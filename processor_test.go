@@ -1,7 +1,6 @@
 package common
 
 import (
-	"github.com/rpccloud/rpc/common"
 	"testing"
 )
 

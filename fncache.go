@@ -1,7 +1,5 @@
 package common
 
-import "github.com/rpccloud/rpc/common"
-
 func getFCache(fn interface{}) fCacheFunc {
 	stringKind, ok := getFuncKind(fn)
 	if !ok {
@@ -16,7 +14,7 @@ func getFCache(fn interface{}) fCacheFunc {
 	return nil
 }
 
-func fcB(c Context, s *common.RPCStream, f interface{}) bool {
+func fcB(c Context, s *RPCStream, f interface{}) bool {
 	h, a := s.ReadBool()
 	if !a && !s.IsReadFinish() {
 		return false

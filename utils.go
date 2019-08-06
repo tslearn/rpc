@@ -10,6 +10,102 @@ import (
 	"unsafe"
 )
 
+type fCacheFunc func(
+	ctx Context,
+	stream *common.RPCStream,
+	fn interface{},
+) bool
+
+var (
+	rpcArray  common.RPCArray
+	rpcMap    common.RPCMap
+	rpcBytes  common.RPCBytes
+	rpcString common.RPCString
+
+	readTypeString string
+	readTypeBytes  []byte
+
+	pContext Context
+	pReturn  Return
+)
+
+func getArgumentsErrorPosition(fn reflect.Value) int {
+	if fn.Type().NumIn() < 1 {
+		return 0
+	}
+
+	if fn.Type().In(0) != reflect.ValueOf(pContext).Type() {
+		return 0
+	}
+
+	for i := 1; i < fn.Type().NumIn(); i++ {
+		argType := fn.Type().In(i)
+		switch argType.Kind() {
+		case reflect.Uint64:
+			continue
+		case reflect.Int64:
+			continue
+		case reflect.Float64:
+			continue
+		case reflect.Bool:
+			continue
+		default:
+			if argType == reflect.ValueOf(rpcString).Type() ||
+				argType == reflect.ValueOf(rpcBytes).Type() ||
+				argType == reflect.ValueOf(rpcArray).Type() ||
+				argType == reflect.ValueOf(rpcMap).Type() {
+				continue
+			}
+			return i
+		}
+	}
+
+	return -1
+}
+
+func getFuncKind(fn interface{}) (string, bool) {
+	reflectFn := reflect.ValueOf(fn)
+
+	if reflectFn.Type().NumIn() < 1 ||
+		reflectFn.Type().In(0) != reflect.ValueOf(pContext).Type() {
+		return "", false
+	}
+
+	if reflectFn.Type().NumOut() != 1 ||
+		reflectFn.Type().Out(0) != reflect.ValueOf(pReturn).Type() {
+		return "", false
+	}
+
+	ret := ""
+	for i := 1; i < reflectFn.Type().NumIn(); i++ {
+		argType := reflectFn.Type().In(i)
+
+		if argType == reflect.ValueOf(rpcArray).Type() {
+			ret += "A"
+		} else if argType == reflect.ValueOf(rpcMap).Type() {
+			ret += "M"
+		} else if argType == reflect.ValueOf(rpcBytes).Type() {
+			ret += "X"
+		} else if argType == reflect.ValueOf(rpcString).Type() {
+			ret += "S"
+		} else {
+			switch argType.Kind() {
+			case reflect.Int64:
+				ret += "I"
+			case reflect.Uint64:
+				ret += "U"
+			case reflect.Bool:
+				ret += "B"
+			case reflect.Float64:
+				ret += "F"
+			default:
+				return "", false
+			}
+		}
+	}
+	return ret, true
+}
+
 // GetStackString reports the call stack information
 func GetStackString(skip uint) string {
 	sb := NewStringBuilder()

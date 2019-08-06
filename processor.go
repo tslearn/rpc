@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/common"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -43,15 +42,15 @@ var (
 //	p.execArgs = p.execArgs[:0]
 //}
 
-func consume(processor *rpcProcessor, stream *common.RPCStream) {
+func consume(processor *rpcProcessor, stream *RPCStream) {
 
 }
 
 type rpcThread struct {
 	processor      *rpcProcessor
-	ch             chan *common.RPCStream
+	ch             chan *RPCStream
 	execNS         int64
-	execStream     *common.RPCStream
+	execStream     *RPCStream
 	execDepth      uint64
 	execFrom       string
 	execEchoNode   *rpcEchoNode
@@ -66,9 +65,9 @@ type rpcThread struct {
 func newThread(processor *rpcProcessor) *rpcThread {
 	return &rpcThread{
 		processor:  processor,
-		ch:         make(chan *common.RPCStream),
+		ch:         make(chan *RPCStream),
 		execArgs:   make([]reflect.Value, 0, 16),
-		execStream: common.NewRPCStream(),
+		execStream: NewRPCStream(),
 		execNS:     0,
 	}
 }
@@ -78,11 +77,11 @@ func (p *rpcThread) getRunDuration() time.Duration {
 	if timeNS == 0 {
 		return 0
 	}
-	return common.TimeSpanFrom(timeNS)
+	return TimeSpanFrom(timeNS)
 }
 
 func (p *rpcThread) toRun() bool {
-	return atomic.CompareAndSwapInt64(&p.execNS, 0, common.TimeNowNS())
+	return atomic.CompareAndSwapInt64(&p.execNS, 0, TimeNowNS())
 }
 
 func (p *rpcThread) toSweep() {
@@ -105,7 +104,7 @@ func (p *rpcThread) start() {
 	}()
 }
 
-func (p *rpcThread) put(stream *common.RPCStream) {
+func (p *rpcThread) put(stream *RPCStream) {
 	p.ch <- stream
 }
 
@@ -113,7 +112,7 @@ func (p *rpcThread) stop() {
 	close(p.ch)
 }
 
-func (p *rpcThread) eval(inStream *common.RPCStream) Return {
+func (p *rpcThread) eval(inStream *RPCStream) Return {
 	// create context
 	ctx := serverContext{thread: p}
 
@@ -360,7 +359,7 @@ func (p *rpcThreadSlot) gc() {
 	}
 }
 
-func (p *rpcThreadSlot) put(stream *common.RPCStream) {
+func (p *rpcThreadSlot) put(stream *RPCStream) {
 	arrayOfThreads := <-p.cacheArray
 
 	for i := 0; i < NumOfThreadPerBlock; i++ {
@@ -378,7 +377,7 @@ func (p *rpcThreadSlot) put(stream *common.RPCStream) {
 ////////////////////////////////////////////////////////////////////////////////
 type rpcProcessor struct {
 	isRunning    bool
-	logger       *common.Logger
+	logger       *Logger
 	echosMap     map[string]*rpcEchoNode
 	servicesMap  map[string]*rpcServiceNode
 	slots        []*rpcThreadSlot
@@ -388,7 +387,7 @@ type rpcProcessor struct {
 }
 
 func newProcessor(
-	logger *common.Logger,
+	logger *Logger,
 	maxNodeDepth uint,
 	maxCallDepth uint,
 ) *rpcProcessor {
@@ -453,13 +452,13 @@ func (p *rpcProcessor) stop() bool {
 }
 
 func (p *rpcProcessor) put(
-	stream *common.RPCStream,
+	stream *RPCStream,
 	goroutineFixedRand *rand.Rand,
 ) {
 	// get a random uint32
 	randInt := 0
 	if goroutineFixedRand == nil {
-		randInt = int(common.GetRandUint32())
+		randInt = int(GetRandUint32())
 	} else {
 		randInt = goroutineFixedRand.Int()
 	}
@@ -474,7 +473,7 @@ func (p *rpcProcessor) AddService(
 	err := p.mountService(RootName, &rpcAddMeta{
 		name:        name,
 		serviceMeta: serviceMeta,
-		debug:       common.GetStackString(1),
+		debug:       GetStackString(1),
 	})
 
 	if err != nil {
@@ -487,15 +486,15 @@ func (p *rpcProcessor) AddService(
 func (p *rpcProcessor) mountService(
 	parentServiceNodePath string,
 	addMeta *rpcAddMeta,
-) common.RPCError {
+) RPCError {
 	// check addMeta is not nil
 	if addMeta == nil {
-		return common.NewRPCError("mountService addMeta is nil")
+		return NewRPCError("mountService addMeta is nil")
 	}
 
 	// check addMeta.serviceMeta is not nil
 	if addMeta.serviceMeta == nil {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			"mountService service is nil",
 			addMeta.debug,
 		)
@@ -503,7 +502,7 @@ func (p *rpcProcessor) mountService(
 
 	// check addMeta.name is valid
 	if !NodeNameRegex.MatchString(addMeta.name) {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf("mountService name %s is illegal", addMeta.name),
 			addMeta.debug,
 		)
@@ -512,13 +511,13 @@ func (p *rpcProcessor) mountService(
 	// check max node depth overflow
 	parentNode, ok := p.servicesMap[parentServiceNodePath]
 	if !ok {
-		return common.NewRPCError(
+		return NewRPCError(
 			"mountService parentNode is nil",
 		)
 	}
 	servicePath := parentServiceNodePath + "." + addMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf(
 				"Service path %s is too long, it must be less or equal than %d",
 				servicePath,
@@ -530,15 +529,15 @@ func (p *rpcProcessor) mountService(
 
 	// check the mount path is not occupied
 	if item, ok := p.servicesMap[servicePath]; ok {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf(
 				"Add name %s is duplicated",
 				addMeta.name,
 			),
 			fmt.Sprintf(
 				"Current:\n%s\nConflict:\n%s",
-				common.AddPrefixPerLine(addMeta.debug, "\t"),
-				common.AddPrefixPerLine(item.addMeta.debug, "\t"),
+				AddPrefixPerLine(addMeta.debug, "\t"),
+				AddPrefixPerLine(item.addMeta.debug, "\t"),
 			),
 		)
 	}
@@ -574,20 +573,20 @@ func (p *rpcProcessor) mountService(
 func (p *rpcProcessor) mountEcho(
 	serviceNode *rpcServiceNode,
 	echoMeta *rpcEchoMeta,
-) common.RPCError {
+) RPCError {
 	// check the node is nil
 	if serviceNode == nil {
-		return common.NewRPCError("mountEcho node is nil")
+		return NewRPCError("mountEcho node is nil")
 	}
 
 	// check the echoMeta is nil
 	if echoMeta == nil {
-		return common.NewRPCError("mountEcho scheme is nil")
+		return NewRPCError("mountEcho scheme is nil")
 	}
 
 	// check the name
 	if !EchoNameRegex.MatchString(echoMeta.name) {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf("Echo name %s is illegal", echoMeta.name),
 			echoMeta.debug,
 		)
@@ -596,22 +595,22 @@ func (p *rpcProcessor) mountEcho(
 	// check the echo path is not occupied
 	echoPath := serviceNode.path + ":" + echoMeta.name
 	if item, ok := p.echosMap[echoPath]; ok {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf(
 				"Echo name %s is duplicated",
 				echoMeta.name,
 			),
 			fmt.Sprintf(
 				"Current:\n%s\nConflict:\n%s",
-				common.AddPrefixPerLine(echoMeta.debug, "\t"),
-				common.AddPrefixPerLine(item.echoMeta.debug, "\t"),
+				AddPrefixPerLine(echoMeta.debug, "\t"),
+				AddPrefixPerLine(item.echoMeta.debug, "\t"),
 			),
 		)
 	}
 
 	// check the echo handler is nil
 	if echoMeta.handler == nil {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			"Echo handler is nil",
 			echoMeta.debug,
 		)
@@ -620,7 +619,7 @@ func (p *rpcProcessor) mountEcho(
 	// Check echo handler is Func
 	fn := reflect.ValueOf(echoMeta.handler)
 	if fn.Kind() != reflect.Func {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			"Echo handler must be func(ctx Context, ...) Return",
 			echoMeta.debug,
 		)
@@ -629,15 +628,15 @@ func (p *rpcProcessor) mountEcho(
 	// Check echo handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			"Echo handler 1st argument type must be Context",
 			echoMeta.debug,
 		)
 	} else if argumentsErrorPos > 0 {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			fmt.Sprintf(
 				"Echo handler %s argument type <%s> not supported",
-				common.ConvertOrdinalToString(1+uint(argumentsErrorPos)),
+				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 				fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
 			),
 			echoMeta.debug,
@@ -647,7 +646,7 @@ func (p *rpcProcessor) mountEcho(
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(pReturn).Type() {
-		return common.NewRPCErrorWithDebug(
+		return NewRPCErrorWithDebug(
 			"Echo handler return type must be Return",
 			echoMeta.debug,
 		)
@@ -655,7 +654,7 @@ func (p *rpcProcessor) mountEcho(
 
 	// mount the echoRecord
 	fileLine := ""
-	debugArr := common.FindLinesByPrefix(echoMeta.debug, "-01")
+	debugArr := FindLinesByPrefix(echoMeta.debug, "-01")
 	if len(debugArr) > 0 {
 		arr := strings.Split(debugArr[0], " ")
 		if len(arr) == 3 {

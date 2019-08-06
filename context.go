@@ -4,58 +4,84 @@ import (
 	"fmt"
 )
 
-type serverContext struct {
-	thread *rpcThread
+type rpcContextInner struct {
+	stream       *RPCStream
+	serverThread *rpcThread
+	clientThread *uint64
 }
 
-type Context = *serverContext
+type rpcContext struct {
+	inner *rpcContextInner
+}
 
-func (p *serverContext) writeError(message string, debug string) Return {
-	stream := p.thread.execStream
-	stream.SetWritePos(13)
-	stream.WriteBool(false)
-	stream.WriteString(message)
-	stream.WriteString(debug)
-	p.thread.execSuccessful = false
+type Context = *rpcContext
+
+func (p *rpcContext) writeError(message string, debug string) Return {
+	if p.inner != nil {
+		serverThread := p.inner.serverThread
+		if serverThread != nil {
+			stream := serverThread.execStream
+			stream.SetWritePos(13)
+			stream.WriteBool(false)
+			stream.WriteString(message)
+			stream.WriteString(debug)
+			serverThread.execSuccessful = false
+		}
+	}
 	return nilReturn
 }
 
 // OK get success Return  by value
-func (p *serverContext) OK(value interface{}) Return {
-	stream := p.thread.execStream
-	stream.SetWritePos(13)
-	stream.WriteBool(true)
-	if stream.Write(value) == common.RPCStreamWriteOK {
-		p.thread.execSuccessful = true
-		return nilReturn
-	} else {
-		return p.writeError(
-			"return type is error",
-			common.GetStackString(1),
-		)
+func (p *rpcContext) OK(value interface{}) Return {
+	if p.inner != nil {
+		serverThread := p.inner.serverThread
+		if serverThread != nil {
+			stream := serverThread.execStream
+			stream.SetWritePos(13)
+			stream.WriteBool(true)
+			if stream.Write(value) == RPCStreamWriteOK {
+				serverThread.execSuccessful = true
+				return nilReturn
+			} else {
+				return p.writeError(
+					"return type is error",
+					GetStackString(1),
+				)
+			}
+		}
 	}
+	return nilReturn
 }
 
 // Failed get failed Return by code and message
-func (p *serverContext) Error(a ...interface{}) Return {
-	message := fmt.Sprint(a...)
-	err := common.NewRPCErrorWithDebug(message, common.GetStackString(1))
-	if p.thread != nil &&
-		p.thread.execEchoNode != nil &&
-		p.thread.execEchoNode.debugString != "" {
-		err.AddDebug(p.thread.execEchoNode.debugString)
+func (p *rpcContext) Error(a ...interface{}) Return {
+	if p.inner != nil {
+		serverThread := p.inner.serverThread
+		if serverThread != nil {
+			message := fmt.Sprint(a...)
+			err := NewRPCErrorWithDebug(message, GetStackString(1))
+			if serverThread.execEchoNode != nil &&
+				serverThread.execEchoNode.debugString != "" {
+				err.AddDebug(serverThread.execEchoNode.debugString)
+			}
+			return p.writeError(err.GetMessage(), err.GetDebug())
+		}
 	}
-
-	return p.writeError(err.GetMessage(), err.GetDebug())
+	return nilReturn
 }
 
-func (p *serverContext) Errorf(format string, a ...interface{}) Return {
-	message := fmt.Sprintf(format, a...)
-	err := common.NewRPCErrorWithDebug(message, common.GetStackString(1))
-	if p.thread != nil &&
-		p.thread.execEchoNode != nil &&
-		p.thread.execEchoNode.debugString != "" {
-		err.AddDebug(p.thread.execEchoNode.debugString)
+func (p *rpcContext) Errorf(format string, a ...interface{}) Return {
+	if p.inner != nil {
+		serverThread := p.inner.serverThread
+		if serverThread != nil {
+			message := fmt.Sprintf(format, a...)
+			err := NewRPCErrorWithDebug(message, GetStackString(1))
+			if serverThread.execEchoNode != nil &&
+				serverThread.execEchoNode.debugString != "" {
+				err.AddDebug(serverThread.execEchoNode.debugString)
+			}
+			return p.writeError(err.GetMessage(), err.GetDebug())
+		}
 	}
-	return p.writeError(err.GetMessage(), err.GetDebug())
+	return nilReturn
 }

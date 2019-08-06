@@ -1,7 +1,6 @@
 package common
 
 import (
-	"github.com/rpccloud/rpc/common"
 	"reflect"
 	"sync"
 )
@@ -31,7 +30,7 @@ func newServiceMeta() *rpcServiceMeta {
 	return &rpcServiceMeta{
 		children: make([]*rpcAddMeta, 0, 0),
 		echos:    make([]*rpcEchoMeta, 0, 0),
-		debug:    common.GetStackString(1),
+		debug:    GetStackString(1),
 	}
 }
 
@@ -50,7 +49,7 @@ func (p *rpcServiceMeta) Echo(
 		name:    name,
 		export:  export,
 		handler: handler,
-		debug:   common.GetStackString(1),
+		debug:   GetStackString(1),
 	})
 	return p
 }
@@ -68,7 +67,7 @@ func (p *rpcServiceMeta) Add(
 	p.children = append(p.children, &rpcAddMeta{
 		name:        name,
 		serviceMeta: serviceMeta,
-		debug:       common.GetStackString(1),
+		debug:       GetStackString(1),
 	})
 
 	return p
