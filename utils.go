@@ -265,16 +265,22 @@ func equalRPCString(left interface{}, right interface{}) bool {
 	l := RPCString{}
 	r := RPCString{}
 
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
 	switch left.(type) {
 	case string:
-		l = RPCString{status: rpcStatusAllocated, bytes: ([]byte)(left.(string))}
+		l = RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(left.(string))}
 	case RPCString:
 		l = left.(RPCString)
 	}
 
 	switch right.(type) {
 	case string:
-		r = RPCString{status: rpcStatusAllocated, bytes: ([]byte)(right.(string))}
+		r = RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(right.(string))}
 	case RPCString:
 		r = right.(RPCString)
 	default:
@@ -309,15 +315,21 @@ func equalRPCBytes(left interface{}, right interface{}) bool {
 	l := RPCBytes{}
 	r := RPCBytes{}
 
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
 	switch left.(type) {
 	case []byte:
-		l = RPCBytes{status: rpcStatusAllocated, bytes: left.([]byte)}
+		l = RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: left.([]byte)}
 	case RPCBytes:
 		l = left.(RPCBytes)
 	}
 	switch right.(type) {
 	case []byte:
-		r = RPCBytes{status: rpcStatusAllocated, bytes: right.([]byte)}
+		r = RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: right.([]byte)}
 	case RPCBytes:
 		r = right.(RPCBytes)
 	default:
