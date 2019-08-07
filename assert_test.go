@@ -51,10 +51,15 @@ func TestAssert_Equals(t *testing.T) {
 
 func TestAssert_Contains(t *testing.T) {
 	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
 	assert("hello").Contains("")
 	assert("hello").Contains("o")
 
-	assert(toRPCArray([]interface{}{1, 2})).Contains(int64(2))
+	assert(toRPCArray([]interface{}{1, 2}, ctx)).Contains(int64(2))
 
 	assertFailedFn(func() {
 		assert(3).Contains(3)
@@ -69,7 +74,7 @@ func TestAssert_Contains(t *testing.T) {
 		assert(nil).Contains(nil)
 	})
 	assertFailedFn(func() {
-		assert(toRPCArray([]interface{}{1, 3})).Contains(nil)
+		assert(toRPCArray([]interface{}{1, 3}, ctx)).Contains(nil)
 	})
 	assertFailedFn(func() {
 		assert().Contains(2)

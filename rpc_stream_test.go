@@ -862,13 +862,13 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 	}
 
 	testCollection := [][2]interface{}{
-		{toRPCArray([]interface{}{}), []byte{64}},
-		{toRPCArray([]interface{}{true}), []byte{65, 6, 0, 0, 0, 2}},
-		{toRPCArray([]interface{}{true, false}), []byte{66, 7, 0, 0, 0, 2, 3}},
+		{toRPCArray([]interface{}{}, ctx), []byte{64}},
+		{toRPCArray([]interface{}{true}, ctx), []byte{65, 6, 0, 0, 0, 2}},
+		{toRPCArray([]interface{}{true, false}, ctx), []byte{66, 7, 0, 0, 0, 2, 3}},
 		{toRPCArray([]interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}), []byte{
+		}, ctx), []byte{
 			94, 35, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -876,7 +876,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 		{toRPCArray([]interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}), []byte{
+		}, ctx), []byte{
 			95, 40, 0, 0, 0, 31, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -884,7 +884,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 		{toRPCArray([]interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}), []byte{
+		}, ctx), []byte{
 			95, 41, 0, 0, 0, 32, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -1025,8 +1025,8 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 	}
 
 	testCollection := [][2]interface{}{
-		{toRPCMap(map[string]interface{}{}), []byte{0x60}},
-		{toRPCMap(map[string]interface{}{"1": true}), []byte{0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02}},
+		{toRPCMap(map[string]interface{}{}, ctx), []byte{0x60}},
+		{toRPCMap(map[string]interface{}{"1": true}, ctx), []byte{0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02}},
 		{toRPCMap(map[string]interface{}{
 			"1": true, "2": true, "3": true, "4": true,
 			"5": true, "6": true, "7": true, "8": true,
@@ -1036,7 +1036,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			"l": true, "m": true, "n": true, "o": true,
 			"p": true, "q": true, "r": true, "s": true,
 			"t": true, "u": true,
-		}), []byte{
+		}, ctx), []byte{
 			0x7e, 0x7d, 0x00, 0x00, 0x00,
 			0x81, 0x31, 0x00, 0x02, 0x81, 0x32, 0x00, 0x02, 0x81, 0x33, 0x00, 0x02, 0x81, 0x34, 0x00, 0x02,
 			0x81, 0x35, 0x00, 0x02, 0x81, 0x36, 0x00, 0x02, 0x81, 0x37, 0x00, 0x02, 0x81, 0x38, 0x00, 0x02,
@@ -1056,7 +1056,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			"l": true, "m": true, "n": true, "o": true,
 			"p": true, "q": true, "r": true, "s": true,
 			"t": true, "u": true, "v": true,
-		}), []byte{
+		}, ctx), []byte{
 			0x7f, 0x85, 0x00, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00,
 			0x81, 0x31, 0x00, 0x02, 0x81, 0x32, 0x00, 0x02, 0x81, 0x33, 0x00, 0x02, 0x81, 0x34, 0x00, 0x02,
 			0x81, 0x35, 0x00, 0x02, 0x81, 0x36, 0x00, 0x02, 0x81, 0x37, 0x00, 0x02, 0x81, 0x38, 0x00, 0x02,
@@ -1076,7 +1076,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			"l": true, "m": true, "n": true, "o": true,
 			"p": true, "q": true, "r": true, "s": true,
 			"t": true, "u": true, "v": true, "w": true,
-		}), []byte{
+		}, ctx), []byte{
 			0x7f, 0x89, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
 			0x81, 0x31, 0x00, 0x02, 0x81, 0x32, 0x00, 0x02, 0x81, 0x33, 0x00, 0x02, 0x81, 0x34, 0x00, 0x02,
 			0x81, 0x35, 0x00, 0x02, 0x81, 0x36, 0x00, 0x02, 0x81, 0x37, 0x00, 0x02, 0x81, 0x38, 0x00, 0x02,

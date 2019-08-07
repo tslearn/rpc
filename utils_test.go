@@ -136,6 +136,12 @@ func Test_equals(t *testing.T) {
 	assert := NewAssert(t)
 	invalidCtx := &rpcContext{inner: nil}
 
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
 	loggerPtr := NewLogger()
 	testCollection := [][3]interface{}{
 		{true, true, true},
@@ -190,48 +196,48 @@ func Test_equals(t *testing.T) {
 		{RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
 
 		{nilRPCMap, nilRPCMap, true},
-		{toRPCMap(map[string]interface{}{}), toRPCMap(map[string]interface{}{}), true},
+		{toRPCMap(map[string]interface{}{}, ctx), toRPCMap(map[string]interface{}{}, ctx), true},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
 			true,
 		},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
-			toRPCArray([]interface{}{9007199254740991}),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCArray([]interface{}{9007199254740991}, ctx),
 			false,
 		},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
-			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}, ctx),
 			false,
 		},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}),
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
 			false,
 		},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
-			toRPCMap(map[string]interface{}{"test": 9007199254740990}),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740990}, ctx),
 			false,
 		},
 		{
-			toRPCMap(map[string]interface{}{"test": 9007199254740991}),
-			toRPCMap(nil),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(nil, ctx),
 			false,
 		},
-		{toRPCMap(map[string]interface{}{}), nil, false},
+		{toRPCMap(map[string]interface{}{}, ctx), nil, false},
 		{nilRPCArray, nilRPCArray, true},
-		{toRPCArray([]interface{}{}), toRPCArray([]interface{}{}), true},
-		{toRPCArray([]interface{}{1}), toRPCArray([]interface{}{1}), true},
-		{toRPCArray([]interface{}{1, 2}), toRPCArray([]interface{}{1, 2}), true},
-		{toRPCArray([]interface{}{1, 2}), 3, false},
-		{toRPCArray([]interface{}{1, 2}), toRPCArray([]interface{}{1}), false},
-		{toRPCArray([]interface{}{1}), toRPCArray([]interface{}{1, 2}), false},
-		{toRPCArray([]interface{}{1, 2}), toRPCArray([]interface{}{2, 1}), false},
-		{toRPCArray([]interface{}{1, 2}), toRPCArray(nil), false},
-		{toRPCArray([]interface{}{}), toRPCArray(nil), false},
+		{toRPCArray([]interface{}{}, ctx), toRPCArray([]interface{}{}, ctx), true},
+		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1}, ctx), true},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1, 2}, ctx), true},
+		{toRPCArray([]interface{}{1, 2}, ctx), 3, false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1}, ctx), false},
+		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1, 2}, ctx), false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{2, 1}, ctx), false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray(nil, ctx), false},
+		{toRPCArray([]interface{}{}, ctx), toRPCArray(nil, ctx), false},
 
 		{nil, nil, true},
 		{nil, (*Logger)(nil), true},
@@ -286,6 +292,11 @@ func Test_equals_exceptions(t *testing.T) {
 func Test_contains(t *testing.T) {
 	assert := NewAssert(t)
 	invalidCtx := &rpcContext{inner: nil}
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
 
 	testCollection := [][3]interface{}{
 		{"hello world", "world", 1},
@@ -300,15 +311,15 @@ func Test_contains(t *testing.T) {
 		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("world")}, 1},
 		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("you")}, 0},
 		{"hello world", RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, -1},
-		{toRPCArray([]interface{}{1, 2, int64(3)}), int64(3), 1},
-		{toRPCArray([]interface{}{1, 2, int64(3)}), int(3), 0},
-		{toRPCArray([]interface{}{1, 2, 3}), 0, 0},
-		{toRPCArray([]interface{}{1, 2, 3}), nil, 0},
-		{toRPCArray([]interface{}{1, 2, 3}), true, 0},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}), "1", -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}), "3", -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}), true, -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}), nil, -1},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), 1},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), 0},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), 0, 0},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), nil, 0},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), true, 0},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "1", -1},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "3", -1},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), true, -1},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), nil, -1},
 		{[]byte{}, []byte{}, 1},
 		{[]byte{1, 2, 3, 4}, []byte{}, 1},
 		{[]byte{1, 2, 3, 4}, []byte{2, 3}, 1},
