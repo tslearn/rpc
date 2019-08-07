@@ -48,7 +48,7 @@ type RPCString struct {
 
 // OK ...
 func (p RPCString) OK() bool {
-	return p.ctx.inner != nil && p.status != rpcStatusError
+	return p.ctx != nil && p.ctx.inner != nil && p.status != rpcStatusError
 }
 
 // ToString ...
@@ -72,7 +72,7 @@ type RPCBytes struct {
 
 // OK ...
 func (p RPCBytes) OK() bool {
-	return p.ctx.inner != nil && p.status != rpcStatusError
+	return p.ctx != nil && p.ctx.inner != nil && p.status != rpcStatusError
 }
 
 // ToBytes ...
@@ -165,7 +165,7 @@ func (p rpcArray) Size() int {
 
 // GetNil ...
 func (p rpcArray) GetNil(index int) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadNil()
 	}

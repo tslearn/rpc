@@ -165,16 +165,16 @@ func Test_equals(t *testing.T) {
 		{"abc", "ab", false},
 		{"", nil, false},
 		{"", 6, false},
-		{"", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("")}, true},
-		{"abc", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, true},
-		{"abc", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("ab")}, false},
+		{"", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("")}, true},
+		{"abc", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, true},
+		{"abc", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("ab")}, false},
 		{"abc", RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, false},
-		{"hi", RPCString{status: rpcStatusAllocated, bytes: nil}, false},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("")}, "", true},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "abc", true},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
+		{"hi", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: nil}, false},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("")}, "", true},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "abc", true},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
 		{RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
-		{RPCString{status: rpcStatusAllocated, bytes: nil}, "hi", false},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: nil}, "hi", false},
 		{errorRPCString, errorRPCString, true},
 
 		{[]byte{}, []byte{}, true},
@@ -186,13 +186,13 @@ func Test_equals(t *testing.T) {
 		{[]byte{12, 13}, []byte{12}, false},
 		{[]byte{13, 12}, nil, false},
 		{[]byte{}, nil, false},
-		{[]byte{}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, true},
-		{[]byte{12, 13}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{12, 13}}, true},
-		{[]byte{12, 13}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{12}}, false},
+		{[]byte{}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, true},
+		{[]byte{12, 13}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12, 13}}, true},
+		{[]byte{12, 13}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12}}, false},
 		{[]byte{12, 13}, RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, false},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, true},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{12, 13}}, []byte{12, 13}, true},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, true},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12, 13}}, []byte{12, 13}, true},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
 		{RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
 
 		{nilRPCMap, nilRPCMap, true},
@@ -272,16 +272,23 @@ func Test_equals(t *testing.T) {
 func Test_equals_exceptions(t *testing.T) {
 	assert := NewAssert(t)
 
-	rightArray := newRPCArray(nil)
-	errorArray := newRPCArray(nil)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	rightArray := newRPCArray(ctx)
+	errorArray := newRPCArray(ctx)
 	rightArray.Append(true)
 	errorArray.Append(true)
 	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
 	assert(equals(rightArray, errorArray)).IsFalse()
 	assert(equals(errorArray, rightArray)).IsFalse()
 
-	rightMap := newRPCMap(nil)
-	errorMap := newRPCMap(nil)
+	ctx.inner.stream = NewRPCStream()
+	rightMap := newRPCMap(ctx)
+	errorMap := newRPCMap(ctx)
 	rightMap.Set("0", true)
 	errorMap.Set("0", true)
 	(*errorMap.ctx.getCacheStream().frames[0])[1] = 13
@@ -303,13 +310,13 @@ func Test_contains(t *testing.T) {
 		{"hello world", "you", 0},
 		{"hello world", 3, -1},
 		{"hello world", nil, -1},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", 1},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "you", 0},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, 3, -1},
-		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, nil, -1},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", 1},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "you", 0},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, 3, -1},
+		{RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, nil, -1},
 		{RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", -1},
-		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("world")}, 1},
-		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("you")}, 0},
+		{"hello world", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("world")}, 1},
+		{"hello world", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("you")}, 0},
 		{"hello world", RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, -1},
 		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), 1},
 		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), 0},
@@ -330,23 +337,23 @@ func Test_contains(t *testing.T) {
 		{[]byte{1, 2}, true, -1},
 		{[]byte{1, 2}, nil, -1},
 
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, 1},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, 1},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{2, 3}, 1},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, []byte{1, 3}, 0},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, 1, -1},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, true, -1},
-		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, nil, -1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, 1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, 1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{2, 3}, 1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, []byte{1, 3}, 0},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, 1, -1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, true, -1},
+		{RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, nil, -1},
 		{RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, -1},
 
-		{[]byte{}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, 1},
-		{[]byte{1, 2, 3, 4}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, 1},
-		{[]byte{1, 2, 3, 4}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{2, 3}}, 1},
+		{[]byte{}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, 1},
+		{[]byte{1, 2, 3, 4}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, 1},
+		{[]byte{1, 2, 3, 4}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{2, 3}}, 1},
 
-		{[]byte{1, 2}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 3}}, 0},
-		{1, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{true, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{nil, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
+		{[]byte{1, 2}, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 3}}, 0},
+		{1, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
+		{true, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
+		{nil, RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
 		{[]byte{1, 2, 3, 4}, RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{2, 3}}, -1},
 
 		{nil, "3", -1},
@@ -362,8 +369,13 @@ func Test_contains(t *testing.T) {
 
 func Test_contains_exceptions(t *testing.T) {
 	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
 
-	errorArray := newRPCArray(nil)
+	errorArray := newRPCArray(ctx)
 	errorArray.Append(true)
 	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
 

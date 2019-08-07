@@ -53,28 +53,10 @@ func Test_RPCArray_newRPCArray(t *testing.T) {
 	invalidCtx := &rpcContext{
 		inner: nil,
 	}
-	assert(newRPCArray(nil)).Equals(newRPCArray(validCtx))
+	assert(newRPCArray(validCtx).ctx).IsNotNil()
+	assert(newRPCArray(validCtx).in).IsNotNil()
+	assert(newRPCArray(nil)).Equals(nilRPCArray)
 	assert(newRPCArray(invalidCtx)).Equals(nilRPCArray)
-}
-
-func Test_RPCArray_Release(t *testing.T) {
-	assert := NewAssert(t)
-	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
-		},
-	}
-
-	array0 := newRPCArray(validCtx)
-	array0.release()
-	assert(array0.in).IsNil()
-
-	array1 := newRPCArray(nil)
-	for i := 0; i < 100; i++ {
-		array1.Append(20)
-	}
-	array1.release()
-	assert(array1.in).IsNil()
 }
 
 func Test_RPCArray_getStream(t *testing.T) {
@@ -98,6 +80,12 @@ func Test_RPCArray_Get(t *testing.T) {
 	assert := NewAssert(t)
 	testArray := make([]interface{}, 16, 16)
 
+	testCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
 	testArray[0] = nil
 	testArray[1] = false
 	testArray[2] = float64(3.14)
@@ -107,12 +95,12 @@ func Test_RPCArray_Get(t *testing.T) {
 	testArray[6] = "hello"
 	testArray[7] = []byte{}
 	testArray[8] = []byte{0x53}
-	testArray[9] = newRPCArray(nil)
-	testArray10 := newRPCArray(nil)
+	testArray[9] = newRPCArray(testCtx)
+	testArray10 := newRPCArray(testCtx)
 	testArray10.Append("world")
 	testArray[10] = testArray10
-	testArray[11] = newRPCMap(nil)
-	testSmallArray12 := newRPCMap(nil)
+	testArray[11] = newRPCMap(testCtx)
+	testSmallArray12 := newRPCMap(testCtx)
 	testSmallArray12.Set("hello", "world")
 	testArray[12] = testSmallArray12
 
@@ -125,7 +113,7 @@ func Test_RPCArray_Get(t *testing.T) {
 		ctx := &rpcContext{
 			inner: inner,
 		}
-		rpcArray := newRPCArray(nil)
+		rpcArray := newRPCArray(ctx)
 		for _, v := range array {
 			rpcArray.Append(v)
 		}
@@ -250,81 +238,81 @@ func Test_RPCArray_Set(t *testing.T) {
 		inner: nil,
 	}
 
-	array1 := newRPCArray(nil)
-	array2 := newRPCArray(validCtx)
+	array1 := newRPCArray(validCtx)
+	array2 := newRPCArray(nil)
 	array3 := newRPCArray(invalidCtx)
 
 	assert(array1.AppendNil()).IsTrue()
 	assert(array1.SetNil(0)).IsTrue()
-	assert(array2.AppendNil()).IsTrue()
-	assert(array2.SetNil(0)).IsTrue()
+	assert(array2.AppendNil()).IsFalse()
+	assert(array2.SetNil(0)).IsFalse()
 	assert(array3.AppendNil()).IsFalse()
 	assert(array3.SetNil(0)).IsFalse()
 
 	assert(array1.AppendBool(false)).IsTrue()
 	assert(array1.SetBool(0, false)).IsTrue()
-	assert(array2.AppendBool(false)).IsTrue()
-	assert(array2.SetBool(0, false)).IsTrue()
+	assert(array2.AppendBool(false)).IsFalse()
+	assert(array2.SetBool(0, false)).IsFalse()
 	assert(array3.AppendBool(false)).IsFalse()
 	assert(array3.SetBool(0, false)).IsFalse()
 
 	assert(array1.AppendFloat64(3.14)).IsTrue()
 	assert(array1.SetFloat64(0, 3.14)).IsTrue()
-	assert(array2.AppendFloat64(3.14)).IsTrue()
-	assert(array2.SetFloat64(0, 3.14)).IsTrue()
+	assert(array2.AppendFloat64(3.14)).IsFalse()
+	assert(array2.SetFloat64(0, 3.14)).IsFalse()
 	assert(array3.AppendFloat64(3.14)).IsFalse()
 	assert(array3.SetFloat64(0, 3.14)).IsFalse()
 
 	assert(array1.AppendInt64(100)).IsTrue()
 	assert(array1.SetInt64(0, 100)).IsTrue()
-	assert(array2.AppendInt64(100)).IsTrue()
-	assert(array2.SetInt64(0, 100)).IsTrue()
+	assert(array2.AppendInt64(100)).IsFalse()
+	assert(array2.SetInt64(0, 100)).IsFalse()
 	assert(array3.AppendInt64(100)).IsFalse()
 	assert(array3.SetInt64(0, 100)).IsFalse()
 
 	assert(array1.AppendUint64(100)).IsTrue()
 	assert(array1.SetUint64(0, 100)).IsTrue()
-	assert(array2.AppendUint64(100)).IsTrue()
-	assert(array2.SetUint64(0, 100)).IsTrue()
+	assert(array2.AppendUint64(100)).IsFalse()
+	assert(array2.SetUint64(0, 100)).IsFalse()
 	assert(array3.AppendUint64(100)).IsFalse()
 	assert(array3.SetUint64(0, 100)).IsFalse()
 
-	rpcString := RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello")}
+	rpcString := RPCString{ctx: validCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello")}
 	assert(array1.AppendRPCString(rpcString)).IsTrue()
 	assert(array1.SetRPCString(0, rpcString)).IsTrue()
-	assert(array2.AppendRPCString(rpcString)).IsTrue()
-	assert(array2.SetRPCString(0, rpcString)).IsTrue()
+	assert(array2.AppendRPCString(rpcString)).IsFalse()
+	assert(array2.SetRPCString(0, rpcString)).IsFalse()
 	assert(array3.AppendRPCString(rpcString)).IsFalse()
 	assert(array3.SetRPCString(0, rpcString)).IsFalse()
 
-	rpcBytes := RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2, 3}}
+	rpcBytes := RPCBytes{ctx: validCtx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3}}
 	assert(array1.AppendRPCBytes(rpcBytes)).IsTrue()
 	assert(array1.SetRPCBytes(0, rpcBytes)).IsTrue()
-	assert(array2.AppendRPCBytes(rpcBytes)).IsTrue()
-	assert(array2.SetRPCBytes(0, rpcBytes)).IsTrue()
+	assert(array2.AppendRPCBytes(rpcBytes)).IsFalse()
+	assert(array2.SetRPCBytes(0, rpcBytes)).IsFalse()
 	assert(array3.AppendRPCBytes(rpcBytes)).IsFalse()
 	assert(array3.SetRPCBytes(0, rpcBytes)).IsFalse()
 
-	rpcArray := newRPCArray(nil)
+	rpcArray := newRPCArray(validCtx)
 	assert(array1.AppendRPCArray(rpcArray)).IsTrue()
 	assert(array1.SetRPCArray(0, rpcArray)).IsTrue()
-	assert(array2.AppendRPCArray(rpcArray)).IsTrue()
-	assert(array2.SetRPCArray(0, rpcArray)).IsTrue()
+	assert(array2.AppendRPCArray(rpcArray)).IsFalse()
+	assert(array2.SetRPCArray(0, rpcArray)).IsFalse()
 	assert(array3.AppendRPCArray(rpcArray)).IsFalse()
 	assert(array3.SetRPCArray(0, rpcArray)).IsFalse()
 
-	rpcMap := newRPCMap(nil)
+	rpcMap := newRPCMap(validCtx)
 	assert(array1.AppendRPCMap(rpcMap)).IsTrue()
 	assert(array1.SetRPCMap(0, rpcMap)).IsTrue()
-	assert(array2.AppendRPCMap(rpcMap)).IsTrue()
-	assert(array2.SetRPCMap(0, rpcMap)).IsTrue()
+	assert(array2.AppendRPCMap(rpcMap)).IsFalse()
+	assert(array2.SetRPCMap(0, rpcMap)).IsFalse()
 	assert(array3.AppendRPCMap(rpcMap)).IsFalse()
 	assert(array3.SetRPCMap(0, rpcMap)).IsFalse()
 
 	assert(array1.Append("hello")).IsTrue()
 	assert(array1.Set(0, "hello")).IsTrue()
-	assert(array2.Append("hello")).IsTrue()
-	assert(array2.Set(0, "hello")).IsTrue()
+	assert(array2.Append("hello")).IsFalse()
+	assert(array2.Set(0, "hello")).IsFalse()
 	assert(array3.Append("hello")).IsFalse()
 	assert(array3.Set(0, "hello")).IsFalse()
 }
@@ -339,32 +327,8 @@ func Test_RPCMap_newRPCArray(t *testing.T) {
 	invalidCtx := &rpcContext{
 		inner: nil,
 	}
-	assert(newRPCMap(nil)).Equals(newRPCMap(validCtx))
+	assert(newRPCMap(validCtx).ok()).IsTrue()
 	assert(newRPCMap(invalidCtx)).Equals(nilRPCMap)
-}
-
-func Test_RPCMap_Release(t *testing.T) {
-	assert := NewAssert(t)
-	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
-		},
-	}
-
-	mp0 := newRPCMap(validCtx)
-	mp0.release()
-	assert(mp0.in).IsNil()
-
-	mp1 := newRPCMap(nil)
-	for i := 0; i < 100; i++ {
-		mp1.Set(strconv.Itoa(i), i)
-	}
-
-	for i := 0; i < 90; i++ {
-		mp1.Delete(strconv.Itoa(i))
-	}
-	mp1.release()
-	assert(mp1.in).IsNil()
 }
 
 func Test_RPCMap_getStream(t *testing.T) {
@@ -390,6 +354,12 @@ func Test_RPCMap_Get(t *testing.T) {
 	testSmallMap := make(map[string]interface{})
 	testLargeMap := make(map[string]interface{})
 
+	testCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
 	testSmallMap["0"] = nil
 	testSmallMap["1"] = false
 	testSmallMap["2"] = float64(3.14)
@@ -399,12 +369,12 @@ func Test_RPCMap_Get(t *testing.T) {
 	testSmallMap["6"] = "hello"
 	testSmallMap["7"] = []byte{}
 	testSmallMap["8"] = []byte{0x53}
-	testSmallMap["9"] = newRPCArray(nil)
-	testSmallMap10 := newRPCArray(nil)
+	testSmallMap["9"] = newRPCArray(testCtx)
+	testSmallMap10 := newRPCArray(testCtx)
 	testSmallMap10.Append("world")
 	testSmallMap["10"] = testSmallMap10
-	testSmallMap["11"] = newRPCMap(nil)
-	testSmallMap12 := newRPCMap(nil)
+	testSmallMap["11"] = newRPCMap(testCtx)
+	testSmallMap12 := newRPCMap(testCtx)
 	testSmallMap12.Set("hello", "world")
 	testSmallMap["12"] = testSmallMap12
 	testSmallMap["13"] = nil
@@ -420,12 +390,12 @@ func Test_RPCMap_Get(t *testing.T) {
 	testLargeMap["6"] = "hello"
 	testLargeMap["7"] = []byte{}
 	testLargeMap["8"] = []byte{0x53}
-	testLargeMap["9"] = newRPCArray(nil)
-	testLargeMap10 := newRPCArray(nil)
+	testLargeMap["9"] = newRPCArray(testCtx)
+	testLargeMap10 := newRPCArray(testCtx)
 	testLargeMap10.Append("world")
 	testLargeMap["10"] = testLargeMap10
-	testLargeMap["11"] = newRPCMap(nil)
-	testLargeMap12 := newRPCMap(nil)
+	testLargeMap["11"] = newRPCMap(testCtx)
+	testLargeMap12 := newRPCMap(testCtx)
 	testLargeMap12.Set("hello", "world")
 	testLargeMap["12"] = testLargeMap12
 	testLargeMap["13"] = nil
@@ -440,7 +410,7 @@ func Test_RPCMap_Get(t *testing.T) {
 		ctx := &rpcContext{
 			inner: inner,
 		}
-		rpcMap := newRPCMap(nil)
+		rpcMap := newRPCMap(ctx)
 		for k, v := range mp {
 			rpcMap.Set(k, v)
 		}
@@ -547,15 +517,25 @@ func Test_RPCMap_Get(t *testing.T) {
 
 func Test_RPCMap_Set(t *testing.T) {
 	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
 
 	fnTest := func(tp string, name string, value interface{}) {
+		validCtx := &rpcContext{
+			inner: &rpcInnerContext{
+				stream: NewRPCStream(),
+			},
+		}
 		invalidCtx := &rpcContext{
 			inner: nil,
 		}
 
-		map0 := newRPCMap(nil)
-		map16 := newRPCMap(nil)
-		map100 := newRPCMap(nil)
+		map0 := newRPCMap(validCtx)
+		map16 := newRPCMap(validCtx)
+		map100 := newRPCMap(validCtx)
 
 		for i := 0; i < 16; i++ {
 			map16.Set(strconv.Itoa(i), i)
@@ -624,22 +604,22 @@ func Test_RPCMap_Set(t *testing.T) {
 	fnTest("float64", "3", float64(3.14))
 	fnTest("int64", "4", int64(23))
 	fnTest("uint64", "5", uint64(324))
-	fnTest("rpcString", "6", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello")})
-	fnTest("rpcBytes", "7", RPCBytes{status: rpcStatusAllocated, bytes: []byte{123, 1}})
-	fnTest("rpcArray", "8", newRPCArray(nil))
-	fnTest("rpcMap", "9", newRPCMap(nil))
+	fnTest("rpcString", "6", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello")})
+	fnTest("rpcBytes", "7", RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{123, 1}})
+	fnTest("rpcArray", "8", newRPCArray(ctx))
+	fnTest("rpcMap", "9", newRPCMap(ctx))
 
 	fnTest("nil", "t1", nil)
 	fnTest("bool", "t2", false)
 	fnTest("float64", "t3", float64(3.14))
 	fnTest("int64", "t4", int64(23))
 	fnTest("uint64", "t5", uint64(324))
-	fnTest("rpcString", "t6", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello")})
-	fnTest("rpcBytes", "t7", RPCBytes{status: rpcStatusAllocated, bytes: []byte{123, 1}})
-	fnTest("rpcArray", "t8", newRPCArray(nil))
-	fnTest("rpcMap", "t9", newRPCMap(nil))
+	fnTest("rpcString", "t6", RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello")})
+	fnTest("rpcBytes", "t7", RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{123, 1}})
+	fnTest("rpcArray", "t8", newRPCArray(ctx))
+	fnTest("rpcMap", "t9", newRPCMap(ctx))
 
-	mp := newRPCMap(nil)
+	mp := newRPCMap(ctx)
 	assert(mp.SetRPCString("error", errorRPCString)).IsFalse()
 	assert(mp.SetRPCBytes("error", errorRPCBytes)).IsFalse()
 	invalidCtx := &rpcContext{

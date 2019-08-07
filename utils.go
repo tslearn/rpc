@@ -287,6 +287,12 @@ func equalRPCString(left interface{}, right interface{}) bool {
 		return false
 	}
 
+	if l.ctx == nil && r.ctx == nil &&
+		l.status == rpcStatusError && r.status == rpcStatusError &&
+		len(l.bytes) == 0 && len(r.bytes) == 0 {
+		return true
+	}
+
 	return l.OK() && r.OK() &&
 		l.status == r.status && equalBytes(l.bytes, r.bytes)
 }
@@ -334,6 +340,12 @@ func equalRPCBytes(left interface{}, right interface{}) bool {
 		r = right.(RPCBytes)
 	default:
 		return false
+	}
+
+	if l.ctx == nil && r.ctx == nil &&
+		l.status == rpcStatusError && r.status == rpcStatusError &&
+		len(l.bytes) == 0 && len(r.bytes) == 0 {
+		return true
 	}
 
 	return l.OK() && r.OK() &&
