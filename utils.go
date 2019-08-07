@@ -10,17 +10,11 @@ import (
 	"unsafe"
 )
 
-type fCacheFunc func(
-	ctx Context,
-	stream *common.RPCStream,
-	fn interface{},
-) bool
-
 var (
-	rpcArray  common.RPCArray
-	rpcMap    common.RPCMap
-	rpcBytes  common.RPCBytes
-	rpcString common.RPCString
+	vRPCArray  RPCArray
+	vRPCMap    RPCMap
+	vRPCBytes  RPCBytes
+	vRPCString RPCString
 
 	readTypeString string
 	readTypeBytes  []byte
@@ -50,10 +44,10 @@ func getArgumentsErrorPosition(fn reflect.Value) int {
 		case reflect.Bool:
 			continue
 		default:
-			if argType == reflect.ValueOf(rpcString).Type() ||
-				argType == reflect.ValueOf(rpcBytes).Type() ||
-				argType == reflect.ValueOf(rpcArray).Type() ||
-				argType == reflect.ValueOf(rpcMap).Type() {
+			if argType == reflect.ValueOf(vRPCString).Type() ||
+				argType == reflect.ValueOf(vRPCBytes).Type() ||
+				argType == reflect.ValueOf(vRPCArray).Type() ||
+				argType == reflect.ValueOf(vRPCMap).Type() {
 				continue
 			}
 			return i
@@ -80,13 +74,13 @@ func getFuncKind(fn interface{}) (string, bool) {
 	for i := 1; i < reflectFn.Type().NumIn(); i++ {
 		argType := reflectFn.Type().In(i)
 
-		if argType == reflect.ValueOf(rpcArray).Type() {
+		if argType == reflect.ValueOf(vRPCArray).Type() {
 			ret += "A"
-		} else if argType == reflect.ValueOf(rpcMap).Type() {
+		} else if argType == reflect.ValueOf(vRPCMap).Type() {
 			ret += "M"
-		} else if argType == reflect.ValueOf(rpcBytes).Type() {
+		} else if argType == reflect.ValueOf(vRPCBytes).Type() {
 			ret += "X"
-		} else if argType == reflect.ValueOf(rpcString).Type() {
+		} else if argType == reflect.ValueOf(vRPCString).Type() {
 			ret += "S"
 		} else {
 			switch argType.Kind() {
@@ -287,11 +281,7 @@ func equalRPCString(left interface{}, right interface{}) bool {
 		return false
 	}
 
-	if l.OK() && r.OK() {
-		return equalBytes(l.bytes, r.bytes)
-	}
-
-	return l.pub.OK() && r.pub.OK() &&
+	return l.OK() && r.OK() &&
 		l.status == r.status && equalBytes(l.bytes, r.bytes)
 }
 
@@ -334,11 +324,7 @@ func equalRPCBytes(left interface{}, right interface{}) bool {
 		return false
 	}
 
-	if l.OK() && r.OK() {
-		return equalBytes(l.bytes, r.bytes)
-	}
-
-	return l.pub.OK() && r.pub.OK() &&
+	return l.OK() && r.OK() &&
 		l.status == r.status && equalBytes(l.bytes, r.bytes)
 }
 
@@ -348,10 +334,10 @@ func equalRPCArray(left interface{}, right interface{}) bool {
 	if !ok {
 		return false
 	}
-	if l.pub == nil && l.in == nil && r.pub == nil && r.in == nil {
+	if l.ctx == nil && l.in == nil && r.ctx == nil && r.in == nil {
 		return true
 	}
-	if !l.OK() || !r.OK() {
+	if !l.ok() || !r.ok() {
 		return false
 	}
 	if l.Size() != r.Size() {
@@ -380,10 +366,10 @@ func equalRPCMap(left interface{}, right interface{}) bool {
 	if !ok {
 		return false
 	}
-	if l.pub == nil && l.in == nil && r.pub == nil && r.in == nil {
+	if l.ctx == nil && l.in == nil && r.ctx == nil && r.in == nil {
 		return true
 	}
-	if !l.OK() || !r.OK() {
+	if !l.ok() || !r.ok() {
 		return false
 	}
 

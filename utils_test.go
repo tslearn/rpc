@@ -134,7 +134,7 @@ func Test_isNil(t *testing.T) {
 
 func Test_equals(t *testing.T) {
 	assert := NewAssert(t)
-	invalidPub := &PubControl{ctx: nil}
+	invalidCtx := &rpcContext{inner: nil}
 
 	loggerPtr := NewLogger()
 	testCollection := [][3]interface{}{
@@ -162,12 +162,12 @@ func Test_equals(t *testing.T) {
 		{"", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("")}, true},
 		{"abc", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, true},
 		{"abc", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("ab")}, false},
-		{"abc", RPCString{pub: invalidPub, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, false},
+		{"abc", RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, false},
 		{"hi", RPCString{status: rpcStatusAllocated, bytes: nil}, false},
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("")}, "", true},
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "abc", true},
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
-		{RPCString{pub: invalidPub, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
+		{RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
 		{RPCString{status: rpcStatusAllocated, bytes: nil}, "hi", false},
 		{errorRPCString, errorRPCString, true},
 
@@ -183,11 +183,11 @@ func Test_equals(t *testing.T) {
 		{[]byte{}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, true},
 		{[]byte{12, 13}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{12, 13}}, true},
 		{[]byte{12, 13}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{12}}, false},
-		{[]byte{12, 13}, RPCBytes{pub: invalidPub, status: rpcStatusAllocated, bytes: []byte{12}}, false},
+		{[]byte{12, 13}, RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, false},
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, true},
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{12, 13}}, []byte{12, 13}, true},
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
-		{RPCBytes{pub: invalidPub, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
+		{RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
 
 		{nilRPCMap, nilRPCMap, true},
 		{toRPCMap(map[string]interface{}{}), toRPCMap(map[string]interface{}{}), true},
@@ -270,7 +270,7 @@ func Test_equals_exceptions(t *testing.T) {
 	errorArray := newRPCArray(nil)
 	rightArray.Append(true)
 	errorArray.Append(true)
-	(*errorArray.getStream().frames[0])[1] = 13
+	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
 	assert(equals(rightArray, errorArray)).IsFalse()
 	assert(equals(errorArray, rightArray)).IsFalse()
 
@@ -278,14 +278,14 @@ func Test_equals_exceptions(t *testing.T) {
 	errorMap := newRPCMap(nil)
 	rightMap.Set("0", true)
 	errorMap.Set("0", true)
-	(*errorMap.getStream().frames[0])[1] = 13
+	(*errorMap.ctx.getCacheStream().frames[0])[1] = 13
 	assert(equals(rightMap, errorMap)).IsFalse()
 	assert(equals(errorMap, rightMap)).IsFalse()
 }
 
 func Test_contains(t *testing.T) {
 	assert := NewAssert(t)
-	invalidPub := &PubControl{ctx: nil}
+	invalidCtx := &rpcContext{inner: nil}
 
 	testCollection := [][3]interface{}{
 		{"hello world", "world", 1},
@@ -296,10 +296,10 @@ func Test_contains(t *testing.T) {
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "you", 0},
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, 3, -1},
 		{RPCString{status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, nil, -1},
-		{RPCString{pub: invalidPub, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", -1},
+		{RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", -1},
 		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("world")}, 1},
 		{"hello world", RPCString{status: rpcStatusAllocated, bytes: ([]byte)("you")}, 0},
-		{"hello world", RPCString{pub: invalidPub, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, -1},
+		{"hello world", RPCString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, -1},
 		{toRPCArray([]interface{}{1, 2, int64(3)}), int64(3), 1},
 		{toRPCArray([]interface{}{1, 2, int64(3)}), int(3), 0},
 		{toRPCArray([]interface{}{1, 2, 3}), 0, 0},
@@ -326,7 +326,7 @@ func Test_contains(t *testing.T) {
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, 1, -1},
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, true, -1},
 		{RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, nil, -1},
-		{RPCBytes{pub: invalidPub, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, -1},
+		{RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, -1},
 
 		{[]byte{}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, 1},
 		{[]byte{1, 2, 3, 4}, RPCBytes{status: rpcStatusAllocated, bytes: []byte{}}, 1},
@@ -336,7 +336,7 @@ func Test_contains(t *testing.T) {
 		{1, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
 		{true, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
 		{nil, RPCBytes{status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{[]byte{1, 2, 3, 4}, RPCBytes{pub: invalidPub, status: rpcStatusAllocated, bytes: []byte{2, 3}}, -1},
+		{[]byte{1, 2, 3, 4}, RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{2, 3}}, -1},
 
 		{nil, "3", -1},
 		{nil, nil, -1},
@@ -354,7 +354,7 @@ func Test_contains_exceptions(t *testing.T) {
 
 	errorArray := newRPCArray(nil)
 	errorArray.Append(true)
-	(*errorArray.getStream().frames[0])[1] = 13
+	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
 
 	assert(contains(errorArray, true)).Equals(0)
 }

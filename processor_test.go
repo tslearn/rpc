@@ -7,25 +7,24 @@ import (
 var service = newServiceMeta().
 	Echo("sayHello", true, func(
 		ctx Context,
-		name common.RPCString,
+		name RPCString,
 	) Return {
 		n, _ := name.ToString()
 		if n == "true" {
-			return ctx.OK()
+			return ctx.OK(true)
 		} else {
 			return ctx.Error()
 		}
-		return nil
 	}).
 	Echo("sayGoodBye", true, func(
 		ctx Context,
-		name common.RPCString,
+		name RPCString,
 	) Return {
 		return nil
 	})
 
 func TestRpcProcessor_AddService(t *testing.T) {
-	logger := common.NewLogger()
+	logger := NewLogger()
 	processor := newProcessor(logger, 16, 16)
 	processor.AddService("user", service)
 }

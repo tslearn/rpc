@@ -1,6 +1,6 @@
 package common
 
-func getFCache(fn interface{}) fCacheFunc {
+func getFCache(fn interface{}) fnCacheFunc {
 	stringKind, ok := getFuncKind(fn)
 	if !ok {
 		return nil

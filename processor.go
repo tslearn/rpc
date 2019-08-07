@@ -47,29 +47,41 @@ func consume(processor *rpcProcessor, stream *RPCStream) {
 }
 
 type rpcThread struct {
-	processor      *rpcProcessor
-	ch             chan *RPCStream
-	execNS         int64
-	execStream     *RPCStream
-	execDepth      uint64
-	execFrom       string
-	execEchoNode   *rpcEchoNode
-	execArgs       []reflect.Value
-	execVarInt64   int64
-	execVarUint64  uint64
-	execVarFloat64 float64
-	execVarBool    bool
-	execSuccessful bool
+	processor       *rpcProcessor
+	ch              chan *RPCStream
+	execNS          int64
+	execStream      *RPCStream
+	execDepth       uint64
+	execFrom        string
+	execEchoNode    *rpcEchoNode
+	execArgs        []reflect.Value
+	execVarInt64    int64
+	execVarUint64   uint64
+	execVarFloat64  float64
+	execVarBool     bool
+	execVarRPCArray RPCArray
+	execVarRPCMap   RPCMap
+	execSuccessful  bool
+
+	execInnerContext *rpcInnerContext
 }
 
 func newThread(processor *rpcProcessor) *rpcThread {
-	return &rpcThread{
+	ret := rpcThread{
 		processor:  processor,
 		ch:         make(chan *RPCStream),
 		execArgs:   make([]reflect.Value, 0, 16),
 		execStream: NewRPCStream(),
 		execNS:     0,
 	}
+
+	ret.execInnerContext = &rpcInnerContext{
+		stream:       nil,
+		serverThread: &ret,
+		clientThread: nil,
+	}
+
+	return &ret
 }
 
 func (p *rpcThread) getRunDuration() time.Duration {
@@ -114,7 +126,8 @@ func (p *rpcThread) stop() {
 
 func (p *rpcThread) eval(inStream *RPCStream) Return {
 	// create context
-	ctx := serverContext{thread: p}
+	p.execInnerContext.stream = inStream
+	ctx := rpcContext{inner: p.execInnerContext}
 
 	// if the header is error, we can not find the method to return
 	headerBytes, ok := inStream.ReadUnsafeBytes()
@@ -197,20 +210,28 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 				rv = reflect.ValueOf(p.execVarBool)
 				break
 			default:
-				if p.execEchoNode.argTypes[i] == reflect.ValueOf(rpcBytes).Type() {
-					bVar := inStream.ReadRPCBytes()
+				if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
+					bVar := inStream.ReadRPCBytes(&ctx)
 					ok = bVar.OK()
 					rv = reflect.ValueOf(bVar)
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(rpcString).Type() {
-					sVar := inStream.ReadRPCString()
+				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCString).Type() {
+					sVar := inStream.ReadRPCString(&ctx)
 					ok = sVar.OK()
 					rv = reflect.ValueOf(sVar)
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(rpcArray).Type() {
-					aVar, ok := inStream.ReadRPCArray()
-					rv = reflect.ValueOf(aVar)
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(rpcMap).Type() {
-					mVar, ok := inStream.ReadRPCMap()
-					rv = reflect.ValueOf(mVar)
+				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
+					aVar, success := inStream.ReadRPCArray(&ctx)
+					if !success {
+						ok = false
+					} else {
+						rv = reflect.ValueOf(aVar)
+					}
+				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCMap).Type() {
+					mVar, success := inStream.ReadRPCMap(&ctx)
+					if !success {
+						ok = false
+					} else {
+						rv = reflect.ValueOf(mVar)
+					}
 				} else {
 					ok = false
 				}
@@ -231,7 +252,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 		inStream.SetReadPos(argStartPos)
 		remoteArgsType := make([]string, 0, 0)
 		for inStream.CanReadNext() {
-			val, ok := inStream.Read()
+			val, ok := inStream.Read(&ctx)
 			if !ok {
 				return ctx.writeError("rpc data format error", "")
 			}
@@ -667,13 +688,13 @@ func (p *rpcProcessor) mountEcho(
 	for i := 0; i < len(argTypes); i++ {
 		argTypes[i] = fn.Type().In(i)
 
-		if argTypes[i] == reflect.ValueOf(rpcBytes).Type() {
+		if argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
 			argStrings[i] = "RPCBytes"
-		} else if argTypes[i] == reflect.ValueOf(rpcString).Type() {
+		} else if argTypes[i] == reflect.ValueOf(vRPCString).Type() {
 			argStrings[i] = "RPCString"
-		} else if argTypes[i] == reflect.ValueOf(rpcArray).Type() {
+		} else if argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
 			argStrings[i] = "RPCArray"
-		} else if argTypes[i] == reflect.ValueOf(rpcMap).Type() {
+		} else if argTypes[i] == reflect.ValueOf(vRPCMap).Type() {
 			argStrings[i] = "RPCMap"
 		} else {
 			argStrings[i] = argTypes[i].String()

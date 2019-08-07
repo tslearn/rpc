@@ -920,11 +920,12 @@ func (p *RPCStream) WriteRPCBytes(v RPCBytes) RPCStreamWriteErrorCode {
 
 // WriteRPCArray write RPCArray value to stream
 func (p *RPCStream) WriteRPCArray(v RPCArray) RPCStreamWriteErrorCode {
-	if !v.OK() {
+	in, readStream := v.getIS()
+
+	if readStream == nil {
 		return RPCStreamWriteRPCArrayIsNotAvailable
 	}
 
-	in := v.in
 	length := len(in.items)
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 64
@@ -936,7 +937,6 @@ func (p *RPCStream) WriteRPCArray(v RPCArray) RPCStreamWriteErrorCode {
 	}
 
 	startPos := p.GetWritePos()
-	readStream := v.getStream()
 
 	b := p.writeFrame[p.writeIndex:]
 	if p.writeIndex < 507 {
@@ -1001,11 +1001,12 @@ func (p *RPCStream) WriteRPCArray(v RPCArray) RPCStreamWriteErrorCode {
 
 // WriteRPCMap write RPCMap value to stream
 func (p *RPCStream) WriteRPCMap(v RPCMap) RPCStreamWriteErrorCode {
-	if !v.OK() {
+	in, readStream := v.getIS()
+
+	if readStream == nil {
 		return RPCStreamWriteRPCMapIsNotAvailable
 	}
 
-	in := v.in
 	length := 0
 	if in.largeMap == nil {
 		length = len(in.smallMap)
@@ -1023,7 +1024,6 @@ func (p *RPCStream) WriteRPCMap(v RPCMap) RPCStreamWriteErrorCode {
 	}
 
 	startPos := p.GetWritePos()
-	readStream := v.getStream()
 
 	b := p.writeFrame[p.writeIndex:]
 	if p.writeIndex < 507 {
@@ -1359,111 +1359,100 @@ func (p *RPCStream) ReadUint64() (uint64, bool) {
 }
 
 // ReadRPCString read a RPCString value
-func (p *RPCStream) ReadRPCString(pub *PubControl) RPCString {
-	if !pub.OK() {
+func (p *RPCStream) ReadRPCString(ctx *rpcContext) RPCString {
+	cs := ctx.getCacheStream()
+	if cs == nil {
 		return errorRPCString
 	}
+
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
 		if p.hasOneByteToRead() {
 			p.gotoNextReadByteUnsafe()
 			return RPCString{
-				pub:    pub,
+				ctx:    ctx,
 				status: rpcStatusAllocated,
 				bytes:  emptyBytes,
 			}
 		}
 	} else if v > 128 && v < 191 {
-		totalLength := int(v - 126)
+		length := int(v - 126)
 
-		// the string  cached in the pub streams will reduce memory alloc
-		if pub != nil && pub.ctx != nil && pub.ctx.stream != nil {
-			cs := pub.ctx.stream
+		if cs == p &&
+			p.isSafetyReadNBytesInCurrentFrame(length) &&
+			p.readFrame[p.readIndex+length-1] == 0 {
+			p.readIndex += length
+			return RPCString{
+				ctx:    ctx,
+				status: rpcStatusNotAllocated,
+				bytes:  p.readFrame[p.readIndex-length+1 : p.readIndex-1],
+			}
+		}
 
-			if cs == p && p.isSafetyReadNBytesInCurrentFrame(totalLength) && p.readFrame[p.readIndex+totalLength-1] == 0 {
-				p.readIndex += totalLength
+		if cs.writeIndex+length >= 512 {
+			cs.gotoNextWriteFrame()
+		}
+
+		if p.isSafetyReadNBytesInCurrentFrame(length) {
+			if p.readFrame[p.readIndex+length-1] == 0 {
+				copy(
+					cs.writeFrame[cs.writeIndex:],
+					p.readFrame[p.readIndex:p.readIndex+length],
+				)
+				p.readIndex += length
+				cs.writeIndex += length
 				return RPCString{
-					pub:    pub,
+					ctx:    ctx,
 					status: rpcStatusNotAllocated,
-					bytes:  p.readFrame[p.readIndex-totalLength+1 : p.readIndex-1],
+					bytes:  cs.writeFrame[cs.writeIndex-length+1 : cs.writeIndex-1],
 				}
 			}
-
-			if cs.writeIndex+totalLength >= 512 {
-				cs.gotoNextWriteFrame()
-			}
-
-			if p.isSafetyReadNBytesInCurrentFrame(totalLength) {
-				if p.readFrame[p.readIndex+totalLength-1] == 0 {
-					copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:p.readIndex+totalLength])
-					p.readIndex += totalLength
-					cs.writeIndex += totalLength
-					return RPCString{
-						pub:    pub,
-						status: rpcStatusNotAllocated,
-						bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex-1],
-					}
-				}
-			} else if p.hasNBytesToRead(totalLength) {
-				if v, ok := p.readByte(p.GetReadPos() + totalLength - 1); ok && v == 0 {
-					copyCount := copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:])
-					cs.writeIndex += copyCount
-					p.gotoNextReadFrameUnsafe()
-					copyCount = copy(cs.writeFrame[cs.writeIndex:], p.readFrame[:totalLength-copyCount])
-					p.readIndex = copyCount
-					cs.writeIndex += copyCount
-					return RPCString{
-						pub:    pub,
-						status: rpcStatusNotAllocated,
-						bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex-1],
-					}
-				}
-			}
-		} else if p.hasNBytesToRead(totalLength) {
-			p.saveReadPos()
-			strBuffer := make([]byte, totalLength-2, totalLength-2)
-			copyBytes := copy(strBuffer, p.readFrame[p.readIndex+1:])
-			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
-				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
-				p.readIndex = copy(strBuffer[copyBytes:], p.readFrame)
-			}
-			if p.readFrame[p.readIndex] == 0 {
-				p.gotoNextReadByteUnsafe()
+		} else if p.hasNBytesToRead(length) {
+			if v, ok := p.readByte(p.GetReadPos() + length - 1); ok && v == 0 {
+				copyCount := copy(
+					cs.writeFrame[cs.writeIndex:],
+					p.readFrame[p.readIndex:],
+				)
+				cs.writeIndex += copyCount
+				p.gotoNextReadFrameUnsafe()
+				copyCount = copy(
+					cs.writeFrame[cs.writeIndex:],
+					p.readFrame[:length-copyCount],
+				)
+				p.readIndex = copyCount
+				cs.writeIndex += copyCount
 				return RPCString{
-					pub:    pub,
-					status: rpcStatusAllocated,
-					bytes:  strBuffer,
+					ctx:    ctx,
+					status: rpcStatusNotAllocated,
+					bytes:  cs.writeFrame[cs.writeIndex-length+1 : cs.writeIndex-1],
 				}
 			}
-			p.restoreReadPos()
 		}
 	} else if v == 191 {
 		p.saveReadPos()
-		totalLength := -1
+		length := -1
 
 		if p.isSafetyRead5BytesInCurrentFrame() {
 			b := p.readFrame[p.readIndex:]
-			totalLength = int(uint32(b[1])|
+			length = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
 				(uint32(b[4])<<24)) + 6
 			p.readIndex += 5
 		} else if p.hasNBytesToRead(5) {
 			b := p.read5BytesCrossFrameUnsafe()
-			totalLength = int(uint32(b[1])|
+			length = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
 				(uint32(b[4])<<24)) + 6
 		}
-		if totalLength > 68 && p.hasNBytesToRead(totalLength-5) {
-			bytes := p.readNBytesUnsafe(totalLength - 6)
+		if length > 68 && p.hasNBytesToRead(length-5) {
+			bytes := p.readNBytesUnsafe(length - 6)
 			if p.readFrame[p.readIndex] == 0 {
 				p.gotoNextReadByteUnsafe()
 				return RPCString{
-					pub:    pub,
+					ctx:    ctx,
 					status: rpcStatusAllocated,
 					bytes:  bytes,
 				}
@@ -1556,8 +1545,9 @@ func (p *RPCStream) ReadUnsafeString() (ret string, ok bool) {
 }
 
 // ReadRPCBytes read a RPCBytes value
-func (p *RPCStream) ReadRPCBytes(pub *PubControl) RPCBytes {
-	if !pub.OK() {
+func (p *RPCStream) ReadRPCBytes(ctx *rpcContext) RPCBytes {
+	cs := ctx.getCacheStream()
+	if cs == nil {
 		return errorRPCBytes
 	}
 
@@ -1567,7 +1557,7 @@ func (p *RPCStream) ReadRPCBytes(pub *PubControl) RPCBytes {
 		if p.hasOneByteToRead() {
 			p.gotoNextReadByteUnsafe()
 			return RPCBytes{
-				pub:    pub,
+				ctx:    ctx,
 				status: rpcStatusAllocated,
 				bytes:  emptyBytes,
 			}
@@ -1575,58 +1565,39 @@ func (p *RPCStream) ReadRPCBytes(pub *PubControl) RPCBytes {
 	} else if v > 192 && v < 255 {
 		totalLength := int(v - 191)
 
-		// the bytes cached in the pub streams will reduce memory alloc
-		if pub != nil && pub.ctx != nil && pub.ctx.stream != nil {
-			cs := pub.ctx.stream
-
-			if cs == p && p.isSafetyReadNBytesInCurrentFrame(totalLength) {
-				p.readIndex += totalLength
-				return RPCBytes{
-					pub:    pub,
-					status: rpcStatusNotAllocated,
-					bytes:  p.readFrame[p.readIndex-totalLength+1 : p.readIndex],
-				}
+		if cs == p && p.isSafetyReadNBytesInCurrentFrame(totalLength) {
+			p.readIndex += totalLength
+			return RPCBytes{
+				ctx:    ctx,
+				status: rpcStatusNotAllocated,
+				bytes:  p.readFrame[p.readIndex-totalLength+1 : p.readIndex],
 			}
+		}
 
-			if cs.writeIndex+totalLength >= 512 {
-				cs.gotoNextWriteFrame()
-			}
+		if cs.writeIndex+totalLength >= 512 {
+			cs.gotoNextWriteFrame()
+		}
 
-			if p.isSafetyReadNBytesInCurrentFrame(totalLength) {
-				copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:p.readIndex+totalLength])
-				p.readIndex += totalLength
-				cs.writeIndex += totalLength
-				return RPCBytes{
-					pub:    pub,
-					status: rpcStatusNotAllocated,
-					bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex],
-				}
-			} else if p.hasNBytesToRead(totalLength) {
-				copyCount := copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:])
-				cs.writeIndex += copyCount
-				p.gotoNextReadFrameUnsafe()
-				copyCount = copy(cs.writeFrame[cs.writeIndex:], p.readFrame[:totalLength-copyCount])
-				p.readIndex = copyCount
-				cs.writeIndex += copyCount
-				return RPCBytes{
-					pub:    pub,
-					status: rpcStatusNotAllocated,
-					bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex],
-				}
+		if p.isSafetyReadNBytesInCurrentFrame(totalLength) {
+			copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:p.readIndex+totalLength])
+			p.readIndex += totalLength
+			cs.writeIndex += totalLength
+			return RPCBytes{
+				ctx:    ctx,
+				status: rpcStatusNotAllocated,
+				bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex],
 			}
 		} else if p.hasNBytesToRead(totalLength) {
-			strBuffer := make([]byte, totalLength-1, totalLength-1)
-			copyBytes := copy(strBuffer, p.readFrame[p.readIndex+1:])
-			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
-				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
-				p.readIndex = copy(strBuffer[copyBytes:], p.readFrame)
-			}
+			copyCount := copy(cs.writeFrame[cs.writeIndex:], p.readFrame[p.readIndex:])
+			cs.writeIndex += copyCount
+			p.gotoNextReadFrameUnsafe()
+			copyCount = copy(cs.writeFrame[cs.writeIndex:], p.readFrame[:totalLength-copyCount])
+			p.readIndex = copyCount
+			cs.writeIndex += copyCount
 			return RPCBytes{
-				pub:    pub,
-				status: rpcStatusAllocated,
-				bytes:  strBuffer,
+				ctx:    ctx,
+				status: rpcStatusNotAllocated,
+				bytes:  cs.writeFrame[cs.writeIndex-totalLength+1 : cs.writeIndex],
 			}
 		}
 	} else if v == 255 {
@@ -1648,7 +1619,7 @@ func (p *RPCStream) ReadRPCBytes(pub *PubControl) RPCBytes {
 		}
 		if totalLength > 67 && p.hasNBytesToRead(totalLength-5) {
 			return RPCBytes{
-				pub:    pub,
+				ctx:    ctx,
 				status: rpcStatusAllocated,
 				bytes:  p.readNBytesUnsafe(totalLength - 5),
 			}
@@ -1716,50 +1687,49 @@ func (p *RPCStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 }
 
 // ReadRPCArray read a RPCArray value
-func (p *RPCStream) ReadRPCArray(pub *PubControl) (RPCArray, bool) {
+func (p *RPCStream) ReadRPCArray(ctx *rpcContext) (RPCArray, bool) {
 	v := p.readFrame[p.readIndex]
-	if pub.OK() && v >= 64 && v < 96 {
-		ret := newRPCArray(pub)
+	if cs := ctx.getCacheStream(); cs != nil && v >= 64 && v < 96 {
+		ret := newRPCArray(ctx)
 		in := ret.in
-		s := ret.getStream()
 		arrLen := 0
 		totalLen := 0
 		p.saveReadPos()
 
-		if p != s {
-			wPos := s.GetWritePos()
-			if !s.writeStreamNext(p) {
+		if p != cs {
+			wPos := cs.GetWritePos()
+			if !cs.writeStreamNext(p) {
 				return nilRPCArray, false
 			}
-			s.SetReadPos(wPos)
+			cs.SetReadPos(wPos)
 		}
 
-		start := s.GetReadPos()
+		start := cs.GetReadPos()
 
 		if v == 64 {
-			if s.hasOneByteToRead() {
-				s.gotoNextReadByteUnsafe()
+			if cs.hasOneByteToRead() {
+				cs.gotoNextReadByteUnsafe()
 				return ret, true
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
-			if s.isSafetyRead5BytesInCurrentFrame() {
-				b := s.readFrame[s.readIndex:]
+			if cs.isSafetyRead5BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
 					(uint32(b[3]) << 16) |
 					(uint32(b[4]) << 24))
-				s.readIndex += 5
-			} else if s.hasNBytesToRead(5) {
-				bytes4 := s.read5BytesCrossFrameUnsafe()
+				cs.readIndex += 5
+			} else if cs.hasNBytesToRead(5) {
+				bytes4 := cs.read5BytesCrossFrameUnsafe()
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if s.isSafetyRead9BytesInCurrentFrame() {
-				b := s.readFrame[s.readIndex:]
+			if cs.isSafetyRead9BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
 					(uint32(b[3]) << 16) |
@@ -1768,9 +1738,9 @@ func (p *RPCStream) ReadRPCArray(pub *PubControl) (RPCArray, bool) {
 					(uint32(b[6]) << 8) |
 					(uint32(b[7]) << 16) |
 					(uint32(b[8]) << 24))
-				s.readIndex += 9
-			} else if s.hasNBytesToRead(9) {
-				bytes8 := s.read9BytesCrossFrameUnsafe()
+				cs.readIndex += 9
+			} else if cs.hasNBytesToRead(9) {
+				bytes8 := cs.read9BytesCrossFrameUnsafe()
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
@@ -1786,26 +1756,26 @@ func (p *RPCStream) ReadRPCArray(pub *PubControl) (RPCArray, bool) {
 		if arrLen > 0 && totalLen > 4 {
 			itemPos := 0
 			for i := 0; i < arrLen; i++ {
-				skip := readSkipArray[s.readFrame[s.readIndex]]
-				if skip > 0 && s.isSafetyReadNBytesInCurrentFrame(skip) {
-					itemPos = s.GetReadPos()
-					s.readIndex += skip
+				skip := readSkipArray[cs.readFrame[cs.readIndex]]
+				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+					itemPos = cs.GetReadPos()
+					cs.readIndex += skip
 				} else {
-					itemPos = s.readSkipItem(end)
+					itemPos = cs.readSkipItem(end)
 					if itemPos < 0 {
-						ret.Release()
+						ret.release()
 						p.restoreReadPos()
 						return nilRPCArray, false
 					}
 				}
 				in.items = append(in.items, itemPos)
 			}
-			if s.GetReadPos() == end {
+			if cs.GetReadPos() == end {
 				return ret, true
 			}
 		}
 
-		ret.Release()
+		ret.release()
 		p.restoreReadPos()
 		return nilRPCArray, false
 	}
@@ -1814,50 +1784,49 @@ func (p *RPCStream) ReadRPCArray(pub *PubControl) (RPCArray, bool) {
 }
 
 // ReadRPCMap read a RPCMap value
-func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
+func (p *RPCStream) ReadRPCMap(ctx *rpcContext) (RPCMap, bool) {
 	v := p.readFrame[p.readIndex]
-	if pub.OK() && v >= 96 && v < 128 {
-		ret := newRPCMap(pub)
+	if cs := ctx.getCacheStream(); cs != nil && v >= 96 && v < 128 {
+		ret := newRPCMap(ctx)
 		in := ret.in
-		s := ret.getStream()
 		mapLen := 0
 		totalLen := 0
 		p.saveReadPos()
 
-		if p != s {
-			wPos := s.GetWritePos()
-			if !s.writeStreamNext(p) {
+		if p != cs {
+			wPos := cs.GetWritePos()
+			if !cs.writeStreamNext(p) {
 				return nilRPCMap, false
 			}
-			s.SetReadPos(wPos)
+			cs.SetReadPos(wPos)
 		}
 
-		start := s.GetReadPos()
+		start := cs.GetReadPos()
 
 		if v == 96 {
-			if s.hasOneByteToRead() {
-				s.gotoNextReadByteUnsafe()
+			if cs.hasOneByteToRead() {
+				cs.gotoNextReadByteUnsafe()
 				return ret, true
 			}
 		} else if v < 127 {
 			mapLen = int(v - 96)
-			if s.isSafetyRead5BytesInCurrentFrame() {
-				b := s.readFrame[s.readIndex:]
+			if cs.isSafetyRead5BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
 					(uint32(b[3]) << 16) |
 					(uint32(b[4]) << 24))
-				s.readIndex += 5
-			} else if s.hasNBytesToRead(5) {
-				bytes4 := s.read5BytesCrossFrameUnsafe()
+				cs.readIndex += 5
+			} else if cs.hasNBytesToRead(5) {
+				bytes4 := cs.read5BytesCrossFrameUnsafe()
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if s.isSafetyRead9BytesInCurrentFrame() {
-				b := s.readFrame[s.readIndex:]
+			if cs.isSafetyRead9BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
 					(uint32(b[3]) << 16) |
@@ -1866,9 +1835,9 @@ func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
 					(uint32(b[6]) << 8) |
 					(uint32(b[7]) << 16) |
 					(uint32(b[8]) << 24))
-				s.readIndex += 9
-			} else if s.hasNBytesToRead(9) {
-				bytes8 := s.read9BytesCrossFrameUnsafe()
+				cs.readIndex += 9
+			} else if cs.hasNBytesToRead(9) {
+				bytes8 := cs.read9BytesCrossFrameUnsafe()
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
@@ -1885,20 +1854,20 @@ func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
 			itemPos := 0
 			if mapLen <= 16 {
 				for i := 0; i < mapLen; i++ {
-					name, ok := s.ReadUnsafeString()
+					name, ok := cs.ReadUnsafeString()
 					if !ok {
-						ret.Release()
+						ret.release()
 						p.restoreReadPos()
 						return nilRPCMap, false
 					}
-					skip := readSkipArray[s.readFrame[s.readIndex]]
-					if skip > 0 && s.isSafetyReadNBytesInCurrentFrame(skip) {
-						itemPos = s.GetReadPos()
-						s.readIndex += skip
+					skip := readSkipArray[cs.readFrame[cs.readIndex]]
+					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+						itemPos = cs.GetReadPos()
+						cs.readIndex += skip
 					} else {
-						itemPos = s.readSkipItem(end)
+						itemPos = cs.readSkipItem(end)
 						if itemPos < 0 {
-							ret.Release()
+							ret.release()
 							p.restoreReadPos()
 							return nilRPCMap, false
 						}
@@ -1911,20 +1880,20 @@ func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
 			} else {
 				in.largeMap = make(map[string]int)
 				for i := 0; i < mapLen; i++ {
-					name, ok := s.ReadUnsafeString()
+					name, ok := cs.ReadUnsafeString()
 					if !ok {
-						ret.Release()
+						ret.release()
 						p.restoreReadPos()
 						return nilRPCMap, false
 					}
-					skip := readSkipArray[s.readFrame[s.readIndex]]
-					if skip > 0 && s.isSafetyReadNBytesInCurrentFrame(skip) {
-						itemPos = s.GetReadPos()
-						s.readIndex += skip
+					skip := readSkipArray[cs.readFrame[cs.readIndex]]
+					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+						itemPos = cs.GetReadPos()
+						cs.readIndex += skip
 					} else {
-						itemPos = s.readSkipItem(end)
+						itemPos = cs.readSkipItem(end)
 						if itemPos < 0 {
-							ret.Release()
+							ret.release()
 							p.restoreReadPos()
 							return nilRPCMap, false
 						}
@@ -1932,12 +1901,12 @@ func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
 					in.largeMap[name] = itemPos
 				}
 			}
-			if s.GetReadPos() == end {
+			if cs.GetReadPos() == end {
 				return ret, true
 			}
 		}
 
-		ret.Release()
+		ret.release()
 		p.restoreReadPos()
 		return nilRPCMap, false
 	}
@@ -1946,7 +1915,7 @@ func (p *RPCStream) ReadRPCMap(pub *PubControl) (RPCMap, bool) {
 }
 
 // Read read a generic value
-func (p *RPCStream) Read(pub *PubControl) (interface{}, bool) {
+func (p *RPCStream) Read(ctx *rpcContext) (interface{}, bool) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
@@ -1985,12 +1954,12 @@ func (p *RPCStream) Read(pub *PubControl) (interface{}, bool) {
 		return p.ReadUint64()
 	case 1:
 		if op < 96 {
-			return p.ReadRPCArray(pub)
+			return p.ReadRPCArray(ctx)
 		}
-		return p.ReadRPCMap(pub)
+		return p.ReadRPCMap(ctx)
 	case 2:
-		return p.ReadRPCString(pub).ToString()
+		return p.ReadRPCString(ctx).ToString()
 	default:
-		return p.ReadRPCBytes(pub).ToBytes()
+		return p.ReadRPCBytes(ctx).ToBytes()
 	}
 }

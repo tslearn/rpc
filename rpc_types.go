@@ -19,15 +19,12 @@ type RPCStreamWriteErrorCode int
 const (
 	RPCStreamWriteOK RPCStreamWriteErrorCode = iota
 	RPCStreamWriteUnsupportedType
-	//RPCStreamWriteRPCStringIsNotAvailable
 	RPCStreamWriteRPCStringError
-	//RPCStreamWriteRPCBytesIsNotAvailable
 	RPCStreamWriteRPCBytesError
 	RPCStreamWriteRPCArrayIsNotAvailable
 	RPCStreamWriteRPCArrayError
 	RPCStreamWriteRPCMapIsNotAvailable
 	RPCStreamWriteRPCMapError
-	RPCStreamWriteOverflow
 )
 
 // RPCInt64 ...
@@ -44,19 +41,19 @@ type RPCBool = bool
 
 // RPCString ...
 type RPCString struct {
-	pub    *PubControl
+	ctx    *rpcContext
 	status rpcStatus
 	bytes  []byte
 }
 
 // OK ...
 func (p RPCString) OK() bool {
-	return p.pub.OK() && p.status != rpcStatusError
+	return p.ctx.inner != nil && p.status != rpcStatusError
 }
 
 // ToString ...
 func (p RPCString) ToString() (string, bool) {
-	if p.pub.OK() {
+	if p.OK() {
 		if p.status == rpcStatusNotAllocated {
 			return string(p.bytes), true
 		} else if p.status == rpcStatusAllocated {
@@ -68,19 +65,19 @@ func (p RPCString) ToString() (string, bool) {
 
 // RPCBytes ...
 type RPCBytes struct {
-	pub    *PubControl
+	ctx    *rpcContext
 	status rpcStatus
 	bytes  []byte
 }
 
 // OK ...
 func (p RPCBytes) OK() bool {
-	return p.pub.OK() && p.status != rpcStatusError
+	return p.ctx.inner != nil && p.status != rpcStatusError
 }
 
 // ToBytes ...
 func (p RPCBytes) ToBytes() ([]byte, bool) {
-	if p.pub.OK() {
+	if p.OK() {
 		if p.status == rpcStatusNotAllocated {
 			ret := make([]byte, len(p.bytes), len(p.bytes))
 			copy(ret, p.bytes)
@@ -92,34 +89,19 @@ func (p RPCBytes) ToBytes() ([]byte, bool) {
 	return nil, false
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // RPCArray
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-var rpcArrayInnerCacheWithStream = sync.Pool{
+////////////////////////////////////////////////////////////////////////////////
+var rpcArrayInnerCache = sync.Pool{
 	New: func() interface{} {
 		return &rpcArrayInner{
-			items:  make([]int, 0, 64),
-			stream: NewRPCStream(),
-			seed:   0,
-		}
-	},
-}
-
-var rpcArrayInnerCacheWithoutStream = sync.Pool{
-	New: func() interface{} {
-		return &rpcArrayInner{
-			items:  make([]int, 0, 64),
-			stream: nil,
-			seed:   0,
+			items: make([]int, 0, 64),
 		}
 	},
 }
 
 type rpcArrayInner struct {
-	items  []int
-	stream *RPCStream
-	seed   int
+	items []int
 }
 
 func (p *rpcArrayInner) free() {
@@ -128,256 +110,218 @@ func (p *rpcArrayInner) free() {
 	} else {
 		p.items = make([]int, 0, 64)
 	}
-
-	p.seed++
-
-	if p.stream == nil {
-		rpcArrayInnerCacheWithoutStream.Put(p)
-	} else {
-		p.stream.Reset()
-		rpcArrayInnerCacheWithStream.Put(p)
-	}
+	rpcArrayInnerCache.Put(p)
 }
 
 // RPCArray ...
-type RPCArray struct {
-	pub  *PubControl
-	in   *rpcArrayInner
-	seed int
+type rpcArray struct {
+	ctx *rpcContext
+	in  *rpcArrayInner
 }
 
-func newRPCArray(pub *PubControl) RPCArray {
-	if pub.OK() {
-		if pub.HasContext() {
-			in := rpcArrayInnerCacheWithoutStream.Get().(*rpcArrayInner)
-			return RPCArray{
-				pub:  pub,
-				in:   in,
-				seed: in.seed,
-			}
-		} else {
-			in := rpcArrayInnerCacheWithStream.Get().(*rpcArrayInner)
-			return RPCArray{
-				pub:  pub,
-				in:   in,
-				seed: in.seed,
-			}
+type RPCArray = rpcArray
+
+func newRPCArray(ctx *rpcContext) rpcArray {
+	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
+		return rpcArray{
+			ctx: ctx,
+			in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
 		}
 	}
 	return nilRPCArray
 }
 
-// Release ...
-func (p *RPCArray) Release() {
-	if p.in != nil && p.seed == p.in.seed {
-		p.in.free()
-	}
-
-	p.in = nil
+func (p rpcArray) ok() bool {
+	return p.in != nil &&
+		p.ctx != nil &&
+		p.ctx.inner != nil &&
+		p.ctx.inner.stream != nil
 }
 
-// OK ...
-func (p *RPCArray) OK() bool {
-	return p.in != nil && p.seed == p.in.seed && p.pub.OK()
+// Release ...
+func (p rpcArray) release() {
+	if p.in != nil {
+		p.in.free()
+		p.in = nil
+	}
+}
+
+func (p rpcArray) getIS() (*rpcArrayInner, *RPCStream) {
+	if p.in != nil && p.ctx != nil && p.ctx.inner != nil {
+		return p.in, p.ctx.inner.stream
+	} else {
+		return nil, nil
+	}
 }
 
 // Size ...
-func (p *RPCArray) Size() int {
-	if p.OK() {
-		return len(p.in.items)
+func (p rpcArray) Size() int {
+	if in, _ := p.getIS(); in != nil {
+		return len(in.items)
+	} else {
+		return 0
 	}
-	return 0
-}
-
-func (p *RPCArray) getStream() *RPCStream {
-	if p.in != nil && p.seed == p.in.seed {
-		if p.pub == nil {
-			return p.in.stream
-		} else if p.pub.ctx != nil {
-			return p.pub.ctx.stream
-		} else {
-			return nil
-		}
-	}
-	return nil
 }
 
 // GetNil ...
-func (p *RPCArray) GetNil(index int) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadNil()
+func (p rpcArray) GetNil(index int) bool {
+	if in, s := p.getIS(); s != nil {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadNil()
 	}
 	return false
 }
 
 // SetNil ...
-func (p *RPCArray) SetNil(index int) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		in.items[index] = stream.GetWritePos()
-		stream.WriteNil()
+func (p rpcArray) SetNil(index int) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		in.items[index] = s.GetWritePos()
+		s.WriteNil()
 		return true
 	}
 	return false
 }
 
 // AppendNil ...
-func (p *RPCArray) AppendNil() bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		in.items = append(in.items, stream.GetWritePos())
-		stream.WriteNil()
+func (p rpcArray) AppendNil() bool {
+	if in, s := p.getIS(); s != nil {
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteNil()
 		return true
 	}
 	return false
 }
 
 // GetBool ...
-func (p *RPCArray) GetBool(index int) (bool, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadBool()
+func (p rpcArray) GetBool(index int) (bool, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadBool()
 	}
 	return false, false
 }
 
 // SetBool ...
-func (p *RPCArray) SetBool(index int, value bool) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		in.items[index] = stream.GetWritePos()
-		stream.WriteBool(value)
+func (p rpcArray) SetBool(index int, value bool) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		in.items[index] = s.GetWritePos()
+		s.WriteBool(value)
 		return true
 	}
 	return false
 }
 
 // AppendBool ...
-func (p *RPCArray) AppendBool(value bool) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		in.items = append(in.items, stream.GetWritePos())
-		stream.WriteBool(value)
+func (p rpcArray) AppendBool(value bool) bool {
+	if in, s := p.getIS(); s != nil {
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteBool(value)
 		return true
 	}
 	return false
 }
 
 // GetInt64 ...
-func (p *RPCArray) GetInt64(index int) (int64, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadInt64()
+func (p rpcArray) GetInt64(index int) (int64, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadInt64()
 	}
 	return 0, false
 }
 
 // SetInt64 ...
-func (p *RPCArray) SetInt64(index int, value int64) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		in.items[index] = stream.GetWritePos()
-		stream.WriteInt64(value)
+func (p rpcArray) SetInt64(index int, value int64) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		in.items[index] = s.GetWritePos()
+		s.WriteInt64(value)
 		return true
 	}
 	return false
 }
 
 // AppendInt64 ...
-func (p *RPCArray) AppendInt64(value int64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		in.items = append(in.items, stream.GetWritePos())
-		stream.WriteInt64(value)
+func (p rpcArray) AppendInt64(value int64) bool {
+	if in, s := p.getIS(); s != nil {
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteInt64(value)
 		return true
 	}
 	return false
 }
 
 // GetUint64 ...
-func (p *RPCArray) GetUint64(index int) (uint64, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadUint64()
+func (p rpcArray) GetUint64(index int) (uint64, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadUint64()
 	}
 	return 0, false
 }
 
 // SetUint64 ...
-func (p *RPCArray) SetUint64(index int, value uint64) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		in.items[index] = stream.GetWritePos()
-		stream.WriteUint64(value)
+func (p rpcArray) SetUint64(index int, value uint64) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		in.items[index] = s.GetWritePos()
+		s.WriteUint64(value)
 		return true
 	}
 	return false
 }
 
 // AppendUint64 ...
-func (p *RPCArray) AppendUint64(value uint64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		in.items = append(in.items, stream.GetWritePos())
-		stream.WriteUint64(value)
+func (p rpcArray) AppendUint64(value uint64) bool {
+	if in, s := p.getIS(); s != nil {
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteUint64(value)
 		return true
 	}
 	return false
 }
 
 // GetFloat64 ...
-func (p *RPCArray) GetFloat64(index int) (float64, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadFloat64()
+func (p rpcArray) GetFloat64(index int) (float64, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadFloat64()
 	}
 	return 0, false
 }
 
 // SetFloat64 ...
-func (p *RPCArray) SetFloat64(index int, value float64) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		in.items[index] = stream.GetWritePos()
-		stream.WriteFloat64(value)
+func (p rpcArray) SetFloat64(index int, value float64) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		in.items[index] = s.GetWritePos()
+		s.WriteFloat64(value)
 		return true
 	}
 	return false
 }
 
 // AppendFloat64 ...
-func (p *RPCArray) AppendFloat64(value float64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		in.items = append(in.items, stream.GetWritePos())
-		stream.WriteFloat64(value)
+func (p rpcArray) AppendFloat64(value float64) bool {
+	if in, s := p.getIS(); s != nil {
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteFloat64(value)
 		return true
 	}
 	return false
 }
 
 // GetRPCString ...
-func (p *RPCArray) GetRPCString(index int) RPCString {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadRPCString(p.pub)
+func (p rpcArray) GetRPCString(index int) RPCString {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadRPCString(p.ctx)
 	}
 	return errorRPCString
 }
 
 // SetRPCString ...
-func (p *RPCArray) SetRPCString(index int, value RPCString) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		pos := stream.GetWritePos()
-		if stream.WriteRPCString(value) == RPCStreamWriteOK {
+func (p rpcArray) SetRPCString(index int, value RPCString) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		pos := s.GetWritePos()
+		if s.WriteRPCString(value) == RPCStreamWriteOK {
 			in.items[index] = pos
 			return true
 		}
@@ -386,11 +330,10 @@ func (p *RPCArray) SetRPCString(index int, value RPCString) bool {
 }
 
 // AppendRPCString ...
-func (p *RPCArray) AppendRPCString(value RPCString) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCString(value) == RPCStreamWriteOK {
+func (p rpcArray) AppendRPCString(value RPCString) bool {
+	if in, s := p.getIS(); s != nil {
+		pos := s.GetWritePos()
+		if s.WriteRPCString(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
 			return true
 		}
@@ -399,21 +342,19 @@ func (p *RPCArray) AppendRPCString(value RPCString) bool {
 }
 
 // GetRPCBytes ...
-func (p *RPCArray) GetRPCBytes(index int) RPCBytes {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadRPCBytes(p.pub)
+func (p rpcArray) GetRPCBytes(index int) RPCBytes {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadRPCBytes(p.ctx)
 	}
 	return errorRPCBytes
 }
 
 // SetRPCBytes ...
-func (p *RPCArray) SetRPCBytes(index int, value RPCBytes) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		pos := stream.GetWritePos()
-		if stream.WriteRPCBytes(value) == RPCStreamWriteOK {
+func (p rpcArray) SetRPCBytes(index int, value RPCBytes) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		pos := s.GetWritePos()
+		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
 			in.items[index] = pos
 			return true
 		}
@@ -422,11 +363,10 @@ func (p *RPCArray) SetRPCBytes(index int, value RPCBytes) bool {
 }
 
 // AppendRPCBytes ...
-func (p *RPCArray) AppendRPCBytes(value RPCBytes) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCBytes(value) == RPCStreamWriteOK {
+func (p rpcArray) AppendRPCBytes(value RPCBytes) bool {
+	if in, s := p.getIS(); s != nil {
+		pos := s.GetWritePos()
+		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
 			return true
 		}
@@ -435,21 +375,19 @@ func (p *RPCArray) AppendRPCBytes(value RPCBytes) bool {
 }
 
 // GetRPCArray ...
-func (p *RPCArray) GetRPCArray(index int) (RPCArray, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadRPCArray(p.pub)
+func (p rpcArray) GetRPCArray(index int) (RPCArray, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadRPCArray(p.ctx)
 	}
 	return nilRPCArray, false
 }
 
 // SetRPCArray ...
-func (p *RPCArray) SetRPCArray(index int, value RPCArray) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		pos := stream.GetWritePos()
-		if stream.WriteRPCArray(value) == RPCStreamWriteOK {
+func (p rpcArray) SetRPCArray(index int, value RPCArray) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		pos := s.GetWritePos()
+		if s.WriteRPCArray(value) == RPCStreamWriteOK {
 			in.items[index] = pos
 			return true
 		}
@@ -458,11 +396,10 @@ func (p *RPCArray) SetRPCArray(index int, value RPCArray) bool {
 }
 
 // AppendRPCArray ...
-func (p *RPCArray) AppendRPCArray(value RPCArray) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCArray(value) == RPCStreamWriteOK {
+func (p rpcArray) AppendRPCArray(value RPCArray) bool {
+	if in, s := p.getIS(); s != nil {
+		pos := s.GetWritePos()
+		if s.WriteRPCArray(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
 			return true
 		}
@@ -471,21 +408,19 @@ func (p *RPCArray) AppendRPCArray(value RPCArray) bool {
 }
 
 // GetRPCMap ...
-func (p *RPCArray) GetRPCMap(index int) (RPCMap, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.ReadRPCMap(p.pub)
+func (p rpcArray) GetRPCMap(index int) (RPCMap, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.ReadRPCMap(p.ctx)
 	}
 	return nilRPCMap, false
 }
 
 // SetRPCMap ...
-func (p *RPCArray) SetRPCMap(index int, value RPCMap) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		pos := stream.GetWritePos()
-		if stream.WriteRPCMap(value) == RPCStreamWriteOK {
+func (p rpcArray) SetRPCMap(index int, value RPCMap) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		pos := s.GetWritePos()
+		if s.WriteRPCMap(value) == RPCStreamWriteOK {
 			in.items[index] = pos
 			return true
 		}
@@ -494,11 +429,10 @@ func (p *RPCArray) SetRPCMap(index int, value RPCMap) bool {
 }
 
 // AppendRPCMap ...
-func (p *RPCArray) AppendRPCMap(value RPCMap) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCMap(value) == RPCStreamWriteOK {
+func (p rpcArray) AppendRPCMap(value RPCMap) bool {
+	if in, s := p.getIS(); s != nil {
+		pos := s.GetWritePos()
+		if s.WriteRPCMap(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
 			return true
 		}
@@ -507,21 +441,19 @@ func (p *RPCArray) AppendRPCMap(value RPCMap) bool {
 }
 
 // Get ...
-func (p *RPCArray) Get(index int) (interface{}, bool) {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		stream.setReadPosUnsafe(in.items[index])
-		return stream.Read(p.pub)
+func (p rpcArray) Get(index int) (interface{}, bool) {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		s.setReadPosUnsafe(in.items[index])
+		return s.Read(p.ctx)
 	}
 	return nil, false
 }
 
 // Set ...
-func (p *RPCArray) Set(index int, value interface{}) bool {
-	in := p.in
-	if stream := p.getStream(); stream != nil && index >= 0 && index < len(in.items) {
-		pos := stream.GetWritePos()
-		if stream.Write(value) == RPCStreamWriteOK {
+func (p rpcArray) Set(index int, value interface{}) bool {
+	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+		pos := s.GetWritePos()
+		if s.Write(value) == RPCStreamWriteOK {
 			in.items[index] = pos
 			return true
 		}
@@ -530,11 +462,10 @@ func (p *RPCArray) Set(index int, value interface{}) bool {
 }
 
 // Append ...
-func (p *RPCArray) Append(value interface{}) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.Write(value) == RPCStreamWriteOK {
+func (p rpcArray) Append(value interface{}) bool {
+	if in, s := p.getIS(); s != nil {
+		pos := s.GetWritePos()
+		if s.Write(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
 			return true
 		}
@@ -542,28 +473,14 @@ func (p *RPCArray) Append(value interface{}) bool {
 	return false
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // RPCMap
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-var rpcMapInnerCacheWithStream = sync.Pool{
+////////////////////////////////////////////////////////////////////////////////
+var rpcMapInnerCache = sync.Pool{
 	New: func() interface{} {
 		return &rpcMapInner{
 			smallMap: make([]rpcMapItem, 0, 16),
 			largeMap: nil,
-			stream:   NewRPCStream(),
-			seed:     0,
-		}
-	},
-}
-
-var rpcMapInnerCacheWithoutStream = sync.Pool{
-	New: func() interface{} {
-		return &rpcMapInner{
-			smallMap: make([]rpcMapItem, 0, 16),
-			largeMap: nil,
-			stream:   nil,
-			seed:     0,
 		}
 	},
 }
@@ -576,22 +493,56 @@ type rpcMapItem struct {
 type rpcMapInner struct {
 	smallMap []rpcMapItem
 	largeMap map[string]int
-	stream   *RPCStream
-	seed     int
+}
+
+func (p *rpcMapInner) getIndex(name string) int {
+	if p.largeMap == nil {
+		smallMap := p.smallMap
+		for i := 0; i < len(smallMap); i++ {
+			if smallMap[i].name == name {
+				return smallMap[i].pos
+			}
+		}
+	} else {
+		if v, ok := p.largeMap[name]; ok {
+			return v
+		}
+	}
+	return -1
+}
+
+func (p *rpcMapInner) setIndex(name string, idx int) bool {
+	smallMap := p.smallMap
+	if p.largeMap == nil {
+		// find the name
+		for i := 0; i < len(smallMap); i++ {
+			if smallMap[i].name == name {
+				smallMap[i].pos = idx
+				return true
+			}
+		}
+
+		// the name is not exist
+		if len(smallMap) < 16 {
+			p.smallMap = append(p.smallMap, rpcMapItem{
+				name: name,
+				pos:  idx,
+			})
+		} else {
+			p.toLargeMode()
+			p.largeMap[name] = idx
+		}
+	} else {
+		p.largeMap[name] = idx
+	}
+
+	return true
 }
 
 func (p *rpcMapInner) free() {
 	p.smallMap = p.smallMap[:0]
 	p.largeMap = nil
-
-	p.seed++
-
-	if p.stream == nil {
-		rpcMapInnerCacheWithoutStream.Put(p)
-	} else {
-		p.stream.Reset()
-		rpcMapInnerCacheWithStream.Put(p)
-	}
+	rpcMapInnerCache.Put(p)
 }
 
 func (p *rpcMapInner) toLargeMode() {
@@ -613,111 +564,84 @@ func (p *rpcMapInner) toSmallMode() {
 }
 
 // RPCMap ...
-type RPCMap struct {
-	pub  *PubControl
-	in   *rpcMapInner
-	seed int
+type rpcMap struct {
+	ctx *rpcContext
+	in  *rpcMapInner
 }
 
-func newRPCMap(pub *PubControl) RPCMap {
-	if pub.OK() {
-		if pub.HasContext() {
-			in := rpcMapInnerCacheWithoutStream.Get().(*rpcMapInner)
-			return RPCMap{
-				pub:  pub,
-				in:   in,
-				seed: in.seed,
-			}
-		}
-		in := rpcMapInnerCacheWithStream.Get().(*rpcMapInner)
+type RPCMap = rpcMap
+
+func newRPCMap(ctx *rpcContext) RPCMap {
+	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
 		return RPCMap{
-			pub:  pub,
-			in:   in,
-			seed: in.seed,
+			ctx: ctx,
+			in:  rpcMapInnerCache.Get().(*rpcMapInner),
 		}
 	}
 	return nilRPCMap
 }
 
-// Release ...
-func (p *RPCMap) Release() {
-	if p.in != nil && p.seed == p.in.seed {
-		p.in.free()
-	}
-
-	p.in = nil
+func (p rpcMap) ok() bool {
+	return p.in != nil &&
+		p.ctx != nil &&
+		p.ctx.inner != nil &&
+		p.ctx.inner.stream != nil
 }
 
-// OK ...
-func (p *RPCMap) OK() bool {
-	return p.in != nil && p.seed == p.in.seed && p.pub.OK()
+// Release ...
+func (p rpcMap) release() {
+	if p.in != nil {
+		p.in.free()
+		p.in = nil
+	}
+}
+
+func (p rpcMap) getIS() (*rpcMapInner, *RPCStream) {
+	if p.in != nil && p.ctx != nil && p.ctx.inner != nil {
+		return p.in, p.ctx.inner.stream
+	} else {
+		return nil, nil
+	}
 }
 
 // Size ...
-func (p *RPCMap) Size() int {
-	if p.OK() {
-		if p.in.largeMap == nil {
-			return len(p.in.smallMap)
+func (p rpcMap) Size() int {
+	if in, _ := p.getIS(); in != nil {
+		if in.largeMap == nil {
+			return len(in.smallMap)
+		} else {
+			return len(in.largeMap)
 		}
-		return len(p.in.largeMap)
 	}
 	return 0
 }
 
-func (p *RPCMap) getStream() *RPCStream {
-	if p.in != nil && p.seed == p.in.seed {
-		if p.pub == nil {
-			return p.in.stream
-		} else if p.pub.ctx != nil {
-			return p.pub.ctx.stream
-		} else {
-			return nil
-		}
-	}
-	return nil
-}
-
 // Keys ...
 func (p *RPCMap) Keys() []string {
-	if p.OK() {
-		in := p.in
+	if in, _ := p.getIS(); in != nil {
 		if in.largeMap == nil {
-			ret := make([]string, 0)
+			ret := make([]string, 0, len(in.smallMap))
 			for _, it := range in.smallMap {
 				ret = append(ret, it.name)
 			}
 			return ret
+		} else {
+			ret := make([]string, 0, len(in.largeMap))
+			for key := range in.largeMap {
+				ret = append(ret, key)
+			}
+			return ret
 		}
-		ret := make([]string, 0)
-		for key := range in.largeMap {
-			ret = append(ret, key)
-		}
-		return ret
 	}
 	return []string{}
 }
 
 // GetNil ...
 func (p *RPCMap) GetNil(name string) bool {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadNil()
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadNil()
 		}
 	}
 	return false
@@ -725,57 +649,20 @@ func (p *RPCMap) GetNil(name string) bool {
 
 // SetNil ...
 func (p *RPCMap) SetNil(name string) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		stream.WriteNil()
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		s.WriteNil()
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetBool ...
 func (p *RPCMap) GetBool(name string) (bool, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadBool()
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadBool()
 		}
 	}
 	return false, false
@@ -783,57 +670,20 @@ func (p *RPCMap) GetBool(name string) (bool, bool) {
 
 // SetBool ...
 func (p *RPCMap) SetBool(name string, value bool) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		stream.WriteBool(value)
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		s.WriteBool(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetFloat64 ...
 func (p *RPCMap) GetFloat64(name string) (float64, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadFloat64()
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadFloat64()
 		}
 	}
 	return 0, false
@@ -841,57 +691,20 @@ func (p *RPCMap) GetFloat64(name string) (float64, bool) {
 
 // SetFloat64 ...
 func (p *RPCMap) SetFloat64(name string, value float64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		stream.WriteFloat64(value)
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		s.WriteFloat64(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetInt64 ...
 func (p *RPCMap) GetInt64(name string) (int64, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadInt64()
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadInt64()
 		}
 	}
 	return 0, false
@@ -899,57 +712,20 @@ func (p *RPCMap) GetInt64(name string) (int64, bool) {
 
 // SetInt64 ...
 func (p *RPCMap) SetInt64(name string, value int64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		stream.WriteInt64(value)
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		s.WriteInt64(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetUint64 ...
 func (p *RPCMap) GetUint64(name string) (uint64, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadUint64()
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadUint64()
 		}
 	}
 	return 0, false
@@ -957,57 +733,20 @@ func (p *RPCMap) GetUint64(name string) (uint64, bool) {
 
 // SetUint64 ...
 func (p *RPCMap) SetUint64(name string, value uint64) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		stream.WriteUint64(value)
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		s.WriteUint64(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetRPCString ...
 func (p *RPCMap) GetRPCString(name string) RPCString {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadRPCString(p.pub)
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadRPCString(p.ctx)
 		}
 	}
 	return errorRPCString
@@ -1015,59 +754,23 @@ func (p *RPCMap) GetRPCString(name string) RPCString {
 
 // SetRPCString ...
 func (p *RPCMap) SetRPCString(name string, value RPCString) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCString(value) != RPCStreamWriteOK {
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		if s.WriteRPCString(value) == RPCStreamWriteOK {
+			return in.setIndex(name, idx)
+		} else {
 			return false
 		}
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
 	}
 	return false
 }
 
 // GetRPCBytes ...
 func (p *RPCMap) GetRPCBytes(name string) RPCBytes {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadRPCBytes(p.pub)
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadRPCBytes(p.ctx)
 		}
 	}
 	return errorRPCBytes
@@ -1075,59 +778,23 @@ func (p *RPCMap) GetRPCBytes(name string) RPCBytes {
 
 // SetRPCBytes ...
 func (p *RPCMap) SetRPCBytes(name string, value RPCBytes) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCBytes(value) != RPCStreamWriteOK {
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
+			return in.setIndex(name, idx)
+		} else {
 			return false
 		}
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
 	}
 	return false
 }
 
 // GetRPCArray ...
 func (p *RPCMap) GetRPCArray(name string) (RPCArray, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadRPCArray(p.pub)
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadRPCArray(p.ctx)
 		}
 	}
 	return nilRPCArray, false
@@ -1135,59 +802,23 @@ func (p *RPCMap) GetRPCArray(name string) (RPCArray, bool) {
 
 // SetRPCArray ...
 func (p *RPCMap) SetRPCArray(name string, value RPCArray) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCArray(value) != RPCStreamWriteOK {
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		if s.WriteRPCArray(value) == RPCStreamWriteOK {
+			return in.setIndex(name, idx)
+		} else {
 			return false
 		}
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
 	}
 	return false
 }
 
 // GetRPCMap ...
 func (p *RPCMap) GetRPCMap(name string) (RPCMap, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.ReadRPCMap(p.pub)
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.ReadRPCMap(p.ctx)
 		}
 	}
 	return nilRPCMap, false
@@ -1195,59 +826,23 @@ func (p *RPCMap) GetRPCMap(name string) (RPCMap, bool) {
 
 // SetRPCMap ...
 func (p *RPCMap) SetRPCMap(name string, value RPCMap) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.WriteRPCMap(value) != RPCStreamWriteOK {
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		if s.WriteRPCMap(value) == RPCStreamWriteOK {
+			return in.setIndex(name, idx)
+		} else {
 			return false
 		}
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
 	}
 	return false
 }
 
 // Get ...
 func (p *RPCMap) Get(name string) (interface{}, bool) {
-	if stream := p.getStream(); stream != nil && name != "" {
-		in := p.in
-		idx := 0
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					idx = smallMap[i].pos
-					break
-				}
-			}
-		} else {
-			if v, ok := in.largeMap[name]; ok {
-				idx = v
-			}
-		}
-		if idx > 0 {
-			stream.setReadPosUnsafe(idx)
-			return stream.Read(p.pub)
+	if in, s := p.getIS(); s != nil && name != "" {
+		if idx := in.getIndex(name); idx > 0 {
+			s.setReadPosUnsafe(idx)
+			return s.Read(p.ctx)
 		}
 	}
 	return nil, false
@@ -1255,42 +850,20 @@ func (p *RPCMap) Get(name string) (interface{}, bool) {
 
 // Set ...
 func (p *RPCMap) Set(name string, value interface{}) bool {
-	if stream := p.getStream(); stream != nil {
-		in := p.in
-		pos := stream.GetWritePos()
-		if stream.Write(value) != RPCStreamWriteOK {
+	if in, s := p.getIS(); s != nil && name != "" {
+		idx := s.GetWritePos()
+		if s.Write(value) == RPCStreamWriteOK {
+			return in.setIndex(name, idx)
+		} else {
 			return false
 		}
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i].pos = pos
-					return true
-				}
-			}
-
-			if len(smallMap) < 16 {
-				in.smallMap = append(in.smallMap, rpcMapItem{
-					name: name,
-					pos:  pos,
-				})
-			} else {
-				in.toLargeMode()
-				in.largeMap[name] = pos
-			}
-		} else {
-			in.largeMap[name] = pos
-		}
-		return true
 	}
 	return false
 }
 
 // Delete ...
 func (p *RPCMap) Delete(name string) bool {
-	if p.OK() {
-		in := p.in
+	if in, _ := p.getIS(); in != nil {
 		smallMap := in.smallMap
 		if in.largeMap == nil {
 			for i := 0; i < len(smallMap); i++ {

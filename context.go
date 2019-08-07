@@ -4,17 +4,32 @@ import (
 	"fmt"
 )
 
-type rpcContextInner struct {
+type rpcInnerContext struct {
 	stream       *RPCStream
 	serverThread *rpcThread
 	clientThread *uint64
 }
 
 type rpcContext struct {
-	inner *rpcContextInner
+	inner *rpcInnerContext
 }
 
 type Context = *rpcContext
+
+func (p *rpcContext) getCacheStream() *RPCStream {
+	if p != nil && p.inner != nil {
+		return p.inner.stream
+	}
+	return nil
+}
+
+func (p *rpcContext) close() bool {
+	if p.inner != nil {
+		p.inner = nil
+		return true
+	}
+	return false
+}
 
 func (p *rpcContext) writeError(message string, debug string) Return {
 	if p.inner != nil {

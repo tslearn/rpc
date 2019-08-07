@@ -7,81 +7,90 @@ import (
 
 func Test_RPCString_OK(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
 
-	assert(RPCString{pub: validPub, status: rpcStatusAllocated, bytes: ([]byte)("hello")}.OK()).IsTrue()
-	assert(RPCString{pub: invalidPub, status: rpcStatusAllocated, bytes: ([]byte)("hello")}.OK()).IsFalse()
+	assert(RPCString{
+		ctx:    validCtx,
+		status: rpcStatusAllocated,
+		bytes:  ([]byte)("hello"),
+	}.OK()).IsTrue()
+	assert(RPCString{
+		ctx:    invalidCtx,
+		status: rpcStatusAllocated,
+		bytes:  ([]byte)("hello"),
+	}.OK()).IsFalse()
 }
 
 func Test_RPCBytes_OK(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
 
-	assert(RPCBytes{pub: validPub, status: rpcStatusAllocated, bytes: []byte{1, 2}}.OK()).IsTrue()
-	assert(RPCBytes{pub: invalidPub, status: rpcStatusAllocated, bytes: []byte{1, 2}}.OK()).IsFalse()
+	assert(RPCBytes{ctx: validCtx, status: rpcStatusAllocated, bytes: []byte{1, 2}}.OK()).IsTrue()
+	assert(RPCBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{1, 2}}.OK()).IsFalse()
 }
 
 func Test_RPCArray_newRPCArray(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
-	assert(newRPCArray(nil)).Equals(newRPCArray(validPub))
-	assert(newRPCArray(invalidPub)).Equals(nilRPCArray)
+	assert(newRPCArray(nil)).Equals(newRPCArray(validCtx))
+	assert(newRPCArray(invalidCtx)).Equals(nilRPCArray)
 }
 
 func Test_RPCArray_Release(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{stream: NewRPCStream()},
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
 	}
 
-	array0 := newRPCArray(validPub)
-	assert(array0.seed).Equals(array0.in.seed)
-	array0.Release()
+	array0 := newRPCArray(validCtx)
+	array0.release()
 	assert(array0.in).IsNil()
 
 	array1 := newRPCArray(nil)
 	for i := 0; i < 100; i++ {
 		array1.Append(20)
 	}
-	array1.Release()
+	array1.release()
 	assert(array1.in).IsNil()
 }
 
 func Test_RPCArray_getStream(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
-	validArray := newRPCArray(validPub)
-	invalidArray := newRPCArray(invalidPub)
-	assert(validArray.getStream()).IsNotNil()
-	assert(invalidArray.getStream()).IsNil()
+	validArray := newRPCArray(validCtx)
+	invalidArray := newRPCArray(invalidCtx)
+	assert(validArray.ctx.getCacheStream()).IsNotNil()
+	assert(invalidArray.ctx.getCacheStream()).IsNil()
 	assert(invalidArray.Size()).Equals(0)
 }
 
@@ -110,11 +119,11 @@ func Test_RPCArray_Get(t *testing.T) {
 	fnTestArray := func(array []interface{}, index int, tp string) {
 		array[len(array)-1] = array[index]
 
-		ctx := &PubContext{
+		inner := &rpcInnerContext{
 			stream: NewRPCStream(),
 		}
-		pub := &PubControl{
-			ctx: ctx,
+		ctx := &rpcContext{
+			inner: inner,
 		}
 		rpcArray := newRPCArray(nil)
 		for _, v := range array {
@@ -123,96 +132,96 @@ func Test_RPCArray_Get(t *testing.T) {
 
 		stream := NewRPCStream()
 		stream.Write(rpcArray)
-		arr, _ := stream.ReadRPCArray(pub)
+		arr, _ := stream.ReadRPCArray(ctx)
 
 		switch tp {
 		case "nil":
 			assert(arr.GetNil(arr.Size() - 1)).Equals(true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetNil(index)).Equals(true)
 			assert(arr.GetNil(arr.Size())).Equals(false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetNil(arr.Size() - 1)).Equals(false)
 			assert(arr.GetNil(index)).Equals(false)
 		case "bool":
 			assert(arr.GetBool(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetBool(index)).Equals(array[index], true)
 			assert(arr.GetBool(arr.Size())).Equals(false, false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetBool(arr.Size()-1)).Equals(false, false)
 			assert(arr.GetBool(index)).Equals(false, false)
 		case "float64":
 			assert(arr.GetFloat64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetFloat64(index)).Equals(array[index], true)
 			assert(arr.GetFloat64(arr.Size())).Equals(float64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetFloat64(arr.Size()-1)).Equals(float64(0), false)
 			assert(arr.GetFloat64(index)).Equals(float64(0), false)
 		case "int64":
 			assert(arr.GetInt64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetInt64(index)).Equals(array[index], true)
 			assert(arr.GetInt64(arr.Size())).Equals(int64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetInt64(arr.Size()-1)).Equals(int64(0), false)
 			assert(arr.GetInt64(index)).Equals(int64(0), false)
 		case "uint64":
 			assert(arr.GetUint64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetUint64(index)).Equals(array[index], true)
 			assert(arr.GetUint64(arr.Size())).Equals(uint64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetUint64(arr.Size()-1)).Equals(uint64(0), false)
 			assert(arr.GetUint64(index)).Equals(uint64(0), false)
 		case "rpcString":
 			assert(arr.GetRPCString(arr.Size()-1).ToString()).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetRPCString(index).ToString()).Equals(array[index], true)
 			assert(arr.GetRPCString(arr.Size()).ToString()).Equals("", false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetRPCString(arr.Size()-1).ToString()).Equals("", false)
 			assert(arr.GetRPCString(index).ToString()).Equals("", false)
 		case "rpcBytes":
 			assert(arr.GetRPCBytes(arr.Size()-1).ToBytes()).Equals(array[index], true)
-			assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetRPCBytes(index).ToBytes()).Equals(array[index], true)
 			assert(arr.GetRPCBytes(arr.Size()).ToBytes()).Equals(nil, false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetRPCBytes(arr.Size()-1).ToBytes()).Equals(nil, false)
 			assert(arr.GetRPCBytes(index).ToBytes()).Equals(nil, false)
 		case "rpcArray":
 			target1, ok := arr.GetRPCArray(arr.Size() - 1)
-			assert(ok, arr.getStream().GetWritePos()).Equals(true, arr.getStream().GetReadPos())
+			assert(ok, arr.ctx.getCacheStream().GetWritePos()).Equals(true, arr.ctx.getCacheStream().GetReadPos())
 			target2, ok := arr.GetRPCArray(index)
 			assert(arr.GetRPCArray(arr.Size())).Equals(nilRPCArray, false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetRPCArray(arr.Size()-1)).Equals(nilRPCArray, false)
 			assert(arr.GetRPCArray(index)).Equals(nilRPCArray, false)
-			assert(target1.pub).Equals(pub)
-			assert(target2.pub).Equals(pub)
+			assert(target1.ctx).Equals(ctx)
+			assert(target2.ctx).Equals(ctx)
 		case "rpcMap":
 			target1, ok := arr.GetRPCMap(arr.Size() - 1)
-			assert(ok, arr.getStream().GetWritePos()).Equals(true, arr.getStream().GetReadPos())
+			assert(ok, arr.ctx.getCacheStream().GetWritePos()).Equals(true, arr.ctx.getCacheStream().GetReadPos())
 			target2, ok := arr.GetRPCMap(index)
 			assert(arr.GetRPCMap(arr.Size())).Equals(nilRPCMap, false)
-			pub.Close()
+			ctx.close()
 			assert(arr.GetRPCMap(arr.Size()-1)).Equals(nilRPCMap, false)
 			assert(arr.GetRPCMap(index)).Equals(nilRPCMap, false)
-			assert(target1.pub).Equals(pub)
-			assert(target2.pub).Equals(pub)
+			assert(target1.ctx).Equals(ctx)
+			assert(target2.ctx).Equals(ctx)
 		}
 
-		pub.ctx = ctx
+		ctx.inner = inner
 		assert(arr.Get(arr.Size()-1)).Equals(array[index], true)
-		assert(arr.getStream().GetWritePos()).Equals(arr.getStream().GetReadPos())
+		assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
 		assert(arr.Get(index)).Equals(array[index], true)
 		assert(arr.Get(arr.Size())).Equals(nil, false)
-		pub.Close()
+		ctx.close()
 		assert(arr.Get(arr.Size()-1)).Equals(nil, false)
 		assert(arr.Get(index)).Equals(nil, false)
-		assert(pub.Close()).IsFalse()
+		assert(ctx.close()).IsFalse()
 	}
 
 	fnTestArray(testArray, 0, "nil")
@@ -232,16 +241,18 @@ func Test_RPCArray_Get(t *testing.T) {
 
 func Test_RPCArray_Set(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{}
+	invalidCtx := &rpcContext{
+		inner: nil,
+	}
 
 	array1 := newRPCArray(nil)
-	array2 := newRPCArray(validPub)
-	array3 := newRPCArray(invalidPub)
+	array2 := newRPCArray(validCtx)
+	array3 := newRPCArray(invalidCtx)
 
 	assert(array1.AppendNil()).IsTrue()
 	assert(array1.SetNil(0)).IsTrue()
@@ -320,27 +331,28 @@ func Test_RPCArray_Set(t *testing.T) {
 
 func Test_RPCMap_newRPCArray(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
-	assert(newRPCMap(nil)).Equals(newRPCMap(validPub))
-	assert(newRPCMap(invalidPub)).Equals(nilRPCMap)
+	assert(newRPCMap(nil)).Equals(newRPCMap(validCtx))
+	assert(newRPCMap(invalidCtx)).Equals(nilRPCMap)
 }
 
 func Test_RPCMap_Release(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{stream: NewRPCStream()},
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
 	}
 
-	mp0 := newRPCMap(validPub)
-	assert(mp0.seed).Equals(mp0.in.seed)
-	mp0.Release()
+	mp0 := newRPCMap(validCtx)
+	mp0.release()
 	assert(mp0.in).IsNil()
 
 	mp1 := newRPCMap(nil)
@@ -351,24 +363,24 @@ func Test_RPCMap_Release(t *testing.T) {
 	for i := 0; i < 90; i++ {
 		mp1.Delete(strconv.Itoa(i))
 	}
-	mp1.Release()
+	mp1.release()
 	assert(mp1.in).IsNil()
 }
 
 func Test_RPCMap_getStream(t *testing.T) {
 	assert := NewAssert(t)
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
-	validMap := newRPCMap(validPub)
-	invalidMap := newRPCMap(invalidPub)
-	assert(validMap.getStream()).IsNotNil()
-	assert(invalidMap.getStream()).IsNil()
+	validMap := newRPCMap(validCtx)
+	invalidMap := newRPCMap(invalidCtx)
+	assert(validMap.ctx.getCacheStream()).IsNotNil()
+	assert(invalidMap.ctx.getCacheStream()).IsNil()
 	assert(invalidMap.Size()).Equals(0)
 	assert(len(invalidMap.Keys())).Equals(0)
 }
@@ -422,11 +434,11 @@ func Test_RPCMap_Get(t *testing.T) {
 	testLargeMap["16"] = nil
 
 	fnTestMap := func(mp map[string]interface{}, name string, tp string) {
-		ctx := &PubContext{
+		inner := &rpcInnerContext{
 			stream: NewRPCStream(),
 		}
-		pub := &PubControl{
-			ctx: ctx,
+		ctx := &rpcContext{
+			inner: inner,
 		}
 		rpcMap := newRPCMap(nil)
 		for k, v := range mp {
@@ -435,74 +447,74 @@ func Test_RPCMap_Get(t *testing.T) {
 
 		stream := NewRPCStream()
 		stream.Write(rpcMap)
-		sm, _ := stream.ReadRPCMap(pub)
+		sm, _ := stream.ReadRPCMap(ctx)
 
 		switch tp {
 		case "nil":
 			assert(sm.GetNil(name)).Equals(true)
 			assert(sm.GetNil("no")).Equals(false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetNil(name)).Equals(false)
 		case "bool":
 			assert(sm.GetBool(name)).Equals(mp[name], true)
 			assert(sm.GetBool("no")).Equals(false, false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetBool(name)).Equals(false, false)
 		case "float64":
 			assert(sm.GetFloat64(name)).Equals(mp[name], true)
 			assert(sm.GetFloat64("no")).Equals(float64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetFloat64(name)).Equals(float64(0), false)
 		case "int64":
 			assert(sm.GetInt64(name)).Equals(mp[name], true)
 			assert(sm.GetInt64("no")).Equals(int64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetInt64(name)).Equals(int64(0), false)
 		case "uint64":
 			assert(sm.GetUint64(name)).Equals(mp[name], true)
 			assert(sm.GetUint64("no")).Equals(uint64(0), false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetUint64(name)).Equals(uint64(0), false)
 		case "rpcString":
 			sc := sm.GetRPCString(name)
 			assert(sc.ToString()).Equals(mp[name], true)
 			assert(sm.GetRPCString("no").ToString()).Equals("", false)
-			pub.Close()
+			ctx.close()
 			assert(sc.ToString()).Equals("", false)
 			assert(sm.GetRPCString(name).ToString()).Equals("", false)
-			assert(sc.pub).Equals(pub)
+			assert(sc.ctx).Equals(ctx)
 		case "rpcBytes":
 			sc := sm.GetRPCBytes(name)
 			assert(sc.ToBytes()).Equals(mp[name], true)
 			assert(sm.GetRPCBytes("no").ToBytes()).Equals(nil, false)
-			pub.Close()
+			ctx.close()
 			assert(sc.ToBytes()).Equals(nil, false)
 			assert(sm.GetRPCBytes(name).ToBytes()).Equals(nil, false)
-			assert(sc.pub).Equals(pub)
+			assert(sc.ctx).Equals(ctx)
 		case "rpcArray":
 			target1, ok := sm.GetRPCArray(name)
 			assert(ok).Equals(true)
 			_, ok = sm.GetRPCArray("no")
 			assert(ok).Equals(false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetRPCArray(name)).Equals(nilRPCArray, false)
-			assert(target1.pub).Equals(pub)
+			assert(target1.ctx).Equals(ctx)
 		case "rpcMap":
 			target1, ok := sm.GetRPCMap(name)
 			assert(ok).Equals(true)
 			_, ok = sm.GetRPCMap("no")
 			assert(ok).Equals(false)
-			pub.Close()
+			ctx.close()
 			assert(sm.GetRPCMap(name)).Equals(nilRPCMap, false)
-			assert(target1.pub).Equals(pub)
+			assert(target1.ctx).Equals(ctx)
 		}
 
-		pub.ctx = ctx
+		ctx.inner = inner
 		assert(sm.Get(name)).Equals(mp[name], true)
 		assert(sm.Get("no")).Equals(nil, false)
-		pub.Close()
+		ctx.close()
 		assert(sm.Get(name)).Equals(nil, false)
-		assert(pub.Close()).IsFalse()
+		assert(ctx.close()).IsFalse()
 	}
 
 	fnTestMap(testSmallMap, "0", "nil")
@@ -537,8 +549,8 @@ func Test_RPCMap_Set(t *testing.T) {
 	assert := NewAssert(t)
 
 	fnTest := func(tp string, name string, value interface{}) {
-		invalidPub := &PubControl{
-			ctx: nil,
+		invalidCtx := &rpcContext{
+			inner: nil,
 		}
 
 		map0 := newRPCMap(nil)
@@ -551,7 +563,7 @@ func Test_RPCMap_Set(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			map100.Set(strconv.Itoa(i), i)
 		}
-		invalidMap := newRPCMap(invalidPub)
+		invalidMap := newRPCMap(invalidCtx)
 
 		switch tp {
 		case "nil":
@@ -630,9 +642,11 @@ func Test_RPCMap_Set(t *testing.T) {
 	mp := newRPCMap(nil)
 	assert(mp.SetRPCString("error", errorRPCString)).IsFalse()
 	assert(mp.SetRPCBytes("error", errorRPCBytes)).IsFalse()
-	invalidPub := &PubControl{ctx: nil}
-	assert(mp.SetRPCArray("error", newRPCArray(invalidPub))).IsFalse()
-	assert(mp.SetRPCMap("error", newRPCMap(invalidPub))).IsFalse()
+	invalidCtx := &rpcContext{
+		inner: nil,
+	}
+	assert(mp.SetRPCArray("error", newRPCArray(invalidCtx))).IsFalse()
+	assert(mp.SetRPCMap("error", newRPCMap(invalidCtx))).IsFalse()
 	assert(mp.Set("error", make(chan bool))).IsFalse()
 }
 
@@ -641,16 +655,16 @@ func Test_RPCMap_Delete(t *testing.T) {
 
 	rpcMap := newRPCMap(nil)
 
-	validPub := &PubControl{
-		ctx: &PubContext{
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidPub := &PubControl{
-		ctx: nil,
+	invalidCtx := &rpcContext{
+		inner: nil,
 	}
-	validMap := newRPCMap(validPub)
-	invalidMap := newRPCMap(invalidPub)
+	validMap := newRPCMap(validCtx)
+	invalidMap := newRPCMap(invalidCtx)
 
 	assert(rpcMap.Delete("")).Equals(false)
 	assert(validMap.Delete("")).Equals(false)
