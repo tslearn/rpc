@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/tianshuo.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/processor_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/processor_test.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -11,58 +11,49 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CoverageViewManager">
+    <option name="myElementSize" value="337" />
+  </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/defs.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="207">
-              <caret line="9" column="22" selection-start-line="9" selection-start-column="22" selection-end-line="9" selection-end-column="22" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/error.go">
+        <entry file="file://$PROJECT_DIR$/rpc_stream_test.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="901">
-              <caret line="62" column="18" selection-start-line="62" selection-start-column="18" selection-end-line="62" selection-end-column="18" />
+              <caret line="941" column="23" selection-start-line="941" selection-start-column="23" selection-end-line="941" selection-end-column="23" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/error_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="19" selection-start-line="19" selection-end-line="19" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/speed_counter.go">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/fncache.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="207">
-              <caret line="9" column="11" selection-start-line="9" selection-start-column="11" selection-end-line="9" selection-end-column="11" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/string_builder.go">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/logger_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="901">
-              <caret line="169" selection-start-line="169" selection-end-line="169" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/speed_counter_test.go">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/processor.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3680">
-              <caret line="170" selection-start-line="170" selection-end-line="170" />
+            <state relative-caret-position="377">
+              <caret line="453" lean-forward="true" selection-start-line="453" selection-end-line="453" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/testing/testing.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="308">
+              <caret line="1071" selection-start-line="1071" selection-end-line="1071" />
             </state>
           </provider>
         </entry>
@@ -70,27 +61,35 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/processor_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="644">
-              <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+            <state relative-caret-position="695">
+              <caret line="38" lean-forward="true" selection-start-line="38" selection-end-line="38" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/indicator.go">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/indicator_test.go">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/logger.go">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/proc.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-869">
-              <caret line="151" lean-forward="true" selection-start-line="151" selection-end-line="151" />
+            <state relative-caret-position="308">
+              <caret line="301" selection-start-line="301" selection-end-line="301" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/asm_amd64.s">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="315">
+              <caret line="1336" selection-start-line="1336" selection-end-line="1336" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/chan.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="308">
+              <caret line="714" selection-start-line="714" selection-end-line="714" />
             </state>
           </provider>
         </entry>
@@ -133,10 +132,8 @@
         <option value="$PROJECT_DIR$/go.sum" />
         <option value="$PROJECT_DIR$/monitor.go" />
         <option value="$PROJECT_DIR$/fncache.go" />
-        <option value="$PROJECT_DIR$/processor_test.go" />
         <option value="$PROJECT_DIR$/defs.go" />
         <option value="$PROJECT_DIR$/context.go" />
-        <option value="$PROJECT_DIR$/processor.go" />
         <option value="$PROJECT_DIR$/assert_test.go" />
         <option value="$PROJECT_DIR$/rpc_stream.go" />
         <option value="$PROJECT_DIR$/rpc_stream_test.go" />
@@ -144,6 +141,8 @@
         <option value="$PROJECT_DIR$/rpc_types_test.go" />
         <option value="$PROJECT_DIR$/utils.go" />
         <option value="$PROJECT_DIR$/utils_test.go" />
+        <option value="$PROJECT_DIR$/processor.go" />
+        <option value="$PROJECT_DIR$/processor_test.go" />
       </list>
     </option>
   </component>
@@ -208,7 +207,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.go test rpcc">
+  <component name="RunManager" selected="Go Test.TestRpcProcessor_Execute in github.com/tslearn/rpcc">
+    <configuration name="TestRpcProcessor_AddService in github.com/tslearn/rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestRpcProcessor_AddService$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestRpcProcessor_Execute$" />
+      <method v="2" />
+    </configuration>
     <configuration name="Test_contains in github.com/tslearn/rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -231,28 +252,6 @@
       <pattern value="^Test_contains_exceptions$" />
       <method v="2" />
     </configuration>
-    <configuration name="Test_equals in github.com/tslearn/rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^Test_equals$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="Test_equals_exceptions in github.com/tslearn/rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^Test_equals_exceptions$" />
-      <method v="2" />
-    </configuration>
     <configuration name="go test rpcc" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -265,44 +264,44 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestRpcProcessor_Execute in github.com/tslearn/rpcc" />
+        <item itemvalue="Go Test.TestRpcProcessor_AddService in github.com/tslearn/rpcc" />
         <item itemvalue="Go Test.go test rpcc" />
         <item itemvalue="Go Test.Test_contains_exceptions in github.com/tslearn/rpcc" />
         <item itemvalue="Go Test.Test_contains in github.com/tslearn/rpcc" />
-        <item itemvalue="Go Test.Test_equals_exceptions in github.com/tslearn/rpcc" />
-        <item itemvalue="Go Test.Test_equals in github.com/tslearn/rpcc" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="go_test_rpcc - 2019.08.07 at 18h 00m 45s.xml">
-      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 48m 38s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="go_test_rpcc - 2019.08.07 at 18h 02m 05s.xml">
-      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 05s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Test_equals_exceptions_in_github_com_tslearn_rpcc - 2019.08.07 at 18h 03m 13s.xml">
-      <configuration name="Test_equals_exceptions in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 19s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Test_equals_exceptions_in_github_com_tslearn_rpcc - 2019.08.07 at 18h 03m 35s.xml">
-      <configuration name="Test_equals_exceptions in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 23s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="go_test_rpcc - 2019.08.07 at 18h 03m 45s.xml">
-      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 33s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="go_test_rpcc - 2019.08.07 at 18h 04m 46s.xml">
-      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 47s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Test_contains_in_github_com_tslearn_rpcc - 2019.08.07 at 18h 05m 15s.xml">
-      <configuration name="Test_contains in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 50m 52s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Test_contains_exceptions_in_github_com_tslearn_rpcc - 2019.08.07 at 18h 05m 21s.xml">
-      <configuration name="Test_contains_exceptions in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 51m 08s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Test_contains_exceptions_in_github_com_tslearn_rpcc - 2019.08.07 at 18h 05m 43s.xml">
-      <configuration name="Test_contains_exceptions in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 51m 19s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="go_test_rpcc - 2019.08.07 at 18h 05m 52s.xml">
-      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcProcessor_Execute_in_github_com_tslearn_rpcc - 2019.08.08 at 10h 56m 06s.xml">
+      <configuration name="TestRpcProcessor_Execute in github.com/tslearn/rpcc" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TodoView">
@@ -318,7 +317,7 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18681319" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.18681319" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -327,14 +326,15 @@
       <window_info anchor="bottom" id="Inspection" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Docker" order="4" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="5" />
+      <window_info anchor="right" id="Coverage" sideWeight="0.71979696" side_tool="true" weight="0.35409036" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.28121826" visible="true" weight="0.35409036" />
+      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.4" visible="true" weight="0.36019537" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
-      <window_info anchor="right" id="Debug" order="6" sideWeight="0.7187817" side_tool="true" weight="0.36507937" />
-      <window_info anchor="right" id="Run" order="7" sideWeight="0.7187817" side_tool="true" weight="0.36507937" />
+      <window_info anchor="right" id="Debug" order="6" sideWeight="0.6" side_tool="true" weight="0.36019537" />
+      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.6" side_tool="true" visible="true" weight="0.36019537" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.50152284" side_tool="true" weight="0.33272284" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
     </layout>
@@ -356,16 +356,6 @@
     <entry file="file://$PROJECT_DIR$/time.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1078" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/string_builder.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1124" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/speed_counter.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-733" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seed_test.go">
@@ -407,20 +397,6 @@
     <entry file="file://$PROJECT_DIR$/monitor.go" />
     <entry file="file://$PROJECT_DIR$/monitor_test.go" />
     <entry file="file://$PROJECT_DIR$/pub_control.go" />
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/testing/testing.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="354">
-          <caret line="829" selection-start-line="829" selection-end-line="829" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/rpc_types.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1058">
-          <caret line="49" column="19" selection-start-line="49" selection-start-column="19" selection-end-line="49" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/rpc_stream.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="40963">
@@ -442,13 +418,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="7820">
           <caret line="348" column="3" selection-start-line="348" selection-start-column="3" selection-end-line="348" selection-end-column="3" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/rpc_stream_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="21528">
-          <caret line="941" column="23" selection-start-line="941" selection-start-column="23" selection-end-line="941" selection-end-column="23" />
         </state>
       </provider>
     </entry>
@@ -565,17 +534,68 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/rpc_types.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-6890">
+          <caret line="49" column="19" selection-start-line="49" selection-start-column="19" selection-end-line="49" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rpc_stream_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="901">
+          <caret line="941" column="23" selection-start-line="941" selection-start-column="23" selection-end-line="941" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/speed_counter.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/string_builder.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/speed_counter_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/asm_amd64.s">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="1336" selection-start-line="1336" selection-end-line="1336" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/testing/testing.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="1071" selection-start-line="1071" selection-end-line="1071" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/chan.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="714" selection-start-line="714" selection-end-line="714" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/proc.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="301" selection-start-line="301" selection-end-line="301" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/processor.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3680">
-          <caret line="170" selection-start-line="170" selection-end-line="170" />
+        <state relative-caret-position="377">
+          <caret line="453" lean-forward="true" selection-start-line="453" selection-end-line="453" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/processor_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="644">
-          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+        <state relative-caret-position="695">
+          <caret line="38" lean-forward="true" selection-start-line="38" selection-end-line="38" />
         </state>
       </provider>
     </entry>

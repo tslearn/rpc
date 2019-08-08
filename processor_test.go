@@ -2,6 +2,7 @@ package common
 
 import (
 	"testing"
+	"time"
 )
 
 var service = newServiceMeta().
@@ -32,5 +33,10 @@ func TestRpcProcessor_Execute(t *testing.T) {
 	processor := getProcessor()
 	processor.start()
 	processor.AddService("user", service)
+
+	stream := NewRPCStream()
+	processor.put(stream, nil)
+
+	time.Sleep(time.Second)
 	processor.stop()
 }
