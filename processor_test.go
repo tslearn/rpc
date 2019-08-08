@@ -23,8 +23,14 @@ var service = newServiceMeta().
 		return nil
 	})
 
-func TestRpcProcessor_AddService(t *testing.T) {
+func getProcessor() *rpcProcessor {
 	logger := NewLogger()
-	processor := newProcessor(logger, 16, 16)
+	return newProcessor(logger, 16, 16)
+}
+
+func TestRpcProcessor_Execute(t *testing.T) {
+	processor := getProcessor()
+	processor.start()
 	processor.AddService("user", service)
+	processor.stop()
 }

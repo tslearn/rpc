@@ -30,18 +30,6 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////  rpcThread                                       ///////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-//func (p *executor) startRun() {
-//	atomic.StoreInt64(&p.execNS, common.TimeNowNS())
-//}
-//
-//func (p *executor) stopRun() {
-//	p.execDepth = 0
-//	p.execRecord = nil
-//	atomic.StoreInt64(&p.execNS, 0)
-//	p.execArgs = p.execArgs[:0]
-//}
-
 func consume(processor *rpcProcessor, stream *RPCStream) {
 
 }
@@ -296,6 +284,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 type rpcThreadArray [NumOfThreadPerBlock]*rpcThread
 type rpcThreadSlot struct {
 	isRunning  bool
+	gcFinish   chan bool
 	threads    []*rpcThread
 	cacheArray chan *rpcThreadArray
 	emptyArray chan *rpcThreadArray
@@ -315,6 +304,7 @@ func (p *rpcThreadSlot) start(processor *rpcProcessor) bool {
 	defer p.Unlock()
 
 	if !p.isRunning {
+		p.gcFinish = make(chan bool)
 		p.cacheArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
 		p.emptyArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
 		for i := 0; i < NumOfBlockPerSlot; i++ {
@@ -340,13 +330,14 @@ func (p *rpcThreadSlot) stop() bool {
 	defer p.Unlock()
 
 	if p.isRunning {
+		close(p.cacheArray)
+		close(p.emptyArray)
+		p.isRunning = false
+		<-p.gcFinish
 		for i := 0; i < len(p.threads); i++ {
 			p.threads[i].stop()
 			p.threads[i] = nil
 		}
-		close(p.cacheArray)
-		close(p.emptyArray)
-		p.isRunning = false
 		return true
 	} else {
 		return false
@@ -358,7 +349,7 @@ func (p *rpcThreadSlot) gc() {
 	threadArray := <-p.emptyArray
 	arrIndex := 0
 	totalThreads := len(p.threads)
-	for {
+	for p.isRunning {
 		for i := 0; i < NumOfThreadGCSwipe; i++ {
 			gIndex = (gIndex + 1) % totalThreads
 			if p.threads[gIndex].execNS == -1 {
@@ -370,7 +361,7 @@ func (p *rpcThreadSlot) gc() {
 						threadArray = <-p.emptyArray
 						arrIndex = 0
 						if threadArray == nil {
-							return
+							break
 						}
 					}
 				}
@@ -378,6 +369,7 @@ func (p *rpcThreadSlot) gc() {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
+	p.gcFinish <- true
 }
 
 func (p *rpcThreadSlot) put(stream *RPCStream) {
@@ -475,7 +467,7 @@ func (p *rpcProcessor) stop() bool {
 func (p *rpcProcessor) put(
 	stream *RPCStream,
 	goroutineFixedRand *rand.Rand,
-) {
+) bool {
 	// get a random uint32
 	randInt := 0
 	if goroutineFixedRand == nil {
@@ -484,7 +476,13 @@ func (p *rpcProcessor) put(
 		randInt = goroutineFixedRand.Int()
 	}
 	// put stream in a random slot
-	p.slots[randInt%len(p.slots)].put(stream)
+	slot := p.slots[randInt%len(p.slots)]
+	if slot != nil {
+		slot.put(stream)
+		return true
+	} else {
+		return false
+	}
 }
 
 func (p *rpcProcessor) AddService(
