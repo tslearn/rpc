@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"math/rand"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -13,13 +12,12 @@ import (
 )
 
 const (
-	RootName            = "$"
-	NumOfThreadPerBlock = 1
-	NumOfBlockPerSlot   = 8192
-	NumOfThreadGCSwipe  = 8192
-	NumOfSlotPerCore    = 4
-	NumOfMinSlot        = 4
-	NumOfMaxSlot        = 128
+	RootName           = "$"
+	NumOfThreadPerSlot = 8192
+	NumOfThreadGCSwipe = 4096
+	NumOfSlotPerCore   = 4
+	NumOfMinSlot       = 4
+	NumOfMaxSlot       = 128
 )
 
 var (
@@ -30,10 +28,11 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////  rpcThread                                       ///////////////
 ////////////////////////////////////////////////////////////////////////////////
-var speedCount = NewSpeedCounter()
+var speedCounter = NewSpeedCounter()
 
 func consume(processor *rpcProcessor, stream *RPCStream) {
-	speedCount.Add(1)
+	time.Sleep(5 * time.Millisecond)
+	speedCounter.Add(1)
 }
 
 type rpcThread struct {
@@ -106,12 +105,12 @@ func (p *rpcThread) start() {
 	}()
 }
 
-func (p *rpcThread) put(stream *RPCStream) {
-	p.ch <- stream
-}
-
 func (p *rpcThread) stop() {
 	close(p.ch)
+}
+
+func (p *rpcThread) put(stream *RPCStream) {
+	p.ch <- stream
 }
 
 func (p *rpcThread) eval(inStream *RPCStream) Return {
@@ -283,21 +282,18 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////  rpcThreadSlot                                   ///////////////
 ////////////////////////////////////////////////////////////////////////////////
-type rpcThreadArray [NumOfThreadPerBlock]*rpcThread
 type rpcThreadSlot struct {
-	isRunning  bool
-	gcFinish   chan bool
-	threads    []*rpcThread
-	cacheArray chan *rpcThreadArray
-	emptyArray chan *rpcThreadArray
+	isRunning   bool
+	gcFinish    chan bool
+	threads     []*rpcThread
+	freeThreads chan *rpcThread
 	sync.Mutex
 }
 
 func newThreadSlot() *rpcThreadSlot {
-	size := uint32(NumOfBlockPerSlot * NumOfThreadPerBlock)
 	return &rpcThreadSlot{
 		isRunning: false,
-		threads:   make([]*rpcThread, size, size),
+		threads:   make([]*rpcThread, NumOfThreadPerSlot, NumOfThreadPerSlot),
 	}
 }
 
@@ -307,17 +303,12 @@ func (p *rpcThreadSlot) start(processor *rpcProcessor) bool {
 
 	if !p.isRunning {
 		p.gcFinish = make(chan bool)
-		p.cacheArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
-		p.emptyArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
-		for i := 0; i < NumOfBlockPerSlot; i++ {
-			threadArray := &rpcThreadArray{}
-			for n := 0; n < NumOfThreadPerBlock; n++ {
-				thread := newThread(processor)
-				p.threads[i*NumOfThreadPerBlock+n] = thread
-				threadArray[n] = thread
-				thread.start()
-			}
-			p.cacheArray <- threadArray
+		p.freeThreads = make(chan *rpcThread, NumOfThreadPerSlot)
+		for i := 0; i < NumOfThreadPerSlot; i++ {
+			thread := newThread(processor)
+			thread.start()
+			p.threads[i] = thread
+			p.freeThreads <- thread
 		}
 		go p.gc()
 		p.isRunning = true
@@ -332,8 +323,7 @@ func (p *rpcThreadSlot) stop() bool {
 	defer p.Unlock()
 
 	if p.isRunning {
-		close(p.cacheArray)
-		close(p.emptyArray)
+		close(p.freeThreads)
 		p.isRunning = false
 		<-p.gcFinish
 		for i := 0; i < len(p.threads); i++ {
@@ -348,43 +338,26 @@ func (p *rpcThreadSlot) stop() bool {
 
 func (p *rpcThreadSlot) gc() {
 	gIndex := 0
-	threadArray := <-p.emptyArray
-	arrIndex := 0
 	totalThreads := len(p.threads)
 	for p.isRunning {
 		for i := 0; i < NumOfThreadGCSwipe; i++ {
 			gIndex = (gIndex + 1) % totalThreads
-			if p.threads[gIndex].execNS == -1 {
-				if p.threads[gIndex].toFree() {
-					threadArray[arrIndex] = p.threads[gIndex]
-					arrIndex++
-					if arrIndex == NumOfThreadPerBlock {
-						p.cacheArray <- threadArray
-						threadArray = <-p.emptyArray
-						arrIndex = 0
-						if threadArray == nil {
-							break
-						}
-					}
+			thread := p.threads[gIndex]
+			if thread.execNS == -1 {
+				if thread.toFree() {
+					p.freeThreads <- thread
 				}
 			}
 		}
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(16 * time.Millisecond)
 	}
 	p.gcFinish <- true
 }
 
 func (p *rpcThreadSlot) put(stream *RPCStream) {
-	arrayOfThreads := <-p.cacheArray
-
-	for i := 0; i < NumOfThreadPerBlock; i++ {
-		thread := arrayOfThreads[i]
-		thread.toRun()
-		thread.put(stream)
-		arrayOfThreads[i] = nil
-	}
-
-	p.emptyArray <- arrayOfThreads
+	thread := <-p.freeThreads
+	thread.toRun()
+	thread.put(stream)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -466,19 +439,9 @@ func (p *rpcProcessor) stop() bool {
 	}
 }
 
-func (p *rpcProcessor) put(
-	stream *RPCStream,
-	goroutineFixedRand *rand.Rand,
-) bool {
-	// get a random uint32
-	randInt := 0
-	if goroutineFixedRand == nil {
-		randInt = int(GetRandUint32())
-	} else {
-		randInt = goroutineFixedRand.Int()
-	}
+func (p *rpcProcessor) put(stream *RPCStream) bool {
 	// put stream in a random slot
-	slot := p.slots[randInt%len(p.slots)]
+	slot := p.slots[int(GetRandUint32())%len(p.slots)]
 	if slot != nil {
 		slot.put(stream)
 		return true
@@ -721,4 +684,35 @@ func (p *rpcProcessor) mountEcho(
 	)
 
 	return nil
+}
+
+func rpcProcessorProfile() {
+	stream := NewRPCStream()
+	pools := newProcessor(NewLogger(), 16, 16)
+	pools.start()
+	time.Sleep(3 * time.Second)
+
+	startTime := time.Now()
+
+	n := 4
+	finish := make(chan bool, n)
+
+	speedCounter.Calculate()
+
+	for i := 0; i < n; i++ {
+		go func() {
+			//r := rand.New(rand.NewSource(rand.Int63()))
+			for j := 0; j < 1000000; j++ {
+				pools.put(stream)
+			}
+			finish <- true
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		<-finish
+	}
+
+	fmt.Println("SpeedCounter : ", speedCounter.Calculate())
+	fmt.Println("time used: ", time.Now().Sub(startTime))
 }

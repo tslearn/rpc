@@ -12,67 +12,88 @@ import (
 )
 
 const (
-	NumOfThreadPerBlock = 1
-	NumOfBlockPerSlot   = 8192
+	NumOfThreadPerBlock = 16
+	NumOfBlockPerSlot   = 512
 	NumOfThreadGCSwipe  = 8192
 	NumOfSlotPerCore    = 4
 	NumOfMinSlot        = 4
 	NumOfMaxSlot        = 128
 )
 
-var count = uint64(0)
-
+////////////////////////////////////////////////////////////////////////////////
+///////////////  rpcThread                                       ///////////////
+////////////////////////////////////////////////////////////////////////////////
 var speedCounter = core.NewSpeedCounter()
 
-func consume(pool *rpcThreadPool, stream *core.RPCStream) {
+func consume(processor *rpcProcessor, stream *core.RPCStream) {
 	speedCounter.Add(1)
 }
 
 type rpcThread struct {
-	ch     chan *core.RPCStream
-	status int32
+	processor *rpcProcessor
+	ch        chan *core.RPCStream
+	execNS    int64
+
+	execDepth      uint64
+	execSuccessful bool
 }
 
-func newThread() *rpcThread {
-	return &rpcThread{
-		ch:     make(chan *core.RPCStream),
-		status: 0,
+func newThread(processor *rpcProcessor) *rpcThread {
+	ret := rpcThread{
+		processor: processor,
+		ch:        make(chan *core.RPCStream),
+		execNS:    0,
 	}
+
+	return &ret
+}
+
+func (p *rpcThread) getRunDuration() time.Duration {
+	timeNS := atomic.LoadInt64(&p.execNS)
+	if timeNS == 0 {
+		return 0
+	}
+	return core.TimeSpanFrom(timeNS)
 }
 
 func (p *rpcThread) toRun() bool {
-	return atomic.CompareAndSwapInt32(&p.status, 0, 2)
+	return atomic.CompareAndSwapInt64(&p.execNS, 0, core.TimeNowNS())
 }
 
-func (p *rpcThread) toSweep() bool {
-	return atomic.CompareAndSwapInt32(&p.status, 2, 1)
+func (p *rpcThread) toSweep() {
+	//p.execDepth = 0
+	//p.execArgs = p.execArgs[:0]
+	atomic.StoreInt64(&p.execNS, -1)
 }
 
 func (p *rpcThread) toFree() bool {
-	return atomic.CompareAndSwapInt32(&p.status, 1, 0)
+	return atomic.CompareAndSwapInt64(&p.execNS, -1, 0)
 }
 
-func (p *rpcThread) start(pool *rpcThreadPool) {
+func (p *rpcThread) start() {
 	go func() {
 		for node := <-p.ch; node != nil; node = <-p.ch {
-			consume(pool, node)
+			consume(p.processor, node)
 			p.toSweep()
 		}
 	}()
-}
-
-func (p *rpcThread) put(stream *core.RPCStream) {
-	p.ch <- stream
 }
 
 func (p *rpcThread) stop() {
 	close(p.ch)
 }
 
-type rpcThreadArray [NumOfThreadPerBlock]*rpcThread
+func (p *rpcThread) put(stream *core.RPCStream) {
+	p.ch <- stream
+}
 
+////////////////////////////////////////////////////////////////////////////////
+///////////////  rpcThreadSlot                                   ///////////////
+////////////////////////////////////////////////////////////////////////////////
+type rpcThreadArray [NumOfThreadPerBlock]*rpcThread
 type rpcThreadSlot struct {
-	size       uint32
+	isRunning  bool
+	gcFinish   chan bool
 	threads    []*rpcThread
 	cacheArray chan *rpcThreadArray
 	emptyArray chan *rpcThreadArray
@@ -82,71 +103,85 @@ type rpcThreadSlot struct {
 func newThreadSlot() *rpcThreadSlot {
 	size := uint32(NumOfBlockPerSlot * NumOfThreadPerBlock)
 	return &rpcThreadSlot{
-		size:    size,
-		threads: make([]*rpcThread, size, size),
+		isRunning: false,
+		threads:   make([]*rpcThread, size, size),
 	}
 }
 
-func (p *rpcThreadSlot) start(pool *rpcThreadPool) {
+func (p *rpcThreadSlot) start(processor *rpcProcessor) bool {
 	p.Lock()
 	defer p.Unlock()
 
-	p.cacheArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
-	p.emptyArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
-
-	for i := 0; i < NumOfBlockPerSlot; i++ {
-		threadArray := &rpcThreadArray{}
-		for n := 0; n < NumOfThreadPerBlock; n++ {
-			threadPos := i*NumOfThreadPerBlock + n
-			thread := newThread()
-			p.threads[threadPos] = thread
-			threadArray[n] = thread
-			thread.start(pool)
+	if !p.isRunning {
+		p.gcFinish = make(chan bool)
+		p.cacheArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
+		p.emptyArray = make(chan *rpcThreadArray, NumOfBlockPerSlot)
+		for i := 0; i < NumOfBlockPerSlot; i++ {
+			threadArray := &rpcThreadArray{}
+			for n := 0; n < NumOfThreadPerBlock; n++ {
+				thread := newThread(processor)
+				p.threads[i*NumOfThreadPerBlock+n] = thread
+				threadArray[n] = thread
+				thread.start()
+			}
+			p.cacheArray <- threadArray
 		}
-		p.cacheArray <- threadArray
+		go p.gc()
+		p.isRunning = true
+		return true
+	} else {
+		return false
 	}
-
-	go p.gc()
 }
 
-func (p *rpcThreadSlot) stop() {
+func (p *rpcThreadSlot) stop() bool {
 	p.Lock()
 	defer p.Unlock()
 
-	for i := uint32(0); i < p.size; i++ {
-		p.threads[i].stop()
-		p.threads[i] = nil
+	if p.isRunning {
+		close(p.cacheArray)
+		close(p.emptyArray)
+		p.isRunning = false
+		<-p.gcFinish
+		for i := 0; i < len(p.threads); i++ {
+			p.threads[i].stop()
+			p.threads[i] = nil
+		}
+		return true
+	} else {
+		return false
 	}
-
-	close(p.cacheArray)
-	close(p.emptyArray)
 }
 
 func (p *rpcThreadSlot) gc() {
 	gIndex := 0
-	arr := <-p.emptyArray
+	threadArray := <-p.emptyArray
 	arrIndex := 0
-	for arr != nil {
+	totalThreads := len(p.threads)
+	for p.isRunning {
 		for i := 0; i < NumOfThreadGCSwipe; i++ {
-			gIndex = (gIndex + 1) % len(p.threads)
-			if p.threads[gIndex].status == 1 {
+			gIndex = (gIndex + 1) % totalThreads
+			if p.threads[gIndex].execNS == -1 {
 				if p.threads[gIndex].toFree() {
-					arr[arrIndex] = p.threads[gIndex]
+					threadArray[arrIndex] = p.threads[gIndex]
 					arrIndex++
 					if arrIndex == NumOfThreadPerBlock {
-						p.cacheArray <- arr
-						arr = <-p.emptyArray
+						p.cacheArray <- threadArray
+						threadArray = <-p.emptyArray
 						arrIndex = 0
+						if threadArray == nil {
+							break
+						}
 					}
 				}
 			}
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
+	p.gcFinish <- true
 }
 
 func (p *rpcThreadSlot) put(stream *core.RPCStream) {
-
 	arrayOfThreads := <-p.cacheArray
 
 	for i := 0; i < NumOfThreadPerBlock; i++ {
@@ -162,64 +197,95 @@ func (p *rpcThreadSlot) put(stream *core.RPCStream) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-type rpcThreadPool struct {
-	size  uint32
-	slots []*rpcThreadSlot
+type rpcProcessor struct {
+	isRunning    bool
+	logger       *core.Logger
+	slots        []*rpcThreadSlot
+	maxNodeDepth uint64
+	maxCallDepth uint64
 	sync.Mutex
 }
 
-func newThreadPool() *rpcThreadPool {
-	size := uint32(runtime.NumCPU() * NumOfSlotPerCore)
-	if size < NumOfMinSlot {
-		size = NumOfMinSlot
+func newProcessor(
+	logger *core.Logger,
+	maxNodeDepth uint,
+	maxCallDepth uint,
+) *rpcProcessor {
+	numOfSlots := uint32(runtime.NumCPU() * NumOfSlotPerCore)
+	if numOfSlots < NumOfMinSlot {
+		numOfSlots = NumOfMinSlot
 	}
-	if size > NumOfMaxSlot {
-		size = NumOfMaxSlot
+	if numOfSlots > NumOfMaxSlot {
+		numOfSlots = NumOfMaxSlot
 	}
-	return &rpcThreadPool{
-		size:  size,
-		slots: make([]*rpcThreadSlot, size, size),
+
+	ret := &rpcProcessor{
+		isRunning:    false,
+		logger:       logger,
+		slots:        make([]*rpcThreadSlot, numOfSlots, numOfSlots),
+		maxNodeDepth: uint64(maxNodeDepth),
+		maxCallDepth: uint64(maxCallDepth),
 	}
+
+	return ret
 }
 
-func (p *rpcThreadPool) start() {
+func (p *rpcProcessor) start() bool {
 	p.Lock()
 	defer p.Unlock()
 
-	for i := uint32(0); i < p.size; i++ {
-		p.slots[i] = newThreadSlot()
-		p.slots[i].start(p)
+	if !p.isRunning {
+		for i := 0; i < len(p.slots); i++ {
+			p.slots[i] = newThreadSlot()
+			p.slots[i].start(p)
+		}
+		p.isRunning = true
+		return true
+	} else {
+		return false
 	}
 }
 
-func (p *rpcThreadPool) stop() {
+func (p *rpcProcessor) stop() bool {
 	p.Lock()
 	defer p.Unlock()
 
-	for i := uint32(0); i < p.size; i++ {
-		p.slots[i].stop()
-		p.slots[i] = nil
+	if p.isRunning {
+		for i := 0; i < len(p.slots); i++ {
+			p.slots[i].stop()
+			p.slots[i] = nil
+		}
+		p.isRunning = false
+		return true
+	} else {
+		return false
 	}
 }
 
-func (p *rpcThreadPool) put(
+func (p *rpcProcessor) put(
 	stream *core.RPCStream,
 	goroutineFixedRand *rand.Rand,
-) {
+) bool {
 	// get a random uint32
-	randUint32 := uint32(0)
+	randInt := 0
 	if goroutineFixedRand == nil {
-		randUint32 = core.GetRandUint32()
+		randInt = int(core.GetRandUint32())
 	} else {
-		randUint32 = goroutineFixedRand.Uint32()
+		randInt = goroutineFixedRand.Int()
 	}
 	// put stream in a random slot
-	p.slots[randUint32%p.size].put(stream)
+	slot := p.slots[randInt%len(p.slots)]
+	if slot != nil {
+		slot.put(stream)
+		return true
+	} else {
+		return false
+	}
 }
 
-func ThreadPoolProfile() {
+func rpcProcessorProfile() {
 	stream := core.NewRPCStream()
-	pools := newThreadPool()
+	pools := newProcessor(core.NewLogger(), 16, 16)
 	pools.start()
 	time.Sleep(3 * time.Second)
 
