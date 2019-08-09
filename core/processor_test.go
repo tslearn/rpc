@@ -10,12 +10,8 @@ var service = newServiceMeta().
 		ctx Context,
 		name RPCString,
 	) Return {
-		n, _ := name.ToString()
-		if n == "true" {
-			return ctx.OK(true)
-		} else {
-			return ctx.Error()
-		}
+		_name, _ := name.ToString()
+		return ctx.OK("hello " + _name)
 	}).
 	Echo("sayGoodBye", true, func(
 		ctx Context,
@@ -39,8 +35,15 @@ func TestRpcProcessor_Execute(t *testing.T) {
 	processor.AddService("user", service)
 
 	stream := NewRPCStream()
+	byte16 := make([]byte, 16, 16)
+	stream.WriteBytes(byte16)
+	stream.WriteString("$.user:sayHello")
+	stream.WriteUint64(3)
+	stream.WriteString("#")
+	stream.WriteInt64(3)
+
 	processor.put(stream)
 
-	time.Sleep(time.Second)
+	time.Sleep(10000 * time.Second)
 	processor.stop()
 }

@@ -67,9 +67,7 @@ func (p *rpcError) AddDebug(debug string) RPCError {
 func (p *rpcError) Error() string {
 	sb := NewStringBuilder()
 	if len(p.message) > 0 {
-		sb.AppendFormat("[RPCError %s]\n", p.message)
-	} else {
-		sb.AppendString("[RPCError]\n")
+		sb.AppendFormat("%s\n", p.message)
 	}
 
 	if len(p.debug) > 0 {

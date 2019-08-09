@@ -13,11 +13,11 @@ import (
 
 const (
 	RootName           = "$"
-	NumOfThreadPerSlot = 8192
-	NumOfThreadGCSwipe = 4096
+	NumOfThreadPerSlot = 2
+	NumOfThreadGCSwipe = 2
 	NumOfSlotPerCore   = 4
-	NumOfMinSlot       = 4
-	NumOfMaxSlot       = 128
+	NumOfMinSlot       = 1
+	NumOfMaxSlot       = 1
 )
 
 var (
@@ -28,13 +28,6 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////  rpcThread                                       ///////////////
 ////////////////////////////////////////////////////////////////////////////////
-var speedCounter = NewSpeedCounter()
-
-func consume(processor *rpcProcessor, stream *RPCStream) {
-	time.Sleep(5 * time.Millisecond)
-	speedCounter.Add(1)
-}
-
 type rpcThread struct {
 	processor       *rpcProcessor
 	ch              chan *RPCStream
@@ -98,8 +91,8 @@ func (p *rpcThread) toFree() bool {
 
 func (p *rpcThread) start() {
 	go func() {
-		for node := <-p.ch; node != nil; node = <-p.ch {
-			consume(p.processor, node)
+		for stream := <-p.ch; stream != nil; stream = <-p.ch {
+			p.eval(stream)
 			p.toSweep()
 		}
 	}()
@@ -116,11 +109,11 @@ func (p *rpcThread) put(stream *RPCStream) {
 func (p *rpcThread) eval(inStream *RPCStream) Return {
 	// create context
 	p.execInnerContext.stream = inStream
-	ctx := rpcContext{inner: p.execInnerContext}
+	ctx := &rpcContext{inner: p.execInnerContext}
 
 	// if the header is error, we can not find the method to return
 	headerBytes, ok := inStream.ReadUnsafeBytes()
-	if !ok || len(headerBytes) != 12 {
+	if !ok || len(headerBytes) != 16 {
 		p.processor.logger.Error("rpc data format error")
 		return nilReturn
 	}
@@ -163,7 +156,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 					p.execEchoNode.callString,
 					err,
 				),
-				"",
+				GetStackString(1),
 			)
 		}
 		p.execEchoNode.indicator.count(
@@ -175,7 +168,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 
 	fnCache := p.execEchoNode.fnCache
 	if fnCache != nil {
-		ok = fnCache(&ctx, inStream, p.execEchoNode.echoMeta.handler)
+		ok = fnCache(ctx, inStream, p.execEchoNode.echoMeta.handler)
 	} else {
 		p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
 		for i := 1; i < len(p.execEchoNode.argTypes); i++ {
@@ -200,22 +193,22 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 				break
 			default:
 				if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
-					bVar := inStream.ReadRPCBytes(&ctx)
+					bVar := inStream.ReadRPCBytes(ctx)
 					ok = bVar.OK()
 					rv = reflect.ValueOf(bVar)
 				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCString).Type() {
-					sVar := inStream.ReadRPCString(&ctx)
+					sVar := inStream.ReadRPCString(ctx)
 					ok = sVar.OK()
 					rv = reflect.ValueOf(sVar)
 				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
-					aVar, success := inStream.ReadRPCArray(&ctx)
+					aVar, success := inStream.ReadRPCArray(ctx)
 					if !success {
 						ok = false
 					} else {
 						rv = reflect.ValueOf(aVar)
 					}
 				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCMap).Type() {
-					mVar, success := inStream.ReadRPCMap(&ctx)
+					mVar, success := inStream.ReadRPCMap(ctx)
 					if !success {
 						ok = false
 					} else {
@@ -241,7 +234,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 		inStream.SetReadPos(argStartPos)
 		remoteArgsType := make([]string, 0, 0)
 		for inStream.CanReadNext() {
-			val, ok := inStream.Read(&ctx)
+			val, ok := inStream.Read(ctx)
 			if !ok {
 				return ctx.writeError("rpc data format error", "")
 			}
@@ -697,12 +690,10 @@ func rpcProcessorProfile() {
 	n := 4
 	finish := make(chan bool, n)
 
-	speedCounter.Calculate()
-
 	for i := 0; i < n; i++ {
 		go func() {
 			//r := rand.New(rand.NewSource(rand.Int63()))
-			for j := 0; j < 1000000; j++ {
+			for j := 0; j < 10000000; j++ {
 				pools.put(stream)
 			}
 			finish <- true
@@ -713,6 +704,5 @@ func rpcProcessorProfile() {
 		<-finish
 	}
 
-	fmt.Println("SpeedCounter : ", speedCounter.Calculate())
 	fmt.Println("time used: ", time.Now().Sub(startTime))
 }

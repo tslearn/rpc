@@ -35,6 +35,8 @@ func (p *rpcContext) writeError(message string, debug string) Return {
 	if p.inner != nil {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
+			logger := serverThread.processor.logger
+			logger.Error(NewRPCErrorWithDebug(message, debug))
 			stream := serverThread.execStream
 			stream.SetWritePos(13)
 			stream.WriteBool(false)
