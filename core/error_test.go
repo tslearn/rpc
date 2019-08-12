@@ -28,16 +28,16 @@ func TestNewRPCErrorWithDebug(t *testing.T) {
 	var testCollection = [][2]interface{}{
 		{
 			NewRPCErrorWithDebug("", ""),
-			"[RPCError]\n",
+			"",
 		}, {
 			NewRPCErrorWithDebug("message", ""),
-			"[RPCError message]\n",
+			"message\n",
 		}, {
 			NewRPCErrorWithDebug("", "debug"),
-			"[RPCError]\nDebug:\n\tdebug\n",
+			"Debug:\n\tdebug\n",
 		}, {
 			NewRPCErrorWithDebug("message", "debug"),
-			"[RPCError message]\nDebug:\n\tdebug\n",
+			"message\nDebug:\n\tdebug\n",
 		},
 	}
 	for _, item := range testCollection {
