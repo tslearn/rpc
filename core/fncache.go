@@ -7,18 +7,29 @@ func getFCache(fn interface{}) fnCacheFunc {
 	}
 
 	switch stringKind {
-	case "B":
-		return fcB
+	case "I":
+		return fcI
+	case "S":
+		return fcS
 	}
 
 	return nil
 }
 
-func fcB(c Context, s *RPCStream, f interface{}) bool {
-	h, a := s.ReadBool()
-	if !a && !s.IsReadFinish() {
+func fcI(c Context, s *RPCStream, f interface{}) bool {
+	h, ok := s.ReadInt64()
+	if !ok || !s.IsReadFinish() {
 		return false
 	}
-	f.(func(Context, bool))(c, h)
+	f.(func(Context, int64) Return)(c, h)
+	return true
+}
+
+func fcS(c Context, s *RPCStream, f interface{}) bool {
+	h := s.ReadRPCString(c)
+	if !h.OK() || !s.IsReadFinish() {
+		return false
+	}
+	f.(func(Context, RPCString) Return)(c, h)
 	return true
 }

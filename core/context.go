@@ -37,11 +37,11 @@ func (p *rpcContext) writeError(message string, debug string) Return {
 		if serverThread != nil {
 			logger := serverThread.processor.logger
 			logger.Error(NewRPCErrorWithDebug(message, debug))
-			stream := serverThread.execStream
-			stream.SetWritePos(13)
-			stream.WriteBool(false)
-			stream.WriteString(message)
-			stream.WriteString(debug)
+			execStream := serverThread.execStream
+			execStream.SetWritePos(17)
+			execStream.WriteBool(false)
+			execStream.WriteString(message)
+			execStream.WriteString(debug)
 			serverThread.execSuccessful = false
 		}
 	}
@@ -54,7 +54,7 @@ func (p *rpcContext) OK(value interface{}) Return {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
 			stream := serverThread.execStream
-			stream.SetWritePos(13)
+			stream.SetWritePos(17)
 			stream.WriteBool(true)
 			if stream.Write(value) == RPCStreamWriteOK {
 				serverThread.execSuccessful = true

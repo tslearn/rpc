@@ -6,6 +6,11 @@ type fnCacheFunc = func(
 	fn interface{},
 ) bool
 
+type fnProcessorCallback = func(
+	stream *RPCStream,
+	success bool,
+)
+
 // Any common Any type
 type Any = interface{}
 

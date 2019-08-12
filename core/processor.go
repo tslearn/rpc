@@ -13,11 +13,11 @@ import (
 
 const (
 	RootName           = "$"
-	NumOfThreadPerSlot = 2
-	NumOfThreadGCSwipe = 2
+	NumOfThreadPerSlot = 8192
+	NumOfThreadGCSwipe = 4096
 	NumOfSlotPerCore   = 4
-	NumOfMinSlot       = 1
-	NumOfMaxSlot       = 1
+	NumOfMinSlot       = 4
+	NumOfMaxSlot       = 128
 )
 
 var (
@@ -29,21 +29,14 @@ var (
 ///////////////  rpcThread                                       ///////////////
 ////////////////////////////////////////////////////////////////////////////////
 type rpcThread struct {
-	processor       *rpcProcessor
-	ch              chan *RPCStream
-	execNS          int64
-	execStream      *RPCStream
-	execDepth       uint64
-	execFrom        string
-	execEchoNode    *rpcEchoNode
-	execArgs        []reflect.Value
-	execVarInt64    int64
-	execVarUint64   uint64
-	execVarFloat64  float64
-	execVarBool     bool
-	execVarRPCArray RPCArray
-	execVarRPCMap   RPCMap
-	execSuccessful  bool
+	processor      *rpcProcessor
+	ch             chan *RPCStream
+	execNS         int64
+	execStream     *RPCStream
+	execDepth      uint64
+	execEchoNode   *rpcEchoNode
+	execArgs       []reflect.Value
+	execSuccessful bool
 
 	execInnerContext *rpcInnerContext
 }
@@ -107,6 +100,7 @@ func (p *rpcThread) put(stream *RPCStream) {
 }
 
 func (p *rpcThread) eval(inStream *RPCStream) Return {
+	processor := p.processor
 	// create context
 	p.execInnerContext.stream = inStream
 	ctx := &rpcContext{inner: p.execInnerContext}
@@ -114,7 +108,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 	// if the header is error, we can not find the method to return
 	headerBytes, ok := inStream.ReadUnsafeBytes()
 	if !ok || len(headerBytes) != 16 {
-		p.processor.logger.Error("rpc data format error")
+		processor.logger.Error("rpc data format error")
 		return nilReturn
 	}
 	p.execStream.WriteBytes(headerBytes)
@@ -124,7 +118,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 	if !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execEchoNode, ok = p.processor.echosMap[echoPath]; !ok {
+	if p.execEchoNode, ok = processor.echosMap[echoPath]; !ok {
 		return ctx.Errorf("rpc echo path %s is not mounted", echoPath)
 	}
 
@@ -132,16 +126,17 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execDepth > p.processor.maxCallDepth {
+	if p.execDepth > processor.maxCallDepth {
 		return ctx.Errorf(
 			"rpc current call depth (%d) is overflow. limit(%d)",
 			p.execDepth,
-			p.processor.maxCallDepth,
+			processor.maxCallDepth,
 		)
 	}
 
 	// read from
-	if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
+	from, ok := inStream.ReadUnsafeString()
+	if !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
 
@@ -161,7 +156,7 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 		}
 		p.execEchoNode.indicator.count(
 			p.getRunDuration(),
-			p.execFrom,
+			from,
 			p.execSuccessful,
 		)
 	}()
@@ -176,20 +171,36 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 
 			switch p.execEchoNode.argTypes[i].Kind() {
 			case reflect.Int64:
-				p.execVarInt64, ok = inStream.ReadInt64()
-				rv = reflect.ValueOf(p.execVarInt64)
+				iVar, success := inStream.ReadInt64()
+				if !success {
+					ok = false
+				} else {
+					rv = reflect.ValueOf(iVar)
+				}
 				break
 			case reflect.Uint64:
-				p.execVarUint64, ok = inStream.ReadUint64()
-				rv = reflect.ValueOf(p.execVarUint64)
+				uVar, success := inStream.ReadUint64()
+				if !success {
+					ok = false
+				} else {
+					rv = reflect.ValueOf(uVar)
+				}
 				break
 			case reflect.Float64:
-				p.execVarFloat64, ok = inStream.ReadFloat64()
-				rv = reflect.ValueOf(p.execVarFloat64)
+				fVar, success := inStream.ReadFloat64()
+				if !success {
+					ok = false
+				} else {
+					rv = reflect.ValueOf(fVar)
+				}
 				break
 			case reflect.Bool:
-				p.execVarBool, ok = inStream.ReadBool()
-				rv = reflect.ValueOf(p.execVarBool)
+				bVar, success := inStream.ReadBool()
+				if !success {
+					ok = false
+				} else {
+					rv = reflect.ValueOf(bVar)
+				}
 				break
 			default:
 				if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
@@ -268,6 +279,10 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 	if fnCache == nil {
 		p.execEchoNode.reflectFn.Call(p.execArgs)
 	}
+
+	processor.callback(p.execStream, p.execSuccessful)
+	inStream.Reset()
+	p.execStream = inStream
 
 	return nilReturn
 }
@@ -356,9 +371,11 @@ func (p *rpcThreadSlot) put(stream *RPCStream) {
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////  rpcProcessor                                    ///////////////
 ////////////////////////////////////////////////////////////////////////////////
+
 type rpcProcessor struct {
 	isRunning    bool
 	logger       *Logger
+	callback     fnProcessorCallback
 	echosMap     map[string]*rpcEchoNode
 	servicesMap  map[string]*rpcServiceNode
 	slots        []*rpcThreadSlot
@@ -371,6 +388,7 @@ func newProcessor(
 	logger *Logger,
 	maxNodeDepth uint,
 	maxCallDepth uint,
+	callback fnProcessorCallback,
 ) *rpcProcessor {
 	numOfSlots := uint32(runtime.NumCPU() * NumOfSlotPerCore)
 	if numOfSlots < NumOfMinSlot {
@@ -383,6 +401,7 @@ func newProcessor(
 	ret := &rpcProcessor{
 		isRunning:    false,
 		logger:       logger,
+		callback:     callback,
 		echosMap:     make(map[string]*rpcEchoNode),
 		servicesMap:  make(map[string]*rpcServiceNode),
 		slots:        make([]*rpcThreadSlot, numOfSlots, numOfSlots),
@@ -677,32 +696,4 @@ func (p *rpcProcessor) mountEcho(
 	)
 
 	return nil
-}
-
-func rpcProcessorProfile() {
-	stream := NewRPCStream()
-	pools := newProcessor(NewLogger(), 16, 16)
-	pools.start()
-	time.Sleep(3 * time.Second)
-
-	startTime := time.Now()
-
-	n := 4
-	finish := make(chan bool, n)
-
-	for i := 0; i < n; i++ {
-		go func() {
-			//r := rand.New(rand.NewSource(rand.Int63()))
-			for j := 0; j < 10000000; j++ {
-				pools.put(stream)
-			}
-			finish <- true
-		}()
-	}
-
-	for i := 0; i < n; i++ {
-		<-finish
-	}
-
-	fmt.Println("time used: ", time.Now().Sub(startTime))
 }
