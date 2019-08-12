@@ -2,7 +2,6 @@
 
 ### 性能测试
 ```
-$ go tool pprof cpu.prof
-(pprof) web
-(pprof) exit
+$ go get -u github.com/google/pprof
+$ pprof -web cpu.prof
 ```

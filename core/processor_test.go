@@ -12,7 +12,7 @@ var service = newServiceMeta().
 		ctx Context,
 		i int64,
 	) Return {
-		return ctx.Errorf("error %s", "ts")
+		return ctx.OK(i)
 	}).
 	Echo("sayGoodBye", true, func(
 		ctx Context,
