@@ -2,6 +2,6 @@ package lab
 
 import "testing"
 
-func TestThreadPoolProfile(t *testing.T) {
+func BenchmarkThreadPoolProfile(b *testing.B) {
 	rpcProcessorProfile()
 }
