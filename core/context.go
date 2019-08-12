@@ -5,7 +5,7 @@ import (
 )
 
 type rpcInnerContext struct {
-	stream       *RPCStream
+	stream       *rpcStream
 	serverThread *rpcThread
 	clientThread *uint64
 }
@@ -16,7 +16,7 @@ type rpcContext struct {
 
 type Context = *rpcContext
 
-func (p *rpcContext) getCacheStream() *RPCStream {
+func (p *rpcContext) getCacheStream() *rpcStream {
 	if p != nil && p.inner != nil {
 		return p.inner.stream
 	}

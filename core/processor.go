@@ -30,9 +30,9 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 type rpcThread struct {
 	processor      *rpcProcessor
-	ch             chan *RPCStream
+	ch             chan *rpcStream
 	execNS         int64
-	execStream     *RPCStream
+	execStream     *rpcStream
 	execDepth      uint64
 	execEchoNode   *rpcEchoNode
 	execArgs       []reflect.Value
@@ -44,7 +44,7 @@ type rpcThread struct {
 func newThread(processor *rpcProcessor) *rpcThread {
 	ret := rpcThread{
 		processor:  processor,
-		ch:         make(chan *RPCStream),
+		ch:         make(chan *rpcStream),
 		execArgs:   make([]reflect.Value, 0, 16),
 		execStream: NewRPCStream(),
 		execNS:     0,
@@ -95,11 +95,11 @@ func (p *rpcThread) stop() {
 	close(p.ch)
 }
 
-func (p *rpcThread) put(stream *RPCStream) {
+func (p *rpcThread) put(stream *rpcStream) {
 	p.ch <- stream
 }
 
-func (p *rpcThread) eval(inStream *RPCStream) Return {
+func (p *rpcThread) eval(inStream *rpcStream) Return {
 	processor := p.processor
 	// create context
 	p.execInnerContext.stream = inStream
@@ -253,9 +253,9 @@ func (p *rpcThread) eval(inStream *RPCStream) Return {
 			if val == nil {
 				remoteArgsType = append(remoteArgsType, "nil")
 			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeBytes).Type() {
-				remoteArgsType = append(remoteArgsType, "RPCBytes")
+				remoteArgsType = append(remoteArgsType, "rpcBytes")
 			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeString).Type() {
-				remoteArgsType = append(remoteArgsType, "RPCString")
+				remoteArgsType = append(remoteArgsType, "rpcString")
 			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeArray).Type() {
 				remoteArgsType = append(remoteArgsType, "RPCArray")
 			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeMap).Type() {
@@ -362,7 +362,7 @@ func (p *rpcThreadSlot) gc() {
 	p.gcFinish <- true
 }
 
-func (p *rpcThreadSlot) put(stream *RPCStream) {
+func (p *rpcThreadSlot) put(stream *rpcStream) {
 	thread := <-p.freeThreads
 	thread.toRun()
 	thread.put(stream)
@@ -451,7 +451,7 @@ func (p *rpcProcessor) stop() bool {
 	}
 }
 
-func (p *rpcProcessor) put(stream *RPCStream) bool {
+func (p *rpcProcessor) put(stream *rpcStream) bool {
 	// put stream in a random slot
 	slot := p.slots[int(GetRandUint32())%len(p.slots)]
 	if slot != nil {
@@ -664,9 +664,9 @@ func (p *rpcProcessor) mountEcho(
 		argTypes[i] = fn.Type().In(i)
 
 		if argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
-			argStrings[i] = "RPCBytes"
+			argStrings[i] = "rpcBytes"
 		} else if argTypes[i] == reflect.ValueOf(vRPCString).Type() {
-			argStrings[i] = "RPCString"
+			argStrings[i] = "rpcString"
 		} else if argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
 			argStrings[i] = "RPCArray"
 		} else if argTypes[i] == reflect.ValueOf(vRPCMap).Type() {

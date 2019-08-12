@@ -16,7 +16,7 @@ var service = newServiceMeta().
 	}).
 	Echo("sayGoodBye", true, func(
 		ctx Context,
-		name RPCString,
+		name rpcString,
 	) Return {
 		return nil
 	})
@@ -26,7 +26,7 @@ func getProcessor() *rpcProcessor {
 		NewLogger(),
 		16,
 		16,
-		func(stream *RPCStream, success bool) {
+		func(stream *rpcStream, success bool) {
 			stream.Release()
 		},
 	)

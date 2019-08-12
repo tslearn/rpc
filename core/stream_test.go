@@ -10,7 +10,7 @@ import (
 var unusedBytes = make([]byte, 40960, 40960)
 
 func fillTestStream(
-	stream *RPCStream,
+	stream *rpcStream,
 	outerBuffer []byte,
 	startPos int,
 	data interface{},
@@ -27,7 +27,7 @@ func fillTestStream(
 }
 
 func fillTestStreamByBuffer(
-	stream *RPCStream,
+	stream *rpcStream,
 	startPos int,
 	buffer []byte,
 ) {

@@ -13,8 +13,8 @@ import (
 var (
 	vRPCArray  RPCArray
 	vRPCMap    RPCMap
-	vRPCBytes  RPCBytes
-	vRPCString RPCString
+	vRPCBytes  rpcBytes
+	vRPCString rpcString
 
 	readTypeString string
 	readTypeBytes  []byte
@@ -262,8 +262,8 @@ func isNil(val interface{}) (ret bool) {
 }
 
 func equalRPCString(left interface{}, right interface{}) bool {
-	l := RPCString{}
-	r := RPCString{}
+	l := rpcString{}
+	r := rpcString{}
 
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -273,16 +273,16 @@ func equalRPCString(left interface{}, right interface{}) bool {
 
 	switch left.(type) {
 	case string:
-		l = RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(left.(string))}
-	case RPCString:
-		l = left.(RPCString)
+		l = rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(left.(string))}
+	case rpcString:
+		l = left.(rpcString)
 	}
 
 	switch right.(type) {
 	case string:
-		r = RPCString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(right.(string))}
-	case RPCString:
-		r = right.(RPCString)
+		r = rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(right.(string))}
+	case rpcString:
+		r = right.(rpcString)
 	default:
 		return false
 	}
@@ -318,8 +318,8 @@ func equalBytes(left []byte, right []byte) bool {
 }
 
 func equalRPCBytes(left interface{}, right interface{}) bool {
-	l := RPCBytes{}
-	r := RPCBytes{}
+	l := rpcBytes{}
+	r := rpcBytes{}
 
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -329,15 +329,15 @@ func equalRPCBytes(left interface{}, right interface{}) bool {
 
 	switch left.(type) {
 	case []byte:
-		l = RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: left.([]byte)}
-	case RPCBytes:
-		l = left.(RPCBytes)
+		l = rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: left.([]byte)}
+	case rpcBytes:
+		l = left.(rpcBytes)
 	}
 	switch right.(type) {
 	case []byte:
-		r = RPCBytes{ctx: ctx, status: rpcStatusAllocated, bytes: right.([]byte)}
-	case RPCBytes:
-		r = right.(RPCBytes)
+		r = rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: right.([]byte)}
+	case rpcBytes:
+		r = right.(rpcBytes)
 	default:
 		return false
 	}
@@ -436,11 +436,11 @@ func equals(left interface{}, right interface{}) bool {
 	switch left.(type) {
 	case string:
 		return equalRPCString(left, right)
-	case RPCString:
+	case rpcString:
 		return equalRPCString(left, right)
 	case []byte:
 		return equalRPCBytes(left, right)
-	case RPCBytes:
+	case rpcBytes:
 		return equalRPCBytes(left, right)
 	case RPCArray:
 		return equalRPCArray(left, right)
@@ -465,8 +465,8 @@ func containsRPCString(left interface{}, right interface{}) int {
 	switch left.(type) {
 	case string:
 		l, ok = left.(string)
-	case RPCString:
-		l, ok = left.(RPCString).ToString()
+	case rpcString:
+		l, ok = left.(rpcString).ToString()
 	}
 	if !ok {
 		return -1
@@ -474,8 +474,8 @@ func containsRPCString(left interface{}, right interface{}) int {
 	switch right.(type) {
 	case string:
 		r, ok = right.(string)
-	case RPCString:
-		r, ok = right.(RPCString).ToString()
+	case rpcString:
+		r, ok = right.(rpcString).ToString()
 	default:
 		return -1
 	}
@@ -497,8 +497,8 @@ func containsRPCBytes(left interface{}, right interface{}) int {
 	switch left.(type) {
 	case []byte:
 		l, ok = left.([]byte)
-	case RPCBytes:
-		l, ok = left.(RPCBytes).ToBytes()
+	case rpcBytes:
+		l, ok = left.(rpcBytes).ToBytes()
 	}
 	if !ok {
 		return -1
@@ -506,8 +506,8 @@ func containsRPCBytes(left interface{}, right interface{}) int {
 	switch right.(type) {
 	case []byte:
 		r, ok = right.([]byte)
-	case RPCBytes:
-		r, ok = right.(RPCBytes).ToBytes()
+	case rpcBytes:
+		r, ok = right.(rpcBytes).ToBytes()
 	default:
 		return -1
 	}
@@ -553,11 +553,11 @@ func contains(left interface{}, right interface{}) int {
 	switch left.(type) {
 	case string:
 		return containsRPCString(left, right)
-	case RPCString:
+	case rpcString:
 		return containsRPCString(left, right)
 	case []byte:
 		return containsRPCBytes(left, right)
-	case RPCBytes:
+	case rpcBytes:
 		return containsRPCBytes(left, right)
 	case RPCArray:
 		return containsRPCArray(left, right)

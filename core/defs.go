@@ -2,12 +2,12 @@ package core
 
 type fnCacheFunc = func(
 	ctx Context,
-	stream *RPCStream,
+	stream *rpcStream,
 	fn interface{},
 ) bool
 
 type fnProcessorCallback = func(
-	stream *RPCStream,
+	stream *rpcStream,
 	success bool,
 )
 

@@ -16,7 +16,7 @@ func getFCache(fn interface{}) fnCacheFunc {
 	return nil
 }
 
-func fcI(c Context, s *RPCStream, f interface{}) bool {
+func fcI(c Context, s *rpcStream, f interface{}) bool {
 	h, ok := s.ReadInt64()
 	if !ok || !s.IsReadFinish() {
 		return false
@@ -25,11 +25,11 @@ func fcI(c Context, s *RPCStream, f interface{}) bool {
 	return true
 }
 
-func fcS(c Context, s *RPCStream, f interface{}) bool {
+func fcS(c Context, s *rpcStream, f interface{}) bool {
 	h := s.ReadRPCString(c)
 	if !h.OK() || !s.IsReadFinish() {
 		return false
 	}
-	f.(func(Context, RPCString) Return)(c, h)
+	f.(func(Context, rpcString) Return)(c, h)
 	return true
 }
