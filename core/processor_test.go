@@ -1,6 +1,8 @@
 package core
 
 import (
+	"os"
+	"runtime/pprof"
 	"testing"
 	"time"
 )
@@ -60,7 +62,11 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.N = 50000000
-	b.SetParallelism(4096)
+	b.SetParallelism(1024)
+
+	file, _ := os.Create("../cpu.prof")
+	pprof.StartCPUProfile(file)
+
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewRPCStream()
@@ -73,4 +79,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			processor.put(stream)
 		}
 	})
+
+	pprof.StopCPUProfile()
 }
