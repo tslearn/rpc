@@ -42,7 +42,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	b.N = 50000000
+	b.N = 20000000
 	b.SetParallelism(1024)
 
 	file, _ := os.Create("../cpu.prof")
