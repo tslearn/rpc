@@ -169,7 +169,6 @@ func TestLogger_Debug(t *testing.T) {
 		"(\\s)Debug:(\\s)message\n$"
 
 	fmt.Println(buf.String())
-
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 

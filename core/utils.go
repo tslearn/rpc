@@ -12,7 +12,7 @@ import (
 
 var (
 	vRPCArray  RPCArray
-	vRPCMap    RPCMap
+	vRPCMap    rpcMap
 	vRPCBytes  rpcBytes
 	vRPCString rpcString
 
@@ -227,7 +227,7 @@ func toRPCArray(val []interface{}, ctx *rpcContext) RPCArray {
 	return ret
 }
 
-func toRPCMap(val map[string]interface{}, ctx *rpcContext) RPCMap {
+func toRPCMap(val map[string]interface{}, ctx *rpcContext) rpcMap {
 	if val == nil {
 		return nilRPCMap
 	}
@@ -385,8 +385,8 @@ func equalRPCArray(left interface{}, right interface{}) bool {
 }
 
 func equalRPCMap(left interface{}, right interface{}) bool {
-	l := left.(RPCMap)
-	r, ok := right.(RPCMap)
+	l := left.(rpcMap)
+	r, ok := right.(rpcMap)
 	if !ok {
 		return false
 	}
@@ -444,7 +444,7 @@ func equals(left interface{}, right interface{}) bool {
 		return equalRPCBytes(left, right)
 	case RPCArray:
 		return equalRPCArray(left, right)
-	case RPCMap:
+	case rpcMap:
 		return equalRPCMap(left, right)
 	case RPCError:
 		lError := left.(RPCError)

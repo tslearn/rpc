@@ -587,10 +587,10 @@ func Test_RPCMap_Set(t *testing.T) {
 			assert(map100.SetRPCArray(name, value.(RPCArray))).IsTrue()
 			assert(invalidMap.SetRPCArray(name, value.(RPCArray))).IsFalse()
 		case "rpcMap":
-			assert(map0.SetRPCMap(name, value.(RPCMap))).IsTrue()
-			assert(map16.SetRPCMap(name, value.(RPCMap))).IsTrue()
-			assert(map100.SetRPCMap(name, value.(RPCMap))).IsTrue()
-			assert(invalidMap.SetRPCMap(name, value.(RPCMap))).IsFalse()
+			assert(map0.SetRPCMap(name, value.(rpcMap))).IsTrue()
+			assert(map16.SetRPCMap(name, value.(rpcMap))).IsTrue()
+			assert(map100.SetRPCMap(name, value.(rpcMap))).IsTrue()
+			assert(invalidMap.SetRPCMap(name, value.(rpcMap))).IsFalse()
 		}
 
 		assert(map0.Set(name, value)).IsTrue()

@@ -107,7 +107,7 @@ func getRandomStringArrayTestData(n uint32) RPCArray {
 	return ret
 }
 
-func getRandomStringMapTestData(n uint32) RPCMap {
+func getRandomStringMapTestData(n uint32) rpcMap {
 	ret := newRPCMap(&rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -956,7 +956,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 	pubBytes := make([]byte, 40960, 40960)
 	stream := NewRPCStream()
 
-	testRandomCollection := []RPCMap{
+	testRandomCollection := []rpcMap{
 		getRandomStringMapTestData(0),
 		getRandomStringMapTestData(1),
 		getRandomStringMapTestData(255),
@@ -1054,7 +1054,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			rpcMap := testData[0].(RPCMap)
+			rpcMap := testData[0].(rpcMap)
 			if rpcMap.Size() <= 1 {
 				assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
 					Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)

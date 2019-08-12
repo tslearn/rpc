@@ -408,7 +408,7 @@ func (p rpcArray) AppendRPCArray(value RPCArray) bool {
 }
 
 // GetRPCMap ...
-func (p rpcArray) GetRPCMap(index int) (RPCMap, bool) {
+func (p rpcArray) GetRPCMap(index int) (rpcMap, bool) {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadRPCMap(p.ctx)
@@ -417,7 +417,7 @@ func (p rpcArray) GetRPCMap(index int) (RPCMap, bool) {
 }
 
 // SetRPCMap ...
-func (p rpcArray) SetRPCMap(index int, value RPCMap) bool {
+func (p rpcArray) SetRPCMap(index int, value rpcMap) bool {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		pos := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
@@ -429,7 +429,7 @@ func (p rpcArray) SetRPCMap(index int, value RPCMap) bool {
 }
 
 // AppendRPCMap ...
-func (p rpcArray) AppendRPCMap(value RPCMap) bool {
+func (p rpcArray) AppendRPCMap(value rpcMap) bool {
 	if in, s := p.getIS(); s != nil {
 		pos := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
@@ -569,11 +569,9 @@ type rpcMap struct {
 	in  *rpcMapInner
 }
 
-type RPCMap = rpcMap
-
-func newRPCMap(ctx *rpcContext) RPCMap {
+func newRPCMap(ctx *rpcContext) rpcMap {
 	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
-		return RPCMap{
+		return rpcMap{
 			ctx: ctx,
 			in:  rpcMapInnerCache.Get().(*rpcMapInner),
 		}
@@ -814,7 +812,7 @@ func (p rpcMap) SetRPCArray(name string, value RPCArray) bool {
 }
 
 // GetRPCMap ...
-func (p rpcMap) GetRPCMap(name string) (RPCMap, bool) {
+func (p rpcMap) GetRPCMap(name string) (rpcMap, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
 		if idx := in.getIndex(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
@@ -825,7 +823,7 @@ func (p rpcMap) GetRPCMap(name string) (RPCMap, bool) {
 }
 
 // SetRPCMap ...
-func (p rpcMap) SetRPCMap(name string, value RPCMap) bool {
+func (p rpcMap) SetRPCMap(name string, value rpcMap) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
