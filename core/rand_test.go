@@ -38,7 +38,7 @@ func BenchmarkGoroutineFixedRandom(b *testing.B) {
 	//sum := 0
 
 	//b.SetParallelism(100)
-
+	b.N = 100000000
 	b.RunParallel(func(pb *testing.PB) {
 		r := rand.New(rand.NewSource(rand.Int63()))
 		for pb.Next() {
