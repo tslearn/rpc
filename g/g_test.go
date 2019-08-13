@@ -22,7 +22,11 @@ func TestG(t *testing.T) {
 		}
 
 		if gp2 == gp1 {
-			t.Fatalf("every living G must be different. [gp1:%p] [gp2:%p]", gp1, gp2)
+			t.Fatalf(
+				"every living G must be different. [gp1:%p] [gp2:%p]",
+				gp1,
+				gp2,
+			)
 		}
 	})
 }
