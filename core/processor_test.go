@@ -1,8 +1,6 @@
 package core
 
 import (
-	"fmt"
-	"github.com/huandu/go-tls/g"
 	"os"
 	"runtime/pprof"
 	"testing"
@@ -51,8 +49,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	pprof.StartCPUProfile(file)
 
 	b.RunParallel(func(pb *testing.PB) {
-
-		fmt.Println(g.G())
 		for pb.Next() {
 			stream := NewRPCStream()
 			byte16 := make([]byte, 16, 16)
@@ -66,22 +62,4 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	})
 
 	pprof.StopCPUProfile()
-}
-
-func BenchmarkRpcProcessor_G(b *testing.B) {
-	//c := 0
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.N = 500000000
-	b.SetParallelism(12)
-	// count := uint64(0)
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			//if &c == nil {
-			//  fmt.Println("hi")
-			//  //atomic.AddUint64(&count, 1)
-			//}
-		}
-	})
-	//fmt.Println(count)
 }

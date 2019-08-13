@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/g/g.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/g_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/getg_386.s" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/getg_amd64.s" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/getg_amd64p32.s" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/getg_arm.s" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/getg_arm64.s" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/g/go_tls.h" afterDir="false" />
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/processor_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -29,11 +23,11 @@
           <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="427">
-              <caret line="30" column="21" selection-start-line="30" selection-start-column="21" selection-end-line="30" selection-end-column="21" />
+            <state relative-caret-position="74">
+              <caret line="45" selection-start-line="45" selection-end-line="45" />
               <folding>
                 <element signature="e#14#103#0" expanded="true" />
               </folding>
@@ -42,12 +36,60 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/go.mod">
+        <entry file="file://$PROJECT_DIR$/g/getg_arm.s">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/core/processor_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="30" lean-forward="true" selection-start-column="7" selection-end-column="30" />
+            <state relative-caret-position="1495">
+              <caret line="65" selection-start-line="65" selection-end-line="65" />
+              <folding>
+                <element signature="e#14#103#0" expanded="true" />
+              </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/g/getg_amd64.s">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="276">
+              <caret line="12" selection-start-line="12" selection-end-line="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/g/go_tls.h">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/go.mod">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="69">
+              <caret line="3" selection-start-line="3" selection-end-line="3" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/README.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="115">
+                <caret line="5" column="21" selection-start-line="5" selection-start-column="21" selection-end-line="5" selection-end-column="21" />
+              </first_editor>
+              <second_editor />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/go.sum">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -80,6 +122,7 @@
       <find>Echo handler 2nd argument</find>
       <find>ret</find>
       <find>getg</find>
+      <find>github.com/huandu</find>
     </findStrings>
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.12.7/libexec" />
@@ -95,8 +138,6 @@
         <option value="$PROJECT_DIR$/define.go" />
         <option value="$PROJECT_DIR$/error.go" />
         <option value="$PROJECT_DIR$/service.go" />
-        <option value="$PROJECT_DIR$/go.mod" />
-        <option value="$PROJECT_DIR$/go.sum" />
         <option value="$PROJECT_DIR$/monitor.go" />
         <option value="$PROJECT_DIR$/fncache.go" />
         <option value="$PROJECT_DIR$/defs.go" />
@@ -131,8 +172,10 @@
         <option value="$PROJECT_DIR$/core/logger_test.go" />
         <option value="$PROJECT_DIR$/core/utils.go" />
         <option value="$PROJECT_DIR$/core/rand_test.go" />
-        <option value="$PROJECT_DIR$/core/processor_test.go" />
         <option value="$PROJECT_DIR$/main.go" />
+        <option value="$PROJECT_DIR$/core/processor_test.go" />
+        <option value="$PROJECT_DIR$/go.mod" />
+        <option value="$PROJECT_DIR$/go.sum" />
       </list>
     </option>
   </component>
@@ -156,29 +199,16 @@
             <path>
               <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
               <item name="rpcc" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
+              <item name="rpcc" type="462c0819:PsiDirectoryNode" />
               <item name="g" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
               <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-            </path>
-            <path>
-              <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="Go Modules &lt;github.com/tslearn/rpcc&gt;" type="20ee2d1f:SyntheticLibraryElementNode" />
-            </path>
-            <path>
-              <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="Go Modules &lt;github.com/tslearn/rpcc&gt;" type="20ee2d1f:SyntheticLibraryElementNode" />
-              <item name="go-tls@v0.0.0-20190320055402-ef90f27f86a2" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="rpcc" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="Go Modules &lt;github.com/tslearn/rpcc&gt;" type="20ee2d1f:SyntheticLibraryElementNode" />
-              <item name="go-tls@v0.0.0-20190320055402-ef90f27f86a2" type="462c0819:PsiDirectoryNode" />
-              <item name="g" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -226,7 +256,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Build.go build main.go">
+  <component name="RunManager" selected="Go Test.go test rpcc">
     <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -281,18 +311,15 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.go test rpcc" />
         <item itemvalue="Go Build.go build main.go" />
         <item itemvalue="Go Test.BenchmarkRpcProcessor_G in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.BenchmarkGoroutineFixedRandom in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.go test rpcc" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="BenchmarkRpcProcessor_G_in_github_com_tslearn_rpcc_core - 2019.08.12 at 22h 10m 17s.xml">
-      <configuration name="BenchmarkRpcProcessor_G in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="BenchmarkRpcProcessor_G_in_github_com_tslearn_rpcc_core - 2019.08.12 at 22h 10m 47s.xml">
       <configuration name="BenchmarkRpcProcessor_G in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -320,6 +347,9 @@
     <history-entry file="BenchmarkRpcProcessor_G_in_github_com_tslearn_rpcc_core - 2019.08.12 at 22h 17m 17s.xml">
       <configuration name="BenchmarkRpcProcessor_G in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
+    <history-entry file="go_test_rpcc - 2019.08.13 at 09h 25m 03s.xml">
+      <configuration name="go test rpcc" configurationId="GoTestRunConfiguration" />
+    </history-entry>
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -334,12 +364,12 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.18681319" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18681319" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Messages" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.35892117" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.36618257" />
       <window_info anchor="bottom" id="Cvs" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Docker" order="4" show_stripe_button="false" />
@@ -351,7 +381,7 @@
       <window_info anchor="right" id="Terminal" order="4" sideWeight="0.39695433" visible="true" weight="0.36630037" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.6030457" side_tool="true" weight="0.36630037" />
-      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.6030457" side_tool="true" visible="true" weight="0.36630037" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.6030457" side_tool="true" visible="true" weight="0.36630037" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.50152284" side_tool="true" weight="0.33272284" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.71979696" side_tool="true" weight="0.35409036" />
@@ -372,7 +402,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/core/processor_test.go</url>
-          <line>69</line>
+          <line>65</line>
           <properties />
           <option name="timeStamp" value="12" />
         </line-breakpoint>
@@ -383,30 +413,6 @@
     <SUITE FILE_PATH="coverage/rpcc$go_test_rpcc.out" NAME="go test rpcc Coverage Results" MODIFIED="1565226740413" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/time/time.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="14260">
-          <caret line="623" column="14" selection-start-line="623" selection-start-column="14" selection-end-line="623" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/chan.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="16330">
-          <caret line="714" selection-start-line="714" selection-end-line="714" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/go.sum">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/reflect/type.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="430">
-          <caret line="992" selection-start-line="992" selection-end-line="992" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/reflect/value.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="308">
@@ -481,19 +487,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="296">
           <caret line="183" column="14" selection-start-line="183" selection-start-column="14" selection-end-line="183" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cpu.prof">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="115">
-            <caret line="5" column="21" selection-start-line="5" selection-start-column="21" selection-end-line="5" selection-end-column="21" />
-          </first_editor>
-          <second_editor />
         </state>
       </provider>
     </entry>
@@ -650,16 +643,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/processor_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="606">
-          <caret line="71" column="4" selection-start-line="71" selection-start-column="4" selection-end-line="71" selection-end-column="4" />
-          <folding>
-            <element signature="e#14#66#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/sync/atomic/value.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="690">
@@ -719,22 +702,61 @@
     <entry file="file://$PROJECT_DIR$/g/g.go">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/go.mod">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="30" lean-forward="true" selection-start-column="7" selection-end-column="30" />
+    <entry file="file://$PROJECT_DIR$/g/go_tls.h">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="115">
+            <caret line="5" column="21" selection-start-line="5" selection-start-column="21" selection-end-line="5" selection-end-column="21" />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/cpu.prof">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="427">
-          <caret line="30" column="21" selection-start-line="30" selection-start-column="21" selection-end-line="30" selection-end-column="21" />
+        <state relative-caret-position="74">
+          <caret line="45" selection-start-line="45" selection-end-line="45" />
           <folding>
             <element signature="e#14#103#0" expanded="true" />
           </folding>
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/g/getg_arm.s">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/g/getg_amd64.s">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="276">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/processor_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1495">
+          <caret line="65" selection-start-line="65" selection-end-line="65" />
+          <folding>
+            <element signature="e#14#103#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/go.mod">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="69">
+          <caret line="3" selection-start-line="3" selection-end-line="3" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/go.sum">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>
