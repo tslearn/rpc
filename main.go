@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"runtime"
 	"sync"
@@ -64,6 +65,10 @@ func routine(idx int) {
 }
 
 func main() {
+	sb := bytes.Buffer{}
+
+	sb.String()
+
 	runtime.GC()
 
 	for n := 0; n < loop; n++ {
