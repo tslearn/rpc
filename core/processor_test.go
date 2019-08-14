@@ -10,15 +10,9 @@ import (
 var service = newServiceMeta().
 	Echo("sayHello", true, func(
 		ctx Context,
-		i int64,
-	) Return {
-		return ctx.OK(i)
-	}).
-	Echo("sayGoodBye", true, func(
-		ctx Context,
 		name string,
 	) Return {
-		return nil
+		return ctx.OK(name)
 	})
 
 func getProcessor() *rpcProcessor {
@@ -33,11 +27,9 @@ func getProcessor() *rpcProcessor {
 }
 
 func BenchmarkRpcProcessor_Execute(b *testing.B) {
-
 	processor := getProcessor()
 	processor.start()
 	processor.AddService("user", service)
-
 	time.Sleep(2 * time.Second)
 
 	b.ResetTimer()
@@ -56,7 +48,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
-			stream.WriteInt64(3)
+			stream.WriteString("tianshuo")
 			processor.put(stream)
 		}
 	})
