@@ -2,6 +2,7 @@ package core
 
 import (
 	"testing"
+	"unsafe"
 )
 
 // test IsNil fail
@@ -181,4 +182,222 @@ func Test_reportFail(t *testing.T) {
 	target.Equals(4)
 
 	assert(<-target.t.(*testAssertFail).ch).IsTrue()
+}
+
+func Test_isNil(t *testing.T) {
+	assert := NewAssert(t)
+
+	assert(isNil(nil)).IsTrue()
+	assert(isNil((*rpcStream)(nil))).IsTrue()
+	assert(isNil((*rpcArray)(nil))).IsTrue()
+	assert(isNil((*rpcMap)(nil))).IsTrue()
+
+	assert(isNil(nilRPCArray)).IsFalse()
+	assert(isNil(nilRPCMap)).IsFalse()
+
+	unsafeNil := unsafe.Pointer(nil)
+	uintptrNil := uintptr(0)
+
+	assert(isNil(unsafeNil)).IsTrue()
+	assert(isNil(uintptrNil)).IsTrue()
+}
+
+func Test_equals(t *testing.T) {
+	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	loggerPtr := NewLogger()
+	testCollection := [][3]interface{}{
+		{true, true, true},
+		{false, false, true},
+		{false, true, false},
+		{false, 0, false},
+		{true, 1, false},
+		{true, nil, false},
+		{0, 0, true},
+		{3, 4, false},
+		{3, int(3), true},
+		{3, int32(3), false},
+		{3, nil, false},
+		{3.14, 3.14, true},
+		{3.14, 3.15, false},
+		{3.14, float32(3.14), false},
+		{3.14, float64(3.14), true},
+		{3.14, nil, false},
+		{"", "", true},
+		{"abc", "abc", true},
+		{"abc", "ab", false},
+		{"", nil, false},
+		{"", 6, false},
+
+		{[]byte{}, []byte{}, true},
+		{[]byte{12}, []byte{12}, true},
+		{[]byte{12, 13}, []byte{12, 13}, true},
+		{[]byte{12, 13}, 12, false},
+		{[]byte{13, 12}, []byte{12, 13}, false},
+		{[]byte{12}, []byte{12, 13}, false},
+		{[]byte{12, 13}, []byte{12}, false},
+		{[]byte{13, 12}, nil, false},
+		{[]byte{}, nil, false},
+
+		{nilRPCMap, nilRPCMap, true},
+		{toRPCMap(map[string]interface{}{}, ctx), toRPCMap(map[string]interface{}{}, ctx), true},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			true,
+		},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCArray([]interface{}{9007199254740991}, ctx),
+			false,
+		},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}, ctx),
+			false,
+		},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991, "3": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			false,
+		},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(map[string]interface{}{"test": 9007199254740990}, ctx),
+			false,
+		},
+		{
+			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
+			toRPCMap(nil, ctx),
+			false,
+		},
+		{toRPCMap(map[string]interface{}{}, ctx), nil, false},
+		{nilRPCArray, nilRPCArray, true},
+		{toRPCArray([]interface{}{}, ctx), toRPCArray([]interface{}{}, ctx), true},
+		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1}, ctx), true},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1, 2}, ctx), true},
+		{toRPCArray([]interface{}{1, 2}, ctx), 3, false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1}, ctx), false},
+		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1, 2}, ctx), false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{2, 1}, ctx), false},
+		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray(nil, ctx), false},
+		{toRPCArray([]interface{}{}, ctx), toRPCArray(nil, ctx), false},
+
+		{nil, nil, true},
+		{nil, (*Logger)(nil), true},
+		{(*Logger)(nil), nil, true},
+		{nil, []interface{}(nil), true},
+		{nil, map[string]interface{}(nil), true},
+		{nil, []byte(nil), true},
+		{nil, []byte{}, false},
+		{rpcArray{}, nil, false},
+		{rpcMap{}, nil, false},
+		{[]byte{}, nil, false},
+
+		{NewRPCErrorWithDebug("m1", "d1"), NewRPCErrorWithDebug("m1", "d1"), true},
+		{NewRPCErrorWithDebug("", "d1"), NewRPCErrorWithDebug("m1", "d1"), false},
+		{NewRPCErrorWithDebug("m1", ""), NewRPCErrorWithDebug("m1", "d1"), false},
+		{NewRPCErrorWithDebug("m1", ""), nil, false},
+		{NewRPCErrorWithDebug("m1", ""), 3, false},
+
+		{loggerPtr, loggerPtr, true},
+		{NewLogger(), NewLogger(), false},
+
+		{nilRPCArray, nilRPCArray, true},
+		{nilRPCMap, nilRPCMap, true},
+	}
+
+	for _, item := range testCollection {
+		assert(assertEquals(item[0], item[1]) == item[2]).IsTrue()
+	}
+}
+
+func Test_equals_exceptions(t *testing.T) {
+	assert := NewAssert(t)
+
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	rightArray := newRPCArray(ctx)
+	errorArray := newRPCArray(ctx)
+	rightArray.Append(true)
+	errorArray.Append(true)
+	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
+	assert(assertEquals(rightArray, errorArray)).IsFalse()
+	assert(assertEquals(errorArray, rightArray)).IsFalse()
+
+	ctx.inner.stream = NewRPCStream()
+	rightMap := newRPCMap(ctx)
+	errorMap := newRPCMap(ctx)
+	rightMap.Set("0", true)
+	errorMap.Set("0", true)
+	(*errorMap.ctx.getCacheStream().frames[0])[1] = 13
+	assert(assertEquals(rightMap, errorMap)).IsFalse()
+	assert(assertEquals(errorMap, rightMap)).IsFalse()
+}
+
+func Test_contains(t *testing.T) {
+	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	testCollection := [][3]interface{}{
+		{"hello world", "world", true},
+		{"hello world", "you", false},
+		{"hello world", 3, false},
+		{"hello world", nil, false},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), true},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), 0, false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), nil, false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), true, false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "1", false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "3", false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), true, false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), nil, false},
+		{[]byte{}, []byte{}, true},
+		{[]byte{1, 2, 3, 4}, []byte{}, true},
+		{[]byte{1, 2, 3, 4}, []byte{2, 3}, true},
+		{[]byte{1, 2}, []byte{1, 2}, true},
+		{[]byte{1, 2}, []byte{1, 2, 3}, false},
+		{[]byte{1, 2, 3, 4}, []byte{2, 4}, false},
+		{[]byte{1, 2}, 1, false},
+		{[]byte{1, 2}, true, false},
+		{[]byte{1, 2}, nil, false},
+
+		{nil, "3", false},
+		{nil, nil, false},
+		{true, 3, false},
+		{float64(0), float64(0), false},
+	}
+
+	for _, v := range testCollection {
+		assert(contains(v[0], v[1])).Equals(v[2])
+	}
+}
+
+func Test_contains_exceptions(t *testing.T) {
+	assert := NewAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	errorArray := newRPCArray(ctx)
+	errorArray.Append(true)
+	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
+
+	assert(contains(errorArray, true)).Equals(false)
 }
