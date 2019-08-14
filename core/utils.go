@@ -14,8 +14,8 @@ var (
 	vRPCArray rpcArray
 	vRPCMap   rpcMap
 
-	readTypeString string
-	readTypeBytes  []byte
+	//readTypeString string
+	//readTypeBytes  []byte
 
 	pContext Context
 	pReturn  Return

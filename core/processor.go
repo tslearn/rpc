@@ -259,13 +259,11 @@ func (p *rpcThread) eval(inStream *rpcStream) Return {
 
 			if val == nil {
 				remoteArgsType = append(remoteArgsType, "nil")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeBytes).Type() {
-				remoteArgsType = append(remoteArgsType, "rpcBytes")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeString).Type() {
-				remoteArgsType = append(remoteArgsType, "rpcString")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeArray).Type() {
+			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(emptyBytes).Type() {
+				remoteArgsType = append(remoteArgsType, "[]byte")
+			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCArray).Type() {
 				remoteArgsType = append(remoteArgsType, "RPCArray")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(readTypeMap).Type() {
+			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCMap).Type() {
 				remoteArgsType = append(remoteArgsType, "RPCMap")
 			} else {
 				remoteArgsType = append(remoteArgsType, reflect.ValueOf(val).Type().String())

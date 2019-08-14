@@ -33,11 +33,7 @@ var (
 			return &ret
 		},
 	}
-	emptyString = ""
-	emptyBytes  = make([]byte, 0, 0)
 
-	nilRPCArray   = rpcArray{}
-	nilRPCMap     = rpcMap{}
 	readSkipArray = make([]int, 256, 256)
 )
 

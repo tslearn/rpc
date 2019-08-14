@@ -21,6 +21,9 @@ type Array = []interface{}
 type Map = map[string]interface{}
 
 var (
-	readTypeArray Array
-	readTypeMap   Map
+	emptyString = ""
+	emptyBytes  = make([]byte, 0, 0)
+
+	nilRPCArray = rpcArray{}
+	nilRPCMap   = rpcMap{}
 )

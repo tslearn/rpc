@@ -30,16 +30,15 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	processor := getProcessor()
 	processor.start()
 	processor.AddService("user", service)
-	time.Sleep(2 * time.Second)
-
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.N = 20000000
-	b.SetParallelism(1024)
-
 	file, _ := os.Create("../cpu.prof")
+
+	time.Sleep(2000 * time.Millisecond)
 	pprof.StartCPUProfile(file)
 
+	b.ReportAllocs()
+	b.N = 100000000
+	b.SetParallelism(1024)
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewRPCStream()
@@ -52,6 +51,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			processor.put(stream)
 		}
 	})
+	b.StopTimer()
 
 	pprof.StopCPUProfile()
 }
