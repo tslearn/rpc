@@ -120,7 +120,7 @@ func Test_isNil(t *testing.T) {
 
 	assert(isNil(nil)).IsTrue()
 	assert(isNil((*rpcStream)(nil))).IsTrue()
-	assert(isNil((*RPCArray)(nil))).IsTrue()
+	assert(isNil((*rpcArray)(nil))).IsTrue()
 	assert(isNil((*rpcMap)(nil))).IsTrue()
 
 	assert(isNil(nilRPCArray)).IsFalse()
@@ -226,7 +226,7 @@ func Test_equals(t *testing.T) {
 		{nil, map[string]interface{}(nil), true},
 		{nil, []byte(nil), true},
 		{nil, []byte{}, false},
-		{RPCArray{}, nil, false},
+		{rpcArray{}, nil, false},
 		{rpcMap{}, nil, false},
 		{[]byte{}, nil, false},
 

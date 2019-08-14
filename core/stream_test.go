@@ -95,7 +95,7 @@ func getBytesTestData(n uint32) [2]interface{} {
 	}
 }
 
-func getRandomStringArrayTestData(n uint32) RPCArray {
+func getRandomStringArrayTestData(n uint32) rpcArray {
 	ret := newRPCArray(&rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -761,7 +761,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 	pubBytes := make([]byte, 40960, 40960)
 	stream := NewRPCStream()
 
-	testRandomCollection := []RPCArray{
+	testRandomCollection := []rpcArray{
 		getRandomStringArrayTestData(0),
 		getRandomStringArrayTestData(1),
 		getRandomStringArrayTestData(255),

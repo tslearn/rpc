@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	vRPCArray RPCArray
+	vRPCArray rpcArray
 	vRPCMap   rpcMap
 
 	readTypeString string
@@ -214,7 +214,7 @@ func AddPrefixPerLine(origin string, prefix string) string {
 	return buf.String()
 }
 
-func toRPCArray(val []interface{}, ctx *rpcContext) RPCArray {
+func toRPCArray(val []interface{}, ctx *rpcContext) rpcArray {
 	if val == nil {
 		return nilRPCArray
 	}
@@ -281,8 +281,8 @@ func equalBytes(left []byte, right []byte) bool {
 }
 
 func equalRPCArray(left interface{}, right interface{}) bool {
-	l := left.(RPCArray)
-	r, ok := right.(RPCArray)
+	l := left.(rpcArray)
+	r, ok := right.(rpcArray)
 	if !ok {
 		return false
 	}
@@ -368,7 +368,7 @@ func equals(left interface{}, right interface{}) bool {
 			return false
 		}
 		return equalBytes(left.([]byte), rBytes)
-	case RPCArray:
+	case rpcArray:
 		return equalRPCArray(left, right)
 	case rpcMap:
 		return equalRPCMap(left, right)
@@ -398,8 +398,8 @@ func contains(left interface{}, right interface{}) bool {
 			return false
 		}
 		return bytes.Contains(left.([]byte), rBytes)
-	case RPCArray:
-		l := left.(RPCArray)
+	case rpcArray:
+		l := left.(rpcArray)
 		for i := 0; i < l.Size(); i++ {
 			lv, ok := l.Get(i)
 			if !ok {

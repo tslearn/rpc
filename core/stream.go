@@ -36,7 +36,7 @@ var (
 	emptyString = ""
 	emptyBytes  = make([]byte, 0, 0)
 
-	nilRPCArray   = RPCArray{}
+	nilRPCArray   = rpcArray{}
 	nilRPCMap     = rpcMap{}
 	readSkipArray = make([]int, 256, 256)
 )
@@ -889,7 +889,7 @@ func (p *rpcStream) WriteBytes(v []byte) {
 }
 
 // WriteRPCArray write RPCArray value to stream
-func (p *rpcStream) WriteRPCArray(v RPCArray) RPCStreamWriteErrorCode {
+func (p *rpcStream) WriteRPCArray(v rpcArray) RPCStreamWriteErrorCode {
 	in, readStream := v.getIS()
 
 	if readStream == nil {
@@ -1119,8 +1119,8 @@ func (p *rpcStream) Write(v interface{}) RPCStreamWriteErrorCode {
 	case []byte:
 		p.WriteBytes(v.([]byte))
 		return RPCStreamWriteOK
-	case RPCArray:
-		return p.WriteRPCArray(v.(RPCArray))
+	case rpcArray:
+		return p.WriteRPCArray(v.(rpcArray))
 	case rpcMap:
 		return p.WriteRPCMap(v.(rpcMap))
 	}
@@ -1633,7 +1633,7 @@ func (p *rpcStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 }
 
 // ReadRPCArray read a RPCArray value
-func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (RPCArray, bool) {
+func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 	v := p.readFrame[p.readIndex]
 	if cs := ctx.getCacheStream(); cs != nil && v >= 64 && v < 96 {
 		ret := newRPCArray(ctx)

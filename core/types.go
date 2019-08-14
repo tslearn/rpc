@@ -46,8 +46,6 @@ type rpcArray struct {
 	in  *rpcArrayInner
 }
 
-type RPCArray = rpcArray
-
 func newRPCArray(ctx *rpcContext) rpcArray {
 	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
 		return rpcArray{
@@ -294,7 +292,7 @@ func (p rpcArray) AppendBytes(value []byte) bool {
 }
 
 // GetRPCArray ...
-func (p rpcArray) GetRPCArray(index int) (RPCArray, bool) {
+func (p rpcArray) GetRPCArray(index int) (rpcArray, bool) {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadRPCArray(p.ctx)
@@ -303,7 +301,7 @@ func (p rpcArray) GetRPCArray(index int) (RPCArray, bool) {
 }
 
 // SetRPCArray ...
-func (p rpcArray) SetRPCArray(index int, value RPCArray) bool {
+func (p rpcArray) SetRPCArray(index int, value rpcArray) bool {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		pos := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
@@ -315,7 +313,7 @@ func (p rpcArray) SetRPCArray(index int, value RPCArray) bool {
 }
 
 // AppendRPCArray ...
-func (p rpcArray) AppendRPCArray(value RPCArray) bool {
+func (p rpcArray) AppendRPCArray(value rpcArray) bool {
 	if in, s := p.getIS(); s != nil {
 		pos := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
@@ -701,7 +699,7 @@ func (p rpcMap) SetBytes(name string, value []byte) bool {
 }
 
 // GetRPCArray ...
-func (p rpcMap) GetRPCArray(name string) (RPCArray, bool) {
+func (p rpcMap) GetRPCArray(name string) (rpcArray, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
 		if idx := in.getIndex(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
@@ -712,7 +710,7 @@ func (p rpcMap) GetRPCArray(name string) (RPCArray, bool) {
 }
 
 // SetRPCArray ...
-func (p rpcMap) SetRPCArray(name string, value RPCArray) bool {
+func (p rpcMap) SetRPCArray(name string, value rpcArray) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
