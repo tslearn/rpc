@@ -487,7 +487,7 @@ func (p *rpcProcessor) AddService(
 func (p *rpcProcessor) mountService(
 	parentServiceNodePath string,
 	addMeta *rpcAddMeta,
-) RPCError {
+) *rpcError {
 	// check addMeta is not nil
 	if addMeta == nil {
 		return NewRPCError("mountService addMeta is nil")
@@ -574,7 +574,7 @@ func (p *rpcProcessor) mountService(
 func (p *rpcProcessor) mountEcho(
 	serviceNode *rpcServiceNode,
 	echoMeta *rpcEchoMeta,
-) RPCError {
+) *rpcError {
 	// check the node is nil
 	if serviceNode == nil {
 		return NewRPCError("mountEcho node is nil")

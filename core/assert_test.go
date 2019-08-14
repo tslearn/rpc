@@ -28,7 +28,7 @@ func TestAssert_Equals(t *testing.T) {
 	assert := NewAssert(t)
 	assert(3).Equals(3)
 	assert(nil).Equals(nil)
-	assert(RPCError(nil)).Equals(nil)
+	assert((*rpcError)(nil)).Equals(nil)
 
 	assertFailedFn(func() {
 		assert(3).Equals(4)
@@ -86,7 +86,7 @@ func TestAssert_IsNil(t *testing.T) {
 	assert := NewAssert(t)
 
 	assert(nil).IsNil()
-	assert(RPCError(nil)).IsNil()
+	assert((*rpcError)(nil)).IsNil()
 
 	assertFailedFn(func() {
 		assert(NewRPCError("")).IsNil()
@@ -119,7 +119,7 @@ func TestAssert_IsNotNil(t *testing.T) {
 		assert(nil).IsNotNil()
 	})
 	assertFailedFn(func() {
-		assert(RPCError(nil)).IsNotNil()
+		assert((*rpcError)(nil)).IsNotNil()
 	})
 	assertFailedFn(func() {
 		assert().IsNotNil()
@@ -131,7 +131,7 @@ func TestAssert_IsTrue(t *testing.T) {
 	assert(true).IsTrue()
 
 	assertFailedFn(func() {
-		assert(RPCError(nil)).IsTrue()
+		assert((*rpcError)(nil)).IsTrue()
 	})
 	assertFailedFn(func() {
 		assert(32).IsTrue()

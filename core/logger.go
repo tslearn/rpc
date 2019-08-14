@@ -38,7 +38,7 @@ type LogSubscription struct {
 	Fatal   func(msg string)
 }
 
-func (p *LogSubscription) Close() RPCError {
+func (p *LogSubscription) Close() *rpcError {
 	if p.logger == nil {
 		return NewRPCError("logger is nil")
 	}
@@ -73,7 +73,7 @@ func NewLogger() *Logger {
 
 // SetLevel set the log level, such as LogLevelOff LogLevelFatal
 // LogLevelError LogLevelWarning LogLevelInfo LogLevelDebug LogLevelAll
-func (p *Logger) SetLevel(level int) RPCError {
+func (p *Logger) SetLevel(level int) *rpcError {
 	if level < LogLevelOff || level > LogLevelAll {
 		return NewRPCError(
 			fmt.Sprintf("level(%d) not supported", level),
@@ -91,7 +91,7 @@ func (p *Logger) refreshCache() {
 	p.cache = cache
 }
 
-func (p *Logger) removeSubscription(id int64) RPCError {
+func (p *Logger) removeSubscription(id int64) *rpcError {
 	p.Lock()
 	defer p.Unlock()
 

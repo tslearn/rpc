@@ -152,12 +152,12 @@ func assertEquals(left interface{}, right interface{}) bool {
 			return false
 		}
 		return assertRPCMapEqual(left.(rpcMap), rMap)
-	case RPCError:
-		rError, ok := right.(RPCError)
+	case *rpcError:
+		rError, ok := right.(*rpcError)
 		if !ok {
 			return false
 		}
-		return left.(RPCError).Error() == rError.Error()
+		return left.(*rpcError).Error() == rError.Error()
 	default:
 		return left == right
 	}

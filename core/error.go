@@ -5,11 +5,8 @@ type rpcError struct {
 	debug   string
 }
 
-// RPCError ...
-type RPCError = *rpcError
-
 // NewRPCError create new error
-func NewRPCError(message string) RPCError {
+func NewRPCError(message string) *rpcError {
 	return &rpcError{
 		message: message,
 		debug:   GetStackString(1),
@@ -17,7 +14,7 @@ func NewRPCError(message string) RPCError {
 }
 
 // NewRPCErrorWithDebug create new error
-func NewRPCErrorWithDebug(message string, debug string) RPCError {
+func NewRPCErrorWithDebug(message string, debug string) *rpcError {
 	return &rpcError{
 		message: message,
 		debug:   debug,
@@ -25,7 +22,7 @@ func NewRPCErrorWithDebug(message string, debug string) RPCError {
 }
 
 // WrapSystemError add debug segment to the error, (Note: if err is not Error type, we wrapped it)
-func WrapSystemError(err error) RPCError {
+func WrapSystemError(err error) *rpcError {
 	if err == nil {
 		return nil
 	}
@@ -37,7 +34,7 @@ func WrapSystemError(err error) RPCError {
 }
 
 // WrapSystemErrorWithDebug add debug segment to the error, (Note: if err is not Error type, we wrapped it)
-func WrapSystemErrorWithDebug(err error) RPCError {
+func WrapSystemErrorWithDebug(err error) *rpcError {
 	if err == nil {
 		return nil
 	}
@@ -56,7 +53,7 @@ func (p *rpcError) GetDebug() string {
 	return p.debug
 }
 
-func (p *rpcError) AddDebug(debug string) RPCError {
+func (p *rpcError) AddDebug(debug string) *rpcError {
 	if p.debug != "" {
 		p.debug += "\n"
 	}
