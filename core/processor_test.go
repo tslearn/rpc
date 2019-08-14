@@ -9,9 +9,9 @@ import (
 
 var service = newServiceMeta().
 	Echo("sayHello", true, func(
-		ctx Context,
+		ctx *rpcContext,
 		name string,
-	) Return {
+	) *rpcReturn {
 		return ctx.OK(name)
 	})
 

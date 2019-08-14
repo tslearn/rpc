@@ -1,7 +1,7 @@
 package core
 
 type fnCacheFunc = func(
-	ctx Context,
+	ctx *rpcContext,
 	stream *rpcStream,
 	fn interface{},
 ) bool
@@ -26,6 +26,6 @@ var (
 
 	nilRPCArray = rpcArray{}
 	nilRPCMap   = rpcMap{}
-	nilReturn   = Return(nil)
-	nilContext  = Context(nil)
+	nilReturn   = (*rpcReturn)(nil)
+	nilContext  = (*rpcContext)(nil)
 )

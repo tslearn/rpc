@@ -99,7 +99,7 @@ func (p *rpcThread) put(stream *rpcStream) {
 	p.ch <- stream
 }
 
-func (p *rpcThread) eval(inStream *rpcStream) Return {
+func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	processor := p.processor
 	// create context
 	p.execInnerContext.stream = inStream

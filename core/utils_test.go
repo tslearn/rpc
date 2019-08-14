@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 	"unsafe"
 )
@@ -314,7 +313,6 @@ func Test_contains(t *testing.T) {
 	}
 
 	for _, v := range testCollection {
-		fmt.Println(v[0], v[1], v[2])
 		assert(contains(v[0], v[1])).Equals(v[2])
 	}
 }

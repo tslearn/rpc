@@ -14,8 +14,6 @@ type rpcContext struct {
 	inner *rpcInnerContext
 }
 
-type Context = *rpcContext
-
 func (p *rpcContext) getCacheStream() *rpcStream {
 	if p != nil && p.inner != nil {
 		return p.inner.stream
@@ -31,7 +29,7 @@ func (p *rpcContext) close() bool {
 	return false
 }
 
-func (p *rpcContext) writeError(message string, debug string) Return {
+func (p *rpcContext) writeError(message string, debug string) *rpcReturn {
 	if p.inner != nil {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
@@ -49,7 +47,7 @@ func (p *rpcContext) writeError(message string, debug string) Return {
 }
 
 // OK get success Return  by value
-func (p *rpcContext) OK(value interface{}) Return {
+func (p *rpcContext) OK(value interface{}) *rpcReturn {
 	if p.inner != nil {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
@@ -71,7 +69,7 @@ func (p *rpcContext) OK(value interface{}) Return {
 }
 
 // Failed get failed Return by code and message
-func (p *rpcContext) Error(a ...interface{}) Return {
+func (p *rpcContext) Error(a ...interface{}) *rpcReturn {
 	if p.inner != nil {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
@@ -87,7 +85,7 @@ func (p *rpcContext) Error(a ...interface{}) Return {
 	return nilReturn
 }
 
-func (p *rpcContext) Errorf(format string, a ...interface{}) Return {
+func (p *rpcContext) Errorf(format string, a ...interface{}) *rpcReturn {
 	if p.inner != nil {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
