@@ -218,14 +218,14 @@ func (p *rpcThread) eval(inStream *rpcStream) Return {
 					} else {
 						rv = reflect.ValueOf(xVar)
 					}
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
+				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(nilRPCArray).Type() {
 					aVar, success := inStream.ReadRPCArray(ctx)
 					if !success {
 						ok = false
 					} else {
 						rv = reflect.ValueOf(aVar)
 					}
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCMap).Type() {
+				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(nilRPCMap).Type() {
 					mVar, success := inStream.ReadRPCMap(ctx)
 					if !success {
 						ok = false
@@ -646,7 +646,7 @@ func (p *rpcProcessor) mountEcho(
 
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
-		fn.Type().Out(0) != reflect.ValueOf(pReturn).Type() {
+		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
 		return NewRPCErrorWithDebug(
 			"Echo handler return type must be Return",
 			echoMeta.debug,
@@ -670,9 +670,9 @@ func (p *rpcProcessor) mountEcho(
 
 		if argTypes[i] == reflect.ValueOf(emptyBytes).Type() {
 			argStrings[i] = "[]byte"
-		} else if argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
+		} else if argTypes[i] == reflect.ValueOf(nilRPCArray).Type() {
 			argStrings[i] = "RPCArray"
-		} else if argTypes[i] == reflect.ValueOf(vRPCMap).Type() {
+		} else if argTypes[i] == reflect.ValueOf(nilRPCMap).Type() {
 			argStrings[i] = "RPCMap"
 		} else {
 			argStrings[i] = argTypes[i].String()

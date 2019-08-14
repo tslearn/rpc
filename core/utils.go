@@ -10,23 +10,12 @@ import (
 	"unsafe"
 )
 
-var (
-	vRPCArray rpcArray
-	vRPCMap   rpcMap
-
-	//readTypeString string
-	//readTypeBytes  []byte
-
-	pContext Context
-	pReturn  Return
-)
-
 func getArgumentsErrorPosition(fn reflect.Value) int {
 	if fn.Type().NumIn() < 1 {
 		return 0
 	}
 
-	if fn.Type().In(0) != reflect.ValueOf(pContext).Type() {
+	if fn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
 		return 0
 	}
 
@@ -45,8 +34,8 @@ func getArgumentsErrorPosition(fn reflect.Value) int {
 			continue
 		default:
 			if argType == reflect.ValueOf(emptyBytes).Type() ||
-				argType == reflect.ValueOf(vRPCArray).Type() ||
-				argType == reflect.ValueOf(vRPCMap).Type() {
+				argType == reflect.ValueOf(nilRPCArray).Type() ||
+				argType == reflect.ValueOf(nilRPCMap).Type() {
 				continue
 			}
 			return i
@@ -60,12 +49,12 @@ func getFuncKind(fn interface{}) (string, bool) {
 	reflectFn := reflect.ValueOf(fn)
 
 	if reflectFn.Type().NumIn() < 1 ||
-		reflectFn.Type().In(0) != reflect.ValueOf(pContext).Type() {
+		reflectFn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
 		return "", false
 	}
 
 	if reflectFn.Type().NumOut() != 1 ||
-		reflectFn.Type().Out(0) != reflect.ValueOf(pReturn).Type() {
+		reflectFn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
 		return "", false
 	}
 
@@ -73,9 +62,9 @@ func getFuncKind(fn interface{}) (string, bool) {
 	for i := 1; i < reflectFn.Type().NumIn(); i++ {
 		argType := reflectFn.Type().In(i)
 
-		if argType == reflect.ValueOf(vRPCArray).Type() {
+		if argType == reflect.ValueOf(nilRPCArray).Type() {
 			ret += "A"
-		} else if argType == reflect.ValueOf(vRPCMap).Type() {
+		} else if argType == reflect.ValueOf(nilRPCMap).Type() {
 			ret += "M"
 		} else if argType == reflect.ValueOf(emptyBytes).Type() {
 			ret += "X"

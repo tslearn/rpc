@@ -26,4 +26,6 @@ var (
 
 	nilRPCArray = rpcArray{}
 	nilRPCMap   = rpcMap{}
+	nilReturn   = Return(nil)
+	nilContext  = Context(nil)
 )
