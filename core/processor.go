@@ -202,15 +202,22 @@ func (p *rpcThread) eval(inStream *rpcStream) Return {
 					rv = reflect.ValueOf(bVar)
 				}
 				break
-			default:
-				if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
-					bVar := inStream.ReadRPCBytes(ctx)
-					ok = bVar.OK()
-					rv = reflect.ValueOf(bVar)
-				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCString).Type() {
-					sVar := inStream.ReadRPCString(ctx)
-					ok = sVar.OK()
+			case reflect.String:
+				sVar, success := inStream.ReadString()
+				if !success {
+					ok = false
+				} else {
 					rv = reflect.ValueOf(sVar)
+				}
+				break
+			default:
+				if p.execEchoNode.argTypes[i] == reflect.ValueOf(emptyBytes).Type() {
+					xVar, success := inStream.ReadBytes()
+					if !success {
+						ok = false
+					} else {
+						rv = reflect.ValueOf(xVar)
+					}
 				} else if p.execEchoNode.argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
 					aVar, success := inStream.ReadRPCArray(ctx)
 					if !success {
@@ -663,10 +670,8 @@ func (p *rpcProcessor) mountEcho(
 	for i := 0; i < len(argTypes); i++ {
 		argTypes[i] = fn.Type().In(i)
 
-		if argTypes[i] == reflect.ValueOf(vRPCBytes).Type() {
-			argStrings[i] = "rpcBytes"
-		} else if argTypes[i] == reflect.ValueOf(vRPCString).Type() {
-			argStrings[i] = "rpcString"
+		if argTypes[i] == reflect.ValueOf(emptyBytes).Type() {
+			argStrings[i] = "[]byte"
 		} else if argTypes[i] == reflect.ValueOf(vRPCArray).Type() {
 			argStrings[i] = "RPCArray"
 		} else if argTypes[i] == reflect.ValueOf(vRPCMap).Type() {

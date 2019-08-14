@@ -60,7 +60,7 @@ func (p *Assert) Contains(val interface{}) {
 	}
 
 	for i := 0; i < len(p.args); i++ {
-		if contains(p.args[i], val) != 1 {
+		if !contains(p.args[i], val) {
 			reportFail(p)
 			return
 		}

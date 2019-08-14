@@ -2,15 +2,6 @@ package core
 
 import (
 	"sync"
-	"unsafe"
-)
-
-type rpcStatus uint8
-
-const (
-	rpcStatusError rpcStatus = iota
-	rpcStatusAllocated
-	rpcStatusNotAllocated
 )
 
 // RPCStreamWriteErrorCode ...
@@ -19,75 +10,11 @@ type RPCStreamWriteErrorCode int
 const (
 	RPCStreamWriteOK RPCStreamWriteErrorCode = iota
 	RPCStreamWriteUnsupportedType
-	RPCStreamWriteRPCStringError
-	RPCStreamWriteRPCBytesError
 	RPCStreamWriteRPCArrayIsNotAvailable
 	RPCStreamWriteRPCArrayError
 	RPCStreamWriteRPCMapIsNotAvailable
 	RPCStreamWriteRPCMapError
 )
-
-// RPCInt64 ...
-type rpcInt64 = int64
-
-// RPCUint64 ...
-type rpcUint64 = uint64
-
-// RPCFloat64 ...
-type rpcFloat64 = float64
-
-// RPCBool ...
-type rpcBool = bool
-
-// rpcString ...
-type rpcString struct {
-	ctx    *rpcContext
-	status rpcStatus
-	bytes  []byte
-}
-
-// OK ...
-func (p rpcString) OK() bool {
-	return p.ctx != nil && p.ctx.inner != nil && p.status != rpcStatusError
-}
-
-// ToString ...
-func (p rpcString) ToString() (string, bool) {
-	if p.OK() {
-		if p.status == rpcStatusNotAllocated {
-			return string(p.bytes), true
-		} else if p.status == rpcStatusAllocated {
-			return *(*string)(unsafe.Pointer(&p.bytes)), true
-		}
-	}
-	return "", false
-}
-
-// rpcBytes ...
-type rpcBytes struct {
-	ctx    *rpcContext
-	status rpcStatus
-	bytes  []byte
-}
-
-// OK ...
-func (p rpcBytes) OK() bool {
-	return p.ctx != nil && p.ctx.inner != nil && p.status != rpcStatusError
-}
-
-// ToBytes ...
-func (p rpcBytes) ToBytes() ([]byte, bool) {
-	if p.OK() {
-		if p.status == rpcStatusNotAllocated {
-			ret := make([]byte, len(p.bytes), len(p.bytes))
-			copy(ret, p.bytes)
-			return ret, true
-		} else if p.status == rpcStatusAllocated {
-			return p.bytes, true
-		}
-	}
-	return nil, false
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // RPCArray
@@ -309,67 +236,59 @@ func (p rpcArray) AppendFloat64(value float64) bool {
 }
 
 // GetRPCString ...
-func (p rpcArray) GetRPCString(index int) rpcString {
+func (p rpcArray) GetString(index int) (string, bool) {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		s.setReadPosUnsafe(in.items[index])
-		return s.ReadRPCString(p.ctx)
+		return s.ReadString()
 	}
-	return errorRPCString
+	return emptyString, false
 }
 
 // SetRPCString ...
-func (p rpcArray) SetRPCString(index int, value rpcString) bool {
+func (p rpcArray) SetString(index int, value string) bool {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
-		pos := s.GetWritePos()
-		if s.WriteRPCString(value) == RPCStreamWriteOK {
-			in.items[index] = pos
-			return true
-		}
+		in.items[index] = s.GetWritePos()
+		s.WriteString(value)
+		return true
 	}
 	return false
 }
 
 // AppendRPCString ...
-func (p rpcArray) AppendRPCString(value rpcString) bool {
+func (p rpcArray) AppendString(value string) bool {
 	if in, s := p.getIS(); s != nil {
-		pos := s.GetWritePos()
-		if s.WriteRPCString(value) == RPCStreamWriteOK {
-			in.items = append(in.items, pos)
-			return true
-		}
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteString(value)
+		return true
 	}
 	return false
 }
 
 // GetRPCBytes ...
-func (p rpcArray) GetRPCBytes(index int) rpcBytes {
+func (p rpcArray) GetBytes(index int) ([]byte, bool) {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
 		s.setReadPosUnsafe(in.items[index])
-		return s.ReadRPCBytes(p.ctx)
+		return s.ReadBytes()
 	}
-	return errorRPCBytes
+	return emptyBytes, false
 }
 
 // SetRPCBytes ...
-func (p rpcArray) SetRPCBytes(index int, value rpcBytes) bool {
+func (p rpcArray) SetBytes(index int, value []byte) bool {
 	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
-		pos := s.GetWritePos()
-		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
-			in.items[index] = pos
-			return true
-		}
+		in.items[index] = s.GetWritePos()
+		s.WriteBytes(value)
+		return true
 	}
 	return false
 }
 
 // AppendRPCBytes ...
-func (p rpcArray) AppendRPCBytes(value rpcBytes) bool {
+func (p rpcArray) AppendBytes(value []byte) bool {
 	if in, s := p.getIS(); s != nil {
-		pos := s.GetWritePos()
-		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
-			in.items = append(in.items, pos)
-			return true
-		}
+		in.items = append(in.items, s.GetWritePos())
+		s.WriteBytes(value)
+		return true
 	}
 	return false
 }
@@ -740,49 +659,43 @@ func (p rpcMap) SetUint64(name string, value uint64) bool {
 }
 
 // GetRPCString ...
-func (p rpcMap) GetRPCString(name string) rpcString {
+func (p rpcMap) GetString(name string) (string, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
 		if idx := in.getIndex(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
-			return s.ReadRPCString(p.ctx)
+			return s.ReadString()
 		}
 	}
-	return errorRPCString
+	return emptyString, false
 }
 
 // SetRPCString ...
-func (p rpcMap) SetRPCString(name string, value rpcString) bool {
+func (p rpcMap) SetString(name string, value string) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
-		if s.WriteRPCString(value) == RPCStreamWriteOK {
-			return in.setIndex(name, idx)
-		} else {
-			return false
-		}
+		s.WriteString(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }
 
 // GetRPCBytes ...
-func (p rpcMap) GetRPCBytes(name string) rpcBytes {
+func (p rpcMap) GetBytes(name string) ([]byte, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
 		if idx := in.getIndex(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
-			return s.ReadRPCBytes(p.ctx)
+			return s.ReadBytes()
 		}
 	}
-	return errorRPCBytes
+	return emptyBytes, false
 }
 
 // SetRPCBytes ...
-func (p rpcMap) SetRPCBytes(name string, value rpcBytes) bool {
+func (p rpcMap) SetBytes(name string, value []byte) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
-		if s.WriteRPCBytes(value) == RPCStreamWriteOK {
-			return in.setIndex(name, idx)
-		} else {
-			return false
-		}
+		s.WriteBytes(value)
+		return in.setIndex(name, idx)
 	}
 	return false
 }

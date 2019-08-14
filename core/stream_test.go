@@ -547,13 +547,6 @@ func Test_RPCStream_Uint64(t *testing.T) {
 
 func Test_RPCStream_String(t *testing.T) {
 	assert := NewAssert(t)
-	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream:       NewRPCStream(),
-			serverThread: nil,
-			clientThread: nil,
-		},
-	}
 	pubBytes := make([]byte, 40960, 40960)
 	stream := NewRPCStream()
 
@@ -581,7 +574,7 @@ func Test_RPCStream_String(t *testing.T) {
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 
 			stream.SetReadPos(i)
-			assert(stream.ReadRPCString(ctx).ToString()).Equals(testData[0], true)
+			assert(stream.ReadString()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 		}
 
@@ -613,11 +606,11 @@ func Test_RPCStream_String(t *testing.T) {
 				// ReadRPCString
 				targetBuffer[len(targetBuffer)-2] = 1
 				fillTestStreamByBuffer(stream, i, targetBuffer)
-				assert(stream.ReadRPCString(ctx).status).Equals(rpcStatusError)
+				assert(stream.ReadString()).Equals(emptyString, false)
 				assert(stream.GetReadPos()).Equals(i)
 				targetBuffer[len(targetBuffer)-2] = 0
 				fillTestStreamByBuffer(stream, i, targetBuffer)
-				assert(stream.ReadRPCString(ctx).ToString()).Equals(testData[0], true)
+				assert(stream.ReadString()).Equals(testData[0], true)
 				assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 			}
 		}
@@ -631,7 +624,7 @@ func Test_RPCStream_String(t *testing.T) {
 					// ReadUnsafeString
 					stream.SetReadPos(i)
 					stream.setWritePosUnsafe(idx)
-					assert(stream.ReadUnsafeString()).Equals("", false)
+					assert(stream.ReadUnsafeString()).Equals(emptyString, false)
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadUnsafeString()).Equals(testData[0], true)
@@ -640,10 +633,10 @@ func Test_RPCStream_String(t *testing.T) {
 					// ReadRPCString
 					stream.SetReadPos(i)
 					stream.setWritePosUnsafe(idx)
-					assert(stream.ReadRPCString(ctx).status).Equals(rpcStatusError)
+					assert(stream.ReadString()).Equals(emptyString, false)
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
-					assert(stream.ReadRPCString(ctx).ToString()).Equals(testData[0], true)
+					assert(stream.ReadString()).Equals(testData[0], true)
 					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 				}
 			}
@@ -661,32 +654,13 @@ func Test_RPCStream_String(t *testing.T) {
 
 			// ReadRPCString
 			stream.SetReadPos(i)
-			assert(stream.ReadRPCString(ctx).ToString()).Equals(testData[0], true)
+			assert(stream.ReadString()).Equals(testData[0], true)
 		}
 	}
-
-	// ReadRPCString error
-	invalidCtx := &rpcContext{
-		inner: nil,
-	}
-	stream = NewRPCStream()
-	stream.Write("hello")
-	assert(stream.ReadRPCString(invalidCtx).ToString()).Equals("", false)
-
-	// WriteRPCString error
-	stream = NewRPCStream()
-	assert(stream.WriteRPCString(errorRPCString)).Equals(RPCStreamWriteRPCStringError)
 }
 
 func Test_RPCStream_Bytes(t *testing.T) {
 	assert := NewAssert(t)
-	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream:       NewRPCStream(),
-			serverThread: nil,
-			clientThread: nil,
-		},
-	}
 	pubBytes := make([]byte, 40960, 40960)
 	stream := NewRPCStream()
 
@@ -716,7 +690,7 @@ func Test_RPCStream_Bytes(t *testing.T) {
 
 			// ReadRPCBytes
 			stream.SetReadPos(i)
-			assert(stream.ReadRPCBytes(ctx).ToBytes()).Equals(testData[0], true)
+			assert(stream.ReadBytes()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 		}
 
@@ -749,10 +723,10 @@ func Test_RPCStream_Bytes(t *testing.T) {
 					// ReadRPCBytes
 					stream.SetReadPos(i)
 					stream.setWritePosUnsafe(idx)
-					assert(stream.ReadRPCBytes(ctx).status).Equals(rpcStatusError)
+					assert(stream.ReadBytes()).Equals(emptyBytes, false)
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
-					assert(stream.ReadRPCBytes(ctx).ToBytes()).Equals(testData[0], true)
+					assert(stream.ReadBytes()).Equals(testData[0], true)
 					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
 				}
 			}
@@ -770,21 +744,9 @@ func Test_RPCStream_Bytes(t *testing.T) {
 
 			// ReadRPCBytes
 			stream.SetReadPos(i)
-			assert(stream.ReadRPCBytes(ctx).ToBytes()).Equals(testData[0], true)
+			assert(stream.ReadBytes()).Equals(testData[0], true)
 		}
 	}
-
-	// ReadRPCBytes error
-	invalidCtx := &rpcContext{
-		inner: nil,
-	}
-	stream = NewRPCStream()
-	stream.WriteBytes([]byte{1, 2})
-	assert(stream.ReadRPCBytes(invalidCtx).ToBytes()).Equals(nil, false)
-
-	// WriteRPCBytes error
-	stream = NewRPCStream()
-	assert(stream.WriteRPCBytes(errorRPCBytes)).Equals(RPCStreamWriteRPCBytesError)
 }
 
 func Test_RPCStream_RPCArray(t *testing.T) {

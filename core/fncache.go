@@ -26,10 +26,10 @@ func fcI(c Context, s *rpcStream, f interface{}) bool {
 }
 
 func fcS(c Context, s *rpcStream, f interface{}) bool {
-	h := s.ReadRPCString(c)
-	if !h.OK() || !s.IsReadFinish() {
+	h, ok := s.ReadString()
+	if !ok || !s.IsReadFinish() {
 		return false
 	}
-	f.(func(Context, rpcString) Return)(c, h)
+	f.(func(Context, string) Return)(c, h)
 	return true
 }

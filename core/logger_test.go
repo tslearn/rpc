@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -168,7 +167,6 @@ func TestLogger_Debug(t *testing.T) {
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Debug:(\\s)message\n$"
 
-	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 

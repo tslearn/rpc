@@ -11,10 +11,8 @@ import (
 )
 
 var (
-	vRPCArray  RPCArray
-	vRPCMap    rpcMap
-	vRPCBytes  rpcBytes
-	vRPCString rpcString
+	vRPCArray RPCArray
+	vRPCMap   rpcMap
 
 	readTypeString string
 	readTypeBytes  []byte
@@ -43,9 +41,10 @@ func getArgumentsErrorPosition(fn reflect.Value) int {
 			continue
 		case reflect.Bool:
 			continue
+		case reflect.String:
+			continue
 		default:
-			if argType == reflect.ValueOf(vRPCString).Type() ||
-				argType == reflect.ValueOf(vRPCBytes).Type() ||
+			if argType == reflect.ValueOf(emptyBytes).Type() ||
 				argType == reflect.ValueOf(vRPCArray).Type() ||
 				argType == reflect.ValueOf(vRPCMap).Type() {
 				continue
@@ -78,10 +77,8 @@ func getFuncKind(fn interface{}) (string, bool) {
 			ret += "A"
 		} else if argType == reflect.ValueOf(vRPCMap).Type() {
 			ret += "M"
-		} else if argType == reflect.ValueOf(vRPCBytes).Type() {
+		} else if argType == reflect.ValueOf(emptyBytes).Type() {
 			ret += "X"
-		} else if argType == reflect.ValueOf(vRPCString).Type() {
-			ret += "S"
 		} else {
 			switch argType.Kind() {
 			case reflect.Int64:
@@ -92,6 +89,8 @@ func getFuncKind(fn interface{}) (string, bool) {
 				ret += "B"
 			case reflect.Float64:
 				ret += "F"
+			case reflect.String:
+				ret += "S"
 			default:
 				return "", false
 			}
@@ -261,42 +260,6 @@ func isNil(val interface{}) (ret bool) {
 	return rv.IsNil()
 }
 
-func equalRPCString(left interface{}, right interface{}) bool {
-	l := rpcString{}
-	r := rpcString{}
-
-	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
-		},
-	}
-
-	switch left.(type) {
-	case string:
-		l = rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(left.(string))}
-	case rpcString:
-		l = left.(rpcString)
-	}
-
-	switch right.(type) {
-	case string:
-		r = rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)(right.(string))}
-	case rpcString:
-		r = right.(rpcString)
-	default:
-		return false
-	}
-
-	if l.ctx == nil && r.ctx == nil &&
-		l.status == rpcStatusError && r.status == rpcStatusError &&
-		len(l.bytes) == 0 && len(r.bytes) == 0 {
-		return true
-	}
-
-	return l.OK() && r.OK() &&
-		l.status == r.status && equalBytes(l.bytes, r.bytes)
-}
-
 func equalBytes(left []byte, right []byte) bool {
 	if left == nil && right == nil {
 		return true
@@ -315,41 +278,6 @@ func equalBytes(left []byte, right []byte) bool {
 		}
 		return true
 	}
-}
-
-func equalRPCBytes(left interface{}, right interface{}) bool {
-	l := rpcBytes{}
-	r := rpcBytes{}
-
-	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
-		},
-	}
-
-	switch left.(type) {
-	case []byte:
-		l = rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: left.([]byte)}
-	case rpcBytes:
-		l = left.(rpcBytes)
-	}
-	switch right.(type) {
-	case []byte:
-		r = rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: right.([]byte)}
-	case rpcBytes:
-		r = right.(rpcBytes)
-	default:
-		return false
-	}
-
-	if l.ctx == nil && r.ctx == nil &&
-		l.status == rpcStatusError && r.status == rpcStatusError &&
-		len(l.bytes) == 0 && len(r.bytes) == 0 {
-		return true
-	}
-
-	return l.OK() && r.OK() &&
-		l.status == r.status && equalBytes(l.bytes, r.bytes)
 }
 
 func equalRPCArray(left interface{}, right interface{}) bool {
@@ -434,14 +362,12 @@ func equals(left interface{}, right interface{}) bool {
 	}
 
 	switch left.(type) {
-	case string:
-		return equalRPCString(left, right)
-	case rpcString:
-		return equalRPCString(left, right)
 	case []byte:
-		return equalRPCBytes(left, right)
-	case rpcBytes:
-		return equalRPCBytes(left, right)
+		rBytes, ok := right.([]byte)
+		if !ok {
+			return false
+		}
+		return equalBytes(left.([]byte), rBytes)
 	case RPCArray:
 		return equalRPCArray(left, right)
 	case rpcMap:
@@ -458,109 +384,32 @@ func equals(left interface{}, right interface{}) bool {
 	}
 }
 
-func containsRPCString(left interface{}, right interface{}) int {
-	l := ""
-	r := ""
-	ok := false
+func contains(left interface{}, right interface{}) bool {
 	switch left.(type) {
 	case string:
-		l, ok = left.(string)
-	case rpcString:
-		l, ok = left.(rpcString).ToString()
-	}
-	if !ok {
-		return -1
-	}
-	switch right.(type) {
-	case string:
-		r, ok = right.(string)
-	case rpcString:
-		r, ok = right.(rpcString).ToString()
-	default:
-		return -1
-	}
-	if !ok {
-		return -1
-	}
-
-	if strings.Contains(l, r) {
-		return 1
-	}
-	return 0
-}
-
-func containsRPCBytes(left interface{}, right interface{}) int {
-	l := []byte(nil)
-	r := []byte(nil)
-	ok := false
-
-	switch left.(type) {
-	case []byte:
-		l, ok = left.([]byte)
-	case rpcBytes:
-		l, ok = left.(rpcBytes).ToBytes()
-	}
-	if !ok {
-		return -1
-	}
-	switch right.(type) {
-	case []byte:
-		r, ok = right.([]byte)
-	case rpcBytes:
-		r, ok = right.(rpcBytes).ToBytes()
-	default:
-		return -1
-	}
-	if !ok {
-		return -1
-	}
-
-	if len(r) == 0 {
-		return 1
-	}
-	if len(l) < len(r) {
-		return 0
-	}
-	for i := 0; i <= len(l)-len(r); i++ {
-		k := 0
-		for k < len(r) && l[i+k] == r[k] {
-			k++
-		}
-		if k == len(r) {
-			return 1
-		}
-	}
-	return 0
-}
-
-func containsRPCArray(left interface{}, right interface{}) int {
-	l := left.(RPCArray)
-
-	for i := 0; i < l.Size(); i++ {
-		lv, ok := l.Get(i)
+		rString, ok := right.(string)
 		if !ok {
-			return 0
+			return false
 		}
-
-		if equals(lv, right) {
-			return 1
-		}
-	}
-	return 0
-}
-
-func contains(left interface{}, right interface{}) int {
-	switch left.(type) {
-	case string:
-		return containsRPCString(left, right)
-	case rpcString:
-		return containsRPCString(left, right)
+		return strings.Contains(left.(string), rString)
 	case []byte:
-		return containsRPCBytes(left, right)
-	case rpcBytes:
-		return containsRPCBytes(left, right)
+		rBytes, ok := right.([]byte)
+		if !ok {
+			return false
+		}
+		return bytes.Contains(left.([]byte), rBytes)
 	case RPCArray:
-		return containsRPCArray(left, right)
+		l := left.(RPCArray)
+		for i := 0; i < l.Size(); i++ {
+			lv, ok := l.Get(i)
+			if !ok {
+				return false
+			}
+			if equals(lv, right) {
+				return true
+			}
+		}
+		return false
 	}
-	return -1
+	return false
 }

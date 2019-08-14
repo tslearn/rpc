@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 	"unsafe"
 )
@@ -134,8 +135,6 @@ func Test_isNil(t *testing.T) {
 
 func Test_equals(t *testing.T) {
 	assert := NewAssert(t)
-	invalidCtx := &rpcContext{inner: nil}
-
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -165,17 +164,6 @@ func Test_equals(t *testing.T) {
 		{"abc", "ab", false},
 		{"", nil, false},
 		{"", 6, false},
-		{"", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("")}, true},
-		{"abc", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, true},
-		{"abc", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("ab")}, false},
-		{"abc", rpcString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, false},
-		{"hi", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: nil}, false},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("")}, "", true},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "abc", true},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
-		{rpcString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("abc")}, "ab", false},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: nil}, "hi", false},
-		{errorRPCString, errorRPCString, true},
 
 		{[]byte{}, []byte{}, true},
 		{[]byte{12}, []byte{12}, true},
@@ -186,14 +174,6 @@ func Test_equals(t *testing.T) {
 		{[]byte{12, 13}, []byte{12}, false},
 		{[]byte{13, 12}, nil, false},
 		{[]byte{}, nil, false},
-		{[]byte{}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, true},
-		{[]byte{12, 13}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12, 13}}, true},
-		{[]byte{12, 13}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12}}, false},
-		{[]byte{12, 13}, rpcBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, false},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, true},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12, 13}}, []byte{12, 13}, true},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
-		{rpcBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{12}}, []byte{12, 13}, false},
 
 		{nilRPCMap, nilRPCMap, true},
 		{toRPCMap(map[string]interface{}{}, ctx), toRPCMap(map[string]interface{}{}, ctx), true},
@@ -259,7 +239,6 @@ func Test_equals(t *testing.T) {
 		{loggerPtr, loggerPtr, true},
 		{NewLogger(), NewLogger(), false},
 
-		{errorRPCBytes, errorRPCBytes, true},
 		{nilRPCArray, nilRPCArray, true},
 		{nilRPCMap, nilRPCMap, true},
 	}
@@ -298,7 +277,6 @@ func Test_equals_exceptions(t *testing.T) {
 
 func Test_contains(t *testing.T) {
 	assert := NewAssert(t)
-	invalidCtx := &rpcContext{inner: nil}
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -306,63 +284,37 @@ func Test_contains(t *testing.T) {
 	}
 
 	testCollection := [][3]interface{}{
-		{"hello world", "world", 1},
-		{"hello world", "you", 0},
-		{"hello world", 3, -1},
-		{"hello world", nil, -1},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", 1},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "you", 0},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, 3, -1},
-		{rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, nil, -1},
-		{rpcString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, "world", -1},
-		{"hello world", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("world")}, 1},
-		{"hello world", rpcString{ctx: ctx, status: rpcStatusAllocated, bytes: ([]byte)("you")}, 0},
-		{"hello world", rpcString{ctx: invalidCtx, status: rpcStatusAllocated, bytes: ([]byte)("hello world")}, -1},
-		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), 1},
-		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), 0},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), 0, 0},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), nil, 0},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), true, 0},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "1", -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "3", -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), true, -1},
-		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), nil, -1},
-		{[]byte{}, []byte{}, 1},
-		{[]byte{1, 2, 3, 4}, []byte{}, 1},
-		{[]byte{1, 2, 3, 4}, []byte{2, 3}, 1},
-		{[]byte{1, 2}, []byte{1, 2}, 1},
-		{[]byte{1, 2}, []byte{1, 2, 3}, 0},
-		{[]byte{1, 2, 3, 4}, []byte{2, 4}, 0},
-		{[]byte{1, 2}, 1, -1},
-		{[]byte{1, 2}, true, -1},
-		{[]byte{1, 2}, nil, -1},
+		{"hello world", "world", true},
+		{"hello world", "you", false},
+		{"hello world", 3, false},
+		{"hello world", nil, false},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), true},
+		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), 0, false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), nil, false},
+		{toRPCArray([]interface{}{1, 2, 3}, ctx), true, false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "1", false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "3", false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), true, false},
+		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), nil, false},
+		{[]byte{}, []byte{}, true},
+		{[]byte{1, 2, 3, 4}, []byte{}, true},
+		{[]byte{1, 2, 3, 4}, []byte{2, 3}, true},
+		{[]byte{1, 2}, []byte{1, 2}, true},
+		{[]byte{1, 2}, []byte{1, 2, 3}, false},
+		{[]byte{1, 2, 3, 4}, []byte{2, 4}, false},
+		{[]byte{1, 2}, 1, false},
+		{[]byte{1, 2}, true, false},
+		{[]byte{1, 2}, nil, false},
 
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, []byte{}, 1},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, 1},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{2, 3}, 1},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, []byte{1, 3}, 0},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, 1, -1},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, true, -1},
-		{rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, nil, -1},
-		{rpcBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{1, 2, 3, 4}}, []byte{}, -1},
-
-		{[]byte{}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, 1},
-		{[]byte{1, 2, 3, 4}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{}}, 1},
-		{[]byte{1, 2, 3, 4}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{2, 3}}, 1},
-
-		{[]byte{1, 2}, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 3}}, 0},
-		{1, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{true, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{nil, rpcBytes{ctx: ctx, status: rpcStatusAllocated, bytes: []byte{1, 2}}, -1},
-		{[]byte{1, 2, 3, 4}, rpcBytes{ctx: invalidCtx, status: rpcStatusAllocated, bytes: []byte{2, 3}}, -1},
-
-		{nil, "3", -1},
-		{nil, nil, -1},
-		{true, 3, -1},
-		{float64(0), float64(0), -1},
+		{nil, "3", false},
+		{nil, nil, false},
+		{true, 3, false},
+		{float64(0), float64(0), false},
 	}
 
 	for _, v := range testCollection {
+		fmt.Println(v[0], v[1], v[2])
 		assert(contains(v[0], v[1])).Equals(v[2])
 	}
 }
@@ -379,5 +331,5 @@ func Test_contains_exceptions(t *testing.T) {
 	errorArray.Append(true)
 	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
 
-	assert(contains(errorArray, true)).Equals(0)
+	assert(contains(errorArray, true)).Equals(false)
 }

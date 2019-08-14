@@ -16,7 +16,7 @@ var service = newServiceMeta().
 	}).
 	Echo("sayGoodBye", true, func(
 		ctx Context,
-		name rpcString,
+		name string,
 	) Return {
 		return nil
 	})
