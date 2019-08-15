@@ -202,15 +202,3 @@ func AddPrefixPerLine(origin string, prefix string) string {
 	}
 	return buf.String()
 }
-
-func toRPCMap(val map[string]interface{}, ctx *rpcContext) rpcMap {
-	if val == nil {
-		return nilRPCMap
-	}
-
-	ret := newRPCMap(ctx)
-	for name, value := range val {
-		ret.Set(name, value)
-	}
-	return ret
-}

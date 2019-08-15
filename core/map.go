@@ -108,6 +108,20 @@ func newRPCMap(ctx *rpcContext) rpcMap {
 	return nilRPCMap
 }
 
+func newRPCMapByMap(ctx *rpcContext, val map[string]interface{}) rpcMap {
+	ret := newRPCMap(ctx)
+	if val != nil {
+		for name, value := range val {
+			if !ret.Set(name, value) {
+				ret.release()
+				return nilRPCMap
+			}
+		}
+	}
+
+	return ret
+}
+
 func (p rpcMap) ok() bool {
 	return p.in != nil &&
 		p.ctx != nil &&
