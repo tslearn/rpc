@@ -60,7 +60,7 @@ func TestAssert_Contains(t *testing.T) {
 	assert("hello").Contains("")
 	assert("hello").Contains("o")
 
-	assert(toRPCArray([]interface{}{1, 2}, ctx)).Contains(int64(2))
+	assert(newRPCArrayByArray(ctx, []interface{}{1, 2})).Contains(int64(2))
 
 	assertFailedFn(func() {
 		assert(3).Contains(3)
@@ -75,7 +75,7 @@ func TestAssert_Contains(t *testing.T) {
 		assert(nil).Contains(nil)
 	})
 	assertFailedFn(func() {
-		assert(toRPCArray([]interface{}{1, 3}, ctx)).Contains(nil)
+		assert(newRPCArrayByArray(ctx, []interface{}{1, 3})).Contains(nil)
 	})
 	assertFailedFn(func() {
 		assert().Contains(2)
@@ -253,7 +253,7 @@ func Test_equals(t *testing.T) {
 		},
 		{
 			toRPCMap(map[string]interface{}{"test": 9007199254740991}, ctx),
-			toRPCArray([]interface{}{9007199254740991}, ctx),
+			newRPCArrayByArray(ctx, []interface{}{9007199254740991}),
 			false,
 		},
 		{
@@ -278,15 +278,16 @@ func Test_equals(t *testing.T) {
 		},
 		{toRPCMap(map[string]interface{}{}, ctx), nil, false},
 		{nilRPCArray, nilRPCArray, true},
-		{toRPCArray([]interface{}{}, ctx), toRPCArray([]interface{}{}, ctx), true},
-		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1}, ctx), true},
-		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1, 2}, ctx), true},
-		{toRPCArray([]interface{}{1, 2}, ctx), 3, false},
-		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{1}, ctx), false},
-		{toRPCArray([]interface{}{1}, ctx), toRPCArray([]interface{}{1, 2}, ctx), false},
-		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray([]interface{}{2, 1}, ctx), false},
-		{toRPCArray([]interface{}{1, 2}, ctx), toRPCArray(nil, ctx), false},
-		{toRPCArray([]interface{}{}, ctx), toRPCArray(nil, ctx), false},
+
+		{newRPCArrayByArray(ctx, []interface{}{}), newRPCArrayByArray(ctx, []interface{}{}), true},
+		{newRPCArrayByArray(ctx, []interface{}{1}), newRPCArrayByArray(ctx, []interface{}{1}), true},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, []interface{}{1, 2}), true},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2}), 3, false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, []interface{}{1}), false},
+		{newRPCArrayByArray(ctx, []interface{}{1}), newRPCArrayByArray(ctx, []interface{}{1, 2}), false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, []interface{}{2, 1}), false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, nil), false},
+		{newRPCArrayByArray(ctx, []interface{}{}), newRPCArrayByArray(ctx, nil), true},
 
 		{nil, nil, true},
 		{nil, (*Logger)(nil), true},
@@ -357,11 +358,11 @@ func Test_contains(t *testing.T) {
 		{"hello world", "you", false},
 		{"hello world", 3, false},
 		{"hello world", nil, false},
-		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int64(3), true},
-		{toRPCArray([]interface{}{1, 2, int64(3)}, ctx), int(3), false},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), 0, false},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), nil, false},
-		{toRPCArray([]interface{}{1, 2, 3}, ctx), true, false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2, int64(3)}), int64(3), true},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2, int64(3)}), int(3), false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2, 3}), 0, false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2, 3}), nil, false},
+		{newRPCArrayByArray(ctx, []interface{}{1, 2, 3}), true, false},
 		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "1", false},
 		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), "3", false},
 		{toRPCMap(map[string]interface{}{"1": 1, "2": 2}, ctx), true, false},

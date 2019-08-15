@@ -787,29 +787,29 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 	}
 
 	testCollection := [][2]interface{}{
-		{toRPCArray([]interface{}{}, ctx), []byte{64}},
-		{toRPCArray([]interface{}{true}, ctx), []byte{65, 6, 0, 0, 0, 2}},
-		{toRPCArray([]interface{}{true, false}, ctx), []byte{66, 7, 0, 0, 0, 2, 3}},
-		{toRPCArray([]interface{}{
+		{newRPCArrayByArray(ctx, []interface{}{}), []byte{64}},
+		{newRPCArrayByArray(ctx, []interface{}{true}), []byte{65, 6, 0, 0, 0, 2}},
+		{newRPCArrayByArray(ctx, []interface{}{true, false}), []byte{66, 7, 0, 0, 0, 2, 3}},
+		{newRPCArrayByArray(ctx, []interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}, ctx), []byte{
+		}), []byte{
 			94, 35, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		}},
-		{toRPCArray([]interface{}{
+		{newRPCArrayByArray(ctx, []interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}, ctx), []byte{
+		}), []byte{
 			95, 40, 0, 0, 0, 31, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		}},
-		{toRPCArray([]interface{}{
+		{newRPCArrayByArray(ctx, []interface{}{
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-		}, ctx), []byte{
+		}), []byte{
 			95, 41, 0, 0, 0, 32, 0, 0, 0,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,

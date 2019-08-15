@@ -42,6 +42,19 @@ func newRPCArray(ctx *rpcContext) rpcArray {
 	return nilRPCArray
 }
 
+func newRPCArrayByArray(ctx *rpcContext, val []interface{}) rpcArray {
+	ret := newRPCArray(ctx)
+	if val != nil {
+		for i := 0; i < len(val); i++ {
+			if !ret.Append(val[i]) {
+				ret.release()
+				return nilRPCArray
+			}
+		}
+	}
+	return ret
+}
+
 func (p rpcArray) ok() bool {
 	return p.in != nil &&
 		p.ctx != nil &&
