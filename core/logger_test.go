@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -166,7 +167,7 @@ func TestLogger_Debug(t *testing.T) {
 
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Debug:(\\s)message\n$"
-
+	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -181,7 +182,7 @@ func TestLogger_Info(t *testing.T) {
 
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Info:(\\s)message\n$"
-
+	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -196,7 +197,7 @@ func TestLogger_Warning(t *testing.T) {
 
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Warning:(\\s)message\n$"
-
+	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -211,7 +212,7 @@ func TestLogger_Error(t *testing.T) {
 
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Error:(\\s)message\n$"
-
+	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -226,6 +227,6 @@ func TestLogger_Fatal(t *testing.T) {
 
 	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
 		"(\\s)Error:(\\s)message\n$"
-
+	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }

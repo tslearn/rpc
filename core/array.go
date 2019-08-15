@@ -65,11 +65,7 @@ func (p *rpcArray) release() {
 }
 
 func (p rpcArray) getIS() (*rpcArrayInner, *rpcStream) {
-	if p.ok() {
-		return p.in, p.ctx.inner.stream
-	} else {
-		return nil, nil
-	}
+	return p.in, p.ctx.getCacheStream()
 }
 
 // Size ...
@@ -77,7 +73,7 @@ func (p rpcArray) Size() int {
 	if in, _ := p.getIS(); in != nil {
 		return len(in.items)
 	} else {
-		return 0
+		return -1
 	}
 }
 

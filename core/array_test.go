@@ -110,7 +110,33 @@ func TestRpcArray_release(t *testing.T) {
 	bugRPCArray2.release()
 }
 
-func TestRpcArray_getStream(t *testing.T) {
+func TestRpcArray_getIS(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	nilRPCArray := rpcArray{}
+	assert(nilRPCArray.getIS()).IsNil()
+
+	emptyRPCArray := newRPCArray(validCtx)
+	assert(emptyRPCArray.getIS()).IsNotNil()
+
+	bugRPCArray1 := rpcArray{
+		ctx: nil,
+		in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
+	}
+	assert(bugRPCArray1.getIS()).Equals(bugRPCArray1.in, nil)
+	bugRPCArray2 := rpcArray{
+		ctx: validCtx,
+		in:  nil,
+	}
+	assert(bugRPCArray2.getIS()).Equals(nil, validCtx.inner.stream)
+}
+
+func TestRpcArray_Size(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -120,23 +146,26 @@ func TestRpcArray_getStream(t *testing.T) {
 	invalidCtx := &rpcContext{
 		inner: nil,
 	}
-	validArray := newRPCArray(validCtx)
-	invalidArray := newRPCArray(invalidCtx)
-	assert(validArray.ctx.getCacheStream()).IsNotNil()
-	assert(invalidArray.ctx.getCacheStream()).IsNil()
-	assert(invalidArray.Size()).Equals(0)
+	validRPCArray := newRPCArray(validCtx)
+	invalidRPCArray := newRPCArray(invalidCtx)
+
+	for i := 1; i < 522; i++ {
+		assert(validRPCArray.AppendBool(true)).IsTrue()
+		assert(invalidRPCArray.AppendBool(true)).IsFalse()
+		assert(validRPCArray.Size()).Equals(i)
+		assert(invalidRPCArray.Size()).Equals(-1)
+	}
 }
 
 func TestRpcArray_Get(t *testing.T) {
 	assert := NewAssert(t)
-	testArray := make([]interface{}, 16, 16)
-
-	testCtx := &rpcContext{
+	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
 
+	testArray := make([]interface{}, 14, 14)
 	testArray[0] = nil
 	testArray[1] = false
 	testArray[2] = float64(3.14)
@@ -146,37 +175,36 @@ func TestRpcArray_Get(t *testing.T) {
 	testArray[6] = "hello"
 	testArray[7] = []byte{}
 	testArray[8] = []byte{0x53}
-	testArray[9] = newRPCArray(testCtx)
-	testArray10 := newRPCArray(testCtx)
-	testArray10.Append("world")
-	testArray[10] = testArray10
-	testArray[11] = newRPCMap(testCtx)
-	testSmallArray12 := newRPCMap(testCtx)
-	testSmallArray12.Set("hello", "world")
-	testArray[12] = testSmallArray12
+	testArray[9] = newRPCArray(validCtx)
+	testArray[10] = newRPCArrayByArray(validCtx, Array{"world"})
+	testArray[11] = newRPCMap(validCtx)
+	testArray[12] = newRPCMapByMap(validCtx, Map{"hello": "world"})
 
-	fnTestArray := func(array []interface{}, index int, tp string) {
+	fnTestArray := func(array Array, index int, tp string) {
+		// set the last one to the current index
 		array[len(array)-1] = array[index]
 
-		inner := &rpcInnerContext{
-			stream: NewRPCStream(),
-		}
 		ctx := &rpcContext{
-			inner: inner,
+			inner: &rpcInnerContext{
+				stream: NewRPCStream(),
+			},
 		}
-		rpcArray := newRPCArray(ctx)
-		for _, v := range array {
-			rpcArray.Append(v)
-		}
-
 		stream := NewRPCStream()
-		stream.Write(rpcArray)
+		stream.Write(newRPCArrayByArray(ctx, array))
 		arr, _ := stream.ReadRPCArray(ctx)
+
+		// ctx is valid
+		assert(arr.Get(arr.Size()-1)).Equals(array[index], true)
+		assert(arr.ctx.getCacheStream().GetWritePos()).
+			Equals(arr.ctx.getCacheStream().GetReadPos())
+		assert(arr.Get(index)).Equals(array[index], true)
+		assert(arr.Get(arr.Size())).Equals(nil, false)
 
 		switch tp {
 		case "nil":
 			assert(arr.GetNil(arr.Size() - 1)).Equals(true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetNil(index)).Equals(true)
 			assert(arr.GetNil(arr.Size())).Equals(false)
 			ctx.close()
@@ -184,7 +212,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetNil(index)).Equals(false)
 		case "bool":
 			assert(arr.GetBool(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetBool(index)).Equals(array[index], true)
 			assert(arr.GetBool(arr.Size())).Equals(false, false)
 			ctx.close()
@@ -192,7 +221,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetBool(index)).Equals(false, false)
 		case "float64":
 			assert(arr.GetFloat64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetFloat64(index)).Equals(array[index], true)
 			assert(arr.GetFloat64(arr.Size())).Equals(float64(0), false)
 			ctx.close()
@@ -200,7 +230,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetFloat64(index)).Equals(float64(0), false)
 		case "int64":
 			assert(arr.GetInt64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetInt64(index)).Equals(array[index], true)
 			assert(arr.GetInt64(arr.Size())).Equals(int64(0), false)
 			ctx.close()
@@ -208,7 +239,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetInt64(index)).Equals(int64(0), false)
 		case "uint64":
 			assert(arr.GetUint64(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetUint64(index)).Equals(array[index], true)
 			assert(arr.GetUint64(arr.Size())).Equals(uint64(0), false)
 			ctx.close()
@@ -216,7 +248,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetUint64(index)).Equals(uint64(0), false)
 		case "string":
 			assert(arr.GetString(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetString(index)).Equals(array[index], true)
 			assert(arr.GetString(arr.Size())).Equals("", false)
 			ctx.close()
@@ -224,7 +257,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetString(index)).Equals("", false)
 		case "bytes":
 			assert(arr.GetBytes(arr.Size()-1)).Equals(array[index], true)
-			assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
+			assert(arr.ctx.getCacheStream().GetWritePos()).
+				Equals(arr.ctx.getCacheStream().GetReadPos())
 			assert(arr.GetBytes(index)).Equals(array[index], true)
 			assert(arr.GetBytes(arr.Size())).Equals(emptyBytes, false)
 			ctx.close()
@@ -232,7 +266,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetBytes(index)).Equals(emptyBytes, false)
 		case "rpcArray":
 			target1, ok := arr.GetRPCArray(arr.Size() - 1)
-			assert(ok, arr.ctx.getCacheStream().GetWritePos()).Equals(true, arr.ctx.getCacheStream().GetReadPos())
+			assert(ok, arr.ctx.getCacheStream().GetWritePos()).
+				Equals(true, arr.ctx.getCacheStream().GetReadPos())
 			target2, ok := arr.GetRPCArray(index)
 			assert(arr.GetRPCArray(arr.Size())).Equals(nilRPCArray, false)
 			ctx.close()
@@ -242,7 +277,8 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(target2.ctx).Equals(ctx)
 		case "rpcMap":
 			target1, ok := arr.GetRPCMap(arr.Size() - 1)
-			assert(ok, arr.ctx.getCacheStream().GetWritePos()).Equals(true, arr.ctx.getCacheStream().GetReadPos())
+			assert(ok, arr.ctx.getCacheStream().GetWritePos()).
+				Equals(true, arr.ctx.getCacheStream().GetReadPos())
 			target2, ok := arr.GetRPCMap(index)
 			assert(arr.GetRPCMap(arr.Size())).Equals(nilRPCMap, false)
 			ctx.close()
@@ -250,14 +286,11 @@ func TestRpcArray_Get(t *testing.T) {
 			assert(arr.GetRPCMap(index)).Equals(nilRPCMap, false)
 			assert(target1.ctx).Equals(ctx)
 			assert(target2.ctx).Equals(ctx)
+		default:
+			panic("unknown token")
 		}
 
-		ctx.inner = inner
-		assert(arr.Get(arr.Size()-1)).Equals(array[index], true)
-		assert(arr.ctx.getCacheStream().GetWritePos()).Equals(arr.ctx.getCacheStream().GetReadPos())
-		assert(arr.Get(index)).Equals(array[index], true)
-		assert(arr.Get(arr.Size())).Equals(nil, false)
-		ctx.close()
+		// ctx is closed
 		assert(arr.Get(arr.Size()-1)).Equals(nil, false)
 		assert(arr.Get(index)).Equals(nil, false)
 		assert(ctx.close()).IsFalse()
@@ -278,7 +311,7 @@ func TestRpcArray_Get(t *testing.T) {
 	fnTestArray(testArray, 12, "rpcMap")
 }
 
-func TestRpcArray_Set(t *testing.T) {
+func TestRpcArray_Set_Append(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -295,73 +328,133 @@ func TestRpcArray_Set(t *testing.T) {
 
 	assert(array1.AppendNil()).IsTrue()
 	assert(array1.SetNil(0)).IsTrue()
+	assert(array1.SetNil(-1)).IsFalse()
+	assert(array1.SetNil(1000)).IsFalse()
 	assert(array2.AppendNil()).IsFalse()
 	assert(array2.SetNil(0)).IsFalse()
+	assert(array2.SetNil(-1)).IsFalse()
+	assert(array2.SetNil(1000)).IsFalse()
 	assert(array3.AppendNil()).IsFalse()
 	assert(array3.SetNil(0)).IsFalse()
+	assert(array3.SetNil(-1)).IsFalse()
+	assert(array3.SetNil(1000)).IsFalse()
 
 	assert(array1.AppendBool(false)).IsTrue()
 	assert(array1.SetBool(0, false)).IsTrue()
+	assert(array1.SetBool(-1, false)).IsFalse()
+	assert(array1.SetBool(1000, false)).IsFalse()
 	assert(array2.AppendBool(false)).IsFalse()
 	assert(array2.SetBool(0, false)).IsFalse()
+	assert(array2.SetBool(-1, false)).IsFalse()
+	assert(array2.SetBool(1000, false)).IsFalse()
 	assert(array3.AppendBool(false)).IsFalse()
 	assert(array3.SetBool(0, false)).IsFalse()
+	assert(array3.SetBool(-1, false)).IsFalse()
+	assert(array3.SetBool(1000, false)).IsFalse()
 
 	assert(array1.AppendFloat64(3.14)).IsTrue()
 	assert(array1.SetFloat64(0, 3.14)).IsTrue()
+	assert(array1.SetFloat64(-1, 3.14)).IsFalse()
+	assert(array1.SetFloat64(1000, 3.14)).IsFalse()
 	assert(array2.AppendFloat64(3.14)).IsFalse()
 	assert(array2.SetFloat64(0, 3.14)).IsFalse()
+	assert(array2.SetFloat64(-1, 3.14)).IsFalse()
+	assert(array2.SetFloat64(1000, 3.14)).IsFalse()
 	assert(array3.AppendFloat64(3.14)).IsFalse()
 	assert(array3.SetFloat64(0, 3.14)).IsFalse()
+	assert(array3.SetFloat64(-1, 3.14)).IsFalse()
+	assert(array3.SetFloat64(1000, 3.14)).IsFalse()
 
 	assert(array1.AppendInt64(100)).IsTrue()
 	assert(array1.SetInt64(0, 100)).IsTrue()
+	assert(array1.SetInt64(-1, 100)).IsFalse()
+	assert(array1.SetInt64(1000, 100)).IsFalse()
 	assert(array2.AppendInt64(100)).IsFalse()
 	assert(array2.SetInt64(0, 100)).IsFalse()
+	assert(array2.SetInt64(-1, 100)).IsFalse()
+	assert(array2.SetInt64(1000, 100)).IsFalse()
 	assert(array3.AppendInt64(100)).IsFalse()
 	assert(array3.SetInt64(0, 100)).IsFalse()
+	assert(array3.SetInt64(-1, 100)).IsFalse()
+	assert(array3.SetInt64(1000, 100)).IsFalse()
 
 	assert(array1.AppendUint64(100)).IsTrue()
 	assert(array1.SetUint64(0, 100)).IsTrue()
+	assert(array1.SetUint64(-1, 100)).IsFalse()
+	assert(array1.SetUint64(1000, 100)).IsFalse()
 	assert(array2.AppendUint64(100)).IsFalse()
 	assert(array2.SetUint64(0, 100)).IsFalse()
+	assert(array2.SetUint64(-1, 100)).IsFalse()
+	assert(array2.SetUint64(1000, 100)).IsFalse()
 	assert(array3.AppendUint64(100)).IsFalse()
 	assert(array3.SetUint64(0, 100)).IsFalse()
+	assert(array3.SetUint64(-1, 100)).IsFalse()
+	assert(array3.SetUint64(1000, 100)).IsFalse()
 
 	assert(array1.AppendString("hello")).IsTrue()
 	assert(array1.SetString(0, "hello")).IsTrue()
+	assert(array1.SetString(-1, "hello")).IsFalse()
+	assert(array1.SetString(1000, "hello")).IsFalse()
 	assert(array2.AppendString("hello")).IsFalse()
 	assert(array2.SetString(0, "hello")).IsFalse()
+	assert(array2.SetString(-1, "hello")).IsFalse()
+	assert(array2.SetString(1000, "hello")).IsFalse()
 	assert(array3.AppendString("hello")).IsFalse()
 	assert(array3.SetString(0, "hello")).IsFalse()
+	assert(array3.SetString(-1, "hello")).IsFalse()
+	assert(array3.SetString(1000, "hello")).IsFalse()
 
 	assert(array1.AppendBytes([]byte{1, 2, 3})).IsTrue()
 	assert(array1.SetBytes(0, []byte{1, 2, 3})).IsTrue()
+	assert(array1.SetBytes(-1, []byte{1, 2, 3})).IsFalse()
+	assert(array1.SetBytes(1000, []byte{1, 2, 3})).IsFalse()
 	assert(array2.AppendBytes([]byte{1, 2, 3})).IsFalse()
 	assert(array2.SetBytes(0, []byte{1, 2, 3})).IsFalse()
+	assert(array2.SetBytes(-1, []byte{1, 2, 3})).IsFalse()
+	assert(array2.SetBytes(1000, []byte{1, 2, 3})).IsFalse()
 	assert(array3.AppendBytes([]byte{1, 2, 3})).IsFalse()
 	assert(array3.SetBytes(0, []byte{1, 2, 3})).IsFalse()
+	assert(array3.SetBytes(-1, []byte{1, 2, 3})).IsFalse()
+	assert(array3.SetBytes(1000, []byte{1, 2, 3})).IsFalse()
 
 	rpcArray := newRPCArray(validCtx)
 	assert(array1.AppendRPCArray(rpcArray)).IsTrue()
 	assert(array1.SetRPCArray(0, rpcArray)).IsTrue()
+	assert(array1.SetRPCArray(-1, rpcArray)).IsFalse()
+	assert(array1.SetRPCArray(1000, rpcArray)).IsFalse()
 	assert(array2.AppendRPCArray(rpcArray)).IsFalse()
 	assert(array2.SetRPCArray(0, rpcArray)).IsFalse()
+	assert(array2.SetRPCArray(-1, rpcArray)).IsFalse()
+	assert(array2.SetRPCArray(1000, rpcArray)).IsFalse()
 	assert(array3.AppendRPCArray(rpcArray)).IsFalse()
 	assert(array3.SetRPCArray(0, rpcArray)).IsFalse()
+	assert(array3.SetRPCArray(-1, rpcArray)).IsFalse()
+	assert(array3.SetRPCArray(1000, rpcArray)).IsFalse()
 
 	rpcMap := newRPCMap(validCtx)
 	assert(array1.AppendRPCMap(rpcMap)).IsTrue()
 	assert(array1.SetRPCMap(0, rpcMap)).IsTrue()
+	assert(array1.SetRPCMap(-1, rpcMap)).IsFalse()
+	assert(array1.SetRPCMap(1000, rpcMap)).IsFalse()
 	assert(array2.AppendRPCMap(rpcMap)).IsFalse()
 	assert(array2.SetRPCMap(0, rpcMap)).IsFalse()
+	assert(array2.SetRPCMap(-1, rpcMap)).IsFalse()
+	assert(array2.SetRPCMap(1000, rpcMap)).IsFalse()
 	assert(array3.AppendRPCMap(rpcMap)).IsFalse()
 	assert(array3.SetRPCMap(0, rpcMap)).IsFalse()
+	assert(array3.SetRPCMap(-1, rpcMap)).IsFalse()
+	assert(array3.SetRPCMap(1000, rpcMap)).IsFalse()
 
 	assert(array1.Append("hello")).IsTrue()
 	assert(array1.Set(0, "hello")).IsTrue()
+	assert(array1.Set(-1, "hello")).IsFalse()
+	assert(array1.Set(1000, "hello")).IsFalse()
 	assert(array2.Append("hello")).IsFalse()
 	assert(array2.Set(0, "hello")).IsFalse()
+	assert(array2.Set(-1, "hello")).IsFalse()
+	assert(array2.Set(1000, "hello")).IsFalse()
 	assert(array3.Append("hello")).IsFalse()
 	assert(array3.Set(0, "hello")).IsFalse()
+	assert(array3.Set(-1, "hello")).IsFalse()
+	assert(array3.Set(1000, "hello")).IsFalse()
 }
