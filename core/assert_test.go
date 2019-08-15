@@ -289,7 +289,7 @@ func Test_equals(t *testing.T) {
 		{newRPCArrayByArray(ctx, []interface{}{1}), newRPCArrayByArray(ctx, []interface{}{1, 2}), false},
 		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, []interface{}{2, 1}), false},
 		{newRPCArrayByArray(ctx, []interface{}{1, 2}), newRPCArrayByArray(ctx, nil), false},
-		{newRPCArrayByArray(ctx, []interface{}{}), newRPCArrayByArray(ctx, nil), true},
+		{newRPCArrayByArray(ctx, []interface{}{}), newRPCArrayByArray(ctx, nil), false},
 
 		{nil, nil, true},
 		{nil, (*Logger)(nil), true},

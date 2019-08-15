@@ -2,35 +2,34 @@ package core
 
 import "sync"
 
-var rpcArrayInnerCache = sync.Pool{
-	New: func() interface{} {
-		return &rpcArrayInner{
-			items: make([]int, 0, 64),
-		}
-	},
-}
-
 type rpcArrayInner struct {
 	items []int
 }
 
+var rpcArrayInnerCache = sync.Pool{
+	New: func() interface{} {
+		return &rpcArrayInner{
+			items: make([]int, 0, 32),
+		}
+	},
+}
+
 func (p *rpcArrayInner) free() {
-	if cap(p.items) == 64 {
+	if cap(p.items) == 32 {
 		p.items = p.items[:0]
 	} else {
-		p.items = make([]int, 0, 64)
+		p.items = make([]int, 0, 32)
 	}
 	rpcArrayInnerCache.Put(p)
 }
 
-// RPCArray ...
 type rpcArray struct {
 	ctx *rpcContext
 	in  *rpcArrayInner
 }
 
 func newRPCArray(ctx *rpcContext) rpcArray {
-	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
+	if ctx.ok() {
 		return rpcArray{
 			ctx: ctx,
 			in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
@@ -39,36 +38,34 @@ func newRPCArray(ctx *rpcContext) rpcArray {
 	return nilRPCArray
 }
 
-func newRPCArrayByArray(ctx *rpcContext, val []interface{}) rpcArray {
+func newRPCArrayByArray(ctx *rpcContext, val Array) rpcArray {
+	if val == nil {
+		return nilRPCArray
+	}
 	ret := newRPCArray(ctx)
-	if val != nil {
-		for i := 0; i < len(val); i++ {
-			if !ret.Append(val[i]) {
-				ret.release()
-				return nilRPCArray
-			}
+	for i := 0; i < len(val); i++ {
+		if !ret.Append(val[i]) {
+			ret.release()
+			return nilRPCArray
 		}
 	}
 	return ret
 }
 
 func (p rpcArray) ok() bool {
-	return p.in != nil &&
-		p.ctx != nil &&
-		p.ctx.inner != nil &&
-		p.ctx.inner.stream != nil
+	return p.in != nil && p.ctx.ok()
 }
 
-// Release ...
-func (p rpcArray) release() {
+func (p *rpcArray) release() {
 	if p.in != nil {
 		p.in.free()
 		p.in = nil
 	}
+	p.ctx = nil
 }
 
 func (p rpcArray) getIS() (*rpcArrayInner, *rpcStream) {
-	if p.in != nil && p.ctx != nil && p.ctx.inner != nil {
+	if p.ok() {
 		return p.in, p.ctx.inner.stream
 	} else {
 		return nil, nil

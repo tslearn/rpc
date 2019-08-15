@@ -1,8 +1,28 @@
 package core
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+	"unsafe"
+)
 
-func Test_RPCArray_newRPCArray(t *testing.T) {
+func TestRpcArrayInner_free(t *testing.T) {
+	assert := NewAssert(t)
+	for i := 0; i < 522; i++ {
+		arrayInner := rpcArrayInnerCache.New().(*rpcArrayInner)
+		assert(arrayInner).IsNotNil()
+		assert(len(arrayInner.items), cap(arrayInner.items)).Equals(0, 32)
+		for n := 0; n < i; n++ {
+			arrayInner.items = append(arrayInner.items, n)
+		}
+		assert(len(arrayInner.items)).Equals(i)
+		assert(len(arrayInner.items), cap(arrayInner.items) >= i).Equals(i, true)
+		arrayInner.free()
+		assert(len(arrayInner.items), cap(arrayInner.items)).Equals(0, 32)
+	}
+}
+
+func TestRpcArray_newRPCArray(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -12,13 +32,85 @@ func Test_RPCArray_newRPCArray(t *testing.T) {
 	invalidCtx := &rpcContext{
 		inner: nil,
 	}
-	assert(newRPCArray(validCtx).ctx).IsNotNil()
+	assert(newRPCArray(validCtx).ctx).Equals(validCtx)
 	assert(newRPCArray(validCtx).in).IsNotNil()
-	assert(newRPCArray(nil)).Equals(nilRPCArray)
-	assert(newRPCArray(invalidCtx)).Equals(nilRPCArray)
+	assert(newRPCArray(nil).ctx).IsNil()
+	assert(newRPCArray(nil).in).IsNil()
+	assert(newRPCArray(invalidCtx).ctx).IsNil()
+	assert(newRPCArray(invalidCtx).in).IsNil()
+	assert(nilRPCArray.ctx).IsNil()
+	assert(nilRPCArray.in).IsNil()
+
+	assert(newRPCArrayByArray(validCtx, nil).ctx).IsNil()
+	assert(newRPCArrayByArray(validCtx, nil).in).IsNil()
+
+	assert(newRPCArrayByArray(validCtx, []interface{}{nilContext}).ctx).IsNil()
+	assert(newRPCArrayByArray(validCtx, []interface{}{nilContext}).in).IsNil()
+
+	assert(newRPCArrayByArray(validCtx, []interface{}{}).ctx).Equals(validCtx)
+	assert(newRPCArrayByArray(validCtx, []interface{}{}).ok()).IsTrue()
+	assert(newRPCArrayByArray(validCtx, []interface{}{}).Size()).Equals(0)
+
+	assert(newRPCArrayByArray(validCtx, []interface{}{1}).ctx).Equals(validCtx)
+	assert(newRPCArrayByArray(validCtx, []interface{}{1}).ok()).IsTrue()
+	assert(newRPCArrayByArray(validCtx, []interface{}{1}).Size()).Equals(1)
 }
 
-func Test_RPCArray_getStream(t *testing.T) {
+func TestRpcArray_ok(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	assert(nilRPCArray.ok()).IsFalse()
+	assert(newRPCArray(validCtx).ok()).IsTrue()
+	assert(rpcArray{ctx: validCtx}.ok()).IsFalse()
+}
+
+func TestRpcArray_release(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	nilRPCArray := rpcArray{}
+	nilRPCArray.release()
+
+	emptyRPCArray := newRPCArray(validCtx)
+	emptyRPCArray.release()
+
+	assert(nilRPCArray.ctx).IsNil()
+	assert(nilRPCArray.in).IsNil()
+
+	assert(emptyRPCArray.ctx).IsNil()
+	assert(emptyRPCArray.in).IsNil()
+
+	bugRPCArray1 := rpcArray{
+		ctx: nil,
+		in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
+	}
+	bugRPCArray1.release()
+	assert(bugRPCArray1.ctx).IsNil()
+	assert(bugRPCArray1.in).IsNil()
+
+	bugRPCArray2 := rpcArray{
+		ctx: nil,
+		in:  (*rpcArrayInner)(unsafe.Pointer(uintptr(1323))),
+	}
+	defer func() {
+		if err := recover(); err != nil {
+			assert(fmt.Sprint(err)).Contains("runtime error")
+			fmt.Println(err)
+		}
+	}()
+	bugRPCArray2.release()
+}
+
+func TestRpcArray_getStream(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -35,7 +127,7 @@ func Test_RPCArray_getStream(t *testing.T) {
 	assert(invalidArray.Size()).Equals(0)
 }
 
-func Test_RPCArray_Get(t *testing.T) {
+func TestRpcArray_Get(t *testing.T) {
 	assert := NewAssert(t)
 	testArray := make([]interface{}, 16, 16)
 
@@ -186,7 +278,7 @@ func Test_RPCArray_Get(t *testing.T) {
 	fnTestArray(testArray, 12, "rpcMap")
 }
 
-func Test_RPCArray_Set(t *testing.T) {
+func TestRpcArray_Set(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{

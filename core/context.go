@@ -14,6 +14,10 @@ type rpcContext struct {
 	inner *rpcInnerContext
 }
 
+func (p *rpcContext) ok() bool {
+	return p != nil && p.inner != nil && p.inner.stream != nil
+}
+
 func (p *rpcContext) getCacheStream() *rpcStream {
 	if p != nil && p.inner != nil {
 		return p.inner.stream
