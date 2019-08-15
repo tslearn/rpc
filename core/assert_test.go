@@ -187,19 +187,19 @@ func Test_reportFail(t *testing.T) {
 func Test_isNil(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(isNil(nil)).IsTrue()
-	assert(isNil((*rpcStream)(nil))).IsTrue()
-	assert(isNil((*rpcArray)(nil))).IsTrue()
-	assert(isNil((*rpcMap)(nil))).IsTrue()
+	assert(assertIsNil(nil)).IsTrue()
+	assert(assertIsNil((*rpcStream)(nil))).IsTrue()
+	assert(assertIsNil((*rpcArray)(nil))).IsTrue()
+	assert(assertIsNil((*rpcMap)(nil))).IsTrue()
 
-	assert(isNil(nilRPCArray)).IsFalse()
-	assert(isNil(nilRPCMap)).IsFalse()
+	assert(assertIsNil(nilRPCArray)).IsFalse()
+	assert(assertIsNil(nilRPCMap)).IsFalse()
 
 	unsafeNil := unsafe.Pointer(nil)
 	uintptrNil := uintptr(0)
 
-	assert(isNil(unsafeNil)).IsTrue()
-	assert(isNil(uintptrNil)).IsTrue()
+	assert(assertIsNil(unsafeNil)).IsTrue()
+	assert(assertIsNil(uintptrNil)).IsTrue()
 }
 
 func Test_equals(t *testing.T) {

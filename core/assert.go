@@ -20,7 +20,7 @@ var reportFail = func(p *Assert) {
 	p.t.Fail()
 }
 
-func isNil(val interface{}) (ret bool) {
+func assertIsNil(val interface{}) (ret bool) {
 	if val == nil {
 		return true
 	}
@@ -122,8 +122,8 @@ func assertRPCMapEqual(left rpcMap, right rpcMap) bool {
 }
 
 func assertEquals(left interface{}, right interface{}) bool {
-	leftNil := isNil(left)
-	rightNil := isNil(right)
+	leftNil := assertIsNil(left)
+	rightNil := assertIsNil(right)
 
 	if leftNil {
 		return rightNil
@@ -252,7 +252,7 @@ func (p *Assert) IsNil() {
 	}
 
 	for i := 0; i < len(p.args); i++ {
-		if !isNil(p.args[i]) {
+		if !assertIsNil(p.args[i]) {
 			reportFail(p)
 			return
 		}
@@ -267,7 +267,7 @@ func (p *Assert) IsNotNil() {
 	}
 
 	for i := 0; i < len(p.args); i++ {
-		if isNil(p.args[i]) {
+		if assertIsNil(p.args[i]) {
 			reportFail(p)
 			return
 		}
