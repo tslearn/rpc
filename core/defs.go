@@ -1,5 +1,17 @@
 package core
 
+// RPCStreamWriteErrorCode ...
+type RPCStreamWriteErrorCode int
+
+const (
+	RPCStreamWriteOK RPCStreamWriteErrorCode = iota
+	RPCStreamWriteUnsupportedType
+	RPCStreamWriteRPCArrayIsNotAvailable
+	RPCStreamWriteRPCArrayError
+	RPCStreamWriteRPCMapIsNotAvailable
+	RPCStreamWriteRPCMapError
+)
+
 type fnCacheFunc = func(
 	ctx *rpcContext,
 	stream *rpcStream,
@@ -10,6 +22,9 @@ type fnProcessorCallback = func(
 	stream *rpcStream,
 	success bool,
 )
+
+// rpcReturn is rpc function return type
+type rpcReturn struct{}
 
 // Any common Any type
 type Any = interface{}
