@@ -21,7 +21,7 @@ type rpcMapInner struct {
 	largeMap map[string]int
 }
 
-func (p *rpcMapInner) getIndex(name string) int {
+func (p *rpcMapInner) getItemPos(name string) int {
 	if p.largeMap == nil {
 		smallMap := p.smallMap
 		for i := 0; i < len(smallMap); i++ {
@@ -37,9 +37,9 @@ func (p *rpcMapInner) getIndex(name string) int {
 	return -1
 }
 
-func (p *rpcMapInner) setIndex(name string, idx int) bool {
-	smallMap := p.smallMap
+func (p *rpcMapInner) setItemPos(name string, idx int) bool {
 	if p.largeMap == nil {
+		smallMap := p.smallMap
 		// find the name
 		for i := 0; i < len(smallMap); i++ {
 			if smallMap[i].name == name {
@@ -65,6 +65,29 @@ func (p *rpcMapInner) setIndex(name string, idx int) bool {
 	return true
 }
 
+// Delete ...
+func (p *rpcMapInner) deleteItem(name string) bool {
+	if p.largeMap == nil {
+		smallMap := p.smallMap
+		for i := 0; i < len(smallMap); i++ {
+			if smallMap[i].name == name {
+				smallMap[i] = smallMap[len(smallMap)-1]
+				p.smallMap = p.smallMap[:len(smallMap)-1]
+				return true
+			}
+		}
+	} else {
+		if _, ok := p.largeMap[name]; ok {
+			delete(p.largeMap, name)
+			if len(p.largeMap) <= 16 {
+				p.toSmallMode()
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func (p *rpcMapInner) free() {
 	p.smallMap = p.smallMap[:0]
 	p.largeMap = nil
@@ -72,21 +95,25 @@ func (p *rpcMapInner) free() {
 }
 
 func (p *rpcMapInner) toLargeMode() {
-	p.largeMap = make(map[string]int)
-	for _, it := range p.smallMap {
-		p.largeMap[it.name] = it.pos
+	if p.largeMap == nil {
+		p.largeMap = make(map[string]int)
+		for _, it := range p.smallMap {
+			p.largeMap[it.name] = it.pos
+		}
+		p.smallMap = p.smallMap[:0]
 	}
-	p.smallMap = p.smallMap[:0]
 }
 
 func (p *rpcMapInner) toSmallMode() {
-	for key, value := range p.largeMap {
-		p.smallMap = append(p.smallMap, rpcMapItem{
-			name: key,
-			pos:  value,
-		})
+	if p.largeMap != nil && len(p.largeMap) <= 16 {
+		for key, value := range p.largeMap {
+			p.smallMap = append(p.smallMap, rpcMapItem{
+				name: key,
+				pos:  value,
+			})
+		}
+		p.largeMap = nil
 	}
-	p.largeMap = nil
 }
 
 // RPCMap ...
@@ -105,7 +132,7 @@ func newRPCMap(ctx *rpcContext) rpcMap {
 	return nilRPCMap
 }
 
-func newRPCMapByMap(ctx *rpcContext, val map[string]interface{}) rpcMap {
+func newRPCMapByMap(ctx *rpcContext, val Map) rpcMap {
 	ret := newRPCMap(ctx)
 	if val != nil {
 		for name, value := range val {
@@ -177,7 +204,7 @@ func (p rpcMap) Keys() []string {
 // GetNil ...
 func (p rpcMap) GetNil(name string) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadNil()
 		}
@@ -190,7 +217,7 @@ func (p rpcMap) SetNil(name string) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteNil()
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -198,7 +225,7 @@ func (p rpcMap) SetNil(name string) bool {
 // GetBool ...
 func (p rpcMap) GetBool(name string) (bool, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadBool()
 		}
@@ -211,7 +238,7 @@ func (p rpcMap) SetBool(name string, value bool) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteBool(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -219,7 +246,7 @@ func (p rpcMap) SetBool(name string, value bool) bool {
 // GetFloat64 ...
 func (p rpcMap) GetFloat64(name string) (float64, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadFloat64()
 		}
@@ -232,7 +259,7 @@ func (p rpcMap) SetFloat64(name string, value float64) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteFloat64(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -240,7 +267,7 @@ func (p rpcMap) SetFloat64(name string, value float64) bool {
 // GetInt64 ...
 func (p rpcMap) GetInt64(name string) (int64, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadInt64()
 		}
@@ -253,7 +280,7 @@ func (p rpcMap) SetInt64(name string, value int64) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteInt64(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -261,7 +288,7 @@ func (p rpcMap) SetInt64(name string, value int64) bool {
 // GetUint64 ...
 func (p rpcMap) GetUint64(name string) (uint64, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadUint64()
 		}
@@ -274,7 +301,7 @@ func (p rpcMap) SetUint64(name string, value uint64) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteUint64(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -282,7 +309,7 @@ func (p rpcMap) SetUint64(name string, value uint64) bool {
 // GetRPCString ...
 func (p rpcMap) GetString(name string) (string, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadString()
 		}
@@ -295,7 +322,7 @@ func (p rpcMap) SetString(name string, value string) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteString(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -303,7 +330,7 @@ func (p rpcMap) SetString(name string, value string) bool {
 // GetRPCBytes ...
 func (p rpcMap) GetBytes(name string) ([]byte, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadBytes()
 		}
@@ -316,7 +343,7 @@ func (p rpcMap) SetBytes(name string, value []byte) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteBytes(value)
-		return in.setIndex(name, idx)
+		return in.setItemPos(name, idx)
 	}
 	return false
 }
@@ -324,7 +351,7 @@ func (p rpcMap) SetBytes(name string, value []byte) bool {
 // GetRPCArray ...
 func (p rpcMap) GetRPCArray(name string) (rpcArray, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadRPCArray(p.ctx)
 		}
@@ -337,7 +364,7 @@ func (p rpcMap) SetRPCArray(name string, value rpcArray) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
-			return in.setIndex(name, idx)
+			return in.setItemPos(name, idx)
 		} else {
 			return false
 		}
@@ -348,7 +375,7 @@ func (p rpcMap) SetRPCArray(name string, value rpcArray) bool {
 // GetRPCMap ...
 func (p rpcMap) GetRPCMap(name string) (rpcMap, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.ReadRPCMap(p.ctx)
 		}
@@ -361,7 +388,7 @@ func (p rpcMap) SetRPCMap(name string, value rpcMap) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
-			return in.setIndex(name, idx)
+			return in.setItemPos(name, idx)
 		} else {
 			return false
 		}
@@ -372,7 +399,7 @@ func (p rpcMap) SetRPCMap(name string, value rpcMap) bool {
 // Get ...
 func (p rpcMap) Get(name string) (interface{}, bool) {
 	if in, s := p.getIS(); s != nil && name != "" {
-		if idx := in.getIndex(name); idx > 0 {
+		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
 			return s.Read(p.ctx)
 		}
@@ -385,7 +412,7 @@ func (p rpcMap) Set(name string, value interface{}) bool {
 	if in, s := p.getIS(); s != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.Write(value) == RPCStreamWriteOK {
-			return in.setIndex(name, idx)
+			return in.setItemPos(name, idx)
 		} else {
 			return false
 		}
@@ -396,24 +423,7 @@ func (p rpcMap) Set(name string, value interface{}) bool {
 // Delete ...
 func (p rpcMap) Delete(name string) bool {
 	if in, _ := p.getIS(); in != nil {
-		smallMap := in.smallMap
-		if in.largeMap == nil {
-			for i := 0; i < len(smallMap); i++ {
-				if smallMap[i].name == name {
-					smallMap[i] = smallMap[len(smallMap)-1]
-					in.smallMap = in.smallMap[:len(smallMap)-1]
-					return true
-				}
-			}
-		} else {
-			if _, ok := in.largeMap[name]; ok {
-				delete(in.largeMap, name)
-				if len(in.largeMap) == 16 {
-					in.toSmallMode()
-				}
-				return true
-			}
-		}
+		return in.deleteItem(name)
 	}
 	return false
 }

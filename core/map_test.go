@@ -5,6 +5,86 @@ import (
 	"testing"
 )
 
+func TestRpcMapInner_getItemPos_setItemPos_deleteItem(t *testing.T) {
+	assert := NewAssert(t)
+
+	fnTest := func(size int) {
+		mapInner := rpcMapInnerCache.Get().(*rpcMapInner)
+		assert(mapInner).IsNotNil()
+
+		// set value and get
+		for i := 0; i < size; i++ {
+			assert(mapInner.setItemPos(strconv.Itoa(i), i)).IsTrue()
+		}
+		for i := 0; i < size; i++ {
+			assert(mapInner.getItemPos(strconv.Itoa(i))).Equals(i)
+		}
+
+		// get unset value
+		for i := size; i < 2*size; i++ {
+			assert(mapInner.getItemPos(strconv.Itoa(i))).Equals(-1)
+		}
+
+		// reset new value
+		for i := 0; i < size; i++ {
+			assert(mapInner.setItemPos(strconv.Itoa(i), 2*i)).IsTrue()
+		}
+		for i := 0; i < size; i++ {
+			assert(mapInner.getItemPos(strconv.Itoa(i))).Equals(2 * i)
+		}
+
+		// delete
+		for i := 0; i < size; i++ {
+			assert(mapInner.deleteItem(strconv.Itoa(size + i))).IsFalse()
+			assert(mapInner.deleteItem(strconv.Itoa(i))).IsTrue()
+			assert(mapInner.deleteItem(strconv.Itoa(i))).IsFalse()
+		}
+	}
+
+	fnTest(0)
+	fnTest(1)
+	fnTest(8)
+	fnTest(15)
+	fnTest(16)
+	fnTest(17)
+	fnTest(47)
+	fnTest(99)
+	fnTest(1000)
+}
+
+func TestRpcMapInner_free(t *testing.T) {
+	assert := NewAssert(t)
+
+	fnTest := func(size int) {
+		mapInner := rpcMapInnerCache.Get().(*rpcMapInner)
+		assert(mapInner).IsNotNil()
+		assert(len(mapInner.smallMap)).Equals(0)
+		assert(cap(mapInner.smallMap)).Equals(16)
+		assert(mapInner.largeMap).IsNil()
+
+		// set value and get
+		for i := 0; i < size; i++ {
+			assert(mapInner.setItemPos(strconv.Itoa(i), i)).IsTrue()
+		}
+
+		mapInner.free()
+		assert(len(mapInner.smallMap)).Equals(0)
+		assert(cap(mapInner.smallMap)).Equals(16)
+		assert(mapInner.largeMap).IsNil()
+	}
+
+	for i := 0; i < 200; i++ {
+		fnTest(i)
+	}
+}
+
+//func TestRpcMapInner_toLargeMode_toSmallMode(t *testing.T) {
+//  assert := NewAssert(t)
+//
+//
+//
+//}
+
 func Test_RPCMap_newRPCArray(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
