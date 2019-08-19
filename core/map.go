@@ -208,7 +208,7 @@ func (p rpcMap) GetNil(name string) bool {
 
 // SetNil ...
 func (p rpcMap) SetNil(name string) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteNil()
 		return in.setItemPos(name, idx)
@@ -229,7 +229,7 @@ func (p rpcMap) GetBool(name string) (bool, bool) {
 
 // SetBool ...
 func (p rpcMap) SetBool(name string, value bool) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteBool(value)
 		return in.setItemPos(name, idx)
@@ -250,7 +250,7 @@ func (p rpcMap) GetFloat64(name string) (float64, bool) {
 
 // SetFloat64 ...
 func (p rpcMap) SetFloat64(name string, value float64) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteFloat64(value)
 		return in.setItemPos(name, idx)
@@ -271,7 +271,7 @@ func (p rpcMap) GetInt64(name string) (int64, bool) {
 
 // SetInt64 ...
 func (p rpcMap) SetInt64(name string, value int64) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteInt64(value)
 		return in.setItemPos(name, idx)
@@ -292,7 +292,7 @@ func (p rpcMap) GetUint64(name string) (uint64, bool) {
 
 // SetUint64 ...
 func (p rpcMap) SetUint64(name string, value uint64) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteUint64(value)
 		return in.setItemPos(name, idx)
@@ -313,7 +313,7 @@ func (p rpcMap) GetString(name string) (string, bool) {
 
 // SetRPCString ...
 func (p rpcMap) SetString(name string, value string) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteString(value)
 		return in.setItemPos(name, idx)
@@ -334,7 +334,7 @@ func (p rpcMap) GetBytes(name string) ([]byte, bool) {
 
 // SetRPCBytes ...
 func (p rpcMap) SetBytes(name string, value []byte) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		s.WriteBytes(value)
 		return in.setItemPos(name, idx)
@@ -355,7 +355,7 @@ func (p rpcMap) GetRPCArray(name string) (rpcArray, bool) {
 
 // SetRPCArray ...
 func (p rpcMap) SetRPCArray(name string, value rpcArray) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
 			return in.setItemPos(name, idx)
@@ -379,7 +379,7 @@ func (p rpcMap) GetRPCMap(name string) (rpcMap, bool) {
 
 // SetRPCMap ...
 func (p rpcMap) SetRPCMap(name string, value rpcMap) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
 			return in.setItemPos(name, idx)
@@ -403,7 +403,7 @@ func (p rpcMap) Get(name string) (interface{}, bool) {
 
 // Set ...
 func (p rpcMap) Set(name string, value interface{}) bool {
-	if in, s := p.getIS(); s != nil && name != "" {
+	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		idx := s.GetWritePos()
 		if s.Write(value) == RPCStreamWriteOK {
 			return in.setItemPos(name, idx)

@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"sort"
 	"strconv"
 	"testing"
 )
@@ -220,6 +222,51 @@ func TestRpcMap_Size(t *testing.T) {
 	}
 }
 
+func TestRpcMap_Keys(t *testing.T) {
+	assert := NewAssert(t)
+
+	fnTest := func(size int) {
+		mp := newRPCMap(&rpcContext{
+			inner: &rpcInnerContext{
+				stream: NewRPCStream(),
+			},
+		})
+
+		keys := make([]string, size, size)
+		for i := 0; i < size; i++ {
+			key := strconv.Itoa(i)
+			mp.Set(key, i)
+			keys[i] = key
+		}
+		retKeys := mp.Keys()
+		sort.Strings(retKeys)
+		sort.Strings(keys)
+
+		assert(fmt.Sprint(keys) == fmt.Sprint(retKeys)).IsTrue()
+	}
+
+	for i := 0; i < 252; i++ {
+		fnTest(i)
+	}
+
+	bugMap0 := rpcMap{}
+	bugMap1 := rpcMap{
+		ctx: &rpcContext{
+			inner: &rpcInnerContext{
+				stream: NewRPCStream(),
+			},
+		},
+		in: nil,
+	}
+	bugMap2 := rpcMap{
+		ctx: nil,
+		in:  rpcMapInnerCache.Get().(*rpcMapInner),
+	}
+	assert(len(bugMap0.Keys())).Equals(0)
+	assert(len(bugMap1.Keys())).Equals(0)
+	assert(len(bugMap2.Keys())).Equals(0)
+}
+
 func TestRpcMap_Get(t *testing.T) {
 	assert := NewAssert(t)
 	testSmallMap := make(Map)
@@ -281,12 +328,17 @@ func TestRpcMap_Get(t *testing.T) {
 			ctx: nil,
 			in:  rpcMapInnerCache.Get().(*rpcMapInner),
 		}
+		sm3 := rpcMap{
+			ctx: nil,
+			in:  nil,
+		}
 
 		assert(sm0.Get(name)).Equals(mp[name], true)
 		assert(sm0.Get("")).Equals(nil, false)
 		assert(sm0.Get("no")).Equals(nil, false)
 		assert(sm1.Get(name)).Equals(nil, false)
 		assert(sm2.Get(name)).Equals(nil, false)
+		assert(sm3.Get(name)).Equals(nil, false)
 		switch tp {
 		case "nil":
 			assert(sm0.GetNil(name)).Equals(true)
@@ -294,6 +346,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetNil("no")).Equals(false)
 			assert(sm1.GetNil(name)).Equals(false)
 			assert(sm2.GetNil(name)).Equals(false)
+			assert(sm3.GetNil(name)).Equals(false)
 			ctx.close()
 			assert(sm0.GetNil(name)).Equals(false)
 		case "bool":
@@ -302,6 +355,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetBool("no")).Equals(false, false)
 			assert(sm1.GetBool(name)).Equals(false, false)
 			assert(sm2.GetBool(name)).Equals(false, false)
+			assert(sm3.GetBool(name)).Equals(false, false)
 			ctx.close()
 			assert(sm0.GetBool(name)).Equals(false, false)
 		case "float64":
@@ -310,6 +364,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetFloat64("no")).Equals(float64(0), false)
 			assert(sm1.GetFloat64(name)).Equals(float64(0), false)
 			assert(sm2.GetFloat64(name)).Equals(float64(0), false)
+			assert(sm3.GetBool(name)).Equals(false, false)
 			ctx.close()
 			assert(sm0.GetFloat64(name)).Equals(float64(0), false)
 		case "int64":
@@ -318,6 +373,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetInt64("no")).Equals(int64(0), false)
 			assert(sm1.GetInt64(name)).Equals(int64(0), false)
 			assert(sm2.GetInt64(name)).Equals(int64(0), false)
+			assert(sm3.GetInt64(name)).Equals(int64(0), false)
 			ctx.close()
 			assert(sm0.GetInt64(name)).Equals(int64(0), false)
 		case "uint64":
@@ -326,6 +382,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetUint64("no")).Equals(uint64(0), false)
 			assert(sm1.GetUint64(name)).Equals(uint64(0), false)
 			assert(sm2.GetUint64(name)).Equals(uint64(0), false)
+			assert(sm3.GetUint64(name)).Equals(uint64(0), false)
 			ctx.close()
 			assert(sm0.GetUint64(name)).Equals(uint64(0), false)
 		case "string":
@@ -334,6 +391,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetString("no")).Equals("", false)
 			assert(sm1.GetString(name)).Equals("", false)
 			assert(sm2.GetString(name)).Equals("", false)
+			assert(sm3.GetString(name)).Equals("", false)
 			ctx.close()
 			assert(sm0.GetString(name)).Equals("", false)
 		case "bytes":
@@ -342,6 +400,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetBytes("no")).Equals(emptyBytes, false)
 			assert(sm1.GetBytes(name)).Equals(emptyBytes, false)
 			assert(sm2.GetBytes(name)).Equals(emptyBytes, false)
+			assert(sm3.GetBytes(name)).Equals(emptyBytes, false)
 			ctx.close()
 			assert(sm0.GetBytes(name)).Equals(emptyBytes, false)
 		case "rpcArray":
@@ -351,6 +410,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetRPCArray("no")).Equals(nilRPCArray, false)
 			assert(sm1.GetRPCArray(name)).Equals(nilRPCArray, false)
 			assert(sm2.GetRPCArray(name)).Equals(nilRPCArray, false)
+			assert(sm3.GetRPCArray(name)).Equals(nilRPCArray, false)
 			ctx.close()
 			assert(sm0.GetRPCArray(name)).Equals(nilRPCArray, false)
 			assert(target1.ctx).Equals(ctx)
@@ -361,6 +421,7 @@ func TestRpcMap_Get(t *testing.T) {
 			assert(sm0.GetRPCMap("no")).Equals(nilRPCMap, false)
 			assert(sm1.GetRPCMap(name)).Equals(nilRPCMap, false)
 			assert(sm2.GetRPCMap(name)).Equals(nilRPCMap, false)
+			assert(sm3.GetRPCMap(name)).Equals(nilRPCMap, false)
 			ctx.close()
 			assert(sm0.GetRPCMap(name)).Equals(nilRPCMap, false)
 			assert(target1.ctx).Equals(ctx)
@@ -427,60 +488,94 @@ func Test_RPCMap_Set(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			map100.Set(strconv.Itoa(i), i)
 		}
-		invalidMap := newRPCMap(invalidCtx)
+		invalidMap0 := newRPCMap(invalidCtx)
+		invalidMap1 := rpcMap{
+			ctx: validCtx,
+			in:  nil,
+		}
+		invalidMap2 := rpcMap{
+			ctx: nil,
+			in:  rpcMapInnerCache.Get().(*rpcMapInner),
+		}
 
 		switch tp {
 		case "nil":
 			assert(map0.SetNil(name)).IsTrue()
 			assert(map16.SetNil(name)).IsTrue()
 			assert(map100.SetNil(name)).IsTrue()
-			assert(invalidMap.SetNil(name)).IsFalse()
+			assert(invalidMap0.SetNil(name)).IsFalse()
+			assert(invalidMap1.SetNil(name)).IsFalse()
+			assert(invalidMap2.SetNil(name)).IsFalse()
 		case "bool":
 			assert(map0.SetBool(name, value.(bool))).IsTrue()
 			assert(map16.SetBool(name, value.(bool))).IsTrue()
 			assert(map100.SetBool(name, value.(bool))).IsTrue()
-			assert(invalidMap.SetBool(name, value.(bool))).IsFalse()
+			assert(invalidMap0.SetBool(name, value.(bool))).IsFalse()
+			assert(invalidMap1.SetBool(name, value.(bool))).IsFalse()
+			assert(invalidMap2.SetBool(name, value.(bool))).IsFalse()
 		case "int64":
 			assert(map0.SetInt64(name, value.(int64))).IsTrue()
 			assert(map16.SetInt64(name, value.(int64))).IsTrue()
 			assert(map100.SetInt64(name, value.(int64))).IsTrue()
-			assert(invalidMap.SetInt64(name, value.(int64))).IsFalse()
+			assert(invalidMap0.SetInt64(name, value.(int64))).IsFalse()
+			assert(invalidMap1.SetInt64(name, value.(int64))).IsFalse()
+			assert(invalidMap2.SetInt64(name, value.(int64))).IsFalse()
 		case "uint64":
 			assert(map0.SetUint64(name, value.(uint64))).IsTrue()
 			assert(map16.SetUint64(name, value.(uint64))).IsTrue()
 			assert(map100.SetUint64(name, value.(uint64))).IsTrue()
-			assert(invalidMap.SetUint64(name, value.(uint64))).IsFalse()
+			assert(invalidMap0.SetUint64(name, value.(uint64))).IsFalse()
+			assert(invalidMap1.SetUint64(name, value.(uint64))).IsFalse()
+			assert(invalidMap2.SetUint64(name, value.(uint64))).IsFalse()
 		case "float64":
 			assert(map0.SetFloat64(name, value.(float64))).IsTrue()
 			assert(map16.SetFloat64(name, value.(float64))).IsTrue()
 			assert(map100.SetFloat64(name, value.(float64))).IsTrue()
-			assert(invalidMap.SetFloat64(name, value.(float64))).IsFalse()
+			assert(invalidMap0.SetFloat64(name, value.(float64))).IsFalse()
+			assert(invalidMap1.SetFloat64(name, value.(float64))).IsFalse()
+			assert(invalidMap2.SetFloat64(name, value.(float64))).IsFalse()
 		case "string":
 			assert(map0.SetString(name, value.(string))).IsTrue()
 			assert(map16.SetString(name, value.(string))).IsTrue()
 			assert(map100.SetString(name, value.(string))).IsTrue()
-			assert(invalidMap.SetString(name, value.(string))).IsFalse()
+			assert(invalidMap0.SetString(name, value.(string))).IsFalse()
+			assert(invalidMap1.SetString(name, value.(string))).IsFalse()
+			assert(invalidMap2.SetString(name, value.(string))).IsFalse()
 		case "bytes":
 			assert(map0.SetBytes(name, value.([]byte))).IsTrue()
 			assert(map16.SetBytes(name, value.([]byte))).IsTrue()
 			assert(map100.SetBytes(name, value.([]byte))).IsTrue()
-			assert(invalidMap.SetBytes(name, value.([]byte))).IsFalse()
+			assert(invalidMap0.SetBytes(name, value.([]byte))).IsFalse()
+			assert(invalidMap1.SetBytes(name, value.([]byte))).IsFalse()
+			assert(invalidMap2.SetBytes(name, value.([]byte))).IsFalse()
 		case "rpcArray":
 			assert(map0.SetRPCArray(name, value.(rpcArray))).IsTrue()
 			assert(map16.SetRPCArray(name, value.(rpcArray))).IsTrue()
 			assert(map100.SetRPCArray(name, value.(rpcArray))).IsTrue()
-			assert(invalidMap.SetRPCArray(name, value.(rpcArray))).IsFalse()
+			assert(map0.SetRPCArray(name, rpcArray{})).IsFalse()
+			assert(map16.SetRPCArray(name, rpcArray{})).IsFalse()
+			assert(map100.SetRPCArray(name, rpcArray{})).IsFalse()
+			assert(invalidMap0.SetRPCArray(name, value.(rpcArray))).IsFalse()
+			assert(invalidMap1.SetRPCArray(name, value.(rpcArray))).IsFalse()
+			assert(invalidMap2.SetRPCArray(name, value.(rpcArray))).IsFalse()
 		case "rpcMap":
 			assert(map0.SetRPCMap(name, value.(rpcMap))).IsTrue()
 			assert(map16.SetRPCMap(name, value.(rpcMap))).IsTrue()
 			assert(map100.SetRPCMap(name, value.(rpcMap))).IsTrue()
-			assert(invalidMap.SetRPCMap(name, value.(rpcMap))).IsFalse()
+			assert(map0.SetRPCMap(name, rpcMap{})).IsFalse()
+			assert(map16.SetRPCMap(name, rpcMap{})).IsFalse()
+			assert(map100.SetRPCMap(name, rpcMap{})).IsFalse()
+			assert(invalidMap0.SetRPCMap(name, value.(rpcMap))).IsFalse()
+			assert(invalidMap1.SetRPCMap(name, value.(rpcMap))).IsFalse()
+			assert(invalidMap2.SetRPCMap(name, value.(rpcMap))).IsFalse()
 		}
 
 		assert(map0.Set(name, value)).IsTrue()
 		assert(map16.Set(name, value)).IsTrue()
 		assert(map100.Set(name, value)).IsTrue()
-		assert(invalidMap.Set(name, value)).IsFalse()
+		assert(invalidMap0.Set(name, value)).IsFalse()
+		assert(invalidMap1.Set(name, value)).IsFalse()
+		assert(invalidMap2.Set(name, value)).IsFalse()
 	}
 
 	fnTest("nil", "1", nil)
@@ -502,39 +597,66 @@ func Test_RPCMap_Set(t *testing.T) {
 	fnTest("bytes", "t7", []byte{123, 1})
 	fnTest("rpcArray", "t8", newRPCArray(ctx))
 	fnTest("rpcMap", "t9", newRPCMap(ctx))
-
-	mp := newRPCMap(ctx)
-	invalidCtx := &rpcContext{
-		inner: nil,
-	}
-	assert(mp.SetRPCArray("error", newRPCArray(invalidCtx))).IsFalse()
-	assert(mp.SetRPCMap("error", newRPCMap(invalidCtx))).IsFalse()
-	assert(mp.Set("error", make(chan bool))).IsFalse()
 }
 
 func Test_RPCMap_Delete(t *testing.T) {
 	assert := NewAssert(t)
-
-	rpcMap := newRPCMap(nil)
-
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidCtx := &rpcContext{
-		inner: nil,
+
+	map0 := newRPCMap(validCtx)
+	map16 := newRPCMap(validCtx)
+	map17 := newRPCMap(validCtx)
+	map100 := newRPCMap(validCtx)
+	bugMap0 := rpcMap{}
+	bugMap1 := rpcMap{
+		ctx: validCtx,
+		in:  nil,
 	}
-	validMap := newRPCMap(validCtx)
-	invalidMap := newRPCMap(invalidCtx)
+	bugMap2 := rpcMap{
+		ctx: nil,
+		in:  rpcMapInnerCache.Get().(*rpcMapInner),
+	}
 
-	assert(rpcMap.Delete("")).Equals(false)
-	assert(validMap.Delete("")).Equals(false)
-	assert(invalidMap.Delete("")).Equals(false)
-	assert(nilRPCMap.Delete("")).Equals(false)
+	for i := 1; i <= 16; i++ {
+		map16.Set(strconv.Itoa(i), i)
+	}
+	for i := 1; i <= 17; i++ {
+		map17.Set(strconv.Itoa(i), i)
+	}
+	for i := 1; i <= 100; i++ {
+		map100.Set(strconv.Itoa(i), i)
+	}
 
-	assert(rpcMap.Delete("hi")).Equals(false)
-	assert(validMap.Delete("hi")).Equals(false)
-	assert(invalidMap.Delete("hi")).Equals(false)
-	assert(nilRPCMap.Delete("hi")).Equals(false)
+	assert(map0.Delete("")).IsFalse()
+	assert(map16.Delete("")).IsFalse()
+	assert(map17.Delete("")).IsFalse()
+	assert(map100.Delete("")).IsFalse()
+	assert(bugMap0.Delete("")).IsFalse()
+	assert(bugMap1.Delete("")).IsFalse()
+	assert(bugMap2.Delete("")).IsFalse()
+
+	assert(map0.Delete("no")).IsFalse()
+	assert(map16.Delete("no")).IsFalse()
+	assert(map17.Delete("no")).IsFalse()
+	assert(map100.Delete("no")).IsFalse()
+	assert(bugMap0.Delete("no")).IsFalse()
+	assert(bugMap1.Delete("no")).IsFalse()
+	assert(bugMap2.Delete("no")).IsFalse()
+
+	assert(map0.Delete("1")).IsFalse()
+	assert(map16.Delete("1")).IsTrue()
+	assert(map17.Delete("1")).IsTrue()
+	assert(map100.Delete("1")).IsTrue()
+
+	assert(map16.Delete("16")).IsTrue()
+	assert(map17.Delete("16")).IsTrue()
+	assert(map100.Delete("16")).IsTrue()
+
+	assert(map17.Delete("17")).IsTrue()
+	assert(map100.Delete("17")).IsTrue()
+
 }
