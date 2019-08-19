@@ -78,13 +78,6 @@ func TestRpcMapInner_free(t *testing.T) {
 	}
 }
 
-//func TestRpcMapInner_toLargeMode_toSmallMode(t *testing.T) {
-//  assert := NewAssert(t)
-//
-//
-//
-//}
-
 func Test_RPCMap_newRPCArray(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
