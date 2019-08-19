@@ -78,18 +78,90 @@ func TestRpcMapInner_free(t *testing.T) {
 	}
 }
 
-func Test_RPCMap_newRPCArray(t *testing.T) {
+func TestRpcMap_newRPCMap(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
 		},
 	}
-	invalidCtx := &rpcContext{
-		inner: nil,
-	}
+	invalidCtx := &rpcContext{}
+
+	assert(newRPCMap(nil).ctx).IsNil()
+	assert(newRPCMap(nil).in).IsNil()
+	assert(newRPCMap(nil).ok()).IsFalse()
+
+	assert(newRPCMap(invalidCtx).ctx).IsNil()
+	assert(newRPCMap(invalidCtx).in).IsNil()
+	assert(newRPCMap(invalidCtx).ok()).IsFalse()
+
+	assert(newRPCMap(validCtx).ctx).IsNotNil()
+	assert(newRPCMap(validCtx).in).IsNotNil()
 	assert(newRPCMap(validCtx).ok()).IsTrue()
-	assert(newRPCMap(invalidCtx)).Equals(nilRPCMap)
+
+	assert(newRPCMapByMap(validCtx, nil).ctx).IsNil()
+	assert(newRPCMapByMap(validCtx, nil).in).IsNil()
+	assert(newRPCMapByMap(validCtx, nil).ok()).IsFalse()
+	assert(newRPCMapByMap(validCtx, nil).Size()).Equals(-1)
+
+	assert(newRPCMapByMap(validCtx, Map{}).ctx).IsNotNil()
+	assert(newRPCMapByMap(validCtx, Map{}).in).IsNotNil()
+	assert(newRPCMapByMap(validCtx, Map{}).ok()).IsTrue()
+	assert(newRPCMapByMap(validCtx, Map{}).Size()).Equals(0)
+
+	assert(newRPCMapByMap(validCtx, Map{"0": true}).ctx).IsNotNil()
+	assert(newRPCMapByMap(validCtx, Map{"0": true}).in).IsNotNil()
+	assert(newRPCMapByMap(validCtx, Map{"0": true}).ok()).IsTrue()
+	assert(newRPCMapByMap(validCtx, Map{"0": true}).Size()).Equals(1)
+
+	assert(newRPCMapByMap(validCtx, Map{"0": nilReturn}).ctx).IsNil()
+	assert(newRPCMapByMap(validCtx, Map{"0": nilReturn}).in).IsNil()
+	assert(newRPCMapByMap(validCtx, Map{"0": nilReturn}).ok()).IsFalse()
+	assert(newRPCMapByMap(validCtx, Map{"0": nilReturn}).Size()).Equals(-1)
+}
+
+func TestRpcMap_ok(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+	invalidCtx := &rpcContext{}
+
+	assert(newRPCMap(validCtx).ok()).IsTrue()
+	assert(newRPCMap(nil).ok()).IsFalse()
+	assert(newRPCMap(invalidCtx).ok()).IsFalse()
+}
+
+func TestRpcMap_release(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	nilRPCMap := rpcMap{}
+	assert(nilRPCMap.Size()).Equals(-1)
+	nilRPCMap.release()
+	assert(nilRPCMap.ctx).IsNil()
+	assert(nilRPCMap.in).IsNil()
+
+	emptyRPCMap := newRPCMap(validCtx)
+	assert(emptyRPCMap.Size()).Equals(0)
+	emptyRPCMap.release()
+	assert(emptyRPCMap.ctx).IsNil()
+	assert(emptyRPCMap.in).IsNil()
+
+	bugRPCMap1 := rpcMap{
+		ctx: nil,
+		in:  rpcMapInnerCache.Get().(*rpcMapInner),
+	}
+	assert(bugRPCMap1.Size()).Equals(-1)
+	bugRPCMap1.release()
+	assert(bugRPCMap1.ctx).IsNil()
+	assert(bugRPCMap1.in).IsNil()
 }
 
 func Test_RPCMap_getStream(t *testing.T) {

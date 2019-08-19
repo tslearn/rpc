@@ -70,7 +70,7 @@ func (p rpcArray) getIS() (*rpcArrayInner, *rpcStream) {
 
 // Size ...
 func (p rpcArray) Size() int {
-	if in, _ := p.getIS(); in != nil {
+	if in := p.in; in != nil && p.ctx.ok() {
 		return len(in.items)
 	} else {
 		return -1

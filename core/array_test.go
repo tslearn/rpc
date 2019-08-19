@@ -1,9 +1,7 @@
 package core
 
 import (
-	"fmt"
 	"testing"
-	"unsafe"
 )
 
 func TestRpcArrayInner_free(t *testing.T) {
@@ -78,14 +76,14 @@ func TestRpcArray_release(t *testing.T) {
 	}
 
 	nilRPCArray := rpcArray{}
+	assert(nilRPCArray.Size()).Equals(-1)
 	nilRPCArray.release()
-
-	emptyRPCArray := newRPCArray(validCtx)
-	emptyRPCArray.release()
-
 	assert(nilRPCArray.ctx).IsNil()
 	assert(nilRPCArray.in).IsNil()
 
+	emptyRPCArray := newRPCArray(validCtx)
+	assert(emptyRPCArray.Size()).Equals(0)
+	emptyRPCArray.release()
 	assert(emptyRPCArray.ctx).IsNil()
 	assert(emptyRPCArray.in).IsNil()
 
@@ -93,21 +91,10 @@ func TestRpcArray_release(t *testing.T) {
 		ctx: nil,
 		in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
 	}
+	assert(bugRPCArray1.Size()).Equals(-1)
 	bugRPCArray1.release()
 	assert(bugRPCArray1.ctx).IsNil()
 	assert(bugRPCArray1.in).IsNil()
-
-	bugRPCArray2 := rpcArray{
-		ctx: nil,
-		in:  (*rpcArrayInner)(unsafe.Pointer(uintptr(1323))),
-	}
-	defer func() {
-		if err := recover(); err != nil {
-			assert(fmt.Sprint(err)).Contains("runtime error")
-			fmt.Println(err)
-		}
-	}()
-	bugRPCArray2.release()
 }
 
 func TestRpcArray_getIS(t *testing.T) {

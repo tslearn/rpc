@@ -123,7 +123,7 @@ type rpcMap struct {
 }
 
 func newRPCMap(ctx *rpcContext) rpcMap {
-	if ctx != nil && ctx.inner != nil && ctx.inner.stream != nil {
+	if ctx.ok() {
 		return rpcMap{
 			ctx: ctx,
 			in:  rpcMapInnerCache.Get().(*rpcMapInner),
@@ -133,52 +133,46 @@ func newRPCMap(ctx *rpcContext) rpcMap {
 }
 
 func newRPCMapByMap(ctx *rpcContext, val Map) rpcMap {
+	if val == nil {
+		return nilRPCMap
+	}
 	ret := newRPCMap(ctx)
-	if val != nil {
-		for name, value := range val {
-			if !ret.Set(name, value) {
-				ret.release()
-				return nilRPCMap
-			}
+	for name, value := range val {
+		if !ret.Set(name, value) {
+			ret.release()
+			return nilRPCMap
 		}
 	}
-
 	return ret
 }
 
 func (p rpcMap) ok() bool {
-	return p.in != nil &&
-		p.ctx != nil &&
-		p.ctx.inner != nil &&
-		p.ctx.inner.stream != nil
+	return p.in != nil && p.ctx.ok()
 }
 
 // Release ...
-func (p rpcMap) release() {
+func (p *rpcMap) release() {
 	if p.in != nil {
 		p.in.free()
 		p.in = nil
 	}
+	p.ctx = nil
 }
 
 func (p rpcMap) getIS() (*rpcMapInner, *rpcStream) {
-	if p.in != nil && p.ctx != nil && p.ctx.inner != nil {
-		return p.in, p.ctx.inner.stream
-	} else {
-		return nil, nil
-	}
+	return p.in, p.ctx.getCacheStream()
 }
 
 // Size ...
 func (p rpcMap) Size() int {
-	if in, _ := p.getIS(); in != nil {
+	if in := p.in; in != nil && p.ctx.ok() {
 		if in.largeMap == nil {
 			return len(in.smallMap)
 		} else {
 			return len(in.largeMap)
 		}
 	}
-	return 0
+	return -1
 }
 
 // Keys ...
