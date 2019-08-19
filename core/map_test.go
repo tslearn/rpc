@@ -164,7 +164,34 @@ func TestRpcMap_release(t *testing.T) {
 	assert(bugRPCMap1.in).IsNil()
 }
 
-func Test_RPCMap_getStream(t *testing.T) {
+func TestRpcMap_getIS(t *testing.T) {
+	assert := NewAssert(t)
+	validCtx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	nilRPCMap := rpcMap{}
+	assert(nilRPCMap.getIS()).IsNil()
+
+	emptyRPCMap := newRPCMap(validCtx)
+	assert(emptyRPCMap.getIS()).IsNotNil()
+
+	bugRPCMap1 := rpcMap{
+		ctx: nil,
+		in:  rpcMapInnerCache.Get().(*rpcMapInner),
+	}
+	assert(bugRPCMap1.getIS()).Equals(bugRPCMap1.in, nil)
+
+	bugRPCMap2 := rpcMap{
+		ctx: validCtx,
+		in:  nil,
+	}
+	assert(bugRPCMap2.getIS()).Equals(nil, validCtx.inner.stream)
+}
+
+func TestRpcMap_Size(t *testing.T) {
 	assert := NewAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -174,19 +201,29 @@ func Test_RPCMap_getStream(t *testing.T) {
 	invalidCtx := &rpcContext{
 		inner: nil,
 	}
-	validMap := newRPCMap(validCtx)
-	invalidMap := newRPCMap(invalidCtx)
-	assert(validMap.ctx.getCacheStream()).IsNotNil()
-	assert(invalidMap.ctx.getCacheStream()).IsNil()
-	assert(invalidMap.Size()).Equals(0)
-	assert(len(invalidMap.Keys())).Equals(0)
+	validRPCMap := newRPCMap(validCtx)
+	invalidRPCMap1 := newRPCMap(invalidCtx)
+	invalidRPCMap2 := rpcMap{
+		ctx: nil,
+		in:  rpcMapInnerCache.Get().(*rpcMapInner),
+	}
+
+	for i := 1; i < 522; i++ {
+		assert(validRPCMap.Set(strconv.Itoa(i), i)).IsTrue()
+		assert(validRPCMap.Size()).Equals(i)
+
+		assert(invalidRPCMap1.Set(strconv.Itoa(i), i)).IsFalse()
+		assert(invalidRPCMap1.Size()).Equals(-1)
+
+		assert(invalidRPCMap2.Set(strconv.Itoa(i), i)).IsFalse()
+		assert(invalidRPCMap2.Size()).Equals(-1)
+	}
 }
 
-func Test_RPCMap_Get(t *testing.T) {
+func TestRpcMap_Get(t *testing.T) {
 	assert := NewAssert(t)
-	testSmallMap := make(map[string]interface{})
-	testLargeMap := make(map[string]interface{})
-
+	testSmallMap := make(Map)
+	testLargeMap := make(Map)
 	testCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -203,13 +240,9 @@ func Test_RPCMap_Get(t *testing.T) {
 	testSmallMap["7"] = []byte{}
 	testSmallMap["8"] = []byte{0x53}
 	testSmallMap["9"] = newRPCArray(testCtx)
-	testSmallMap10 := newRPCArray(testCtx)
-	testSmallMap10.Append("world")
-	testSmallMap["10"] = testSmallMap10
+	testSmallMap["10"] = newRPCArrayByArray(testCtx, Array{"world"})
 	testSmallMap["11"] = newRPCMap(testCtx)
-	testSmallMap12 := newRPCMap(testCtx)
-	testSmallMap12.Set("hello", "world")
-	testSmallMap["12"] = testSmallMap12
+	testSmallMap["12"] = newRPCMapByMap(testCtx, Map{"hello": "world"})
 	testSmallMap["13"] = nil
 	testSmallMap["14"] = nil
 	testSmallMap["15"] = nil
@@ -224,121 +257,145 @@ func Test_RPCMap_Get(t *testing.T) {
 	testLargeMap["7"] = []byte{}
 	testLargeMap["8"] = []byte{0x53}
 	testLargeMap["9"] = newRPCArray(testCtx)
-	testLargeMap10 := newRPCArray(testCtx)
-	testLargeMap10.Append("world")
-	testLargeMap["10"] = testLargeMap10
+	testLargeMap["10"] = newRPCArrayByArray(testCtx, Array{"world"})
 	testLargeMap["11"] = newRPCMap(testCtx)
-	testLargeMap12 := newRPCMap(testCtx)
-	testLargeMap12.Set("hello", "world")
-	testLargeMap["12"] = testLargeMap12
+	testLargeMap["12"] = newRPCMapByMap(testCtx, Map{"hello": "world"})
 	testLargeMap["13"] = nil
 	testLargeMap["14"] = nil
 	testLargeMap["15"] = nil
 	testLargeMap["16"] = nil
 
 	fnTestMap := func(mp map[string]interface{}, name string, tp string) {
-		inner := &rpcInnerContext{
-			stream: NewRPCStream(),
-		}
 		ctx := &rpcContext{
-			inner: inner,
-		}
-		rpcMap := newRPCMap(ctx)
-		for k, v := range mp {
-			rpcMap.Set(k, v)
+			inner: &rpcInnerContext{
+				stream: NewRPCStream(),
+			},
 		}
 
-		stream := NewRPCStream()
-		stream.Write(rpcMap)
-		sm, _ := stream.ReadRPCMap(ctx)
+		sm0 := newRPCMapByMap(ctx, mp)
+		sm1 := rpcMap{
+			ctx: ctx,
+			in:  nil,
+		}
+		sm2 := rpcMap{
+			ctx: nil,
+			in:  rpcMapInnerCache.Get().(*rpcMapInner),
+		}
 
+		assert(sm0.Get(name)).Equals(mp[name], true)
+		assert(sm0.Get("")).Equals(nil, false)
+		assert(sm0.Get("no")).Equals(nil, false)
+		assert(sm1.Get(name)).Equals(nil, false)
+		assert(sm2.Get(name)).Equals(nil, false)
 		switch tp {
 		case "nil":
-			assert(sm.GetNil(name)).Equals(true)
-			assert(sm.GetNil("no")).Equals(false)
+			assert(sm0.GetNil(name)).Equals(true)
+			assert(sm0.GetNil("")).Equals(false)
+			assert(sm0.GetNil("no")).Equals(false)
+			assert(sm1.GetNil(name)).Equals(false)
+			assert(sm2.GetNil(name)).Equals(false)
 			ctx.close()
-			assert(sm.GetNil(name)).Equals(false)
+			assert(sm0.GetNil(name)).Equals(false)
 		case "bool":
-			assert(sm.GetBool(name)).Equals(mp[name], true)
-			assert(sm.GetBool("no")).Equals(false, false)
+			assert(sm0.GetBool(name)).Equals(mp[name], true)
+			assert(sm0.GetBool("")).Equals(false, false)
+			assert(sm0.GetBool("no")).Equals(false, false)
+			assert(sm1.GetBool(name)).Equals(false, false)
+			assert(sm2.GetBool(name)).Equals(false, false)
 			ctx.close()
-			assert(sm.GetBool(name)).Equals(false, false)
+			assert(sm0.GetBool(name)).Equals(false, false)
 		case "float64":
-			assert(sm.GetFloat64(name)).Equals(mp[name], true)
-			assert(sm.GetFloat64("no")).Equals(float64(0), false)
+			assert(sm0.GetFloat64(name)).Equals(mp[name], true)
+			assert(sm0.GetFloat64("")).Equals(float64(0), false)
+			assert(sm0.GetFloat64("no")).Equals(float64(0), false)
+			assert(sm1.GetFloat64(name)).Equals(float64(0), false)
+			assert(sm2.GetFloat64(name)).Equals(float64(0), false)
 			ctx.close()
-			assert(sm.GetFloat64(name)).Equals(float64(0), false)
+			assert(sm0.GetFloat64(name)).Equals(float64(0), false)
 		case "int64":
-			assert(sm.GetInt64(name)).Equals(mp[name], true)
-			assert(sm.GetInt64("no")).Equals(int64(0), false)
+			assert(sm0.GetInt64(name)).Equals(mp[name], true)
+			assert(sm0.GetInt64("")).Equals(int64(0), false)
+			assert(sm0.GetInt64("no")).Equals(int64(0), false)
+			assert(sm1.GetInt64(name)).Equals(int64(0), false)
+			assert(sm2.GetInt64(name)).Equals(int64(0), false)
 			ctx.close()
-			assert(sm.GetInt64(name)).Equals(int64(0), false)
+			assert(sm0.GetInt64(name)).Equals(int64(0), false)
 		case "uint64":
-			assert(sm.GetUint64(name)).Equals(mp[name], true)
-			assert(sm.GetUint64("no")).Equals(uint64(0), false)
+			assert(sm0.GetUint64(name)).Equals(mp[name], true)
+			assert(sm0.GetUint64("")).Equals(uint64(0), false)
+			assert(sm0.GetUint64("no")).Equals(uint64(0), false)
+			assert(sm1.GetUint64(name)).Equals(uint64(0), false)
+			assert(sm2.GetUint64(name)).Equals(uint64(0), false)
 			ctx.close()
-			assert(sm.GetUint64(name)).Equals(uint64(0), false)
+			assert(sm0.GetUint64(name)).Equals(uint64(0), false)
 		case "string":
-			assert(sm.GetString(name)).Equals(mp[name], true)
-			assert(sm.GetString("no")).Equals("", false)
+			assert(sm0.GetString(name)).Equals(mp[name], true)
+			assert(sm0.GetString("")).Equals("", false)
+			assert(sm0.GetString("no")).Equals("", false)
+			assert(sm1.GetString(name)).Equals("", false)
+			assert(sm2.GetString(name)).Equals("", false)
 			ctx.close()
-			assert(sm.GetString(name)).Equals("", false)
+			assert(sm0.GetString(name)).Equals("", false)
 		case "bytes":
-			assert(sm.GetBytes(name)).Equals(mp[name], true)
-			assert(sm.GetBytes("no")).Equals(emptyBytes, false)
+			assert(sm0.GetBytes(name)).Equals(mp[name], true)
+			assert(sm0.GetBytes("")).Equals(emptyBytes, false)
+			assert(sm0.GetBytes("no")).Equals(emptyBytes, false)
+			assert(sm1.GetBytes(name)).Equals(emptyBytes, false)
+			assert(sm2.GetBytes(name)).Equals(emptyBytes, false)
 			ctx.close()
-			assert(sm.GetBytes(name)).Equals(emptyBytes, false)
+			assert(sm0.GetBytes(name)).Equals(emptyBytes, false)
 		case "rpcArray":
-			target1, ok := sm.GetRPCArray(name)
-			assert(ok).Equals(true)
-			_, ok = sm.GetRPCArray("no")
-			assert(ok).Equals(false)
+			target1, ok := sm0.GetRPCArray(name)
+			assert(ok).IsTrue()
+			assert(sm0.GetRPCArray("")).Equals(nilRPCArray, false)
+			assert(sm0.GetRPCArray("no")).Equals(nilRPCArray, false)
+			assert(sm1.GetRPCArray(name)).Equals(nilRPCArray, false)
+			assert(sm2.GetRPCArray(name)).Equals(nilRPCArray, false)
 			ctx.close()
-			assert(sm.GetRPCArray(name)).Equals(nilRPCArray, false)
+			assert(sm0.GetRPCArray(name)).Equals(nilRPCArray, false)
 			assert(target1.ctx).Equals(ctx)
 		case "rpcMap":
-			target1, ok := sm.GetRPCMap(name)
+			target1, ok := sm0.GetRPCMap(name)
 			assert(ok).Equals(true)
-			_, ok = sm.GetRPCMap("no")
-			assert(ok).Equals(false)
+			assert(sm0.GetRPCMap("")).Equals(nilRPCMap, false)
+			assert(sm0.GetRPCMap("no")).Equals(nilRPCMap, false)
+			assert(sm1.GetRPCMap(name)).Equals(nilRPCMap, false)
+			assert(sm2.GetRPCMap(name)).Equals(nilRPCMap, false)
 			ctx.close()
-			assert(sm.GetRPCMap(name)).Equals(nilRPCMap, false)
+			assert(sm0.GetRPCMap(name)).Equals(nilRPCMap, false)
 			assert(target1.ctx).Equals(ctx)
 		}
 
-		ctx.inner = inner
-		assert(sm.Get(name)).Equals(mp[name], true)
-		assert(sm.Get("no")).Equals(nil, false)
-		ctx.close()
-		assert(sm.Get(name)).Equals(nil, false)
+		assert(sm0.Get(name)).Equals(nil, false)
 		assert(ctx.close()).IsFalse()
 	}
 
 	fnTestMap(testSmallMap, "0", "nil")
-	fnTestMap(testLargeMap, "0", "nil")
 	fnTestMap(testSmallMap, "1", "bool")
-	fnTestMap(testLargeMap, "1", "bool")
 	fnTestMap(testSmallMap, "2", "float64")
-	fnTestMap(testLargeMap, "2", "float64")
 	fnTestMap(testSmallMap, "3", "int64")
-	fnTestMap(testLargeMap, "3", "int64")
 	fnTestMap(testSmallMap, "4", "uint64")
-	fnTestMap(testLargeMap, "4", "uint64")
 	fnTestMap(testSmallMap, "5", "string")
-	fnTestMap(testLargeMap, "5", "string")
 	fnTestMap(testSmallMap, "6", "string")
-	fnTestMap(testLargeMap, "6", "string")
 	fnTestMap(testSmallMap, "7", "bytes")
-	fnTestMap(testLargeMap, "7", "bytes")
 	fnTestMap(testSmallMap, "8", "bytes")
-	fnTestMap(testLargeMap, "8", "bytes")
 	fnTestMap(testSmallMap, "9", "rpcArray")
-	fnTestMap(testLargeMap, "9", "rpcArray")
 	fnTestMap(testSmallMap, "10", "rpcArray")
-	fnTestMap(testLargeMap, "10", "rpcArray")
 	fnTestMap(testSmallMap, "11", "rpcMap")
-	fnTestMap(testLargeMap, "11", "rpcMap")
 	fnTestMap(testSmallMap, "12", "rpcMap")
+
+	fnTestMap(testLargeMap, "0", "nil")
+	fnTestMap(testLargeMap, "1", "bool")
+	fnTestMap(testLargeMap, "2", "float64")
+	fnTestMap(testLargeMap, "3", "int64")
+	fnTestMap(testLargeMap, "4", "uint64")
+	fnTestMap(testLargeMap, "5", "string")
+	fnTestMap(testLargeMap, "6", "string")
+	fnTestMap(testLargeMap, "7", "bytes")
+	fnTestMap(testLargeMap, "8", "bytes")
+	fnTestMap(testLargeMap, "9", "rpcArray")
+	fnTestMap(testLargeMap, "10", "rpcArray")
+	fnTestMap(testLargeMap, "11", "rpcMap")
 	fnTestMap(testLargeMap, "12", "rpcMap")
 }
 
