@@ -38,7 +38,7 @@ func (p *rpcContext) writeError(message string, debug string) *rpcReturn {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
 			logger := serverThread.processor.logger
-			logger.Error(NewRPCErrorWithDebug(message, debug))
+			logger.Error(NewRPCErrorByDebug(message, debug))
 			execStream := serverThread.execStream
 			execStream.SetWritePos(17)
 			execStream.WriteBool(false)
@@ -78,7 +78,7 @@ func (p *rpcContext) OK(value interface{}) *rpcReturn {
 //		serverThread := p.inner.serverThread
 //		if serverThread != nil {
 //			message := fmt.Sprint(a...)
-//			err := NewRPCErrorWithDebug(message, GetStackString(1))
+//			err := NewRPCErrorByDebug(message, GetStackString(1))
 //			if serverThread.execEchoNode != nil &&
 //				serverThread.execEchoNode.debugString != "" {
 //				err.AddDebug(serverThread.execEchoNode.debugString)
@@ -94,7 +94,7 @@ func (p *rpcContext) Errorf(format string, a ...interface{}) *rpcReturn {
 		serverThread := p.inner.serverThread
 		if serverThread != nil {
 			message := fmt.Sprintf(format, a...)
-			err := NewRPCErrorWithDebug(message, GetStackString(1))
+			err := NewRPCErrorByDebug(message, GetStackString(1))
 			if serverThread.execEchoNode != nil &&
 				serverThread.execEchoNode.debugString != "" {
 				err.AddDebug(serverThread.execEchoNode.debugString)

@@ -13,8 +13,8 @@ func NewRPCError(message string) *rpcError {
 	}
 }
 
-// NewRPCErrorWithDebug create new error
-func NewRPCErrorWithDebug(message string, debug string) *rpcError {
+// NewRPCErrorByDebug create new error
+func NewRPCErrorByDebug(message string, debug string) *rpcError {
 	return &rpcError{
 		message: message,
 		debug:   debug,

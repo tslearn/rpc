@@ -495,7 +495,7 @@ func (p *rpcProcessor) mountService(
 
 	// check addMeta.serviceMeta is not nil
 	if addMeta.serviceMeta == nil {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			"mountService service is nil",
 			addMeta.debug,
 		)
@@ -503,7 +503,7 @@ func (p *rpcProcessor) mountService(
 
 	// check addMeta.name is valid
 	if !NodeNameRegex.MatchString(addMeta.name) {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf("mountService name %s is illegal", addMeta.name),
 			addMeta.debug,
 		)
@@ -518,7 +518,7 @@ func (p *rpcProcessor) mountService(
 	}
 	servicePath := parentServiceNodePath + "." + addMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Service path %s is too long, it must be less or equal than %d",
 				servicePath,
@@ -530,7 +530,7 @@ func (p *rpcProcessor) mountService(
 
 	// check the mount path is not occupied
 	if item, ok := p.servicesMap[servicePath]; ok {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Add name %s is duplicated",
 				addMeta.name,
@@ -587,7 +587,7 @@ func (p *rpcProcessor) mountEcho(
 
 	// check the name
 	if !EchoNameRegex.MatchString(echoMeta.name) {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf("Echo name %s is illegal", echoMeta.name),
 			echoMeta.debug,
 		)
@@ -596,7 +596,7 @@ func (p *rpcProcessor) mountEcho(
 	// check the echo path is not occupied
 	echoPath := serviceNode.path + ":" + echoMeta.name
 	if item, ok := p.echosMap[echoPath]; ok {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Echo name %s is duplicated",
 				echoMeta.name,
@@ -611,7 +611,7 @@ func (p *rpcProcessor) mountEcho(
 
 	// check the echo handler is nil
 	if echoMeta.handler == nil {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			"Echo handler is nil",
 			echoMeta.debug,
 		)
@@ -620,7 +620,7 @@ func (p *rpcProcessor) mountEcho(
 	// Check echo handler is Func
 	fn := reflect.ValueOf(echoMeta.handler)
 	if fn.Kind() != reflect.Func {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			"Echo handler must be func(ctx Context, ...) Return",
 			echoMeta.debug,
 		)
@@ -629,12 +629,12 @@ func (p *rpcProcessor) mountEcho(
 	// Check echo handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			"Echo handler 1st argument type must be Context",
 			echoMeta.debug,
 		)
 	} else if argumentsErrorPos > 0 {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Echo handler %s argument type <%s> not supported",
 				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
@@ -647,7 +647,7 @@ func (p *rpcProcessor) mountEcho(
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return NewRPCErrorWithDebug(
+		return NewRPCErrorByDebug(
 			"Echo handler return type must be Return",
 			echoMeta.debug,
 		)

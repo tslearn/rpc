@@ -232,11 +232,11 @@ func Test_equals(t *testing.T) {
 		{rpcMap{}, nil, false},
 		{[]byte{}, nil, false},
 
-		{NewRPCErrorWithDebug("m1", "d1"), NewRPCErrorWithDebug("m1", "d1"), true},
-		{NewRPCErrorWithDebug("", "d1"), NewRPCErrorWithDebug("m1", "d1"), false},
-		{NewRPCErrorWithDebug("m1", ""), NewRPCErrorWithDebug("m1", "d1"), false},
-		{NewRPCErrorWithDebug("m1", ""), nil, false},
-		{NewRPCErrorWithDebug("m1", ""), 3, false},
+		{NewRPCErrorByDebug("m1", "d1"), NewRPCErrorByDebug("m1", "d1"), true},
+		{NewRPCErrorByDebug("", "d1"), NewRPCErrorByDebug("m1", "d1"), false},
+		{NewRPCErrorByDebug("m1", ""), NewRPCErrorByDebug("m1", "d1"), false},
+		{NewRPCErrorByDebug("m1", ""), nil, false},
+		{NewRPCErrorByDebug("m1", ""), 3, false},
 
 		{loggerPtr, loggerPtr, true},
 		{NewLogger(), NewLogger(), false},
