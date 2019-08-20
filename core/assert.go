@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-type failedInterface interface {
-	Fail()
-}
-
 var reportFail = func(p *rpcAssert) {
 	_, file, line, _ := runtime.Caller(2)
 	fmt.Printf("%s:%d\n", file, line)
@@ -18,7 +14,7 @@ var reportFail = func(p *rpcAssert) {
 
 // rpcAssert class
 type rpcAssert struct {
-	t    failedInterface
+	t    interface{ Fail() }
 	args []interface{}
 }
 
