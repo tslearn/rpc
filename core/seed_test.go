@@ -3,7 +3,7 @@ package core
 import "testing"
 
 func Test_GetSeed(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	seed := GetSeed()
 	assert(seed > 10000).IsTrue()
 

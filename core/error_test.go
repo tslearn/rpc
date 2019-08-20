@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewRPCError(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	var testCollection = [][4]interface{}{
 		{
@@ -23,7 +23,7 @@ func TestNewRPCError(t *testing.T) {
 }
 
 func TestNewRPCErrorWithDebug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	var testCollection = [][2]interface{}{
 		{
@@ -46,7 +46,7 @@ func TestNewRPCErrorWithDebug(t *testing.T) {
 }
 
 func TestWrapSystemError(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	// wrap nil error
 	err := WrapSystemError(nil)
@@ -61,7 +61,7 @@ func TestWrapSystemError(t *testing.T) {
 }
 
 func TestWrapSystemErrorWithDebug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	// wrap nil error
 	err := WrapSystemErrorWithDebug(nil)
@@ -76,7 +76,7 @@ func TestWrapSystemErrorWithDebug(t *testing.T) {
 }
 
 func TestRpcError_GetMessage(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	err := &rpcError{
 		message: "message",
@@ -86,7 +86,7 @@ func TestRpcError_GetMessage(t *testing.T) {
 }
 
 func TestRpcError_GetDebug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	err := &rpcError{
 		message: "message",
@@ -96,7 +96,7 @@ func TestRpcError_GetDebug(t *testing.T) {
 }
 
 func TestRpcError_AddDebug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	err := &rpcError{
 		message: "message",

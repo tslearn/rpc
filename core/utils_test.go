@@ -10,7 +10,7 @@ type testObject struct {
 }
 
 func Test_GetStackString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(FindLinesByPrefix(
 		GetStackString(0),
 		"-01",
@@ -22,7 +22,7 @@ func Test_GetStackString(t *testing.T) {
 }
 
 func Test_FindLinesByPrefix(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	ret := FindLinesByPrefix("", "")
 	assert(len(ret)).Equals(1)
@@ -49,7 +49,7 @@ func Test_FindLinesByPrefix(t *testing.T) {
 }
 
 func Test_GetByteArrayDebugString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(GetByteArrayDebugString([]byte{})).Equals(
 		"",
 	)
@@ -65,7 +65,7 @@ func Test_GetByteArrayDebugString(t *testing.T) {
 }
 
 func Test_GetUrlBySchemeHostPortAndPath(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(GetURLBySchemeHostPortAndPath("", "127.0.0.1", 8080, "/world")).
 		Equals("")
@@ -80,7 +80,7 @@ func Test_GetUrlBySchemeHostPortAndPath(t *testing.T) {
 }
 
 func Test_ConvertOrdinalToString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(ConvertOrdinalToString(0)).Equals("")
 	assert(ConvertOrdinalToString(1)).Equals("1st")
@@ -92,7 +92,7 @@ func Test_ConvertOrdinalToString(t *testing.T) {
 }
 
 func Test_GetObjectFieldPointer(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	obj := &testObject{
 		test: "hi",
 	}
@@ -100,7 +100,7 @@ func Test_GetObjectFieldPointer(t *testing.T) {
 }
 
 func Test_AddPrefixPerLine(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(AddPrefixPerLine("", "")).Equals("")
 	assert(AddPrefixPerLine("a", "")).Equals("a")

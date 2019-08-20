@@ -10,7 +10,7 @@ import (
 )
 
 func TestLogSubscription_Close(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	subscription := logger.Subscribe()
@@ -40,7 +40,7 @@ func TestLogSubscription_Close(t *testing.T) {
 }
 
 func TestNewLogger(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 	assert(logger.level).Equals(LogLevelAll)
 	assert(len(logger.subscriptions)).Equals(0)
@@ -48,7 +48,7 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestLogger_SetLevel(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	assert(logger.SetLevel(-1).GetMessage()).Equals(
@@ -126,7 +126,7 @@ func TestLogger_SetLevel(t *testing.T) {
 }
 
 func TestLogger_Subscribe(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	subscription := logger.Subscribe()
@@ -156,7 +156,7 @@ func TestLogger_Subscribe(t *testing.T) {
 }
 
 func TestLogger_Debug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	var buf bytes.Buffer
@@ -170,7 +170,7 @@ func TestLogger_Debug(t *testing.T) {
 }
 
 func TestLogger_Info(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	var buf bytes.Buffer
@@ -183,7 +183,7 @@ func TestLogger_Info(t *testing.T) {
 }
 
 func TestLogger_Warning(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	var buf bytes.Buffer
@@ -197,7 +197,7 @@ func TestLogger_Warning(t *testing.T) {
 }
 
 func TestLogger_Error(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	var buf bytes.Buffer
@@ -211,7 +211,7 @@ func TestLogger_Error(t *testing.T) {
 }
 
 func TestLogger_Fatal(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	logger := NewLogger()
 
 	var buf bytes.Buffer

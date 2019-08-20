@@ -9,7 +9,7 @@ import (
 func assertFailedFn(fn func()) {
 	ch := make(chan bool, 1)
 	originReportFail := reportFail
-	reportFail = func(p *Assert) {
+	reportFail = func(p *rpcAssert) {
 		ch <- true
 	}
 	fn()
@@ -18,14 +18,14 @@ func assertFailedFn(fn func()) {
 }
 
 func TestNewAssert(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(assert(3).args[0]).Equals(3)
 	assert(assert(3).t).Equals(t)
 }
 
 func TestAssert_Equals(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(3).Equals(3)
 	assert(nil).Equals(nil)
 	assert((*rpcError)(nil)).Equals(nil)
@@ -51,7 +51,7 @@ func TestAssert_Equals(t *testing.T) {
 }
 
 func TestAssert_Contains(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -83,7 +83,7 @@ func TestAssert_Contains(t *testing.T) {
 }
 
 func TestAssert_IsNil(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(nil).IsNil()
 	assert((*rpcError)(nil)).IsNil()
@@ -112,7 +112,7 @@ func TestAssert_IsNil(t *testing.T) {
 }
 
 func TestAssert_IsNotNil(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(t).IsNotNil()
 
 	assertFailedFn(func() {
@@ -127,7 +127,7 @@ func TestAssert_IsNotNil(t *testing.T) {
 }
 
 func TestAssert_IsTrue(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(true).IsTrue()
 
 	assertFailedFn(func() {
@@ -148,7 +148,7 @@ func TestAssert_IsTrue(t *testing.T) {
 }
 
 func TestAssert_IsFalse(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	assert(false).IsFalse()
 
 	assertFailedFn(func() {
@@ -174,10 +174,10 @@ func (p *testAssertFail) Fail() {
 }
 
 func Test_reportFail(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	ch := make(chan bool, 1)
-	target := NewAssert(t)(3)
+	target := newAssert(t)(3)
 	target.t = &testAssertFail{ch: ch}
 	target.Equals(4)
 
@@ -185,7 +185,7 @@ func Test_reportFail(t *testing.T) {
 }
 
 func Test_isNil(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	assert(assertIsNil(nil)).IsTrue()
 	assert(assertIsNil((*rpcStream)(nil))).IsTrue()
@@ -203,7 +203,7 @@ func Test_isNil(t *testing.T) {
 }
 
 func Test_equals(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -321,7 +321,7 @@ func Test_equals(t *testing.T) {
 }
 
 func Test_equals_exceptions(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
@@ -348,7 +348,7 @@ func Test_equals_exceptions(t *testing.T) {
 }
 
 func Test_contains(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -391,7 +391,7 @@ func Test_contains(t *testing.T) {
 }
 
 func Test_contains_exceptions(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),

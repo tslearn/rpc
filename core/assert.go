@@ -14,7 +14,7 @@ type failedInterface interface {
 	Fail()
 }
 
-var reportFail = func(p *Assert) {
+var reportFail = func(p *rpcAssert) {
 	_, file, line, _ := runtime.Caller(2)
 	fmt.Printf("%s:%d\n", file, line)
 	p.t.Fail()
@@ -193,16 +193,16 @@ func contains(left interface{}, right interface{}) bool {
 	return false
 }
 
-// Assert class
-type Assert struct {
+// rpcAssert class
+type rpcAssert struct {
 	t    failedInterface
 	args []interface{}
 }
 
-// NewAssert create new assert class
-func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
-	return func(args ...interface{}) *Assert {
-		return &Assert{
+// newAssert create new assert class
+func newAssert(t *testing.T) func(args ...interface{}) *rpcAssert {
+	return func(args ...interface{}) *rpcAssert {
+		return &rpcAssert{
 			t:    t,
 			args: args,
 		}
@@ -210,7 +210,7 @@ func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
 }
 
 // Equals ...
-func (p *Assert) Equals(args ...interface{}) {
+func (p *rpcAssert) Equals(args ...interface{}) {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return
@@ -230,7 +230,7 @@ func (p *Assert) Equals(args ...interface{}) {
 }
 
 // Contains ...
-func (p *Assert) Contains(val interface{}) {
+func (p *rpcAssert) Contains(val interface{}) {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return
@@ -245,7 +245,7 @@ func (p *Assert) Contains(val interface{}) {
 }
 
 // IsNil ...
-func (p *Assert) IsNil() {
+func (p *rpcAssert) IsNil() {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return
@@ -260,7 +260,7 @@ func (p *Assert) IsNil() {
 }
 
 // IsNotNil ...
-func (p *Assert) IsNotNil() {
+func (p *rpcAssert) IsNotNil() {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return
@@ -275,7 +275,7 @@ func (p *Assert) IsNotNil() {
 }
 
 // IsTrue ...
-func (p *Assert) IsTrue() {
+func (p *rpcAssert) IsTrue() {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return
@@ -290,7 +290,7 @@ func (p *Assert) IsTrue() {
 }
 
 // IsFalse ...
-func (p *Assert) IsFalse() {
+func (p *rpcAssert) IsFalse() {
 	if len(p.args) < 1 {
 		reportFail(p)
 		return

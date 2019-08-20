@@ -5,7 +5,7 @@ import (
 )
 
 func TestRpcArrayInner_free(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	for i := 0; i < 522; i++ {
 		arrayInner := rpcArrayInnerCache.New().(*rpcArrayInner)
 		assert(arrayInner).IsNotNil()
@@ -21,7 +21,7 @@ func TestRpcArrayInner_free(t *testing.T) {
 }
 
 func TestRpcArray_newRPCArray(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -55,7 +55,7 @@ func TestRpcArray_newRPCArray(t *testing.T) {
 }
 
 func TestRpcArray_ok(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -68,7 +68,7 @@ func TestRpcArray_ok(t *testing.T) {
 }
 
 func TestRpcArray_release(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -98,7 +98,7 @@ func TestRpcArray_release(t *testing.T) {
 }
 
 func TestRpcArray_getIS(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -124,7 +124,7 @@ func TestRpcArray_getIS(t *testing.T) {
 }
 
 func TestRpcArray_Size(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -145,7 +145,7 @@ func TestRpcArray_Size(t *testing.T) {
 }
 
 func TestRpcArray_Get(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),
@@ -336,7 +336,7 @@ func TestRpcArray_Get(t *testing.T) {
 }
 
 func TestRpcArray_Set_Append(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
 			stream: NewRPCStream(),

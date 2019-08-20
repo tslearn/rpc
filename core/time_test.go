@@ -6,7 +6,7 @@ import (
 )
 
 func TestTimeNowNS(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 
 	for i := 0; i < 500000; i++ {
 		nowNS := TimeNowNS()
@@ -23,13 +23,13 @@ func TestTimeNowNS(t *testing.T) {
 }
 
 func TestTimeNowMS(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	nowMS := TimeNowMS()
 	assert(time.Now().UnixNano()-nowMS*int64(time.Millisecond) < int64(5*time.Millisecond)).IsTrue()
 }
 
 func TestTimeSpanFrom(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	ns := TimeNowNS()
 	time.Sleep(50 * time.Millisecond)
 	dur := TimeSpanFrom(ns)
@@ -38,7 +38,7 @@ func TestTimeSpanFrom(t *testing.T) {
 }
 
 func TestTimeSpanBetween(t *testing.T) {
-	assert := NewAssert(t)
+	assert := newAssert(t)
 	start := TimeNowNS()
 	time.Sleep(50 * time.Millisecond)
 	dur := TimeSpanBetween(start, TimeNowNS())
