@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/logger_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/logger_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -19,7 +19,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/array.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="557">
+            <state relative-caret-position="-6159">
               <caret line="82" lean-forward="true" selection-start-line="82" selection-end-line="82" />
             </state>
           </provider>
@@ -33,6 +33,15 @@
               <folding>
                 <element signature="e#14#35#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/main.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="92">
+              <caret line="4" column="1" lean-forward="true" selection-start-line="4" selection-start-column="1" selection-end-line="4" selection-end-column="1" />
             </state>
           </provider>
         </entry>
@@ -68,15 +77,6 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/defs.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="352">
-              <caret line="27" selection-start-line="27" selection-end-line="27" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/map.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-4961">
@@ -85,7 +85,7 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/logger_test.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="718">
@@ -106,8 +106,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/assert.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="224" selection-start-line="224" selection-end-line="224" />
+            <state relative-caret-position="344">
+              <caret line="194" selection-start-line="194" selection-end-line="194" />
               <folding>
                 <element signature="e#14#94#0" expanded="true" />
               </folding>
@@ -190,7 +190,6 @@
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/lab/thread_test.go" />
         <option value="$PROJECT_DIR$/core/rand_test.go" />
-        <option value="$PROJECT_DIR$/main.go" />
         <option value="$PROJECT_DIR$/go.mod" />
         <option value="$PROJECT_DIR$/go.sum" />
         <option value="$PROJECT_DIR$/g/g_test.go" />
@@ -212,13 +211,14 @@
         <option value="$PROJECT_DIR$/core/stream_test.go" />
         <option value="$PROJECT_DIR$/core/assert_test.go" />
         <option value="$PROJECT_DIR$/core/context.go" />
-        <option value="$PROJECT_DIR$/core/assert.go" />
         <option value="$PROJECT_DIR$/core/defs.go" />
         <option value="$PROJECT_DIR$/core/map.go" />
         <option value="$PROJECT_DIR$/core/map_test.go" />
         <option value="$PROJECT_DIR$/core/array_test.go" />
         <option value="$PROJECT_DIR$/core/array.go" />
         <option value="$PROJECT_DIR$/core/logger_test.go" />
+        <option value="$PROJECT_DIR$/core/assert.go" />
+        <option value="$PROJECT_DIR$/main.go" />
       </list>
     </option>
   </component>
@@ -359,12 +359,6 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="go_test_core - 2019.08.19 at 19h 52m 29s.xml">
-      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestLogger_Fatal_in_github_com_tslearn_rpcc_core - 2019.08.19 at 19h 52m 55s.xml">
-      <configuration name="TestLogger_Fatal in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="TestLogger_Fatal_in_github_com_tslearn_rpcc_core - 2019.08.19 at 19h 53m 22s.xml">
       <configuration name="TestLogger_Fatal in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -389,6 +383,12 @@
     <history-entry file="go_test_core - 2019.08.20 at 09h 42m 13s.xml">
       <configuration name="go test core" configurationId="GoTestRunConfiguration" />
     </history-entry>
+    <history-entry file="go_test_core - 2019.08.20 at 09h 43m 21s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.20 at 09h 46m 36s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -403,11 +403,11 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17216118" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.17216118" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.36618257" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3807054" />
       <window_info anchor="bottom" id="Cvs" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Docker" order="4" show_stripe_button="false" />
@@ -420,7 +420,7 @@
       <window_info anchor="right" id="Terminal" order="4" sideWeight="0.1857868" visible="true" weight="0.37301588" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.55431473" side_tool="true" weight="0.14957266" />
-      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.8142132" side_tool="true" visible="true" weight="0.37301588" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.8142132" side_tool="true" visible="true" weight="0.37301588" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.50152284" side_tool="true" weight="0.33272284" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
@@ -479,16 +479,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="69">
           <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="727">
-          <caret line="45" selection-start-line="45" selection-end-line="45" />
-          <folding>
-            <element signature="e#14#103#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -749,16 +739,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/assert.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="224" selection-start-line="224" selection-end-line="224" />
-          <folding>
-            <element signature="e#14#94#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/map.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-4961">
@@ -786,13 +766,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/array.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="557">
-          <caret line="82" lean-forward="true" selection-start-line="82" selection-end-line="82" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/logger.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="123">
@@ -804,6 +777,30 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="718">
           <caret line="222" column="48" selection-start-line="222" selection-start-column="48" selection-end-line="222" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/array.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-6159">
+          <caret line="82" lean-forward="true" selection-start-line="82" selection-end-line="82" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/assert.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="344">
+          <caret line="194" selection-start-line="194" selection-end-line="194" />
+          <folding>
+            <element signature="e#14#94#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="92">
+          <caret line="4" column="1" lean-forward="true" selection-start-line="4" selection-start-column="1" selection-end-line="4" selection-end-column="1" />
         </state>
       </provider>
     </entry>
