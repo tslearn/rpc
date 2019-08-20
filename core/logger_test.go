@@ -165,9 +165,8 @@ func TestLogger_Debug(t *testing.T) {
 	logger.Debug("message")
 	log.SetOutput(os.Stderr)
 
-	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
-		"(\\s)Debug:(\\s)message\n$"
-	fmt.Println(buf.String())
+	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
+		"\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message\n$"
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -179,10 +178,8 @@ func TestLogger_Info(t *testing.T) {
 	log.SetOutput(&buf)
 	logger.Info("message")
 	log.SetOutput(os.Stderr)
-
-	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
-		"(\\s)Info:(\\s)message\n$"
-	fmt.Println(buf.String())
+	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
+		"\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message\n$"
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -195,9 +192,8 @@ func TestLogger_Warning(t *testing.T) {
 	logger.Warning("message")
 	log.SetOutput(os.Stderr)
 
-	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
-		"(\\s)Warning:(\\s)message\n$"
-	fmt.Println(buf.String())
+	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
+		"\\+\\d{2}:\\d{2}(\\s)Warning:(\\s)message\n$"
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -210,9 +206,8 @@ func TestLogger_Error(t *testing.T) {
 	logger.Error("message")
 	log.SetOutput(os.Stderr)
 
-	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
-		"(\\s)Error:(\\s)message\n$"
-	fmt.Println(buf.String())
+	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
+		"\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message\n$"
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }
 
@@ -222,11 +217,11 @@ func TestLogger_Fatal(t *testing.T) {
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
-	logger.Error("message")
+	logger.Fatal("message")
 	log.SetOutput(os.Stderr)
 
-	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}\\+\\d{2}:\\d{2}" +
-		"(\\s)Error:(\\s)message\n$"
+	regex := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
+		"\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message\n$"
 	fmt.Println(buf.String())
 	assert(regexp.MatchString(regex, buf.String())).Equals(true, nil)
 }

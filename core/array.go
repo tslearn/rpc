@@ -56,6 +56,10 @@ func (p rpcArray) ok() bool {
 	return p.in != nil && p.ctx.ok()
 }
 
+func checkRpcArrayIndex(in *rpcArrayInner, index int) bool {
+	return in != nil && index >= 0 && index < len(in.items)
+}
+
 func (p *rpcArray) release() {
 	if p.in != nil {
 		p.in.free()
@@ -79,7 +83,7 @@ func (p rpcArray) Size() int {
 
 // GetNil ...
 func (p rpcArray) GetNil(index int) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadNil()
 	}
@@ -88,7 +92,7 @@ func (p rpcArray) GetNil(index int) bool {
 
 // SetNil ...
 func (p rpcArray) SetNil(index int) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteNil()
 		return true
@@ -98,7 +102,7 @@ func (p rpcArray) SetNil(index int) bool {
 
 // AppendNil ...
 func (p rpcArray) AppendNil() bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteNil()
 		return true
@@ -108,7 +112,7 @@ func (p rpcArray) AppendNil() bool {
 
 // GetBool ...
 func (p rpcArray) GetBool(index int) (bool, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadBool()
 	}
@@ -117,7 +121,7 @@ func (p rpcArray) GetBool(index int) (bool, bool) {
 
 // SetBool ...
 func (p rpcArray) SetBool(index int, value bool) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteBool(value)
 		return true
@@ -127,7 +131,7 @@ func (p rpcArray) SetBool(index int, value bool) bool {
 
 // AppendBool ...
 func (p rpcArray) AppendBool(value bool) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteBool(value)
 		return true
@@ -137,7 +141,7 @@ func (p rpcArray) AppendBool(value bool) bool {
 
 // GetInt64 ...
 func (p rpcArray) GetInt64(index int) (int64, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadInt64()
 	}
@@ -146,7 +150,7 @@ func (p rpcArray) GetInt64(index int) (int64, bool) {
 
 // SetInt64 ...
 func (p rpcArray) SetInt64(index int, value int64) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteInt64(value)
 		return true
@@ -156,7 +160,7 @@ func (p rpcArray) SetInt64(index int, value int64) bool {
 
 // AppendInt64 ...
 func (p rpcArray) AppendInt64(value int64) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteInt64(value)
 		return true
@@ -166,7 +170,7 @@ func (p rpcArray) AppendInt64(value int64) bool {
 
 // GetUint64 ...
 func (p rpcArray) GetUint64(index int) (uint64, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadUint64()
 	}
@@ -175,7 +179,7 @@ func (p rpcArray) GetUint64(index int) (uint64, bool) {
 
 // SetUint64 ...
 func (p rpcArray) SetUint64(index int, value uint64) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteUint64(value)
 		return true
@@ -185,7 +189,7 @@ func (p rpcArray) SetUint64(index int, value uint64) bool {
 
 // AppendUint64 ...
 func (p rpcArray) AppendUint64(value uint64) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteUint64(value)
 		return true
@@ -195,7 +199,7 @@ func (p rpcArray) AppendUint64(value uint64) bool {
 
 // GetFloat64 ...
 func (p rpcArray) GetFloat64(index int) (float64, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadFloat64()
 	}
@@ -204,7 +208,7 @@ func (p rpcArray) GetFloat64(index int) (float64, bool) {
 
 // SetFloat64 ...
 func (p rpcArray) SetFloat64(index int, value float64) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteFloat64(value)
 		return true
@@ -214,7 +218,7 @@ func (p rpcArray) SetFloat64(index int, value float64) bool {
 
 // AppendFloat64 ...
 func (p rpcArray) AppendFloat64(value float64) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteFloat64(value)
 		return true
@@ -224,7 +228,7 @@ func (p rpcArray) AppendFloat64(value float64) bool {
 
 // GetRPCString ...
 func (p rpcArray) GetString(index int) (string, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadString()
 	}
@@ -233,7 +237,7 @@ func (p rpcArray) GetString(index int) (string, bool) {
 
 // SetRPCString ...
 func (p rpcArray) SetString(index int, value string) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteString(value)
 		return true
@@ -243,7 +247,7 @@ func (p rpcArray) SetString(index int, value string) bool {
 
 // AppendRPCString ...
 func (p rpcArray) AppendString(value string) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteString(value)
 		return true
@@ -253,7 +257,7 @@ func (p rpcArray) AppendString(value string) bool {
 
 // GetRPCBytes ...
 func (p rpcArray) GetBytes(index int) ([]byte, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadBytes()
 	}
@@ -262,7 +266,7 @@ func (p rpcArray) GetBytes(index int) ([]byte, bool) {
 
 // SetRPCBytes ...
 func (p rpcArray) SetBytes(index int, value []byte) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		in.items[index] = s.GetWritePos()
 		s.WriteBytes(value)
 		return true
@@ -272,7 +276,7 @@ func (p rpcArray) SetBytes(index int, value []byte) bool {
 
 // AppendRPCBytes ...
 func (p rpcArray) AppendBytes(value []byte) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		in.items = append(in.items, s.GetWritePos())
 		s.WriteBytes(value)
 		return true
@@ -282,7 +286,7 @@ func (p rpcArray) AppendBytes(value []byte) bool {
 
 // GetRPCArray ...
 func (p rpcArray) GetRPCArray(index int) (rpcArray, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadRPCArray(p.ctx)
 	}
@@ -291,7 +295,7 @@ func (p rpcArray) GetRPCArray(index int) (rpcArray, bool) {
 
 // SetRPCArray ...
 func (p rpcArray) SetRPCArray(index int, value rpcArray) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		pos := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
 			in.items[index] = pos
@@ -303,7 +307,7 @@ func (p rpcArray) SetRPCArray(index int, value rpcArray) bool {
 
 // AppendRPCArray ...
 func (p rpcArray) AppendRPCArray(value rpcArray) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		pos := s.GetWritePos()
 		if s.WriteRPCArray(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
@@ -315,7 +319,7 @@ func (p rpcArray) AppendRPCArray(value rpcArray) bool {
 
 // GetRPCMap ...
 func (p rpcArray) GetRPCMap(index int) (rpcMap, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.ReadRPCMap(p.ctx)
 	}
@@ -324,7 +328,7 @@ func (p rpcArray) GetRPCMap(index int) (rpcMap, bool) {
 
 // SetRPCMap ...
 func (p rpcArray) SetRPCMap(index int, value rpcMap) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		pos := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
 			in.items[index] = pos
@@ -336,7 +340,7 @@ func (p rpcArray) SetRPCMap(index int, value rpcMap) bool {
 
 // AppendRPCMap ...
 func (p rpcArray) AppendRPCMap(value rpcMap) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		pos := s.GetWritePos()
 		if s.WriteRPCMap(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
@@ -348,7 +352,7 @@ func (p rpcArray) AppendRPCMap(value rpcMap) bool {
 
 // Get ...
 func (p rpcArray) Get(index int) (interface{}, bool) {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
 		return s.Read(p.ctx)
 	}
@@ -357,7 +361,7 @@ func (p rpcArray) Get(index int) (interface{}, bool) {
 
 // Set ...
 func (p rpcArray) Set(index int, value interface{}) bool {
-	if in, s := p.getIS(); s != nil && index >= 0 && index < len(in.items) {
+	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		pos := s.GetWritePos()
 		if s.Write(value) == RPCStreamWriteOK {
 			in.items[index] = pos
@@ -369,7 +373,7 @@ func (p rpcArray) Set(index int, value interface{}) bool {
 
 // Append ...
 func (p rpcArray) Append(value interface{}) bool {
-	if in, s := p.getIS(); s != nil {
+	if in, s := p.getIS(); s != nil && in != nil {
 		pos := s.GetWritePos()
 		if s.Write(value) == RPCStreamWriteOK {
 			in.items = append(in.items, pos)
