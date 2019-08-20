@@ -884,6 +884,80 @@ func (p *rpcStream) WriteBytes(v []byte) {
 	}
 }
 
+func (p *rpcStream) WriteArray(v Array) RPCStreamWriteErrorCode {
+	length := len(v)
+	if length == 0 {
+		p.writeFrame[p.writeIndex] = 64
+		p.writeIndex++
+		if p.writeIndex == 512 {
+			p.gotoNextWriteFrame()
+		}
+		return RPCStreamWriteOK
+	}
+
+	startPos := p.GetWritePos()
+
+	b := p.writeFrame[p.writeIndex:]
+	if p.writeIndex < 507 {
+		p.writeIndex += 5
+	} else {
+		b = b[0:1]
+		p.SetWritePos(startPos + 5)
+	}
+
+	if length < 31 {
+		b[0] = byte(64 + length)
+	} else {
+		b[0] = 95
+	}
+
+	if length > 30 {
+		if p.writeIndex < 508 {
+			l := p.writeFrame[p.writeIndex:]
+			l[0] = byte(uint32(length))
+			l[1] = byte(uint32(length) >> 8)
+			l[2] = byte(uint32(length) >> 16)
+			l[3] = byte(uint32(length) >> 24)
+			p.writeIndex += 4
+		} else {
+			p.PutBytes([]byte{
+				byte(uint32(length)),
+				byte(uint32(length) >> 8),
+				byte(uint32(length) >> 16),
+				byte(uint32(length) >> 24),
+			})
+		}
+	}
+
+	for i := 0; i < length; i++ {
+		errCode := p.Write(v[i])
+		if errCode != RPCStreamWriteOK {
+			p.setWritePosUnsafe(startPos)
+			return errCode
+		}
+	}
+
+	totalLength := uint32(p.GetWritePos() - startPos)
+	if len(b) > 1 {
+		b[1] = byte(totalLength)
+		b[2] = byte(totalLength >> 8)
+		b[3] = byte(totalLength >> 16)
+		b[4] = byte(totalLength >> 24)
+	} else {
+		endPos := p.GetWritePos()
+		p.setWritePosUnsafe(startPos + 1)
+		p.PutBytes([]byte{
+			byte(totalLength),
+			byte(totalLength >> 8),
+			byte(totalLength >> 16),
+			byte(totalLength >> 24),
+		})
+		p.setWritePosUnsafe(endPos)
+	}
+
+	return RPCStreamWriteOK
+}
+
 // WriteRPCArray write RPCArray value to stream
 func (p *rpcStream) WriteRPCArray(v rpcArray) RPCStreamWriteErrorCode {
 	in, readStream := v.getIS()
@@ -941,6 +1015,83 @@ func (p *rpcStream) WriteRPCArray(v rpcArray) RPCStreamWriteErrorCode {
 		if !p.writeStreamNext(readStream) {
 			p.setWritePosUnsafe(startPos)
 			return RPCStreamWriteRPCArrayError
+		}
+	}
+
+	totalLength := uint32(p.GetWritePos() - startPos)
+	if len(b) > 1 {
+		b[1] = byte(totalLength)
+		b[2] = byte(totalLength >> 8)
+		b[3] = byte(totalLength >> 16)
+		b[4] = byte(totalLength >> 24)
+	} else {
+		endPos := p.GetWritePos()
+		p.setWritePosUnsafe(startPos + 1)
+		p.PutBytes([]byte{
+			byte(totalLength),
+			byte(totalLength >> 8),
+			byte(totalLength >> 16),
+			byte(totalLength >> 24),
+		})
+		p.setWritePosUnsafe(endPos)
+	}
+
+	return RPCStreamWriteOK
+}
+
+// WriteRPCMap write RPCMap value to stream
+func (p *rpcStream) WriteMap(v Map) RPCStreamWriteErrorCode {
+	length := len(v)
+
+	if length == 0 {
+		p.writeFrame[p.writeIndex] = 96
+		p.writeIndex++
+		if p.writeIndex == 512 {
+			p.gotoNextWriteFrame()
+		}
+		return RPCStreamWriteOK
+	}
+
+	startPos := p.GetWritePos()
+
+	b := p.writeFrame[p.writeIndex:]
+	if p.writeIndex < 507 {
+		p.writeIndex += 5
+	} else {
+		b = b[0:1]
+		p.SetWritePos(startPos + 5)
+	}
+
+	if length < 31 {
+		b[0] = byte(96 + length)
+	} else {
+		b[0] = 127
+	}
+
+	if length > 30 {
+		if p.writeIndex < 508 {
+			l := p.writeFrame[p.writeIndex:]
+			l[0] = byte(uint32(length))
+			l[1] = byte(uint32(length) >> 8)
+			l[2] = byte(uint32(length) >> 16)
+			l[3] = byte(uint32(length) >> 24)
+			p.writeIndex += 4
+		} else {
+			p.PutBytes([]byte{
+				byte(uint32(length)),
+				byte(uint32(length) >> 8),
+				byte(uint32(length) >> 16),
+				byte(uint32(length) >> 24),
+			})
+		}
+	}
+
+	for name, value := range v {
+		p.WriteString(name)
+		errCode := p.Write(value)
+		if errCode != RPCStreamWriteOK {
+			p.setWritePosUnsafe(startPos)
+			return errCode
 		}
 	}
 
@@ -1119,6 +1270,10 @@ func (p *rpcStream) Write(v interface{}) RPCStreamWriteErrorCode {
 		return p.WriteRPCArray(v.(rpcArray))
 	case rpcMap:
 		return p.WriteRPCMap(v.(rpcMap))
+	case Array:
+		return p.WriteArray(v.(Array))
+	case Map:
+		return p.WriteMap(v.(Map))
 	}
 
 	return RPCStreamWriteUnsupportedType
