@@ -421,3 +421,30 @@ func (p rpcMap) Delete(name string) bool {
 	}
 	return false
 }
+
+func (p rpcMap) equals(value rpcMap) bool {
+	if p.ctx == nil && p.in == nil && value.ctx == nil && value.in == nil {
+		return true
+	}
+	if !p.ok() || !value.ok() {
+		return false
+	}
+	if p.Size() != value.Size() {
+		return false
+	}
+
+	for _, key := range p.Keys() {
+		lv, ok := p.Get(key)
+		if !ok {
+			return false
+		}
+		rv, ok := value.Get(key)
+		if !ok {
+			return false
+		}
+		if !rpcEquals(lv, rv) {
+			return false
+		}
+	}
+	return true
+}

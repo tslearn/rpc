@@ -202,3 +202,97 @@ func AddPrefixPerLine(origin string, prefix string) string {
 	}
 	return buf.String()
 }
+
+func rpcIsNil(val interface{}) (ret bool) {
+	if val == nil {
+		return true
+	}
+
+	switch val.(type) {
+	case unsafe.Pointer:
+		return val.(unsafe.Pointer) == nil
+	case uintptr:
+		return val.(uintptr) == 0
+	}
+
+	defer func() {
+		if e := recover(); e != nil {
+			ret = false
+		}
+	}()
+
+	rv := reflect.ValueOf(val)
+	return rv.IsNil()
+}
+
+func rpcEquals(left interface{}, right interface{}) bool {
+	leftNil := rpcIsNil(left)
+	rightNil := rpcIsNil(right)
+
+	if leftNil {
+		return rightNil
+	}
+
+	if rightNil {
+		return false
+	}
+
+	switch left.(type) {
+	case []byte:
+		rBytes, ok := right.([]byte)
+		if !ok {
+			return false
+		}
+		return bytes.Equal(left.([]byte), rBytes)
+	case rpcArray:
+		rArray, ok := right.(rpcArray)
+		if !ok {
+			return false
+		}
+		return left.(rpcArray).equals(rArray)
+	case rpcMap:
+		rMap, ok := right.(rpcMap)
+		if !ok {
+			return false
+		}
+		return left.(rpcMap).equals(rMap)
+	case *rpcError:
+		rError, ok := right.(*rpcError)
+		if !ok {
+			return false
+		}
+		return left.(*rpcError).Error() == rError.Error()
+	default:
+		return left == right
+	}
+}
+
+func rpcContains(left interface{}, right interface{}) bool {
+	switch left.(type) {
+	case string:
+		rString, ok := right.(string)
+		if !ok {
+			return false
+		}
+		return strings.Contains(left.(string), rString)
+	case []byte:
+		rBytes, ok := right.([]byte)
+		if !ok {
+			return false
+		}
+		return bytes.Contains(left.([]byte), rBytes)
+	case rpcArray:
+		l := left.(rpcArray)
+		for i := 0; i < l.Size(); i++ {
+			lv, ok := l.Get(i)
+			if !ok {
+				return false
+			}
+			if rpcEquals(lv, right) {
+				return true
+			}
+		}
+		return false
+	}
+	return false
+}

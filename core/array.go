@@ -382,3 +382,30 @@ func (p rpcArray) Append(value interface{}) bool {
 	}
 	return false
 }
+
+func (p rpcArray) equals(array rpcArray) bool {
+	if p.ctx == nil && p.in == nil && array.ctx == nil && array.in == nil {
+		return true
+	}
+	if !p.ok() || !array.ok() {
+		return false
+	}
+	if p.Size() != array.Size() {
+		return false
+	}
+
+	for i := 0; i < p.Size(); i++ {
+		lv, ok := p.Get(i)
+		if !ok {
+			return false
+		}
+		rv, ok := array.Get(i)
+		if !ok {
+			return false
+		}
+		if !rpcEquals(lv, rv) {
+			return false
+		}
+	}
+	return true
+}
