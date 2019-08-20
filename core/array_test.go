@@ -123,6 +123,55 @@ func TestRpcArray_getIS(t *testing.T) {
 	assert(bugRPCArray2.getIS()).Equals(nil, validCtx.inner.stream)
 }
 
+func TestRpcArray_equals(t *testing.T) {
+	assert := newAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+	nilArray := rpcArray{}
+	emptyArray := newRPCArray(ctx)
+	array1 := newRPCArrayByArray(ctx, Array{0})
+	array2 := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	array3 := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	array4 := newRPCArrayByArray(ctx, Array{9, 8, 7, 6, 5, 4, 3, 2, 1, 0})
+
+	bugArray := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	ctx.getCacheStream().setWritePosUnsafe(bugArray.in.items[0])
+	ctx.getCacheStream().PutBytes([]byte{11})
+
+	assert(rpcArray{}.equals(rpcArray{})).IsTrue()
+	assert(emptyArray.equals(nilArray)).IsFalse()
+	assert(nilArray.equals(emptyArray)).IsFalse()
+	assert(array1.equals(array2)).IsFalse()
+	assert(array2.equals(array3)).IsTrue()
+	assert(array2.equals(array4)).IsFalse()
+	assert(array2.equals(bugArray)).IsFalse()
+	assert(bugArray.equals(array2)).IsFalse()
+}
+
+func TestRpcArray_contains(t *testing.T) {
+	assert := newAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	nilArray := rpcArray{}
+	emptyArray := newRPCArray(ctx)
+	array1 := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	bugArray := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	ctx.getCacheStream().setWritePosUnsafe(bugArray.in.items[0])
+	ctx.getCacheStream().PutBytes([]byte{11})
+
+	assert(nilArray.contains(int64(0))).IsFalse()
+	assert(emptyArray.contains(int64(0))).IsFalse()
+	assert(array1.contains(int64(0))).IsTrue()
+	assert(bugArray.contains(int64(0))).IsFalse()
+}
+
 func TestRpcArray_Size(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{

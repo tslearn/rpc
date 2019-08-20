@@ -193,6 +193,55 @@ func TestRpcMap_getIS(t *testing.T) {
 	assert(bugRPCMap2.getIS()).Equals(nil, validCtx.inner.stream)
 }
 
+func TestRpcMap_equals(t *testing.T) {
+	assert := newAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+
+	mp0 := newRPCMap(ctx)
+	mp1 := newRPCMapByMap(ctx, Map{"0": 0})
+	mp2 := newRPCMapByMap(ctx, Map{"0": 0, "1": 1})
+	mp3 := newRPCMapByMap(ctx, Map{"1": 1, "0": 0})
+	mp4 := newRPCMapByMap(ctx, Map{"1": 1, "0": 2})
+
+	bugMap := newRPCMapByMap(ctx, Map{"1": 1, "0": 0})
+	ctx.getCacheStream().setWritePosUnsafe(bugMap.in.smallMap[0].pos)
+	ctx.getCacheStream().PutBytes([]byte{11})
+
+	assert(nilRPCMap.equals(rpcMap{})).IsTrue()
+	assert(nilRPCMap.equals(mp0)).IsFalse()
+	assert(mp0.equals(nilRPCMap)).IsFalse()
+	assert(mp0.equals(mp1)).IsFalse()
+	assert(mp1.equals(mp2)).IsFalse()
+	assert(mp2.equals(mp3)).IsTrue()
+	assert(mp3.equals(mp4)).IsFalse()
+
+	assert(mp2.equals(bugMap)).IsFalse()
+	assert(bugMap.equals(mp2)).IsFalse()
+}
+
+func TestRpcMap_contains(t *testing.T) {
+	assert := newAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: NewRPCStream(),
+		},
+	}
+	mp0 := newRPCMap(ctx)
+	mp1 := newRPCMapByMap(ctx, Map{"0": 0, "1": 1})
+	bugMap := newRPCMapByMap(ctx, Map{"1": 1, "0": 0})
+	ctx.getCacheStream().setWritePosUnsafe(bugMap.in.smallMap[0].pos)
+	ctx.getCacheStream().PutBytes([]byte{11})
+
+	assert(nilRPCMap.contains(int64(0))).IsFalse()
+	assert(mp0.contains(int64(0))).IsFalse()
+	assert(mp1.contains(int64(0))).IsTrue()
+	assert(bugMap.contains(int64(0))).IsFalse()
+}
+
 func TestRpcMap_Size(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
