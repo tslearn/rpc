@@ -239,60 +239,42 @@ func rpcEquals(left interface{}, right interface{}) bool {
 
 	switch left.(type) {
 	case []byte:
-		rBytes, ok := right.([]byte)
-		if !ok {
-			return false
+		if rBytes, ok := right.([]byte); ok {
+			return bytes.Equal(left.([]byte), rBytes)
 		}
-		return bytes.Equal(left.([]byte), rBytes)
 	case rpcArray:
-		rArray, ok := right.(rpcArray)
-		if !ok {
-			return false
+		if rArray, ok := right.(rpcArray); ok {
+			return left.(rpcArray).equals(rArray)
 		}
-		return left.(rpcArray).equals(rArray)
 	case rpcMap:
-		rMap, ok := right.(rpcMap)
-		if !ok {
-			return false
+		if rMap, ok := right.(rpcMap); ok {
+			return left.(rpcMap).equals(rMap)
 		}
-		return left.(rpcMap).equals(rMap)
 	case *rpcError:
-		rError, ok := right.(*rpcError)
-		if !ok {
-			return false
+		if rError, ok := right.(*rpcError); ok {
+			return left.(*rpcError).Error() == rError.Error()
 		}
-		return left.(*rpcError).Error() == rError.Error()
 	default:
 		return left == right
 	}
+
+	return false
 }
 
 func rpcContains(left interface{}, right interface{}) bool {
 	switch left.(type) {
 	case string:
-		rString, ok := right.(string)
-		if !ok {
-			return false
+		if rString, ok := right.(string); ok {
+			return strings.Contains(left.(string), rString)
 		}
-		return strings.Contains(left.(string), rString)
 	case []byte:
-		rBytes, ok := right.([]byte)
-		if !ok {
-			return false
+		if rBytes, ok := right.([]byte); ok {
+			return bytes.Contains(left.([]byte), rBytes)
 		}
-		return bytes.Contains(left.([]byte), rBytes)
 	case rpcArray:
-		l := left.(rpcArray)
-		for i := 0; i < l.Size(); i++ {
-			lv, ok := l.Get(i)
-			if !ok {
-				return false
-			}
-			if rpcEquals(lv, right) {
-				return true
-			}
-		}
-		return false
+		return left.(rpcArray).contains(right)
+	case rpcMap:
+		return left.(rpcMap).contains(right)
 	}
 	return false
 }

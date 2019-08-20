@@ -383,14 +383,14 @@ func (p rpcArray) Append(value interface{}) bool {
 	return false
 }
 
-func (p rpcArray) equals(array rpcArray) bool {
-	if p.ctx == nil && p.in == nil && array.ctx == nil && array.in == nil {
+func (p rpcArray) equals(val rpcArray) bool {
+	if p.ctx == nil && p.in == nil && val.ctx == nil && val.in == nil {
 		return true
 	}
-	if !p.ok() || !array.ok() {
+	if !p.ok() || !val.ok() {
 		return false
 	}
-	if p.Size() != array.Size() {
+	if p.Size() != val.Size() {
 		return false
 	}
 
@@ -399,7 +399,7 @@ func (p rpcArray) equals(array rpcArray) bool {
 		if !ok {
 			return false
 		}
-		rv, ok := array.Get(i)
+		rv, ok := val.Get(i)
 		if !ok {
 			return false
 		}
@@ -408,4 +408,17 @@ func (p rpcArray) equals(array rpcArray) bool {
 		}
 	}
 	return true
+}
+
+func (p rpcArray) contains(val interface{}) bool {
+	for i := 0; i < p.Size(); i++ {
+		lv, ok := p.Get(i)
+		if !ok {
+			return false
+		}
+		if rpcEquals(lv, val) {
+			return true
+		}
+	}
+	return false
 }

@@ -422,14 +422,14 @@ func (p rpcMap) Delete(name string) bool {
 	return false
 }
 
-func (p rpcMap) equals(value rpcMap) bool {
-	if p.ctx == nil && p.in == nil && value.ctx == nil && value.in == nil {
+func (p rpcMap) equals(val rpcMap) bool {
+	if p.ctx == nil && p.in == nil && val.ctx == nil && val.in == nil {
 		return true
 	}
-	if !p.ok() || !value.ok() {
+	if !p.ok() || !val.ok() {
 		return false
 	}
-	if p.Size() != value.Size() {
+	if p.Size() != val.Size() {
 		return false
 	}
 
@@ -438,7 +438,7 @@ func (p rpcMap) equals(value rpcMap) bool {
 		if !ok {
 			return false
 		}
-		rv, ok := value.Get(key)
+		rv, ok := val.Get(key)
 		if !ok {
 			return false
 		}
@@ -447,4 +447,17 @@ func (p rpcMap) equals(value rpcMap) bool {
 		}
 	}
 	return true
+}
+
+func (p rpcMap) contains(val interface{}) bool {
+	for _, key := range p.Keys() {
+		lv, ok := p.Get(key)
+		if !ok {
+			return false
+		}
+		if rpcEquals(lv, val) {
+			return true
+		}
+	}
+	return false
 }
