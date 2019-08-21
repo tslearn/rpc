@@ -18,7 +18,7 @@ func TestRpcStream_basic(t *testing.T) {
 		assert(stream.writeFrame).Equals(*stream.frames[0])
 
 		for n := 0; n < i; n++ {
-			stream.PutBytes([]byte{9})
+			stream.putBytes([]byte{9})
 		}
 		stream.Release()
 	}

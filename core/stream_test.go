@@ -16,10 +16,10 @@ func fillTestStream(
 	data interface{},
 ) {
 	if startPos > 0 {
-		stream.reset()
+		stream.Reset()
 		buffer := outerBuffer[0 : startPos-1]
 		copy(buffer, unusedBytes)
-		stream.PutBytes(buffer)
+		stream.putBytes(buffer)
 		stream.Write(data)
 		stream.WriteNil()
 		stream.SetReadPos(startPos)
@@ -31,9 +31,9 @@ func fillTestStreamByBuffer(
 	startPos int,
 	buffer []byte,
 ) {
-	stream.reset()
+	stream.Reset()
 	stream.writeIndex = 0
-	stream.PutBytes(buffer)
+	stream.putBytes(buffer)
 	stream.SetReadPos(startPos)
 }
 
@@ -140,11 +140,11 @@ func Test_RPCStream_Release(t *testing.T) {
 func Test_RPCStream_GetTotalFrames(t *testing.T) {
 	assert := newAssert(t)
 	stream := newRPCStream()
-	assert(stream.GetTotalFrames()).Equals(1)
+	assert(stream.getTotalFrames()).Equals(1)
 	for i := 0; i < 511; i++ {
 		stream.WriteNil()
 	}
-	assert(stream.GetTotalFrames()).Equals(2)
+	assert(stream.getTotalFrames()).Equals(2)
 }
 
 func Test_RPCStream_SetReadPos(t *testing.T) {
@@ -189,7 +189,7 @@ func Test_RPCStream_writeStreamUnsafe(t *testing.T) {
 	}
 
 	wStream := newRPCStream()
-	wStream.PutBytes(wBytes)
+	wStream.putBytes(wBytes)
 
 	for i := 0; i < 200000; i++ {
 		oWritePos := int(GetRandUint32()) % 550
@@ -197,13 +197,13 @@ func Test_RPCStream_writeStreamUnsafe(t *testing.T) {
 		length := int(GetRandUint32()) % 1500
 
 		s := newRPCStream()
-		s.PutBytes(oBytes[0:oWritePos])
+		s.putBytes(oBytes[0:oWritePos])
 		wStream.SetReadPos(1 + wsReadPos)
 
 		s.writeStreamUnsafe(wStream, length)
 		copy(exp[1:], oBytes[:oWritePos])
 		copy(exp[1+oWritePos:], wBytes[:length])
-		assert(s.GetBuffer()).Equals(exp[:1+oWritePos+length])
+		assert(s.getBuffer()).Equals(exp[:1+oWritePos+length])
 
 		assert(s.GetReadPos()).Equals(1)
 		assert(s.GetWritePos()).Equals(1 + oWritePos + length)
@@ -226,7 +226,7 @@ func Test_RPCStream_writeStream(t *testing.T) {
 	writeStream = newRPCStream()
 	copy((*writeStream.frames[0])[1:], []byte{13})
 	stream.writeStreamUnsafe(writeStream, 1)
-	assert(stream.GetBuffer()).Equals([]byte{1, 13})
+	assert(stream.getBuffer()).Equals([]byte{1, 13})
 	assert(stream.readSkipItem(stream.GetWritePos())).Equals(-1)
 }
 
@@ -245,7 +245,7 @@ func Test_RPCStream_Nil(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadNil()).IsTrue()
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
@@ -294,7 +294,7 @@ func Test_RPCStream_Bool(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadBool()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
@@ -355,7 +355,7 @@ func Test_RPCStream_Float64(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadFloat64()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
@@ -432,7 +432,7 @@ func Test_RPCStream_Int64(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadInt64()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
@@ -499,7 +499,7 @@ func Test_RPCStream_Uint64(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadUint64()).Equals(testData[0], true)
 			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
@@ -566,7 +566,7 @@ func Test_RPCStream_String(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 
 			stream.SetReadPos(i)
@@ -680,7 +680,7 @@ func Test_RPCStream_Bytes(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 
 			// ReadUnsafeBytes
@@ -775,8 +775,8 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 			if i%512 < 10 || i%512 > 500 {
 				bytes := pubBytes[1:i]
 				copy(bytes, unusedBytes)
-				stream.reset()
-				stream.PutBytes(bytes)
+				stream.Reset()
+				stream.putBytes(bytes)
 
 				assert(stream.WriteRPCArray(testData)).Equals(RPCStreamWriteOK)
 				stream.SetReadPos(i)
@@ -822,7 +822,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 			fillTestStream(stream, pubBytes, i, testData[0])
 			targetBuffer := getTestBuffer(pubBytes, i, testData[1].([]byte))
 
-			assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 
 			stream.SetReadPos(i)
@@ -932,8 +932,8 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			if i%512 < 10 || i%512 > 500 {
 				bytes := pubBytes[1:i]
 				copy(bytes, unusedBytes)
-				stream.reset()
-				stream.PutBytes(bytes)
+				stream.Reset()
+				stream.putBytes(bytes)
 				assert(stream.WriteRPCMap(testData)).Equals(RPCStreamWriteOK)
 				stream.SetReadPos(i)
 				assert(stream.ReadRPCMap(nil)).Equals(nilRPCMap, false)
@@ -1018,7 +1018,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 
 			rpcMap := testData[0].(rpcMap)
 			if rpcMap.Size() <= 1 {
-				assert(stream.GetBuffer(), stream.writeIndex, stream.writeSeg).
+				assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 					Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			}
 
@@ -1129,19 +1129,19 @@ func Test_RPCStream_ReadAndWrite(t *testing.T) {
 	assert := newAssert(t)
 
 	stream := newRPCStream()
-	stream.PutBytes([]byte{4})
+	stream.putBytes([]byte{4})
 	assert(stream.Read(nil)).Equals(float64(0), true)
 
 	stream = newRPCStream()
-	stream.PutBytes([]byte{12})
+	stream.putBytes([]byte{12})
 	assert(stream.Read(nil)).Equals(nil, false)
 
 	stream = newRPCStream()
-	stream.PutBytes([]byte{13})
+	stream.putBytes([]byte{13})
 	assert(stream.Read(nil)).Equals(nil, false)
 
 	stream = newRPCStream()
-	stream.PutBytes([]byte{54})
+	stream.putBytes([]byte{54})
 	assert(stream.Read(nil)).Equals(uint64(0), true)
 
 	stream = newRPCStream()

@@ -139,7 +139,7 @@ func TestRpcArray_equals(t *testing.T) {
 
 	bugArray := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	ctx.getCacheStream().setWritePosUnsafe(bugArray.in.items[0])
-	ctx.getCacheStream().PutBytes([]byte{11})
+	ctx.getCacheStream().putBytes([]byte{11})
 
 	assert(rpcArray{}.equals(rpcArray{})).IsTrue()
 	assert(emptyArray.equals(nilArray)).IsFalse()
@@ -164,7 +164,7 @@ func TestRpcArray_contains(t *testing.T) {
 	array1 := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	bugArray := newRPCArrayByArray(ctx, Array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	ctx.getCacheStream().setWritePosUnsafe(bugArray.in.items[0])
-	ctx.getCacheStream().PutBytes([]byte{11})
+	ctx.getCacheStream().putBytes([]byte{11})
 
 	assert(nilArray.contains(int64(0))).IsFalse()
 	assert(emptyArray.contains(int64(0))).IsFalse()

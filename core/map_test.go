@@ -27,7 +27,7 @@ func TestRpcMapInner_getItemPos_setItemPos_deleteItem(t *testing.T) {
 			assert(mapInner.getItemPos(strconv.Itoa(i))).Equals(-1)
 		}
 
-		// reset new value
+		// Reset new value
 		for i := 0; i < size; i++ {
 			assert(mapInner.setItemPos(strconv.Itoa(i), 2*i)).IsTrue()
 		}
@@ -209,7 +209,7 @@ func TestRpcMap_equals(t *testing.T) {
 
 	bugMap := newRPCMapByMap(ctx, Map{"1": 1, "0": 0})
 	ctx.getCacheStream().setWritePosUnsafe(bugMap.in.smallMap[0].pos)
-	ctx.getCacheStream().PutBytes([]byte{11})
+	ctx.getCacheStream().putBytes([]byte{11})
 
 	assert(nilRPCMap.equals(rpcMap{})).IsTrue()
 	assert(nilRPCMap.equals(mp0)).IsFalse()
@@ -234,7 +234,7 @@ func TestRpcMap_contains(t *testing.T) {
 	mp1 := newRPCMapByMap(ctx, Map{"0": 0, "1": 1})
 	bugMap := newRPCMapByMap(ctx, Map{"1": 1, "0": 0})
 	ctx.getCacheStream().setWritePosUnsafe(bugMap.in.smallMap[0].pos)
-	ctx.getCacheStream().PutBytes([]byte{11})
+	ctx.getCacheStream().putBytes([]byte{11})
 
 	assert(nilRPCMap.contains(int64(0))).IsFalse()
 	assert(mp0.contains(int64(0))).IsFalse()

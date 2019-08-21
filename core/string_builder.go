@@ -23,7 +23,7 @@ func NewStringBuilder() *StringBuilder {
 	return stringBuilderPool.Get().(*StringBuilder)
 }
 
-// reset reset the builder
+// Reset Reset the builder
 func (p *StringBuilder) Reset() {
 	if cap(p.buffer) == 4096 {
 		p.buffer = p.buffer[:0]
@@ -32,7 +32,7 @@ func (p *StringBuilder) Reset() {
 	}
 }
 
-// Release release the builder
+// Release Release the builder
 func (p *StringBuilder) Release() {
 	p.Reset()
 	stringBuilderPool.Put(p)

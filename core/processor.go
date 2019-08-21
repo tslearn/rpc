@@ -286,7 +286,7 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	}
 
 	processor.callback(p.execStream, p.execSuccessful)
-	inStream.reset()
+	inStream.Reset()
 	p.execStream = inStream
 
 	return nilReturn

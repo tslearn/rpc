@@ -2,10 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/core/streams_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/utils.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/utils_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/array_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/array_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/map.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/map.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/map_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/map_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/processor.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/processor_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/stream_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/streams_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/streams_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/string_builder.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/string_builder.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
     <ignored mask="*.prof" />
@@ -19,7 +25,7 @@
     <option name="myElementSize" value="173" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.6777996">
+    <splitter split-orientation="horizontal" split-proportion="0.31238273">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="false">
@@ -46,7 +52,7 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/streams_test.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="460">
+                <state relative-caret-position="5">
                   <caret line="20" column="32" lean-forward="true" selection-start-line="20" selection-start-column="32" selection-end-line="20" selection-end-column="32" />
                 </state>
               </provider>
@@ -88,8 +94,8 @@
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/core/utils_test.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="442">
-                  <caret line="242" column="14" selection-start-line="242" selection-start-column="5" selection-end-line="242" selection-end-column="14" />
+                <state relative-caret-position="488">
+                  <caret line="241" column="14" selection-start-line="241" selection-start-column="14" selection-end-line="241" selection-end-column="14" />
                 </state>
               </provider>
             </entry>
@@ -110,8 +116,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/stream.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-572">
-                  <caret line="32" column="13" selection-start-line="32" selection-start-column="13" selection-end-line="32" selection-end-column="13" />
+                <state relative-caret-position="7061">
+                  <caret line="312" column="3" lean-forward="true" selection-start-line="312" selection-start-column="3" selection-end-line="312" selection-end-column="3" />
                 </state>
               </provider>
             </entry>
@@ -217,11 +223,11 @@
         <option value="$PROJECT_DIR$/core/assert.go" />
         <option value="$PROJECT_DIR$/core/defs.go" />
         <option value="$PROJECT_DIR$/core/stream_test.go" />
-        <option value="$PROJECT_DIR$/core/stream.go" />
         <option value="$PROJECT_DIR$/core/error.go" />
         <option value="$PROJECT_DIR$/core/utils_test.go" />
         <option value="$PROJECT_DIR$/core/utils.go" />
         <option value="$PROJECT_DIR$/core/streams_test.go" />
+        <option value="$PROJECT_DIR$/core/stream.go" />
       </list>
     </option>
   </component>
@@ -298,7 +304,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestRpcStream_ in github.com/tslearn/rpcc/core">
+  <component name="RunManager" selected="Go Test.go test core">
     <configuration name="TestRpcStream_ in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
@@ -352,8 +358,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestRpcStream_ in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.go test core" />
+        <item itemvalue="Go Test.TestRpcStream_ in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.go test rpcc" />
         <item itemvalue="Go Test.stream_test.go" />
         <item itemvalue="Go Test.utils_test.go" />
@@ -361,15 +367,6 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="go_test_core - 2019.08.21 at 09h 33m 18s.xml">
-      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="go_test_core - 2019.08.21 at 09h 33m 43s.xml">
-      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="go_test_core - 2019.08.21 at 09h 34m 03s.xml">
-      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="go_test_core - 2019.08.21 at 09h 36m 35s.xml">
       <configuration name="go test core" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -391,6 +388,15 @@
     <history-entry file="TestRpcStream__in_github_com_tslearn_rpcc_core - 2019.08.21 at 09h 46m 13s.xml">
       <configuration name="TestRpcStream_ in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
+    <history-entry file="go_test_core - 2019.08.21 at 09h 58m 58s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.21 at 09h 59m 08s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.21 at 10h 02m 32s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -409,7 +415,7 @@
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.39626557" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.44813278" />
       <window_info anchor="bottom" id="Cvs" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Docker" order="4" show_stripe_button="false" />
@@ -419,10 +425,10 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18477157" visible="true" weight="0.22222222" />
+      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18477157" visible="true" weight="0.1929182" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.8152284" side_tool="true" weight="0.22222222" />
-      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.8152284" side_tool="true" visible="true" weight="0.22222222" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.8152284" side_tool="true" visible="true" weight="0.1929182" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8142132" side_tool="true" weight="0.16971917" />
@@ -737,13 +743,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/stream.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="145" column="20" selection-start-line="145" selection-start-column="20" selection-end-line="145" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/assert.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="308">
@@ -763,8 +762,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/core/utils_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="442">
-          <caret line="242" column="14" selection-start-line="242" selection-start-column="5" selection-end-line="242" selection-end-column="14" />
+        <state relative-caret-position="488">
+          <caret line="241" column="14" selection-start-line="241" selection-start-column="14" selection-end-line="241" selection-end-column="14" />
         </state>
       </provider>
     </entry>
@@ -790,8 +789,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/core/streams_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="460">
+        <state relative-caret-position="5">
           <caret line="20" column="32" lean-forward="true" selection-start-line="20" selection-start-column="32" selection-end-line="20" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/stream.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7061">
+          <caret line="312" column="3" lean-forward="true" selection-start-line="312" selection-start-column="3" selection-end-line="312" selection-end-column="3" />
         </state>
       </provider>
     </entry>

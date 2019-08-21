@@ -116,8 +116,8 @@ func newRPCStream() *rpcStream {
 	return rpcStreamCache.Get().(*rpcStream)
 }
 
-// reset ...
-func (p *rpcStream) reset() {
+// Reset ...
+func (p *rpcStream) Reset() {
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
 		p.frames[i] = nil
@@ -144,12 +144,12 @@ func (p *rpcStream) reset() {
 
 // Release clean the rpcStream
 func (p *rpcStream) Release() {
-	p.reset()
+	p.Reset()
 	rpcStreamCache.Put(p)
 }
 
-// GetBuffer ...
-func (p *rpcStream) GetBuffer() []byte {
+// getBuffer ...
+func (p *rpcStream) getBuffer() []byte {
 	length := p.GetWritePos()
 	ret := make([]byte, length, length)
 	for i := 0; i <= p.writeSeg; i++ {
@@ -158,8 +158,8 @@ func (p *rpcStream) GetBuffer() []byte {
 	return ret
 }
 
-// GetTotalFrames ...
-func (p *rpcStream) GetTotalFrames() int {
+// getTotalFrames ...
+func (p *rpcStream) getTotalFrames() int {
 	return p.writeSeg + 1
 }
 
@@ -291,7 +291,7 @@ func (p *rpcStream) isSafetyRead9BytesInCurrentFrame() bool {
 		(p.readIndex+8 < p.writeIndex || p.readSeg < p.writeSeg)
 }
 
-func (p *rpcStream) PutBytes(v []byte) {
+func (p *rpcStream) putBytes(v []byte) {
 	if p.writeIndex+len(v) < 512 {
 		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
 	} else {
@@ -602,7 +602,7 @@ func (p *rpcStream) WriteFloat64(value float64) {
 			b[8] = byte(v >> 56)
 			p.writeIndex += 9
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				5,
 				byte(v),
 				byte(v >> 8),
@@ -637,7 +637,7 @@ func (p *rpcStream) WriteInt64(v int64) {
 			p.writeIndex += 3
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			6,
 			byte(v),
 			byte(v >> 8),
@@ -653,7 +653,7 @@ func (p *rpcStream) WriteInt64(v int64) {
 			p.writeIndex += 5
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			7,
 			byte(v),
 			byte(v >> 8),
@@ -675,7 +675,7 @@ func (p *rpcStream) WriteInt64(v int64) {
 			p.writeIndex += 9
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			8,
 			byte(v),
 			byte(v >> 8),
@@ -706,7 +706,7 @@ func (p *rpcStream) WriteUint64(v uint64) {
 			p.writeIndex += 3
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			9,
 			byte(v),
 			byte(v >> 8),
@@ -722,7 +722,7 @@ func (p *rpcStream) WriteUint64(v uint64) {
 			p.writeIndex += 5
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			10,
 			byte(v),
 			byte(v >> 8),
@@ -744,7 +744,7 @@ func (p *rpcStream) WriteUint64(v uint64) {
 			p.writeIndex += 9
 			return
 		}
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			11,
 			byte(v),
 			byte(v >> 8),
@@ -809,7 +809,7 @@ func (p *rpcStream) WriteString(v string) {
 			b[4] = byte(uint32(length) >> 24)
 			p.writeIndex += 5
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				191,
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
@@ -851,7 +851,7 @@ func (p *rpcStream) WriteBytes(v []byte) {
 			p.gotoNextWriteFrame()
 		}
 		// write body
-		p.PutBytes(v)
+		p.putBytes(v)
 	} else {
 		if p.writeIndex+length < 507 {
 			b := p.writeFrame[p.writeIndex:]
@@ -871,7 +871,7 @@ func (p *rpcStream) WriteBytes(v []byte) {
 			b[4] = byte(uint32(length) >> 24)
 			p.writeIndex += 5
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				255,
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
@@ -880,7 +880,7 @@ func (p *rpcStream) WriteBytes(v []byte) {
 			})
 		}
 		// write body
-		p.PutBytes(v)
+		p.putBytes(v)
 	}
 }
 
@@ -920,7 +920,7 @@ func (p *rpcStream) WriteArray(v Array) RPCStreamWriteErrorCode {
 			l[3] = byte(uint32(length) >> 24)
 			p.writeIndex += 4
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
 				byte(uint32(length) >> 16),
@@ -946,7 +946,7 @@ func (p *rpcStream) WriteArray(v Array) RPCStreamWriteErrorCode {
 	} else {
 		endPos := p.GetWritePos()
 		p.setWritePosUnsafe(startPos + 1)
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
@@ -1001,7 +1001,7 @@ func (p *rpcStream) WriteRPCArray(v rpcArray) RPCStreamWriteErrorCode {
 			l[3] = byte(uint32(length) >> 24)
 			p.writeIndex += 4
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
 				byte(uint32(length) >> 16),
@@ -1027,7 +1027,7 @@ func (p *rpcStream) WriteRPCArray(v rpcArray) RPCStreamWriteErrorCode {
 	} else {
 		endPos := p.GetWritePos()
 		p.setWritePosUnsafe(startPos + 1)
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
@@ -1077,7 +1077,7 @@ func (p *rpcStream) WriteMap(v Map) RPCStreamWriteErrorCode {
 			l[3] = byte(uint32(length) >> 24)
 			p.writeIndex += 4
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
 				byte(uint32(length) >> 16),
@@ -1104,7 +1104,7 @@ func (p *rpcStream) WriteMap(v Map) RPCStreamWriteErrorCode {
 	} else {
 		endPos := p.GetWritePos()
 		p.setWritePosUnsafe(startPos + 1)
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
@@ -1165,7 +1165,7 @@ func (p *rpcStream) WriteRPCMap(v rpcMap) RPCStreamWriteErrorCode {
 			l[3] = byte(uint32(length) >> 24)
 			p.writeIndex += 4
 		} else {
-			p.PutBytes([]byte{
+			p.putBytes([]byte{
 				byte(uint32(length)),
 				byte(uint32(length) >> 8),
 				byte(uint32(length) >> 16),
@@ -1203,7 +1203,7 @@ func (p *rpcStream) WriteRPCMap(v rpcMap) RPCStreamWriteErrorCode {
 	} else {
 		endPos := p.GetWritePos()
 		p.setWritePosUnsafe(startPos + 1)
-		p.PutBytes([]byte{
+		p.putBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
