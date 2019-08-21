@@ -242,6 +242,8 @@ func rpcEquals(left interface{}, right interface{}) bool {
 		if rBytes, ok := right.([]byte); ok {
 			return bytes.Equal(left.([]byte), rBytes)
 		}
+	case []int:
+		return reflect.DeepEqual(left, right)
 	case rpcArray:
 		if rArray, ok := right.(rpcArray); ok {
 			return left.(rpcArray).equals(rArray)
