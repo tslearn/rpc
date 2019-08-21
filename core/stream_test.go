@@ -156,15 +156,6 @@ func Test_RPCStream_SetReadPos(t *testing.T) {
 	assert(stream.SetReadPos(513)).IsFalse()
 }
 
-func Test_RPCStream_readByte(t *testing.T) {
-	assert := newAssert(t)
-	stream := newRPCStream()
-
-	assert(stream.readByte(-1)).Equals(byte(0), false)
-	assert(stream.readByte(0)).Equals(byte(1), true)
-	assert(stream.readByte(1)).Equals(byte(0), false)
-}
-
 func Test_RPCStream_writeStreamUnsafe(t *testing.T) {
 	assert := newAssert(t)
 

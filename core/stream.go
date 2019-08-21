@@ -374,13 +374,6 @@ func (p *rpcStream) readNBytesUnsafe(n int) []byte {
 	return ret
 }
 
-func (p *rpcStream) readByte(pos int) (byte, bool) {
-	if pos >= 0 && pos < p.GetWritePos() {
-		return (*p.frames[pos>>9])[pos&0x1FF], true
-	}
-	return 0, false
-}
-
 // return how many bytes to skip
 func (p *rpcStream) peekSkip() int {
 	skip := readSkipArray[p.readFrame[p.readIndex]]
@@ -410,6 +403,7 @@ func (p *rpcStream) peekSkip() int {
 }
 
 // return the item read pos, and skip it
+// end must be a valid pos
 func (p *rpcStream) readSkipItem(end int) int {
 	ret := p.GetReadPos()
 	skip := p.peekSkip()
@@ -418,7 +412,7 @@ func (p *rpcStream) readSkipItem(end int) int {
 		if p.readIndex+skip < 512 {
 			p.readIndex += skip
 		} else {
-			p.SetReadPos(ret + skip)
+			p.setReadPosUnsafe(ret + skip)
 		}
 		return ret
 	} else {
