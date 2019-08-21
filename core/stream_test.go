@@ -137,16 +137,6 @@ func Test_RPCStream_Release(t *testing.T) {
 	assert(stream.saveSeg, stream.saveIndex).Equals(0, 1)
 }
 
-func Test_RPCStream_GetTotalFrames(t *testing.T) {
-	assert := newAssert(t)
-	stream := newRPCStream()
-	assert(stream.getTotalFrames()).Equals(1)
-	for i := 0; i < 511; i++ {
-		stream.WriteNil()
-	}
-	assert(stream.getTotalFrames()).Equals(2)
-}
-
 func Test_RPCStream_SetReadPos(t *testing.T) {
 	assert := newAssert(t)
 	stream := newRPCStream()
@@ -248,7 +238,7 @@ func Test_RPCStream_Nil(t *testing.T) {
 			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadNil()).IsTrue()
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -264,7 +254,7 @@ func Test_RPCStream_Nil(t *testing.T) {
 
 				stream.setWritePosUnsafe(writePos)
 				assert(stream.ReadNil()).IsTrue()
-				assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+				assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 			}
 		}
 
@@ -297,7 +287,7 @@ func Test_RPCStream_Bool(t *testing.T) {
 			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadBool()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -308,7 +298,7 @@ func Test_RPCStream_Bool(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -324,7 +314,7 @@ func Test_RPCStream_Bool(t *testing.T) {
 
 				stream.setWritePosUnsafe(writePos)
 				assert(stream.ReadBool()).Equals(testData[0], true)
-				assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+				assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 			}
 		}
 
@@ -358,7 +348,7 @@ func Test_RPCStream_Float64(t *testing.T) {
 			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadFloat64()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -369,7 +359,7 @@ func Test_RPCStream_Float64(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -386,7 +376,7 @@ func Test_RPCStream_Float64(t *testing.T) {
 
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadFloat64()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -435,7 +425,7 @@ func Test_RPCStream_Int64(t *testing.T) {
 			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadInt64()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -446,7 +436,7 @@ func Test_RPCStream_Int64(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -463,7 +453,7 @@ func Test_RPCStream_Int64(t *testing.T) {
 
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadInt64()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -502,7 +492,7 @@ func Test_RPCStream_Uint64(t *testing.T) {
 			assert(stream.getBuffer(), stream.writeIndex, stream.writeSeg).
 				Equals(targetBuffer, len(targetBuffer)%512, len(targetBuffer)/512)
 			assert(stream.ReadUint64()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -513,7 +503,7 @@ func Test_RPCStream_Uint64(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -530,7 +520,7 @@ func Test_RPCStream_Uint64(t *testing.T) {
 
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadUint64()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -571,11 +561,11 @@ func Test_RPCStream_String(t *testing.T) {
 
 			stream.SetReadPos(i)
 			assert(stream.ReadUnsafeString()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 
 			stream.SetReadPos(i)
 			assert(stream.ReadString()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -586,7 +576,7 @@ func Test_RPCStream_String(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: string tail is not zero
@@ -601,7 +591,7 @@ func Test_RPCStream_String(t *testing.T) {
 				targetBuffer[len(targetBuffer)-2] = 0
 				fillTestStreamByBuffer(stream, i, targetBuffer)
 				assert(stream.ReadUnsafeString()).Equals(testData[0], true)
-				assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+				assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 
 				// ReadRPCString
 				targetBuffer[len(targetBuffer)-2] = 1
@@ -611,7 +601,7 @@ func Test_RPCStream_String(t *testing.T) {
 				targetBuffer[len(targetBuffer)-2] = 0
 				fillTestStreamByBuffer(stream, i, targetBuffer)
 				assert(stream.ReadString()).Equals(testData[0], true)
-				assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+				assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 			}
 		}
 
@@ -628,7 +618,7 @@ func Test_RPCStream_String(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadUnsafeString()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 
 					// ReadRPCString
 					stream.SetReadPos(i)
@@ -637,7 +627,7 @@ func Test_RPCStream_String(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadString()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -686,12 +676,12 @@ func Test_RPCStream_Bytes(t *testing.T) {
 			// ReadUnsafeBytes
 			stream.SetReadPos(i)
 			assert(stream.ReadUnsafeBytes()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 
 			// ReadRPCBytes
 			stream.SetReadPos(i)
 			assert(stream.ReadBytes()).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -702,7 +692,7 @@ func Test_RPCStream_Bytes(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -718,7 +708,7 @@ func Test_RPCStream_Bytes(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadUnsafeBytes()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 
 					// ReadRPCBytes
 					stream.SetReadPos(i)
@@ -727,7 +717,7 @@ func Test_RPCStream_Bytes(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.setWritePosUnsafe(writePos)
 					assert(stream.ReadBytes()).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -781,7 +771,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 				assert(stream.WriteRPCArray(testData)).Equals(RPCStreamWriteOK)
 				stream.SetReadPos(i)
 				assert(stream.ReadRPCArray(ctx)).Equals(testData, true)
-				assert(stream.IsReadFinish()).IsTrue()
+				assert(!stream.CanRead()).IsTrue()
 			}
 		}
 	}
@@ -830,7 +820,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 
 			stream.SetReadPos(i)
 			assert(stream.ReadRPCArray(ctx)).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -841,7 +831,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 			stream.SetReadPos(i)
 			assert(stream.ReadRPCArray(ctx)).Equals(testData[0], true)
 		}
@@ -863,7 +853,7 @@ func Test_RPCStream_RPCArray(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.SetWritePos(writePos)
 					assert(stream.ReadRPCArray(ctx)).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}
@@ -940,7 +930,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 
 				stream.SetReadPos(i)
 				assert(stream.ReadRPCMap(ctx)).Equals(testData, true)
-				assert(stream.IsReadFinish()).IsTrue()
+				assert(!stream.CanRead()).IsTrue()
 			}
 		}
 	}
@@ -1024,11 +1014,11 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 
 			stream.SetReadPos(i)
 			assert(stream.ReadRPCMap(nil)).Equals(nilRPCMap, false)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsFalse()
+			assert(stream.ReadNil(), !stream.CanRead()).IsFalse()
 
 			stream.SetReadPos(i)
 			assert(stream.ReadRPCMap(ctx)).Equals(testData[0], true)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// skip test
@@ -1039,7 +1029,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 			assert(stream.readSkipItem(endPos - 1)).Equals(-1)
 			assert(stream.GetReadPos()).Equals(i)
 			assert(stream.readSkipItem(endPos)).Equals(i)
-			assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+			assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 		}
 
 		// error: read overflow
@@ -1059,7 +1049,7 @@ func Test_RPCStream_RPCMap(t *testing.T) {
 					assert(stream.GetReadPos()).Equals(i)
 					stream.SetWritePos(writePos)
 					assert(stream.ReadRPCMap(ctx)).Equals(testData[0], true)
-					assert(stream.ReadNil(), stream.IsReadFinish()).IsTrue()
+					assert(stream.ReadNil(), !stream.CanRead()).IsTrue()
 				}
 			}
 		}

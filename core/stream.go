@@ -118,11 +118,11 @@ func newRPCStream() *rpcStream {
 
 // Reset ...
 func (p *rpcStream) Reset() {
+	// reset frames
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
 		p.frames[i] = nil
 	}
-
 	if cap(p.frames) > 8 {
 		newFrames := make([]*[]byte, 1, 8)
 		newFrames[0] = p.frames[0]
@@ -133,9 +133,10 @@ func (p *rpcStream) Reset() {
 
 	p.readSeg = 0
 	p.readIndex = 1
+	p.readFrame = *p.frames[0]
+
 	p.writeSeg = 0
 	p.writeIndex = 1
-	p.readFrame = *p.frames[0]
 	p.writeFrame = *p.frames[0]
 
 	p.saveIndex = 1
@@ -156,11 +157,6 @@ func (p *rpcStream) getBuffer() []byte {
 		copy(ret[i<<9:], *p.frames[i])
 	}
 	return ret
-}
-
-// getTotalFrames ...
-func (p *rpcStream) getTotalFrames() int {
-	return p.writeSeg + 1
 }
 
 // GetReadPos get the current read pos of the stream
@@ -231,14 +227,9 @@ func (p *rpcStream) setWritePosUnsafe(pos int) {
 	}
 }
 
-// CanReadNext return true if the stream is not finish
-func (p *rpcStream) CanReadNext() bool {
+// CanRead return true if the stream is not finish
+func (p *rpcStream) CanRead() bool {
 	return p.readIndex < p.writeIndex || p.readSeg < p.writeSeg
-}
-
-// IsReadFinish return true if the stream is read finish
-func (p *rpcStream) IsReadFinish() bool {
-	return p.readIndex == p.writeIndex && p.readSeg == p.writeSeg
 }
 
 func (p *rpcStream) gotoNextWriteFrame() {
