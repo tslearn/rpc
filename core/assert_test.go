@@ -53,7 +53,7 @@ func TestAssert_Contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 	assert("hello").Contains("")

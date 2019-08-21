@@ -24,7 +24,7 @@ func TestRpcArray_newRPCArray(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{
@@ -58,7 +58,7 @@ func TestRpcArray_ok(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 
@@ -71,7 +71,7 @@ func TestRpcArray_release(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 
@@ -101,7 +101,7 @@ func TestRpcArray_getIS(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestRpcArray_equals(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 	nilArray := rpcArray{}
@@ -155,7 +155,7 @@ func TestRpcArray_contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 
@@ -176,7 +176,7 @@ func TestRpcArray_Size(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{
@@ -197,7 +197,7 @@ func TestRpcArray_Get(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 
@@ -222,7 +222,7 @@ func TestRpcArray_Get(t *testing.T) {
 
 		ctx := &rpcContext{
 			inner: &rpcInnerContext{
-				stream: NewRPCStream(),
+				stream: newRPCStream(),
 			},
 		}
 
@@ -388,7 +388,7 @@ func TestRpcArray_Set_Append(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
 		inner: &rpcInnerContext{
-			stream: NewRPCStream(),
+			stream: newRPCStream(),
 		},
 	}
 

@@ -111,13 +111,13 @@ type rpcStream struct {
 	saveIndex int
 }
 
-// NewRPCStream ...
-func NewRPCStream() *rpcStream {
+// newRPCStream ...
+func newRPCStream() *rpcStream {
 	return rpcStreamCache.Get().(*rpcStream)
 }
 
-// Reset ...
-func (p *rpcStream) Reset() {
+// reset ...
+func (p *rpcStream) reset() {
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
 		p.frames[i] = nil
@@ -144,7 +144,7 @@ func (p *rpcStream) Reset() {
 
 // Release clean the rpcStream
 func (p *rpcStream) Release() {
-	p.Reset()
+	p.reset()
 	rpcStreamCache.Put(p)
 }
 

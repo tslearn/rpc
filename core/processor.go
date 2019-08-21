@@ -46,7 +46,7 @@ func newThread(processor *rpcProcessor) *rpcThread {
 		processor:  processor,
 		ch:         make(chan *rpcStream),
 		execArgs:   make([]reflect.Value, 0, 16),
-		execStream: NewRPCStream(),
+		execStream: newRPCStream(),
 		execNS:     0,
 	}
 
@@ -286,7 +286,7 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	}
 
 	processor.callback(p.execStream, p.execSuccessful)
-	inStream.Reset()
+	inStream.reset()
 	p.execStream = inStream
 
 	return nilReturn

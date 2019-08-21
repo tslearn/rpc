@@ -41,7 +41,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			stream := NewRPCStream()
+			stream := newRPCStream()
 			byte16 := make([]byte, 16, 16)
 			stream.WriteBytes(byte16)
 			stream.WriteString("$.user:sayHello")
