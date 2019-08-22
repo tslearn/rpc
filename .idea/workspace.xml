@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/processor.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/streams_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/streams_test.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
@@ -16,59 +14,17 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageViewManager">
-    <option name="myElementSize" value="30" />
+    <option name="myElementSize" value="89" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.68028843">
+    <splitter split-orientation="horizontal" split-proportion="0.5155855">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/core/array.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="9430">
-                  <caret line="410" column="1" selection-start-line="410" selection-start-column="1" selection-end-line="410" selection-end-column="1" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/utils.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="362">
-                  <caret line="235" column="15" lean-forward="true" selection-start-line="235" selection-start-column="15" selection-end-line="235" selection-end-column="15" />
-                  <folding>
-                    <element signature="e#14#94#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/array_test.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="3657">
-                  <caret line="159" column="3" lean-forward="true" selection-start-line="159" selection-start-column="3" selection-end-line="159" selection-end-column="3" />
-                  <folding>
-                    <element signature="e#14#35#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/stream_test.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="1546">
-                  <caret line="76" column="15" selection-start-line="76" selection-start-column="15" selection-end-line="76" selection-end-column="15" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/defs.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="648">
-                  <caret line="39" column="2" selection-start-line="39" selection-start-column="2" selection-end-line="39" selection-end-column="2" />
+                <state relative-caret-position="315">
+                  <caret line="70" column="18" selection-start-line="70" selection-start-column="18" selection-end-line="70" selection-end-column="18" />
                 </state>
               </provider>
             </entry>
@@ -76,34 +32,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/streams_test.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-69">
-                  <caret line="75" column="56" selection-start-line="75" selection-start-column="56" selection-end-line="75" selection-end-column="56" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/processor.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="276">
-                  <caret line="21" column="24" lean-forward="true" selection-start-line="21" selection-start-column="24" selection-end-line="21" selection-end-column="24" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/string_builder.go">
-              <provider selected="true" editor-type-id="text-editor" />
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/assert.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="584">
-                  <caret line="43" column="17" selection-start-line="43" selection-start-column="8" selection-end-line="43" selection-end-column="17" />
-                  <folding>
-                    <element signature="e#14#53#0" expanded="true" />
-                  </folding>
+                <state relative-caret-position="547">
+                  <caret line="1502" column="69" selection-start-line="1502" selection-start-column="69" selection-end-line="1502" selection-end-column="69" />
                 </state>
               </provider>
             </entry>
@@ -115,26 +45,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/stream.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-1217">
-                  <caret line="1677" column="4" selection-start-line="1677" selection-start-column="4" selection-end-line="1677" selection-end-column="4" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/testing/testing.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="315">
-                  <caret line="864" selection-start-line="864" selection-end-line="864" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/sync/pool.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="377">
-                  <caret line="152" selection-start-line="152" selection-end-line="152" />
+                <state relative-caret-position="-1138">
+                  <caret line="1773" column="28" selection-start-line="1773" selection-start-column="13" selection-end-line="1773" selection-end-column="28" />
                 </state>
               </provider>
             </entry>
@@ -180,8 +92,8 @@
       <find>peekSkip</find>
       <find>ReadBool</find>
       <find>ReadString</find>
-      <find>pubBytes</find>
       <find>WriteNi</find>
+      <find>pubBytes</find>
     </findStrings>
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.12.7/libexec" />
@@ -321,8 +233,8 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestRpcStream_ReadUnsafeBytes in github.com/tslearn/rpcc/core">
-    <configuration name="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core">
+    <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -330,29 +242,7 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_ReadBytes$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestRpcStream_ReadString in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$/core" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc/core" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_ReadString$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$/core" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc/core" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_ReadUint64$" />
+      <pattern value="^TestRpcStream_ReadRPCArray$" />
       <method v="2" />
     </configuration>
     <configuration name="TestRpcStream_ReadUnsafeBytes in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -366,7 +256,7 @@
       <pattern value="^TestRpcStream_ReadUnsafeBytes$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRpcStream_ReadUnsafeString in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRpcStream_WriteArray in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -374,49 +264,70 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_ReadUnsafeString$" />
+      <pattern value="^TestRpcStream_WriteArray$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestRpcStream_WriteRPCArray in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$/core" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tslearn/rpcc/core" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestRpcStream_WriteRPCArray$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="streams_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$/core" />
+      <framework value="gotest" />
+      <kind value="FILE" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/core/streams_test.go" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.streams_test.go" />
+        <item itemvalue="Go Test.TestRpcStream_WriteRPCArray in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.TestRpcStream_WriteArray in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.TestRpcStream_ReadUnsafeBytes in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_ReadUnsafeString in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_ReadString in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestRpcStream_ReadBool_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 00s.xml">
-      <configuration name="TestRpcStream_ReadBool in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 36m 15s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 09s.xml">
-      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 38m 56s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadInt64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 19s.xml">
-      <configuration name="TestRpcStream_ReadInt64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 40m 00s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadUint64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 33s.xml">
-      <configuration name="TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 40m 19s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadString_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 43s.xml">
-      <configuration name="TestRpcStream_ReadString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 41m 01s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadUnsafeString_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 37m 54s.xml">
-      <configuration name="TestRpcStream_ReadUnsafeString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 52m 28s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadBytes_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 38m 08s.xml">
-      <configuration name="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 14h 59m 47s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadBytes_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 39m 32s.xml">
-      <configuration name="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 15h 01m 07s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadBytes_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 40m 11s.xml">
-      <configuration name="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 15h 01m 12s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_ReadBytes_in_github_com_tslearn_rpcc_core - 2019.08.22 at 11h 44m 27s.xml">
-      <configuration name="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core - 2019.08.22 at 15h 02m 45s.xml">
+      <configuration name="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TodoView">
@@ -432,7 +343,7 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.15628816" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.15628816" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -446,13 +357,13 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18071066" visible="true" weight="0.081807084" />
+      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18071066" visible="true" weight="0.11904762" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.8192893" side_tool="true" weight="0.2008547" />
-      <window_info anchor="right" id="Run" order="7" sideWeight="0.8192893" side_tool="true" weight="0.081807084" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.8192893" side_tool="true" weight="0.11904762" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
-      <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8192893" side_tool="true" weight="0.081807084" />
+      <window_info active="true" anchor="right" id="Coverage" order="10" sideWeight="0.8192893" side_tool="true" visible="true" weight="0.11904762" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -484,6 +395,7 @@
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_writeStreamNext_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_writeStreamNext in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566406217532" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_CanRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_CanRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566372069428" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_peekSkip_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_peekSkip in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566396759606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteArray_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteArray in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566452220112" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_contains_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_contains in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566286138777" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteBytes_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteBytes in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566444993901" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_read5BytesCrossFrameUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_read5BytesCrossFrameUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566380700479" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
@@ -505,11 +417,12 @@
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadString_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadString in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566445063260" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteBool_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteBool in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566444952418" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadBool_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadBool in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566445020146" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadRPCArray_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadRPCArray in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566457461927" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMapInner_getItemPos_setItemPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMapInner_getItemPos_setItemPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566181904295" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_readSkipItem_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_readSkipItem in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566397588041" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadUint64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566445053222" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_gotoNextReadByteUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_gotoNextReadByteUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378903541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$streams_test_go.out" NAME="streams_test.go Coverage Results" MODIFIED="1566406350235" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$streams_test_go.out" NAME="streams_test.go Coverage Results" MODIFIED="1566453416172" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$utils_test_go.out" NAME="utils_test.go Coverage Results" MODIFIED="1566288665434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyRead3BytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyRead3BytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378868434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_getBuffer_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_getBuffer in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369512448" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
@@ -520,6 +433,7 @@
     <SUITE FILE_PATH="coverage/rpcc$map_test_go.out" NAME="map_test.go Coverage Results" MODIFIED="1566286298218" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_GetReadPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_GetReadPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369806864" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadBytes_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadBytes in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566445697630" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteRPCArray_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteRPCArray in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566453354029" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$array_test_go.out" NAME="array_test.go Coverage Results" MODIFIED="1566286283741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$go_test_g.out" NAME="go test g Coverage Results" MODIFIED="1565659709061" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteUInt64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteUInt64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566444976451" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
@@ -767,30 +681,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/array.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="9430">
-          <caret line="410" column="1" selection-start-line="410" selection-start-column="1" selection-end-line="410" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/array_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3657">
-          <caret line="159" column="3" lean-forward="true" selection-start-line="159" selection-start-column="3" selection-end-line="159" selection-end-column="3" />
-          <folding>
-            <element signature="e#14#35#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/stream_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1546">
-          <caret line="76" column="15" selection-start-line="76" selection-start-column="15" selection-end-line="76" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/assert.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="584">
@@ -818,12 +708,15 @@
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/sync/pool.go">
+    <entry file="file://$PROJECT_DIR$/core/processor.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="377">
-          <caret line="152" selection-start-line="152" selection-end-line="152" />
+        <state relative-caret-position="230">
+          <caret line="19" column="26" lean-forward="true" selection-start-line="19" selection-start-column="26" selection-end-line="19" selection-end-column="26" />
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/string_builder.go">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/testing/testing.go">
       <provider selected="true" editor-type-id="text-editor">
@@ -832,27 +725,48 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/processor.go">
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/sync/pool.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="21" column="24" lean-forward="true" selection-start-line="21" selection-start-column="24" selection-end-line="21" selection-end-column="24" />
+        <state relative-caret-position="377">
+          <caret line="152" selection-start-line="152" selection-end-line="152" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/string_builder.go">
-      <provider selected="true" editor-type-id="text-editor" />
+    <entry file="file://$PROJECT_DIR$/core/array_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3657">
+          <caret line="159" column="3" lean-forward="true" selection-start-line="159" selection-start-column="3" selection-end-line="159" selection-end-column="3" />
+          <folding>
+            <element signature="e#14#35#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/stream_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="492">
+          <caret line="780" column="7" lean-forward="true" selection-start-line="780" selection-start-column="7" selection-end-line="780" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/array.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="70" column="18" selection-start-line="70" selection-start-column="18" selection-end-line="70" selection-end-column="18" />
+        </state>
+      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/stream.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1217">
-          <caret line="1677" column="4" selection-start-line="1677" selection-start-column="4" selection-end-line="1677" selection-end-column="4" />
+        <state relative-caret-position="-1138">
+          <caret line="1773" column="28" selection-start-line="1773" selection-start-column="13" selection-end-line="1773" selection-end-column="28" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/streams_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-69">
-          <caret line="75" column="56" selection-start-line="75" selection-start-column="56" selection-end-line="75" selection-end-column="56" />
+        <state relative-caret-position="547">
+          <caret line="1502" column="69" selection-start-line="1502" selection-start-column="69" selection-end-line="1502" selection-end-column="69" />
         </state>
       </provider>
     </entry>

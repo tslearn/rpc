@@ -1850,7 +1850,6 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 
 		ret.release()
 		p.restoreReadPos()
-		return nilRPCArray, false
 	}
 
 	return nilRPCArray, false

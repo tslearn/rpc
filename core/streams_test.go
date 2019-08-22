@@ -1403,3 +1403,127 @@ func TestRpcStream_ReadUnsafeBytes(t *testing.T) {
 		}
 	}
 }
+
+func TestRpcStream_ReadRPCArray(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["array"] {
+		// ok
+		for i := 1; i < 530; i++ {
+			for j := 1; j < 530; j++ {
+				// skip for performance
+				if j > 10 && j < 500 {
+					continue
+				}
+				ctx := &rpcContext{
+					inner: &rpcInnerContext{
+						stream: newRPCStream(),
+					},
+				}
+				ctx.getCacheStream().SetWritePos(j)
+				stream := newRPCStream()
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.Write(testData[0])
+				assert(stream.ReadRPCArray(ctx)).
+					Equals(newRPCArrayByArray(ctx, testData[0].(Array)), true)
+				assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadRPCArray(ctx)).Equals(nilRPCArray, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{13})
+			assert(stream.ReadRPCArray(ctx)).Equals(nilRPCArray, false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+
+		// error in stream
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			if len(testData[0].(Array)) > 0 {
+				stream.SetWritePos(stream.GetWritePos() - 1)
+				stream.putBytes([]byte{13})
+				assert(stream.ReadRPCArray(ctx)).Equals(nilRPCArray, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// error in stream
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{0x41, 0x07, 0x00, 0x00, 0x00, 0x02, 0x02})
+			assert(stream.ReadRPCArray(ctx)).Equals(nilRPCArray, false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+//
+//// error in rpc array stream
+//for i := 1; i < 550; i++ {
+//ctx := &rpcContext{
+//inner: &rpcInnerContext{
+//stream: newRPCStream(),
+//},
+//}
+//stream := newRPCStream()
+//stream.SetWritePos(i)
+//rpcArray := newRPCArrayByArray(ctx, testData[0].(Array))
+//if rpcArray.Size() > 0 {
+//ctx.getCacheStream().SetWritePos(ctx.getCacheStream().GetWritePos() - 1)
+//ctx.getCacheStream().putBytes([]byte{13})
+//assert(stream.WriteRPCArray(rpcArray)).
+//Equals(RPCStreamWriteRPCArrayError)
+//assert(stream.GetWritePos()).Equals(i)
+//}
+//stream.Release()
+//}
