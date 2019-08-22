@@ -98,16 +98,16 @@ var rpcStreamTestCollections = map[string][][2]interface{}{
 		}},
 	},
 	"array": {
-		{[]interface{}{}, []byte{64}},
-		{[]interface{}{true}, []byte{
+		{Array{}, []byte{64}},
+		{Array{true}, []byte{
 			65, 6, 0, 0, 0, 2,
 		}},
-		{[]interface{}{
+		{Array{
 			true, false,
 		}, []byte{
 			66, 7, 0, 0, 0, 2, 3,
 		}},
-		{[]interface{}{
+		{Array{
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
@@ -117,7 +117,7 @@ var rpcStreamTestCollections = map[string][][2]interface{}{
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2,
 		}},
-		{[]interface{}{
+		{Array{
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
@@ -128,7 +128,7 @@ var rpcStreamTestCollections = map[string][][2]interface{}{
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 		}},
-		{[]interface{}{
+		{Array{
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
 			true, true, true, true, true, true, true, true, true, true,
@@ -139,6 +139,86 @@ var rpcStreamTestCollections = map[string][][2]interface{}{
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 			2,
+		}},
+	},
+	"map": {
+		{Map{}, []byte{0x60}},
+		{Map{"1": true}, []byte{
+			0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02,
+		}},
+		{Map{
+			"1": true, "2": true, "3": true, "4": true,
+			"5": true, "6": true, "7": true, "8": true,
+			"9": true, "a": true, "b": true, "c": true,
+			"d": true, "e": true, "f": true, "g": true,
+			"h": true, "i": true, "j": true, "k": true,
+			"l": true, "m": true, "n": true, "o": true,
+			"p": true, "q": true, "r": true, "s": true,
+			"t": true, "u": true,
+		}, []byte{
+			0x7e, 0x7d, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02, 0x81,
+			0x32, 0x00, 0x02, 0x81, 0x33, 0x00, 0x02, 0x81, 0x34, 0x00,
+			0x02, 0x81, 0x35, 0x00, 0x02, 0x81, 0x36, 0x00, 0x02, 0x81,
+			0x37, 0x00, 0x02, 0x81, 0x38, 0x00, 0x02, 0x81, 0x39, 0x00,
+			0x02, 0x81, 0x61, 0x00, 0x02, 0x81, 0x62, 0x00, 0x02, 0x81,
+			0x63, 0x00, 0x02, 0x81, 0x64, 0x00, 0x02, 0x81, 0x65, 0x00,
+			0x02, 0x81, 0x66, 0x00, 0x02, 0x81, 0x67, 0x00, 0x02, 0x81,
+			0x68, 0x00, 0x02, 0x81, 0x69, 0x00, 0x02, 0x81, 0x6a, 0x00,
+			0x02, 0x81, 0x6b, 0x00, 0x02, 0x81, 0x6c, 0x00, 0x02, 0x81,
+			0x6d, 0x00, 0x02, 0x81, 0x6e, 0x00, 0x02, 0x81, 0x6f, 0x00,
+			0x02, 0x81, 0x70, 0x00, 0x02, 0x81, 0x71, 0x00, 0x02, 0x81,
+			0x72, 0x00, 0x02, 0x81, 0x73, 0x00, 0x02, 0x81, 0x74, 0x00,
+			0x02, 0x81, 0x75, 0x00, 0x02,
+		}},
+		{Map{
+			"1": true, "2": true, "3": true, "4": true,
+			"5": true, "6": true, "7": true, "8": true,
+			"9": true, "a": true, "b": true, "c": true,
+			"d": true, "e": true, "f": true, "g": true,
+			"h": true, "i": true, "j": true, "k": true,
+			"l": true, "m": true, "n": true, "o": true,
+			"p": true, "q": true, "r": true, "s": true,
+			"t": true, "u": true, "v": true,
+		}, []byte{
+			0x7f, 0x85, 0x00, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x81,
+			0x31, 0x00, 0x02, 0x81, 0x32, 0x00, 0x02, 0x81, 0x33, 0x00,
+			0x02, 0x81, 0x34, 0x00, 0x02, 0x81, 0x35, 0x00, 0x02, 0x81,
+			0x36, 0x00, 0x02, 0x81, 0x37, 0x00, 0x02, 0x81, 0x38, 0x00,
+			0x02, 0x81, 0x39, 0x00, 0x02, 0x81, 0x61, 0x00, 0x02, 0x81,
+			0x62, 0x00, 0x02, 0x81, 0x63, 0x00, 0x02, 0x81, 0x64, 0x00,
+			0x02, 0x81, 0x65, 0x00, 0x02, 0x81, 0x66, 0x00, 0x02, 0x81,
+			0x67, 0x00, 0x02, 0x81, 0x68, 0x00, 0x02, 0x81, 0x69, 0x00,
+			0x02, 0x81, 0x6a, 0x00, 0x02, 0x81, 0x6b, 0x00, 0x02, 0x81,
+			0x6c, 0x00, 0x02, 0x81, 0x6d, 0x00, 0x02, 0x81, 0x6e, 0x00,
+			0x02, 0x81, 0x6f, 0x00, 0x02, 0x81, 0x70, 0x00, 0x02, 0x81,
+			0x71, 0x00, 0x02, 0x81, 0x72, 0x00, 0x02, 0x81, 0x73, 0x00,
+			0x02, 0x81, 0x74, 0x00, 0x02, 0x81, 0x75, 0x00, 0x02, 0x81,
+			0x76, 0x00, 0x02,
+		}},
+		{Map{
+			"1": true, "2": true, "3": true, "4": true,
+			"5": true, "6": true, "7": true, "8": true,
+			"9": true, "a": true, "b": true, "c": true,
+			"d": true, "e": true, "f": true, "g": true,
+			"h": true, "i": true, "j": true, "k": true,
+			"l": true, "m": true, "n": true, "o": true,
+			"p": true, "q": true, "r": true, "s": true,
+			"t": true, "u": true, "v": true, "w": true,
+		}, []byte{
+			0x7f, 0x89, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x81,
+			0x31, 0x00, 0x02, 0x81, 0x32, 0x00, 0x02, 0x81, 0x33, 0x00,
+			0x02, 0x81, 0x34, 0x00, 0x02, 0x81, 0x35, 0x00, 0x02, 0x81,
+			0x36, 0x00, 0x02, 0x81, 0x37, 0x00, 0x02, 0x81, 0x38, 0x00,
+			0x02, 0x81, 0x39, 0x00, 0x02, 0x81, 0x61, 0x00, 0x02, 0x81,
+			0x62, 0x00, 0x02, 0x81, 0x63, 0x00, 0x02, 0x81, 0x64, 0x00,
+			0x02, 0x81, 0x65, 0x00, 0x02, 0x81, 0x66, 0x00, 0x02, 0x81,
+			0x67, 0x00, 0x02, 0x81, 0x68, 0x00, 0x02, 0x81, 0x69, 0x00,
+			0x02, 0x81, 0x6a, 0x00, 0x02, 0x81, 0x6b, 0x00, 0x02, 0x81,
+			0x6c, 0x00, 0x02, 0x81, 0x6d, 0x00, 0x02, 0x81, 0x6e, 0x00,
+			0x02, 0x81, 0x6f, 0x00, 0x02, 0x81, 0x70, 0x00, 0x02, 0x81,
+			0x71, 0x00, 0x02, 0x81, 0x72, 0x00, 0x02, 0x81, 0x73, 0x00,
+			0x02, 0x81, 0x74, 0x00, 0x02, 0x81, 0x75, 0x00, 0x02, 0x81,
+			0x76, 0x00, 0x02, 0x81, 0x77, 0x00, 0x02,
 		}},
 	},
 }
@@ -981,6 +1061,103 @@ func TestRpcStream_WriteRPCArray(t *testing.T) {
 	}
 }
 
+func TestRpcStream_WriteMap(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["map"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(stream.WriteMap(testData[0].(Map))).Equals(RPCStreamWriteOK)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+
+			stream.SetReadPos(i)
+			assert(stream.ReadRPCMap(ctx)).
+				Equals(newRPCMapByMap(ctx, testData[0].(Map)), true)
+
+			stream.Release()
+		}
+
+		// error type
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
+				Equals(RPCStreamWriteUnsupportedType)
+			assert(stream.GetWritePos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteRPCMap(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["map"] {
+		// ok
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(stream.WriteRPCMap(newRPCMapByMap(ctx, testData[0].(Map)))).
+				Equals(RPCStreamWriteOK)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+
+			stream.SetReadPos(i)
+			assert(stream.ReadRPCMap(ctx)).
+				Equals(newRPCMapByMap(ctx, testData[0].(Map)), true)
+
+			stream.Release()
+		}
+
+		// ctx is closed
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			ctx.close()
+			assert(stream.WriteRPCMap(newRPCMapByMap(ctx, testData[0].(Map)))).
+				Equals(RPCStreamWriteRPCMapIsNotAvailable)
+			assert(stream.GetWritePos()).Equals(i)
+			stream.Release()
+		}
+
+		// error in rpc array stream
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			rpcMap := newRPCMapByMap(ctx, testData[0].(Map))
+			if rpcMap.Size() > 0 {
+				ctx.getCacheStream().SetWritePos(ctx.getCacheStream().GetWritePos() - 1)
+				ctx.getCacheStream().putBytes([]byte{13})
+				assert(stream.WriteRPCMap(rpcMap)).
+					Equals(RPCStreamWriteRPCMapError)
+				assert(stream.GetWritePos()).Equals(i)
+			}
+			stream.Release()
+		}
+	}
+}
+
 func TestRpcStream_ReadNil(t *testing.T) {
 	assert := newAssert(t)
 
@@ -1507,23 +1684,137 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 	}
 }
 
-//
-//// error in rpc array stream
-//for i := 1; i < 550; i++ {
-//ctx := &rpcContext{
-//inner: &rpcInnerContext{
-//stream: newRPCStream(),
-//},
-//}
-//stream := newRPCStream()
-//stream.SetWritePos(i)
-//rpcArray := newRPCArrayByArray(ctx, testData[0].(Array))
-//if rpcArray.Size() > 0 {
-//ctx.getCacheStream().SetWritePos(ctx.getCacheStream().GetWritePos() - 1)
-//ctx.getCacheStream().putBytes([]byte{13})
-//assert(stream.WriteRPCArray(rpcArray)).
-//Equals(RPCStreamWriteRPCArrayError)
-//assert(stream.GetWritePos()).Equals(i)
-//}
-//stream.Release()
-//}
+func TestRpcStream_ReadRPCMap(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["map"] {
+		// ok
+		for i := 1; i < 530; i++ {
+			for j := 1; j < 530; j++ {
+				// skip for performance
+				if j > 10 && j < 500 {
+					continue
+				}
+				ctx := &rpcContext{
+					inner: &rpcInnerContext{
+						stream: newRPCStream(),
+					},
+				}
+				ctx.getCacheStream().SetWritePos(j)
+				stream := newRPCStream()
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.Write(testData[0])
+				assert(stream.ReadRPCMap(ctx)).
+					Equals(newRPCMapByMap(ctx, testData[0].(Map)), true)
+				assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+
+		// overflow
+		for i := 1; i < 530; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{13})
+			assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+
+		// error in stream
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			if len(testData[0].(Map)) > 0 {
+				stream.SetWritePos(stream.GetWritePos() - 1)
+				stream.putBytes([]byte{13})
+				assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// error in stream, length error
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{
+				0x61, 0x0A, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02, 0x02,
+			})
+			assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+
+		// error in stream, key error
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			wPos := stream.GetWritePos()
+			mapSize := len(testData[0].(Map))
+
+			if mapSize > 30 {
+				stream.setWritePosUnsafe(i + 9)
+				stream.putBytes([]byte{13})
+				stream.setWritePosUnsafe(wPos)
+				assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+				assert(stream.GetReadPos()).Equals(i)
+			} else if mapSize > 0 {
+				stream.setWritePosUnsafe(i + 5)
+				stream.putBytes([]byte{13})
+				stream.setWritePosUnsafe(wPos)
+				assert(stream.ReadRPCMap(ctx)).Equals(nilRPCMap, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+	}
+}
