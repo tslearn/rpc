@@ -97,6 +97,50 @@ var rpcStreamTestCollections = map[string][][2]interface{}{
 			0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
 		}},
 	},
+	"array": {
+		{[]interface{}{}, []byte{64}},
+		{[]interface{}{true}, []byte{
+			65, 6, 0, 0, 0, 2,
+		}},
+		{[]interface{}{
+			true, false,
+		}, []byte{
+			66, 7, 0, 0, 0, 2, 3,
+		}},
+		{[]interface{}{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+		}, []byte{
+			94, 35, 0, 0, 0, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2,
+		}},
+		{[]interface{}{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true,
+		}, []byte{
+			95, 40, 0, 0, 0, 31, 0, 0, 0, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		}},
+		{[]interface{}{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true,
+		}, []byte{
+			95, 41, 0, 0, 0, 32, 0, 0, 0, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2,
+		}},
+	},
 }
 
 func TestRpcStream_basic(t *testing.T) {
@@ -845,6 +889,93 @@ func TestRpcStream_WriteBytes(t *testing.T) {
 			stream.WriteBytes(testData[0].([]byte))
 			assert(stream.getBuffer()[i:]).Equals(testData[1])
 			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteArray(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["array"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(stream.WriteArray(testData[0].(Array))).Equals(RPCStreamWriteOK)
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// error type
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(
+				stream.WriteArray(Array{true, true, true, make(chan bool), true}),
+			).Equals(RPCStreamWriteUnsupportedType)
+			assert(stream.GetWritePos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteRPCArray(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["array"] {
+		// ok
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			assert(
+				stream.WriteRPCArray(newRPCArrayByArray(ctx, testData[0].(Array))),
+			).Equals(RPCStreamWriteOK)
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// ctx is closed
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			ctx.close()
+			assert(
+				stream.WriteRPCArray(newRPCArrayByArray(ctx, testData[0].(Array))),
+			).Equals(RPCStreamWriteRPCArrayIsNotAvailable)
+			assert(stream.GetWritePos()).Equals(i)
+			stream.Release()
+		}
+
+		// error in rpc array stream
+		for i := 1; i < 550; i++ {
+			ctx := &rpcContext{
+				inner: &rpcInnerContext{
+					stream: newRPCStream(),
+				},
+			}
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			rpcArray := newRPCArrayByArray(ctx, testData[0].(Array))
+			if rpcArray.Size() > 0 {
+				ctx.getCacheStream().SetWritePos(ctx.getCacheStream().GetWritePos() - 1)
+				ctx.getCacheStream().putBytes([]byte{13})
+				assert(stream.WriteRPCArray(rpcArray)).
+					Equals(RPCStreamWriteRPCArrayError)
+				assert(stream.GetWritePos()).Equals(i)
+			}
 			stream.Release()
 		}
 	}
