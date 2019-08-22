@@ -1835,7 +1835,7 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
-					if itemPos < 0 {
+					if itemPos < start || itemPos >= end {
 						ret.release()
 						p.restoreReadPos()
 						return nilRPCArray, false
