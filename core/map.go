@@ -12,8 +12,8 @@ var rpcMapInnerCache = sync.Pool{
 }
 
 type rpcMapItem struct {
-	name string
-	pos  int
+	key string
+	pos int
 }
 
 type rpcMapInner struct {
@@ -21,28 +21,43 @@ type rpcMapInner struct {
 	largeMap map[string]int
 }
 
-func (p *rpcMapInner) getItemPos(name string) int {
+func (p *rpcMapInner) getItemPos(key string) int {
 	if p.largeMap == nil {
 		smallMap := p.smallMap
 		for i := 0; i < len(smallMap); i++ {
-			if smallMap[i].name == name {
+			if smallMap[i].key == key {
 				return smallMap[i].pos
 			}
 		}
 	} else {
-		if v, ok := p.largeMap[name]; ok {
+		if v, ok := p.largeMap[key]; ok {
 			return v
 		}
 	}
 	return -1
 }
 
-func (p *rpcMapInner) setItemPos(name string, idx int) bool {
+func (p *rpcMapInner) hasKey(key string) bool {
+	if p.largeMap == nil {
+		smallMap := p.smallMap
+		for i := 0; i < len(smallMap); i++ {
+			if smallMap[i].key == key {
+				return true
+			}
+		}
+		return false
+	} else {
+		_, ok := p.largeMap[key]
+		return ok
+	}
+}
+
+func (p *rpcMapInner) setItemPos(key string, idx int) bool {
 	if p.largeMap == nil {
 		smallMap := p.smallMap
 		// find the name
 		for i := 0; i < len(smallMap); i++ {
-			if smallMap[i].name == name {
+			if smallMap[i].key == key {
 				smallMap[i].pos = idx
 				return true
 			}
@@ -51,34 +66,34 @@ func (p *rpcMapInner) setItemPos(name string, idx int) bool {
 		// the name is not exist
 		if len(smallMap) < 16 {
 			p.smallMap = append(p.smallMap, rpcMapItem{
-				name: name,
-				pos:  idx,
+				key: key,
+				pos: idx,
 			})
 		} else {
 			p.toLargeMode()
-			p.largeMap[name] = idx
+			p.largeMap[key] = idx
 		}
 	} else {
-		p.largeMap[name] = idx
+		p.largeMap[key] = idx
 	}
 
 	return true
 }
 
 // Delete ...
-func (p *rpcMapInner) deleteItem(name string) bool {
+func (p *rpcMapInner) deleteItem(key string) bool {
 	if p.largeMap == nil {
 		smallMap := p.smallMap
 		for i := 0; i < len(smallMap); i++ {
-			if smallMap[i].name == name {
+			if smallMap[i].key == key {
 				smallMap[i] = smallMap[len(smallMap)-1]
 				p.smallMap = p.smallMap[:len(smallMap)-1]
 				return true
 			}
 		}
 	} else {
-		if _, ok := p.largeMap[name]; ok {
-			delete(p.largeMap, name)
+		if _, ok := p.largeMap[key]; ok {
+			delete(p.largeMap, key)
 			if len(p.largeMap) <= 16 {
 				p.toSmallMode()
 			}
@@ -98,7 +113,7 @@ func (p *rpcMapInner) toLargeMode() {
 	if p.largeMap == nil {
 		p.largeMap = make(map[string]int)
 		for _, it := range p.smallMap {
-			p.largeMap[it.name] = it.pos
+			p.largeMap[it.key] = it.pos
 		}
 		p.smallMap = p.smallMap[:0]
 	}
@@ -108,8 +123,8 @@ func (p *rpcMapInner) toSmallMode() {
 	if p.largeMap != nil && len(p.largeMap) <= 16 {
 		for key, value := range p.largeMap {
 			p.smallMap = append(p.smallMap, rpcMapItem{
-				name: key,
-				pos:  value,
+				key: key,
+				pos: value,
 			})
 		}
 		p.largeMap = nil
@@ -181,7 +196,7 @@ func (p rpcMap) Keys() []string {
 		if in.largeMap == nil {
 			ret := make([]string, 0, len(in.smallMap))
 			for _, it := range in.smallMap {
-				ret = append(ret, it.name)
+				ret = append(ret, it.key)
 			}
 			return ret
 		} else {

@@ -7,6 +7,36 @@ import (
 	"testing"
 )
 
+func TestRpcMapInner_hasKey(t *testing.T) {
+	assert := newAssert(t)
+	ctx := &rpcContext{
+		inner: &rpcInnerContext{
+			stream: newRPCStream(),
+		},
+	}
+
+	sMap := newRPCMapByMap(ctx, Map{"0": 0, "1": 1, "2": 2})
+	assert(sMap.in.hasKey("0")).IsTrue()
+	assert(sMap.in.hasKey("2")).IsTrue()
+	assert(sMap.in.hasKey("no")).IsFalse()
+
+	bMap := newRPCMapByMap(ctx, Map{
+		"1": true, "2": true, "3": true, "4": true,
+		"5": true, "6": true, "7": true, "8": true,
+		"9": true, "a": true, "b": true, "c": true,
+		"d": true, "e": true, "f": true, "g": true,
+		"h": true, "i": true, "j": true, "k": true,
+		"l": true, "m": true, "n": true, "o": true,
+		"p": true, "q": true, "r": true, "s": true,
+		"t": true, "u": true, "v": true, "w": true,
+	})
+
+	assert(bMap.in.hasKey("1")).IsTrue()
+	assert(bMap.in.hasKey("2")).IsTrue()
+	assert(bMap.in.hasKey("v")).IsTrue()
+	assert(bMap.in.hasKey("no")).IsFalse()
+}
+
 func TestRpcMapInner_getItemPos_setItemPos_deleteItem(t *testing.T) {
 	assert := newAssert(t)
 

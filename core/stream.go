@@ -1161,7 +1161,7 @@ func (p *rpcStream) WriteRPCMap(v rpcMap) RPCStreamWriteErrorCode {
 
 	if length <= 16 {
 		for i := 0; i < length; i++ {
-			p.WriteString(in.smallMap[i].name)
+			p.WriteString(in.smallMap[i].key)
 			readStream.setReadPosUnsafe(in.smallMap[i].pos)
 			if !p.writeStreamNext(readStream) {
 				p.setWritePosUnsafe(startPos)
@@ -1926,8 +1926,8 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 			itemPos := 0
 			if mapLen <= 16 {
 				for i := 0; i < mapLen; i++ {
-					name, ok := cs.ReadUnsafeString()
-					if !ok {
+					key, ok := cs.ReadUnsafeString()
+					if !ok || in.hasKey(key) {
 						ret.release()
 						p.restoreReadPos()
 						return nilRPCMap, false
@@ -1938,15 +1938,15 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 						cs.readIndex += skip
 					} else {
 						itemPos = cs.readSkipItem(end)
-						if itemPos < 0 {
+						if itemPos < start || itemPos >= end {
 							ret.release()
 							p.restoreReadPos()
 							return nilRPCMap, false
 						}
 					}
 					in.smallMap = append(in.smallMap, rpcMapItem{
-						name: name,
-						pos:  itemPos,
+						key: key,
+						pos: itemPos,
 					})
 				}
 			} else {
