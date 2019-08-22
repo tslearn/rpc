@@ -5,6 +5,66 @@ import (
 	"testing"
 )
 
+var rpcStreamTestCollections = map[string][][2]interface{}{
+	"nil": {
+		{nil, []byte{0x01}},
+	},
+	"bool": {
+		{true, []byte{0x02}},
+		{false, []byte{0x03}},
+	},
+	"float64": {
+		{float64(0), []byte{0x04}},
+		{float64(3.1415926), []byte{
+			0x05, 0x4a, 0xd8, 0x12, 0x4d, 0xfb, 0x21, 0x09, 0x40,
+		}},
+		{float64(-3.1415926), []byte{
+			0x05, 0x4a, 0xd8, 0x12, 0x4d, 0xfb, 0x21, 0x09, 0xc0,
+		}},
+	},
+	"int64": {
+		{int64(-9223372036854775808), []byte{
+			0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+		}},
+		{int64(-2147483649), []byte{
+			0x08, 0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0xff,
+		}},
+		{int64(-2147483648), []byte{0x07, 0x00, 0x00, 0x00, 0x80}},
+		{int64(-32769), []byte{0x07, 0xff, 0x7f, 0xff, 0xff}},
+		{int64(-32768), []byte{0x06, 0x00, 0x80}},
+		{int64(-8), []byte{0x06, 0xf8, 0xff}},
+		{int64(-7), []byte{0x0e}},
+		{int64(-1), []byte{0x14}},
+		{int64(0), []byte{0x15}},
+		{int64(1), []byte{0x16}},
+		{int64(32), []byte{0x35}},
+		{int64(33), []byte{0x06, 0x21, 0x00}},
+		{int64(32767), []byte{0x06, 0xff, 0x7f}},
+		{int64(32768), []byte{0x07, 0x00, 0x80, 0x00, 0x00}},
+		{int64(2147483647), []byte{0x07, 0xff, 0xff, 0xff, 0x7f}},
+		{int64(2147483648), []byte{
+			0x08, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+		}},
+		{int64(9223372036854775807), []byte{
+			0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+		}},
+	},
+	"uint64": {
+		{uint64(0), []byte{0x36}},
+		{uint64(9), []byte{0x3f}},
+		{uint64(10), []byte{0x09, 0x0a, 0x00}},
+		{uint64(65535), []byte{0x09, 0xff, 0xff}},
+		{uint64(65536), []byte{0x0a, 0x00, 0x00, 0x01, 0x00}},
+		{uint64(4294967295), []byte{0x0a, 0xff, 0xff, 0xff, 0xff}},
+		{uint64(4294967296), []byte{
+			0x0b, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+		}},
+		{uint64(18446744073709551615), []byte{
+			0x0b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		}},
+	},
+}
+
 func TestRpcStream_basic(t *testing.T) {
 	assert := newAssert(t)
 
@@ -639,6 +699,307 @@ func TestRpcStream_writeStreamNext(t *testing.T) {
 			assert(stream.GetWritePos()).
 				Equals(dataStream.GetWritePos() + j - 1)
 
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteNil(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["nil"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.WriteNil()
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(i + 1)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteBool(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["bool"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.WriteBool(testData[0].(bool))
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteFloat64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["float64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.WriteFloat64(testData[0].(float64))
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteInt64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["int64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.WriteInt64(testData[0].(int64))
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_WriteUInt64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["uint64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.WriteUint64(testData[0].(uint64))
+			assert(stream.getBuffer()[i:]).Equals(testData[1])
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_ReadNil(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["nil"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+
+			assert(stream.ReadNil()).Equals(true)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadNil()).IsFalse()
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(23)
+			assert(stream.ReadNil()).IsFalse()
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_ReadBool(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["bool"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			assert(stream.ReadBool()).Equals(testData[0], true)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadBool()).Equals(false, false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(23)
+			assert(stream.ReadBool()).Equals(false, false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_ReadFloat64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["float64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			assert(stream.ReadFloat64()).Equals(testData[0], true)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadFloat64()).Equals(float64(0), false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{13})
+			assert(stream.ReadFloat64()).Equals(float64(0), false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_ReadInt64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["int64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			assert(stream.ReadInt64()).Equals(testData[0], true)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadInt64()).Equals(int64(0), false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{13})
+			assert(stream.ReadInt64()).Equals(int64(0), false)
+			assert(stream.GetReadPos()).Equals(i)
+			stream.Release()
+		}
+	}
+}
+
+func TestRpcStream_ReadUint64(t *testing.T) {
+	assert := newAssert(t)
+
+	for _, testData := range rpcStreamTestCollections["uint64"] {
+		// ok
+		for i := 1; i < 1100; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			assert(stream.ReadUint64()).Equals(testData[0], true)
+			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
+			stream.Release()
+		}
+
+		// overflow
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.Write(testData[0])
+			writePos := stream.GetWritePos()
+			for idx := i; idx < writePos-1; idx++ {
+				stream.SetReadPos(i)
+				stream.setWritePosUnsafe(idx)
+				assert(stream.ReadUint64()).Equals(uint64(0), false)
+				assert(stream.GetReadPos()).Equals(i)
+			}
+			stream.Release()
+		}
+
+		// type not match
+		for i := 1; i < 550; i++ {
+			stream := newRPCStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.putBytes([]byte{13})
+			assert(stream.ReadUint64()).Equals(uint64(0), false)
+			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
 	}

@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/streams_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/streams_test.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
@@ -16,26 +14,17 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageViewManager">
-    <option name="myElementSize" value="106" />
+    <option name="myElementSize" value="60" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.53754264">
+    <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/stream.go">
+            <entry file="file://$PROJECT_DIR$/core/stream_test.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="299">
-                  <caret line="284" column="20" selection-start-line="284" selection-start-column="20" selection-end-line="284" selection-end-column="20" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/panic.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="315">
-                  <caret line="521" selection-start-line="521" selection-end-line="521" />
+                <state relative-caret-position="7865">
+                  <caret line="687" lean-forward="true" selection-start-line="687" selection-end-line="687" />
                 </state>
               </provider>
             </entry>
@@ -43,26 +32,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/streams_test.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="787">
-                  <caret line="345" selection-start-line="345" selection-end-line="345" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/stream_test.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="161">
-                  <caret line="156" column="1" selection-start-line="156" selection-start-column="1" selection-end-line="156" selection-end-column="1" />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file pinned="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/core/processor.go">
-              <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="292">
-                  <caret line="145" selection-start-line="145" selection-end-line="161" selection-end-column="5" />
+                <state relative-caret-position="237">
+                  <caret line="962" selection-start-line="962" selection-end-line="962" />
                 </state>
               </provider>
             </entry>
@@ -74,8 +45,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/core/stream.go">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="108">
-                  <caret line="304" column="1" lean-forward="true" selection-start-line="304" selection-start-column="1" selection-end-line="304" selection-end-column="1" />
+                <state relative-caret-position="-469">
+                  <caret line="565" lean-forward="true" selection-start-line="565" selection-end-line="565" />
                 </state>
               </provider>
             </entry>
@@ -93,8 +64,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>13</find>
-      <find>gc</find>
       <find>12</find>
       <find>debug</find>
       <find>processor</find>
@@ -123,6 +92,8 @@
       <find>writeStreamNext</find>
       <find>recover</find>
       <find>peekSkip</find>
+      <find>ReadBool</find>
+      <find>pubBytes</find>
     </findStrings>
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.12.7/libexec" />
@@ -262,8 +233,8 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestRpcStream_putString in github.com/tslearn/rpcc/core">
-    <configuration name="TestRpcStream_gotoNextReadByteUnsafe in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.go test core">
+    <configuration name="TestRpcStream_ReadBool in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -271,10 +242,10 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_gotoNextReadByteUnsafe$" />
+      <pattern value="^TestRpcStream_ReadBool$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -282,10 +253,10 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_hasNBytesToRead$" />
+      <pattern value="^TestRpcStream_ReadFloat64$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRpcStream_hasOneByteToRead in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRpcStream_ReadInt64 in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -293,10 +264,10 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_hasOneByteToRead$" />
+      <pattern value="^TestRpcStream_ReadInt64$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRpcStream_putBytes in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
@@ -304,60 +275,59 @@
       <package value="github.com/tslearn/rpcc/core" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_putBytes$" />
+      <pattern value="^TestRpcStream_ReadUint64$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRpcStream_putString in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="go test core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc/core" />
-      <directory value="$PROJECT_DIR$/" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/core" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestRpcStream_putString$" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestRpcStream_putString in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_putBytes in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_gotoNextReadByteUnsafe in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_hasOneByteToRead in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.go test core" />
+        <item itemvalue="Go Test.TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.TestRpcStream_ReadInt64 in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.TestRpcStream_ReadBool in github.com/tslearn/rpcc/core" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestRpcStream_hasNBytesToRead_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 14m 43s.xml">
-      <configuration name="TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 13m 03s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_hasNBytesToRead_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 14m 49s.xml">
-      <configuration name="TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 13m 07s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_hasOneByteToRead_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 14m 57s.xml">
-      <configuration name="TestRpcStream_hasOneByteToRead in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 13m 52s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_gotoNextReadByteUnsafe_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 15m 03s.xml">
-      <configuration name="TestRpcStream_gotoNextReadByteUnsafe in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 14m 09s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putBytes_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 26m 36s.xml">
-      <configuration name="TestRpcStream_putBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 14m 21s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putBytes_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 26m 48s.xml">
-      <configuration name="TestRpcStream_putBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 14m 29s.xml">
+      <configuration name="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putBytes_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 26m 59s.xml">
-      <configuration name="TestRpcStream_putBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_WriteFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 15m 38s.xml">
+      <configuration name="TestRpcStream_WriteFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putBytes_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 27m 19s.xml">
-      <configuration name="TestRpcStream_putBytes in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_WriteFloat64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 15m 58s.xml">
+      <configuration name="TestRpcStream_WriteFloat64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putString_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 28m 21s.xml">
-      <configuration name="TestRpcStream_putString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_WriteUInt64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 36m 29s.xml">
+      <configuration name="TestRpcStream_WriteUInt64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRpcStream_putString_in_github_com_tslearn_rpcc_core - 2019.08.21 at 17h 28m 26s.xml">
-      <configuration name="TestRpcStream_putString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestRpcStream_WriteInt64_in_github_com_tslearn_rpcc_core - 2019.08.22 at 10h 36m 33s.xml">
+      <configuration name="TestRpcStream_WriteInt64 in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TodoView">
@@ -387,13 +357,13 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18071066" visible="true" weight="0.13125764" />
+      <window_info anchor="right" id="Terminal" order="4" sideWeight="0.18071066" visible="true" weight="0.1007326" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.8152284" side_tool="true" weight="0.22222222" />
-      <window_info anchor="right" id="Run" order="7" sideWeight="0.8192893" side_tool="true" weight="0.13125764" />
+      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.8192893" side_tool="true" visible="true" weight="0.1007326" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
-      <window_info active="true" anchor="right" id="Coverage" order="10" sideWeight="0.8192893" side_tool="true" visible="true" weight="0.13125764" />
+      <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8192893" side_tool="true" weight="0.1007326" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -430,46 +400,66 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_newRPCMap_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_newRPCMap in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566198280987" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_setWritePosUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_setWritePosUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566371714088" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_newRPCStream_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_newRPCStream in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369187073" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMapInner_getItemPos_setItemPos_deleteItem_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMapInner_getItemPos_setItemPos_deleteItem in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566187055512" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_saveReadPos_restoreReadPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_saveReadPos_restoreReadPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566370849004" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_writeStreamUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_writeStreamUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566400523580" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_newRPCStream_Release_Reset_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_newRPCStream_Release_Reset in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566370187128" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyReadNBytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyReadNBytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378875271" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteFloat64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteFloat64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566440158339" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_read3BytesCrossFrameUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_read3BytesCrossFrameUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566380289102" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$go_test_core.out" NAME="go test core Coverage Results" MODIFIED="1566372160776" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcMapInner_getItemPos_setItemPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMapInner_getItemPos_setItemPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566181904295" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadFloat64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadFloat64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441583576" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$gobench_indicator_test_go.out" NAME="gobench indicator_test.go Coverage Results" MODIFIED="1565880160155" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMapInner_free_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMapInner_free in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566182907462" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_Size_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_Size in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566205191536" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$streams_test_go.out" NAME="streams_test.go Coverage Results" MODIFIED="1566372117593" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteInt64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteInt64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441532817" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_hasNBytesToRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378888988" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_writeStreamNext_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_writeStreamNext in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566406217532" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_CanRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_CanRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566372069428" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_peekSkip_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_peekSkip in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566396759606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_contains_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_contains in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566286138777" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_read5BytesCrossFrameUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_read5BytesCrossFrameUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566380700479" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_read9BytesCrossFrameUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_read9BytesCrossFrameUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566380986232" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_readNBytesUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_readNBytesUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566385873732" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$stream_test_go.out" NAME="stream_test.go Coverage Results" MODIFIED="1566291085236" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_putString_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_putString in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566379705618" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_peek5BytesCrossFrameUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_peek5BytesCrossFrameUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566380519826" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_hasOneByteToRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_hasOneByteToRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378896659" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_Nil_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_Nil in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566437489011" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyRead5BytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyRead5BytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378860805" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcArrayInner_free_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArrayInner_free in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1565862070673" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcArray_equals_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArray_equals in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566283323318" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_equals_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_equals in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566285900330" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_setWritePosUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_setWritePosUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566371714088" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_newRPCStream_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_newRPCStream in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369187073" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadInt64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadInt64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441594179" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteBool_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteBool in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566439369857" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadBool_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadBool in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441577095" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcMapInner_getItemPos_setItemPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMapInner_getItemPos_setItemPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566181904295" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_readSkipItem_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_readSkipItem in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566397588041" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadUint64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadUint64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441603803" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_gotoNextReadByteUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_gotoNextReadByteUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378903541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$streams_test_go.out" NAME="streams_test.go Coverage Results" MODIFIED="1566406350235" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$utils_test_go.out" NAME="utils_test.go Coverage Results" MODIFIED="1566288665434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyRead3BytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyRead3BytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378868434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_getBuffer_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_getBuffer in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369512448" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyRead9BytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyRead9BytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378853676" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_hasNBytesToRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_hasNBytesToRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378888988" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$assert_test_go.out" NAME="assert_test.go Coverage Results" MODIFIED="1566288630962" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_setReadPosUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_setReadPosUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566370428331" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_CanRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_CanRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566372069428" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_contains_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_contains in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566286138777" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$map_test_go.out" NAME="map_test.go Coverage Results" MODIFIED="1566286298218" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_GetReadPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_GetReadPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369806864" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$array_test_go.out" NAME="array_test.go Coverage Results" MODIFIED="1566286283741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$go_test_g.out" NAME="go test g Coverage Results" MODIFIED="1565659709061" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$stream_test_go.out" NAME="stream_test.go Coverage Results" MODIFIED="1566291085236" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_putString_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_putString in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566379705618" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteUInt64_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteUInt64 in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441544978" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$go_test_rpcc.out" NAME="go test rpcc Coverage Results" MODIFIED="1565226740413" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$logger_test_go.out" NAME="logger_test.go Coverage Results" MODIFIED="1566215643477" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcArray_Set_Append_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArray_Set_Append in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566265169745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_hasOneByteToRead_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_hasOneByteToRead in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378896659" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadNil_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadNil in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566441569669" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_WriteNil_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_WriteNil in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566438085463" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcArray_newRPCArray_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArray_newRPCArray in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1565862835419" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_isSafetyRead5BytesInCurrentFrame_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_isSafetyRead5BytesInCurrentFrame in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566378860805" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcArrayInner_free_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArrayInner_free in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1565862070673" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcArray_contains_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArray_contains in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566283597982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_SetReadPos_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_SetReadPos in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566370990387" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_putBytes_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_putBytes in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566379608063" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcArray_equals_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcArray_equals in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566283323318" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
-    <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_equals_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_equals in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566285900330" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_Reset_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_Reset in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369090416" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
   <component name="editorHistoryManager">
@@ -754,13 +744,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/panic.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="521" selection-start-line="521" selection-end-line="521" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/processor.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="292">
@@ -768,24 +751,31 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/stream_test.go">
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/panic.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="156" column="1" selection-start-line="156" selection-start-column="1" selection-end-line="156" selection-end-column="1" />
+        <state relative-caret-position="315">
+          <caret line="521" selection-start-line="521" selection-end-line="521" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/stream.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="284" column="20" selection-start-line="284" selection-start-column="20" selection-end-line="284" selection-end-column="20" />
+        <state relative-caret-position="-469">
+          <caret line="565" lean-forward="true" selection-start-line="565" selection-end-line="565" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/stream_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7865">
+          <caret line="687" lean-forward="true" selection-start-line="687" selection-end-line="687" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/streams_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="787">
-          <caret line="345" selection-start-line="345" selection-end-line="345" />
+        <state relative-caret-position="237">
+          <caret line="962" selection-start-line="962" selection-end-line="962" />
         </state>
       </provider>
     </entry>
