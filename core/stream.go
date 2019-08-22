@@ -1678,15 +1678,6 @@ func (p *rpcStream) ReadBytes() ([]byte, bool) {
 
 		if bytesLen > 62 {
 			if p.isSafetyReadNBytesInCurrentFrame(bytesLen) {
-				p.readIndex += bytesLen
-				return p.readFrame[p.readIndex-bytesLen : p.readIndex], true
-			} else if p.hasNBytesToRead(bytesLen) {
-				return p.readNBytesUnsafe(bytesLen), true
-			}
-		}
-
-		if bytesLen > 62 {
-			if p.isSafetyReadNBytesInCurrentFrame(bytesLen) {
 				ret := make([]byte, bytesLen, bytesLen)
 				copy(ret, p.readFrame[p.readIndex:])
 				p.readIndex += bytesLen
