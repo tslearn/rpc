@@ -1536,6 +1536,7 @@ func (p *rpcStream) ReadString() (string, bool) {
 				}
 			}
 		}
+
 		p.restoreReadPos()
 	}
 
