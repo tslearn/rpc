@@ -1765,7 +1765,7 @@ func (p *rpcStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 		}
 		p.restoreReadPos()
 	}
-	return nil, false
+	return emptyBytes, false
 }
 
 // ReadRPCArray read a RPCArray value
