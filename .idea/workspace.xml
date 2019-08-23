@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
     <ignored mask="*.prof" />
@@ -21,8 +20,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/core/stream.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="539">
-              <caret line="1837" column="48" selection-start-line="1837" selection-start-column="48" selection-end-line="1837" selection-end-column="48" />
+            <state relative-caret-position="-7038">
+              <caret line="1699" lean-forward="true" selection-start-line="1699" selection-end-line="1699" />
             </state>
           </provider>
         </entry>
@@ -182,7 +181,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
+  <component name="ProjectFrameBounds" fullScreen="true">
     <option name="width" value="1680" />
     <option name="height" value="1050" />
   </component>
@@ -394,18 +393,6 @@
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/core/stream.go</url>
-          <line>1647</line>
-          <properties />
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/rpcc$TestRpcMap_newRPCMap_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcMap_newRPCMap in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566198280987" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
@@ -802,8 +789,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/core/stream.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="539">
-          <caret line="1837" column="48" selection-start-line="1837" selection-start-column="48" selection-end-line="1837" selection-end-column="48" />
+        <state relative-caret-position="-7038">
+          <caret line="1699" lean-forward="true" selection-start-line="1699" selection-end-line="1699" />
         </state>
       </provider>
     </entry>
