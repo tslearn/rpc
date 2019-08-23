@@ -18,10 +18,9 @@ const (
 // WebSocketClient is implement of INetClient via web socket
 type WebSocketClient struct {
 	readTimeoutNS int64
-	//readSizeLimit     int64
-	conn       *websocket.Conn
-	closeChan  chan bool
-	readyState int64
+	conn          *websocket.Conn
+	closeChan     chan bool
+	readyState    int64
 	sync.Mutex
 }
 

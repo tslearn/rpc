@@ -9,7 +9,7 @@ import (
 func main() {
 	server := core.NewWebSocketServer()
 	go newClientGoroutine(server)
-	server.SetReadSizeLimit(500 * 1024 * 1024)
+	//server.SetReadSizeLimit(500 * 1024 * 1024)
 	err := server.Start("0.0.0.0", 10000, "/ws")
 
 	if err != nil {
