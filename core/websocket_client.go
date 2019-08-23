@@ -36,7 +36,7 @@ func NewWebSocketClient(url string) *WebSocketClient {
 
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		rpcErr := WrapSystemError(err)
+		rpcErr := NewRPCErrorByError(err)
 		client.onConnError(nil, rpcErr)
 		return nil
 	}
@@ -49,7 +49,7 @@ func NewWebSocketClient(url string) *WebSocketClient {
 		defer func() {
 			err := client.conn.Close()
 			if err != nil {
-				client.onConnError(client.conn, WrapSystemError(err))
+				client.onConnError(client.conn, NewRPCErrorByError(err))
 			}
 			atomic.StoreInt64(&client.readyState, wsClientClosed)
 			client.onConnClose(client.conn)
@@ -69,7 +69,7 @@ func NewWebSocketClient(url string) *WebSocketClient {
 			mt, message, err := client.conn.ReadMessage()
 			if err != nil {
 				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					client.onConnError(client.conn, WrapSystemError(err))
+					client.onConnError(client.conn, NewRPCErrorByError(err))
 				}
 				return
 			}
@@ -112,7 +112,7 @@ func (p *WebSocketClient) setReadTimeout(readTimeoutNS int64) *rpcError {
 		nextTimeoutNS = nowNS + 3600*int64(time.Second)
 	}
 
-	return WrapSystemError(p.conn.SetReadDeadline(
+	return NewRPCErrorByError(p.conn.SetReadDeadline(
 		time.Unix(nextTimeoutNS/int64(time.Second), nextTimeoutNS%int64(time.Second)),
 	))
 }
@@ -141,7 +141,7 @@ func (p *WebSocketClient) send(messageType int, data []byte) *rpcError {
 	err := p.conn.WriteMessage(messageType, data)
 
 	if err != nil {
-		ret := WrapSystemError(err)
+		ret := NewRPCErrorByError(err)
 		p.onConnError(p.conn, ret)
 		return ret
 	}
@@ -168,7 +168,7 @@ func (p *WebSocketClient) Close() *rpcError {
 	)
 
 	if err != nil {
-		ret := WrapSystemError(err)
+		ret := NewRPCErrorByError(err)
 		p.onConnError(p.conn, ret)
 		return ret
 	}

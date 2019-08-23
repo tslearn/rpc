@@ -31,7 +31,7 @@ func TestNewRPCErrorWithDebug(t *testing.T) {
 		},
 	}
 	for _, item := range testCollection {
-		assert(item[0].(*rpcError).String()).Equals(item[1])
+		assert(item[0].(*rpcError).Error()).Equals(item[1])
 	}
 }
 
@@ -39,30 +39,15 @@ func TestWrapSystemError(t *testing.T) {
 	assert := newAssert(t)
 
 	// wrap nil error
-	err := WrapSystemError(nil)
+	err := NewRPCErrorByError(nil)
 	assert(err).IsNil()
 
 	// wrap error
-	err = WrapSystemError(
+	err = NewRPCErrorByError(
 		errors.New("custom error"),
 	)
 	assert(err.GetMessage()).Equals("custom error")
 	assert(err.GetDebug()).Equals("")
-}
-
-func TestWrapSystemErrorWithDebug(t *testing.T) {
-	assert := newAssert(t)
-
-	// wrap nil error
-	err := WrapSystemErrorWithDebug(nil)
-	assert(err).IsNil()
-
-	// wrap error
-	err = WrapSystemErrorWithDebug(
-		errors.New("custom error"),
-	)
-	assert(err.GetMessage()).Equals("custom error")
-	assert(err.GetDebug()).Contains("error_test.go")
 }
 
 func TestRpcError_GetMessage(t *testing.T) {

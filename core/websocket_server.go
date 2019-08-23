@@ -91,7 +91,7 @@ func (p *WebSocketServer) Start(
 			defer func() {
 				err := conn.Close()
 				if err != nil {
-					ret = WrapSystemError(err)
+					ret = NewRPCErrorByError(err)
 					p.onError(conn, ret)
 				}
 				p.onClose(conn)
@@ -111,14 +111,14 @@ func (p *WebSocketServer) Start(
 				if conn.SetReadDeadline(
 					time.Unix(timeoutNS/int64(time.Second), timeoutNS%int64(time.Second)),
 				) != nil {
-					p.onError(conn, WrapSystemError(err))
+					p.onError(conn, NewRPCErrorByError(err))
 					return
 				}
 
 				mt, message, err := conn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						p.onError(conn, WrapSystemError(err))
+						p.onError(conn, NewRPCErrorByError(err))
 					}
 					return
 				}
@@ -140,7 +140,7 @@ func (p *WebSocketServer) Start(
 			Handler: serverMux,
 		}
 		p.Unlock()
-		return WrapSystemError(p.httpServer.ListenAndServe())
+		return NewRPCErrorByError(p.httpServer.ListenAndServe())
 	}
 
 	return NewRPCError(
@@ -154,7 +154,7 @@ func (p *WebSocketServer) Close() *rpcError {
 	defer p.Unlock()
 
 	if atomic.LoadInt64(&p.startNS) > 0 {
-		err := WrapSystemError(p.httpServer.Close())
+		err := NewRPCErrorByError(p.httpServer.Close())
 		<-p.closeChan
 		return err
 	}

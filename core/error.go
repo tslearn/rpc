@@ -20,8 +20,8 @@ func NewRPCErrorByDebug(message string, debug string) *rpcError {
 	}
 }
 
-// WrapSystemError add debug segment to the error, (Note: if err is not Error type, we wrapped it)
-func WrapSystemError(err error) *rpcError {
+// NewRPCErrorByError add debug segment to the error, (Note: if err is not Error type, we wrapped it)
+func NewRPCErrorByError(err error) *rpcError {
 	if err == nil {
 		return nil
 	}
@@ -29,18 +29,6 @@ func WrapSystemError(err error) *rpcError {
 	return &rpcError{
 		message: err.Error(),
 		debug:   "",
-	}
-}
-
-// WrapSystemErrorWithDebug add debug segment to the error, (Note: if err is not Error type, we wrapped it)
-func WrapSystemErrorWithDebug(err error) *rpcError {
-	if err == nil {
-		return nil
-	}
-
-	return &rpcError{
-		message: err.Error(),
-		debug:   GetStackString(1),
 	}
 }
 
@@ -60,7 +48,7 @@ func (p *rpcError) AddDebug(debug string) *rpcError {
 	return p
 }
 
-func (p *rpcError) String() string {
+func (p *rpcError) Error() string {
 	sb := NewStringBuilder()
 	if len(p.message) > 0 {
 		sb.AppendFormat("%s\n", p.message)

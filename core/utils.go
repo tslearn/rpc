@@ -254,7 +254,7 @@ func rpcEquals(left interface{}, right interface{}) bool {
 		}
 	case *rpcError:
 		if rError, ok := right.(*rpcError); ok {
-			return left.(*rpcError).String() == rError.String()
+			return left.(*rpcError).Error() == rError.Error()
 		}
 	default:
 		return left == right
