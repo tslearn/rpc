@@ -8,18 +8,8 @@ import (
 func TestNewRPCError(t *testing.T) {
 	assert := newAssert(t)
 
-	var testCollection = [][4]interface{}{
-		{
-			NewRPCError("hello"),
-			"hello",
-			"error_test.go",
-		},
-	}
-
-	for _, item := range testCollection {
-		assert(item[0].(*rpcError).GetMessage()).Equals(item[1])
-		assert(item[0].(*rpcError).GetDebug()).Contains(item[2])
-	}
+	assert(NewRPCError("hello").GetMessage()).Equals("hello")
+	assert(NewRPCError("hello").GetDebug()).Equals(emptyString)
 }
 
 func TestNewRPCErrorWithDebug(t *testing.T) {

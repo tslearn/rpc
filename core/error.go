@@ -9,7 +9,6 @@ type rpcError struct {
 func NewRPCError(message string) *rpcError {
 	return &rpcError{
 		message: message,
-		debug:   GetStackString(1),
 	}
 }
 
