@@ -61,7 +61,7 @@ func (p *rpcError) AddDebug(debug string) *rpcError {
 	return p
 }
 
-func (p *rpcError) Error() string {
+func (p *rpcError) String() string {
 	sb := NewStringBuilder()
 	if len(p.message) > 0 {
 		sb.AppendFormat("%s\n", p.message)

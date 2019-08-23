@@ -61,7 +61,7 @@ func NewWebSocketClient(url string) *WebSocketClient {
 		for {
 			readTimeoutNS := atomic.LoadInt64(&client.readTimeoutNS)
 			if err := client.setReadTimeout(readTimeoutNS); err != nil {
-				client.onConnError(client.conn, WrapSystemError(err))
+				client.onConnError(client.conn, err)
 				return
 			}
 
