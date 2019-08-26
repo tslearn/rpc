@@ -2,10 +2,11 @@ package core
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -88,7 +89,9 @@ func NewWebSocketClient(
 			case websocket.CloseMessage:
 				return
 			default:
-				client.onError(conn, NewRPCError("unknown message type"))
+				client.onError(conn, NewRPCError(
+					"WebSocketClient: unknown message type",
+				))
 				return
 			}
 		}
@@ -105,7 +108,7 @@ func (p *WebSocketClient) IsOpen() bool {
 // SendBinary send byte array to the remote server
 func (p *WebSocketClient) SendBinary(data []byte) *rpcError {
 	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
-		err := NewRPCError("connection is not opened")
+		err := NewRPCError("WebSocketClient: connection is not opened")
 		p.onError(p.conn, err)
 		return err
 	}
@@ -129,18 +132,16 @@ func (p *WebSocketClient) Close() *rpcError {
 
 	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
 		err := NewRPCError(
-			"websocket-client: connection is not opened",
+			"WebSocketClient: connection is not opened",
 		)
 		p.onError(p.conn, err)
 		return err
 	}
 
-	err := p.conn.WriteMessage(
+	if err := p.conn.WriteMessage(
 		websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-	)
-
-	if err != nil {
+	); err != nil {
 		ret := NewRPCErrorByError(err)
 		p.onError(p.conn, ret)
 		return ret
@@ -151,9 +152,9 @@ func (p *WebSocketClient) Close() *rpcError {
 	select {
 	case <-p.closeChan:
 		return nil
-	case <-time.After(1200 * time.Millisecond):
+	case <-time.After(2000 * time.Millisecond):
 		err := NewRPCError(
-			"websocket-client: close timeout",
+			"WebSocketClient: close timeout",
 		)
 		p.onError(p.conn, err)
 		return err

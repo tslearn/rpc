@@ -62,13 +62,13 @@ func (p *WebSocketServer) Start(
 		defer func() {
 			atomic.CompareAndSwapInt64(&p.startNS, timeNS, 0)
 			p.logger.Infof(
-				"websocket-server: stopped",
+				"WebSocketServer: stopped",
 			)
 			p.closeChan <- true
 		}()
 
 		p.logger.Infof(
-			"websocket-server: start at %s",
+			"WebSocketServer: start at %s",
 			GetURLBySchemeHostPortAndPath("ws", host, port, path),
 		)
 		serverMux := http.NewServeMux()
@@ -79,7 +79,7 @@ func (p *WebSocketServer) Start(
 			conn, err := wsUpgradeManager.Upgrade(w, req, nil)
 			if err != nil {
 				p.logger.Errorf(
-					"websocket-server: %s",
+					"WebSocketServer: %s",
 					err.Error(),
 				)
 				return
@@ -115,14 +115,15 @@ func (p *WebSocketServer) Start(
 					}
 					return
 				}
-
 				switch mt {
 				case websocket.BinaryMessage:
 					p.onBinary(conn, message)
 				case websocket.CloseMessage:
 					return
 				default:
-					p.onError(conn, NewRPCError("unknown message type"))
+					p.onError(conn, NewRPCError(
+						"WebSocketServer: unknown message type",
+					))
 					return
 				}
 			}
@@ -137,7 +138,7 @@ func (p *WebSocketServer) Start(
 	}
 
 	return NewRPCError(
-		"websocket-server: has already been opened",
+		"WebSocketServer: has already been opened",
 	)
 }
 
@@ -153,7 +154,7 @@ func (p *WebSocketServer) Close() *rpcError {
 	}
 
 	return NewRPCError(
-		"websocket-server: close error, it is not opened",
+		"WebSocketServer: close error, it is not opened",
 	)
 }
 
