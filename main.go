@@ -19,8 +19,11 @@ func main() {
 
 func newClientGoroutine(server *core.WebSocketServer) {
 	time.Sleep(2 * time.Second)
-	client := core.NewWebSocketClient("ws://127.0.0.1:10000/ws")
-	client.SetReadSizeLimit(500 * 1024 * 1024)
+	client := core.NewWebSocketClient(
+		"ws://127.0.0.1:10000/ws",
+		16000,
+		500*1024*1024,
+	)
 	size := 500 * 1024 * 1024
 	bytes := make([]byte, size, size)
 	if err := client.SendBinary(bytes); err != nil {

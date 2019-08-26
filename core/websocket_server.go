@@ -20,8 +20,8 @@ type WebSocketServer struct {
 	processor     *rpcProcessor
 	logger        *Logger
 	startNS       int64
-	readSizeLimit int64
-	readTimeoutNS int64
+	readSizeLimit uint64
+	readTimeoutNS uint64
 	httpServer    *http.Server
 	closeChan     chan bool
 	seed          int64
@@ -44,7 +44,7 @@ func NewWebSocketServer() *WebSocketServer {
 		logger:        logger,
 		startNS:       0,
 		readSizeLimit: 64 * 1024,
-		readTimeoutNS: 60 * int64(time.Second),
+		readTimeoutNS: 60 * uint64(time.Second),
 		httpServer:    nil,
 		closeChan:     make(chan bool, 1),
 		seed:          1,
@@ -85,7 +85,7 @@ func (p *WebSocketServer) Start(
 				return
 			}
 
-			conn.SetReadLimit(atomic.LoadInt64(&p.readSizeLimit))
+			conn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
 			p.onOpen(conn)
 
 			defer func() {
@@ -97,20 +97,13 @@ func (p *WebSocketServer) Start(
 				p.onClose(conn)
 			}()
 
-			timeoutNS := int64(0)
-			readTimeoutNS := atomic.LoadInt64(&p.readTimeoutNS)
-
 			for {
-				nowNS := TimeNowNS()
-
-				if readTimeoutNS > 0 {
-					timeoutNS = nowNS + readTimeoutNS
-				} else {
-					timeoutNS = nowNS + 3600*int64(time.Second)
-				}
-				if conn.SetReadDeadline(
-					time.Unix(timeoutNS/int64(time.Second), timeoutNS%int64(time.Second)),
-				) != nil {
+				nextTimeoutNS := TimeNowNS() +
+					int64(atomic.LoadUint64(&p.readTimeoutNS))
+				if err := conn.SetReadDeadline(time.Unix(
+					nextTimeoutNS/int64(time.Second),
+					nextTimeoutNS%int64(time.Second),
+				)); err != nil {
 					p.onError(conn, NewRPCErrorByError(err))
 					return
 				}
@@ -187,13 +180,10 @@ func (p *WebSocketServer) GetLogger() *Logger {
 
 // SetReadSizeLimit set WebSocketServer read limit in byte
 func (p *WebSocketServer) SetReadSizeLimit(readLimit uint64) {
-	atomic.StoreInt64(&p.readSizeLimit, int64(readLimit))
+	atomic.StoreUint64(&p.readSizeLimit, readLimit)
 }
 
 // SetReadTimeoutMS set WebSocketServer timeout in millisecond
 func (p *WebSocketServer) SetReadTimeoutMS(readTimeoutMS uint64) {
-	atomic.StoreInt64(
-		&p.readTimeoutNS,
-		int64(readTimeoutMS)*int64(time.Millisecond),
-	)
+	atomic.StoreUint64(&p.readTimeoutNS, readTimeoutMS*uint64(time.Millisecond))
 }

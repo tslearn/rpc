@@ -21,20 +21,22 @@ const (
 
 // WebSocketClient is implement of INetClient via web socket
 type WebSocketClient struct {
-	conn          *websocket.Conn
-	closeChan     chan bool
-	readTimeoutNS uint64
-	readyState    int64
+	conn       *websocket.Conn
+	closeChan  chan bool
+	readyState int64
 	sync.Mutex
 }
 
 // NewWebSocketClient create a WebSocketClient, and connect to url
-func NewWebSocketClient(url string) *WebSocketClient {
+func NewWebSocketClient(
+	url string,
+	timeoutMS uint64,
+	readSizeLimit uint64,
+) *WebSocketClient {
 	client := &WebSocketClient{
-		conn:          nil,
-		closeChan:     make(chan bool, 1),
-		readTimeoutNS: 16 * uint64(time.Second),
-		readyState:    wsClientConnecting,
+		conn:       nil,
+		closeChan:  make(chan bool, 1),
+		readyState: wsClientConnecting,
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -49,21 +51,20 @@ func NewWebSocketClient(url string) *WebSocketClient {
 
 	go func() {
 		defer func() {
-			err := client.conn.Close()
-			if err != nil {
-				client.onError(client.conn, NewRPCErrorByError(err))
+			if err := conn.Close(); err != nil {
+				client.onError(conn, NewRPCErrorByError(err))
 			}
 			atomic.StoreInt64(&client.readyState, wsClientClosed)
-			client.onClose(client.conn)
+			client.onClose(conn)
 			client.closeChan <- true
 		}()
 
-		conn.SetReadLimit(64 * 1024)
+		conn.SetReadLimit(int64(readSizeLimit))
+		timeoutNS := int64(timeoutMS) * int64(time.Millisecond)
 
 		for {
 			// set next read dead line
-			nextTimeoutNS := TimeNowNS() +
-				int64(atomic.LoadUint64(&client.readTimeoutNS))
+			nextTimeoutNS := TimeNowNS() + timeoutNS
 			if err := conn.SetReadDeadline(time.Unix(
 				nextTimeoutNS/int64(time.Second),
 				nextTimeoutNS%int64(time.Second),
@@ -96,16 +97,6 @@ func NewWebSocketClient(url string) *WebSocketClient {
 	return client
 }
 
-// SetReadLimit set WebSocketClient read limit in byte
-func (p *WebSocketClient) SetReadSizeLimit(readSizeLimit uint64) {
-	p.conn.SetReadLimit(int64(readSizeLimit))
-}
-
-// SetReadTimeoutMS set WebSocketClient timeout in millisecond
-func (p *WebSocketClient) SetReadTimeoutMS(readTimeoutMS uint64) {
-	atomic.StoreUint64(&p.readTimeoutNS, readTimeoutMS*uint64(time.Millisecond))
-}
-
 // IsOpen returns true when the WebSocketClient is linked, otherwise false
 func (p *WebSocketClient) IsOpen() bool {
 	return atomic.LoadInt64(&p.readyState) == wsClientOpen
@@ -113,23 +104,16 @@ func (p *WebSocketClient) IsOpen() bool {
 
 // SendBinary send byte array to the remote server
 func (p *WebSocketClient) SendBinary(data []byte) *rpcError {
-	return p.send(websocket.BinaryMessage, data)
-}
-
-func (p *WebSocketClient) send(messageType int, data []byte) *rpcError {
 	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
-		err := NewRPCError(
-			"websocket-client: send error, connection is not opened",
-		)
+		err := NewRPCError("connection is not opened")
 		p.onError(p.conn, err)
 		return err
 	}
 
 	p.Lock()
 	defer p.Unlock()
-	err := p.conn.WriteMessage(messageType, data)
 
-	if err != nil {
+	if err := p.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 		ret := NewRPCErrorByError(err)
 		p.onError(p.conn, ret)
 		return ret
