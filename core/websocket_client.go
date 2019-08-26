@@ -9,17 +9,21 @@ import (
 )
 
 const (
-	wsClientConnecting = int64(0) // The connection is not yet open.
-	wsClientOpen       = int64(1) // The connection is open and ready to communicate.
-	wsClientClosing    = int64(2) // The connection is in the process of closing.
-	wsClientClosed     = int64(3) // The connection is closed or couldn't be opened.
+	// The connection is connecting
+	wsClientConnecting = int64(0)
+	// The connection is open and ready to communicate.
+	wsClientOpen = int64(1)
+	// The connection is in the process of closing.
+	wsClientClosing = int64(2)
+	// The connection is closed or couldn't be opened.
+	wsClientClosed = int64(3)
 )
 
 // WebSocketClient is implement of INetClient via web socket
 type WebSocketClient struct {
-	readTimeoutNS int64
 	conn          *websocket.Conn
 	closeChan     chan bool
+	readTimeoutNS uint64
 	readyState    int64
 	sync.Mutex
 }
@@ -27,55 +31,64 @@ type WebSocketClient struct {
 // NewWebSocketClient create a WebSocketClient, and connect to url
 func NewWebSocketClient(url string) *WebSocketClient {
 	client := &WebSocketClient{
-		readTimeoutNS: 16 * int64(time.Second),
 		conn:          nil,
 		closeChan:     make(chan bool, 1),
+		readTimeoutNS: 16 * uint64(time.Second),
 		readyState:    wsClientConnecting,
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		rpcErr := NewRPCErrorByError(err)
-		client.onConnError(nil, rpcErr)
+		client.onError(nil, NewRPCErrorByError(err))
 		return nil
 	}
 
 	client.conn = conn
-	atomic.StoreInt64(&client.readyState, wsClientOpen)
-	client.onConnOpen(conn)
+	client.readyState = wsClientOpen
+	client.onOpen(conn)
 
 	go func() {
 		defer func() {
 			err := client.conn.Close()
 			if err != nil {
-				client.onConnError(client.conn, NewRPCErrorByError(err))
+				client.onError(client.conn, NewRPCErrorByError(err))
 			}
 			atomic.StoreInt64(&client.readyState, wsClientClosed)
-			client.onConnClose(client.conn)
+			client.onClose(client.conn)
 			client.closeChan <- true
 		}()
 
 		conn.SetReadLimit(64 * 1024)
 
 		for {
-			readTimeoutNS := atomic.LoadInt64(&client.readTimeoutNS)
-			if err := client.setReadTimeout(readTimeoutNS); err != nil {
-				client.onConnError(client.conn, err)
+			// set next read dead line
+			nextTimeoutNS := TimeNowNS() +
+				int64(atomic.LoadUint64(&client.readTimeoutNS))
+			if err := conn.SetReadDeadline(time.Unix(
+				nextTimeoutNS/int64(time.Second),
+				nextTimeoutNS%int64(time.Second),
+			)); err != nil {
+				client.onError(conn, NewRPCErrorByError(err))
 				return
 			}
 
-			// deal message
-			mt, message, err := client.conn.ReadMessage()
+			// read message
+			mt, message, err := conn.ReadMessage()
 			if err != nil {
 				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					client.onConnError(client.conn, NewRPCErrorByError(err))
+					client.onError(conn, NewRPCErrorByError(err))
 				}
 				return
 			}
 			switch mt {
 			case websocket.BinaryMessage:
-				client.onConnBinary(client.conn, message)
+				client.onBinary(conn, message)
 				break
+			case websocket.CloseMessage:
+				return
+			default:
+				client.onError(conn, NewRPCError("unknown message type"))
+				return
 			}
 		}
 	}()
@@ -89,31 +102,8 @@ func (p *WebSocketClient) SetReadSizeLimit(readSizeLimit uint64) {
 }
 
 // SetReadTimeoutMS set WebSocketClient timeout in millisecond
-func (p *WebSocketClient) SetReadTimeoutMS(readTimeoutMS uint64) *rpcError {
-	timeoutNS := int64(readTimeoutMS) * int64(time.Millisecond)
-	atomic.StoreInt64(&p.readTimeoutNS, timeoutNS)
-	return p.setReadTimeout(timeoutNS)
-}
-
-func (p *WebSocketClient) setReadTimeout(readTimeoutNS int64) *rpcError {
-	if p.conn == nil {
-		return NewRPCError(
-			"websocket-client: conn is nil",
-		)
-	}
-
-	nextTimeoutNS := int64(0)
-	nowNS := TimeNowNS()
-
-	if readTimeoutNS > 0 {
-		nextTimeoutNS = nowNS + int64(readTimeoutNS)
-	} else {
-		nextTimeoutNS = nowNS + 3600*int64(time.Second)
-	}
-
-	return NewRPCErrorByError(p.conn.SetReadDeadline(
-		time.Unix(nextTimeoutNS/int64(time.Second), nextTimeoutNS%int64(time.Second)),
-	))
+func (p *WebSocketClient) SetReadTimeoutMS(readTimeoutMS uint64) {
+	atomic.StoreUint64(&p.readTimeoutNS, readTimeoutMS*uint64(time.Millisecond))
 }
 
 // IsOpen returns true when the WebSocketClient is linked, otherwise false
@@ -131,7 +121,7 @@ func (p *WebSocketClient) send(messageType int, data []byte) *rpcError {
 		err := NewRPCError(
 			"websocket-client: send error, connection is not opened",
 		)
-		p.onConnError(p.conn, err)
+		p.onError(p.conn, err)
 		return err
 	}
 
@@ -141,7 +131,7 @@ func (p *WebSocketClient) send(messageType int, data []byte) *rpcError {
 
 	if err != nil {
 		ret := NewRPCErrorByError(err)
-		p.onConnError(p.conn, ret)
+		p.onError(p.conn, ret)
 		return ret
 	}
 
@@ -157,7 +147,7 @@ func (p *WebSocketClient) Close() *rpcError {
 		err := NewRPCError(
 			"websocket-client: connection is not opened",
 		)
-		p.onConnError(p.conn, err)
+		p.onError(p.conn, err)
 		return err
 	}
 
@@ -168,7 +158,7 @@ func (p *WebSocketClient) Close() *rpcError {
 
 	if err != nil {
 		ret := NewRPCErrorByError(err)
-		p.onConnError(p.conn, ret)
+		p.onError(p.conn, ret)
 		return ret
 	}
 
@@ -181,23 +171,23 @@ func (p *WebSocketClient) Close() *rpcError {
 		err := NewRPCError(
 			"websocket-client: close timeout",
 		)
-		p.onConnError(p.conn, err)
+		p.onError(p.conn, err)
 		return err
 	}
 }
 
-func (p *WebSocketClient) onConnOpen(conn *websocket.Conn) {
+func (p *WebSocketClient) onOpen(conn *websocket.Conn) {
 	fmt.Println("client onOpen", conn)
 }
 
-func (p *WebSocketClient) onConnError(conn *websocket.Conn, err *rpcError) {
+func (p *WebSocketClient) onError(conn *websocket.Conn, err *rpcError) {
 	fmt.Println("client onError", conn, err)
 }
 
-func (p *WebSocketClient) onConnClose(conn *websocket.Conn) {
+func (p *WebSocketClient) onClose(conn *websocket.Conn) {
 	fmt.Println("client onClose", conn)
 }
 
-func (p *WebSocketClient) onConnBinary(conn *websocket.Conn, bytes []byte) {
+func (p *WebSocketClient) onBinary(conn *websocket.Conn, bytes []byte) {
 	fmt.Println("client onBinary", conn, bytes)
 }
