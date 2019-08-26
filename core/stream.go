@@ -159,6 +159,15 @@ func (p *rpcStream) getBuffer() []byte {
 	return ret
 }
 
+// getBufferUnsafe
+func (p *rpcStream) getBufferUnsafe() []byte {
+	if p.writeSeg == 0 {
+		return p.writeFrame[0:p.writeIndex]
+	} else {
+		return p.getBuffer()
+	}
+}
+
 // GetReadPos get the current read pos of the stream
 func (p *rpcStream) GetReadPos() int {
 	return (p.readSeg << 9) | p.readIndex

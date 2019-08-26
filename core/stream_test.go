@@ -306,6 +306,23 @@ func TestRpcStream_getBuffer(t *testing.T) {
 	}
 }
 
+func TestRpcStream_getBufferUnsafe(t *testing.T) {
+	assert := newAssert(t)
+
+	for i := 0; i < 5000; i++ {
+		bytes := make([]byte, i, i)
+		for n := 0; n < i; n++ {
+			bytes[n] = byte(n)
+		}
+
+		stream := newRPCStream()
+		stream.putBytes(bytes)
+		assert(stream.getBufferUnsafe()[0]).Equals(byte(1))
+		assert(stream.getBufferUnsafe()[1:]).Equals(bytes)
+		stream.Release()
+	}
+}
+
 func TestRpcStream_GetReadPos(t *testing.T) {
 	assert := newAssert(t)
 

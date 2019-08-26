@@ -20,11 +20,19 @@ const (
 	wsClientClosed = int64(3)
 )
 
+type websocketClientCallback struct {
+	id     int64
+	timeNS int64
+	ch     chan bool
+	stream *rpcStream
+}
+
 // WebSocketClient is implement of INetClient via web socket
 type WebSocketClient struct {
 	conn       *websocket.Conn
 	closeChan  chan bool
 	readyState int64
+	pool       sync.Map
 	sync.Mutex
 }
 
@@ -123,6 +131,51 @@ func (p *WebSocketClient) SendBinary(data []byte) *rpcError {
 	}
 
 	return nil
+}
+
+func (p *WebSocketClient) SendMessage(
+	target string,
+	args ...interface{},
+) (interface{}, *rpcError) {
+	p.Lock()
+	defer p.Unlock()
+
+	callback := &websocketClientCallback{
+		id:     GetSeed(),
+		timeNS: TimeNowNS(),
+		ch:     make(chan bool),
+		stream: newRPCStream(),
+	}
+	p.pool.Store(callback.id, callback)
+
+	stream := callback.stream
+	// write target
+	stream.WriteString(target)
+	// write depth
+	stream.WriteUint64(0)
+	// write from
+	stream.WriteString("@")
+
+	for i := 0; i < len(args); i++ {
+		if stream.Write(args[i]) != RPCStreamWriteOK {
+			return nil, NewRPCError("args not supported")
+		}
+	}
+
+	if err := p.SendBinary(stream.getBufferUnsafe()); err != nil {
+		return nil, err
+	}
+
+	if response := <-callback.ch; !response {
+		return nil, NewRPCError("timeout")
+	}
+
+	//success, ok := stream.ReadBool();
+	//if !ok {
+	//  return nil, NewRPCError("data format error")
+	//}
+
+	return nil, nil
 }
 
 // Close close the WebSocketClient

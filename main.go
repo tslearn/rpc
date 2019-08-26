@@ -22,13 +22,11 @@ func newClientGoroutine(server *core.WebSocketServer) {
 	client := core.NewWebSocketClient(
 		"ws://127.0.0.1:10000/ws",
 		16000,
-		500*1024*1024,
+		5*1024*1024,
 	)
-	size := 500 * 1024 * 1024
-	bytes := make([]byte, size, size)
-	if err := client.SendBinary(bytes); err != nil {
-		fmt.Println(err)
-	}
+
+	v, err := client.SendMessage("$.user.sayHello", "tianshuo")
+	fmt.Println(v, err)
 
 	if err := client.Close(); err != nil {
 		fmt.Println(err)
