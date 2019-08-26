@@ -354,7 +354,7 @@ func (p rpcArray) AppendRPCMap(value rpcMap) bool {
 func (p rpcArray) Get(index int) (interface{}, bool) {
 	if in, s := p.getIS(); s != nil && checkRpcArrayIndex(in, index) {
 		s.setReadPosUnsafe(in.items[index])
-		return s.Read(p.ctx)
+		return s.ReadByContext(p.ctx)
 	}
 	return nil, false
 }

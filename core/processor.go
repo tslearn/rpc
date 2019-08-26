@@ -252,7 +252,7 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 		inStream.SetReadPos(argStartPos)
 		remoteArgsType := make([]string, 0, 0)
 		for inStream.CanRead() {
-			val, ok := inStream.Read(ctx)
+			val, ok := inStream.ReadByContext(ctx)
 			if !ok {
 				return ctx.writeError("rpc data format error", "")
 			}

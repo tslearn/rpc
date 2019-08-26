@@ -410,7 +410,7 @@ func (p rpcMap) Get(name string) (interface{}, bool) {
 	if in, s := p.getIS(); s != nil && in != nil && name != "" {
 		if idx := in.getItemPos(name); idx > 0 {
 			s.setReadPosUnsafe(idx)
-			return s.Read(p.ctx)
+			return s.ReadByContext(p.ctx)
 		}
 	}
 	return nil, false

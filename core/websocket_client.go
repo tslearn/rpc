@@ -170,10 +170,14 @@ func (p *WebSocketClient) SendMessage(
 		return nil, NewRPCError("timeout")
 	}
 
-	//success, ok := stream.ReadBool();
-	//if !ok {
-	//  return nil, NewRPCError("data format error")
-	//}
+	success, ok := stream.ReadBool()
+	if !ok {
+		return nil, NewRPCError("data format error")
+	}
+
+	if success {
+
+	}
 
 	return nil, nil
 }

@@ -1889,17 +1889,17 @@ func TestRpcStream_Read(t *testing.T) {
 	for _, item := range testCollections {
 		stream := newRPCStream()
 		stream.putBytes(item[1].([]byte))
-		_, ok := stream.Read(ctx)
+		_, ok := stream.ReadByContext(ctx)
 		assert(ok).IsTrue()
 	}
 
 	stream := newRPCStream()
 	stream.putBytes([]byte{12})
-	_, ok := stream.Read(ctx)
+	_, ok := stream.ReadByContext(ctx)
 	assert(ok).IsFalse()
 
 	stream = newRPCStream()
 	stream.putBytes([]byte{13})
-	_, ok = stream.Read(ctx)
+	_, ok = stream.ReadByContext(ctx)
 	assert(ok).IsFalse()
 }
