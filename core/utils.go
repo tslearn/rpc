@@ -256,6 +256,14 @@ func rpcEquals(left interface{}, right interface{}) bool {
 		if rError, ok := right.(*rpcError); ok {
 			return left.(*rpcError).Error() == rError.Error()
 		}
+	case Array:
+		if _, ok := right.(Array); ok {
+			return reflect.DeepEqual(left, right)
+		}
+	case Map:
+		if _, ok := right.(Map); ok {
+			return reflect.DeepEqual(left, right)
+		}
 	default:
 		return left == right
 	}

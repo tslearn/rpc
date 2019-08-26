@@ -16,8 +16,6 @@ var (
 				readIndex:  1,
 				writeSeg:   0,
 				writeIndex: 1,
-				saveSeg:    0,
-				saveIndex:  1,
 			}
 			zeroFrame := make([]byte, 512, 512)
 			ret.frames[0] = &zeroFrame
@@ -107,8 +105,8 @@ type rpcStream struct {
 	writeIndex int
 	writeFrame []byte
 
-	saveSeg   int
-	saveIndex int
+	//saveSeg   int
+	//saveIndex int
 }
 
 // newRPCStream ...
@@ -138,9 +136,6 @@ func (p *rpcStream) Reset() {
 	p.writeSeg = 0
 	p.writeIndex = 1
 	p.writeFrame = *p.frames[0]
-
-	p.saveIndex = 1
-	p.saveSeg = 0
 }
 
 // Release clean the rpcStream
@@ -195,19 +190,6 @@ func (p *rpcStream) setReadPosUnsafe(pos int) {
 	if p.readSeg != readSeg {
 		p.readSeg = readSeg
 		p.readFrame = *p.frames[readSeg]
-	}
-}
-
-func (p *rpcStream) saveReadPos() {
-	p.saveSeg = p.readSeg
-	p.saveIndex = p.readIndex
-}
-
-func (p *rpcStream) restoreReadPos() {
-	p.readIndex = p.saveIndex
-	if p.readSeg != p.saveSeg {
-		p.readSeg = p.saveSeg
-		p.readFrame = *p.frames[p.readSeg]
 	}
 }
 
@@ -1487,7 +1469,7 @@ func (p *rpcStream) ReadString() (string, bool) {
 				return string(b), true
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
-			p.saveReadPos()
+			readStart := p.GetReadPos()
 			strBuffer := make([]byte, strLen, strLen)
 			copyBytes := copy(strBuffer, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
@@ -1500,10 +1482,10 @@ func (p *rpcStream) ReadString() (string, bool) {
 				p.gotoNextReadByteUnsafe()
 				return string(strBuffer), true
 			}
-			p.restoreReadPos()
+			p.setReadPosUnsafe(readStart)
 		}
 	} else if v == 191 {
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 		strLen := -1
 
 		if p.isSafetyRead5BytesInCurrentFrame() {
@@ -1545,8 +1527,7 @@ func (p *rpcStream) ReadString() (string, bool) {
 				}
 			}
 		}
-
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 
 	return emptyString, false
@@ -1574,7 +1555,7 @@ func (p *rpcStream) ReadUnsafeString() (ret string, ok bool) {
 				return ret, true
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
-			p.saveReadPos()
+			readStart := p.GetReadPos()
 			strBuffer := make([]byte, strLen, strLen)
 			copyBytes := copy(strBuffer, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
@@ -1587,10 +1568,10 @@ func (p *rpcStream) ReadUnsafeString() (ret string, ok bool) {
 				p.gotoNextReadByteUnsafe()
 				return string(strBuffer), true
 			}
-			p.restoreReadPos()
+			p.setReadPosUnsafe(readStart)
 		}
 	} else if v == 191 {
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 		strLen := -1
 
 		if p.isSafetyRead5BytesInCurrentFrame() {
@@ -1637,7 +1618,7 @@ func (p *rpcStream) ReadUnsafeString() (ret string, ok bool) {
 			}
 		}
 
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 	return emptyString, false
 }
@@ -1669,7 +1650,7 @@ func (p *rpcStream) ReadBytes() ([]byte, bool) {
 			return ret, true
 		}
 	} else if v == 255 {
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 		bytesLen := -1
 		if p.isSafetyRead5BytesInCurrentFrame() {
 			b := p.readFrame[p.readIndex:]
@@ -1706,8 +1687,7 @@ func (p *rpcStream) ReadBytes() ([]byte, bool) {
 				return ret, true
 			}
 		}
-
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 	return emptyBytes, false
 }
@@ -1738,7 +1718,7 @@ func (p *rpcStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 			return ret, true
 		}
 	} else if v == 255 {
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 		bytesLen := -1
 
 		if p.isSafetyRead5BytesInCurrentFrame() {
@@ -1764,7 +1744,7 @@ func (p *rpcStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 				return p.readNBytesUnsafe(bytesLen), true
 			}
 		}
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 	return emptyBytes, false
 }
@@ -1774,8 +1754,7 @@ func (p *rpcStream) ReadArray() (Array, bool) {
 	if v >= 64 && v < 96 {
 		arrLen := 0
 		totalLen := 0
-		p.saveReadPos()
-		start := p.GetReadPos()
+		readStart := p.GetReadPos()
 
 		if v == 64 {
 			if p.hasOneByteToRead() {
@@ -1829,15 +1808,15 @@ func (p *rpcStream) ReadArray() (Array, bool) {
 				if rv, ok := p.Read(); ok {
 					ret[i] = rv
 				} else {
+					p.setReadPosUnsafe(readStart)
 					return nil, false
 				}
 			}
-			if p.GetReadPos() == start+totalLen {
+			if p.GetReadPos() == readStart+totalLen {
 				return ret, true
 			}
 		}
-
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 
 	return nil, false
@@ -1851,7 +1830,7 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 		in := ret.in
 		arrLen := 0
 		totalLen := 0
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 
 		if p != cs {
 			wPos := cs.GetWritePos()
@@ -1921,7 +1900,7 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start || itemPos >= end {
 						ret.release()
-						p.restoreReadPos()
+						p.setReadPosUnsafe(readStart)
 						return nilRPCArray, false
 					}
 				}
@@ -1933,7 +1912,7 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 		}
 
 		ret.release()
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 	}
 
 	return nilRPCArray, false
@@ -1945,8 +1924,7 @@ func (p *rpcStream) ReadMap() (Map, bool) {
 	if v >= 96 && v < 128 {
 		mapLen := 0
 		totalLen := 0
-		p.saveReadPos()
-		start := p.GetReadPos()
+		readStart := p.GetReadPos()
 
 		if v == 96 {
 			if p.hasOneByteToRead() {
@@ -1994,18 +1972,19 @@ func (p *rpcStream) ReadMap() (Map, bool) {
 			}
 		}
 
-		end := start + totalLen
+		end := readStart + totalLen
 		if mapLen > 0 && totalLen > 4 {
 			ret := Map{}
 			for i := 0; i < mapLen; i++ {
 				name, ok := p.ReadString()
 				if !ok {
-					p.restoreReadPos()
+					p.setReadPosUnsafe(readStart)
 					return nil, false
 				}
 				if rv, ok := p.Read(); ok {
 					ret[name] = rv
 				} else {
+					p.setReadPosUnsafe(readStart)
 					return nil, false
 				}
 			}
@@ -2013,8 +1992,7 @@ func (p *rpcStream) ReadMap() (Map, bool) {
 				return ret, true
 			}
 		}
-
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 		return nil, false
 	}
 
@@ -2029,7 +2007,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 		in := ret.in
 		mapLen := 0
 		totalLen := 0
-		p.saveReadPos()
+		readStart := p.GetReadPos()
 
 		if p != cs {
 			wPos := cs.GetWritePos()
@@ -2095,7 +2073,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 					key, ok := cs.ReadUnsafeString()
 					if !ok || in.hasKey(key) {
 						ret.release()
-						p.restoreReadPos()
+						p.setReadPosUnsafe(readStart)
 						return nilRPCMap, false
 					}
 					skip := readSkipArray[cs.readFrame[cs.readIndex]]
@@ -2106,7 +2084,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 						itemPos = cs.readSkipItem(end)
 						if itemPos < start || itemPos >= end {
 							ret.release()
-							p.restoreReadPos()
+							p.setReadPosUnsafe(readStart)
 							return nilRPCMap, false
 						}
 					}
@@ -2121,7 +2099,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 					name, ok := cs.ReadUnsafeString()
 					if !ok {
 						ret.release()
-						p.restoreReadPos()
+						p.setReadPosUnsafe(readStart)
 						return nilRPCMap, false
 					}
 					skip := readSkipArray[cs.readFrame[cs.readIndex]]
@@ -2132,7 +2110,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 						itemPos = cs.readSkipItem(end)
 						if itemPos < 0 {
 							ret.release()
-							p.restoreReadPos()
+							p.setReadPosUnsafe(readStart)
 							return nilRPCMap, false
 						}
 					}
@@ -2145,7 +2123,7 @@ func (p *rpcStream) ReadRPCMap(ctx *rpcContext) (rpcMap, bool) {
 		}
 
 		ret.release()
-		p.restoreReadPos()
+		p.setReadPosUnsafe(readStart)
 		return nilRPCMap, false
 	}
 
