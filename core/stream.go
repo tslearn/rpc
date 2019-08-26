@@ -1769,80 +1769,79 @@ func (p *rpcStream) ReadUnsafeBytes() (ret []byte, ok bool) {
 	return emptyBytes, false
 }
 
-//
-//func (p *rpcStream) ReadArray() (Array, bool) {
-//	v := p.readFrame[p.readIndex]
-//	if v >= 64 && v < 96 {
-//		arrLen := 0
-//		totalLen := 0
-//		p.saveReadPos()
-//		start := p.GetReadPos()
-//
-//		if v == 64 {
-//			if p.hasOneByteToRead() {
-//				p.gotoNextReadByteUnsafe()
-//				return Array{}, true
-//			}
-//		} else if v < 95 {
-//			arrLen = int(v - 64)
-//			if p.isSafetyRead5BytesInCurrentFrame() {
-//				b := p.readFrame[p.readIndex:]
-//				totalLen = int(uint32(b[1]) |
-//					(uint32(b[2]) << 8) |
-//					(uint32(b[3]) << 16) |
-//					(uint32(b[4]) << 24))
-//				p.readIndex += 5
-//			} else if p.hasNBytesToRead(5) {
-//				bytes4 := p.read5BytesCrossFrameUnsafe()
-//				totalLen = int(uint32(bytes4[1]) |
-//					(uint32(bytes4[2]) << 8) |
-//					(uint32(bytes4[3]) << 16) |
-//					(uint32(bytes4[4]) << 24))
-//			}
-//		} else {
-//			if p.isSafetyRead9BytesInCurrentFrame() {
-//				b := p.readFrame[p.readIndex:]
-//				totalLen = int(uint32(b[1]) |
-//					(uint32(b[2]) << 8) |
-//					(uint32(b[3]) << 16) |
-//					(uint32(b[4]) << 24))
-//				arrLen = int(uint32(b[5]) |
-//					(uint32(b[6]) << 8) |
-//					(uint32(b[7]) << 16) |
-//					(uint32(b[8]) << 24))
-//				p.readIndex += 9
-//			} else if p.hasNBytesToRead(9) {
-//				bytes8 := p.read9BytesCrossFrameUnsafe()
-//				totalLen = int(uint32(bytes8[1]) |
-//					(uint32(bytes8[2]) << 8) |
-//					(uint32(bytes8[3]) << 16) |
-//					(uint32(bytes8[4]) << 24))
-//				arrLen = int(uint32(bytes8[5]) |
-//					(uint32(bytes8[6]) << 8) |
-//					(uint32(bytes8[7]) << 16) |
-//					(uint32(bytes8[8]) << 24))
-//			}
-//		}
-//
-//		if arrLen > 0 && totalLen > 4 {
-//			ret := make(Array, arrLen, arrLen)
-//			for i := 0; i < arrLen; i++ {
-//				rv, err := p.ReadByContext()
-//				if err != nil {
-//					return nil, err
-//				}
-//				ret[i] = rv
-//			}
-//			if p.GetReadPos() == start+totalLen {
-//				return ret, true
-//			}
-//		}
-//
-//		p.restoreReadPos()
-//	}
-//
-//	return nil, false
-//}
+func (p *rpcStream) ReadArray() (Array, bool) {
+	v := p.readFrame[p.readIndex]
+	if v >= 64 && v < 96 {
+		arrLen := 0
+		totalLen := 0
+		p.saveReadPos()
+		start := p.GetReadPos()
+
+		if v == 64 {
+			if p.hasOneByteToRead() {
+				p.gotoNextReadByteUnsafe()
+				return Array{}, true
+			}
+		} else if v < 95 {
+			arrLen = int(v - 64)
+			if p.isSafetyRead5BytesInCurrentFrame() {
+				b := p.readFrame[p.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				p.readIndex += 5
+			} else if p.hasNBytesToRead(5) {
+				bytes4 := p.read5BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes4[1]) |
+					(uint32(bytes4[2]) << 8) |
+					(uint32(bytes4[3]) << 16) |
+					(uint32(bytes4[4]) << 24))
+			}
+		} else {
+			if p.isSafetyRead9BytesInCurrentFrame() {
+				b := p.readFrame[p.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				arrLen = int(uint32(b[5]) |
+					(uint32(b[6]) << 8) |
+					(uint32(b[7]) << 16) |
+					(uint32(b[8]) << 24))
+				p.readIndex += 9
+			} else if p.hasNBytesToRead(9) {
+				bytes8 := p.read9BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes8[1]) |
+					(uint32(bytes8[2]) << 8) |
+					(uint32(bytes8[3]) << 16) |
+					(uint32(bytes8[4]) << 24))
+				arrLen = int(uint32(bytes8[5]) |
+					(uint32(bytes8[6]) << 8) |
+					(uint32(bytes8[7]) << 16) |
+					(uint32(bytes8[8]) << 24))
+			}
+		}
+
+		if arrLen > 0 && totalLen > 4 {
+			ret := make(Array, arrLen, arrLen)
+			for i := 0; i < arrLen; i++ {
+				if rv, ok := p.Read(); ok {
+					ret[i] = rv
+				} else {
+					return nil, false
+				}
+			}
+			if p.GetReadPos() == start+totalLen {
+				return ret, true
+			}
+		}
+
+		p.restoreReadPos()
+	}
+
+	return nil, false
+}
 
 // ReadRPCArray read a RPCArray value
 func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
@@ -1938,6 +1937,88 @@ func (p *rpcStream) ReadRPCArray(ctx *rpcContext) (rpcArray, bool) {
 	}
 
 	return nilRPCArray, false
+}
+
+// ReadRPCMap read a RPCMap value
+func (p *rpcStream) ReadMap() (Map, bool) {
+	v := p.readFrame[p.readIndex]
+	if v >= 96 && v < 128 {
+		mapLen := 0
+		totalLen := 0
+		p.saveReadPos()
+		start := p.GetReadPos()
+
+		if v == 96 {
+			if p.hasOneByteToRead() {
+				p.gotoNextReadByteUnsafe()
+				return Map{}, true
+			}
+		} else if v < 127 {
+			mapLen = int(v - 96)
+			if p.isSafetyRead5BytesInCurrentFrame() {
+				b := p.readFrame[p.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				p.readIndex += 5
+			} else if p.hasNBytesToRead(5) {
+				bytes4 := p.read5BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes4[1]) |
+					(uint32(bytes4[2]) << 8) |
+					(uint32(bytes4[3]) << 16) |
+					(uint32(bytes4[4]) << 24))
+			}
+		} else {
+			if p.isSafetyRead9BytesInCurrentFrame() {
+				b := p.readFrame[p.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				mapLen = int(uint32(b[5]) |
+					(uint32(b[6]) << 8) |
+					(uint32(b[7]) << 16) |
+					(uint32(b[8]) << 24))
+				p.readIndex += 9
+			} else if p.hasNBytesToRead(9) {
+				bytes8 := p.read9BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes8[1]) |
+					(uint32(bytes8[2]) << 8) |
+					(uint32(bytes8[3]) << 16) |
+					(uint32(bytes8[4]) << 24))
+				mapLen = int(uint32(bytes8[5]) |
+					(uint32(bytes8[6]) << 8) |
+					(uint32(bytes8[7]) << 16) |
+					(uint32(bytes8[8]) << 24))
+			}
+		}
+
+		end := start + totalLen
+		if mapLen > 0 && totalLen > 4 {
+			ret := Map{}
+			for i := 0; i < mapLen; i++ {
+				name, ok := p.ReadString()
+				if !ok {
+					p.restoreReadPos()
+					return nil, false
+				}
+				if rv, ok := p.Read(); ok {
+					ret[name] = rv
+				} else {
+					return nil, false
+				}
+			}
+			if p.GetReadPos() == end {
+				return ret, true
+			}
+		}
+
+		p.restoreReadPos()
+		return nil, false
+	}
+
+	return nil, false
 }
 
 // ReadRPCMap read a RPCMap value
@@ -2114,6 +2195,56 @@ func (p *rpcStream) ReadByContext(ctx *rpcContext) (interface{}, bool) {
 			return p.ReadRPCArray(ctx)
 		}
 		return p.ReadRPCMap(ctx)
+	case 2:
+		return p.ReadString()
+	default:
+		return p.ReadBytes()
+	}
+}
+
+// Read read a generic value
+func (p *rpcStream) Read() (interface{}, bool) {
+	op := p.readFrame[p.readIndex]
+	switch op {
+	case byte(1):
+		return nil, p.ReadNil()
+	case byte(2):
+		fallthrough
+	case byte(3):
+		return p.ReadBool()
+	case byte(4):
+		fallthrough
+	case byte(5):
+		return p.ReadFloat64()
+	case byte(6):
+		fallthrough
+	case byte(7):
+		fallthrough
+	case byte(8):
+		return p.ReadInt64()
+	case byte(9):
+		fallthrough
+	case byte(10):
+		fallthrough
+	case byte(11):
+		return p.ReadUint64()
+	case byte(12):
+		return nil, false
+	case byte(13):
+		return nil, false
+	}
+
+	switch op >> 6 {
+	case 0:
+		if op < 54 {
+			return p.ReadInt64()
+		}
+		return p.ReadUint64()
+	case 1:
+		if op < 96 {
+			return p.ReadArray()
+		}
+		return p.ReadMap()
 	case 2:
 		return p.ReadString()
 	default:
