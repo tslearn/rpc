@@ -37,6 +37,7 @@ type rpcThread struct {
 	execEchoNode   *rpcEchoNode
 	execArgs       []reflect.Value
 	execSuccessful bool
+	from           string
 
 	execInnerContext *rpcInnerContext
 }
@@ -105,13 +106,27 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	p.execInnerContext.stream = inStream
 	ctx := &rpcContext{inner: p.execInnerContext}
 
-	//// if the header is error, we can not find the method to return
-	//headerBytes, ok := inStream.ReadUnsafeBytes()
-	//if !ok || len(headerBytes) != 16 {
-	//	processor.logger.Error("rpc data format error")
-	//	return nilReturn
-	//}
-	//p.execStream.WriteBytes(headerBytes)
+	defer func() {
+		if err := recover(); err != nil {
+			ctx.writeError(
+				fmt.Sprintf(
+					"rpc call %s runtime error: %s",
+					p.execEchoNode.callString,
+					err,
+				),
+				GetStackString(1),
+			)
+		}
+		p.execEchoNode.indicator.count(
+			p.getRunDuration(),
+			p.from,
+			p.execSuccessful,
+		)
+		processor.callback(p.execStream, p.execSuccessful)
+		inStream.Reset()
+		p.execStream = inStream
+		p.from = ""
+	}()
 
 	// read echo path
 	echoPath, ok := inStream.ReadUnsafeString()
@@ -135,34 +150,14 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	}
 
 	// read from
-	from, ok := inStream.ReadUnsafeString()
-	if !ok {
+	if p.from, ok = inStream.ReadUnsafeString(); !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
 
 	// build callArgs
 	argStartPos := inStream.GetReadPos()
 
-	defer func() {
-		if err := recover(); err != nil {
-			ctx.writeError(
-				fmt.Sprintf(
-					"rpc call %s runtime error: %s",
-					p.execEchoNode.callString,
-					err,
-				),
-				GetStackString(1),
-			)
-		}
-		p.execEchoNode.indicator.count(
-			p.getRunDuration(),
-			from,
-			p.execSuccessful,
-		)
-	}()
-
-	fnCache := p.execEchoNode.fnCache
-	if fnCache != nil {
+	if fnCache := p.execEchoNode.fnCache; fnCache != nil {
 		ok = fnCache(ctx, inStream, p.execEchoNode.echoMeta.handler)
 	} else {
 		p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
@@ -243,51 +238,43 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 
 			p.execArgs = append(p.execArgs, rv)
 		}
-	}
 
-	if ok {
-		ok = !inStream.CanRead()
-	}
-	if !ok {
-		inStream.SetReadPos(argStartPos)
-		remoteArgsType := make([]string, 0, 0)
-		for inStream.CanRead() {
-			val, ok := inStream.ReadByContext(ctx)
-			if !ok {
-				return ctx.writeError("rpc data format error", "")
+		// if stream data format error
+		if !ok || inStream.CanRead() {
+			inStream.SetReadPos(argStartPos)
+			remoteArgsType := make([]string, 0, 0)
+			for inStream.CanRead() {
+				val, ok := inStream.ReadByContext(ctx)
+				if !ok {
+					return ctx.writeError("rpc data format error", "")
+				}
+
+				if val == nil {
+					remoteArgsType = append(remoteArgsType, "nil")
+				} else if reflect.ValueOf(val).Type() == reflect.ValueOf(emptyBytes).Type() {
+					remoteArgsType = append(remoteArgsType, "[]byte")
+				} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCArray).Type() {
+					remoteArgsType = append(remoteArgsType, "RPCArray")
+				} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCMap).Type() {
+					remoteArgsType = append(remoteArgsType, "RPCMap")
+				} else {
+					remoteArgsType = append(remoteArgsType, reflect.ValueOf(val).Type().String())
+				}
 			}
 
-			if val == nil {
-				remoteArgsType = append(remoteArgsType, "nil")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(emptyBytes).Type() {
-				remoteArgsType = append(remoteArgsType, "[]byte")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCArray).Type() {
-				remoteArgsType = append(remoteArgsType, "RPCArray")
-			} else if reflect.ValueOf(val).Type() == reflect.ValueOf(nilRPCMap).Type() {
-				remoteArgsType = append(remoteArgsType, "RPCMap")
-			} else {
-				remoteArgsType = append(remoteArgsType, reflect.ValueOf(val).Type().String())
-			}
+			return ctx.writeError(
+				fmt.Sprintf(
+					"rpc echo arguments not match\nCalled: %s(%s) Return\nRequired: %s",
+					echoPath,
+					strings.Join(remoteArgsType, ", "),
+					p.execEchoNode.callString,
+				),
+				"",
+			)
 		}
 
-		return ctx.writeError(
-			fmt.Sprintf(
-				"rpc echo arguments not match\nCalled: %s(%s) Return\nRequired: %s",
-				echoPath,
-				strings.Join(remoteArgsType, ", "),
-				p.execEchoNode.callString,
-			),
-			"",
-		)
-	}
-
-	if fnCache == nil {
 		p.execEchoNode.reflectFn.Call(p.execArgs)
 	}
-
-	processor.callback(p.execStream, p.execSuccessful)
-	inStream.Reset()
-	p.execStream = inStream
 
 	return nilReturn
 }
