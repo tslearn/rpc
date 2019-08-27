@@ -470,18 +470,12 @@ func (p *rpcProcessor) put(stream *rpcStream) bool {
 func (p *rpcProcessor) AddService(
 	name string,
 	serviceMeta *rpcServiceMeta,
-) *rpcProcessor {
-	err := p.mountService(RootName, &rpcAddMeta{
+) *rpcError {
+	return p.mountService(RootName, &rpcAddMeta{
 		name:        name,
 		serviceMeta: serviceMeta,
 		debug:       GetStackString(1),
 	})
-
-	if err != nil {
-		p.logger.Error(err)
-	}
-
-	return p
 }
 
 func (p *rpcProcessor) mountService(

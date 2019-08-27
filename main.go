@@ -8,6 +8,14 @@ import (
 
 func main() {
 	server := core.NewWebSocketServer()
+	server.AddService("user", core.NewService().
+		Echo("sayHello", true, func(
+			ctx core.Content,
+			name string,
+		) core.Return {
+			return ctx.OK(name)
+		}))
+
 	go newClientGoroutine(server)
 	//server.SetReadSizeLimit(500 * 1024 * 1024)
 	err := server.Start("0.0.0.0", 10000, "/ws")
@@ -25,7 +33,7 @@ func newClientGoroutine(server *core.WebSocketServer) {
 		5*1024*1024,
 	)
 
-	v, err := client.SendMessage("$.user.sayHello", "tianshuo")
+	v, err := client.SendMessage("$.user:sayHello", "tianshuo")
 	fmt.Println(v, err)
 
 	if err := client.Close(); err != nil {

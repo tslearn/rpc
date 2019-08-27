@@ -51,6 +51,17 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 }
 
+func (p *WebSocketServer) AddService(
+	name string,
+	serviceMeta *rpcServiceMeta,
+) *WebSocketServer {
+	err := p.processor.AddService(name, serviceMeta)
+	if err != nil {
+		p.logger.Error(err)
+	}
+	return p
+}
+
 // Open make the WebSocketServer start serve
 func (p *WebSocketServer) Start(
 	host string,
@@ -61,6 +72,7 @@ func (p *WebSocketServer) Start(
 	if atomic.CompareAndSwapInt64(&p.startNS, 0, timeNS) {
 		defer func() {
 			atomic.CompareAndSwapInt64(&p.startNS, timeNS, 0)
+			p.processor.stop()
 			p.logger.Infof(
 				"WebSocketServer: stopped",
 			)
@@ -71,6 +83,7 @@ func (p *WebSocketServer) Start(
 			"WebSocketServer: start at %s",
 			GetURLBySchemeHostPortAndPath("ws", host, port, path),
 		)
+		p.processor.start()
 		serverMux := http.NewServeMux()
 		serverMux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
 			if req != nil && req.Header != nil {
@@ -171,7 +184,10 @@ func (p *WebSocketServer) onClose(conn *websocket.Conn) {
 }
 
 func (p *WebSocketServer) onBinary(conn *websocket.Conn, bytes []byte) {
-	fmt.Println("server conn onBinary length ", len(bytes))
+	stream := newRPCStream()
+	stream.setWritePosUnsafe(0)
+	stream.putBytes(bytes)
+	p.processor.put(stream)
 }
 
 // GetLogger get WebSocketServer logger

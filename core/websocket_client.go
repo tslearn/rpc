@@ -21,7 +21,7 @@ const (
 )
 
 type websocketClientCallback struct {
-	id     int64
+	id     uint32
 	timeNS int64
 	ch     chan bool
 	stream *rpcStream
@@ -33,7 +33,7 @@ type WebSocketClient struct {
 	closeChan  chan bool
 	readyState int64
 	pool       sync.Map
-	seed       uint64
+	seed       uint32
 	sync.Mutex
 }
 
@@ -124,9 +124,6 @@ func (p *WebSocketClient) send(data []byte) *rpcError {
 		return err
 	}
 
-	p.Lock()
-	defer p.Unlock()
-
 	if err := p.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 		ret := NewRPCErrorByError(err)
 		p.onError(p.conn, ret)
@@ -140,8 +137,13 @@ func (p *WebSocketClient) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *rpcError) {
+	p.Lock()
+	defer p.Unlock()
+
+	p.seed += 1
+
 	callback := &websocketClientCallback{
-		id:     GetSeed(),
+		id:     p.seed,
 		timeNS: TimeNowNS(),
 		ch:     make(chan bool),
 		stream: newRPCStream(),
@@ -149,6 +151,8 @@ func (p *WebSocketClient) SendMessage(
 	p.pool.Store(callback.id, callback)
 
 	stream := callback.stream
+	// set client callback id
+	stream.setClientCallbackID(p.seed)
 	// write target
 	stream.WriteString(target)
 	// write depth

@@ -35,6 +35,13 @@ type Array = []interface{}
 // Map common Map type
 type Map = map[string]interface{}
 
+type Service = *rpcServiceMeta
+
+var NewService = newServiceMeta
+
+type Content = *rpcContext
+type Return = *rpcReturn
+
 var (
 	emptyString = ""
 	emptyBytes  = make([]byte, 0, 0)
