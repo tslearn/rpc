@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -270,15 +269,15 @@ func (p *WebSocketClient) Close() *rpcError {
 }
 
 func (p *WebSocketClient) onOpen(conn *websocket.Conn) {
-	fmt.Println("client onOpen", conn)
+	//fmt.Println("client onOpen", conn)
 }
 
 func (p *WebSocketClient) onError(conn *websocket.Conn, err *rpcError) {
-	fmt.Println("client onError", conn, err)
+	//fmt.Println("client onError", conn, err)
 }
 
 func (p *WebSocketClient) onClose(conn *websocket.Conn) {
-	fmt.Println("client onClose", conn)
+	//fmt.Println("client onClose", conn)
 }
 
 func (p *WebSocketClient) onBinary(conn *websocket.Conn, bytes []byte) {

@@ -30,6 +30,11 @@ type WebSocketServer struct {
 	sync.Mutex
 }
 
+type webSocketServerConn struct {
+	wsConn *websocket.Conn
+	sync.Mutex
+}
+
 // NewWebSocketServer create a WebSocketClient
 func NewWebSocketServer() *WebSocketServer {
 	logger := NewLogger()
@@ -51,10 +56,13 @@ func NewWebSocketServer() *WebSocketServer {
 		func(stream *rpcStream, success bool) {
 			if conn := server.getConnByID(stream.getClientConnID()); conn != nil {
 				stream.setClientConnID(0)
-				if err := conn.WriteMessage(
+				conn.Lock()
+				err := conn.wsConn.WriteMessage(
 					websocket.BinaryMessage,
 					stream.getBufferUnsafe(),
-				); err != nil {
+				)
+				conn.Unlock()
+				if err != nil {
 					server.onError(stream.getClientConnID(), NewRPCErrorByError(err))
 				}
 			}
@@ -64,7 +72,7 @@ func NewWebSocketServer() *WebSocketServer {
 	return server
 }
 
-func (p *WebSocketServer) registerConn(conn *websocket.Conn) uint32 {
+func (p *WebSocketServer) registerConn(conn *webSocketServerConn) uint32 {
 	key := uint32(0)
 	p.Lock()
 	for {
@@ -91,9 +99,9 @@ func (p *WebSocketServer) unregisterConn(key uint32) bool {
 	}
 }
 
-func (p *WebSocketServer) getConnByID(key uint32) *websocket.Conn {
+func (p *WebSocketServer) getConnByID(key uint32) *webSocketServerConn {
 	if v, ok := p.Load(key); ok {
-		return v.(*websocket.Conn)
+		return v.(*webSocketServerConn)
 	} else {
 		return nil
 	}
@@ -147,7 +155,9 @@ func (p *WebSocketServer) Start(
 			}
 
 			conn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			connID := p.registerConn(conn)
+			connID := p.registerConn(&webSocketServerConn{
+				wsConn: conn,
+			})
 			p.onOpen(connID)
 
 			defer func() {
@@ -222,15 +232,15 @@ func (p *WebSocketServer) Close() *rpcError {
 }
 
 func (p *WebSocketServer) onOpen(connID uint32) {
-	fmt.Println("server conn onOpen", connID)
+	//fmt.Println("server conn onOpen", connID)
 }
 
 func (p *WebSocketServer) onError(connID uint32, err *rpcError) {
-	fmt.Println("server conn onError", connID, err)
+	//fmt.Println("server conn onError", connID, err)
 }
 
 func (p *WebSocketServer) onClose(connID uint32) {
-	fmt.Println("server conn onClose", connID)
+	//fmt.Println("server conn onClose", connID)
 }
 
 func (p *WebSocketServer) onBinary(connID uint32, bytes []byte) {
