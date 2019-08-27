@@ -33,8 +33,8 @@ type WebSocketClient struct {
 	conn       *websocket.Conn
 	closeChan  chan bool
 	readyState int64
+	seed       uint32
 	sync.Map
-	seed uint32
 	sync.Mutex
 }
 

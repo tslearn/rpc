@@ -10,10 +10,32 @@ import (
 	"time"
 )
 
-var wsUpgradeManager = websocket.Upgrader{
-	ReadBufferSize:    1024,
-	WriteBufferSize:   1024,
-	EnableCompression: true,
+var (
+	wsUpgradeManager = websocket.Upgrader{
+		ReadBufferSize:    1024,
+		WriteBufferSize:   1024,
+		EnableCompression: true,
+	}
+
+	wsServerConnCache = sync.Pool{
+		New: func() interface{} {
+			return &wsServerConn{
+				wsConn: nil,
+			}
+		},
+	}
+)
+
+type wsServerConn struct {
+	wsConn *websocket.Conn
+	sync.Mutex
+}
+
+func (p *wsServerConn) send(data []byte) error {
+	p.Lock()
+	err := p.wsConn.WriteMessage(websocket.BinaryMessage, data)
+	p.Unlock()
+	return err
 }
 
 // WebSocketServer is implement of INetServer via web socket
@@ -27,11 +49,6 @@ type WebSocketServer struct {
 	closeChan     chan bool
 	seed          uint32
 	sync.Map
-	sync.Mutex
-}
-
-type webSocketServerConn struct {
-	wsConn *websocket.Conn
 	sync.Mutex
 }
 
@@ -56,52 +73,50 @@ func NewWebSocketServer() *WebSocketServer {
 		func(stream *rpcStream, success bool) {
 			if conn := server.getConnByID(stream.getClientConnID()); conn != nil {
 				stream.setClientConnID(0)
-				conn.Lock()
-				err := conn.wsConn.WriteMessage(
-					websocket.BinaryMessage,
-					stream.getBufferUnsafe(),
-				)
-				conn.Unlock()
-				if err != nil {
+				if err := conn.send(stream.getBufferUnsafe()); err != nil {
 					server.onError(stream.getClientConnID(), NewRPCErrorByError(err))
 				}
 			}
 		},
 	)
-
 	return server
 }
 
-func (p *WebSocketServer) registerConn(conn *webSocketServerConn) uint32 {
-	key := uint32(0)
+func (p *WebSocketServer) registerConn(wsConn *websocket.Conn) uint32 {
+	id := uint32(0)
 	p.Lock()
 	for {
 		p.seed += 1
 		if p.seed == math.MaxUint32 {
 			p.seed = 1
 		}
-		key = p.seed
-		if _, ok := p.Load(key); !ok {
-			p.Store(key, conn)
+
+		id = p.seed
+		if _, ok := p.Load(id); !ok {
+			serverConn := wsServerConnCache.Get().(*wsServerConn)
+			serverConn.wsConn = wsConn
+			p.Store(id, serverConn)
 			break
 		}
 	}
 	p.Unlock()
-	return key
+	return id
 }
 
-func (p *WebSocketServer) unregisterConn(key uint32) bool {
-	if _, ok := p.Load(key); ok {
-		p.Delete(key)
+func (p *WebSocketServer) unregisterConn(id uint32) bool {
+	if serverConn, ok := p.Load(id); ok {
+		p.Delete(id)
+		serverConn.(*wsServerConn).wsConn = nil
+		wsServerConnCache.Put(serverConn)
 		return true
 	} else {
 		return false
 	}
 }
 
-func (p *WebSocketServer) getConnByID(key uint32) *webSocketServerConn {
-	if v, ok := p.Load(key); ok {
-		return v.(*webSocketServerConn)
+func (p *WebSocketServer) getConnByID(id uint32) *wsServerConn {
+	if v, ok := p.Load(id); ok {
+		return v.(*wsServerConn)
 	} else {
 		return nil
 	}
@@ -145,7 +160,7 @@ func (p *WebSocketServer) Start(
 			if req != nil && req.Header != nil {
 				req.Header.Del("Origin")
 			}
-			conn, err := wsUpgradeManager.Upgrade(w, req, nil)
+			wsConn, err := wsUpgradeManager.Upgrade(w, req, nil)
 			if err != nil {
 				p.logger.Errorf(
 					"WebSocketServer: %s",
@@ -154,14 +169,12 @@ func (p *WebSocketServer) Start(
 				return
 			}
 
-			conn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			connID := p.registerConn(&webSocketServerConn{
-				wsConn: conn,
-			})
+			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
+			connID := p.registerConn(wsConn)
 			p.onOpen(connID)
 
 			defer func() {
-				err := conn.Close()
+				err := wsConn.Close()
 				if err != nil {
 					ret = NewRPCErrorByError(err)
 					p.onError(connID, ret)
@@ -173,7 +186,7 @@ func (p *WebSocketServer) Start(
 			for {
 				nextTimeoutNS := TimeNowNS() +
 					int64(atomic.LoadUint64(&p.readTimeoutNS))
-				if err := conn.SetReadDeadline(time.Unix(
+				if err := wsConn.SetReadDeadline(time.Unix(
 					nextTimeoutNS/int64(time.Second),
 					nextTimeoutNS%int64(time.Second),
 				)); err != nil {
@@ -181,7 +194,7 @@ func (p *WebSocketServer) Start(
 					return
 				}
 
-				mt, message, err := conn.ReadMessage()
+				mt, message, err := wsConn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 						p.onError(connID, NewRPCErrorByError(err))
