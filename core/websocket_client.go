@@ -33,6 +33,7 @@ type WebSocketClient struct {
 	closeChan  chan bool
 	readyState int64
 	pool       sync.Map
+	seed       uint64
 	sync.Mutex
 }
 
@@ -46,6 +47,8 @@ func NewWebSocketClient(
 		conn:       nil,
 		closeChan:  make(chan bool, 1),
 		readyState: wsClientConnecting,
+		pool:       sync.Map{},
+		seed:       10000,
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)

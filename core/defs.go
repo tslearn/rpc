@@ -38,9 +38,6 @@ type Map = map[string]interface{}
 var (
 	emptyString = ""
 	emptyBytes  = make([]byte, 0, 0)
-
-	emptyArray  = Array{}
-	emptyMap    = Map{}
 	nilRPCArray = rpcArray{}
 	nilRPCMap   = rpcMap{}
 	nilReturn   = (*rpcReturn)(nil)

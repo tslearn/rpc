@@ -13,15 +13,16 @@ var (
 			ret := rpcStream{
 				frames:     make([]*[]byte, 1, 8),
 				readSeg:    0,
-				readIndex:  1,
+				readIndex:  17,
 				writeSeg:   0,
-				writeIndex: 1,
+				writeIndex: 17,
 			}
 			zeroFrame := make([]byte, 512, 512)
 			ret.frames[0] = &zeroFrame
 			ret.readFrame = zeroFrame
 			ret.writeFrame = zeroFrame
 			ret.writeFrame[0] = 1
+			ret.header = zeroFrame[1:17]
 			return &ret
 		},
 	}
@@ -105,8 +106,7 @@ type rpcStream struct {
 	writeIndex int
 	writeFrame []byte
 
-	//saveSeg   int
-	//saveIndex int
+	header []byte
 }
 
 // newRPCStream ...
@@ -130,11 +130,11 @@ func (p *rpcStream) Reset() {
 	}
 
 	p.readSeg = 0
-	p.readIndex = 1
+	p.readIndex = 17
 	p.readFrame = *p.frames[0]
 
 	p.writeSeg = 0
-	p.writeIndex = 1
+	p.writeIndex = 17
 	p.writeFrame = *p.frames[0]
 }
 

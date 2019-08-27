@@ -230,10 +230,10 @@ func TestRpcStream_basic(t *testing.T) {
 	assert(len(stream.frames)).Equals(1)
 	assert(cap(stream.frames)).Equals(8)
 	assert(stream.readSeg).Equals(0)
-	assert(stream.readIndex).Equals(1)
+	assert(stream.readIndex).Equals(17)
 	assert(stream.readFrame).Equals(*stream.frames[0])
 	assert(stream.writeSeg).Equals(0)
-	assert(stream.writeIndex).Equals(1)
+	assert(stream.writeIndex).Equals(17)
 	assert(stream.writeFrame).Equals(*stream.frames[0])
 
 	// test frameCache
@@ -275,10 +275,10 @@ func TestRpcStream_newRPCStream_Release_Reset(t *testing.T) {
 		assert(len(stream.frames)).Equals(1)
 		assert(cap(stream.frames)).Equals(8)
 		assert(stream.readSeg).Equals(0)
-		assert(stream.readIndex).Equals(1)
+		assert(stream.readIndex).Equals(17)
 		assert(stream.readFrame).Equals(*stream.frames[0])
 		assert(stream.writeSeg).Equals(0)
-		assert(stream.writeIndex).Equals(1)
+		assert(stream.writeIndex).Equals(17)
 		assert(stream.writeFrame).Equals(*stream.frames[0])
 
 		for n := 0; n < i; n++ {
@@ -300,7 +300,7 @@ func TestRpcStream_getBuffer(t *testing.T) {
 		stream := newRPCStream()
 		stream.putBytes(bytes)
 		assert(stream.getBuffer()[0]).Equals(byte(1))
-		assert(stream.getBuffer()[1:]).Equals(bytes)
+		assert(stream.getBuffer()[17:]).Equals(bytes)
 		stream.Release()
 	}
 }
@@ -317,7 +317,8 @@ func TestRpcStream_getBufferUnsafe(t *testing.T) {
 		stream := newRPCStream()
 		stream.putBytes(bytes)
 		assert(stream.getBufferUnsafe()[0]).Equals(byte(1))
-		assert(stream.getBufferUnsafe()[1:]).Equals(bytes)
+		assert(stream.getBufferUnsafe()[1:17]).Equals(stream.header)
+		assert(stream.getBufferUnsafe()[17:]).Equals(bytes)
 		stream.Release()
 	}
 }
@@ -796,10 +797,10 @@ func TestRpcStream_writeStreamUnsafe(t *testing.T) {
 				stream.writeStreamUnsafe(dataStream, length)
 				streamBuf := stream.getBuffer()
 				assert(streamBuf[0]).Equals(byte(1))
-				assert(streamBuf[1 : 1+j]).Equals(bytes)
-				assert(streamBuf[1+j:]).Equals(dataStreamBuf[i : i+length])
+				assert(streamBuf[17 : 17+j]).Equals(bytes)
+				assert(streamBuf[17+j:]).Equals(dataStreamBuf[i : i+length])
 				assert(dataStream.GetReadPos()).Equals(i + length)
-				assert(stream.GetWritePos()).Equals(j + 1 + length)
+				assert(stream.GetWritePos()).Equals(17 + j + length)
 				stream.Release()
 			}
 		}
@@ -839,23 +840,23 @@ func TestRpcStream_writeStreamNext(t *testing.T) {
 		for j := 0; j < 550; j++ {
 			stream := newRPCStream()
 			stream.SetWritePos(j)
-			dataStream.SetReadPos(1)
+			dataStream.SetReadPos(17)
 
 			// dataStream
 			assert(stream.writeStreamNext(dataStream)).IsTrue()
 			assert(dataStream.GetReadPos()).Equals(dataStream.GetWritePos())
 			assert(stream.GetWritePos()).
-				Equals(dataStream.GetWritePos() + j - 1)
+				Equals(dataStream.GetWritePos() + j - 17)
 			// bugStream0
 			assert(stream.writeStreamNext(bugStream0)).IsFalse()
-			assert(bugStream0.GetReadPos()).Equals(1)
+			assert(bugStream0.GetReadPos()).Equals(17)
 			assert(stream.GetWritePos()).
-				Equals(dataStream.GetWritePos() + j - 1)
+				Equals(dataStream.GetWritePos() + j - 17)
 			// bugStream1
 			assert(stream.writeStreamNext(bugStream1)).IsFalse()
-			assert(bugStream1.GetReadPos()).Equals(1)
+			assert(bugStream1.GetReadPos()).Equals(17)
 			assert(stream.GetWritePos()).
-				Equals(dataStream.GetWritePos() + j - 1)
+				Equals(dataStream.GetWritePos() + j - 17)
 
 			stream.Release()
 		}

@@ -105,13 +105,13 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	p.execInnerContext.stream = inStream
 	ctx := &rpcContext{inner: p.execInnerContext}
 
-	// if the header is error, we can not find the method to return
-	headerBytes, ok := inStream.ReadUnsafeBytes()
-	if !ok || len(headerBytes) != 16 {
-		processor.logger.Error("rpc data format error")
-		return nilReturn
-	}
-	p.execStream.WriteBytes(headerBytes)
+	//// if the header is error, we can not find the method to return
+	//headerBytes, ok := inStream.ReadUnsafeBytes()
+	//if !ok || len(headerBytes) != 16 {
+	//	processor.logger.Error("rpc data format error")
+	//	return nilReturn
+	//}
+	//p.execStream.WriteBytes(headerBytes)
 
 	// read echo path
 	echoPath, ok := inStream.ReadUnsafeString()

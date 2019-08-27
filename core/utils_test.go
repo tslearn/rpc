@@ -263,7 +263,7 @@ func Test_equals_exceptions(t *testing.T) {
 	errorArray := newRPCArray(ctx)
 	rightArray.Append(true)
 	errorArray.Append(true)
-	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
+	(*errorArray.ctx.getCacheStream().frames[0])[17] = 13
 	assert(rpcEquals(rightArray, errorArray)).IsFalse()
 	assert(rpcEquals(errorArray, rightArray)).IsFalse()
 
@@ -272,7 +272,7 @@ func Test_equals_exceptions(t *testing.T) {
 	errorMap := newRPCMap(ctx)
 	rightMap.Set("0", true)
 	errorMap.Set("0", true)
-	(*errorMap.ctx.getCacheStream().frames[0])[1] = 13
+	(*errorMap.ctx.getCacheStream().frames[0])[17] = 13
 	assert(rpcEquals(rightMap, errorMap)).IsFalse()
 	assert(rpcEquals(errorMap, rightMap)).IsFalse()
 }
@@ -330,7 +330,7 @@ func Test_contains_exceptions(t *testing.T) {
 
 	errorArray := newRPCArray(ctx)
 	errorArray.Append(true)
-	(*errorArray.ctx.getCacheStream().frames[0])[1] = 13
+	(*errorArray.ctx.getCacheStream().frames[0])[17] = 13
 
 	assert(rpcContains(errorArray, true)).Equals(false)
 }
