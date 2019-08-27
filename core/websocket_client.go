@@ -1,7 +1,9 @@
 package core
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,8 +34,8 @@ type WebSocketClient struct {
 	conn       *websocket.Conn
 	closeChan  chan bool
 	readyState int64
-	pool       sync.Map
-	seed       uint32
+	sync.Map
+	seed uint32
 	sync.Mutex
 }
 
@@ -47,8 +49,7 @@ func NewWebSocketClient(
 		conn:       nil,
 		closeChan:  make(chan bool, 1),
 		readyState: wsClientConnecting,
-		pool:       sync.Map{},
-		seed:       10000,
+		seed:       1,
 	}
 
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -124,7 +125,11 @@ func (p *WebSocketClient) send(data []byte) *rpcError {
 		return err
 	}
 
-	if err := p.conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
+	p.Lock()
+	err := p.conn.WriteMessage(websocket.BinaryMessage, data)
+	p.Unlock()
+
+	if err != nil {
 		ret := NewRPCErrorByError(err)
 		p.onError(p.conn, ret)
 		return ret
@@ -133,22 +138,52 @@ func (p *WebSocketClient) send(data []byte) *rpcError {
 	return nil
 }
 
+func (p *WebSocketClient) registerCallback() *websocketClientCallback {
+	ret := (*websocketClientCallback)(nil)
+	p.Lock()
+	for {
+		p.seed += 1
+		if p.seed == math.MaxUint32 {
+			p.seed = 1
+		}
+		if _, ok := p.Load(p.seed); !ok {
+			ret = &websocketClientCallback{
+				id:     p.seed,
+				timeNS: TimeNowNS(),
+				ch:     make(chan bool),
+				stream: newRPCStream(),
+			}
+			p.Store(ret.id, ret)
+			break
+		}
+	}
+	p.Unlock()
+	return ret
+}
+
+func (p *WebSocketClient) unregisterCallback(key uint32) bool {
+	if _, ok := p.Load(key); ok {
+		p.Delete(key)
+		return true
+	} else {
+		return false
+	}
+}
+
+func (p *WebSocketClient) getCallbackByID(key uint32) *websocketClientCallback {
+	if v, ok := p.Load(key); ok {
+		return v.(*websocketClientCallback)
+	} else {
+		return nil
+	}
+}
+
 func (p *WebSocketClient) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *rpcError) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.seed += 1
-
-	callback := &websocketClientCallback{
-		id:     p.seed,
-		timeNS: TimeNowNS(),
-		ch:     make(chan bool),
-		stream: newRPCStream(),
-	}
-	p.pool.Store(callback.id, callback)
+	callback := p.registerCallback()
+	defer p.unregisterCallback(callback.id)
 
 	stream := callback.stream
 	// set client callback id
@@ -247,5 +282,14 @@ func (p *WebSocketClient) onClose(conn *websocket.Conn) {
 }
 
 func (p *WebSocketClient) onBinary(conn *websocket.Conn, bytes []byte) {
-	fmt.Println("client onBinary", conn, bytes)
+	if len(bytes) > 5 {
+		b := bytes[1:5]
+		clientID := binary.LittleEndian.Uint32(b)
+		if cbItem := p.getCallbackByID(clientID); cbItem != nil {
+			stream := cbItem.stream
+			stream.setWritePosUnsafe(0)
+			stream.putBytes(bytes)
+			cbItem.ch <- true
+		}
+	}
 }

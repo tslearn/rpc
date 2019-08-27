@@ -128,6 +128,9 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 		p.from = ""
 	}()
 
+	// copy head
+	copy(p.execStream.header, inStream.header)
+
 	// read echo path
 	echoPath, ok := inStream.ReadUnsafeString()
 	if !ok {

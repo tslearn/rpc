@@ -13,8 +13,7 @@ func TestNewWebSocketServer(t *testing.T) {
 			ctx *rpcContext,
 			name string,
 		) *rpcReturn {
-			fmt.Println("CCCC")
-			return ctx.OK(name)
+			return ctx.OK("hello " + name)
 		}))
 
 	go func() {
@@ -25,7 +24,7 @@ func TestNewWebSocketServer(t *testing.T) {
 			5*1024*1024,
 		)
 		v, err := client.SendMessage("$.user:sayHello", "tianshuo")
-		fmt.Println(v, err)
+		fmt.Println("OK<", v, err)
 
 		if err := client.Close(); err != nil {
 			fmt.Println(err)

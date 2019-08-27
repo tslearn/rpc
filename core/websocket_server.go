@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"math"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -24,23 +25,16 @@ type WebSocketServer struct {
 	readTimeoutNS uint64
 	httpServer    *http.Server
 	closeChan     chan bool
-	seed          int64
+	seed          uint32
+	sync.Map
 	sync.Mutex
 }
 
 // NewWebSocketServer create a WebSocketClient
 func NewWebSocketServer() *WebSocketServer {
 	logger := NewLogger()
-	processor := newProcessor(
-		logger,
-		32,
-		32,
-		func(stream *rpcStream, success bool) {
-
-		},
-	)
-	return &WebSocketServer{
-		processor:     processor,
+	server := &WebSocketServer{
+		processor:     nil,
 		logger:        logger,
 		startNS:       0,
 		readSizeLimit: 64 * 1024,
@@ -48,6 +42,60 @@ func NewWebSocketServer() *WebSocketServer {
 		httpServer:    nil,
 		closeChan:     make(chan bool, 1),
 		seed:          1,
+	}
+
+	server.processor = newProcessor(
+		logger,
+		32,
+		32,
+		func(stream *rpcStream, success bool) {
+			if conn := server.getConnByID(stream.getClientConnID()); conn != nil {
+				stream.setClientConnID(0)
+				if err := conn.WriteMessage(
+					websocket.BinaryMessage,
+					stream.getBufferUnsafe(),
+				); err != nil {
+					server.onError(stream.getClientConnID(), NewRPCErrorByError(err))
+				}
+			}
+		},
+	)
+
+	return server
+}
+
+func (p *WebSocketServer) registerConn(conn *websocket.Conn) uint32 {
+	key := uint32(0)
+	p.Lock()
+	for {
+		p.seed += 1
+		if p.seed == math.MaxUint32 {
+			p.seed = 1
+		}
+		key = p.seed
+		if _, ok := p.Load(key); !ok {
+			p.Store(key, conn)
+			break
+		}
+	}
+	p.Unlock()
+	return key
+}
+
+func (p *WebSocketServer) unregisterConn(key uint32) bool {
+	if _, ok := p.Load(key); ok {
+		p.Delete(key)
+		return true
+	} else {
+		return false
+	}
+}
+
+func (p *WebSocketServer) getConnByID(key uint32) *websocket.Conn {
+	if v, ok := p.Load(key); ok {
+		return v.(*websocket.Conn)
+	} else {
+		return nil
 	}
 }
 
@@ -99,15 +147,17 @@ func (p *WebSocketServer) Start(
 			}
 
 			conn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			p.onOpen(conn)
+			connID := p.registerConn(conn)
+			p.onOpen(connID)
 
 			defer func() {
 				err := conn.Close()
 				if err != nil {
 					ret = NewRPCErrorByError(err)
-					p.onError(conn, ret)
+					p.onError(connID, ret)
 				}
-				p.onClose(conn)
+				p.onClose(connID)
+				p.unregisterConn(connID)
 			}()
 
 			for {
@@ -117,24 +167,24 @@ func (p *WebSocketServer) Start(
 					nextTimeoutNS/int64(time.Second),
 					nextTimeoutNS%int64(time.Second),
 				)); err != nil {
-					p.onError(conn, NewRPCErrorByError(err))
+					p.onError(connID, NewRPCErrorByError(err))
 					return
 				}
 
 				mt, message, err := conn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						p.onError(conn, NewRPCErrorByError(err))
+						p.onError(connID, NewRPCErrorByError(err))
 					}
 					return
 				}
 				switch mt {
 				case websocket.BinaryMessage:
-					p.onBinary(conn, message)
+					p.onBinary(connID, message)
 				case websocket.CloseMessage:
 					return
 				default:
-					p.onError(conn, NewRPCError(
+					p.onError(connID, NewRPCError(
 						"WebSocketServer: unknown message type",
 					))
 					return
@@ -171,22 +221,23 @@ func (p *WebSocketServer) Close() *rpcError {
 	)
 }
 
-func (p *WebSocketServer) onOpen(conn *websocket.Conn) {
-	fmt.Println("server conn onOpen", conn)
+func (p *WebSocketServer) onOpen(connID uint32) {
+	fmt.Println("server conn onOpen", connID)
 }
 
-func (p *WebSocketServer) onError(conn *websocket.Conn, err *rpcError) {
-	fmt.Println("server conn onError", conn, err)
+func (p *WebSocketServer) onError(connID uint32, err *rpcError) {
+	fmt.Println("server conn onError", connID, err)
 }
 
-func (p *WebSocketServer) onClose(conn *websocket.Conn) {
-	fmt.Println("server conn onClose", conn)
+func (p *WebSocketServer) onClose(connID uint32) {
+	fmt.Println("server conn onClose", connID)
 }
 
-func (p *WebSocketServer) onBinary(conn *websocket.Conn, bytes []byte) {
+func (p *WebSocketServer) onBinary(connID uint32, bytes []byte) {
 	stream := newRPCStream()
 	stream.setWritePosUnsafe(0)
 	stream.putBytes(bytes)
+	stream.setClientConnID(connID)
 	p.processor.put(stream)
 }
 
