@@ -114,7 +114,7 @@ func (p *WebSocketClient) IsOpen() bool {
 }
 
 // SendBinary send byte array to the remote server
-func (p *WebSocketClient) SendBinary(data []byte) *rpcError {
+func (p *WebSocketClient) send(data []byte) *rpcError {
 	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
 		err := NewRPCError("WebSocketClient: connection is not opened")
 		p.onError(p.conn, err)
@@ -137,9 +137,6 @@ func (p *WebSocketClient) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *rpcError) {
-	p.Lock()
-	defer p.Unlock()
-
 	callback := &websocketClientCallback{
 		id:     GetSeed(),
 		timeNS: TimeNowNS(),
@@ -162,7 +159,7 @@ func (p *WebSocketClient) SendMessage(
 		}
 	}
 
-	if err := p.SendBinary(stream.getBufferUnsafe()); err != nil {
+	if err := p.send(stream.getBufferUnsafe()); err != nil {
 		return nil, err
 	}
 
@@ -176,10 +173,22 @@ func (p *WebSocketClient) SendMessage(
 	}
 
 	if success {
-
+		if ret, ok := stream.Read(); ok {
+			return ret, nil
+		} else {
+			return nil, NewRPCError("data format error")
+		}
+	} else {
+		message, ok := stream.ReadString()
+		if !ok {
+			return nil, NewRPCError("data format error")
+		}
+		debug, ok := stream.ReadString()
+		if !ok {
+			return nil, NewRPCError("data format error")
+		}
+		return nil, NewRPCErrorByDebug(message, debug)
 	}
-
-	return nil, nil
 }
 
 // Close close the WebSocketClient
