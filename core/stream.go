@@ -138,6 +138,82 @@ func (p *rpcStream) Reset() {
 	p.writeFrame = *p.frames[0]
 }
 
+func (p *rpcStream) getServerCallbackID() uint64 {
+	b := p.header[0:8]
+	return uint64(b[0]) |
+		uint64(b[1])<<8 |
+		uint64(b[2])<<16 |
+		uint64(b[3])<<24 |
+		uint64(b[4])<<32 |
+		uint64(b[5])<<40 |
+		uint64(b[6])<<48 |
+		uint64(b[7])<<56
+}
+
+func (p *rpcStream) setServerCallbackID(v uint64) {
+	b := p.header[0:8]
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+	b[4] = byte(v >> 32)
+	b[5] = byte(v >> 40)
+	b[6] = byte(v >> 48)
+	b[7] = byte(v >> 56)
+}
+
+func (p *rpcStream) getClientCallbackID() uint32 {
+	b := p.header[0:4]
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
+func (p *rpcStream) setClientCallbackID(v uint32) {
+	b := p.header[0:4]
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+}
+
+func (p *rpcStream) getClientConnID() uint32 {
+	b := p.header[4:8]
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
+func (p *rpcStream) setClientConnID(v uint32) {
+	b := p.header[4:8]
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+}
+
+func (p *rpcStream) getMachineID() uint32 {
+	b := p.header[8:12]
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
+func (p *rpcStream) setMachineID(v uint32) {
+	b := p.header[8:12]
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+}
+
+func (p *rpcStream) getRouterID() uint32 {
+	b := p.header[12:16]
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
+func (p *rpcStream) setRouterID(v uint32) {
+	b := p.header[12:16]
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+}
+
 // Release clean the rpcStream
 func (p *rpcStream) Release() {
 	p.Reset()

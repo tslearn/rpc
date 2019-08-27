@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/binary"
+	"math/rand"
 	"testing"
 )
 
@@ -285,6 +287,86 @@ func TestRpcStream_newRPCStream_Release_Reset(t *testing.T) {
 			stream.putBytes([]byte{9})
 		}
 		stream.Release()
+	}
+}
+
+func TestRpcStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
+	assert := newAssert(t)
+
+	stream := newRPCStream()
+	bytes8 := make([]byte, 8, 8)
+
+	for i := 0; i < 1000; i++ {
+		v := rand.Uint64()
+		binary.LittleEndian.PutUint64(bytes8, v)
+		stream.setServerCallbackID(v)
+		assert(stream.header[0:8]).Equals(bytes8)
+		assert(stream.getBufferUnsafe()[1:9]).Equals(bytes8)
+		assert(stream.getServerCallbackID()).Equals(v)
+	}
+}
+
+func TestRpcStream_getClientCallbackID_setClientCallbackID(t *testing.T) {
+	assert := newAssert(t)
+
+	stream := newRPCStream()
+	bytes4 := make([]byte, 4, 4)
+
+	for i := 0; i < 1000; i++ {
+		v := rand.Uint32()
+		binary.LittleEndian.PutUint32(bytes4, v)
+		stream.setClientCallbackID(v)
+		assert(stream.header[0:4]).Equals(bytes4)
+		assert(stream.getBufferUnsafe()[1:5]).Equals(bytes4)
+		assert(stream.getClientCallbackID()).Equals(v)
+	}
+}
+
+func TestRpcStream_getClientConnID_getClientConnID(t *testing.T) {
+	assert := newAssert(t)
+
+	stream := newRPCStream()
+	bytes4 := make([]byte, 4, 4)
+
+	for i := 0; i < 1000; i++ {
+		v := rand.Uint32()
+		binary.LittleEndian.PutUint32(bytes4, v)
+		stream.setClientConnID(v)
+		assert(stream.header[4:8]).Equals(bytes4)
+		assert(stream.getBufferUnsafe()[5:9]).Equals(bytes4)
+		assert(stream.getClientConnID()).Equals(v)
+	}
+}
+
+func TestRpcStream_getMachineID_setMachineID(t *testing.T) {
+	assert := newAssert(t)
+
+	stream := newRPCStream()
+	bytes4 := make([]byte, 4, 4)
+
+	for i := 0; i < 1000; i++ {
+		v := rand.Uint32()
+		binary.LittleEndian.PutUint32(bytes4, v)
+		stream.setMachineID(v)
+		assert(stream.header[8:12]).Equals(bytes4)
+		assert(stream.getBufferUnsafe()[9:13]).Equals(bytes4)
+		assert(stream.getMachineID()).Equals(v)
+	}
+}
+
+func TestRpcStream_getRouterID_setRouterID(t *testing.T) {
+	assert := newAssert(t)
+
+	stream := newRPCStream()
+	bytes4 := make([]byte, 4, 4)
+
+	for i := 0; i < 1000; i++ {
+		v := rand.Uint32()
+		binary.LittleEndian.PutUint32(bytes4, v)
+		stream.setRouterID(v)
+		assert(stream.header[12:16]).Equals(bytes4)
+		assert(stream.getBufferUnsafe()[13:17]).Equals(bytes4)
+		assert(stream.getRouterID()).Equals(v)
 	}
 }
 
