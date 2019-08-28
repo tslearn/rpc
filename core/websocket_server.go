@@ -42,7 +42,7 @@ func (p *wsServerConn) send(data []byte) error {
 type WebSocketServer struct {
 	processor     *rpcProcessor
 	logger        *Logger
-	startNS       int64
+	isRunning     bool
 	readSizeLimit uint64
 	readTimeoutNS uint64
 	httpServer    *http.Server
@@ -58,7 +58,7 @@ func NewWebSocketServer() *WebSocketServer {
 	server := &WebSocketServer{
 		processor:     nil,
 		logger:        logger,
-		startNS:       0,
+		isRunning:     false,
 		readSizeLimit: 64 * 1024,
 		readTimeoutNS: 60 * uint64(time.Second),
 		httpServer:    nil,
@@ -139,109 +139,119 @@ func (p *WebSocketServer) Start(
 	port uint16,
 	path string,
 ) (ret *rpcError) {
-	timeNS := TimeNowNS()
-	if atomic.CompareAndSwapInt64(&p.startNS, 0, timeNS) {
-		defer func() {
-			atomic.CompareAndSwapInt64(&p.startNS, timeNS, 0)
-			p.processor.stop()
-			p.logger.Infof(
-				"WebSocketServer: stopped",
+	p.Lock()
+	if p.isRunning == false {
+		p.isRunning = true
+		p.Unlock()
+	} else {
+		p.Unlock()
+		return NewRPCError(
+			"WebSocketServer: has already been opened",
+		)
+	}
+
+	defer func() {
+		p.Lock()
+		p.isRunning = false
+		p.Unlock()
+		p.processor.stop()
+		p.logger.Infof(
+			"WebSocketServer: stopped",
+		)
+		p.closeChan <- true
+	}()
+
+	p.logger.Infof(
+		"WebSocketServer: start at %s",
+		GetURLBySchemeHostPortAndPath("ws", host, port, path),
+	)
+	p.processor.start()
+	serverMux := http.NewServeMux()
+	serverMux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+		if req != nil && req.Header != nil {
+			req.Header.Del("Origin")
+		}
+		wsConn, err := wsUpgradeManager.Upgrade(w, req, nil)
+		if err != nil {
+			p.logger.Errorf(
+				"WebSocketServer: %s",
+				err.Error(),
 			)
-			p.closeChan <- true
+			return
+		}
+
+		wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
+		connID := p.registerConn(wsConn)
+		p.onOpen(connID)
+
+		defer func() {
+			err := wsConn.Close()
+			if err != nil {
+				ret = NewRPCErrorByError(err)
+				p.onError(connID, ret)
+			}
+			p.onClose(connID)
+			p.unregisterConn(connID)
 		}()
 
-		p.logger.Infof(
-			"WebSocketServer: start at %s",
-			GetURLBySchemeHostPortAndPath("ws", host, port, path),
-		)
-		p.processor.start()
-		serverMux := http.NewServeMux()
-		serverMux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
-			if req != nil && req.Header != nil {
-				req.Header.Del("Origin")
-			}
-			wsConn, err := wsUpgradeManager.Upgrade(w, req, nil)
-			if err != nil {
-				p.logger.Errorf(
-					"WebSocketServer: %s",
-					err.Error(),
-				)
+		for {
+			nextTimeoutNS := TimeNowNS() +
+				int64(atomic.LoadUint64(&p.readTimeoutNS))
+			if err := wsConn.SetReadDeadline(time.Unix(
+				nextTimeoutNS/int64(time.Second),
+				nextTimeoutNS%int64(time.Second),
+			)); err != nil {
+				p.onError(connID, NewRPCErrorByError(err))
 				return
 			}
 
-			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			connID := p.registerConn(wsConn)
-			p.onOpen(connID)
-
-			defer func() {
-				err := wsConn.Close()
-				if err != nil {
-					ret = NewRPCErrorByError(err)
-					p.onError(connID, ret)
-				}
-				p.onClose(connID)
-				p.unregisterConn(connID)
-			}()
-
-			for {
-				nextTimeoutNS := TimeNowNS() +
-					int64(atomic.LoadUint64(&p.readTimeoutNS))
-				if err := wsConn.SetReadDeadline(time.Unix(
-					nextTimeoutNS/int64(time.Second),
-					nextTimeoutNS%int64(time.Second),
-				)); err != nil {
+			mt, message, err := wsConn.ReadMessage()
+			if err != nil {
+				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					p.onError(connID, NewRPCErrorByError(err))
-					return
 				}
-
-				mt, message, err := wsConn.ReadMessage()
-				if err != nil {
-					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						p.onError(connID, NewRPCErrorByError(err))
-					}
-					return
-				}
-				switch mt {
-				case websocket.BinaryMessage:
-					p.onBinary(connID, message)
-				case websocket.CloseMessage:
-					return
-				default:
-					p.onError(connID, NewRPCError(
-						"WebSocketServer: unknown message type",
-					))
-					return
-				}
+				return
 			}
-		})
-		p.Lock()
-		p.httpServer = &http.Server{
-			Addr:    fmt.Sprintf("%s:%d", host, port),
-			Handler: serverMux,
+			switch mt {
+			case websocket.BinaryMessage:
+				p.onBinary(connID, message)
+			case websocket.CloseMessage:
+				return
+			default:
+				p.onError(connID, NewRPCError(
+					"WebSocketServer: unknown message type",
+				))
+				return
+			}
 		}
-		p.Unlock()
-		return NewRPCErrorByError(p.httpServer.ListenAndServe())
-	}
+	})
 
-	return NewRPCError(
-		"WebSocketServer: has already been opened",
-	)
+	p.Lock()
+	p.httpServer = &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", host, port),
+		Handler: serverMux,
+	}
+	p.Unlock()
+
+	return NewRPCErrorByError(p.httpServer.ListenAndServe())
 }
 
 // Close make the WebSocketServer stop serve
 func (p *WebSocketServer) Close() *rpcError {
 	p.Lock()
-	defer p.Unlock()
-
-	if atomic.LoadInt64(&p.startNS) > 0 {
+	if !p.isRunning {
+		p.Unlock()
+		return NewRPCError(
+			"WebSocketServer: close error, it is not opened",
+		)
+	} else {
+		p.isRunning = false
 		err := NewRPCErrorByError(p.httpServer.Close())
+		p.Unlock()
+
 		<-p.closeChan
 		return err
 	}
-
-	return NewRPCError(
-		"WebSocketServer: close error, it is not opened",
-	)
 }
 
 func (p *WebSocketServer) onOpen(connID uint32) {
