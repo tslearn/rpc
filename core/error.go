@@ -40,12 +40,11 @@ func (p *rpcError) GetDebug() string {
 	return p.debug
 }
 
-func (p *rpcError) AddDebug(debug string) *rpcError {
+func (p *rpcError) AddDebug(debug string) {
 	if p.debug != "" {
 		p.debug += "\n"
 	}
 	p.debug += debug
-	return p
 }
 
 func (p *rpcError) Error() string {

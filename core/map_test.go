@@ -10,8 +10,8 @@ import (
 func TestRpcMapInner_hasKey(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -113,8 +113,8 @@ func TestRpcMapInner_free(t *testing.T) {
 func TestRpcMap_newRPCMap(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{}
@@ -155,8 +155,8 @@ func TestRpcMap_newRPCMap(t *testing.T) {
 func TestRpcMap_ok(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{}
@@ -169,8 +169,8 @@ func TestRpcMap_ok(t *testing.T) {
 func TestRpcMap_release(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -199,8 +199,8 @@ func TestRpcMap_release(t *testing.T) {
 func TestRpcMap_getIS(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -220,14 +220,14 @@ func TestRpcMap_getIS(t *testing.T) {
 		ctx: validCtx,
 		in:  nil,
 	}
-	assert(bugRPCMap2.getIS()).Equals(nil, validCtx.inner.stream)
+	assert(bugRPCMap2.getIS()).Equals(nil, validCtx.thread.inStream)
 }
 
 func TestRpcMap_equals(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -256,8 +256,8 @@ func TestRpcMap_equals(t *testing.T) {
 func TestRpcMap_contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	mp0 := newRPCMap(ctx)
@@ -275,13 +275,11 @@ func TestRpcMap_contains(t *testing.T) {
 func TestRpcMap_Size(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
-	invalidCtx := &rpcContext{
-		inner: nil,
-	}
+	invalidCtx := &rpcContext{}
 	validRPCMap := newRPCMap(validCtx)
 	invalidRPCMap1 := newRPCMap(invalidCtx)
 	invalidRPCMap2 := rpcMap{
@@ -306,8 +304,8 @@ func TestRpcMap_Keys(t *testing.T) {
 
 	fnTest := func(size int) {
 		mp := newRPCMap(&rpcContext{
-			inner: &rpcInnerContext{
-				stream: newRPCStream(),
+			thread: &rpcThread{
+				inStream: newRPCStream(),
 			},
 		})
 
@@ -331,8 +329,8 @@ func TestRpcMap_Keys(t *testing.T) {
 	bugMap0 := rpcMap{}
 	bugMap1 := rpcMap{
 		ctx: &rpcContext{
-			inner: &rpcInnerContext{
-				stream: newRPCStream(),
+			thread: &rpcThread{
+				inStream: newRPCStream(),
 			},
 		},
 		in: nil,
@@ -351,8 +349,8 @@ func TestRpcMap_Get(t *testing.T) {
 	testSmallMap := make(Map)
 	testLargeMap := make(Map)
 	testCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -393,8 +391,8 @@ func TestRpcMap_Get(t *testing.T) {
 
 	fnTestMap := func(mp map[string]interface{}, name string, tp string) {
 		ctx := &rpcContext{
-			inner: &rpcInnerContext{
-				stream: newRPCStream(),
+			thread: &rpcThread{
+				inStream: newRPCStream(),
 			},
 		}
 
@@ -542,20 +540,18 @@ func TestRpcMap_Get(t *testing.T) {
 func Test_RPCMap_Set(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
 	fnTest := func(tp string, name string, value interface{}) {
 		validCtx := &rpcContext{
-			inner: &rpcInnerContext{
-				stream: newRPCStream(),
+			thread: &rpcThread{
+				inStream: newRPCStream(),
 			},
 		}
-		invalidCtx := &rpcContext{
-			inner: nil,
-		}
+		invalidCtx := &rpcContext{}
 
 		map0 := newRPCMap(validCtx)
 		map16 := newRPCMap(validCtx)
@@ -681,8 +677,8 @@ func Test_RPCMap_Set(t *testing.T) {
 func Test_RPCMap_Delete(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 

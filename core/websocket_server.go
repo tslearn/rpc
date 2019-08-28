@@ -133,6 +133,19 @@ func (p *WebSocketServer) AddService(
 	return p
 }
 
+func (p *WebSocketServer) StartBackground(
+	host string,
+	port uint16,
+	path string,
+) {
+	go func() {
+		err := p.Start(host, port, path)
+		if err != nil {
+			p.logger.Error(err)
+		}
+	}()
+}
+
 // Open make the WebSocketServer start serve
 func (p *WebSocketServer) Start(
 	host string,

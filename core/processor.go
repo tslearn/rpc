@@ -31,30 +31,23 @@ var (
 type rpcThread struct {
 	processor      *rpcProcessor
 	ch             chan *rpcStream
+	inStream       *rpcStream
+	outStream      *rpcStream
 	execNS         int64
-	execStream     *rpcStream
 	execDepth      uint64
 	execEchoNode   *rpcEchoNode
 	execArgs       []reflect.Value
 	execSuccessful bool
 	from           string
-
-	execInnerContext *rpcInnerContext
 }
 
 func newThread(processor *rpcProcessor) *rpcThread {
 	ret := rpcThread{
-		processor:  processor,
-		ch:         make(chan *rpcStream),
-		execArgs:   make([]reflect.Value, 0, 16),
-		execStream: newRPCStream(),
-		execNS:     0,
-	}
-
-	ret.execInnerContext = &rpcInnerContext{
-		stream:       nil,
-		serverThread: &ret,
-		clientThread: nil,
+		processor: processor,
+		ch:        make(chan *rpcStream),
+		execArgs:  make([]reflect.Value, 0, 16),
+		outStream: newRPCStream(),
+		execNS:    0,
 	}
 
 	return &ret
@@ -103,8 +96,8 @@ func (p *rpcThread) put(stream *rpcStream) {
 func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	processor := p.processor
 	// create context
-	p.execInnerContext.stream = inStream
-	ctx := &rpcContext{inner: p.execInnerContext}
+	p.inStream = inStream
+	ctx := &rpcContext{thread: p}
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -122,15 +115,15 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 			p.from,
 			p.execSuccessful,
 		)
-		processor.callback(p.execStream, p.execSuccessful)
-		p.execStream.Release()
+		processor.callback(p.outStream, p.execSuccessful)
+		p.outStream.Release()
 		inStream.Reset()
-		p.execStream = inStream
+		p.outStream = inStream
 		p.from = ""
 	}()
 
 	// copy head
-	copy(p.execStream.header, inStream.header)
+	copy(p.outStream.header, inStream.header)
 
 	// read echo path
 	echoPath, ok := inStream.ReadUnsafeString()

@@ -135,8 +135,8 @@ func Test_isNil(t *testing.T) {
 func Test_equals(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -254,8 +254,8 @@ func Test_equals_exceptions(t *testing.T) {
 	assert := newAssert(t)
 
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -267,7 +267,7 @@ func Test_equals_exceptions(t *testing.T) {
 	assert(rpcEquals(rightArray, errorArray)).IsFalse()
 	assert(rpcEquals(errorArray, rightArray)).IsFalse()
 
-	ctx.inner.stream = newRPCStream()
+	ctx.thread.inStream = newRPCStream()
 	rightMap := newRPCMap(ctx)
 	errorMap := newRPCMap(ctx)
 	rightMap.Set("0", true)
@@ -280,8 +280,8 @@ func Test_equals_exceptions(t *testing.T) {
 func Test_contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -323,8 +323,8 @@ func Test_contains(t *testing.T) {
 func Test_contains_exceptions(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 

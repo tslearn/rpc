@@ -1091,8 +1091,8 @@ func TestRpcStream_WriteRPCArray(t *testing.T) {
 		// ok
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1108,8 +1108,8 @@ func TestRpcStream_WriteRPCArray(t *testing.T) {
 		// ctx is closed
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1125,8 +1125,8 @@ func TestRpcStream_WriteRPCArray(t *testing.T) {
 		// error in rpc array stream
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1151,8 +1151,8 @@ func TestRpcStream_WriteMap(t *testing.T) {
 		// ok
 		for i := 1; i < 1100; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1186,8 +1186,8 @@ func TestRpcStream_WriteRPCMap(t *testing.T) {
 		// ok
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1206,8 +1206,8 @@ func TestRpcStream_WriteRPCMap(t *testing.T) {
 		// ctx is closed
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1222,8 +1222,8 @@ func TestRpcStream_WriteRPCMap(t *testing.T) {
 		// error in rpc array stream
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1244,8 +1244,8 @@ func TestRpcStream_WriteRPCMap(t *testing.T) {
 func TestRpcStream_Write(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -1787,8 +1787,8 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 					continue
 				}
 				ctx := &rpcContext{
-					inner: &rpcInnerContext{
-						stream: newRPCStream(),
+					thread: &rpcThread{
+						inStream: newRPCStream(),
 					},
 				}
 				ctx.getCacheStream().SetWritePos(j)
@@ -1806,8 +1806,8 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 		// overflow
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1827,8 +1827,8 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 		// type not match
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1843,8 +1843,8 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 		// error in stream
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1863,8 +1863,8 @@ func TestRpcStream_ReadRPCArray(t *testing.T) {
 		// error in stream
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -1890,8 +1890,8 @@ func TestRpcStream_ReadMap(t *testing.T) {
 					continue
 				}
 				ctx := &rpcContext{
-					inner: &rpcInnerContext{
-						stream: newRPCStream(),
+					thread: &rpcThread{
+						inStream: newRPCStream(),
 					},
 				}
 				ctx.getCacheStream().SetWritePos(j)
@@ -1999,8 +1999,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 					continue
 				}
 				ctx := &rpcContext{
-					inner: &rpcInnerContext{
-						stream: newRPCStream(),
+					thread: &rpcThread{
+						inStream: newRPCStream(),
 					},
 				}
 				ctx.getCacheStream().SetWritePos(j)
@@ -2018,8 +2018,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 		// overflow
 		for i := 1; i < 530; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -2039,8 +2039,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 		// type not match
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -2055,8 +2055,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 		// error in stream
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -2075,8 +2075,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 		// error in stream, length error
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -2093,8 +2093,8 @@ func TestRpcStream_ReadRPCMap(t *testing.T) {
 		// error in stream, key error
 		for i := 1; i < 550; i++ {
 			ctx := &rpcContext{
-				inner: &rpcInnerContext{
-					stream: newRPCStream(),
+				thread: &rpcThread{
+					inStream: newRPCStream(),
 				},
 			}
 			stream := newRPCStream()
@@ -2127,8 +2127,8 @@ func TestRpcStream_ReadByContext(t *testing.T) {
 
 	testCollections := make([][2]interface{}, 0, 0)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 

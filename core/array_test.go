@@ -23,12 +23,12 @@ func TestRpcArrayInner_free(t *testing.T) {
 func TestRpcArray_newRPCArray(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{
-		inner: nil,
+		thread: nil,
 	}
 	assert(newRPCArray(validCtx).ctx).Equals(validCtx)
 	assert(newRPCArray(validCtx).in).IsNotNil()
@@ -57,8 +57,8 @@ func TestRpcArray_newRPCArray(t *testing.T) {
 func TestRpcArray_ok(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -70,8 +70,8 @@ func TestRpcArray_ok(t *testing.T) {
 func TestRpcArray_release(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -100,8 +100,8 @@ func TestRpcArray_release(t *testing.T) {
 func TestRpcArray_getIS(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -120,14 +120,14 @@ func TestRpcArray_getIS(t *testing.T) {
 		ctx: validCtx,
 		in:  nil,
 	}
-	assert(bugRPCArray2.getIS()).Equals(nil, validCtx.inner.stream)
+	assert(bugRPCArray2.getIS()).Equals(nil, validCtx.thread.inStream)
 }
 
 func TestRpcArray_equals(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	nilArray := rpcArray{}
@@ -154,8 +154,8 @@ func TestRpcArray_equals(t *testing.T) {
 func TestRpcArray_contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -175,12 +175,12 @@ func TestRpcArray_contains(t *testing.T) {
 func TestRpcArray_Size(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	invalidCtx := &rpcContext{
-		inner: nil,
+		thread: nil,
 	}
 	validRPCArray := newRPCArray(validCtx)
 	invalidRPCArray := newRPCArray(invalidCtx)
@@ -196,8 +196,8 @@ func TestRpcArray_Size(t *testing.T) {
 func TestRpcArray_Get(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 
@@ -221,8 +221,8 @@ func TestRpcArray_Get(t *testing.T) {
 		array[len(array)-1] = array[index]
 
 		ctx := &rpcContext{
-			inner: &rpcInnerContext{
-				stream: newRPCStream(),
+			thread: &rpcThread{
+				inStream: newRPCStream(),
 			},
 		}
 
@@ -387,8 +387,8 @@ func TestRpcArray_Get(t *testing.T) {
 func TestRpcArray_Set_Append(t *testing.T) {
 	assert := newAssert(t)
 	validCtx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 

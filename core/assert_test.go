@@ -52,8 +52,8 @@ func TestAssert_Equals(t *testing.T) {
 func TestAssert_Contains(t *testing.T) {
 	assert := newAssert(t)
 	ctx := &rpcContext{
-		inner: &rpcInnerContext{
-			stream: newRPCStream(),
+		thread: &rpcThread{
+			inStream: newRPCStream(),
 		},
 	}
 	assert("hello").Contains("")
