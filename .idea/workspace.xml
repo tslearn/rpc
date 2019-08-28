@@ -1,18 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
-      <change afterPath="$PROJECT_DIR$/core/init_test.go" afterDir="false" />
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/array_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/array_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/assert_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/assert_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/context.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/context.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/error.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/error.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/map_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/map_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/processor.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/stream_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/utils_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_server.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/websocket_server.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/websocket_server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/websocket_server_test.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
@@ -38,10 +28,19 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="397">
+              <caret line="286" column="17" selection-start-line="286" selection-start-column="14" selection-end-line="286" selection-end-column="17" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/context.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="2024">
-              <caret line="90" column="18" selection-start-line="90" selection-start-column="10" selection-end-line="90" selection-end-column="18" />
+              <caret line="90" column="18" selection-start-line="90" selection-start-column="18" selection-end-line="90" selection-end-column="18" />
             </state>
           </provider>
         </entry>
@@ -103,32 +102,20 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/core/websocket_server_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="138">
-              <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
+            <state relative-caret-position="690">
+              <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
               <folding>
-                <element signature="e#14#50#0" expanded="true" />
+                <element signature="e#14#43#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/error.go">
+        <entry file="file://$PROJECT_DIR$/core/time_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="407">
-              <caret line="46" column="18" selection-start-line="46" selection-start-column="18" selection-end-line="46" selection-end-column="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/init_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="17" lean-forward="true" selection-start-line="17" selection-end-line="17" />
-              <folding>
-                <element signature="e#14#41#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="207">
+              <caret line="12" selection-start-line="12" selection-end-line="12" />
             </state>
           </provider>
         </entry>
@@ -318,7 +305,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.go test core">
+  <component name="RunManager" selected="Go Test.BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core">
     <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -372,8 +359,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.go test core" />
         <item itemvalue="Go Test.BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.go test core" />
         <item itemvalue="Go Test.TestNewWebSocketServer in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Build.go build main.go" />
         <item itemvalue="Go Test.stream_test.go" />
@@ -381,21 +368,6 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="BenchmarkNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 21m 39s.xml">
-      <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 37m 23s.xml">
-      <configuration name="TestNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 37m 39s.xml">
-      <configuration name="TestNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 37m 48s.xml">
-      <configuration name="TestNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 38m 07s.xml">
-      <configuration name="TestNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="BenchmarkNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 10h 40m 21s.xml">
       <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -409,6 +381,21 @@
       <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
     <history-entry file="BenchmarkNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 11h 02m 55s.xml">
+      <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.28 at 11h 03m 46s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="BenchmarkNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 11h 03m 59s.xml">
+      <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.28 at 11h 04m 20s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.08.28 at 11h 05m 29s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="BenchmarkNewWebSocketServer_in_github_com_tslearn_rpcc_core - 2019.08.28 at 11h 06m 40s.xml">
       <configuration name="BenchmarkNewWebSocketServer in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
@@ -557,9 +544,6 @@
           <caret line="24" column="14" lean-forward="true" selection-start-line="24" selection-start-column="14" selection-end-line="24" selection-end-column="14" />
         </state>
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/time_test.go">
-      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/core/indicator.go">
       <provider selected="true" editor-type-id="text-editor">
@@ -822,13 +806,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="516">
-          <caret line="286" column="17" selection-start-line="286" selection-start-column="14" selection-end-line="286" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/error.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="407">
@@ -849,7 +826,7 @@
     <entry file="file://$PROJECT_DIR$/core/context.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2024">
-          <caret line="90" column="18" selection-start-line="90" selection-start-column="10" selection-end-line="90" selection-end-column="18" />
+          <caret line="90" column="18" selection-start-line="90" selection-start-column="18" selection-end-line="90" selection-end-column="18" />
         </state>
       </provider>
     </entry>
@@ -904,12 +881,26 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/core/time_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="207">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="397">
+          <caret line="286" column="17" selection-start-line="286" selection-start-column="14" selection-end-line="286" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/core/websocket_server_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="138">
-          <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
+        <state relative-caret-position="690">
+          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
           <folding>
-            <element signature="e#14#50#0" expanded="true" />
+            <element signature="e#14#43#0" expanded="true" />
           </folding>
         </state>
       </provider>
