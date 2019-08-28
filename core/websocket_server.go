@@ -74,7 +74,7 @@ func NewWebSocketServer() *WebSocketServer {
 			if conn := server.getConnByID(stream.getClientConnID()); conn != nil {
 				stream.setClientConnID(0)
 				if err := conn.send(stream.getBufferUnsafe()); err != nil {
-					server.onError(stream.getClientConnID(), NewRPCErrorByError(err))
+					server.onError(stream.getClientConnID(), err.Error())
 				}
 			}
 		},
@@ -138,12 +138,18 @@ func (p *WebSocketServer) StartBackground(
 	port uint16,
 	path string,
 ) {
+	waitCH := make(chan bool, 2)
 	go func() {
-		err := p.Start(host, port, path)
+		err := p.start(host, port, path, func() {
+			waitCH <- true
+		})
 		if err != nil {
+			waitCH <- true
 			p.logger.Error(err)
 		}
 	}()
+
+	<-waitCH
 }
 
 // Open make the WebSocketServer start serve
@@ -152,7 +158,24 @@ func (p *WebSocketServer) Start(
 	port uint16,
 	path string,
 ) (ret *rpcError) {
+	return p.start(host, port, path, func() {})
+}
+
+// Open make the WebSocketServer start serve
+func (p *WebSocketServer) start(
+	host string,
+	port uint16,
+	path string,
+	onStarting func(),
+) (ret *rpcError) {
 	p.Lock()
+	if len(p.closeChan) == 1 {
+		p.Unlock()
+		return NewRPCError(
+			"WebSocketServer: has not been closed correctly",
+		)
+	}
+
 	if p.isRunning == false {
 		p.isRunning = true
 		p.logger.Infof(
@@ -167,10 +190,7 @@ func (p *WebSocketServer) Start(
 			}
 			wsConn, err := wsUpgradeManager.Upgrade(w, req, nil)
 			if err != nil {
-				p.logger.Errorf(
-					"WebSocketServer: %s",
-					err.Error(),
-				)
+				p.logger.Errorf("WebSocketServer: %s", err.Error())
 				return
 			}
 
@@ -181,8 +201,7 @@ func (p *WebSocketServer) Start(
 			defer func() {
 				err := wsConn.Close()
 				if err != nil {
-					ret = NewRPCErrorByError(err)
-					p.onError(connID, ret)
+					p.onError(connID, err.Error())
 				}
 				p.onClose(connID)
 				p.unregisterConn(connID)
@@ -195,26 +214,23 @@ func (p *WebSocketServer) Start(
 					nextTimeoutNS/int64(time.Second),
 					nextTimeoutNS%int64(time.Second),
 				)); err != nil {
-					p.onError(connID, NewRPCErrorByError(err))
+					p.onError(connID, err.Error())
 					return
 				}
 
 				mt, message, err := wsConn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						p.onError(connID, NewRPCErrorByError(err))
+						fmt.Println("@@@@@@", mt)
+						p.onError(connID, err.Error())
 					}
 					return
 				}
 				switch mt {
 				case websocket.BinaryMessage:
 					p.onBinary(connID, message)
-				case websocket.CloseMessage:
-					return
 				default:
-					p.onError(connID, NewRPCError(
-						"WebSocketServer: unknown message type",
-					))
+					p.onError(connID, "unknown message type")
 					return
 				}
 			}
@@ -225,9 +241,14 @@ func (p *WebSocketServer) Start(
 		}
 		p.Unlock()
 
+		time.AfterFunc(500*time.Millisecond, func() {
+			onStarting()
+		})
+
 		ret := p.httpServer.ListenAndServe()
 
 		p.Lock()
+		p.httpServer = nil
 		p.isRunning = false
 		p.Unlock()
 
@@ -235,12 +256,18 @@ func (p *WebSocketServer) Start(
 		p.logger.Infof(
 			"WebSocketServer: stopped",
 		)
+
 		p.closeChan <- true
-		return NewRPCErrorByError(ret)
+
+		if ret != nil && ret.Error() == "http: Server closed" {
+			return nil
+		} else {
+			return NewRPCErrorByError(ret)
+		}
 	} else {
 		p.Unlock()
 		return NewRPCError(
-			"WebSocketServer: has already been opened",
+			"WebSocketServer: has already been started",
 		)
 	}
 }
@@ -249,6 +276,9 @@ func (p *WebSocketServer) Start(
 func (p *WebSocketServer) Close() *rpcError {
 	p.Lock()
 	if !p.isRunning {
+		if len(p.closeChan) == 1 {
+			<-p.closeChan
+		}
 		p.Unlock()
 		return NewRPCError(
 			"WebSocketServer: close error, it is not opened",
@@ -264,15 +294,15 @@ func (p *WebSocketServer) Close() *rpcError {
 }
 
 func (p *WebSocketServer) onOpen(connID uint32) {
-	//fmt.Println("server conn onOpen", connID)
+	p.logger.Infof("WebSocketServerConn[%d]: opened", connID)
 }
 
-func (p *WebSocketServer) onError(connID uint32, err *rpcError) {
-	//fmt.Println("server conn onError", connID, err)
+func (p *WebSocketServer) onError(connID uint32, msg string) {
+	p.logger.Warningf("WebSocketServerConn[%d]: %s", connID, msg)
 }
 
 func (p *WebSocketServer) onClose(connID uint32) {
-	//fmt.Println("server conn onClose", connID)
+	p.logger.Infof("WebSocketServerConn[%d]: closed", connID)
 }
 
 func (p *WebSocketServer) onBinary(connID uint32, bytes []byte) {

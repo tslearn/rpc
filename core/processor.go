@@ -413,11 +413,11 @@ func (p *rpcProcessor) start() bool {
 	defer p.Unlock()
 
 	if !p.isRunning {
+		p.isRunning = true
 		for i := 0; i < len(p.slots); i++ {
 			p.slots[i] = newThreadSlot()
 			p.slots[i].start(p)
 		}
-		p.isRunning = true
 		return true
 	} else {
 		return false
@@ -510,7 +510,7 @@ func (p *rpcProcessor) mountService(
 	if item, ok := p.servicesMap[servicePath]; ok {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Add name %s is duplicated",
+				"AddService name %s is duplicated",
 				addMeta.name,
 			),
 			fmt.Sprintf(
