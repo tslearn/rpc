@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/binary"
 	"math"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -51,7 +52,9 @@ func NewWebSocketClient(
 		seed:       1,
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	conn, _, err := websocket.DefaultDialer.Dial(url, http.Header{
+		"Conn": []string{"2", "3243545345"},
+	})
 	if err != nil {
 		client.onError(nil, NewRPCErrorByError(err))
 		return nil
