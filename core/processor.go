@@ -13,11 +13,17 @@ import (
 
 const (
 	RootName           = "$"
-	NumOfThreadPerSlot = 8192
-	NumOfThreadGCSwipe = 4096
-	NumOfSlotPerCore   = 4
-	NumOfMinSlot       = 4
-	NumOfMaxSlot       = 128
+	NumOfThreadPerSlot = 1
+	NumOfThreadGCSwipe = 1
+	NumOfSlotPerCore   = 1
+	NumOfMinSlot       = 1
+	NumOfMaxSlot       = 1
+
+	//NumOfThreadPerSlot = 8192
+	//NumOfThreadGCSwipe = 4096
+	//NumOfSlotPerCore   = 2
+	//NumOfMinSlot       = 2
+	//NumOfMaxSlot       = 64
 )
 
 var (

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"math"
 	"net"
@@ -11,6 +12,44 @@ import (
 	"unsafe"
 )
 
+func TestWsServerConn_send(t *testing.T) {
+	assert := newAssert(t)
+
+	server := NewWebSocketServer()
+	server.AddService("user", newServiceMeta().
+		Echo("sayHello", true, func(
+			ctx *rpcContext,
+			name string,
+		) *rpcReturn {
+			wsConn := server.getConnByID(2).wsConn
+			netConnPtr := (*net.Conn)(GetObjectFieldPointer(wsConn, "conn"))
+			fdPointer := (**int)(GetObjectFieldPointer(*netConnPtr, "fd"))
+			*fdPointer = nil
+			return ctx.OK("hello " + name)
+		}))
+	server.StartBackground("0.0.0.0", 12345, "/")
+
+	logWarnCH := make(chan string, 100)
+	server.GetLogger().Subscribe().Warning = func(msg string) {
+		logWarnCH <- msg
+	}
+
+	client := NewWebSocketClient(
+		"ws://127.0.0.1:12345/",
+		16000,
+		64*1024,
+	)
+
+	go func() {
+		_, _ = client.SendMessage("$.user:sayHello", "tianshuo")
+	}()
+
+	assert(<-logWarnCH).Contains("WebSocketServerConn[2]: invalid argument")
+	_ = client.Close()
+
+	_ = server.Close()
+}
+
 func TestNewWebSocketServer(t *testing.T) {
 	assert := newAssert(t)
 
@@ -18,12 +57,10 @@ func TestNewWebSocketServer(t *testing.T) {
 	assert(server).IsNotNil()
 	assert(server.processor).IsNotNil()
 	assert(server.logger).IsNotNil()
-	assert(server.isRunning).IsFalse()
+	assert(server.status).Equals(wsServerClosed)
 	assert(server.readSizeLimit).Equals(uint64(64 * 1024))
 	assert(server.readTimeoutNS).Equals(60 * uint64(time.Second))
 	assert(server.httpServer).IsNil()
-	assert(len(server.closeChan)).Equals(0)
-	assert(cap(server.closeChan)).Equals(1)
 	assert(server.seed).Equals(uint32(1))
 }
 
@@ -143,13 +180,15 @@ func TestWebSocketServer_Start_Close(t *testing.T) {
 
 	// ok
 	go func() {
-		time.Sleep(200 * time.Millisecond)
-		assert(server.isRunning).IsTrue()
+		for server.status != wsServerOpened {
+			time.Sleep(200 * time.Millisecond)
+		}
 		assert(server.processor.isRunning).IsTrue()
 		_ = server.Close()
 	}()
 	assert(server.Start("0.0.0.0", 55555, "/ws")).IsNil()
-	assert(server.isRunning).IsFalse()
+	time.Sleep(100 * time.Millisecond)
+	assert(server.status).Equals(int32(wsServerClosed))
 	assert(server.processor.isRunning).IsFalse()
 	assert(<-logInfoCH).
 		Contains("WebSocketServer: start at ws://0.0.0.0:55555/ws")
@@ -160,16 +199,12 @@ func TestWebSocketServer_Start_Close(t *testing.T) {
 	assert(err1.GetMessage()).
 		Equals("listen tcp: lookup this is wrong: no such host")
 	assert(err1.GetDebug()).Equals("")
-
-	// not closed correctly
-	err2 := server.Start("0.0.0.0", 55555, "/ws")
-	assert(err2.GetMessage()).
-		Equals("WebSocketServer: has not been closed correctly")
 	_ = server.Close()
 
 	// error port is used
 	l, _ := net.Listen("tcp", "0.0.0.0:55555")
 	err3 := server.Start("0.0.0.0", 55555, "/ws")
+	fmt.Println(err3.GetMessage())
 	assert(err3.GetMessage()).
 		Equals("listen tcp 0.0.0.0:55555: bind: address already in use")
 	_ = server.Close()
@@ -177,6 +212,8 @@ func TestWebSocketServer_Start_Close(t *testing.T) {
 }
 
 func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
+	assert := newAssert(t)
+
 	server := NewWebSocketServer().
 		AddService("user", newServiceMeta().
 			Echo("sayHello", true, func(
@@ -187,7 +224,6 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 			}))
 	server.StartBackground("0.0.0.0", 12345, "/")
 
-	assert := newAssert(t)
 	logInfoCH := make(chan string, 100)
 	logErrorCH := make(chan string, 100)
 	logWarnCH := make(chan string, 100)
@@ -251,6 +287,7 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 	_ = client2.Close()
 
 	// SetReadTimeoutMS error
+	server.SetReadTimeoutMS(60000)
 	server.GetLogger().Subscribe().Info = func(msg string) {
 		if strings.Contains(msg, "WebSocketServerConn[5]: opened") {
 			conn := server.getConnByID(5).wsConn
@@ -271,6 +308,85 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 	assert(<-logInfoCH).Contains("WebSocketServerConn[5]: closed")
 	_ = client3.Close()
 
+	// unknown type error
+	server.SetReadTimeoutMS(60000)
+	conn, _, _ := websocket.DefaultDialer.Dial(
+		"ws://127.0.0.1:12345/",
+		nil,
+	)
+	_ = conn.WriteMessage(websocket.TextMessage, []byte{})
+	assert(<-logInfoCH).Contains("WebSocketServerConn[6]: opened")
+	assert(<-logWarnCH).
+		Contains("WebSocketServerConn[6]: unknown message type")
+	assert(<-logInfoCH).Contains("WebSocketServerConn[6]: closed")
+	_ = conn.Close()
+
+	// check all the message is received
+	assert(len(logInfoCH)).Equals(0)
+	assert(len(logWarnCH)).Equals(0)
+	assert(len(logErrorCH)).Equals(0)
+
+	_ = server.Close()
+}
+
+func TestWebSocketServer_SetReadSizeLimit(t *testing.T) {
+	assert := newAssert(t)
+
+	server := NewWebSocketServer().
+		AddService("user", newServiceMeta().
+			Echo("sayHello", true, func(
+				ctx *rpcContext,
+				name string,
+			) *rpcReturn {
+				return ctx.OK("hello " + name)
+			}))
+	server.StartBackground("0.0.0.0", 12345, "/")
+
+	logInfoCH := make(chan string, 100)
+	logErrorCH := make(chan string, 100)
+	logWarnCH := make(chan string, 100)
+	logSubscription := server.GetLogger().Subscribe()
+	logSubscription.Info = func(msg string) {
+		logInfoCH <- msg
+	}
+	logSubscription.Warning = func(msg string) {
+		logWarnCH <- msg
+	}
+	logSubscription.Error = func(msg string) {
+		logErrorCH <- msg
+	}
+
+	// SetReadSizeLimit 44
+	server.SetReadSizeLimit(44)
+	client0 := NewWebSocketClient(
+		"ws://127.0.0.1:12345/",
+		16000,
+		128*1024,
+	)
+	go func() {
+		_, _ = client0.SendMessage("$.user:sayHello", "world")
+	}()
+
+	assert(<-logInfoCH).Contains("WebSocketServerConn[2]: opened")
+	assert(<-logInfoCH).Contains("WebSocketServerConn[2]: closed")
+	assert(<-logWarnCH).
+		Contains("WebSocketServerConn[2]: websocket: read limit exceeded")
+	_ = client0.Close()
+
+	// SetReadSizeLimit 45
+	server.SetReadSizeLimit(45)
+	client1 := NewWebSocketClient(
+		"ws://127.0.0.1:12345/",
+		16000,
+		128*1024,
+	)
+	assert(client1.SendMessage("$.user:sayHello", "world")).
+		Equals("hello world", nil)
+	_ = client1.Close()
+	assert(<-logInfoCH).Contains("WebSocketServerConn[3]: opened")
+	assert(<-logInfoCH).Contains("WebSocketServerConn[3]: closed")
+
+	// check all the message is received
 	assert(len(logInfoCH)).Equals(0)
 	assert(len(logWarnCH)).Equals(0)
 	assert(len(logErrorCH)).Equals(0)

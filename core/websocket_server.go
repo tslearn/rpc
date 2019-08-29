@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+const (
+	wsServerOpening    = int32(1)
+	wsServerOpened     = int32(2)
+	wsServerClosing    = int32(3)
+	wsServerDidClosing = int32(4)
+	wsServerClosed     = int32(5)
+)
+
 var (
 	wsUpgradeManager = websocket.Upgrader{
 		ReadBufferSize:    1024,
@@ -42,11 +50,10 @@ func (p *wsServerConn) send(data []byte) error {
 type WebSocketServer struct {
 	processor     *rpcProcessor
 	logger        *Logger
-	isRunning     bool
+	status        int32
 	readSizeLimit uint64
 	readTimeoutNS uint64
 	httpServer    *http.Server
-	closeChan     chan bool
 	seed          uint32
 	sync.Map
 	sync.Mutex
@@ -58,11 +65,10 @@ func NewWebSocketServer() *WebSocketServer {
 	server := &WebSocketServer{
 		processor:     nil,
 		logger:        logger,
-		isRunning:     false,
+		status:        wsServerClosed,
 		readSizeLimit: 64 * 1024,
 		readTimeoutNS: 60 * uint64(time.Second),
 		httpServer:    nil,
-		closeChan:     make(chan bool, 1),
 		seed:          1,
 	}
 
@@ -71,10 +77,11 @@ func NewWebSocketServer() *WebSocketServer {
 		32,
 		32,
 		func(stream *rpcStream, success bool) {
-			if conn := server.getConnByID(stream.getClientConnID()); conn != nil {
+			connID := stream.getClientConnID()
+			if conn := server.getConnByID(connID); conn != nil {
 				stream.setClientConnID(0)
 				if err := conn.send(stream.getBufferUnsafe()); err != nil {
-					server.onError(stream.getClientConnID(), err.Error())
+					server.onError(connID, err.Error())
 				}
 			}
 		},
@@ -166,18 +173,9 @@ func (p *WebSocketServer) start(
 	host string,
 	port uint16,
 	path string,
-	onStarting func(),
+	onStarted func(),
 ) (ret *rpcError) {
-	p.Lock()
-	if len(p.closeChan) == 1 {
-		p.Unlock()
-		return NewRPCError(
-			"WebSocketServer: has not been closed correctly",
-		)
-	}
-
-	if p.isRunning == false {
-		p.isRunning = true
+	if atomic.CompareAndSwapInt32(&p.status, wsServerClosed, wsServerOpening) {
 		p.logger.Infof(
 			"WebSocketServer: start at %s",
 			GetURLBySchemeHostPortAndPath("ws", host, port, path),
@@ -221,7 +219,6 @@ func (p *WebSocketServer) start(
 				mt, message, err := wsConn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						fmt.Println("@@@@@@", mt)
 						p.onError(connID, err.Error())
 					}
 					return
@@ -235,21 +232,22 @@ func (p *WebSocketServer) start(
 				}
 			}
 		})
+
+		p.Lock()
 		p.httpServer = &http.Server{
 			Addr:    fmt.Sprintf("%s:%d", host, port),
 			Handler: serverMux,
 		}
 		p.Unlock()
 
-		time.AfterFunc(500*time.Millisecond, func() {
-			onStarting()
+		time.AfterFunc(200*time.Millisecond, func() {
+			onStarted()
 		})
-
+		atomic.StoreInt32(&p.status, wsServerOpened)
 		ret := p.httpServer.ListenAndServe()
 
 		p.Lock()
 		p.httpServer = nil
-		p.isRunning = false
 		p.Unlock()
 
 		p.processor.stop()
@@ -257,7 +255,11 @@ func (p *WebSocketServer) start(
 			"WebSocketServer: stopped",
 		)
 
-		p.closeChan <- true
+		if atomic.LoadInt32(&p.status) == wsServerOpened {
+			atomic.StoreInt32(&p.status, wsServerClosed)
+		} else {
+			atomic.StoreInt32(&p.status, wsServerDidClosing)
+		}
 
 		if ret != nil && ret.Error() == "http: Server closed" {
 			return nil
@@ -265,7 +267,6 @@ func (p *WebSocketServer) start(
 			return NewRPCErrorByError(ret)
 		}
 	} else {
-		p.Unlock()
 		return NewRPCError(
 			"WebSocketServer: has already been started",
 		)
@@ -274,22 +275,20 @@ func (p *WebSocketServer) start(
 
 // Close make the WebSocketServer stop serve
 func (p *WebSocketServer) Close() *rpcError {
-	p.Lock()
-	if !p.isRunning {
-		if len(p.closeChan) == 1 {
-			<-p.closeChan
+	if atomic.CompareAndSwapInt32(&p.status, wsServerOpened, wsServerClosing) {
+		err := NewRPCErrorByError(p.httpServer.Close())
+		for !atomic.CompareAndSwapInt32(
+			&p.status,
+			wsServerDidClosing,
+			wsServerClosed,
+		) {
+			time.Sleep(20 * time.Millisecond)
 		}
-		p.Unlock()
+		return err
+	} else {
 		return NewRPCError(
 			"WebSocketServer: close error, it is not opened",
 		)
-	} else {
-		p.isRunning = false
-		err := NewRPCErrorByError(p.httpServer.Close())
-		p.Unlock()
-
-		<-p.closeChan
-		return err
 	}
 }
 
