@@ -147,7 +147,7 @@ func (p *WebSocketServer) StartBackground(
 ) {
 	wait := true
 	go func() {
-		err := p.start(host, port, path)
+		err := p.Start(host, port, path)
 		if err != nil {
 			p.logger.Error(err)
 		}
@@ -162,17 +162,8 @@ func (p *WebSocketServer) StartBackground(
 	}
 }
 
-// Open make the WebSocketServer start serve
+// Start make the WebSocketServer start serve
 func (p *WebSocketServer) Start(
-	host string,
-	port uint16,
-	path string,
-) (ret *rpcError) {
-	return p.start(host, port, path)
-}
-
-// Open make the WebSocketServer start serve
-func (p *WebSocketServer) start(
 	host string,
 	port uint16,
 	path string,
