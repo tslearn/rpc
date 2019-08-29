@@ -145,18 +145,21 @@ func (p *WebSocketServer) StartBackground(
 	port uint16,
 	path string,
 ) {
-	waitCH := make(chan bool, 2)
+	wait := true
 	go func() {
-		err := p.start(host, port, path, func() {
-			waitCH <- true
-		})
+		err := p.start(host, port, path)
 		if err != nil {
-			waitCH <- true
 			p.logger.Error(err)
 		}
+		wait = false
 	}()
 
-	<-waitCH
+	for wait {
+		if atomic.LoadInt32(&p.status) == wsServerOpened {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }
 
 // Open make the WebSocketServer start serve
@@ -165,7 +168,7 @@ func (p *WebSocketServer) Start(
 	port uint16,
 	path string,
 ) (ret *rpcError) {
-	return p.start(host, port, path, func() {})
+	return p.start(host, port, path)
 }
 
 // Open make the WebSocketServer start serve
@@ -173,7 +176,6 @@ func (p *WebSocketServer) start(
 	host string,
 	port uint16,
 	path string,
-	onStarted func(),
 ) (ret *rpcError) {
 	if atomic.CompareAndSwapInt32(&p.status, wsServerClosed, wsServerOpening) {
 		p.logger.Infof(
@@ -240,11 +242,11 @@ func (p *WebSocketServer) start(
 		}
 		p.Unlock()
 
-		time.AfterFunc(200*time.Millisecond, func() {
-			onStarted()
+		time.AfterFunc(300*time.Millisecond, func() {
+			atomic.CompareAndSwapInt32(&p.status, wsServerOpening, wsServerOpened)
 		})
-		atomic.StoreInt32(&p.status, wsServerOpened)
 		ret := p.httpServer.ListenAndServe()
+		time.Sleep(400 * time.Millisecond)
 
 		p.Lock()
 		p.httpServer = nil
@@ -255,10 +257,10 @@ func (p *WebSocketServer) start(
 			"WebSocketServer: stopped",
 		)
 
-		if atomic.LoadInt32(&p.status) == wsServerOpened {
-			atomic.StoreInt32(&p.status, wsServerClosed)
-		} else {
+		if atomic.LoadInt32(&p.status) == wsServerClosing {
 			atomic.StoreInt32(&p.status, wsServerDidClosing)
+		} else {
+			atomic.StoreInt32(&p.status, wsServerClosed)
 		}
 
 		if ret != nil && ret.Error() == "http: Server closed" {

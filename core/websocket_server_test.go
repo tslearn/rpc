@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"math"
 	"net"
@@ -199,12 +198,12 @@ func TestWebSocketServer_Start_Close(t *testing.T) {
 	assert(err1.GetMessage()).
 		Equals("listen tcp: lookup this is wrong: no such host")
 	assert(err1.GetDebug()).Equals("")
+
 	_ = server.Close()
 
 	// error port is used
 	l, _ := net.Listen("tcp", "0.0.0.0:55555")
 	err3 := server.Start("0.0.0.0", 55555, "/ws")
-	fmt.Println(err3.GetMessage())
 	assert(err3.GetMessage()).
 		Equals("listen tcp 0.0.0.0:55555: bind: address already in use")
 	_ = server.Close()
