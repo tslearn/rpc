@@ -35,7 +35,10 @@ var (
 )
 
 type wsServerConn struct {
-	wsConn *websocket.Conn
+	id        uint32
+	wsConn    *websocket.Conn
+	connIndex uint32
+	security  string
 	sync.Mutex
 }
 
@@ -77,10 +80,10 @@ func NewWebSocketServer() *WebSocketServer {
 		32,
 		func(stream *rpcStream, success bool) {
 			connID := stream.getClientConnID()
-			if conn := server.getConnByID(connID); conn != nil {
+			if serverConn := server.getConnByID(connID); serverConn != nil {
 				stream.setClientConnID(0)
-				if err := conn.send(stream.getBufferUnsafe()); err != nil {
-					server.onError(connID, err.Error())
+				if err := serverConn.send(stream.getBufferUnsafe()); err != nil {
+					server.onError(serverConn, err.Error())
 				}
 			}
 		},
@@ -88,9 +91,22 @@ func NewWebSocketServer() *WebSocketServer {
 	return server
 }
 
-func (p *WebSocketServer) registerConn(wsConn *websocket.Conn) uint32 {
-	id := uint32(0)
+func (p *WebSocketServer) registerConn(
+	wsConn *websocket.Conn,
+	id uint32,
+	security string,
+) *wsServerConn {
+	// id and security is ok
+	if v, ok := p.Load(id); ok {
+		serverConn, ok := v.(*wsServerConn)
+		if ok && serverConn != nil && serverConn.security == security {
+			serverConn.wsConn = wsConn
+			return serverConn
+		}
+	}
+
 	p.Lock()
+	ret := (*wsServerConn)(nil)
 	for {
 		p.seed += 1
 		if p.seed == math.MaxUint32 {
@@ -99,20 +115,24 @@ func (p *WebSocketServer) registerConn(wsConn *websocket.Conn) uint32 {
 
 		id = p.seed
 		if _, ok := p.Load(id); !ok {
-			serverConn := wsServerConnCache.Get().(*wsServerConn)
-			serverConn.wsConn = wsConn
-			p.Store(id, serverConn)
+			ret = wsServerConnCache.Get().(*wsServerConn)
+			ret.id = id
+			ret.security = GetRandString(32)
+			ret.wsConn = wsConn
+			ret.connIndex = 0
+			p.Store(id, ret)
 			break
 		}
 	}
 	p.Unlock()
-	return id
+	return ret
 }
 
 func (p *WebSocketServer) unregisterConn(id uint32) bool {
 	if serverConn, ok := p.Load(id); ok {
 		p.Delete(id)
 		serverConn.(*wsServerConn).wsConn = nil
+		serverConn.(*wsServerConn).security = ""
 		wsServerConnCache.Put(serverConn)
 		return true
 	} else {
@@ -193,16 +213,16 @@ func (p *WebSocketServer) Start(
 			}
 
 			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			connID := p.registerConn(wsConn)
-			p.onOpen(connID)
+			serverConn := p.registerConn(wsConn, 0, "")
+			p.onOpen(serverConn)
 
 			defer func() {
 				err := wsConn.Close()
 				if err != nil {
-					p.onError(connID, err.Error())
+					p.onError(serverConn, err.Error())
 				}
-				p.onClose(connID)
-				p.unregisterConn(connID)
+				p.onClose(serverConn)
+				p.unregisterConn(serverConn.id)
 			}()
 
 			for {
@@ -212,22 +232,22 @@ func (p *WebSocketServer) Start(
 					nextTimeoutNS/int64(time.Second),
 					nextTimeoutNS%int64(time.Second),
 				)); err != nil {
-					p.onError(connID, err.Error())
+					p.onError(serverConn, err.Error())
 					return
 				}
 
 				mt, message, err := wsConn.ReadMessage()
 				if err != nil {
 					if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-						p.onError(connID, err.Error())
+						p.onError(serverConn, err.Error())
 					}
 					return
 				}
 				switch mt {
 				case websocket.BinaryMessage:
-					p.onBinary(connID, message)
+					p.onBinary(serverConn, message)
 				default:
-					p.onError(connID, "unknown message type")
+					p.onError(serverConn, "unknown message type")
 					return
 				}
 			}
@@ -292,23 +312,23 @@ func (p *WebSocketServer) Close() *rpcError {
 	}
 }
 
-func (p *WebSocketServer) onOpen(connID uint32) {
-	p.logger.Infof("WebSocketServerConn[%d]: opened", connID)
+func (p *WebSocketServer) onOpen(serverConn *wsServerConn) {
+	p.logger.Infof("WebSocketServerConn[%d]: opened", serverConn.id)
 }
 
-func (p *WebSocketServer) onError(connID uint32, msg string) {
-	p.logger.Warningf("WebSocketServerConn[%d]: %s", connID, msg)
+func (p *WebSocketServer) onError(serverConn *wsServerConn, msg string) {
+	p.logger.Warningf("WebSocketServerConn[%d]: %s", serverConn.id, msg)
 }
 
-func (p *WebSocketServer) onClose(connID uint32) {
-	p.logger.Infof("WebSocketServerConn[%d]: closed", connID)
+func (p *WebSocketServer) onClose(serverConn *wsServerConn) {
+	p.logger.Infof("WebSocketServerConn[%d]: closed", serverConn.id)
 }
 
-func (p *WebSocketServer) onBinary(connID uint32, bytes []byte) {
+func (p *WebSocketServer) onBinary(serverConn *wsServerConn, bytes []byte) {
 	stream := newRPCStream()
 	stream.setWritePosUnsafe(0)
 	stream.putBytes(bytes)
-	stream.setClientConnID(connID)
+	stream.setClientConnID(serverConn.id)
 	p.processor.put(stream)
 }
 

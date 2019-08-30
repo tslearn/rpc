@@ -62,19 +62,20 @@ func TestWebSocketServer_registerConn(t *testing.T) {
 	server := NewWebSocketServer()
 
 	wsConn1 := (*websocket.Conn)(unsafe.Pointer(uintptr(343451)))
-	assert(server.registerConn(wsConn1)).Equals(uint32(2))
+	assert(server.registerConn(wsConn1, 0, "").id).Equals(uint32(2))
 
 	server.seed = 1
 	wsConn2 := (*websocket.Conn)(unsafe.Pointer(uintptr(343452)))
-	assert(server.registerConn(wsConn2)).Equals(uint32(3))
+	assert(server.registerConn(wsConn2, 0, "").id).Equals(uint32(3))
 
 	server.seed = math.MaxUint32 - 2
 	wsConn3 := (*websocket.Conn)(unsafe.Pointer(uintptr(343453)))
-	assert(server.registerConn(wsConn3)).Equals(uint32(math.MaxUint32 - 1))
+	assert(server.registerConn(wsConn3, 0, "").id).
+		Equals(uint32(math.MaxUint32 - 1))
 
 	server.seed = math.MaxUint32 - 2
 	wsConn4 := (*websocket.Conn)(unsafe.Pointer(uintptr(343454)))
-	assert(server.registerConn(wsConn4)).Equals(uint32(1))
+	assert(server.registerConn(wsConn4, 0, "").id).Equals(uint32(1))
 }
 
 func TestWebSocketServer_unregisterConn(t *testing.T) {
@@ -84,7 +85,7 @@ func TestWebSocketServer_unregisterConn(t *testing.T) {
 	for i := uint32(650000); i < 652399; i++ {
 		server.seed = i - 1
 		wsConn := (*websocket.Conn)(unsafe.Pointer(uintptr(i)))
-		assert(server.registerConn(wsConn)).Equals(i)
+		assert(server.registerConn(wsConn, 0, "").id).Equals(i)
 	}
 
 	for i := uint32(650000); i < 652399; i++ {
@@ -100,7 +101,7 @@ func TestWebSocketServer_getConnByID(t *testing.T) {
 	for i := uint32(650000); i < 652399; i++ {
 		server.seed = i - 1
 		wsConn := (*websocket.Conn)(unsafe.Pointer(uintptr(i)))
-		assert(server.registerConn(wsConn)).Equals(i)
+		assert(server.registerConn(wsConn, 0, "").id).Equals(i)
 	}
 
 	for i := uint32(650000); i < 652399; i++ {
