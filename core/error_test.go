@@ -31,7 +31,7 @@ func TestNewRPCErrorWithDebug(t *testing.T) {
 		},
 	}
 	for _, item := range testCollection {
-		assert(item[0].(*rpcError).Error()).Equals(item[1])
+		assert(item[0].(*rpcError).String()).Equals(item[1])
 	}
 }
 

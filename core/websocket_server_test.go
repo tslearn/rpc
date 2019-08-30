@@ -33,18 +33,12 @@ func TestWsServerConn_send(t *testing.T) {
 		logWarnCH <- msg
 	}
 
-	client := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		64*1024,
-	)
-
+	client := NewWebSocketClient("ws://127.0.0.1:12345/")
 	go func() {
 		_, _ = client.SendMessage("$.user:sayHello", "tianshuo")
 	}()
 
 	assert(<-logWarnCH).Contains("WebSocketServerConn[2]: invalid argument")
-	_ = client.Close()
 
 	_ = server.Close()
 }
@@ -198,7 +192,6 @@ func TestWebSocketServer_Start_Close(t *testing.T) {
 	assert(err1.GetMessage()).
 		Equals("listen tcp: lookup this is wrong: no such host")
 	assert(err1.GetDebug()).Equals("")
-
 	_ = server.Close()
 
 	// error port is used
@@ -238,11 +231,7 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 	}
 
 	// ok
-	client0 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client0 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	assert(client0.SendMessage("$.user:sayHello", "tianshuo")).
 		Equals("hello tianshuo", nil)
 	_ = client0.Close()
@@ -256,11 +245,7 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 
 	// SetReadTimeoutMS 0
 	server.SetReadTimeoutMS(0)
-	client1 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client1 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	assert(<-logInfoCH).Contains("WebSocketServerConn[3]: opened")
 	openTime := TimeNowMS()
 	assert(<-logInfoCH).Contains("WebSocketServerConn[3]: closed")
@@ -271,11 +256,7 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 
 	// SetReadTimeoutMS 100
 	server.SetReadTimeoutMS(100)
-	client2 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client2 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	assert(<-logInfoCH).Contains("WebSocketServerConn[4]: opened")
 	openTime = TimeNowMS()
 	assert(<-logInfoCH).Contains("WebSocketServerConn[4]: closed")
@@ -296,16 +277,14 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 		}
 	}
 
-	client3 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client3 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	assert(<-logInfoCH).Contains("WebSocketServerConn[5]: opened")
 	assert(<-logWarnCH).Contains("WebSocketServerConn[5]: invalid argument")
 	assert(<-logWarnCH).Contains("WebSocketServerConn[5]: invalid argument")
 	assert(<-logInfoCH).Contains("WebSocketServerConn[5]: closed")
-	_ = client3.Close()
+	go func() {
+		_ = client3.Close()
+	}()
 
 	// unknown type error
 	server.SetReadTimeoutMS(60000)
@@ -357,11 +336,7 @@ func TestWebSocketServer_SetReadSizeLimit(t *testing.T) {
 
 	// SetReadSizeLimit 44
 	server.SetReadSizeLimit(44)
-	client0 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client0 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	go func() {
 		_, _ = client0.SendMessage("$.user:sayHello", "world")
 	}()
@@ -374,11 +349,7 @@ func TestWebSocketServer_SetReadSizeLimit(t *testing.T) {
 
 	// SetReadSizeLimit 45
 	server.SetReadSizeLimit(45)
-	client1 := NewWebSocketClient(
-		"ws://127.0.0.1:12345/",
-		16000,
-		128*1024,
-	)
+	client1 := NewWebSocketClient("ws://127.0.0.1:12345/")
 	assert(client1.SendMessage("$.user:sayHello", "world")).
 		Equals("hello world", nil)
 	_ = client1.Close()
@@ -398,11 +369,7 @@ func BenchmarkNewWebSocketServer(b *testing.B) {
 
 	client := (*WebSocketClient)(nil)
 	for client == nil {
-		client = NewWebSocketClient(
-			"ws://127.0.0.1:12345/ws",
-			16000,
-			128*1024,
-		)
+		client = NewWebSocketClient("ws://127.0.0.1:12345/ws")
 	}
 	b.ReportAllocs()
 	b.N = 10000

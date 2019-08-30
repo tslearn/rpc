@@ -2,8 +2,9 @@ package core
 
 import (
 	"encoding/binary"
+	"errors"
 	"math"
-	"net/http"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,13 +14,8 @@ import (
 
 const (
 	// The connection is connecting
-	wsClientConnecting = int64(0)
-	// The connection is open and ready to communicate.
-	wsClientOpen = int64(1)
-	// The connection is in the process of closing.
-	wsClientClosing = int64(2)
-	// The connection is closed or couldn't be opened.
-	wsClientClosed = int64(3)
+	wsClientRunning = int32(1)
+	wsClientClosed  = int32(2)
 )
 
 type websocketClientCallback struct {
@@ -27,117 +23,202 @@ type websocketClientCallback struct {
 	timeNS int64
 	ch     chan bool
 	stream *rpcStream
+	valid  bool
 }
 
 // WebSocketClient is implement of INetClient via web socket
 type WebSocketClient struct {
-	conn       *websocket.Conn
-	closeChan  chan bool
-	readyState int64
-	seed       uint32
+	//logger        *Logger
+	status        int32
+	conn          *websocket.Conn
+	seed          uint32
+	serverConn    string
+	msgTimeoutNS  int64
+	readTimeoutNS int64
+	readSizeLimit int64
+	urlString     string
+	sendChannel   chan *websocketClientCallback
+	sendCurrent   *websocketClientCallback
+	tryConnectCH  chan bool
+	trySendCH     chan bool
 	sync.Map
 	sync.Mutex
 }
 
 // NewWebSocketClient create a WebSocketClient, and connect to url
-func NewWebSocketClient(
-	url string,
-	timeoutMS uint64,
-	readSizeLimit uint64,
-) *WebSocketClient {
+func NewWebSocketClient(urlString string) *WebSocketClient {
 	client := &WebSocketClient{
-		conn:       nil,
-		closeChan:  make(chan bool, 1),
-		readyState: wsClientConnecting,
-		seed:       1,
+		//logger:        NewLogger(),
+		status:        wsClientRunning,
+		conn:          nil,
+		seed:          1,
+		serverConn:    "",
+		msgTimeoutNS:  20 * int64(time.Second),
+		readTimeoutNS: 60 * int64(time.Second),
+		readSizeLimit: 10 * 1024 * 1024,
+		urlString:     urlString,
+		sendChannel:   make(chan *websocketClientCallback, 1024),
+		sendCurrent:   nil,
+		tryConnectCH:  make(chan bool, 1),
+		trySendCH:     make(chan bool, 1),
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(url, http.Header{
-		"Conn": []string{"2", "3243545345"},
-	})
-	if err != nil {
-		client.onError(nil, NewRPCErrorByError(err))
-		return nil
-	}
-
-	client.conn = conn
-	client.readyState = wsClientOpen
-	client.onOpen(conn)
-
-	go func() {
-		defer func() {
-			if err := conn.Close(); err != nil {
-				client.onError(conn, NewRPCErrorByError(err))
-			}
-			atomic.StoreInt64(&client.readyState, wsClientClosed)
-			client.onClose(conn)
-			client.closeChan <- true
-		}()
-
-		conn.SetReadLimit(int64(readSizeLimit))
-		timeoutNS := int64(timeoutMS) * int64(time.Millisecond)
-
-		for {
-			// set next read dead line
-			nextTimeoutNS := TimeNowNS() + timeoutNS
-			if err := conn.SetReadDeadline(time.Unix(
-				nextTimeoutNS/int64(time.Second),
-				nextTimeoutNS%int64(time.Second),
-			)); err != nil {
-				client.onError(conn, NewRPCErrorByError(err))
-				return
-			}
-
-			// read message
-			mt, message, err := conn.ReadMessage()
-			if err != nil {
-				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					client.onError(conn, NewRPCErrorByError(err))
-				}
-				return
-			}
-			switch mt {
-			case websocket.BinaryMessage:
-				client.onBinary(conn, message)
-				break
-			case websocket.CloseMessage:
-				return
-			default:
-				client.onError(conn, NewRPCError(
-					"WebSocketClient: unknown message type",
-				))
-				return
-			}
-		}
-	}()
+	go client.tryConnect()
+	go client.trySend()
 
 	return client
 }
 
-// IsOpen returns true when the WebSocketClient is linked, otherwise false
-func (p *WebSocketClient) IsOpen() bool {
-	return atomic.LoadInt64(&p.readyState) == wsClientOpen
+func (p *WebSocketClient) isRunning() bool {
+	return atomic.LoadInt32(&p.status) == wsClientRunning
 }
 
-// SendBinary send byte array to the remote server
-func (p *WebSocketClient) send(data []byte) *rpcError {
-	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
-		err := NewRPCError("WebSocketClient: connection is not opened")
-		p.onError(p.conn, err)
-		return err
+func (p *WebSocketClient) tryConnect() {
+	time.Sleep(30 * time.Millisecond)
+	for p.isRunning() {
+		startConnMS := TimeNowMS()
+		p.connect()
+		connMS := TimeNowMS() - startConnMS
+		if connMS < 2000 && p.isRunning() {
+			time.Sleep(time.Duration(2000-connMS) * time.Millisecond)
+		}
+	}
+	p.tryConnectCH <- true
+}
+
+func (p *WebSocketClient) trySend() {
+	for p.isRunning() {
+		if p.sendCurrent == nil {
+			p.sendCurrent = <-p.sendChannel
+		}
+
+		// try to send, if success, the program will continue soon
+		if conn := p.getConn(); conn != nil && p.sendCurrent != nil {
+			buf := p.sendCurrent.stream.getBufferUnsafe()
+			err := conn.WriteMessage(websocket.BinaryMessage, buf)
+			if err == nil {
+				p.sendCurrent = nil
+				continue
+			}
+			p.onError(err.Error())
+		}
+
+		// wait if send error
+		if p.isRunning() {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	p.trySendCH <- true
+}
+
+func (p *WebSocketClient) readBinaryMessage(
+	readTimeoutNS int64,
+) ([]byte, error, bool) {
+	if p.conn == nil {
+		return nil, errors.New("connection is nil"), false
 	}
 
-	p.Lock()
-	err := p.conn.WriteMessage(websocket.BinaryMessage, data)
-	p.Unlock()
+	// set next read dead line
+	nextTimeoutNS := TimeNowNS() + readTimeoutNS
+	if err := p.conn.SetReadDeadline(time.Unix(
+		nextTimeoutNS/int64(time.Second),
+		nextTimeoutNS%int64(time.Second),
+	)); err != nil {
+		return nil, err, true
+	}
 
+	// read message
+	mt, message, err := p.conn.ReadMessage()
 	if err != nil {
-		ret := NewRPCErrorByError(err)
-		p.onError(p.conn, ret)
-		return ret
+		if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			return nil, err, true
+		}
+		return nil, nil, true
 	}
+	switch mt {
+	case websocket.BinaryMessage:
+		return message, nil, false
+	case websocket.CloseMessage:
+		return nil, nil, true
+	default:
+		return nil, errors.New("unknown message type"), true
+	}
+}
 
-	return nil
+func (p *WebSocketClient) setConn(conn *websocket.Conn) {
+	p.Lock()
+	p.conn = conn
+	p.Unlock()
+}
+
+func (p *WebSocketClient) getConn() *websocket.Conn {
+	p.Lock()
+	ret := p.conn
+	p.Unlock()
+	return ret
+}
+
+func (p *WebSocketClient) connect() {
+	if p.getConn() == nil {
+		// parse URL
+		requestURL, err := url.Parse(p.urlString)
+		if err != nil {
+			p.onError(err.Error())
+			return
+		}
+		requestURL.Query().Add("serverConn", p.serverConn)
+
+		// Dial
+		if conn, _, err := websocket.DefaultDialer.Dial(
+			requestURL.String(),
+			nil,
+		); err != nil {
+			p.onError(err.Error())
+			p.setConn(nil)
+			return
+		} else {
+			p.setConn(conn)
+		}
+
+		// set read size limit
+		p.conn.SetReadLimit(p.readSizeLimit)
+
+		// receive server conn info
+		msg, err, needClose := p.readBinaryMessage(2 * int64(time.Second))
+		if err != nil {
+			p.onError(err.Error())
+		}
+		if msg != nil {
+			p.serverConn = string(msg)
+		}
+		if needClose || p.serverConn == "" {
+			if err := p.conn.Close(); err != nil {
+				p.onError(err.Error())
+			}
+			p.setConn(nil)
+			return
+		}
+
+		p.onOpen()
+
+		for {
+			msg, err, needClose := p.readBinaryMessage(p.readTimeoutNS)
+			if err != nil {
+				p.onError(err.Error())
+			}
+			if needClose {
+				break
+			}
+			p.onBinary(msg)
+		}
+
+		if err := p.conn.Close(); err != nil {
+			p.onError(err.Error())
+		}
+
+		p.onClose()
+		p.setConn(nil)
+	}
 }
 
 func (p *WebSocketClient) registerCallback() *websocketClientCallback {
@@ -154,6 +235,7 @@ func (p *WebSocketClient) registerCallback() *websocketClientCallback {
 				timeNS: TimeNowNS(),
 				ch:     make(chan bool),
 				stream: newRPCStream(),
+				valid:  true,
 			}
 			p.Store(ret.id, ret)
 			break
@@ -203,9 +285,8 @@ func (p *WebSocketClient) SendMessage(
 		}
 	}
 
-	if err := p.send(stream.getBufferUnsafe()); err != nil {
-		return nil, err
-	}
+	// send to channel
+	p.sendChannel <- callback
 
 	if response := <-callback.ch; !response {
 		return nil, NewRPCError("timeout")
@@ -236,54 +317,39 @@ func (p *WebSocketClient) SendMessage(
 }
 
 // Close close the WebSocketClient
-func (p *WebSocketClient) Close() *rpcError {
-	p.Lock()
-	defer p.Unlock()
-
-	if atomic.LoadInt64(&p.readyState) != wsClientOpen {
-		err := NewRPCError(
-			"WebSocketClient: connection is not opened",
-		)
-		p.onError(p.conn, err)
-		return err
+func (p *WebSocketClient) Close() (ret *rpcError) {
+	if atomic.CompareAndSwapInt32(&p.status, wsClientRunning, wsClientClosed) {
+		close(p.sendChannel)
+		if conn := p.getConn(); conn != nil {
+			if err := p.conn.WriteMessage(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+			); err != nil {
+				p.onError(err.Error())
+				ret = NewRPCErrorByError(err)
+			}
+		}
+		<-p.tryConnectCH
+		<-p.trySendCH
+	} else {
+		ret = NewRPCError("WebSocketClient: client is not running")
 	}
-
-	if err := p.conn.WriteMessage(
-		websocket.CloseMessage,
-		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-	); err != nil {
-		ret := NewRPCErrorByError(err)
-		p.onError(p.conn, ret)
-		return ret
-	}
-
-	atomic.StoreInt64(&p.readyState, wsClientClosing)
-
-	select {
-	case <-p.closeChan:
-		return nil
-	case <-time.After(2000 * time.Millisecond):
-		err := NewRPCError(
-			"WebSocketClient: close timeout",
-		)
-		p.onError(p.conn, err)
-		return err
-	}
+	return
 }
 
-func (p *WebSocketClient) onOpen(conn *websocket.Conn) {
+func (p *WebSocketClient) onOpen() {
 	//fmt.Println("client onOpen", conn)
 }
 
-func (p *WebSocketClient) onError(conn *websocket.Conn, err *rpcError) {
+func (p *WebSocketClient) onError(msg string) {
 	//fmt.Println("client onError", conn, err)
 }
 
-func (p *WebSocketClient) onClose(conn *websocket.Conn) {
+func (p *WebSocketClient) onClose() {
 	//fmt.Println("client onClose", conn)
 }
 
-func (p *WebSocketClient) onBinary(conn *websocket.Conn, bytes []byte) {
+func (p *WebSocketClient) onBinary(bytes []byte) {
 	if len(bytes) > 5 {
 		b := bytes[1:5]
 		clientID := binary.LittleEndian.Uint32(b)

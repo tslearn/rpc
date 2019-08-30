@@ -61,10 +61,9 @@ type WebSocketServer struct {
 
 // NewWebSocketServer create a WebSocketClient
 func NewWebSocketServer() *WebSocketServer {
-	logger := NewLogger()
 	server := &WebSocketServer{
 		processor:     nil,
-		logger:        logger,
+		logger:        NewLogger(),
 		status:        wsServerClosed,
 		readSizeLimit: 64 * 1024,
 		readTimeoutNS: 60 * uint64(time.Second),
@@ -73,7 +72,7 @@ func NewWebSocketServer() *WebSocketServer {
 	}
 
 	server.processor = newProcessor(
-		logger,
+		server.logger,
 		32,
 		32,
 		func(stream *rpcStream, success bool) {
@@ -185,6 +184,14 @@ func (p *WebSocketServer) Start(
 				return
 			}
 
+			if err := wsConn.WriteMessage(
+				websocket.BinaryMessage,
+				[]byte("fade-security"),
+			); err != nil {
+				p.logger.Errorf("WebSocketServer: %s", err.Error())
+				return
+			}
+
 			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
 			connID := p.registerConn(wsConn)
 			p.onOpen(connID)
@@ -233,7 +240,7 @@ func (p *WebSocketServer) Start(
 		}
 		p.Unlock()
 
-		time.AfterFunc(300*time.Millisecond, func() {
+		time.AfterFunc(250*time.Millisecond, func() {
 			atomic.CompareAndSwapInt32(&p.status, wsServerOpening, wsServerOpened)
 		})
 		ret := p.httpServer.ListenAndServe()

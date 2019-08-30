@@ -1,5 +1,6 @@
 package core
 
+//
 //func TestMain(m *testing.M) {
 //	server := NewWebSocketServer().
 //		AddService("user", newServiceMeta().
