@@ -53,7 +53,7 @@ func NewWebSocketClient(urlString string) *WebSocketClient {
 		status:        wsClientRunning,
 		conn:          nil,
 		seed:          1,
-		serverConn:    "",
+		serverConn:    "324#asjdfie",
 		msgTimeoutNS:  15 * int64(time.Second),
 		readTimeoutNS: 60 * int64(time.Second),
 		readSizeLimit: 10 * 1024 * 1024,
@@ -192,7 +192,9 @@ func (p *WebSocketClient) connect() {
 			p.onError(err.Error())
 			return
 		}
-		requestURL.Query().Add("serverConn", p.serverConn)
+		query := requestURL.Query()
+		query.Add("conn", p.serverConn)
+		requestURL.RawQuery = query.Encode()
 
 		// Dial
 		if conn, _, err := websocket.DefaultDialer.Dial(

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -15,22 +14,23 @@ func TestWebSocketClient_basic(t *testing.T) {
 			ctx *rpcContext,
 			name string,
 		) *rpcReturn {
+			server.logger.Info("Start")
+			time.Sleep(6 * time.Second)
 			return ctx.OK("hello " + name)
 		}))
+	server.SetReadTimeoutMS(1500)
 	server.StartBackground("0.0.0.0", 12345, "/")
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		client := NewWebSocketClient("ws://127.0.0.1:12345/ws")
 
-		fmt.Println(client.SendMessage(
+		server.logger.Info(client.SendMessage(
 			"$.user:sayHello",
 			"world",
 		))
 
 		_ = client.Close()
 	}
-
-	time.Sleep(30 * time.Second)
 
 	_ = server.Close()
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/gorilla/websocket"
 	"math"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,18 +26,6 @@ var (
 		WriteBufferSize:   1024,
 		EnableCompression: true,
 	}
-
-	//wsServerConnCache = sync.Pool{
-	//	New: func() interface{} {
-	//		return &wsServerConn{
-	//			id:         0,
-	//			wsConn:     nil,
-	//			connIndex:  0,
-	//			security:   "",
-	//			deadlineNS: 0,
-	//		}
-	//	},
-	//}
 )
 
 type wsServerConn struct {
@@ -232,22 +222,38 @@ func (p *WebSocketServer) Start(
 			if req != nil && req.Header != nil {
 				req.Header.Del("Origin")
 			}
+
+			connID := uint32(0)
+			connSecurity := ""
+			keys, ok := req.URL.Query()["conn"]
+			if ok && len(keys) == 1 {
+				arr := strings.Split(keys[0], "#")
+				if len(arr) == 2 {
+					if parseID, err := strconv.ParseUint(arr[0], 10, 64); err == nil {
+						connID = uint32(parseID)
+						connSecurity = arr[1]
+					}
+				}
+			}
+
 			wsConn, err := wsUpgradeManager.Upgrade(w, req, nil)
 			if err != nil {
 				p.logger.Errorf("WebSocketServer: %s", err.Error())
 				return
 			}
 
+			serverConn := p.registerConn(wsConn, connID, connSecurity)
+
 			if err := wsConn.WriteMessage(
 				websocket.BinaryMessage,
-				[]byte("fade-security"),
+				[]byte(fmt.Sprintf("%d#%s", serverConn.id, serverConn.security)),
 			); err != nil {
 				p.logger.Errorf("WebSocketServer: %s", err.Error())
 				return
 			}
 
 			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-			serverConn := p.registerConn(wsConn, 0, "")
+
 			p.onOpen(serverConn)
 
 			defer func() {
