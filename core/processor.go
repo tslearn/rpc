@@ -122,7 +122,6 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 			p.execSuccessful,
 		)
 		processor.callback(p.outStream, p.execSuccessful)
-		p.outStream.Release()
 		inStream.Reset()
 		p.outStream = inStream
 		p.from = ""

@@ -1,12 +1,13 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
 
 func TestWebSocketClient_basic(t *testing.T) {
-	assert := newAssert(t)
+	//	assert := newAssert(t)
 
 	server := NewWebSocketServer()
 	server.AddService("user", newServiceMeta().
@@ -14,21 +15,22 @@ func TestWebSocketClient_basic(t *testing.T) {
 			ctx *rpcContext,
 			name string,
 		) *rpcReturn {
-			time.Sleep(14 * time.Second)
 			return ctx.OK("hello " + name)
 		}))
 	server.StartBackground("0.0.0.0", 12345, "/")
 
-	client := NewWebSocketClient("ws://127.0.0.1:12345/ws")
+	for i := 0; i < 10; i++ {
+		client := NewWebSocketClient("ws://127.0.0.1:12345/ws")
 
-	//fmt.Println(client.SendMessage(
-	//  "$.user:sayHello",
-	//  "world",
-	//))
-	assert(client.SendMessage(
-		"$.user:sayHello",
-		"world",
-	)).Equals("hello world", nil)
+		fmt.Println(client.SendMessage(
+			"$.user:sayHello",
+			"world",
+		))
 
-	_ = client.Close()
+		_ = client.Close()
+	}
+
+	time.Sleep(30 * time.Second)
+
+	_ = server.Close()
 }

@@ -25,28 +25,26 @@ var (
 		EnableCompression: true,
 	}
 
-	wsServerConnCache = sync.Pool{
-		New: func() interface{} {
-			return &wsServerConn{
-				wsConn: nil,
-			}
-		},
-	}
+	//wsServerConnCache = sync.Pool{
+	//	New: func() interface{} {
+	//		return &wsServerConn{
+	//			id:         0,
+	//			wsConn:     nil,
+	//			connIndex:  0,
+	//			security:   "",
+	//			deadlineNS: 0,
+	//		}
+	//	},
+	//}
 )
 
 type wsServerConn struct {
-	id        uint32
-	wsConn    *websocket.Conn
-	connIndex uint32
-	security  string
-	sync.Mutex
-}
-
-func (p *wsServerConn) send(data []byte) error {
-	p.Lock()
-	err := p.wsConn.WriteMessage(websocket.BinaryMessage, data)
-	p.Unlock()
-	return err
+	id         uint32
+	wsConn     *websocket.Conn
+	connIndex  uint32
+	security   string
+	deadlineNS int64
+	streamCH   chan *rpcStream
 }
 
 // WebSocketServer is implement of INetServer via web socket
@@ -79,16 +77,28 @@ func NewWebSocketServer() *WebSocketServer {
 		32,
 		32,
 		func(stream *rpcStream, success bool) {
-			connID := stream.getClientConnID()
-			if serverConn := server.getConnByID(connID); serverConn != nil {
-				stream.setClientConnID(0)
-				if err := serverConn.send(stream.getBufferUnsafe()); err != nil {
-					server.onError(serverConn, err.Error())
-				}
+			if serverConn := server.getConnByID(
+				stream.getClientConnID(),
+			); serverConn != nil {
+				serverConn.streamCH <- stream
 			}
 		},
 	)
 	return server
+}
+
+func (p *WebSocketServer) serverConnWriteRoutine(serverConn *wsServerConn) {
+	ch := serverConn.streamCH
+	for stream := <-ch; stream != nil; stream = <-ch {
+		stream.setClientConnID(0)
+		if err := serverConn.wsConn.WriteMessage(
+			websocket.BinaryMessage,
+			stream.getBufferUnsafe(),
+		); err != nil {
+			p.onError(serverConn, err.Error())
+		}
+		stream.Release()
+	}
 }
 
 func (p *WebSocketServer) registerConn(
@@ -115,12 +125,16 @@ func (p *WebSocketServer) registerConn(
 
 		id = p.seed
 		if _, ok := p.Load(id); !ok {
-			ret = wsServerConnCache.Get().(*wsServerConn)
-			ret.id = id
-			ret.security = GetRandString(32)
-			ret.wsConn = wsConn
-			ret.connIndex = 0
+			ret = &wsServerConn{
+				id:         id,
+				security:   GetRandString(32),
+				wsConn:     wsConn,
+				connIndex:  0,
+				deadlineNS: 0,
+				streamCH:   make(chan *rpcStream, 64),
+			}
 			p.Store(id, ret)
+			go p.serverConnWriteRoutine(ret)
 			break
 		}
 	}
@@ -130,13 +144,33 @@ func (p *WebSocketServer) registerConn(
 
 func (p *WebSocketServer) unregisterConn(id uint32) bool {
 	if serverConn, ok := p.Load(id); ok {
-		p.Delete(id)
 		serverConn.(*wsServerConn).wsConn = nil
-		serverConn.(*wsServerConn).security = ""
-		wsServerConnCache.Put(serverConn)
+		serverConn.(*wsServerConn).deadlineNS = TimeNowNS() +
+			20*int64(time.Second)
 		return true
 	} else {
 		return false
+	}
+}
+
+func (p *WebSocketServer) swipeConn() {
+	for atomic.LoadInt32(&p.status) != wsServerClosed {
+		nowNS := TimeNowNS()
+		p.Range(func(key, value interface{}) bool {
+			v, ok := value.(*wsServerConn)
+			if ok && v != nil {
+				if v.deadlineNS > 0 && v.deadlineNS < nowNS {
+					p.Delete(key)
+					v.wsConn = nil
+					v.security = ""
+					close(v.streamCH)
+					v.streamCH = nil
+				}
+			}
+			return true
+		})
+
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -263,6 +297,9 @@ func (p *WebSocketServer) Start(
 		time.AfterFunc(250*time.Millisecond, func() {
 			atomic.CompareAndSwapInt32(&p.status, wsServerOpening, wsServerOpened)
 		})
+
+		go p.swipeConn()
+
 		ret := p.httpServer.ListenAndServe()
 		time.Sleep(400 * time.Millisecond)
 
@@ -271,6 +308,7 @@ func (p *WebSocketServer) Start(
 		p.Unlock()
 
 		p.processor.stop()
+
 		p.logger.Infof(
 			"WebSocketServer: stopped",
 		)
