@@ -19,11 +19,11 @@ const (
 )
 
 type websocketClientCallback struct {
-	id     uint32
-	timeNS int64
-	ch     chan bool
-	stream *rpcStream
-	valid  bool
+	id        uint32
+	timeNS    int64
+	ch        chan bool
+	stream    *rpcStream
+	isTimeout bool
 }
 
 // WebSocketClient is implement of INetClient via web socket
@@ -39,8 +39,9 @@ type WebSocketClient struct {
 	urlString     string
 	sendChannel   chan *websocketClientCallback
 	sendCurrent   *websocketClientCallback
-	tryConnectCH  chan bool
-	trySendCH     chan bool
+	doConnectCH   chan bool
+	doSendCH      chan bool
+	doTimeoutCH   chan bool
 	sync.Map
 	sync.Mutex
 }
@@ -53,18 +54,20 @@ func NewWebSocketClient(urlString string) *WebSocketClient {
 		conn:          nil,
 		seed:          1,
 		serverConn:    "",
-		msgTimeoutNS:  20 * int64(time.Second),
+		msgTimeoutNS:  15 * int64(time.Second),
 		readTimeoutNS: 60 * int64(time.Second),
 		readSizeLimit: 10 * 1024 * 1024,
 		urlString:     urlString,
 		sendChannel:   make(chan *websocketClientCallback, 1024),
 		sendCurrent:   nil,
-		tryConnectCH:  make(chan bool, 1),
-		trySendCH:     make(chan bool, 1),
+		doConnectCH:   make(chan bool, 1),
+		doSendCH:      make(chan bool, 1),
+		doTimeoutCH:   make(chan bool, 1),
 	}
 
-	go client.tryConnect()
-	go client.trySend()
+	go client.doConnect()
+	go client.doSend()
+	go client.doTimeout()
 
 	return client
 }
@@ -73,7 +76,7 @@ func (p *WebSocketClient) isRunning() bool {
 	return atomic.LoadInt32(&p.status) == wsClientRunning
 }
 
-func (p *WebSocketClient) tryConnect() {
+func (p *WebSocketClient) doConnect() {
 	time.Sleep(30 * time.Millisecond)
 	for p.isRunning() {
 		startConnMS := TimeNowMS()
@@ -83,13 +86,18 @@ func (p *WebSocketClient) tryConnect() {
 			time.Sleep(time.Duration(2000-connMS) * time.Millisecond)
 		}
 	}
-	p.tryConnectCH <- true
+	p.doConnectCH <- true
 }
 
-func (p *WebSocketClient) trySend() {
+func (p *WebSocketClient) doSend() {
 	for p.isRunning() {
 		if p.sendCurrent == nil {
 			p.sendCurrent = <-p.sendChannel
+		}
+
+		// ignore timeout msg
+		if p.sendCurrent != nil && p.sendCurrent.isTimeout {
+			continue
 		}
 
 		// try to send, if success, the program will continue soon
@@ -108,7 +116,25 @@ func (p *WebSocketClient) trySend() {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	p.trySendCH <- true
+	p.doSendCH <- true
+}
+
+func (p *WebSocketClient) doTimeout() {
+	for p.isRunning() {
+		nowNS := TimeNowNS()
+		p.Range(func(key, value interface{}) bool {
+			v, ok := value.(*websocketClientCallback)
+			if ok && v != nil {
+				if nowNS-v.timeNS > p.msgTimeoutNS {
+					v.isTimeout = true
+					v.ch <- false
+				}
+			}
+			return true
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+	p.doTimeoutCH <- true
 }
 
 func (p *WebSocketClient) readBinaryMessage(
@@ -231,11 +257,11 @@ func (p *WebSocketClient) registerCallback() *websocketClientCallback {
 		}
 		if _, ok := p.Load(p.seed); !ok {
 			ret = &websocketClientCallback{
-				id:     p.seed,
-				timeNS: TimeNowNS(),
-				ch:     make(chan bool),
-				stream: newRPCStream(),
-				valid:  true,
+				id:        p.seed,
+				timeNS:    TimeNowNS(),
+				ch:        make(chan bool),
+				stream:    newRPCStream(),
+				isTimeout: false,
 			}
 			p.Store(ret.id, ret)
 			break
@@ -329,8 +355,9 @@ func (p *WebSocketClient) Close() (ret *rpcError) {
 				ret = NewRPCErrorByError(err)
 			}
 		}
-		<-p.tryConnectCH
-		<-p.trySendCH
+		<-p.doConnectCH
+		<-p.doSendCH
+		<-p.doTimeoutCH
 	} else {
 		ret = NewRPCError("WebSocketClient: client is not running")
 	}
