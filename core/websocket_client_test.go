@@ -19,7 +19,7 @@ func TestWebSocketClient_basic(t *testing.T) {
 		}))
 	server.StartBackground("0.0.0.0", 12345, "/")
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1; i++ {
 		client := NewWebSocketClient("ws://127.0.0.1:12345/ws")
 
 		fmt.Println(client.SendMessage(
