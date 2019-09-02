@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_client_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/websocket_client_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/processor.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/processor_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/processor_test.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
     <ignored mask="*.prof" />
@@ -19,76 +20,36 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/strconv/atoi.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="99" column="18" selection-start-line="99" selection-start-column="18" selection-end-line="99" selection-end-column="18" />
-              <folding>
-                <element signature="e#14#114#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="1127">
+              <caret line="49" column="5" selection-start-line="49" selection-start-column="5" selection-end-line="49" selection-end-column="5" />
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/core/rand.go">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/websocket_client.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="124" selection-start-line="124" selection-end-line="133" selection-end-column="6" />
+            <state relative-caret-position="8510">
+              <caret line="380" column="50" selection-start-line="380" selection-start-column="50" selection-end-line="380" selection-end-column="50" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/syscall/syscall_unix.go">
+        <entry file="file://$PROJECT_DIR$/core/utils.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="407">
-              <caret line="116" selection-start-line="116" selection-end-line="116" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/sync/map.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="305" column="14" selection-start-line="305" selection-start-column="14" selection-end-line="305" selection-end-column="14" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/stream.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="361">
-              <caret line="179" selection-start-line="179" selection-end-line="179" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/websocket_server_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="331">
-              <caret line="194" column="15" selection-start-line="194" selection-start-column="15" selection-end-line="194" selection-end-column="15" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/net/http/server.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="1768" selection-start-line="1768" selection-end-line="1768" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/processor.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="629">
-              <caret line="127" column="5" lean-forward="true" selection-start-line="127" selection-start-column="5" selection-end-line="127" selection-end-column="5" />
+            <state relative-caret-position="6095">
+              <caret line="273" column="20" selection-start-line="273" selection-start-column="20" selection-end-line="273" selection-end-column="20" />
+              <folding>
+                <element signature="e#14#94#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -96,19 +57,51 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/processor_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="92">
-              <caret line="9" column="14" selection-start-line="9" selection-start-column="14" selection-end-line="15" selection-end-column="4" />
+            <state relative-caret-position="299">
+              <caret line="18" column="19" selection-start-line="18" selection-start-column="19" selection-end-line="18" selection-end-column="19" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/core/stream.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="4876">
+              <caret line="217" column="31" selection-start-line="217" selection-start-column="31" selection-end-line="217" selection-end-column="31" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/net/url/url.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="23552">
+              <caret line="1030" column="14" selection-start-line="1030" selection-start-column="14" selection-end-line="1030" selection-end-column="14" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/core/processor.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="225">
+              <caret line="19" column="26" lean-forward="true" selection-start-line="19" selection-start-column="26" selection-end-line="19" selection-end-column="26" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="mock:///processor.go">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/websocket_client_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="483">
-              <caret line="21" column="19" selection-start-line="21" selection-start-column="19" selection-end-line="21" selection-end-column="19" />
+            <state relative-caret-position="529">
+              <caret line="26" column="2" selection-start-line="26" selection-start-column="2" selection-end-line="26" selection-end-column="2" />
               <folding>
-                <element signature="e#14#50#0" expanded="true" />
+                <element signature="e#14#43#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -125,9 +118,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>17</find>
-      <find>seed</find>
-      <find>regit</find>
       <find>CallBack</find>
       <find>C</find>
       <find>&lt;nil&gt;</find>
@@ -151,9 +141,12 @@
       <find>fmt.</find>
       <find>return</find>
       <find>rpcErr</find>
-      <find>fmt.Println</find>
       <find>fmt.Println(</find>
       <find>Range</find>
+      <find>bitSize</find>
+      <find>fmt.Println</find>
+      <find>connect</find>
+      <find>onBinary</find>
       <find>stream.Release</find>
     </findStrings>
   </component>
@@ -197,9 +190,7 @@
         <option value="$PROJECT_DIR$/core/fncache.go" />
         <option value="$PROJECT_DIR$/core/streams_test.go" />
         <option value="$PROJECT_DIR$/core/map.go" />
-        <option value="$PROJECT_DIR$/core/processor_test.go" />
         <option value="$PROJECT_DIR$/core/logger.go" />
-        <option value="$PROJECT_DIR$/core/stream.go" />
         <option value="$PROJECT_DIR$/main.go" />
         <option value="$PROJECT_DIR$/core/defs.go" />
         <option value="$PROJECT_DIR$/README.md" />
@@ -210,14 +201,16 @@
         <option value="$PROJECT_DIR$/core/stream_test.go" />
         <option value="$PROJECT_DIR$/core/utils_test.go" />
         <option value="$PROJECT_DIR$/core/error.go" />
-        <option value="$PROJECT_DIR$/core/utils.go" />
         <option value="$PROJECT_DIR$/core/error_test.go" />
         <option value="$PROJECT_DIR$/core/init_test.go" />
-        <option value="$PROJECT_DIR$/core/websocket_client.go" />
         <option value="$PROJECT_DIR$/core/websocket_server_test.go" />
-        <option value="$PROJECT_DIR$/core/websocket_server.go" />
-        <option value="$PROJECT_DIR$/core/processor.go" />
         <option value="$PROJECT_DIR$/core/websocket_client_test.go" />
+        <option value="$PROJECT_DIR$/core/websocket_server.go" />
+        <option value="$PROJECT_DIR$/core/websocket_client.go" />
+        <option value="$PROJECT_DIR$/core/utils.go" />
+        <option value="$PROJECT_DIR$/core/stream.go" />
+        <option value="$PROJECT_DIR$/core/processor_test.go" />
+        <option value="$PROJECT_DIR$/core/processor.go" />
       </list>
     </option>
   </component>
@@ -299,7 +292,18 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.websocket_server_test.go">
+  <component name="RunManager" selected="Go Test.BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core">
+    <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$/core" />
+      <framework value="gobench" />
+      <kind value="PACKAGE" />
+      <package value="github.com/tslearn/rpcc/core" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^BenchmarkRpcProcessor_Execute$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
@@ -309,17 +313,6 @@
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
       <pattern value="^TestWebSocketClient_basic$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestWebSocketServer_SetReadSizeLimit in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$/core" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc/core" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestWebSocketServer_SetReadSizeLimit$" />
       <method v="2" />
     </configuration>
     <configuration name="TestWebSocketServer_Start_Close in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -333,15 +326,14 @@
       <pattern value="^TestWebSocketServer_Start_Close$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestWebSocketServer_Start_HandleFunc in github.com/tslearn/rpcc/core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="go test core" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$/core" />
       <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/tslearn/rpcc/core" />
-      <directory value="$PROJECT_DIR$/" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/core" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestWebSocketServer_Start_HandleFunc$" />
       <method v="2" />
     </configuration>
     <configuration name="websocket_server_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -356,44 +348,44 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.websocket_server_test.go" />
+        <item itemvalue="Go Test.BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.TestWebSocketClient_basic in github.com/tslearn/rpcc/core" />
+        <item itemvalue="Go Test.go test core" />
+        <item itemvalue="Go Test.websocket_server_test.go" />
         <item itemvalue="Go Test.TestWebSocketServer_Start_Close in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestWebSocketServer_Start_HandleFunc in github.com/tslearn/rpcc/core" />
-        <item itemvalue="Go Test.TestWebSocketServer_SetReadSizeLimit in github.com/tslearn/rpcc/core" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 17m 52s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 09m 57s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 19m 11s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 10m 17s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 21m 10s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 11m 36s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 21m 58s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 14m 00s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 22m 39s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 15m 25s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 23m 44s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 09h 15m 58s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 54m 38s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 14h 19m 19s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 54m 51s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 14h 20m 12s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWebSocketClient_basic_in_github_com_tslearn_rpcc_core - 2019.08.30 at 22h 57m 06s.xml">
-      <configuration name="TestWebSocketClient_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 14h 21m 39s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="websocket_server_test_go - 2019.08.30 at 22h 58m 43s.xml">
-      <configuration name="websocket_server_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="BenchmarkRpcProcessor_Execute_in_github_com_tslearn_rpcc_core - 2019.08.31 at 14h 25m 06s.xml">
+      <configuration name="BenchmarkRpcProcessor_Execute in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TodoView">
@@ -407,6 +399,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22832723" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -425,7 +418,7 @@
       <window_info anchor="right" id="Terminal" order="4" sideWeight="0.17360406" visible="true" weight="0.30769232" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.8263959" side_tool="true" weight="0.30769232" />
-      <window_info anchor="right" id="Run" order="7" sideWeight="0.8263959" side_tool="true" visible="true" weight="0.30769232" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.8263959" side_tool="true" weight="0.30769232" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8263959" side_tool="true" weight="0.30769232" />
@@ -542,16 +535,6 @@
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_Reset_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_Reset in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566369090416" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/core/array.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6670">
-          <caret line="290" column="4" selection-start-line="290" selection-start-column="4" selection-end-line="290" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/speed_counter_test.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/runtime/panic.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="11891">
@@ -763,13 +746,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/net/url/url.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="774" column="14" selection-start-line="774" selection-start-column="14" selection-end-line="774" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/workspace/go/pkg/mod/github.com/gorilla/websocket@v1.4.0/client.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="308">
@@ -812,16 +788,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/utils.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5704">
-          <caret line="256" column="57" selection-start-line="256" selection-start-column="57" selection-end-line="256" selection-end-column="57" />
-          <folding>
-            <element signature="e#14#94#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/error_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="690">
@@ -840,20 +806,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="6831">
           <caret line="302" selection-start-line="302" selection-end-line="302" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/processor_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="92">
-          <caret line="9" column="14" selection-start-line="9" selection-start-column="14" selection-end-line="15" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/stream.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="179" selection-start-line="179" selection-end-line="179" />
         </state>
       </provider>
     </entry>
@@ -885,37 +837,78 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/websocket_client.go">
+    <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="124" selection-start-line="124" selection-end-line="133" selection-end-column="6" />
+        <state relative-caret-position="1242">
+          <caret line="64" column="33" selection-start-line="64" selection-start-column="21" selection-end-line="64" selection-end-column="33" />
+          <folding>
+            <element signature="e#14#136#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/websocket_server.go">
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/strconv/atoi.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1127">
+          <caret line="49" column="5" selection-start-line="49" selection-start-column="5" selection-end-line="49" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/rand.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/websocket_client.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8510">
+          <caret line="380" column="50" selection-start-line="380" selection-start-column="50" selection-end-line="380" selection-end-column="50" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/utils.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6095">
+          <caret line="273" column="20" selection-start-line="273" selection-start-column="20" selection-end-line="273" selection-end-column="20" />
+          <folding>
+            <element signature="e#14#94#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/processor_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="299">
-          <caret line="99" column="18" selection-start-line="99" selection-start-column="18" selection-end-line="99" selection-end-column="18" />
+          <caret line="18" column="19" selection-start-line="18" selection-start-column="19" selection-end-line="18" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/stream.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4876">
+          <caret line="217" column="31" selection-start-line="217" selection-start-column="31" selection-end-line="217" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.12.7/libexec/src/net/url/url.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="23552">
+          <caret line="1030" column="14" selection-start-line="1030" selection-start-column="14" selection-end-line="1030" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/websocket_client_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="529">
+          <caret line="26" column="2" selection-start-line="26" selection-start-column="2" selection-end-line="26" selection-end-column="2" />
           <folding>
-            <element signature="e#14#114#0" expanded="true" />
+            <element signature="e#14#43#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/processor.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="629">
-          <caret line="127" column="5" lean-forward="true" selection-start-line="127" selection-start-column="5" selection-end-line="127" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/core/websocket_client_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="483">
-          <caret line="21" column="19" selection-start-line="21" selection-start-column="19" selection-end-line="21" selection-end-column="19" />
-          <folding>
-            <element signature="e#14#50#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="225">
+          <caret line="19" column="26" lean-forward="true" selection-start-line="19" selection-start-column="26" selection-end-line="19" selection-end-column="26" />
         </state>
       </provider>
     </entry>

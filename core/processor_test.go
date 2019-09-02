@@ -7,16 +7,8 @@ import (
 	"time"
 )
 
-var service = newServiceMeta().
-	Echo("sayHello", true, func(
-		ctx *rpcContext,
-		name string,
-	) *rpcReturn {
-		return ctx.OK(name)
-	})
-
-func getProcessor() *rpcProcessor {
-	return newProcessor(
+func BenchmarkRpcProcessor_Execute(b *testing.B) {
+	processor := newProcessor(
 		NewLogger(),
 		16,
 		16,
@@ -24,26 +16,26 @@ func getProcessor() *rpcProcessor {
 			stream.Release()
 		},
 	)
-}
-
-func BenchmarkRpcProcessor_Execute(b *testing.B) {
-	processor := getProcessor()
 	processor.start()
-	processor.AddService("user", service)
+	processor.AddService("user", newServiceMeta().
+		Echo("sayHello", true, func(
+			ctx *rpcContext,
+			name string,
+		) *rpcReturn {
+			return ctx.OK(name)
+		}))
 	file, _ := os.Create("../cpu.prof")
 
-	time.Sleep(2000 * time.Millisecond)
-	pprof.StartCPUProfile(file)
+	time.Sleep(10000 * time.Millisecond)
+	_ = pprof.StartCPUProfile(file)
 
 	b.ReportAllocs()
-	b.N = 100000000
+	b.N = 50000000
 	b.SetParallelism(1024)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := newRPCStream()
-			byte16 := make([]byte, 16, 16)
-			stream.WriteBytes(byte16)
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
