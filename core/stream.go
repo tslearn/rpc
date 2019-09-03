@@ -681,6 +681,7 @@ func (p *rpcStream) WriteInt64(v int64) {
 	}
 
 	if v >= -32768 && v < 32768 {
+		v += 32768
 		if p.writeIndex < 509 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 6
@@ -695,6 +696,7 @@ func (p *rpcStream) WriteInt64(v int64) {
 			byte(v >> 8),
 		})
 	} else if v >= -2147483648 && v < 2147483648 {
+		v += 2147483648
 		if p.writeIndex < 507 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 7
@@ -713,30 +715,36 @@ func (p *rpcStream) WriteInt64(v int64) {
 			byte(v >> 24),
 		})
 	} else {
+		uv := uint64(0)
+		if v < 0 {
+			uv = 9223372036854775808 - uint64(-v)
+		} else {
+			uv = 9223372036854775808 + uint64(v)
+		}
 		if p.writeIndex < 503 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 8
-			b[1] = byte(v)
-			b[2] = byte(v >> 8)
-			b[3] = byte(v >> 16)
-			b[4] = byte(v >> 24)
-			b[5] = byte(v >> 32)
-			b[6] = byte(v >> 40)
-			b[7] = byte(v >> 48)
-			b[8] = byte(v >> 56)
+			b[1] = byte(uv)
+			b[2] = byte(uv >> 8)
+			b[3] = byte(uv >> 16)
+			b[4] = byte(uv >> 24)
+			b[5] = byte(uv >> 32)
+			b[6] = byte(uv >> 40)
+			b[7] = byte(uv >> 48)
+			b[8] = byte(uv >> 56)
 			p.writeIndex += 9
 			return
 		}
 		p.putBytes([]byte{
 			8,
-			byte(v),
-			byte(v >> 8),
-			byte(v >> 16),
-			byte(v >> 24),
-			byte(v >> 32),
-			byte(v >> 40),
-			byte(v >> 48),
-			byte(v >> 56),
+			byte(uv),
+			byte(uv >> 8),
+			byte(uv >> 16),
+			byte(uv >> 24),
+			byte(uv >> 32),
+			byte(uv >> 40),
+			byte(uv >> 48),
+			byte(uv >> 56),
 		})
 	}
 }
@@ -1407,57 +1415,61 @@ func (p *rpcStream) ReadInt64() (int64, bool) {
 		if p.isSafetyRead3BytesInCurrentFrame() {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 3
-			return int64(int16(b[1]) |
-				(int16(b[2]) << 8),
-			), true
+			return int64(uint16(b[1])|
+				(uint16(b[2])<<8),
+			) - 32768, true
 		}
 		if p.hasNBytesToRead(3) {
 			b := p.read3BytesCrossFrameUnsafe()
-			return int64(int16(b[1]) |
-				(int16(b[2]) << 8),
-			), true
+			return int64(uint16(b[1])|
+				(uint16(b[2])<<8),
+			) - 32768, true
 		}
 	} else if v == 7 {
 		if p.isSafetyRead5BytesInCurrentFrame() {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 5
-			return int64(int32(b[1]) |
-				(int32(b[2]) << 8) |
-				(int32(b[3]) << 16) |
-				(int32(b[4]) << 24),
-			), true
+			return int64(uint32(b[1])|
+				(uint32(b[2])<<8)|
+				(uint32(b[3])<<16)|
+				(uint32(b[4])<<24),
+			) - 2147483648, true
 		}
 		if p.hasNBytesToRead(5) {
 			b := p.read5BytesCrossFrameUnsafe()
-			return int64(int32(b[1]) |
-				(int32(b[2]) << 8) |
-				(int32(b[3]) << 16) |
-				(int32(b[4]) << 24),
-			), true
+			return int64(uint32(b[1])|
+				(uint32(b[2])<<8)|
+				(uint32(b[3])<<16)|
+				(uint32(b[4])<<24),
+			) - 2147483648, true
 		}
 	} else if v == 8 {
 		if p.isSafetyRead9BytesInCurrentFrame() {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 9
-			return int64(b[1]) |
-				(int64(b[2]) << 8) |
-				(int64(b[3]) << 16) |
-				(int64(b[4]) << 24) |
-				(int64(b[5]) << 32) |
-				(int64(b[6]) << 40) |
-				(int64(b[7]) << 48) |
-				(int64(b[8]) << 56), true
+			return int64(
+				uint64(b[1]) |
+					(uint64(b[2]) << 8) |
+					(uint64(b[3]) << 16) |
+					(uint64(b[4]) << 24) |
+					(uint64(b[5]) << 32) |
+					(uint64(b[6]) << 40) |
+					(uint64(b[7]) << 48) |
+					(uint64(b[8]) << 56) -
+					9223372036854775808), true
 		}
 		if p.hasNBytesToRead(9) {
 			b := p.read9BytesCrossFrameUnsafe()
-			return int64(b[1]) |
-				(int64(b[2]) << 8) |
-				(int64(b[3]) << 16) |
-				(int64(b[4]) << 24) |
-				(int64(b[5]) << 32) |
-				(int64(b[6]) << 40) |
-				(int64(b[7]) << 48) |
-				(int64(b[8]) << 56), true
+			return int64(
+				uint64(b[1]) |
+					(uint64(b[2]) << 8) |
+					(uint64(b[3]) << 16) |
+					(uint64(b[4]) << 24) |
+					(uint64(b[5]) << 32) |
+					(uint64(b[6]) << 40) |
+					(uint64(b[7]) << 48) |
+					(uint64(b[8]) << 56) -
+					9223372036854775808), true
 		}
 	}
 	return 0, false
