@@ -140,7 +140,7 @@ func GetByteArrayDebugString(bs []byte) string {
 				sb.AppendFormat("\n%04d: ", i)
 			}
 		}
-		sb.AppendFormat("0x%02x ", bs[i])
+		sb.AppendFormat("0x%02X, ", bs[i])
 	}
 	ret := sb.String()
 	sb.Release()
