@@ -19,10 +19,13 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/processor_test.go">
+        <entry file="file://$PROJECT_DIR$/core/utils.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="18" column="19" selection-start-line="18" selection-start-column="19" selection-end-line="18" selection-end-column="19" />
+            <state relative-caret-position="136">
+              <caret line="130" column="28" selection-start-line="130" selection-start-column="5" selection-end-line="130" selection-end-column="28" />
+              <folding>
+                <element signature="e#14#94#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -48,8 +51,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/core/stream_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="729">
-              <caret line="245" column="22" selection-start-line="245" selection-start-column="22" selection-end-line="245" selection-end-column="22" />
+            <state relative-caret-position="509">
+              <caret line="28" column="57" selection-start-line="28" selection-start-column="57" selection-end-line="28" selection-end-column="57" />
+              <folding>
+                <element signature="e#14#67#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -121,7 +127,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>eval</find>
       <find>serverThread</find>
       <find>FormatCloseMessage</find>
       <find>getLo</find>
@@ -151,6 +156,7 @@
       <find>0xff</find>
       <find>0x7F</find>
       <find>0x7f</find>
+      <find>basic</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -365,24 +371,6 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.03 at 21h 45m 48s.xml">
-      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.03 at 21h 46m 18s.xml">
-      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.03 at 21h 55m 58s.xml">
-      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="stream_test_go - 2019.09.03 at 21h 57m 47s.xml">
-      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="stream_test_go - 2019.09.03 at 21h 58m 30s.xml">
-      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="stream_test_go - 2019.09.03 at 21h 58m 50s.xml">
-      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="stream_test_go - 2019.09.03 at 22h 01m 15s.xml">
       <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -393,6 +381,24 @@
       <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
     <history-entry file="stream_test_go - 2019.09.04 at 11h 47m 28s.xml">
+      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="stream_test_go - 2019.09.04 at 11h 50m 58s.xml">
+      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="stream_test_go - 2019.09.04 at 13h 37m 45s.xml">
+      <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.04 at 13h 37m 48s.xml">
+      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.04 at 13h 38m 37s.xml">
+      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="TestRpcStream_basic_in_github_com_tslearn_rpcc_core - 2019.09.04 at 13h 39m 36s.xml">
+      <configuration name="TestRpcStream_basic in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="stream_test_go - 2019.09.04 at 13h 40m 46s.xml">
       <configuration name="stream_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
@@ -409,7 +415,7 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.22832723" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22832723" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -426,7 +432,7 @@
       <window_info anchor="right" id="Terminal" order="4" sideWeight="0.43654823" visible="true" weight="0.2820513" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.8263959" side_tool="true" weight="0.30769232" />
-      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.56345177" side_tool="true" visible="true" weight="0.2820513" />
+      <window_info anchor="right" id="Run" order="7" sideWeight="0.56345177" side_tool="true" visible="true" weight="0.2820513" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8263959" side_tool="true" weight="0.30769232" />
@@ -828,16 +834,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/aaaa.test.go" />
-    <entry file="file://$PROJECT_DIR$/core/utils.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6095">
-          <caret line="273" column="20" selection-start-line="273" selection-start-column="20" selection-end-line="273" selection-end-column="20" />
-          <folding>
-            <element signature="e#14#94#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/processor_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="299">
@@ -903,10 +899,23 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/core/utils.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="130" column="28" selection-start-line="130" selection-start-column="5" selection-end-line="130" selection-end-column="28" />
+          <folding>
+            <element signature="e#14#94#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/core/stream_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="729">
-          <caret line="245" column="22" selection-start-line="245" selection-start-column="22" selection-end-line="245" selection-end-column="22" />
+        <state relative-caret-position="509">
+          <caret line="28" column="57" selection-start-line="28" selection-start-column="57" selection-end-line="28" selection-end-column="57" />
+          <folding>
+            <element signature="e#14#67#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
