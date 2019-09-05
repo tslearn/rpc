@@ -2081,7 +2081,6 @@ func (p *rpcStream) ReadMap() (Map, bool) {
 			}
 		}
 		p.setReadPosUnsafe(readStart)
-		return nil, false
 	}
 
 	return nil, false
