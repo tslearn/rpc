@@ -14,33 +14,33 @@ const (
 	LogLevelFatal = 1
 	// LogLevelError this level logs Error and Fatal
 	LogLevelError = 3
-	// LogLevelWarning this level logs Warning, Error and Fatal
-	LogLevelWarning = 7
-	// LogLevelInfo this level logs Info, Warning, Error and Fatal
+	// LogLevelWarn this level logs Warn, Error and Fatal
+	LogLevelWarn = 7
+	// LogLevelInfo this level logs Info, Warn, Error and Fatal
 	LogLevelInfo = 15
-	// LogLevelAll this level logs Debug, Info, Warning, Error and Fatal
+	// LogLevelAll this level logs Debug, Info, Warn, Error and Fatal
 	LogLevelAll = 31
 
-	logMaskFatal   = 1
-	logMaskError   = 2
-	logMaskWarning = 4
-	logMaskInfo    = 8
-	logMaskDebug   = 16
+	logMaskFatal = 1
+	logMaskError = 2
+	logMaskWarn  = 4
+	logMaskInfo  = 8
+	logMaskDebug = 16
 )
 
 type LogSubscription struct {
-	id      int64
-	logger  *Logger
-	Debug   func(msg string)
-	Info    func(msg string)
-	Warning func(msg string)
-	Error   func(msg string)
-	Fatal   func(msg string)
+	id     int64
+	logger *Logger
+	Debug  func(msg string)
+	Info   func(msg string)
+	Warn   func(msg string)
+	Error  func(msg string)
+	Fatal  func(msg string)
 }
 
-func (p *LogSubscription) Close() *rpcError {
+func (p *LogSubscription) Close() bool {
 	if p.logger == nil {
-		return NewRPCError("logger is nil")
+		return false
 	}
 
 	ret := p.logger.removeSubscription(p.id)
@@ -48,7 +48,7 @@ func (p *LogSubscription) Close() *rpcError {
 	p.logger = nil
 	p.Debug = nil
 	p.Info = nil
-	p.Warning = nil
+	p.Warn = nil
 	p.Error = nil
 	p.Fatal = nil
 	return ret
@@ -57,8 +57,7 @@ func (p *LogSubscription) Close() *rpcError {
 // Logger common logger
 type Logger struct {
 	level         int
-	subscriptions map[int64]*LogSubscription
-	cache         []*LogSubscription
+	subscriptions []*LogSubscription
 	sync.Mutex
 }
 
@@ -66,62 +65,52 @@ type Logger struct {
 func NewLogger() *Logger {
 	return &Logger{
 		level:         LogLevelAll,
-		subscriptions: make(map[int64]*LogSubscription),
-		cache:         make([]*LogSubscription, 0, 0),
+		subscriptions: make([]*LogSubscription, 0, 0),
 	}
 }
 
 // SetLevel set the log level, such as LogLevelOff LogLevelFatal
-// LogLevelError LogLevelWarning LogLevelInfo LogLevelDebug LogLevelAll
-func (p *Logger) SetLevel(level int) *rpcError {
-	if level < LogLevelOff || level > LogLevelAll {
-		return NewRPCError(
-			fmt.Sprintf("level(%d) not supported", level),
-		)
+// LogLevelError LogLevelWarn LogLevelInfo LogLevelDebug LogLevelAll
+func (p *Logger) SetLevel(level int) bool {
+	if level >= LogLevelOff && level <= LogLevelAll {
+		p.Lock()
+		p.level = level
+		p.Unlock()
+		return true
+	} else {
+		return false
 	}
-	p.level = level
-	return nil
 }
 
-func (p *Logger) refreshCache() {
-	cache := make([]*LogSubscription, 0)
-	for _, value := range p.subscriptions {
-		cache = append(cache, value)
-	}
-	p.cache = cache
-}
-
-func (p *Logger) removeSubscription(id int64) *rpcError {
+func (p *Logger) removeSubscription(id int64) bool {
+	ret := false
 	p.Lock()
-	defer p.Unlock()
-
-	if _, ok := p.subscriptions[id]; ok {
-		delete(p.subscriptions, id)
-		p.refreshCache()
-		return nil
+	for i := 0; i < len(p.subscriptions); i++ {
+		if p.subscriptions[i].id == id {
+			array := p.subscriptions
+			p.subscriptions = append(array[:i], array[i+1:]...)
+			ret = true
+			break
+		}
 	}
-
-	return NewRPCError("id is not exist")
+	p.Unlock()
+	return ret
 }
 
 // Subscribe add a subscription to logger
 func (p *Logger) Subscribe() *LogSubscription {
 	p.Lock()
-	defer p.Unlock()
-
-	id := GetSeed()
 	subscription := &LogSubscription{
-		id:      id,
-		logger:  p,
-		Debug:   nil,
-		Info:    nil,
-		Warning: nil,
-		Error:   nil,
-		Fatal:   nil,
+		id:     GetSeed(),
+		logger: p,
+		Debug:  nil,
+		Info:   nil,
+		Warn:   nil,
+		Error:  nil,
+		Fatal:  nil,
 	}
-
-	p.subscriptions[id] = subscription
-	p.refreshCache()
+	p.subscriptions = append(p.subscriptions, subscription)
+	p.Unlock()
 	return subscription
 }
 
@@ -145,14 +134,14 @@ func (p *Logger) Infof(format string, v ...interface{}) {
 	p.log(logMaskInfo, "Info", fmt.Sprintf(format, v...))
 }
 
-// Warning log warning
-func (p *Logger) Warning(v ...interface{}) {
-	p.log(logMaskWarning, "Warning", fmt.Sprint(v...))
+// Warn log warn
+func (p *Logger) Warn(v ...interface{}) {
+	p.log(logMaskWarn, "Warn", fmt.Sprint(v...))
 }
 
-// Warningf log warning
-func (p *Logger) Warningf(format string, v ...interface{}) {
-	p.log(logMaskWarning, "Warning", fmt.Sprintf(format, v...))
+// Warnf log warn
+func (p *Logger) Warnf(format string, v ...interface{}) {
+	p.log(logMaskWarn, "Warn", fmt.Sprintf(format, v...))
 }
 
 // Error log error
@@ -176,10 +165,12 @@ func (p *Logger) Fatalf(format string, v ...interface{}) {
 }
 
 func (p *Logger) log(outputLevel int, tag string, msg string) {
-	if p.level&outputLevel > 0 {
-		p.Lock()
-		defer p.Unlock()
+	p.Lock()
+	level := p.level
+	subscriptions := p.subscriptions
+	p.Unlock()
 
+	if level&outputLevel > 0 {
 		logMsg := fmt.Sprintf(
 			"%s %s: %s",
 			time.Now().Format("2006-01-02T15:04:05.999Z07:00"),
@@ -187,37 +178,35 @@ func (p *Logger) log(outputLevel int, tag string, msg string) {
 			msg,
 		)
 
-		if len(p.cache) > 0 {
-			for i := 0; i < len(p.cache); i++ {
-				var fn func(msg string) = nil
-
-				switch outputLevel {
-				case logMaskDebug:
-					fn = p.cache[i].Debug
-					break
-				case logMaskInfo:
-					fn = p.cache[i].Info
-					break
-				case logMaskWarning:
-					fn = p.cache[i].Warning
-					break
-				case logMaskError:
-					fn = p.cache[i].Error
-					break
-				case logMaskFatal:
-					fn = p.cache[i].Fatal
-					break
-				}
-
-				if fn != nil {
-					fn(logMsg)
-				}
-			}
-		} else {
+		if len(subscriptions) == 0 {
 			flags := log.Flags()
 			log.SetFlags(0)
 			log.Printf(logMsg)
 			log.SetFlags(flags)
+		} else {
+			for i := 0; i < len(subscriptions); i++ {
+				var fn func(msg string) = nil
+				switch outputLevel {
+				case logMaskDebug:
+					fn = subscriptions[i].Debug
+				case logMaskInfo:
+					fn = subscriptions[i].Info
+				case logMaskWarn:
+					fn = subscriptions[i].Warn
+				case logMaskError:
+					fn = subscriptions[i].Error
+				case logMaskFatal:
+					fn = subscriptions[i].Fatal
+				}
+				if fn != nil {
+					fn(logMsg)
+				} else {
+					flags := log.Flags()
+					log.SetFlags(0)
+					log.Printf(logMsg)
+					log.SetFlags(flags)
+				}
+			}
 		}
 	}
 }

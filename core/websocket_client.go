@@ -54,7 +54,7 @@ func NewWebSocketClient(urlString string) *WebSocketClient {
 		conn:          nil,
 		seed:          1,
 		serverConn:    "324#asjdfie",
-		msgTimeoutNS:  15 * int64(time.Second),
+		msgTimeoutNS:  20 * int64(time.Second),
 		readTimeoutNS: 60 * int64(time.Second),
 		readSizeLimit: 10 * 1024 * 1024,
 		urlString:     urlString,
@@ -294,12 +294,16 @@ func (p *WebSocketClient) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *rpcError) {
+	if !p.isRunning() {
+		return nil, NewRPCError("client closed")
+	}
+
 	callback := p.registerCallback()
 	defer p.unregisterCallback(callback.id)
 
 	stream := callback.stream
 	// set client callback id
-	stream.setClientCallbackID(p.seed)
+	stream.setClientCallbackID(callback.id)
 	// write target
 	stream.WriteString(target)
 	// write depth

@@ -81,13 +81,20 @@ func (p *WebSocketServer) serverConnWriteRoutine(serverConn *wsServerConn) {
 	ch := serverConn.streamCH
 	for stream := <-ch; stream != nil; stream = <-ch {
 		stream.setClientConnID(0)
-		if err := serverConn.wsConn.WriteMessage(
-			websocket.BinaryMessage,
-			stream.getBufferUnsafe(),
-		); err != nil {
-			p.onError(serverConn, err.Error())
+		for serverConn.security != "" {
+			if wsConn := serverConn.wsConn; wsConn != nil {
+				if err := serverConn.wsConn.WriteMessage(
+					websocket.BinaryMessage,
+					stream.getBufferUnsafe(),
+				); err == nil {
+					stream.Release()
+					break
+				} else {
+					p.onError(serverConn, err.Error())
+				}
+			}
+			time.Sleep(200 * time.Millisecond)
 		}
-		stream.Release()
 	}
 }
 
@@ -136,7 +143,7 @@ func (p *WebSocketServer) unregisterConn(id uint32) bool {
 	if serverConn, ok := p.Load(id); ok {
 		serverConn.(*wsServerConn).wsConn = nil
 		serverConn.(*wsServerConn).deadlineNS = TimeNowNS() +
-			20*int64(time.Second)
+			25*int64(time.Second)
 		return true
 	} else {
 		return false
@@ -361,7 +368,7 @@ func (p *WebSocketServer) onOpen(serverConn *wsServerConn) {
 }
 
 func (p *WebSocketServer) onError(serverConn *wsServerConn, msg string) {
-	p.logger.Warningf("WebSocketServerConn[%d]: %s", serverConn.id, msg)
+	p.logger.Warnf("WebSocketServerConn[%d]: %s", serverConn.id, msg)
 }
 
 func (p *WebSocketServer) onClose(serverConn *wsServerConn) {

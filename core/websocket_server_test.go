@@ -29,7 +29,7 @@ func TestWsServerConn_send(t *testing.T) {
 	server.StartBackground("0.0.0.0", 12345, "/")
 
 	logWarnCH := make(chan string, 100)
-	server.GetLogger().Subscribe().Warning = func(msg string) {
+	server.GetLogger().Subscribe().Warn = func(msg string) {
 		logWarnCH <- msg
 	}
 
@@ -224,7 +224,7 @@ func TestWebSocketServer_Start_HandleFunc(t *testing.T) {
 	logSubscription.Info = func(msg string) {
 		logInfoCH <- msg
 	}
-	logSubscription.Warning = func(msg string) {
+	logSubscription.Warn = func(msg string) {
 		logWarnCH <- msg
 	}
 	logSubscription.Error = func(msg string) {
@@ -328,7 +328,7 @@ func TestWebSocketServer_SetReadSizeLimit(t *testing.T) {
 	logSubscription.Info = func(msg string) {
 		logInfoCH <- msg
 	}
-	logSubscription.Warning = func(msg string) {
+	logSubscription.Warn = func(msg string) {
 		logWarnCH <- msg
 	}
 	logSubscription.Error = func(msg string) {
