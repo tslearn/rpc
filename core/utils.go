@@ -7,8 +7,53 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 	"unsafe"
 )
+
+var (
+	defaultISODateBuffer = []byte{
+		0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x54,
+		0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E, 0x30, 0x30, 0x30,
+		0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
+	}
+	intToStringCache2 = make([][]byte, 100, 100)
+	intToStringCache3 = make([][]byte, 1000, 1000)
+	intToStringCache4 = make([][]byte, 10000, 10000)
+)
+
+func init() {
+	charToAscii := [10]byte{
+		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
+	}
+	for i := 0; i < 100; i++ {
+		for j := 0; j < 2; j++ {
+			intToStringCache2[i] = []byte{
+				charToAscii[(i/10)%10],
+				charToAscii[i%10],
+			}
+		}
+	}
+	for i := 0; i < 1000; i++ {
+		for j := 0; j < 3; j++ {
+			intToStringCache3[i] = []byte{
+				charToAscii[(i/100)%10],
+				charToAscii[(i/10)%10],
+				charToAscii[i%10],
+			}
+		}
+	}
+	for i := 0; i < 10000; i++ {
+		for j := 0; j < 4; j++ {
+			intToStringCache4[i] = []byte{
+				charToAscii[(i/1000)%10],
+				charToAscii[(i/100)%10],
+				charToAscii[(i/10)%10],
+				charToAscii[i%10],
+			}
+		}
+	}
+}
 
 func getArgumentsErrorPosition(fn reflect.Value) int {
 	if fn.Type().NumIn() < 1 {
@@ -201,6 +246,39 @@ func AddPrefixPerLine(origin string, prefix string) string {
 		buf.WriteString(fmt.Sprintf("%s%s", prefix, v))
 	}
 	return buf.String()
+}
+
+func ConvertToIsoDateString(date time.Time) string {
+	buf := make([]byte, 29, 29)
+	// copy template
+	copy(buf, defaultISODateBuffer)
+	// copy year
+	year := date.Year()
+	if year > 9999 {
+		year = 9999
+	}
+	copy(buf, intToStringCache4[year])
+	// copy month
+	copy(buf[5:], intToStringCache2[date.Month()])
+	// copy date
+	copy(buf[8:], intToStringCache2[date.Day()])
+	// copy hour
+	copy(buf[11:], intToStringCache2[date.Hour()])
+	// copy minute
+	copy(buf[14:], intToStringCache2[date.Minute()])
+	// copy second
+	copy(buf[17:], intToStringCache2[date.Second()])
+	// copy ms
+	copy(buf[20:], intToStringCache3[date.Nanosecond()/1000000])
+	// copy timezone
+	_, offsetSecond := date.Zone()
+	if offsetSecond < 0 {
+		buf[23] = '-'
+		offsetSecond = -offsetSecond
+	}
+	copy(buf[24:], intToStringCache2[offsetSecond/3600])
+	copy(buf[27:], intToStringCache2[(offsetSecond%3600)/60])
+	return string(buf)
 }
 
 func isUTF8Bytes(bytes []byte) bool {
