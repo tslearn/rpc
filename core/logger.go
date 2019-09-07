@@ -173,7 +173,7 @@ func (p *Logger) log(outputLevel int, tag string, msg string) {
 	if level&outputLevel > 0 {
 		logMsg := fmt.Sprintf(
 			"%s %s: %s",
-			time.Now().Format("2006-01-02T15:04:05.999Z07:00"),
+			ConvertToIsoDateString(time.Now()),
 			tag,
 			msg,
 		)
