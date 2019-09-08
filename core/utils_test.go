@@ -389,3 +389,26 @@ func Test_contains_exceptions(t *testing.T) {
 
 	assert(rpcContains(errorArray, true)).Equals(false)
 }
+
+func BenchmarkConvertToIsoDateString(b *testing.B) {
+	date := time.Now()
+	b.N = 10000000
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		ConvertToIsoDateString(date)
+	}
+}
+
+func BenchmarkConvertToIsoDateString1(b *testing.B) {
+	logger := NewLogger()
+	s := logger.Subscribe()
+	s.Info = func(msg string) {
+
+	}
+
+	b.N = 10000000
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		logger.Info("hello")
+	}
+}

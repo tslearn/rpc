@@ -182,13 +182,6 @@ func TestLogger_Debug(t *testing.T) {
 		"\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message\n$"
 	assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
 
-	var buf2 bytes.Buffer
-	log.SetOutput(&buf2)
-	logger.Debug("message", 1)
-	regex2 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
-		"\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message1\n$"
-	assert(regexp.MatchString(regex2, buf2.String())).Equals(true, nil)
-
 	var buf3 bytes.Buffer
 	log.SetOutput(&buf3)
 	logger.Debugf("message")
@@ -216,13 +209,6 @@ func TestLogger_Info(t *testing.T) {
 	regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
 		"\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message\n$"
 	assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-
-	var buf2 bytes.Buffer
-	log.SetOutput(&buf2)
-	logger.Info("message", 1)
-	regex2 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
-		"\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message1\n$"
-	assert(regexp.MatchString(regex2, buf2.String())).Equals(true, nil)
 
 	var buf3 bytes.Buffer
 	log.SetOutput(&buf3)
@@ -252,13 +238,6 @@ func TestLogger_Warn(t *testing.T) {
 		"\\+\\d{2}:\\d{2}(\\s)Warn:(\\s)message\n$"
 	assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
 
-	var buf2 bytes.Buffer
-	log.SetOutput(&buf2)
-	logger.Warn("message", 1)
-	regex2 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
-		"\\+\\d{2}:\\d{2}(\\s)Warn:(\\s)message1\n$"
-	assert(regexp.MatchString(regex2, buf2.String())).Equals(true, nil)
-
 	var buf3 bytes.Buffer
 	log.SetOutput(&buf3)
 	logger.Warnf("message")
@@ -287,13 +266,6 @@ func TestLogger_Error(t *testing.T) {
 		"\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message\n$"
 	assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
 
-	var buf2 bytes.Buffer
-	log.SetOutput(&buf2)
-	logger.Error("message", 1)
-	regex2 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
-		"\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message1\n$"
-	assert(regexp.MatchString(regex2, buf2.String())).Equals(true, nil)
-
 	var buf3 bytes.Buffer
 	log.SetOutput(&buf3)
 	logger.Errorf("message")
@@ -321,13 +293,6 @@ func TestLogger_Fatal(t *testing.T) {
 	regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
 		"\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message\n$"
 	assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-
-	var buf2 bytes.Buffer
-	log.SetOutput(&buf2)
-	logger.Fatal("message", 1)
-	regex2 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{0,3}" +
-		"\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message1\n$"
-	assert(regexp.MatchString(regex2, buf2.String())).Equals(true, nil)
 
 	var buf3 bytes.Buffer
 	log.SetOutput(&buf3)

@@ -35,7 +35,7 @@ func (p *rpcContext) close() bool {
 func (p *rpcContext) writeError(message string, debug string) *rpcReturn {
 	if p.thread != nil {
 		logger := p.thread.processor.logger
-		logger.Error(NewRPCErrorByDebug(message, debug))
+		logger.Error(NewRPCErrorByDebug(message, debug).String())
 		execStream := p.thread.outStream
 		execStream.SetWritePos(17)
 		execStream.WriteBool(false)

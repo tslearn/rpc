@@ -115,53 +115,53 @@ func (p *Logger) Subscribe() *LogSubscription {
 }
 
 // Debug log debug
-func (p *Logger) Debug(v ...interface{}) {
-	p.log(logMaskDebug, "Debug", fmt.Sprint(v...))
+func (p *Logger) Debug(msg string) {
+	p.log(logMaskDebug, " Debug: ", msg)
 }
 
 // Debugf log debug
 func (p *Logger) Debugf(format string, v ...interface{}) {
-	p.log(logMaskDebug, "Debug", fmt.Sprintf(format, v...))
+	p.log(logMaskDebug, " Debug: ", fmt.Sprintf(format, v...))
 }
 
 // Info log info
-func (p *Logger) Info(v ...interface{}) {
-	p.log(logMaskInfo, "Info", fmt.Sprint(v...))
+func (p *Logger) Info(msg string) {
+	p.log(logMaskInfo, " Info: ", msg)
 }
 
 // Infof log info
 func (p *Logger) Infof(format string, v ...interface{}) {
-	p.log(logMaskInfo, "Info", fmt.Sprintf(format, v...))
+	p.log(logMaskInfo, " Info: ", fmt.Sprintf(format, v...))
 }
 
 // Warn log warn
-func (p *Logger) Warn(v ...interface{}) {
-	p.log(logMaskWarn, "Warn", fmt.Sprint(v...))
+func (p *Logger) Warn(msg string) {
+	p.log(logMaskWarn, " Warn: ", msg)
 }
 
 // Warnf log warn
 func (p *Logger) Warnf(format string, v ...interface{}) {
-	p.log(logMaskWarn, "Warn", fmt.Sprintf(format, v...))
+	p.log(logMaskWarn, " Warn: ", fmt.Sprintf(format, v...))
 }
 
 // Error log error
-func (p *Logger) Error(v ...interface{}) {
-	p.log(logMaskError, "Error", fmt.Sprint(v...))
+func (p *Logger) Error(msg string) {
+	p.log(logMaskError, " Error: ", msg)
 }
 
 // Errorf log error
 func (p *Logger) Errorf(format string, v ...interface{}) {
-	p.log(logMaskError, "Error", fmt.Sprintf(format, v...))
+	p.log(logMaskError, " Error: ", fmt.Sprintf(format, v...))
 }
 
 // Fatal log fatal
-func (p *Logger) Fatal(v ...interface{}) {
-	p.log(logMaskFatal, "Fatal", fmt.Sprint(v...))
+func (p *Logger) Fatal(msg string) {
+	p.log(logMaskFatal, " Fatal: ", msg)
 }
 
 // Fatalf log fatal
 func (p *Logger) Fatalf(format string, v ...interface{}) {
-	p.log(logMaskFatal, "Fatal", fmt.Sprintf(format, v...))
+	p.log(logMaskFatal, " Fatal: ", fmt.Sprintf(format, v...))
 }
 
 func (p *Logger) log(outputLevel int, tag string, msg string) {
@@ -171,12 +171,12 @@ func (p *Logger) log(outputLevel int, tag string, msg string) {
 	p.Unlock()
 
 	if level&outputLevel > 0 {
-		logMsg := fmt.Sprintf(
-			"%s %s: %s",
-			ConvertToIsoDateString(time.Now()),
-			tag,
-			msg,
-		)
+		sb := NewStringBuilder()
+		sb.AppendString(ConvertToIsoDateString(time.Now()))
+		sb.AppendString(tag)
+		sb.AppendString(msg)
+		logMsg := sb.String()
+		sb.Release()
 
 		if len(subscriptions) == 0 {
 			flags := log.Flags()

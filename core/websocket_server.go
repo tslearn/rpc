@@ -185,7 +185,7 @@ func (p *WebSocketServer) AddService(
 ) *WebSocketServer {
 	err := p.processor.AddService(name, serviceMeta)
 	if err != nil {
-		p.logger.Error(err)
+		p.logger.Error(err.String())
 	}
 	return p
 }
@@ -199,7 +199,7 @@ func (p *WebSocketServer) StartBackground(
 	go func() {
 		err := p.Start(host, port, path)
 		if err != nil {
-			p.logger.Error(err)
+			p.logger.Error(err.String())
 		}
 		wait = false
 	}()
