@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
-      <change beforePath="$PROJECT_DIR$/core/logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/logger.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/speed_counter.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/speed_counter.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/speed_counter_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/speed_counter_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/time.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/time.go" afterDir="false" />
+    <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/time_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/time_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/utils_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <ignored path="cpu.prof" />
     <ignored mask="*.prof" />
@@ -38,25 +33,22 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="207">
-              <caret line="9" column="18" selection-start-line="9" selection-start-column="18" selection-end-line="9" selection-end-column="18" />
-              <folding>
-                <element signature="e#14#66#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/time_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="396">
-              <caret line="30" column="37" lean-forward="true" selection-start-line="30" selection-start-column="37" selection-end-line="30" selection-end-column="37" />
+            <state relative-caret-position="69">
+              <caret line="3" selection-start-line="3" selection-end-line="3" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/core/time_test.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="590">
+              <caret line="29" column="1" lean-forward="true" selection-start-line="29" selection-start-column="1" selection-end-line="29" selection-end-column="1" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/utils_test.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="787">
@@ -80,8 +72,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/speed_counter.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="305">
-              <caret line="36" selection-start-line="36" selection-end-line="36" />
+            <state relative-caret-position="75">
+              <caret line="26" selection-start-line="26" selection-end-line="26" />
               <folding>
                 <element signature="e#14#59#0" expanded="true" />
               </folding>
@@ -92,8 +84,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/speed_counter_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="646">
-              <caret line="94" lean-forward="true" selection-start-line="94" selection-end-line="94" />
+            <state relative-caret-position="580">
+              <caret line="82" lean-forward="true" selection-start-line="82" selection-end-line="82" />
             </state>
           </provider>
         </entry>
@@ -110,8 +102,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/time.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="465">
-              <caret line="68" column="17" lean-forward="true" selection-start-line="68" selection-start-column="17" selection-end-line="68" selection-end-column="17" />
+            <state relative-caret-position="672">
+              <caret line="70" lean-forward="true" selection-start-line="70" selection-end-line="70" />
             </state>
           </provider>
         </entry>
@@ -227,13 +219,13 @@
         <option value="$PROJECT_DIR$/core/logger_test.go" />
         <option value="$PROJECT_DIR$/g/g.go" />
         <option value="$PROJECT_DIR$/core/speed_counter.go" />
-        <option value="$PROJECT_DIR$/core/time_test.go" />
         <option value="$PROJECT_DIR$/core/indicator_test.go" />
         <option value="$PROJECT_DIR$/core/speed_counter_test.go" />
         <option value="$PROJECT_DIR$/main.go" />
-        <option value="$PROJECT_DIR$/core/time.go" />
         <option value="$PROJECT_DIR$/core/logger.go" />
         <option value="$PROJECT_DIR$/core/utils_test.go" />
+        <option value="$PROJECT_DIR$/core/time.go" />
+        <option value="$PROJECT_DIR$/core/time_test.go" />
       </list>
     </option>
   </component>
@@ -315,7 +307,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.BenchmarkConvertToIsoDateString in github.com/tslearn/rpcc/core">
+  <component name="RunManager" selected="Go Test.go test core">
     <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -369,8 +361,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.BenchmarkConvertToIsoDateString in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.go test core" />
+        <item itemvalue="Go Test.BenchmarkConvertToIsoDateString in github.com/tslearn/rpcc/core" />
         <item itemvalue="Go Test.time_test.go" />
         <item itemvalue="Go Build.go build main.go" />
         <item itemvalue="Go Test.TestSpeedCounter_Calculate_Parallels in github.com/tslearn/rpcc/core" />
@@ -378,12 +370,6 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="BenchmarkConvertToIsoDateString_in_github_com_tslearn_rpcc_core - 2019.09.09 at 09h 35m 46s.xml">
-      <configuration name="BenchmarkConvertToIsoDateString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="time_test_go - 2019.09.09 at 09h 44m 10s.xml">
-      <configuration name="time_test.go" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="go_test_core - 2019.09.09 at 09h 48m 00s.xml">
       <configuration name="go test core" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -408,6 +394,12 @@
     <history-entry file="BenchmarkConvertToIsoDateString_in_github_com_tslearn_rpcc_core - 2019.09.09 at 09h 51m 08s.xml">
       <configuration name="BenchmarkConvertToIsoDateString in github.com/tslearn/rpcc/core" configurationId="GoTestRunConfiguration" />
     </history-entry>
+    <history-entry file="go_test_core - 2019.09.09 at 09h 55m 13s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="go_test_core - 2019.09.09 at 09h 58m 40s.xml">
+      <configuration name="go test core" configurationId="GoTestRunConfiguration" />
+    </history-entry>
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -422,7 +414,7 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.22832723" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.22832723" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -439,7 +431,7 @@
       <window_info anchor="right" id="Terminal" order="4" sideWeight="0.14416243" visible="true" weight="0.34493285" />
       <window_info anchor="right" id="Version Control" order="5" sideWeight="0.4964467" weight="0.32967034" />
       <window_info anchor="right" id="Debug" order="6" sideWeight="0.6060914" side_tool="true" weight="0.2820513" />
-      <window_info anchor="right" id="Run" order="7" sideWeight="0.8558376" side_tool="true" visible="true" weight="0.34493285" />
+      <window_info active="true" anchor="right" id="Run" order="7" sideWeight="0.8558376" side_tool="true" visible="true" weight="0.34493285" />
       <window_info anchor="right" id="Event Log" order="8" sideWeight="0.8142132" side_tool="true" weight="0.37301588" />
       <window_info anchor="right" id="TODO" order="9" sideWeight="0.46865672" side_tool="true" weight="0.32967034" />
       <window_info anchor="right" id="Coverage" order="10" sideWeight="0.8345178" side_tool="true" weight="0.34493285" />
@@ -852,11 +844,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="207">
-          <caret line="9" column="18" selection-start-line="9" selection-start-column="18" selection-end-line="9" selection-end-column="18" />
-          <folding>
-            <element signature="e#14#66#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="69">
+          <caret line="3" selection-start-line="3" selection-end-line="3" />
         </state>
       </provider>
     </entry>
@@ -877,24 +866,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/time.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="465">
-          <caret line="68" column="17" lean-forward="true" selection-start-line="68" selection-start-column="17" selection-end-line="68" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/speed_counter_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="646">
-          <caret line="94" lean-forward="true" selection-start-line="94" selection-end-line="94" />
+        <state relative-caret-position="580">
+          <caret line="82" lean-forward="true" selection-start-line="82" selection-end-line="82" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/core/speed_counter.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="305">
-          <caret line="36" selection-start-line="36" selection-end-line="36" />
+        <state relative-caret-position="75">
+          <caret line="26" selection-start-line="26" selection-end-line="26" />
           <folding>
             <element signature="e#14#59#0" expanded="true" />
           </folding>
@@ -911,17 +893,24 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/time_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="396">
-          <caret line="30" column="37" lean-forward="true" selection-start-line="30" selection-start-column="37" selection-end-line="30" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/core/utils_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="787">
           <caret line="391" selection-start-line="391" selection-end-line="391" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/time.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="672">
+          <caret line="70" lean-forward="true" selection-start-line="70" selection-end-line="70" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/time_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="590">
+          <caret line="29" column="1" lean-forward="true" selection-start-line="29" selection-start-column="1" selection-end-line="29" selection-end-column="1" />
         </state>
       </provider>
     </entry>

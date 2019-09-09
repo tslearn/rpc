@@ -24,8 +24,9 @@ func TestTimeNowNS(t *testing.T) {
 
 func TestTimeNowMS(t *testing.T) {
 	assert := newAssert(t)
-	nowMS := TimeNowMS()
-	assert(time.Now().UnixNano()-nowMS*int64(time.Millisecond) < int64(5*time.Millisecond)).IsTrue()
+	nowNS := TimeNowMS() * int64(time.Millisecond)
+	assert(time.Now().UnixNano()-nowNS < int64(10*time.Millisecond)).IsTrue()
+	assert(time.Now().UnixNano()-nowNS > int64(-10*time.Millisecond)).IsTrue()
 }
 
 func TestTimeSpanFrom(t *testing.T) {
