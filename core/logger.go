@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 )
 
 const (
@@ -172,7 +171,7 @@ func (p *Logger) log(outputLevel int, tag string, msg string) {
 
 	if level&outputLevel > 0 {
 		sb := NewStringBuilder()
-		sb.AppendString(ConvertToIsoDateString(time.Now()))
+		sb.AppendString(TimeNowISOString())
 		sb.AppendString(tag)
 		sb.AppendString(msg)
 		logMsg := sb.String()

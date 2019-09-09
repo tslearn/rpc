@@ -3,6 +3,7 @@ package core
 import (
 	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 // there are two mode for time api: low mode or high mode
@@ -13,43 +14,46 @@ import (
 // high mode accuracy is 1ms
 
 var (
-	timeCurrentNano  = int64(0)
-	timeSpeedCounter = NewSpeedCounter()
+	//timeCurrentNano  = int64(0)
+	timeNowPointer = (unsafe.Pointer)(nil)
 )
 
 func init() {
+	done := make(chan bool)
+	tick := time.NewTicker(4 * time.Millisecond)
+	fnTimer := func(t time.Time) {
+		now := &timeNow{
+			timeNS:        t.UnixNano(),
+			timeISOString: ConvertToIsoDateString(t),
+		}
+		atomic.StorePointer(&timeNowPointer, unsafe.Pointer(now))
+	}
+
+	fnTimer(time.Now())
+
 	// New go routine for timer
 	go func() {
-		timeCount := int64(0)
-
-		for true {
-			if atomic.LoadInt64(&timeCurrentNano) > 0 {
-				atomic.StoreInt64(&timeCurrentNano, time.Now().UnixNano())
-				time.Sleep(890 * time.Microsecond)
-				timeCount++
-			} else {
-				time.Sleep(150 * time.Millisecond)
-				timeCount = 0
-			}
-
-			if timeCount%200 == 0 {
-				speed := timeSpeedCounter.Calculate()
-				if speed > 10000 {
-					atomic.StoreInt64(&timeCurrentNano, time.Now().UnixNano())
-				} else {
-					atomic.StoreInt64(&timeCurrentNano, 0)
-				}
+		for {
+			select {
+			case t := <-tick.C:
+				fnTimer(t)
+			case <-done:
+				return
 			}
 		}
 	}()
 }
 
+type timeNow struct {
+	timeNS        int64
+	timeISOString string
+}
+
 // TimeNowNS get now nanoseconds from 1970-01-01
 func TimeNowNS() int64 {
-	timeSpeedCounter.Add(1)
-	ret := atomic.LoadInt64(&timeCurrentNano)
-	if ret > 0 {
-		return ret
+	ret := atomic.LoadPointer(&timeNowPointer)
+	if ret != nil {
+		return (*timeNow)(ret).timeNS
 	}
 	return time.Now().UnixNano()
 }
@@ -57,6 +61,15 @@ func TimeNowNS() int64 {
 // TimeNowMS get now milliseconds from 1970-01-01
 func TimeNowMS() int64 {
 	return TimeNowNS() / int64(time.Millisecond)
+}
+
+// TimeNowMS get now iso string like this: 2019-09-09T09:47:16.180+08:00
+func TimeNowISOString() string {
+	ret := atomic.LoadPointer(&timeNowPointer)
+	if ret != nil {
+		return (*timeNow)(ret).timeISOString
+	}
+	return ConvertToIsoDateString(time.Now())
 }
 
 // TimeSpanFrom get time.Duration from fromNS
