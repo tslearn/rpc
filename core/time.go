@@ -6,15 +6,7 @@ import (
 	"unsafe"
 )
 
-// there are two mode for time api: low mode or high mode
-// mode are switch automatically by the speed of api called
-// if currentNano equals zero, it represent low mode,
-// low mode accuracy is decided by system
-// if currentNano bigger than zero, it represent high mode,
-// high mode accuracy is 1ms
-
 var (
-	//timeCurrentNano  = int64(0)
 	timeNowPointer = (unsafe.Pointer)(nil)
 )
 
