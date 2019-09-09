@@ -174,6 +174,7 @@ func (p *Logger) log(outputLevel int, tag string, msg string) {
 		sb.AppendString(TimeNowISOString())
 		sb.AppendString(tag)
 		sb.AppendString(msg)
+		sb.AppendByte('\n')
 		logMsg := sb.String()
 		sb.Release()
 
