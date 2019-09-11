@@ -35,10 +35,12 @@ type Array = []interface{}
 // Map common Map type
 type Map = map[string]interface{}
 
-//type Service = *rpcServiceMeta
-//var NewService = newServiceMeta
-//type Content = *rpcContext
-//type Return = *rpcReturn
+type Service = *rpcServiceMeta
+
+var NewService = newServiceMeta
+
+type Content = *rpcContext
+type Return = *rpcReturn
 
 var (
 	emptyString = ""
