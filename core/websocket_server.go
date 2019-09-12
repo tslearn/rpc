@@ -273,18 +273,24 @@ func (p *WebSocketServer) Start(
 
 			serverConn := p.registerConn(wsConn, connID, connSecurity)
 
+			// set conn information
+			connStream := newRPCStream()
+			connStream.setClientCallbackID(0)
+			connStream.WriteUint64(uint64(serverConn.id))
+			connStream.WriteString(serverConn.security)
+			connStream.WriteUint64(uint64(serverConn.getSequence()))
 			if err := wsConn.WriteMessage(
 				websocket.BinaryMessage,
-				[]byte(fmt.Sprintf("%d#%s", serverConn.id, serverConn.security)),
+				connStream.getBufferUnsafe(),
 			); err != nil {
+				connStream.Release()
 				p.logger.Errorf("WebSocketServer: %s", err.Error())
 				return
 			}
+			connStream.Release()
 
 			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
-
 			p.onOpen(serverConn)
-
 			defer func() {
 				err := wsConn.Close()
 				if err != nil {
@@ -323,7 +329,9 @@ func (p *WebSocketServer) Start(
 
 					// this is system instructions
 					if callbackID == 0 {
-
+						// ignore system instructions
+						p.onError(serverConn, "unknown system instruction")
+						return
 					} else { // this is rpc callback function
 						if serverConn.setSequence(serverSequence, callbackID) {
 							stream.setClientConnInfo(serverConn.id)
