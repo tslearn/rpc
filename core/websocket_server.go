@@ -35,6 +35,27 @@ type wsServerConn struct {
 	security   string
 	deadlineNS int64
 	streamCH   chan *rpcStream
+	sequence   uint32
+	sync.Mutex
+}
+
+func (p *wsServerConn) getSequence() uint32 {
+	ret := uint32(0)
+	p.Lock()
+	ret = p.sequence
+	p.Unlock()
+	return ret
+}
+
+func (p *wsServerConn) setSequence(from uint32, to uint32) bool {
+	ret := false
+	p.Lock()
+	if p.sequence == from && from != to {
+		p.sequence = to
+		ret = true
+	}
+	p.Unlock()
+	return ret
 }
 
 // WebSocketServer is implement of INetServer via web socket
@@ -68,7 +89,7 @@ func NewWebSocketServer() *WebSocketServer {
 		32,
 		func(stream *rpcStream, success bool) {
 			if serverConn := server.getConnByID(
-				stream.getClientConnID(),
+				stream.getClientConnInfo(),
 			); serverConn != nil {
 				serverConn.streamCH <- stream
 			}
@@ -80,7 +101,7 @@ func NewWebSocketServer() *WebSocketServer {
 func (p *WebSocketServer) serverConnWriteRoutine(serverConn *wsServerConn) {
 	ch := serverConn.streamCH
 	for stream := <-ch; stream != nil; stream = <-ch {
-		stream.setClientConnID(0)
+		stream.setClientConnInfo(0)
 		for serverConn.security != "" {
 			if wsConn := serverConn.wsConn; wsConn != nil {
 				if err := serverConn.wsConn.WriteMessage(
@@ -124,6 +145,7 @@ func (p *WebSocketServer) registerConn(
 		if _, ok := p.Load(id); !ok {
 			ret = &wsServerConn{
 				id:         id,
+				sequence:   1,
 				security:   GetRandString(32),
 				wsConn:     wsConn,
 				connIndex:  0,
@@ -292,7 +314,26 @@ func (p *WebSocketServer) Start(
 				}
 				switch mt {
 				case websocket.BinaryMessage:
-					p.onBinary(serverConn, message)
+					stream := newRPCStream()
+					stream.setWritePosUnsafe(0)
+					stream.putBytes(message)
+
+					serverSequence := stream.getClientConnInfo()
+					callbackID := stream.getClientCallbackID()
+
+					// this is system instructions
+					if callbackID == 0 {
+
+					} else { // this is rpc callback function
+						if serverConn.setSequence(serverSequence, callbackID) {
+							stream.setClientConnInfo(serverConn.id)
+							p.onStream(serverConn, stream)
+						} else {
+							stream.Release()
+							p.onError(serverConn, "server sequence error")
+							return
+						}
+					}
 				default:
 					p.onError(serverConn, "unknown message type")
 					return
@@ -375,11 +416,10 @@ func (p *WebSocketServer) onClose(serverConn *wsServerConn) {
 	p.logger.Infof("WebSocketServerConn[%d]: closed", serverConn.id)
 }
 
-func (p *WebSocketServer) onBinary(serverConn *wsServerConn, bytes []byte) {
-	stream := newRPCStream()
-	stream.setWritePosUnsafe(0)
-	stream.putBytes(bytes)
-	stream.setClientConnID(serverConn.id)
+func (p *WebSocketServer) onStream(
+	serverConn *wsServerConn,
+	stream *rpcStream,
+) {
 	p.processor.put(stream)
 }
 

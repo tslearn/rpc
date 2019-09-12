@@ -382,7 +382,7 @@ func TestRpcStream_getClientCallbackID_setClientCallbackID(t *testing.T) {
 	}
 }
 
-func TestRpcStream_getClientConnID_getClientConnID(t *testing.T) {
+func TestRpcStream_getClientConnInfo_getClientConnInfo(t *testing.T) {
 	assert := newAssert(t)
 
 	stream := newRPCStream()
@@ -391,10 +391,10 @@ func TestRpcStream_getClientConnID_getClientConnID(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint32()
 		binary.LittleEndian.PutUint32(bytes4, v)
-		stream.setClientConnID(v)
+		stream.setClientConnInfo(v)
 		assert(stream.header[4:8]).Equals(bytes4)
 		assert(stream.getBufferUnsafe()[5:9]).Equals(bytes4)
-		assert(stream.getClientConnID()).Equals(v)
+		assert(stream.getClientConnInfo()).Equals(v)
 	}
 }
 

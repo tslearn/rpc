@@ -175,12 +175,12 @@ func (p *rpcStream) setClientCallbackID(v uint32) {
 	b[3] = byte(v >> 24)
 }
 
-func (p *rpcStream) getClientConnID() uint32 {
+func (p *rpcStream) getClientConnInfo() uint32 {
 	b := p.header[4:8]
 	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
 }
 
-func (p *rpcStream) setClientConnID(v uint32) {
+func (p *rpcStream) setClientConnInfo(v uint32) {
 	b := p.header[4:8]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
