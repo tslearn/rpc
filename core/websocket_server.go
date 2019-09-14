@@ -88,6 +88,7 @@ func NewWebSocketServer() *WebSocketServer {
 		32,
 		32,
 		func(stream *rpcStream, success bool) {
+			// Todo: deal error (chan close)
 			if serverConn := server.getConnByID(
 				stream.getClientConnInfo(),
 			); serverConn != nil {
@@ -100,7 +101,8 @@ func NewWebSocketServer() *WebSocketServer {
 
 func (p *WebSocketServer) serverConnWriteRoutine(serverConn *wsServerConn) {
 	ch := serverConn.streamCH
-	for stream := <-ch; stream != nil; stream = <-ch {
+	stream := <-ch
+	for stream != nil {
 		stream.setClientConnInfo(0)
 		for serverConn.security != "" {
 			if wsConn := serverConn.wsConn; wsConn != nil {
@@ -108,7 +110,10 @@ func (p *WebSocketServer) serverConnWriteRoutine(serverConn *wsServerConn) {
 					websocket.BinaryMessage,
 					stream.getBufferUnsafe(),
 				); err == nil {
+					// release old stream
 					stream.Release()
+					// read new stream
+					stream = <-ch
 					break
 				} else {
 					p.onError(serverConn, err.Error())
@@ -129,6 +134,7 @@ func (p *WebSocketServer) registerConn(
 		serverConn, ok := v.(*wsServerConn)
 		if ok && serverConn != nil && serverConn.security == security {
 			serverConn.wsConn = wsConn
+			serverConn.deadlineNS = 0
 			return serverConn
 		}
 	}
@@ -150,7 +156,7 @@ func (p *WebSocketServer) registerConn(
 				wsConn:     wsConn,
 				connIndex:  0,
 				deadlineNS: 0,
-				streamCH:   make(chan *rpcStream, 64),
+				streamCH:   make(chan *rpcStream, 256),
 			}
 			p.Store(id, ret)
 			go p.serverConnWriteRoutine(ret)
@@ -165,7 +171,7 @@ func (p *WebSocketServer) unregisterConn(id uint32) bool {
 	if serverConn, ok := p.Load(id); ok {
 		serverConn.(*wsServerConn).wsConn = nil
 		serverConn.(*wsServerConn).deadlineNS = TimeNowNS() +
-			25*int64(time.Second)
+			35*int64(time.Second)
 		return true
 	} else {
 		return false
@@ -256,7 +262,7 @@ func (p *WebSocketServer) Start(
 			connSecurity := ""
 			keys, ok := req.URL.Query()["conn"]
 			if ok && len(keys) == 1 {
-				arr := strings.Split(keys[0], "#")
+				arr := strings.Split(keys[0], "-")
 				if len(arr) == 2 {
 					if parseID, err := strconv.ParseUint(arr[0], 10, 64); err == nil {
 						connID = uint32(parseID)
