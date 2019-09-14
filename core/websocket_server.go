@@ -276,6 +276,7 @@ func (p *WebSocketServer) Start(
 			// set conn information
 			connStream := newRPCStream()
 			connStream.setClientCallbackID(0)
+			connStream.WriteString("#.connection.openInformation")
 			connStream.WriteUint64(uint64(serverConn.id))
 			connStream.WriteString(serverConn.security)
 			connStream.WriteUint64(uint64(serverConn.getSequence()))

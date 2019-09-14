@@ -103,24 +103,27 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 	processor := p.processor
 	// create context
 	p.inStream = inStream
+	p.execSuccessful = false
 	ctx := &rpcContext{thread: p}
 
 	defer func() {
-		if err := recover(); err != nil {
+		if err := recover(); err != nil && p.execEchoNode != nil {
 			ctx.writeError(
 				fmt.Sprintf(
-					"rpc call %s runtime error: %s",
+					"rpc-server: call %s runtime error: %s",
 					p.execEchoNode.callString,
 					err,
 				),
 				GetStackString(1),
 			)
 		}
-		p.execEchoNode.indicator.count(
-			p.getRunDuration(),
-			p.from,
-			p.execSuccessful,
-		)
+		if p.execEchoNode != nil {
+			p.execEchoNode.indicator.count(
+				p.getRunDuration(),
+				p.from,
+				p.execSuccessful,
+			)
+		}
 		processor.callback(p.outStream, p.execSuccessful)
 		inStream.Reset()
 		p.outStream = inStream
@@ -136,7 +139,7 @@ func (p *rpcThread) eval(inStream *rpcStream) *rpcReturn {
 		return ctx.writeError("rpc data format error", "")
 	}
 	if p.execEchoNode, ok = processor.echosMap[echoPath]; !ok {
-		return ctx.Errorf("rpc echo path %s is not mounted", echoPath)
+		return ctx.Errorf("rpc-server: echo path %s is not mounted", echoPath)
 	}
 
 	// read depth
