@@ -299,12 +299,12 @@ func (p *WebSocketServer) Start(
 			wsConn.SetReadLimit(int64(atomic.LoadUint64(&p.readSizeLimit)))
 			p.onOpen(serverConn)
 			defer func() {
+				p.unregisterConn(serverConn.id)
 				err := wsConn.Close()
 				if err != nil {
 					p.onError(serverConn, err.Error())
 				}
 				p.onClose(serverConn)
-				p.unregisterConn(serverConn.id)
 			}()
 
 			for {
