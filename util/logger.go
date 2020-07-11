@@ -1,7 +1,7 @@
 package util
 
 import (
-	"log"
+	"fmt"
 	"sync/atomic"
 )
 
@@ -40,6 +40,7 @@ type rpcStdLogWriter struct{}
 func NewStdLogWriter() StdLogWriter {
 	return &rpcStdLogWriter{}
 }
+
 func (p *rpcStdLogWriter) Write(
 	isoTime string,
 	tag string,
@@ -59,13 +60,8 @@ func (p *rpcStdLogWriter) Write(
 	sb.AppendByte(' ')
 	sb.AppendString(msg)
 	sb.AppendByte('\n')
-	logMsg := sb.String()
+	fmt.Print(sb.String())
 	sb.Release()
-
-	flags := log.Flags()
-	log.SetFlags(0)
-	log.Printf(logMsg)
-	log.SetFlags(flags)
 }
 
 // End ***** StdLogWriter ***** //
@@ -88,7 +84,9 @@ func (p *rpcCallbackStdLogWriter) Write(
 	msg string,
 	extra string,
 ) {
-	p.onWrite(isoTime, tag, msg, extra)
+	if p.onWrite != nil {
+		p.onWrite(isoTime, tag, msg, extra)
+	}
 }
 
 // End ***** CallbackLogWriter ***** //
@@ -188,3 +186,5 @@ func (p *rpcLogger) FatalExtra(msg string, extra string) {
 		}
 	}
 }
+
+// End ***** Logger ***** //

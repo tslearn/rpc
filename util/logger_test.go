@@ -1,19 +1,100 @@
 package util
 
 import (
+	"io"
+	"os"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 )
 
-func TestNewLogger(t *testing.T) {
-	assert := NewAssert(t)
-	logger := NewLogger(nil)
-	assert(logger.level).Equals(LogMaskAll)
-	assert(len(logger.writers)).Equals(1)
+func runStdWriterLogger(onRun func(logger Logger)) string {
+	if r, w, err := os.Pipe(); err != nil {
+		return "<error>"
+	} else {
+		old := os.Stdout // keep backup of the real stdout
+		os.Stdout = w
+		defer func() {
+			os.Stdout = old
+		}()
+
+		onRun(NewLogger([]LogWriter{NewStdLogWriter()}))
+
+		retCH := make(chan string)
+
+		go func() {
+			buf := make([]byte, 10240)
+			pos := 0
+			for {
+				if n, err := r.Read(buf[pos:]); err == io.EOF {
+					break
+				} else {
+					pos += n
+				}
+			}
+			retCH <- string(buf[:pos])
+		}()
+		_ = w.Close()
+
+		return <-retCH
+	}
 }
 
-func TestLogger_SetLevel(t *testing.T) {
+func runCallbackWriterLogger(
+	onRun func(logger Logger),
+) (isoTime string, tag string, msg string, extra string) {
+	wait := make(chan bool, 1)
+	onRun(NewLogger([]LogWriter{NewCallbackLogWriter(
+		func(_isoTime string, _tag string, _msg string, _extra string) {
+			isoTime = _isoTime
+			tag = _tag
+			msg = _msg
+			extra = _extra
+			wait <- true
+		},
+	)}))
+	<-wait
+	return
+}
+
+func TestRpcStdLogWriter_Write(t *testing.T) {
+	assert := NewAssert(t)
+
+	assert(strings.HasSuffix(
+		runStdWriterLogger(func(logger Logger) {
+			logger.Info("message")
+		}),
+		" Info: message\n",
+	)).IsTrue()
+
+	assert(strings.HasSuffix(
+		runStdWriterLogger(func(logger Logger) {
+			logger.InfoExtra("message", "extra")
+		}),
+		"(extra) Info: message\n",
+	)).IsTrue()
+}
+
+func TestNewLogger(t *testing.T) {
+	assert := NewAssert(t)
+	logger1 := NewLogger(nil)
+	assert(logger1.level).Equals(LogMaskAll)
+	assert(len(logger1.writers)).Equals(1)
+
+	logger2 := NewLogger([]LogWriter{})
+	assert(logger2.level).Equals(LogMaskAll)
+	assert(len(logger2.writers)).Equals(1)
+
+	logger3 := NewLogger([]LogWriter{
+		NewStdLogWriter(),
+		NewStdLogWriter(),
+	})
+	assert(logger3.level).Equals(LogMaskAll)
+	assert(len(logger3.writers)).Equals(2)
+}
+
+func TestRpcLogger_SetLevel(t *testing.T) {
 	assert := NewAssert(t)
 	logger := NewLogger(nil)
 
@@ -68,166 +149,132 @@ func TestLogger_SetLevel(t *testing.T) {
 	assert(fnTestLogLevel(LogMaskAll + 1)).Equals(LogMaskAll)
 }
 
-//
-//func TestLogger_log(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf bytes.Buffer
-//  log.SetOutput(&buf)
-//  logger.Subscribe()
-//
-//  logger.Debug("")
-//  assert(strings.Contains(buf.String(), "Debug")).IsTrue()
-//  logger.Info("")
-//  assert(strings.Contains(buf.String(), "Info")).IsTrue()
-//  logger.Warn("")
-//  assert(strings.Contains(buf.String(), "Warn")).IsTrue()
-//  logger.Error("")
-//  assert(strings.Contains(buf.String(), "Error")).IsTrue()
-//  logger.Fatal("")
-//  assert(strings.Contains(buf.String(), "Fatal")).IsTrue()
-//
-//  log.SetOutput(os.Stderr)
-//}
-//
-//func TestLogger_Debug(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf1 bytes.Buffer
-//  log.SetOutput(&buf1)
-//  logger.Debug("message")
-//  regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message\n$"
-//  assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-//
-//  var buf3 bytes.Buffer
-//  log.SetOutput(&buf3)
-//
-//  logger.Debugf("message")
-//  regex3 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message\n$"
-//  assert(regexp.MatchString(regex3, buf3.String())).Equals(true, nil)
-//
-//  var buf4 bytes.Buffer
-//  log.SetOutput(&buf4)
-//  logger.Debugf("message %d", 1)
-//  regex4 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Debug:(\\s)message 1\n$"
-//  assert(regexp.MatchString(regex4, buf4.String())).Equals(true, nil)
-//
-//  log.SetOutput(os.Stderr)
-//}
-//
-//func TestLogger_Info(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf1 bytes.Buffer
-//  log.SetOutput(&buf1)
-//  logger.Info("message")
-//  regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message\n$"
-//  assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-//
-//  var buf3 bytes.Buffer
-//  log.SetOutput(&buf3)
-//  logger.Infof("message")
-//  regex3 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message\n$"
-//  assert(regexp.MatchString(regex3, buf3.String())).Equals(true, nil)
-//
-//  var buf4 bytes.Buffer
-//  log.SetOutput(&buf4)
-//  logger.Infof("message %d", 1)
-//  regex4 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Info:(\\s)message 1\n$"
-//  assert(regexp.MatchString(regex4, buf4.String())).Equals(true, nil)
-//
-//  log.SetOutput(os.Stderr)
-//}
-//
-//func TestLogger_Warn(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf1 bytes.Buffer
-//  log.SetOutput(&buf1)
-//  logger.Warn("message")
-//  regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Warn:(\\s)message\n$"
-//  assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-//
-//  var buf3 bytes.Buffer
-//  log.SetOutput(&buf3)
-//  logger.Warnf("message")
-//  regex3 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Warn:(\\s)message\n$"
-//  assert(regexp.MatchString(regex3, buf3.String())).Equals(true, nil)
-//
-//  var buf4 bytes.Buffer
-//  log.SetOutput(&buf4)
-//  logger.Warnf("message %d", 1)
-//  regex4 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Warn:(\\s)message 1\n$"
-//  assert(regexp.MatchString(regex4, buf4.String())).Equals(true, nil)
-//
-//  log.SetOutput(os.Stderr)
-//}
-//
-//func TestLogger_Error(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf1 bytes.Buffer
-//  log.SetOutput(&buf1)
-//  logger.Error("message")
-//  regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message\n$"
-//  assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-//
-//  var buf3 bytes.Buffer
-//  log.SetOutput(&buf3)
-//  logger.Errorf("message")
-//  regex3 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message\n$"
-//  assert(regexp.MatchString(regex3, buf3.String())).Equals(true, nil)
-//
-//  var buf4 bytes.Buffer
-//  log.SetOutput(&buf4)
-//  logger.Errorf("message %d", 1)
-//  regex4 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Error:(\\s)message 1\n$"
-//  assert(regexp.MatchString(regex4, buf4.String())).Equals(true, nil)
-//
-//  log.SetOutput(os.Stderr)
-//}
-//
-//func TestLogger_Fatal(t *testing.T) {
-//  assert := NewAssert(t)
-//  logger := NewLogger()
-//
-//  var buf1 bytes.Buffer
-//  log.SetOutput(&buf1)
-//  logger.Fatal("message")
-//  regex1 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message\n$"
-//  assert(regexp.MatchString(regex1, buf1.String())).Equals(true, nil)
-//
-//  var buf3 bytes.Buffer
-//  log.SetOutput(&buf3)
-//  logger.Fatalf("message")
-//  regex3 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message\n$"
-//  assert(regexp.MatchString(regex3, buf3.String())).Equals(true, nil)
-//
-//  var buf4 bytes.Buffer
-//  log.SetOutput(&buf4)
-//  logger.Fatalf("message %d", 1)
-//  regex4 := "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{3}" +
-//    "\\+\\d{2}:\\d{2}(\\s)Fatal:(\\s)message 1\n$"
-//  assert(regexp.MatchString(regex4, buf4.String())).Equals(true, nil)
-//
-//  log.SetOutput(os.Stderr)
-//}
+func TestRpcLogger_Debug(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.Debug("message")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Debug")
+	assert(msg).Equals("message")
+	assert(extra).Equals("")
+}
+
+func TestRpcLogger_DebugExtra(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.DebugExtra("message", "extra")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Debug")
+	assert(msg).Equals("message")
+	assert(extra).Equals("extra")
+}
+
+func TestRpcLogger_Info(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.Info("message")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Info")
+	assert(msg).Equals("message")
+	assert(extra).Equals("")
+}
+
+func TestRpcLogger_InfoExtra(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.InfoExtra("message", "extra")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Info")
+	assert(msg).Equals("message")
+	assert(extra).Equals("extra")
+}
+
+func TestRpcLogger_Warn(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.Warn("message")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Warn")
+	assert(msg).Equals("message")
+	assert(extra).Equals("")
+}
+
+func TestRpcLogger_WarnExtra(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.WarnExtra("message", "extra")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Warn")
+	assert(msg).Equals("message")
+	assert(extra).Equals("extra")
+}
+
+func TestRpcLogger_Error(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.Error("message")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Error")
+	assert(msg).Equals("message")
+	assert(extra).Equals("")
+}
+
+func TestRpcLogger_ErrorExtra(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.ErrorExtra("message", "extra")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Error")
+	assert(msg).Equals("message")
+	assert(extra).Equals("extra")
+}
+
+func TestRpcLogger_Fatal(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.Fatal("message")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Fatal")
+	assert(msg).Equals("message")
+	assert(extra).Equals("")
+}
+
+func TestRpcLogger_FatalExtra(t *testing.T) {
+	assert := NewAssert(t)
+
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+		logger.FatalExtra("message", "extra")
+	})
+
+	assert(len(isoTime) > 0).IsTrue()
+	assert(tag).Equals("Fatal")
+	assert(msg).Equals("message")
+	assert(extra).Equals("extra")
+}
