@@ -10,9 +10,7 @@ import (
 )
 
 func runStdWriterLogger(onRun func(logger Logger)) string {
-	if r, w, err := os.Pipe(); err != nil {
-		return "<error>"
-	} else {
+	if r, w, err := os.Pipe(); err == nil {
 		old := os.Stdout // keep backup of the real stdout
 		os.Stdout = w
 		defer func() {
@@ -39,6 +37,7 @@ func runStdWriterLogger(onRun func(logger Logger)) string {
 
 		return <-retCH
 	}
+	return "<error>"
 }
 
 func runCallbackWriterLogger(

@@ -51,9 +51,8 @@ func TestSpeedCounter_Calculate(t *testing.T) {
 
 	// time interval is zero
 	sc = NewSpeedCounter()
-	sc.Add(1)
-	v := sc.calculate(sc.lastNS)
-	assert(v).Equals(int64(0))
+	sc.Calculate()
+	assert(sc.Calculate()).Equals(int64(0))
 }
 
 func TestSpeedCounter_Calculate_Parallels(t *testing.T) {

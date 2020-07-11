@@ -26,17 +26,16 @@ const (
 		LogMaskDebug
 )
 
-// Begin ***** LogWriter ***** //
+// LogWriter ...
 type LogWriter interface {
 	Write(isoTime string, tag string, msg string, extra string)
 }
 
-// End ***** LogWriter ***** //
-
-// Begin ***** StdLogWriter ***** //
+// StdLogWriter ...
 type StdLogWriter = *rpcStdLogWriter
 type rpcStdLogWriter struct{}
 
+// NewStdLogWriter ...
 func NewStdLogWriter() StdLogWriter {
 	return &rpcStdLogWriter{}
 }
@@ -64,20 +63,20 @@ func (p *rpcStdLogWriter) Write(
 	sb.Release()
 }
 
-// End ***** StdLogWriter ***** //
-
-// Begin ***** CallbackLogWriter ***** //
+// CallbackLogWriter ...
 type CallbackLogWriter = *rpcCallbackStdLogWriter
 type rpcCallbackStdLogWriter struct {
 	onWrite func(isoTime string, tag string, msg string, extra string)
 }
 
+// NewCallbackLogWriter ...
 func NewCallbackLogWriter(
 	onWrite func(isoTime string, tag string, msg string, extra string),
 ) CallbackLogWriter {
 	return &rpcCallbackStdLogWriter{onWrite: onWrite}
 }
 
+// Write ...
 func (p *rpcCallbackStdLogWriter) Write(
 	isoTime string,
 	tag string,
@@ -89,9 +88,7 @@ func (p *rpcCallbackStdLogWriter) Write(
 	}
 }
 
-// End ***** CallbackLogWriter ***** //
-
-// Begin ***** Logger ***** //
+// Logger ...
 type Logger = *rpcLogger
 type rpcLogger struct {
 	level   int32
@@ -99,17 +96,17 @@ type rpcLogger struct {
 	rpcAutoLock
 }
 
+// NewLogger ...
 func NewLogger(writers []LogWriter) Logger {
 	if writers == nil || len(writers) == 0 {
 		return &rpcLogger{
 			level:   LogMaskAll,
 			writers: []LogWriter{NewStdLogWriter()},
 		}
-	} else {
-		return &rpcLogger{
-			level:   LogMaskAll,
-			writers: writers,
-		}
+	}
+	return &rpcLogger{
+		level:   LogMaskAll,
+		writers: writers,
 	}
 }
 
@@ -117,9 +114,9 @@ func (p *rpcLogger) SetLevel(level int32) bool {
 	if level >= LogMaskNone && level <= LogMaskAll {
 		atomic.StoreInt32(&p.level, level)
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 func (p *rpcLogger) Debug(msg string) {
@@ -186,5 +183,3 @@ func (p *rpcLogger) FatalExtra(msg string, extra string) {
 		}
 	}
 }
-
-// End ***** Logger ***** //

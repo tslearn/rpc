@@ -43,9 +43,9 @@ func NewRPCErrorByError(err error) RPCError {
 func ConvertToRPCError(v interface{}) RPCError {
 	if ret, ok := v.(RPCError); ok {
 		return ret
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 // NewRPCError ...
