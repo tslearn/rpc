@@ -1,24 +1,23 @@
 package util
 
 import (
-	"fmt"
 	"log"
-	"sync"
+	"sync/atomic"
 )
 
 const (
 	// LogMaskNone this level logs nothing
-	LogMaskNone = 0
+	LogMaskNone = int32(0)
 	// LogMaskFatal this level logs Fatal
-	LogMaskFatal = 1
+	LogMaskFatal = int32(1)
 	// LogMaskError this level logs Error
-	LogMaskError = 2
+	LogMaskError = int32(2)
 	// LogMaskWarn this level logs Warn
-	LogMaskWarn = 4
+	LogMaskWarn = int32(4)
 	// LogMaskInfo this level logs Info
-	LogMaskInfo = 8
+	LogMaskInfo = int32(8)
 	// LogMaskDebug this level logs Debug
-	LogMaskDebug = 16
+	LogMaskDebug = int32(16)
 	// LogMaskAll this level logs Debug, Info, Warn, Error and Fatal
 	LogMaskAll = LogMaskFatal |
 		LogMaskError |
@@ -27,190 +26,165 @@ const (
 		LogMaskDebug
 )
 
-// LogSubscription ...
-type LogSubscription struct {
-	id     int64
-	logger *Logger
-	Debug  func(msg string)
-	Info   func(msg string)
-	Warn   func(msg string)
-	Error  func(msg string)
-	Fatal  func(msg string)
+// Begin ***** LogWriter ***** //
+type LogWriter interface {
+	Write(isoTime string, tag string, msg string, extra string)
 }
 
-// Close ...
-func (p *LogSubscription) Close() bool {
-	if p.logger == nil {
-		return false
+// End ***** LogWriter ***** //
+
+// Begin ***** StdLogWriter ***** //
+type StdLogWriter = *rpcStdLogWriter
+type rpcStdLogWriter struct{}
+
+func NewStdLogWriter() StdLogWriter {
+	return &rpcStdLogWriter{}
+}
+func (p *rpcStdLogWriter) Write(
+	isoTime string,
+	tag string,
+	msg string,
+	extra string,
+) {
+	sb := NewStringBuilder()
+	sb.AppendString(isoTime)
+	if len(extra) > 0 {
+		sb.AppendByte('(')
+		sb.AppendString(extra)
+		sb.AppendByte(')')
 	}
+	sb.AppendByte(' ')
+	sb.AppendString(tag)
+	sb.AppendByte(':')
+	sb.AppendByte(' ')
+	sb.AppendString(msg)
+	sb.AppendByte('\n')
+	logMsg := sb.String()
+	sb.Release()
 
-	ret := p.logger.removeSubscription(p.id)
-	p.id = 0
-	p.logger = nil
-	p.Debug = nil
-	p.Info = nil
-	p.Warn = nil
-	p.Error = nil
-	p.Fatal = nil
-	return ret
+	flags := log.Flags()
+	log.SetFlags(0)
+	log.Printf(logMsg)
+	log.SetFlags(flags)
 }
 
-// Logger common logger
-type Logger struct {
-	level         int
-	subscriptions []*LogSubscription
-	sync.Mutex
+// End ***** StdLogWriter ***** //
+
+// Begin ***** CallbackLogWriter ***** //
+type CallbackLogWriter = *rpcCallbackStdLogWriter
+type rpcCallbackStdLogWriter struct {
+	onWrite func(isoTime string, tag string, msg string, extra string)
 }
 
-// NewLogger create new Logger
-func NewLogger() *Logger {
-	return &Logger{
-		level:         LogMaskAll,
-		subscriptions: make([]*LogSubscription, 0, 0),
-	}
+func NewCallbackLogWriter(
+	onWrite func(isoTime string, tag string, msg string, extra string),
+) CallbackLogWriter {
+	return &rpcCallbackStdLogWriter{onWrite: onWrite}
 }
 
-// SetLevel set the log level, such as LogMaskNone LogLevelFatal
-// LogLevelError LogLevelWarn LogLevelInfo LogLevelDebug LogMaskAll
-func (p *Logger) SetLevel(level int) bool {
-	if level >= LogMaskNone && level <= LogMaskAll {
-		p.Lock()
-		p.level = level
-		p.Unlock()
-		return true
-	}
-
-	return false
+func (p *rpcCallbackStdLogWriter) Write(
+	isoTime string,
+	tag string,
+	msg string,
+	extra string,
+) {
+	p.onWrite(isoTime, tag, msg, extra)
 }
 
-func (p *Logger) removeSubscription(id int64) bool {
-	ret := false
-	p.Lock()
-	for i := 0; i < len(p.subscriptions); i++ {
-		if p.subscriptions[i].id == id {
-			array := p.subscriptions
-			p.subscriptions = append(array[:i], array[i+1:]...)
-			ret = true
-			break
+// End ***** CallbackLogWriter ***** //
+
+// Begin ***** Logger ***** //
+type Logger = *rpcLogger
+type rpcLogger struct {
+	level   int32
+	writers []LogWriter
+	rpcAutoLock
+}
+
+func NewLogger(writers []LogWriter) Logger {
+	if writers == nil || len(writers) == 0 {
+		return &rpcLogger{
+			level:   LogMaskAll,
+			writers: []LogWriter{NewStdLogWriter()},
+		}
+	} else {
+		return &rpcLogger{
+			level:   LogMaskAll,
+			writers: writers,
 		}
 	}
-	p.Unlock()
-	return ret
 }
 
-// Subscribe add a subscription to logger
-func (p *Logger) Subscribe() *LogSubscription {
-	p.Lock()
-	subscription := &LogSubscription{
-		id:     GetSeed(),
-		logger: p,
-		Debug:  nil,
-		Info:   nil,
-		Warn:   nil,
-		Error:  nil,
-		Fatal:  nil,
+func (p *rpcLogger) SetLevel(level int32) bool {
+	if level >= LogMaskNone && level <= LogMaskAll {
+		atomic.StoreInt32(&p.level, level)
+		return true
+	} else {
+		return false
 	}
-	p.subscriptions = append(p.subscriptions, subscription)
-	p.Unlock()
-	return subscription
 }
 
-// Debug log debug
-func (p *Logger) Debug(msg string) {
-	p.log(LogMaskDebug, " Debug: ", msg)
+func (p *rpcLogger) Debug(msg string) {
+	p.DebugExtra(msg, "")
 }
 
-// Debugf log debug
-func (p *Logger) Debugf(format string, v ...interface{}) {
-	p.log(LogMaskDebug, " Debug: ", fmt.Sprintf(format, v...))
+func (p *rpcLogger) DebugExtra(msg string, extra string) {
+	if atomic.LoadInt32(&p.level)&LogMaskDebug > 0 {
+		isoTime := TimeNowISOString()
+		for _, writer := range p.writers {
+			writer.Write(isoTime, "Debug", msg, extra)
+		}
+	}
 }
 
-// Info log info
-func (p *Logger) Info(msg string) {
-	p.log(LogMaskInfo, " Info: ", msg)
+func (p *rpcLogger) Info(msg string) {
+	p.InfoExtra(msg, "")
 }
 
-// Infof log info
-func (p *Logger) Infof(format string, v ...interface{}) {
-	p.log(LogMaskInfo, " Info: ", fmt.Sprintf(format, v...))
+func (p *rpcLogger) InfoExtra(msg string, extra string) {
+	if atomic.LoadInt32(&p.level)&LogMaskInfo > 0 {
+		isoTime := TimeNowISOString()
+		for _, writer := range p.writers {
+			writer.Write(isoTime, "Info", msg, extra)
+		}
+	}
 }
 
-// Warn log warn
-func (p *Logger) Warn(msg string) {
-	p.log(LogMaskWarn, " Warn: ", msg)
+func (p *rpcLogger) Warn(msg string) {
+	p.WarnExtra(msg, "")
 }
 
-// Warnf log warn
-func (p *Logger) Warnf(format string, v ...interface{}) {
-	p.log(LogMaskWarn, " Warn: ", fmt.Sprintf(format, v...))
+func (p *rpcLogger) WarnExtra(msg string, extra string) {
+	if atomic.LoadInt32(&p.level)&LogMaskWarn > 0 {
+		isoTime := TimeNowISOString()
+		for _, writer := range p.writers {
+			writer.Write(isoTime, "Warn", msg, extra)
+		}
+	}
 }
 
-// Error log error
-func (p *Logger) Error(msg string) {
-	p.log(LogMaskError, " Error: ", msg)
+func (p *rpcLogger) Error(msg string) {
+	p.ErrorExtra(msg, "")
 }
 
-// Errorf log error
-func (p *Logger) Errorf(format string, v ...interface{}) {
-	p.log(LogMaskError, " Error: ", fmt.Sprintf(format, v...))
+func (p *rpcLogger) ErrorExtra(msg string, extra string) {
+	if atomic.LoadInt32(&p.level)&LogMaskError > 0 {
+		isoTime := TimeNowISOString()
+		for _, writer := range p.writers {
+			writer.Write(isoTime, "Error", msg, extra)
+		}
+	}
 }
 
-// Fatal log fatal
-func (p *Logger) Fatal(msg string) {
-	p.log(LogMaskFatal, " Fatal: ", msg)
+func (p *rpcLogger) Fatal(msg string) {
+	p.FatalExtra(msg, "")
 }
 
-// Fatalf log fatal
-func (p *Logger) Fatalf(format string, v ...interface{}) {
-	p.log(LogMaskFatal, " Fatal: ", fmt.Sprintf(format, v...))
-}
-
-func (p *Logger) log(outputLevel int, tag string, msg string) {
-	p.Lock()
-	level := p.level
-	subscriptions := p.subscriptions
-	p.Unlock()
-
-	if level&outputLevel > 0 {
-		sb := NewStringBuilder()
-		sb.AppendString(TimeNowISOString())
-		sb.AppendString(tag)
-		sb.AppendString(msg)
-		sb.AppendByte('\n')
-		logMsg := sb.String()
-		sb.Release()
-
-		if len(subscriptions) == 0 {
-			flags := log.Flags()
-			log.SetFlags(0)
-			log.Printf(logMsg)
-			log.SetFlags(flags)
-		} else {
-			for i := 0; i < len(subscriptions); i++ {
-				var fn func(msg string) = nil
-				switch outputLevel {
-				case LogMaskDebug:
-					fn = subscriptions[i].Debug
-				case LogMaskInfo:
-					fn = subscriptions[i].Info
-				case LogMaskWarn:
-					fn = subscriptions[i].Warn
-				case LogMaskError:
-					fn = subscriptions[i].Error
-				case LogMaskFatal:
-					fn = subscriptions[i].Fatal
-				}
-				if fn != nil {
-					go func() {
-						fn(logMsg)
-					}()
-				} else {
-					flags := log.Flags()
-					log.SetFlags(0)
-					log.Printf(logMsg)
-					log.SetFlags(flags)
-				}
-			}
+func (p *rpcLogger) FatalExtra(msg string, extra string) {
+	if atomic.LoadInt32(&p.level)&LogMaskFatal > 0 {
+		isoTime := TimeNowISOString()
+		for _, writer := range p.writers {
+			writer.Write(isoTime, "Fatal", msg, extra)
 		}
 	}
 }
