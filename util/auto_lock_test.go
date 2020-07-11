@@ -2,19 +2,23 @@ package util
 
 import "testing"
 
-func TestAutoLock_CallWithLock(t *testing.T) {
+func TestNewAutoLock(t *testing.T) {
 	assert := NewAssert(t)
-	locker := AutoLock{}
+	assert(NewAutoLock()).IsNotNil()
+}
+
+func TestRpcAutoLock_DoWithLock(t *testing.T) {
+	assert := NewAssert(t)
+	locker := NewAutoLock()
 	waits := make(chan bool)
 	sum := 0
 
 	for i := 0; i < 100; i++ {
 		go func() {
 			for n := 0; n < 1000; n++ {
-				assert(locker.CallWithLock(func() interface{} {
+				locker.DoWithLock(func() {
 					sum += n
-					return true
-				})).Equals(true)
+				})
 			}
 			waits <- true
 		}()
@@ -27,18 +31,19 @@ func TestAutoLock_CallWithLock(t *testing.T) {
 	assert(sum).Equals(49950000)
 }
 
-func TestAutoLock_DoWithLock(t *testing.T) {
+func TestRpcAutoLock_CallWithLock(t *testing.T) {
 	assert := NewAssert(t)
-	locker := AutoLock{}
+	locker := NewAutoLock()
 	waits := make(chan bool)
 	sum := 0
 
 	for i := 0; i < 100; i++ {
 		go func() {
 			for n := 0; n < 1000; n++ {
-				locker.DoWithLock(func() {
+				assert(locker.CallWithLock(func() interface{} {
 					sum += n
-				})
+					return true
+				})).Equals(true)
 			}
 			waits <- true
 		}()

@@ -5,20 +5,27 @@ import (
 )
 
 // AutoLock ...
-type AutoLock struct {
-	locker sync.Mutex
+type AutoLock = *rpcAutoLock
+
+type rpcAutoLock struct {
+	sync.Mutex
 }
 
-// CallWithLock ...
-func (p *AutoLock) CallWithLock(fn func() interface{}) interface{} {
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	return fn()
+// NewAutoLock ...
+func NewAutoLock() AutoLock {
+	return &rpcAutoLock{}
 }
 
 // DoWithLock ...
-func (p *AutoLock) DoWithLock(fn func()) {
-	p.locker.Lock()
-	defer p.locker.Unlock()
+func (p *rpcAutoLock) DoWithLock(fn func()) {
+	p.Lock()
+	defer p.Unlock()
 	fn()
+}
+
+// CallWithLock ...
+func (p *rpcAutoLock) CallWithLock(fn func() interface{}) interface{} {
+	p.Lock()
+	defer p.Unlock()
+	return fn()
 }
