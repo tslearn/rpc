@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func runStdWriterLogger(onRun func(logger Logger)) string {
+func runStdWriterLogger(onRun func(logger *Logger)) string {
 	if r, w, err := os.Pipe(); err == nil {
 		old := os.Stdout // keep backup of the real stdout
 		os.Stdout = w
@@ -41,7 +41,7 @@ func runStdWriterLogger(onRun func(logger Logger)) string {
 }
 
 func runCallbackWriterLogger(
-	onRun func(logger Logger),
+	onRun func(logger *Logger),
 ) (isoTime string, tag string, msg string, extra string) {
 	wait := make(chan bool, 1)
 	onRun(NewLogger([]LogWriter{NewCallbackLogWriter(
@@ -61,14 +61,14 @@ func TestRpcStdLogWriter_Write(t *testing.T) {
 	assert := NewAssert(t)
 
 	assert(strings.HasSuffix(
-		runStdWriterLogger(func(logger Logger) {
+		runStdWriterLogger(func(logger *Logger) {
 			logger.Info("message")
 		}),
 		" Info: message\n",
 	)).IsTrue()
 
 	assert(strings.HasSuffix(
-		runStdWriterLogger(func(logger Logger) {
+		runStdWriterLogger(func(logger *Logger) {
 			logger.InfoExtra("message", "extra")
 		}),
 		"(extra) Info: message\n",
@@ -151,7 +151,7 @@ func TestRpcLogger_SetLevel(t *testing.T) {
 func TestRpcLogger_Debug(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Debug("message")
 	})
 
@@ -164,7 +164,7 @@ func TestRpcLogger_Debug(t *testing.T) {
 func TestRpcLogger_DebugExtra(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.DebugExtra("message", "extra")
 	})
 
@@ -177,7 +177,7 @@ func TestRpcLogger_DebugExtra(t *testing.T) {
 func TestRpcLogger_Info(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Info("message")
 	})
 
@@ -190,7 +190,7 @@ func TestRpcLogger_Info(t *testing.T) {
 func TestRpcLogger_InfoExtra(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.InfoExtra("message", "extra")
 	})
 
@@ -203,7 +203,7 @@ func TestRpcLogger_InfoExtra(t *testing.T) {
 func TestRpcLogger_Warn(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Warn("message")
 	})
 
@@ -216,7 +216,7 @@ func TestRpcLogger_Warn(t *testing.T) {
 func TestRpcLogger_WarnExtra(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.WarnExtra("message", "extra")
 	})
 
@@ -229,7 +229,7 @@ func TestRpcLogger_WarnExtra(t *testing.T) {
 func TestRpcLogger_Error(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Error("message")
 	})
 
@@ -242,7 +242,7 @@ func TestRpcLogger_Error(t *testing.T) {
 func TestRpcLogger_ErrorExtra(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.ErrorExtra("message", "extra")
 	})
 
@@ -255,7 +255,7 @@ func TestRpcLogger_ErrorExtra(t *testing.T) {
 func TestRpcLogger_Fatal(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Fatal("message")
 	})
 
@@ -268,7 +268,7 @@ func TestRpcLogger_Fatal(t *testing.T) {
 func TestRpcLogger_FatalExtra(t *testing.T) {
 	assert := NewAssert(t)
 
-	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger Logger) {
+	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.FatalExtra("message", "extra")
 	})
 

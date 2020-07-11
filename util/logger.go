@@ -32,15 +32,14 @@ type LogWriter interface {
 }
 
 // StdLogWriter ...
-type StdLogWriter = *rpcStdLogWriter
-type rpcStdLogWriter struct{}
+type StdLogWriter struct{}
 
 // NewStdLogWriter ...
-func NewStdLogWriter() StdLogWriter {
-	return &rpcStdLogWriter{}
+func NewStdLogWriter() LogWriter {
+	return &StdLogWriter{}
 }
 
-func (p *rpcStdLogWriter) Write(
+func (p *StdLogWriter) Write(
 	isoTime string,
 	tag string,
 	msg string,
@@ -64,20 +63,19 @@ func (p *rpcStdLogWriter) Write(
 }
 
 // CallbackLogWriter ...
-type CallbackLogWriter = *rpcCallbackStdLogWriter
-type rpcCallbackStdLogWriter struct {
+type CallbackLogWriter struct {
 	onWrite func(isoTime string, tag string, msg string, extra string)
 }
 
 // NewCallbackLogWriter ...
 func NewCallbackLogWriter(
 	onWrite func(isoTime string, tag string, msg string, extra string),
-) CallbackLogWriter {
-	return &rpcCallbackStdLogWriter{onWrite: onWrite}
+) *CallbackLogWriter {
+	return &CallbackLogWriter{onWrite: onWrite}
 }
 
 // Write ...
-func (p *rpcCallbackStdLogWriter) Write(
+func (p *CallbackLogWriter) Write(
 	isoTime string,
 	tag string,
 	msg string,
@@ -89,28 +87,28 @@ func (p *rpcCallbackStdLogWriter) Write(
 }
 
 // Logger ...
-type Logger = *rpcLogger
-type rpcLogger struct {
+type Logger struct {
 	level   int32
 	writers []LogWriter
-	rpcAutoLock
+	AutoLock
 }
 
 // NewLogger ...
-func NewLogger(writers []LogWriter) Logger {
+func NewLogger(writers []LogWriter) *Logger {
 	if writers == nil || len(writers) == 0 {
-		return &rpcLogger{
+		return &Logger{
 			level:   LogMaskAll,
 			writers: []LogWriter{NewStdLogWriter()},
 		}
 	}
-	return &rpcLogger{
+	return &Logger{
 		level:   LogMaskAll,
 		writers: writers,
 	}
 }
 
-func (p *rpcLogger) SetLevel(level int32) bool {
+// SetLevel ...
+func (p *Logger) SetLevel(level int32) bool {
 	if level >= LogMaskNone && level <= LogMaskAll {
 		atomic.StoreInt32(&p.level, level)
 		return true
@@ -119,11 +117,13 @@ func (p *rpcLogger) SetLevel(level int32) bool {
 	return false
 }
 
-func (p *rpcLogger) Debug(msg string) {
+// Debug ...
+func (p *Logger) Debug(msg string) {
 	p.DebugExtra(msg, "")
 }
 
-func (p *rpcLogger) DebugExtra(msg string, extra string) {
+// DebugExtra ...
+func (p *Logger) DebugExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskDebug > 0 {
 		isoTime := TimeNowISOString()
 		for _, writer := range p.writers {
@@ -132,11 +132,13 @@ func (p *rpcLogger) DebugExtra(msg string, extra string) {
 	}
 }
 
-func (p *rpcLogger) Info(msg string) {
+// Info ...
+func (p *Logger) Info(msg string) {
 	p.InfoExtra(msg, "")
 }
 
-func (p *rpcLogger) InfoExtra(msg string, extra string) {
+// InfoExtra ...
+func (p *Logger) InfoExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskInfo > 0 {
 		isoTime := TimeNowISOString()
 		for _, writer := range p.writers {
@@ -145,11 +147,13 @@ func (p *rpcLogger) InfoExtra(msg string, extra string) {
 	}
 }
 
-func (p *rpcLogger) Warn(msg string) {
+// Warn ...
+func (p *Logger) Warn(msg string) {
 	p.WarnExtra(msg, "")
 }
 
-func (p *rpcLogger) WarnExtra(msg string, extra string) {
+// WarnExtra ...
+func (p *Logger) WarnExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskWarn > 0 {
 		isoTime := TimeNowISOString()
 		for _, writer := range p.writers {
@@ -158,11 +162,13 @@ func (p *rpcLogger) WarnExtra(msg string, extra string) {
 	}
 }
 
-func (p *rpcLogger) Error(msg string) {
+// Error ...
+func (p *Logger) Error(msg string) {
 	p.ErrorExtra(msg, "")
 }
 
-func (p *rpcLogger) ErrorExtra(msg string, extra string) {
+// ErrorExtra ...
+func (p *Logger) ErrorExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskError > 0 {
 		isoTime := TimeNowISOString()
 		for _, writer := range p.writers {
@@ -171,11 +177,13 @@ func (p *rpcLogger) ErrorExtra(msg string, extra string) {
 	}
 }
 
-func (p *rpcLogger) Fatal(msg string) {
+// Fatal ...
+func (p *Logger) Fatal(msg string) {
 	p.FatalExtra(msg, "")
 }
 
-func (p *rpcLogger) FatalExtra(msg string, extra string) {
+// FatalExtra ...
+func (p *Logger) FatalExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskFatal > 0 {
 		isoTime := TimeNowISOString()
 		for _, writer := range p.writers {

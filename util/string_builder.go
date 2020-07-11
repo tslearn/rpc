@@ -7,25 +7,24 @@ import (
 
 var stringBuilderPool = &sync.Pool{
 	New: func() interface{} {
-		return &rpcStringBuilder{
+		return &StringBuilder{
 			buffer: make([]byte, 0, 4096),
 		}
 	},
 }
 
 // StringBuilder high performance string builder
-type StringBuilder = *rpcStringBuilder
-type rpcStringBuilder struct {
+type StringBuilder struct {
 	buffer []byte
 }
 
 // NewStringBuilder create a string builder
-func NewStringBuilder() StringBuilder {
-	return stringBuilderPool.Get().(*rpcStringBuilder)
+func NewStringBuilder() *StringBuilder {
+	return stringBuilderPool.Get().(*StringBuilder)
 }
 
 // Reset Reset the builder
-func (p *rpcStringBuilder) Reset() {
+func (p *StringBuilder) Reset() {
 	if cap(p.buffer) == 4096 {
 		p.buffer = p.buffer[:0]
 	} else {
@@ -34,33 +33,33 @@ func (p *rpcStringBuilder) Reset() {
 }
 
 // Release Release the builder
-func (p *rpcStringBuilder) Release() {
+func (p *StringBuilder) Release() {
 	p.Reset()
 	stringBuilderPool.Put(p)
 }
 
 // AppendByte append byte to the buffer
-func (p *rpcStringBuilder) AppendByte(byte byte) {
+func (p *StringBuilder) AppendByte(byte byte) {
 	p.buffer = append(p.buffer, byte)
 }
 
 // AppendBytes append bytes to the buffer
-func (p *rpcStringBuilder) AppendBytes(bytes []byte) {
+func (p *StringBuilder) AppendBytes(bytes []byte) {
 	p.buffer = append(p.buffer, bytes...)
 }
 
 // AppendString append a string to string builder
-func (p *rpcStringBuilder) AppendString(str string) {
+func (p *StringBuilder) AppendString(str string) {
 	p.buffer = append(p.buffer, str...)
 }
 
 // AppendFormat append a formatted string to string builder
-func (p *rpcStringBuilder) AppendFormat(format string, a ...interface{}) {
+func (p *StringBuilder) AppendFormat(format string, a ...interface{}) {
 	p.AppendString(fmt.Sprintf(format, a...))
 }
 
 // Merge write a string builder to current string builder
-func (p *rpcStringBuilder) Merge(builder StringBuilder) {
+func (p *StringBuilder) Merge(builder *StringBuilder) {
 	if builder == nil {
 		return
 	}
@@ -68,11 +67,11 @@ func (p *rpcStringBuilder) Merge(builder StringBuilder) {
 }
 
 // IsEmpty return is the string builder is empty
-func (p *rpcStringBuilder) IsEmpty() bool {
+func (p *StringBuilder) IsEmpty() bool {
 	return len(p.buffer) == 0
 }
 
 // String get the builder string
-func (p *rpcStringBuilder) String() string {
+func (p *StringBuilder) String() string {
 	return string(p.buffer)
 }

@@ -7,19 +7,18 @@ import (
 )
 
 // PerformanceIndicator ...
-type PerformanceIndicator = *rpcPerformanceIndicator
-type rpcPerformanceIndicator struct {
+type PerformanceIndicator struct {
 	failed       int64
 	successArray [10]int64
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	rpcAutoLock
+	AutoLock
 }
 
 // NewPerformanceIndicator ...
-func NewPerformanceIndicator() PerformanceIndicator {
-	return &rpcPerformanceIndicator{
+func NewPerformanceIndicator() *PerformanceIndicator {
+	return &PerformanceIndicator{
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
@@ -29,7 +28,7 @@ func NewPerformanceIndicator() PerformanceIndicator {
 }
 
 // Calculate ...
-func (p *rpcPerformanceIndicator) Calculate(
+func (p *PerformanceIndicator) Calculate(
 	nowNS int64,
 ) (speed int64, interval time.Duration) {
 	p.DoWithLock(func() {
@@ -60,7 +59,7 @@ func (p *rpcPerformanceIndicator) Calculate(
 }
 
 // Count ...
-func (p *rpcPerformanceIndicator) Count(
+func (p *PerformanceIndicator) Count(
 	duration time.Duration,
 	origin string,
 	successful bool,
