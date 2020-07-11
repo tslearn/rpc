@@ -18,3 +18,5 @@ coverage.txt
 *.prof
 
 */_tmp_
+
+.idea
