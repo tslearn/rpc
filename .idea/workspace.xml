@@ -20,60 +20,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
-      <change afterPath="$PROJECT_DIR$/rpcc.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/util/assert.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/util/assert_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/array.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/array_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/assert.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/assert_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/context.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/defs.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/error.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/error_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/fncache.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/indicator.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/indicator_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/init_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/logger.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/logger_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/map.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/map_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/processor.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/processor_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/rand.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/rand_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/seed.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/seed_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/service.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/speed_counter.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/speed_counter_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/stream_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/string_builder.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/string_builder_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/time.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/time_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/utils_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_client_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_server.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/websocket_server_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/g.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/g_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/getg_386.s" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/getg_amd64.s" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/getg_amd64p32.s" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/getg_arm.s" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/getg_arm64.s" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/g/go_tls.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/rpcc.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpcc.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/assert.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/assert.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -253,6 +202,10 @@
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
     <state x="341" y="164" key="SettingsEditor/0.0.1680.1050@0.0.1680.1050" timestamp="1594440708772" />
+    <state x="440" y="265" key="Vcs.Push.Dialog.v2" timestamp="1594440853480">
+      <screen x="0" y="0" width="1680" height="1050" />
+    </state>
+    <state x="440" y="265" key="Vcs.Push.Dialog.v2/0.0.1680.1050@0.0.1680.1050" timestamp="1594440853480" />
     <state x="618" y="291" width="598" height="490" key="find.popup" timestamp="1594432829124">
       <screen x="49" y="23" width="1631" height="1027" />
     </state>
