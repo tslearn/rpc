@@ -7,17 +7,19 @@ import (
 )
 
 // PerformanceIndicator ...
-type PerformanceIndicator struct {
+type PerformanceIndicator = *rpcPerformanceIndicator
+type rpcPerformanceIndicator struct {
 	failed       int64
 	successArray [10]int64
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
+	rpcAutoLock
 }
 
 // NewPerformanceIndicator ...
-func NewPerformanceIndicator() *PerformanceIndicator {
-	return &PerformanceIndicator{
+func NewPerformanceIndicator() PerformanceIndicator {
+	return &rpcPerformanceIndicator{
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
@@ -27,28 +29,38 @@ func NewPerformanceIndicator() *PerformanceIndicator {
 }
 
 // Calculate ...
-func (p *PerformanceIndicator) Calculate(nowNS int64) (int64, time.Duration) {
-	// calculate total called
-	total := atomic.LoadInt64(&p.failed)
-	for i := 0; i < 10; i++ {
-		total += atomic.LoadInt64(&p.successArray[i])
-	}
+func (p *rpcPerformanceIndicator) Calculate(
+	nowNS int64,
+) (speed int64, interval time.Duration) {
+	p.DoWithLock(func() {
+		// calculate total called
+		total := atomic.LoadInt64(&p.failed)
+		for i := 0; i < 10; i++ {
+			total += atomic.LoadInt64(&p.successArray[i])
+		}
+		deltaCount := total - p.lastTotal
+		deltaNS := nowNS - p.lastNS
 
-	// calculate delta count and time
-	deltaCount := total - p.lastTotal
-	deltaNS := nowNS - p.lastNS
+		if deltaNS <= 0 {
+			speed = -1
+			interval = time.Duration(0)
+		} else if deltaCount < 0 {
+			speed = -1
+			interval = time.Duration(0)
+		} else {
+			p.lastNS = nowNS
+			p.lastTotal = total
 
-	if deltaNS > 0 {
-		p.lastTotal = total
-		p.lastNS = nowNS
-		return (deltaCount * int64(time.Second)) / deltaNS, time.Duration(deltaNS)
-	}
+			speed = (deltaCount * int64(time.Second)) / deltaNS
+			interval = time.Duration(deltaNS)
+		}
+	})
 
-	return 0, time.Duration(deltaNS)
+	return
 }
 
 // Count ...
-func (p *PerformanceIndicator) Count(
+func (p *rpcPerformanceIndicator) Count(
 	duration time.Duration,
 	origin string,
 	successful bool,

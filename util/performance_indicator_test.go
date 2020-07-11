@@ -41,7 +41,7 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 	nowNS := TimeNowNS()
 	performanceIndicator.Calculate(nowNS)
 	assert(performanceIndicator.Calculate(nowNS)).
-		Equals(int64(0), time.Duration(0))
+		Equals(int64(-1), time.Duration(0))
 
 	assert(performanceIndicator.failed).Equals(int64(30000))
 	assert(performanceIndicator.successArray).Equals([10]int64{
@@ -49,4 +49,9 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 	})
 	assert(performanceIndicator.lastTotal).Equals(int64(60000))
 	assert(performanceIndicator.lastNS).Equals(nowNS)
+
+	performanceIndicator2 := NewPerformanceIndicator()
+	performanceIndicator2.lastTotal = 10
+	assert(performanceIndicator2.Calculate(TimeNowNS()+100)).
+		Equals(int64(-1), time.Duration(0))
 }
