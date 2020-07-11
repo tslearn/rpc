@@ -21,8 +21,7 @@
   <component name="ChangeListManager">
     <list default="true" id="238b7ef2-8eea-491b-b386-fd60c2c30311" name="Default Changelist" comment="commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rpcc.go" beforeDir="false" afterPath="$PROJECT_DIR$/rpcc.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/assert.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/assert.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/assert_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/assert_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +80,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.assert_test.go">
+  <component name="RunManager" selected="Go Test.assert_test.go (1)">
     <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="rpcc" />
       <working_directory value="$PROJECT_DIR$" />
@@ -100,6 +99,16 @@
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
       <pattern value="^TestIsEquals$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="assert_test.go (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="rpcc" />
+      <working_directory value="$PROJECT_DIR$/util" />
+      <framework value="gotest" />
+      <kind value="FILE" />
+      <package value="github.com/tslearn/rpcc" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/util/assert_test.go" />
       <method v="2" />
     </configuration>
     <configuration name="assert_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -122,23 +131,13 @@
       <filePath value="$PROJECT_DIR$/" />
       <method v="2" />
     </configuration>
-    <configuration name="logger_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="rpcc" />
-      <working_directory value="$PROJECT_DIR$/core" />
-      <framework value="gotest" />
-      <kind value="FILE" />
-      <package value="github.com/tslearn/rpcc" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/core/logger_test.go" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.assert_test.go (1)" />
         <item itemvalue="Go Test.assert_test.go" />
         <item itemvalue="Go Test.TestIsEquals in github.com/tslearn/rpcc" />
         <item itemvalue="Go Build.go build main.go" />
         <item itemvalue="Go Test.go test core" />
-        <item itemvalue="Go Test.logger_test.go" />
       </list>
     </recent_temporary>
   </component>
@@ -178,34 +177,34 @@
       <screen x="49" y="23" width="1631" height="1027" />
     </state>
     <state x="709" y="473" key="#GOROOT/49.23.1631.1027@49.23.1631.1027" timestamp="1594432782093" />
-    <state width="545" height="531" key="GridCell.Tab.0.bottom" timestamp="1594440711405">
+    <state width="539" height="501" key="GridCell.Tab.0.bottom" timestamp="1594441454617">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
-    <state width="545" height="531" key="GridCell.Tab.0.bottom/0.0.1680.1050@0.0.1680.1050" timestamp="1594440711405" />
+    <state width="539" height="501" key="GridCell.Tab.0.bottom/0.0.1680.1050@0.0.1680.1050" timestamp="1594441454617" />
     <state width="545" height="791" key="GridCell.Tab.0.bottom/49.23.1631.1027@49.23.1631.1027" timestamp="1594435901425" />
-    <state width="545" height="531" key="GridCell.Tab.0.center" timestamp="1594440711405">
+    <state width="539" height="501" key="GridCell.Tab.0.center" timestamp="1594441454616">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
-    <state width="545" height="531" key="GridCell.Tab.0.center/0.0.1680.1050@0.0.1680.1050" timestamp="1594440711405" />
+    <state width="539" height="501" key="GridCell.Tab.0.center/0.0.1680.1050@0.0.1680.1050" timestamp="1594441454616" />
     <state width="545" height="791" key="GridCell.Tab.0.center/49.23.1631.1027@49.23.1631.1027" timestamp="1594435901425" />
-    <state width="545" height="531" key="GridCell.Tab.0.left" timestamp="1594440711404">
+    <state width="539" height="501" key="GridCell.Tab.0.left" timestamp="1594441454608">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
-    <state width="545" height="531" key="GridCell.Tab.0.left/0.0.1680.1050@0.0.1680.1050" timestamp="1594440711404" />
+    <state width="539" height="501" key="GridCell.Tab.0.left/0.0.1680.1050@0.0.1680.1050" timestamp="1594441454608" />
     <state width="545" height="791" key="GridCell.Tab.0.left/49.23.1631.1027@49.23.1631.1027" timestamp="1594435901424" />
-    <state width="545" height="531" key="GridCell.Tab.0.right" timestamp="1594440711405">
+    <state width="539" height="501" key="GridCell.Tab.0.right" timestamp="1594441454616">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
-    <state width="545" height="531" key="GridCell.Tab.0.right/0.0.1680.1050@0.0.1680.1050" timestamp="1594440711405" />
+    <state width="539" height="501" key="GridCell.Tab.0.right/0.0.1680.1050@0.0.1680.1050" timestamp="1594441454616" />
     <state width="545" height="791" key="GridCell.Tab.0.right/49.23.1631.1027@49.23.1631.1027" timestamp="1594435901425" />
     <state x="341" y="164" key="SettingsEditor" timestamp="1594440708772">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
     <state x="341" y="164" key="SettingsEditor/0.0.1680.1050@0.0.1680.1050" timestamp="1594440708772" />
-    <state x="440" y="265" key="Vcs.Push.Dialog.v2" timestamp="1594440853480">
+    <state x="440" y="265" key="Vcs.Push.Dialog.v2" timestamp="1594440986421">
       <screen x="0" y="0" width="1680" height="1050" />
     </state>
-    <state x="440" y="265" key="Vcs.Push.Dialog.v2/0.0.1680.1050@0.0.1680.1050" timestamp="1594440853480" />
+    <state x="440" y="265" key="Vcs.Push.Dialog.v2/0.0.1680.1050@0.0.1680.1050" timestamp="1594440986421" />
     <state x="618" y="291" width="598" height="490" key="find.popup" timestamp="1594432829124">
       <screen x="49" y="23" width="1631" height="1027" />
     </state>
@@ -275,6 +274,7 @@
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_readNBytesUnsafe_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_readNBytesUnsafe in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566385873732" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$gobench_indicator_test_go.out" NAME="gobench indicator_test.go Coverage Results" MODIFIED="1565880160155" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$Test_ConvertToIsoDateString_in_github_com_tslearn_rpcc_core.out" NAME="Test_ConvertToIsoDateString in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1567862793862" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
+    <SUITE FILE_PATH="coverage/rpcc$assert_test_go__1_.out" NAME="assert_test.go (1) Coverage Results" MODIFIED="1594441053876" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$websocket_server_test_go.out" NAME="websocket_server_test.go Coverage Results" MODIFIED="1567152088904" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestWebSocketServer_StartBackground_in_github_com_tslearn_rpcc_core.out" NAME="TestWebSocketServer_StartBackground in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566978087855" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
     <SUITE FILE_PATH="coverage/rpcc$TestRpcStream_ReadRPCMap_in_github_com_tslearn_rpcc_core.out" NAME="TestRpcStream_ReadRPCMap in github.com/tslearn/rpcc/core Coverage Results" MODIFIED="1566461283341" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
