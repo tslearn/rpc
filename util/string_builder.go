@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var stringBuilderPool = &sync.Pool{
+var stringBuilderCache = &sync.Pool{
 	New: func() interface{} {
 		return &StringBuilder{
 			buffer: make([]byte, 0, 4096),
@@ -20,7 +20,7 @@ type StringBuilder struct {
 
 // NewStringBuilder create a string builder
 func NewStringBuilder() *StringBuilder {
-	return stringBuilderPool.Get().(*StringBuilder)
+	return stringBuilderCache.Get().(*StringBuilder)
 }
 
 // Reset Reset the builder
@@ -35,7 +35,7 @@ func (p *StringBuilder) Reset() {
 // Release Release the builder
 func (p *StringBuilder) Release() {
 	p.Reset()
-	stringBuilderPool.Put(p)
+	stringBuilderCache.Put(p)
 }
 
 // AppendByte append byte to the buffer
