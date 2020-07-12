@@ -19,15 +19,15 @@ const (
 	// LogMaskNone this level logs nothing
 	LogMaskNone = int32(0)
 	// LogMaskFatal this level logs Fatal
-	LogMaskFatal = int32(1)
+	LogMaskFatal = int32(1 << 0)
 	// LogMaskError this level logs Error
-	LogMaskError = int32(2)
+	LogMaskError = int32(1 << 1)
 	// LogMaskWarn this level logs Warn
-	LogMaskWarn = int32(4)
+	LogMaskWarn = int32(1 << 2)
 	// LogMaskInfo this level logs Info
-	LogMaskInfo = int32(8)
+	LogMaskInfo = int32(1 << 3)
 	// LogMaskDebug this level logs Debug
-	LogMaskDebug = int32(16)
+	LogMaskDebug = int32(1 << 4)
 	// LogMaskAll this level logs Debug, Info, Warn, Error and Fatal
 	LogMaskAll = LogMaskFatal |
 		LogMaskError |
@@ -98,22 +98,23 @@ func (p *CallbackLogWriter) Write(
 
 // Logger ...
 type Logger struct {
-	level   int32
-	writers []LogWriter
+	level  int32
+	writer LogWriter
 	AutoLock
 }
 
 // NewLogger ...
-func NewLogger(writers []LogWriter) *Logger {
-	if writers == nil || len(writers) == 0 {
+func NewLogger(writer LogWriter) *Logger {
+	if writer == nil {
 		return &Logger{
-			level:   LogMaskAll,
-			writers: []LogWriter{NewStdLogWriter()},
+			level:  LogMaskAll,
+			writer: NewStdLogWriter(),
 		}
 	}
+
 	return &Logger{
-		level:   LogMaskAll,
-		writers: writers,
+		level:  LogMaskAll,
+		writer: writer,
 	}
 }
 
@@ -135,10 +136,7 @@ func (p *Logger) Debug(msg string) {
 // DebugExtra ...
 func (p *Logger) DebugExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskDebug > 0 {
-		isoTime := TimeNowISOString()
-		for _, writer := range p.writers {
-			writer.Write(isoTime, LogTagDebug, msg, extra)
-		}
+		p.writer.Write(TimeNowISOString(), LogTagDebug, msg, extra)
 	}
 }
 
@@ -150,10 +148,7 @@ func (p *Logger) Info(msg string) {
 // InfoExtra ...
 func (p *Logger) InfoExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskInfo > 0 {
-		isoTime := TimeNowISOString()
-		for _, writer := range p.writers {
-			writer.Write(isoTime, LogTagInfo, msg, extra)
-		}
+		p.writer.Write(TimeNowISOString(), LogTagInfo, msg, extra)
 	}
 }
 
@@ -165,10 +160,7 @@ func (p *Logger) Warn(msg string) {
 // WarnExtra ...
 func (p *Logger) WarnExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskWarn > 0 {
-		isoTime := TimeNowISOString()
-		for _, writer := range p.writers {
-			writer.Write(isoTime, LogTagWarn, msg, extra)
-		}
+		p.writer.Write(TimeNowISOString(), LogTagWarn, msg, extra)
 	}
 }
 
@@ -180,10 +172,7 @@ func (p *Logger) Error(msg string) {
 // ErrorExtra ...
 func (p *Logger) ErrorExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskError > 0 {
-		isoTime := TimeNowISOString()
-		for _, writer := range p.writers {
-			writer.Write(isoTime, LogTagError, msg, extra)
-		}
+		p.writer.Write(TimeNowISOString(), LogTagError, msg, extra)
 	}
 }
 
@@ -195,9 +184,6 @@ func (p *Logger) Fatal(msg string) {
 // FatalExtra ...
 func (p *Logger) FatalExtra(msg string, extra string) {
 	if atomic.LoadInt32(&p.level)&LogMaskFatal > 0 {
-		isoTime := TimeNowISOString()
-		for _, writer := range p.writers {
-			writer.Write(isoTime, LogTagFatal, msg, extra)
-		}
+		p.writer.Write(TimeNowISOString(), LogTagFatal, msg, extra)
 	}
 }

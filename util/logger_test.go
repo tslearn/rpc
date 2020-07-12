@@ -17,7 +17,7 @@ func runStdWriterLogger(onRun func(logger *Logger)) string {
 			os.Stdout = old
 		}()
 
-		onRun(NewLogger([]LogWriter{NewStdLogWriter()}))
+		onRun(NewLogger(NewStdLogWriter()))
 
 		retCH := make(chan string)
 
@@ -44,7 +44,7 @@ func runCallbackWriterLogger(
 	onRun func(logger *Logger),
 ) (isoTime string, tag string, msg string, extra string) {
 	wait := make(chan bool, 1)
-	onRun(NewLogger([]LogWriter{NewCallbackLogWriter(
+	onRun(NewLogger(NewCallbackLogWriter(
 		func(_isoTime string, _tag string, _msg string, _extra string) {
 			isoTime = _isoTime
 			tag = _tag
@@ -52,7 +52,7 @@ func runCallbackWriterLogger(
 			extra = _extra
 			wait <- true
 		},
-	)}))
+	)))
 	<-wait
 	return
 }
@@ -79,18 +79,11 @@ func TestNewLogger(t *testing.T) {
 	assert := NewAssert(t)
 	logger1 := NewLogger(nil)
 	assert(logger1.level).Equals(LogMaskAll)
-	assert(len(logger1.writers)).Equals(1)
+	assert(logger1.writer).IsNotNil()
 
-	logger2 := NewLogger([]LogWriter{})
+	logger2 := NewLogger(NewStdLogWriter())
 	assert(logger2.level).Equals(LogMaskAll)
-	assert(len(logger2.writers)).Equals(1)
-
-	logger3 := NewLogger([]LogWriter{
-		NewStdLogWriter(),
-		NewStdLogWriter(),
-	})
-	assert(logger3.level).Equals(LogMaskAll)
-	assert(len(logger3.writers)).Equals(2)
+	assert(logger2.writer).IsNotNil()
 }
 
 func TestRpcLogger_SetLevel(t *testing.T) {
@@ -113,7 +106,7 @@ func TestRpcLogger_SetLevel(t *testing.T) {
 	fnTestLogLevel := func(level int32) int32 {
 		ret := int32(0)
 
-		logger := NewLogger([]LogWriter{NewCallbackLogWriter(
+		logger := NewLogger(NewCallbackLogWriter(
 			func(_ string, tag string, msg string, _ string) {
 				if msg == "message" {
 					switch tag {
@@ -130,7 +123,7 @@ func TestRpcLogger_SetLevel(t *testing.T) {
 					}
 				}
 			},
-		)})
+		))
 		logger.SetLevel(level)
 		logger.Debug("message")
 		logger.Info("message")
