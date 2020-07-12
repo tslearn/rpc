@@ -32,8 +32,8 @@ func (p *SpeedCounter) Total() int64 {
 	return atomic.LoadInt64(&p.total)
 }
 
-// Calculate get the speed and reinitialized the SpeedCounter
-func (p *SpeedCounter) Calculate() int64 {
+// CalculateSpeed ...
+func (p *SpeedCounter) CalculateSpeed() int64 {
 	return p.CallWithLock(func() interface{} {
 		deltaNS := TimeNowNS() - p.lastNS
 		if deltaNS <= 0 {
