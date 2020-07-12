@@ -60,33 +60,36 @@ func TestConvertToRPCError(t *testing.T) {
 
 func TestRpcError_GetMessage(t *testing.T) {
 	assert := util.NewAssert(t)
-
-	err := &rpcError{
-		message: "message",
-		debug:   "debug",
-	}
-	assert(err.GetMessage()).Equals("message")
+	assert(NewRPCErrorByDebug("message", "debug").GetMessage()).Equals("message")
 }
 
 func TestRpcError_GetDebug(t *testing.T) {
 	assert := util.NewAssert(t)
-
-	err := &rpcError{
-		message: "message",
-		debug:   "debug",
-	}
-	assert(err.GetDebug()).Equals("debug")
+	assert(NewRPCErrorByDebug("message", "debug").GetDebug()).Equals("debug")
 }
 
 func TestRpcError_AddDebug(t *testing.T) {
 	assert := util.NewAssert(t)
 
-	err := &rpcError{
-		message: "message",
-		debug:   "",
-	}
+	err := NewRPCError("message")
 	err.AddDebug("m1")
 	assert(err.GetDebug()).Equals("m1")
 	err.AddDebug("m2")
 	assert(err.GetDebug()).Equals("m1\nm2")
+}
+
+func TestRpcError_GetExtra(t *testing.T) {
+	assert := util.NewAssert(t)
+
+	err := NewRPCError("message")
+	err.SetExtra("extra")
+	assert(err.GetExtra()).Equals("extra")
+}
+
+func TestRpcError_SetExtra(t *testing.T) {
+	assert := util.NewAssert(t)
+
+	err := NewRPCError("message")
+	err.SetExtra("extra")
+	assert(err.(*rpcError).extra).Equals("extra")
 }
