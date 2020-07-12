@@ -23,6 +23,13 @@ func TestConvertToIsoDateString(t *testing.T) {
 		start = start.Add(271099197000000)
 	}
 
+	smallTime, _ := time.Parse(
+		"2006-01-02T15:04:05.999Z07:00",
+		"0000-01-01T00:00:00+00:00",
+	)
+	assert(ConvertToIsoDateString(smallTime)).
+		Equals("0000-01-01T00:00:00.000+00:00")
+
 	largeTime, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"9998-01-01T00:00:00+00:00",
@@ -96,40 +103,20 @@ func TestTimeNowMS(t *testing.T) {
 func TestTimeNowISOString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 1000000; i++ {
 		if nowNS, err := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
 			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() < int64(10*time.Millisecond),
+				time.Now().UnixNano()-nowNS.UnixNano() < int64(30*time.Millisecond),
 			).IsTrue()
 			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() > int64(-10*time.Millisecond),
+				time.Now().UnixNano()-nowNS.UnixNano() > int64(-30*time.Millisecond),
 			).IsTrue()
 		} else {
 			assert().Fail()
 		}
-		time.Sleep(time.Millisecond)
-	}
-
-	// hack timeNowPointer to nil
-	atomic.StorePointer(&timeNowPointer, nil)
-	for i := 0; i < 500; i++ {
-		if nowNS, err := time.Parse(
-			"2006-01-02T15:04:05.999Z07:00",
-			TimeNowISOString(),
-		); err == nil {
-			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() < int64(10*time.Millisecond),
-			).IsTrue()
-			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() > int64(-10*time.Millisecond),
-			).IsTrue()
-		} else {
-			assert().Fail()
-		}
-		time.Sleep(time.Millisecond)
 	}
 }
 
@@ -149,4 +136,18 @@ func TestTimeSpanBetween(t *testing.T) {
 	dur := TimeSpanBetween(start, TimeNowNS())
 	assert(int64(dur) > int64(40*time.Millisecond)).IsTrue()
 	assert(int64(dur) < int64(60*time.Millisecond)).IsTrue()
+}
+
+func BenchmarkTimeNowNS(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		TimeNowNS()
+	}
+}
+
+func BenchmarkTimeNowISOString(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		TimeNowISOString()
+	}
 }

@@ -18,13 +18,13 @@ func NewSpeedCounter() *SpeedCounter {
 	return &SpeedCounter{
 		total:     0,
 		lastCount: 0,
-		lastNS:    TimeNowNS(),
+		lastNS:    time.Now().UnixNano(),
 	}
 }
 
 // Add count n times
-func (p *SpeedCounter) Add(n int64) {
-	atomic.AddInt64(&p.total, n)
+func (p *SpeedCounter) Add(n int64) int64 {
+	return atomic.AddInt64(&p.total, n)
 }
 
 // Total get the total count
@@ -35,7 +35,7 @@ func (p *SpeedCounter) Total() int64 {
 // CalculateSpeed ...
 func (p *SpeedCounter) CalculateSpeed() int64 {
 	return p.CallWithLock(func() interface{} {
-		deltaNS := TimeNowNS() - p.lastNS
+		deltaNS := time.Now().UnixNano() - p.lastNS
 		if deltaNS <= 0 {
 			return int64(0)
 		}
