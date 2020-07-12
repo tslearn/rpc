@@ -55,13 +55,13 @@ func init() {
 func runStoreTime() {
 	defer atomic.StorePointer(&timeNowPointer, nil)
 
-	for i := 0; i < 8000; i++ {
+	for i := 0; i < 800; i++ {
 		now := time.Now()
 		atomic.StorePointer(&timeNowPointer, unsafe.Pointer(&timeInfo{
 			timeNS:        now.UnixNano(),
 			timeISOString: ConvertToIsoDateString(now),
 		}))
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(time.Millisecond)
 	}
 }
 
