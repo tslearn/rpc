@@ -18,7 +18,7 @@ func NewSpeedCounter() *SpeedCounter {
 	return &SpeedCounter{
 		total:     0,
 		lastCount: 0,
-		lastNS:    time.Now().UnixNano(),
+		lastNS:    TimeNowNS(),
 	}
 }
 
@@ -39,12 +39,9 @@ func (p *SpeedCounter) Calculate() int64 {
 		if deltaNS <= 0 {
 			return int64(0)
 		}
-
 		deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
-
 		p.lastCount += deltaCount
 		p.lastNS += deltaNS
-
 		return (deltaCount * int64(time.Second)) / deltaNS
 	}).(int64)
 }
