@@ -10,6 +10,11 @@ type RPCError interface {
 	Error() string
 }
 
+type rpcError struct {
+	message string
+	debug   string
+}
+
 // NewRPCError create new error
 func NewRPCError(message string) RPCError {
 	return &rpcError{
@@ -48,12 +53,6 @@ func ConvertToRPCError(v interface{}) RPCError {
 	return nil
 }
 
-// NewRPCError ...
-type rpcError struct {
-	message string
-	debug   string
-}
-
 func (p *rpcError) GetMessage() string {
 	return p.message
 }
@@ -72,11 +71,16 @@ func (p *rpcError) AddDebug(debug string) {
 func (p *rpcError) Error() string {
 	sb := util.NewStringBuilder()
 	if len(p.message) > 0 {
-		sb.AppendFormat("%s\n", p.message)
+		sb.AppendString(p.message)
+		sb.AppendByte('\n')
 	}
 
 	if len(p.debug) > 0 {
-		sb.AppendFormat("Debug:\n%s\n", AddPrefixPerLine(p.debug, "\t"))
+		sb.AppendString(util.ConcatString(
+			"Debug:\n",
+			util.AddPrefixPerLine(p.debug, "\t"),
+			"\n",
+		))
 	}
 	var ret = sb.String()
 	sb.Release()

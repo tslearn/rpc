@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -49,13 +48,10 @@ func (p *StringBuilder) AppendBytes(bytes []byte) {
 }
 
 // AppendString append a string to string builder
-func (p *StringBuilder) AppendString(str string) {
-	p.buffer = append(p.buffer, str...)
-}
-
-// AppendFormat append a formatted string to string builder
-func (p *StringBuilder) AppendFormat(format string, a ...interface{}) {
-	p.AppendString(fmt.Sprintf(format, a...))
+func (p *StringBuilder) AppendString(str ...string) {
+	for _, v := range str {
+		p.buffer = append(p.buffer, v...)
+	}
 }
 
 // Merge write a string builder to current string builder

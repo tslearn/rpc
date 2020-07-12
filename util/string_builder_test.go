@@ -90,25 +90,6 @@ func Test_StringBuilder_AppendString(t *testing.T) {
 	}
 }
 
-func TestStringBuilder_AppendFormat(t *testing.T) {
-	assert := NewAssert(t)
-
-	builder := NewStringBuilder()
-	builder.AppendFormat("test")
-	assert(builder.String()).Equals("test")
-	builder.Release()
-
-	builder = NewStringBuilder()
-	builder.AppendFormat("test %d", 100)
-	assert(builder.String()).Equals("test 100")
-	builder.Release()
-
-	builder = NewStringBuilder()
-	builder.AppendFormat("test %s %d", "hello", 100)
-	assert(builder.String()).Equals("test hello 100")
-	builder.Release()
-}
-
 func Test_StringBuilder_Merge(t *testing.T) {
 	assert := NewAssert(t)
 
