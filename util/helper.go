@@ -9,11 +9,19 @@ func AddPrefixPerLine(text string, prefix string) string {
 	sb := NewStringBuilder()
 	defer sb.Release()
 
-	for _, v := range strings.Split(text, "\n") {
-		if !sb.IsEmpty() {
+	first := true
+	array := strings.Split(text, "\n")
+	for idx, v := range array {
+		if first {
+			first = false
+		} else {
 			sb.AppendByte('\n')
 		}
-		sb.AppendString(prefix, v)
+
+		if v != "" || idx == 0 || idx != len(array)-1 {
+			sb.AppendString(prefix)
+			sb.AppendString(v)
+		}
 	}
 	return sb.String()
 }

@@ -14,8 +14,8 @@ func TestAddPrefixPerLine(t *testing.T) {
 	assert(AddPrefixPerLine("a\nb", "")).Equals("a\nb")
 	assert(AddPrefixPerLine("", "-")).Equals("-")
 	assert(AddPrefixPerLine("a", "-")).Equals("-a")
-	assert(AddPrefixPerLine("\n", "-")).Equals("-\n-")
-	assert(AddPrefixPerLine("a\n", "-")).Equals("-a\n-")
+	assert(AddPrefixPerLine("\n", "-")).Equals("-\n")
+	assert(AddPrefixPerLine("a\n", "-")).Equals("-a\n")
 	assert(AddPrefixPerLine("a\nb", "-")).Equals("-a\n-b")
 }
 

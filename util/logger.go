@@ -56,14 +56,20 @@ func (p *StdLogWriter) Write(
 	extra string,
 ) {
 	sb := NewStringBuilder()
-	defer sb.Release()
-
 	sb.AppendString(isoTime)
 	if len(extra) > 0 {
-		sb.AppendString("(", extra, ")")
+		sb.AppendByte('(')
+		sb.AppendString(extra)
+		sb.AppendByte(')')
 	}
-	sb.AppendString(" ", tag, ": ", msg, "\n")
+	sb.AppendByte(' ')
+	sb.AppendString(tag)
+	sb.AppendByte(':')
+	sb.AppendByte(' ')
+	sb.AppendString(msg)
+	sb.AppendByte('\n')
 	fmt.Print(sb.String())
+	sb.Release()
 }
 
 // CallbackLogWriter ...

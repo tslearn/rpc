@@ -48,10 +48,8 @@ func (p *StringBuilder) AppendBytes(bytes []byte) {
 }
 
 // AppendString append a string to string builder
-func (p *StringBuilder) AppendString(str ...string) {
-	for _, v := range str {
-		p.buffer = append(p.buffer, v...)
-	}
+func (p *StringBuilder) AppendString(str string) {
+	p.buffer = append(p.buffer, str...)
 }
 
 // Merge write a string builder to current string builder
