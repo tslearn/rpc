@@ -7,7 +7,7 @@ func TestNewAutoLock(t *testing.T) {
 	assert(NewAutoLock()).IsNotNil()
 }
 
-func TestRpcAutoLock_DoWithLock(t *testing.T) {
+func TestAutoLock_DoWithLock(t *testing.T) {
 	assert := NewAssert(t)
 	locker := NewAutoLock()
 	waits := make(chan bool)
@@ -31,7 +31,7 @@ func TestRpcAutoLock_DoWithLock(t *testing.T) {
 	assert(sum).Equals(49950000)
 }
 
-func TestRpcAutoLock_CallWithLock(t *testing.T) {
+func TestAutoLock_CallWithLock(t *testing.T) {
 	assert := NewAssert(t)
 	locker := NewAutoLock()
 	waits := make(chan bool)
