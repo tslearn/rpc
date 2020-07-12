@@ -23,29 +23,30 @@ func isNil(val interface{}) (ret bool) {
 
 // Assert ...
 type Assert struct {
-	t      interface{ Fail() }
-	hookFN func()
-	args   []interface{}
+	t        interface{ Fail() }
+	hookFail func()
+	args     []interface{}
 }
 
 // NewAssert create new assert class
 func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
 	return func(args ...interface{}) *Assert {
 		return &Assert{
-			t:      t,
-			hookFN: nil,
-			args:   args,
+			t:        t,
+			hookFail: nil,
+			args:     args,
 		}
 	}
 }
 
 // Fail ...
 func (p *Assert) Fail() {
-	if p.hookFN != nil {
-		p.hookFN()
+	if p.hookFail != nil {
+		p.hookFail()
 	} else {
-		_, file, line, _ := runtime.Caller(2)
-		fmt.Printf("%s:%d\n", file, line)
+		if _, file, line, ok := runtime.Caller(2); ok {
+			fmt.Printf("%s:%d\n", file, line)
+		}
 		p.t.Fail()
 	}
 }

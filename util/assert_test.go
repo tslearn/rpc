@@ -23,7 +23,7 @@ func runWithFail(fn func(assert func(args ...interface{}) *Assert)) bool {
 	fn(func(args ...interface{}) *Assert {
 		return &Assert{
 			t: nil,
-			hookFN: func() {
+			hookFail: func() {
 				ch <- true
 			},
 			args: args,
