@@ -12,6 +12,10 @@ const (
 		"+/"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 // GetRandString get random string
 func GetRandString(strLen int) string {
 	sb := NewStringBuilder()
@@ -26,8 +30,4 @@ func GetRandString(strLen int) string {
 	ret := sb.String()
 	sb.Release()
 	return ret
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }

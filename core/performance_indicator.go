@@ -1,6 +1,7 @@
-package util
+package core
 
 import (
+	"github.com/tslearn/rpcc/util"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,7 +14,7 @@ type PerformanceIndicator struct {
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	AutoLock
+	util.AutoLock
 }
 
 // NewPerformanceIndicator ...
@@ -22,7 +23,7 @@ func NewPerformanceIndicator() *PerformanceIndicator {
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
-		lastNS:       TimeNowNS(),
+		lastNS:       util.TimeNowNS(),
 		originMap:    sync.Map{},
 	}
 }
@@ -49,7 +50,6 @@ func (p *PerformanceIndicator) Calculate(
 		} else {
 			p.lastNS = nowNS
 			p.lastTotal = total
-
 			speed = (deltaCount * int64(time.Second)) / deltaNS
 			interval = time.Duration(deltaNS)
 		}
