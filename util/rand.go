@@ -19,6 +19,7 @@ func init() {
 // GetRandString get random string
 func GetRandString(strLen int) string {
 	sb := NewStringBuilder()
+	defer sb.Release()
 	for strLen > 0 {
 		rand64 := rand.Uint64()
 		for used := 0; used < 10 && strLen > 0; used++ {
@@ -27,7 +28,5 @@ func GetRandString(strLen int) string {
 			strLen--
 		}
 	}
-	ret := sb.String()
-	sb.Release()
-	return ret
+	return sb.String()
 }

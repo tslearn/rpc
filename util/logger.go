@@ -56,6 +56,7 @@ func (p *StdLogWriter) Write(
 	extra string,
 ) {
 	sb := NewStringBuilder()
+	defer sb.Release()
 	sb.AppendString(isoTime)
 	if len(extra) > 0 {
 		sb.AppendByte('(')
@@ -69,7 +70,6 @@ func (p *StdLogWriter) Write(
 	sb.AppendString(msg)
 	sb.AppendByte('\n')
 	fmt.Print(sb.String())
-	sb.Release()
 }
 
 // CallbackLogWriter ...

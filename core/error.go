@@ -70,6 +70,7 @@ func (p *rpcError) AddDebug(debug string) {
 
 func (p *rpcError) Error() string {
 	sb := util.NewStringBuilder()
+	defer sb.Release()
 	if len(p.message) > 0 {
 		sb.AppendString(p.message)
 		sb.AppendByte('\n')
@@ -82,7 +83,6 @@ func (p *rpcError) Error() string {
 			"\n",
 		))
 	}
-	var ret = sb.String()
-	sb.Release()
-	return ret
+
+	return sb.String()
 }
