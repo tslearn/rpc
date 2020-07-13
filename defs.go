@@ -1,7 +1,7 @@
 package rpcc
 
 import (
-	"github.com/tslearn/rpcc/core"
+	"github.com/tslearn/rpcc/internal"
 	"time"
 )
 
@@ -16,63 +16,59 @@ const SystemStreamKindRequestIds = int64(3)
 const SystemStreamKindRequestIdsBack = int64(4)
 
 type IStreamConn interface {
-	ReadStream(
-		timeout time.Duration,
-		readLimit int64,
-	) (*core.RPCStream, core.RPCError)
-	WriteStream(
-		stream *core.RPCStream,
-		timeout time.Duration,
-		writeLimit int64,
-	) core.RPCError
-	Close() core.RPCError
+	ReadStream(timeout time.Duration, readLimit int64) (Stream, Error)
+	WriteStream(stream Stream, timeout time.Duration, writeLimit int64) Error
+	Close() Error
 }
 
 type IEndPoint interface {
 	ConnectString() string
 	IsRunning() bool
-	Open(onConnRun func(IStreamConn), onError func(core.RPCError)) bool
-	Close(onError func(core.RPCError)) bool
+	Open(onConnRun func(IStreamConn), onError func(Error)) bool
+	Close(onError func(Error)) bool
 }
 
+// Stream ...
+type Stream = *internal.RPCStream
+
 // Bool ...
-type Bool = core.RPCBool
+type Bool = internal.RPCBool
 
 // Int ...
-type Int = core.RPCInt
+type Int = internal.RPCInt
 
 // Uint ...
-type Uint = core.RPCUint
+type Uint = internal.RPCUint
 
 // Float ...
-type Float = core.RPCFloat
+type Float = internal.RPCFloat
 
 // String ...
-type String = core.RPCString
+type String = internal.RPCString
 
 // Bytes ...
-type Bytes = core.RPCBytes
+type Bytes = internal.RPCBytes
 
 // Any common Any type
-type Any = core.RPCAny
+type Any = internal.RPCAny
 
 // Array common Array type
-type Array = core.RPCArray
+type Array = internal.RPCArray
 
 // Map common Map type
-type Map = core.RPCMap
+type Map = internal.RPCMap
 
 // Error ...
-type Error = core.RPCError
+type Error = internal.RPCError
 
 // Return ...
-type Return = core.RPCReturn
+type Return = *internal.RPCReturn
 
 // Context ...
-type Context = core.RPCContext
+type Context = *internal.RPCContext
 
 // Service ...
-type Service = core.Service
+type Service = internal.Service
 
 // NewService ...
-var NewService = core.NewService
+var NewService = internal.NewService

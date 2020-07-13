@@ -2,6 +2,7 @@ package rpcc
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/tslearn/rpcc/internal"
 	"github.com/tslearn/rpcc/util"
 	"net/http"
 	"time"
@@ -13,31 +14,31 @@ type webSocketConn websocket.Conn
 func (p *webSocketConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
-) (*common.RPCStream, common.RPCError) {
+) (Stream, Error) {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return nil, common.NewRPCError(
+		return nil, internal.NewRPCError(
 			"webSocketConn: ReadStream: nil object",
 		)
 	} else {
 		conn.SetReadLimit(readLimit)
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-			return nil, common.NewRPCError(
-				common.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+			return nil, internal.NewRPCError(
+				util.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt, message, err := conn.ReadMessage(); err != nil {
-			return nil, common.NewRPCError(
-				common.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+			return nil, internal.NewRPCError(
+				util.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt != websocket.BinaryMessage {
-			return nil, common.NewRPCError(
+			return nil, internal.NewRPCError(
 				"webSocketConn: ReadStream: unsupported protocol",
 			)
-		} else if len(message) < common.StreamBodyPos {
-			return nil, common.NewRPCError(
+		} else if len(message) < internal.StreamBodyPos {
+			return nil, internal.NewRPCError(
 				"webSocketConn: ReadStream: stream data error",
 			)
 		} else {
-			stream := common.NewRPCStream()
+			stream := internal.NewRPCStream()
 			stream.SetWritePos(0)
 			stream.PutBytes(message)
 			return stream, nil
@@ -46,46 +47,46 @@ func (p *webSocketConn) ReadStream(
 }
 
 func (p *webSocketConn) WriteStream(
-	stream *common.RPCStream,
+	stream Stream,
 	timeout time.Duration,
 	writeLimit int64,
-) common.RPCError {
+) Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return common.NewRPCError(
+		return internal.NewRPCError(
 			"webSocketConn: WriteStream: nil object",
 		)
 	} else if stream == nil {
-		return common.NewRPCError(
+		return internal.NewRPCError(
 			"webSocketConn: WriteStream: stream is nil",
 		)
 	} else if writeLimit > 0 && writeLimit < int64(stream.GetWritePos()) {
-		return common.NewRPCError(
+		return internal.NewRPCError(
 			"webSocketConn: WriteStream: stream data overflow",
 		)
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
-		return common.NewRPCError(
-			common.ConcatString("webSocketConn: WriteStream: ", err.Error()),
+		return internal.NewRPCError(
+			util.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else if err := conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); err != nil {
-		return common.NewRPCError(
-			common.ConcatString("webSocketConn: WriteStream: ", err.Error()),
+		return internal.NewRPCError(
+			util.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else {
 		return nil
 	}
 }
 
-func (p *webSocketConn) Close() common.RPCError {
+func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return common.NewRPCError(
+		return internal.NewRPCError(
 			"webSocketConn: Close: nil object",
 		)
 	} else if err := conn.Close(); err != nil {
-		return common.NewRPCError(
-			common.ConcatString("webSocketConn: Close: ", err.Error()),
+		return internal.NewRPCError(
+			util.ConcatString("webSocketConn: Close: ", err.Error()),
 		)
 	} else {
 		return nil
@@ -108,7 +109,7 @@ type WebSocketServerEndPoint struct {
 	path       string
 	closeCH    chan bool
 	httpServer *http.Server
-	common.AutoLock
+	util.AutoLock
 }
 
 func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
@@ -127,9 +128,9 @@ func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
 // Open it must be none block
 func (p *WebSocketServerEndPoint) Open(
 	onConnRun func(IStreamConn),
-	onError func(common.RPCError),
+	onError func(Error),
 ) bool {
-	err := common.RPCError(nil)
+	err := Error(nil)
 	defer func() {
 		if onError != nil && err != nil {
 			onError(err)
@@ -138,12 +139,12 @@ func (p *WebSocketServerEndPoint) Open(
 
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketServerEndPoint: Open: onConnRun is nil",
 			)
 			return false
 		} else if p.httpServer != nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketServerEndPoint: Open: it has already been opened",
 			)
 			return false
@@ -151,8 +152,8 @@ func (p *WebSocketServerEndPoint) Open(
 			mux := http.NewServeMux()
 			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
 				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-					onError(common.NewRPCError(
-						common.ConcatString("WebSocketServerEndPoint: Open: ", err.Error()),
+					onError(internal.NewRPCError(
+						util.ConcatString("WebSocketServerEndPoint: Open: ", err.Error()),
 					))
 				} else {
 					onConnRun((*webSocketConn)(conn))
@@ -175,8 +176,8 @@ func (p *WebSocketServerEndPoint) Open(
 					})
 				}()
 				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-					onError(common.NewRPCError(
-						common.ConcatString("WebSocketServerEndPoint: Open: ", e.Error()),
+					onError(internal.NewRPCError(
+						util.ConcatString("WebSocketServerEndPoint: Open: ", e.Error()),
 					))
 				}
 			}()
@@ -185,8 +186,8 @@ func (p *WebSocketServerEndPoint) Open(
 	}).(bool)
 }
 
-func (p *WebSocketServerEndPoint) Close(onError func(common.RPCError)) bool {
-	err := common.RPCError(nil)
+func (p *WebSocketServerEndPoint) Close(onError func(Error)) bool {
+	err := Error(nil)
 	defer func() {
 		if onError != nil && err != nil {
 			onError(err)
@@ -195,13 +196,13 @@ func (p *WebSocketServerEndPoint) Close(onError func(common.RPCError)) bool {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketServerEndPoint: Close: has not been opened",
 			)
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
-			err = common.NewRPCError(
-				common.ConcatString("WebSocketServerEndPoint: Close: ", e.Error()),
+			err = internal.NewRPCError(
+				util.ConcatString("WebSocketServerEndPoint: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -218,7 +219,7 @@ func (p *WebSocketServerEndPoint) Close(onError func(common.RPCError)) bool {
 		case <-closeCH.(chan bool):
 			return true
 		case <-time.After(10 * time.Second):
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketServerEndPoint: Close: can not close in 10 seconds",
 			)
 			return false
@@ -243,7 +244,7 @@ type WebSocketClientEndPoint struct {
 	conn          *webSocketConn
 	closeCH       chan bool
 	connectString string
-	common.AutoLock
+	util.AutoLock
 }
 
 func NewWebSocketClientEndPoint(connectString string) IEndPoint {
@@ -256,9 +257,9 @@ func NewWebSocketClientEndPoint(connectString string) IEndPoint {
 
 func (p *WebSocketClientEndPoint) Open(
 	onConnRun func(IStreamConn),
-	onError func(common.RPCError),
+	onError func(Error),
 ) bool {
-	err := common.RPCError(nil)
+	err := Error(nil)
 	defer func() {
 		if onError != nil && err != nil {
 			onError(err)
@@ -267,12 +268,12 @@ func (p *WebSocketClientEndPoint) Open(
 
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketClientEndPoint: Open: onConnRun is nil",
 			)
 			return false
 		} else if p.conn != nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketClientEndPoint: Open: it has already been opened",
 			)
 			return false
@@ -280,12 +281,12 @@ func (p *WebSocketClientEndPoint) Open(
 			p.connectString,
 			nil,
 		); err != nil {
-			err = common.NewRPCError(
-				common.ConcatString("WebSocketClientEndPoint: Open: ", err.Error()),
+			err = internal.NewRPCError(
+				util.ConcatString("WebSocketClientEndPoint: Open: ", err.Error()),
 			)
 			return false
 		} else if wsConn == nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketClientEndPoint: Open: wsConn is nil",
 			)
 			return false
@@ -308,8 +309,8 @@ func (p *WebSocketClientEndPoint) Open(
 	}).(bool)
 }
 
-func (p *WebSocketClientEndPoint) Close(onError func(common.RPCError)) bool {
-	err := common.RPCError(nil)
+func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
+	err := Error(nil)
 	defer func() {
 		if onError != nil && err != nil {
 			onError(err)
@@ -318,13 +319,13 @@ func (p *WebSocketClientEndPoint) Close(onError func(common.RPCError)) bool {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketClientEndPoint: Close: has not been opened",
 			)
 			return nil
 		} else if e := p.conn.Close(); e != nil {
-			err = common.NewRPCError(
-				common.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
+			err = internal.NewRPCError(
+				util.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -341,7 +342,7 @@ func (p *WebSocketClientEndPoint) Close(onError func(common.RPCError)) bool {
 		case <-closeCH.(chan bool):
 			return true
 		case <-time.After(10 * time.Second):
-			err = common.NewRPCError(
+			err = internal.NewRPCError(
 				"WebSocketClientEndPoint: Close: can not close in 10 seconds",
 			)
 			return false

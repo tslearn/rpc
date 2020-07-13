@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"github.com/tslearn/rpcc/util"
@@ -10,13 +10,13 @@ import (
 func TestRpcContext_getThread(t *testing.T) {
 	assert := util.NewAssert(t)
 
-	ctx1 := rpcContext{}
+	ctx1 := RPCContext{}
 	assert(ctx1.getThread()).IsNil()
 
 	thread := newThread(nil)
 	thread.stop()
 
-	ctx2 := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx2 := RPCContext{thread: unsafe.Pointer(thread)}
 	assert(ctx2.getThread()).Equals(thread)
 
 }
@@ -27,7 +27,7 @@ func TestRpcContext_stop(t *testing.T) {
 	thread := newThread(nil)
 	thread.stop()
 
-	ctx := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx := RPCContext{thread: unsafe.Pointer(thread)}
 	assert(ctx.getThread()).IsNotNil()
 	ctx.stop()
 	assert(ctx.getThread()).IsNil()
@@ -40,7 +40,7 @@ func TestRpcContext_OK(t *testing.T) {
 	thread := newThread(nil)
 	thread.stop()
 	assert(thread.execSuccessful).IsFalse()
-	ctx := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx := RPCContext{thread: unsafe.Pointer(thread)}
 	ctx.OK(uint(215))
 	assert(thread.execSuccessful).IsTrue()
 	thread.outStream.SetReadPos(StreamBodyPos)
@@ -52,7 +52,7 @@ func TestRpcContext_OK(t *testing.T) {
 	thread1 := newThread(nil)
 	thread1.stop()
 	assert(thread1.execSuccessful).IsFalse()
-	ctx1 := rpcContext{thread: unsafe.Pointer(thread1)}
+	ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	ctx1.stop()
 	ctx1.OK(uint(215))
 	thread1.outStream.SetReadPos(StreamBodyPos)
@@ -63,7 +63,7 @@ func TestRpcContext_OK(t *testing.T) {
 	thread2 := newThread(nil)
 	thread2.stop()
 	assert(thread2.execSuccessful).IsFalse()
-	ctx2 := rpcContext{thread: unsafe.Pointer(thread2)}
+	ctx2 := RPCContext{thread: unsafe.Pointer(thread2)}
 	ctx2.OK(make(chan bool))
 	assert(thread2.execSuccessful).IsFalse()
 	thread2.outStream.SetReadPos(StreamBodyPos)
@@ -83,7 +83,7 @@ func TestRpcContext_writeError(t *testing.T) {
 	thread := newThread(newThreadPool(processor))
 	thread.stop()
 	thread.execSuccessful = true
-	ctx := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx := RPCContext{thread: unsafe.Pointer(thread)}
 	ctx.writeError("errorMessage", "errorDebug")
 	assert(thread.execSuccessful).IsFalse()
 	thread.outStream.SetReadPos(StreamBodyPos)
@@ -96,7 +96,7 @@ func TestRpcContext_writeError(t *testing.T) {
 	thread1 := newThread(nil)
 	thread1.stop()
 	thread1.execSuccessful = true
-	ctx1 := rpcContext{thread: unsafe.Pointer(thread1)}
+	ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	ctx1.stop()
 	ctx1.writeError("errorMessage", "errorDebug")
 	thread1.outStream.SetReadPos(StreamBodyPos)
@@ -111,7 +111,7 @@ func TestRpcContext_Error(t *testing.T) {
 	// ctx is ok
 	thread := newThread(nil)
 	thread.stop()
-	ctx := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx := RPCContext{thread: unsafe.Pointer(thread)}
 	assert(ctx.Error(nil)).IsNil()
 	assert(thread.outStream.GetWritePos()).Equals(StreamBodyPos)
 	assert(thread.outStream.GetReadPos()).Equals(StreamBodyPos)
@@ -128,7 +128,7 @@ func TestRpcContext_Error(t *testing.T) {
 	thread1 := newThread(nil)
 	thread1.stop()
 	thread1.execEchoNode = &rpcEchoNode{debugString: "nodeDebug"}
-	ctx1 := rpcContext{thread: unsafe.Pointer(thread1)}
+	ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	assert(
 		ctx1.Error(NewRPCErrorByDebug("errorMessage", "errorDebug")),
 	).IsNil()
@@ -144,7 +144,7 @@ func TestRpcContext_Errorf(t *testing.T) {
 	// ctx is ok
 	thread := newThread(nil)
 	thread.stop()
-	ctx := rpcContext{thread: unsafe.Pointer(thread)}
+	ctx := RPCContext{thread: unsafe.Pointer(thread)}
 	assert(ctx.Errorf("error%s", "Message")).IsNil()
 	thread.outStream.SetReadPos(StreamBodyPos)
 	assert(thread.outStream.ReadBool()).Equals(false, true)

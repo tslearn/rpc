@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"github.com/tslearn/rpcc/util"
@@ -35,7 +35,7 @@ func TestRpcThreadPool_stop(t *testing.T) {
 	processor := NewRPCProcessor(16, 16, nil, nil)
 	_ = processor.AddService(
 		"user",
-		NewService().Echo("sayHello", true, func(ctx RPCContext) RPCReturn {
+		NewService().Echo("sayHello", true, func(ctx *RPCContext) *RPCReturn {
 			time.Sleep(99999999 * time.Second)
 			return ctx.OK(true)
 		}),

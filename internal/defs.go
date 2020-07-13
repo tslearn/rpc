@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"reflect"
@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	nilContext  = RPCContext(nil)
-	nilReturn   = RPCReturn(nil)
+	nilContext  = (*RPCContext)(nil)
+	nilReturn   = (*RPCReturn)(nil)
 	contextType = reflect.ValueOf(nilContext).Type()
 	returnType  = reflect.ValueOf(nilReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
@@ -30,7 +30,7 @@ type RPCCache interface {
 
 // RPCCacheFunc ...
 type RPCCacheFunc = func(
-	ctx *rpcContext,
+	ctx *RPCContext,
 	stream *RPCStream,
 	fn interface{},
 ) bool
@@ -50,9 +50,6 @@ type Service interface {
 		service Service,
 	) Service
 }
-
-// RPCContext ...
-type RPCContext = *rpcContext
 
 // RPCBool ...
 type RPCBool = bool
@@ -81,8 +78,5 @@ type RPCArray = []RPCAny
 // RPCMap common Map type
 type RPCMap = map[string]RPCAny
 
-// rpcReturn is rpc function return type
-type rpcReturn struct{}
-
 // RPCReturn ...
-type RPCReturn = *rpcReturn
+type RPCReturn struct{}

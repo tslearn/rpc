@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"github.com/tslearn/rpcc/util"
@@ -68,7 +68,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test basic
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -95,7 +95,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test read echo path error
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -118,7 +118,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// echo path is not mounted
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -141,7 +141,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth data format error
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -164,7 +164,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth is overflow
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -190,7 +190,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// from data format error
 	runWithProcessor(
-		func(ctx RPCContext, name string) RPCReturn {
+		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -211,10 +211,10 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// OK, call with all type value
 	runWithProcessor(
-		func(ctx RPCContext,
+		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
 			x RPCBytes, a RPCArray, m RPCMap,
-		) RPCReturn {
+		) *RPCReturn {
 			return ctx.OK(true)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -242,10 +242,10 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 1st param
 	runWithProcessor(
-		func(ctx RPCContext,
+		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
 			x RPCBytes, a RPCArray, m RPCMap,
-		) RPCReturn {
+		) *RPCReturn {
 			return ctx.OK(true)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -282,10 +282,10 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 2nd param
 	runWithProcessor(
-		func(ctx RPCContext,
+		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
 			x RPCBytes, a RPCArray, m RPCMap,
-		) RPCReturn {
+		) *RPCReturn {
 			return ctx.OK(true)
 		},
 		func(_ *RPCProcessor) *RPCStream {
@@ -322,10 +322,10 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 3rd param
 	runWithProcessor(
-		func(ctx RPCContext,
+		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
 			x RPCBytes, a RPCArray, m RPCMap,
-		) RPCReturn {
+		) *RPCReturn {
 			return ctx.OK(true)
 		},
 		func(_ *RPCProcessor) *RPCStream {

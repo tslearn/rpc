@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"github.com/tslearn/rpcc/util"
@@ -21,24 +21,24 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(fn1)).Equals("", false)
 	fn2 := func(_ chan bool) {}
 	assert(getFuncKind(fn2)).Equals("", false)
-	fn3 := func(ctx RPCContext, _ bool) RPCReturn { return nilReturn }
+	fn3 := func(ctx *RPCContext, _ bool) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn3)).Equals("B", true)
-	fn4 := func(ctx RPCContext, _ int64) RPCReturn { return nilReturn }
+	fn4 := func(ctx *RPCContext, _ int64) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn4)).Equals("I", true)
-	fn5 := func(ctx RPCContext, _ uint64) RPCReturn { return nilReturn }
+	fn5 := func(ctx *RPCContext, _ uint64) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn5)).Equals("U", true)
-	fn6 := func(ctx RPCContext, _ float64) RPCReturn { return nilReturn }
+	fn6 := func(ctx *RPCContext, _ float64) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn6)).Equals("F", true)
-	fn7 := func(ctx RPCContext, _ string) RPCReturn { return nilReturn }
+	fn7 := func(ctx *RPCContext, _ string) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn7)).Equals("S", true)
-	fn8 := func(ctx RPCContext, _ RPCBytes) RPCReturn { return nilReturn }
+	fn8 := func(ctx *RPCContext, _ RPCBytes) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn8)).Equals("X", true)
-	fn9 := func(ctx RPCContext, _ RPCArray) RPCReturn { return nilReturn }
+	fn9 := func(ctx *RPCContext, _ RPCArray) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn9)).Equals("A", true)
-	fn10 := func(ctx RPCContext, _ RPCMap) RPCReturn { return nilReturn }
+	fn10 := func(ctx *RPCContext, _ RPCMap) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn10)).Equals("M", true)
 
-	fn11 := func(ctx RPCContext) RPCReturn { return nilReturn }
+	fn11 := func(ctx *RPCContext) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn11)).Equals("", true)
 
 	// no return
@@ -46,14 +46,14 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(fn12)).Equals("", false)
 
 	// value type not supported
-	fn13 := func(ctx RPCContext, _ chan bool) RPCReturn { return nilReturn }
+	fn13 := func(ctx *RPCContext, _ chan bool) *RPCReturn { return nilReturn }
 	assert(getFuncKind(fn13)).Equals("", false)
 
 	fn14 := func(
-		ctx RPCContext,
+		ctx *RPCContext,
 		_ bool, _ int64, _ uint64, _ float64, _ string,
 		_ RPCBytes, _ RPCArray, _ RPCMap,
-	) RPCReturn {
+	) *RPCReturn {
 		return nilReturn
 	}
 	assert(getFuncKind(fn14)).Equals("BIUFSXAM", true)
@@ -225,7 +225,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 
 	processor1 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor1.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, name string) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		}), "")
 	assert(processor1.BuildCache(
@@ -325,7 +325,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	// OK
 	service2 := NewService()
 	service2.AddService("user", NewService().
-		Echo("sayHello", true, func(ctx RPCContext) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}))
 	assert(processor.mountNode(rootName, &rpcNodeMeta{
@@ -368,13 +368,13 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	_ = processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testOccupied",
 		true,
-		func(ctx RPCContext) RPCReturn { return ctx.OK(true) },
+		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})
 	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testOccupied",
 		true,
-		func(ctx RPCContext) RPCReturn { return ctx.OK(true) },
+		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
 		"Echo name testOccupied is duplicated",
@@ -407,7 +407,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testEchoHandlerArguments",
 		true,
-		func(ctx bool) RPCReturn { return nilReturn },
+		func(ctx bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
 		"Echo handler 1st argument type must be rpc.Context",
@@ -417,7 +417,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testEchoHandlerArguments",
 		true,
-		func(ctx RPCContext, ch chan bool) RPCReturn { return nilReturn },
+		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
 		"Echo handler 2nd argument type <chan bool> not supported",
@@ -428,7 +428,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testEchoHandlerReturn",
 		true,
-		func(ctx RPCContext) (RPCReturn, bool) { return nilReturn, true },
+		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
 		"Echo handler return type must be rpc.Return",
@@ -449,7 +449,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
 		"testOK",
 		true,
-		func(ctx RPCContext, _ bool, _ RPCMap) RPCReturn { return nilReturn },
+		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
 		util.GetStackString(0),
 	})).IsNil()
 
@@ -525,9 +525,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"user",
 		NewService().
 			Echo("sayHello", true, func(
-				ctx *rpcContext,
+				ctx *RPCContext,
 				name string,
-			) RPCReturn {
+			) *RPCReturn {
 				return ctx.OK(name)
 			}),
 		"",

@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"fmt"
@@ -75,13 +75,13 @@ func (p *rpcThread) put(stream *RPCStream) bool {
 	}
 }
 
-func (p *rpcThread) eval(inStream *RPCStream) *rpcReturn {
+func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	processor := p.threadPool.processor
 	timeStart := util.TimeNowNS()
 	// create context
 	p.inStream = inStream
 	p.execSuccessful = false
-	ctx := &rpcContext{thread: unsafe.Pointer(p)}
+	ctx := &RPCContext{thread: unsafe.Pointer(p)}
 
 	defer func() {
 		if err := recover(); err != nil && p.execEchoNode != nil {

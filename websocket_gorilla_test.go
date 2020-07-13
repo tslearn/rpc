@@ -2,13 +2,13 @@ package rpcc
 
 import (
 	"fmt"
-	"github.com/tslearn/kzserver/common"
+	"github.com/tslearn/rpcc/util"
 	"testing"
 	"time"
 )
 
 func TestNewWebSocketServerEndPoint(t *testing.T) {
-	assert := common.NewAssert(t)
+	assert := util.NewAssert(t)
 
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 
@@ -16,7 +16,7 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 		assert(
 			server.Open(func(conn IStreamConn) {
 				fmt.Println(conn)
-			}, func(err common.RPCError) {
+			}, func(err Error) {
 				fmt.Println(err)
 			}),
 		).IsTrue()
@@ -24,7 +24,7 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		assert(
-			server.Close(func(err common.RPCError) {
+			server.Close(func(err Error) {
 				fmt.Println(err)
 			}),
 		).IsTrue()
@@ -32,11 +32,11 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 }
 
 func TestNewWebSocketClientEndPoint(t *testing.T) {
-	assert := common.NewAssert(t)
+	assert := util.NewAssert(t)
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 	server.Open(func(conn IStreamConn) {
 		time.Sleep(3 * time.Second)
-	}, func(err common.RPCError) {
+	}, func(err Error) {
 		fmt.Println(err)
 	})
 
@@ -44,7 +44,7 @@ func TestNewWebSocketClientEndPoint(t *testing.T) {
 	assert(
 		client.Open(func(conn IStreamConn) {
 			time.Sleep(3 * time.Second)
-		}, func(err common.RPCError) {
+		}, func(err Error) {
 			fmt.Println(err)
 		}),
 	).IsTrue()
@@ -52,12 +52,12 @@ func TestNewWebSocketClientEndPoint(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	assert(
-		client.Close(func(err common.RPCError) {
+		client.Close(func(err Error) {
 			fmt.Println(err)
 		}),
 	).IsTrue()
 
-	server.Close(func(err common.RPCError) {
+	server.Close(func(err Error) {
 		fmt.Println(err)
 	})
 }

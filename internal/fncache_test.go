@@ -1,4 +1,4 @@
-package core
+package internal
 
 import (
 	"github.com/tslearn/rpcc/util"
@@ -22,12 +22,12 @@ type TestFuncCache struct{}
 func (p *TestFuncCache) Get(fnString string) RPCCacheFunc {
 	switch fnString {
 	case "S":
-		return func(c *rpcContext, s *RPCStream, f interface{}) bool {
+		return func(c *RPCContext, s *RPCStream, f interface{}) bool {
 			h, ok := s.ReadString()
 			if !ok || s.CanRead() {
 				return false
 			}
-			f.(func(*rpcContext, string) *rpcReturn)(c, h)
+			f.(func(*RPCContext, string) *RPCReturn)(c, h)
 			return true
 		}
 	default:
@@ -51,7 +51,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor1 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor1.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor1.BuildCache(
@@ -65,7 +65,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor2 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor2.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCBool) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCBool) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor2.BuildCache(
@@ -79,7 +79,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor3 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor3.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCInt) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCInt) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor3.BuildCache(
@@ -93,7 +93,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor4 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor4.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCUint) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCUint) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor4.BuildCache(
@@ -107,7 +107,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor5 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor5.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCFloat) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCFloat) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor5.BuildCache(
@@ -121,7 +121,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor6 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor6.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCString) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCString) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor6.BuildCache(
@@ -135,7 +135,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor7 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor7.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCBytes) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCBytes) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor7.BuildCache(
@@ -149,7 +149,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor8 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor8.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCArray) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCArray) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor8.BuildCache(
@@ -163,7 +163,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor9 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor9.AddService("abc", NewService().
-		Echo("sayHello", true, func(ctx RPCContext, _ RPCMap) RPCReturn {
+		Echo("sayHello", true, func(ctx *RPCContext, _ RPCMap) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor9.BuildCache(
@@ -178,9 +178,9 @@ func TestFnCache_basic(t *testing.T) {
 	processor10 := NewRPCProcessor(16, 32, nil, nil)
 	_ = processor10.AddService("abc", NewService().
 		Echo("sayHello", true, func(
-			ctx RPCContext, _ RPCBool, _ RPCInt, _ RPCUint, _ RPCFloat, _ RPCString,
+			ctx *RPCContext, _ RPCBool, _ RPCInt, _ RPCUint, _ RPCFloat, _ RPCString,
 			_ RPCBytes, _ RPCArray, _ RPCMap,
-		) RPCReturn {
+		) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
 	assert(processor10.BuildCache(

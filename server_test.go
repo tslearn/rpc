@@ -2,7 +2,6 @@ package rpcc
 
 import (
 	"fmt"
-	"github.com/tslearn/kzserver/common"
 	"testing"
 	"time"
 )
@@ -17,10 +16,10 @@ func TestServer_Basic(t *testing.T) {
 	server := NewServer(32, nil).
 		AddService("user", NewService().
 			Echo("sayHello", true, func(
-				ctx common.RPCContext,
+				ctx Context,
 				name string,
-			) common.RPCReturn {
-				time.Sleep(1000 * time.Second)
+			) Return {
+				//time.Sleep(1000 * time.Second)
 				return ctx.OK("hello " + name)
 			}),
 		).
