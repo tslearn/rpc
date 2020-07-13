@@ -35,7 +35,7 @@ type rpcEchoNode struct {
 	callString  string
 	debugString string
 	argTypes    []reflect.Type
-	indicator   *PerformanceIndicator
+	indicator   *RPCPerformanceIndicator
 }
 
 type rpcServiceNode struct {
@@ -447,7 +447,7 @@ func (p *RPCProcessor) mountEcho(
 		),
 		debugString: fmt.Sprintf("%s %s", echoPath, fileLine),
 		argTypes:    argTypes,
-		indicator:   NewPerformanceIndicator(),
+		indicator:   NewRPCPerformanceIndicator(),
 	}
 
 	return nil
