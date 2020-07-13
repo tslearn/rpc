@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/util"
 	"sync/atomic"
 	"unsafe"
 )
@@ -41,7 +40,7 @@ func (p *RPCContext) OK(value interface{}) *RPCReturn {
 		if stream.Write(value) != RPCStreamWriteOK {
 			return p.writeError(
 				"return type is error",
-				util.GetStackString(1),
+				GetStackString(1),
 			)
 		}
 
@@ -68,6 +67,6 @@ func (p *RPCContext) Errorf(format string, a ...interface{}) *RPCReturn {
 	return p.Error(
 		NewRPCErrorByDebug(
 			fmt.Sprintf(format, a...),
-			util.GetStackString(1),
+			GetStackString(1),
 		))
 }

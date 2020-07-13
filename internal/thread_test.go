@@ -1,14 +1,13 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestNewThread(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, nil)
 	threadPool := newThreadPool(processor)
@@ -64,7 +63,7 @@ func runWithProcessor(
 }
 
 func TestRpcThread_eval(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	// test basic
 	runWithProcessor(

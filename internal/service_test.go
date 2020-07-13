@@ -1,13 +1,12 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"strings"
 	"testing"
 )
 
 func TestNewService(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	service := NewService()
 	assert(service).IsNotNil()
@@ -20,7 +19,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestRpcService_Add(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	childService := NewService()
 	service := NewService().AddService("user", childService)
 	assert(service).IsNotNil()
@@ -38,7 +37,7 @@ func TestRpcService_Add(t *testing.T) {
 }
 
 func TestRpcService_Echo(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	service := NewService().Echo("sayHello", true, 2345)
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(0)

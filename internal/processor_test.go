@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"os"
 	"path"
 	"reflect"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestGetFuncKind(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	assert(getFuncKind(nil)).Equals("", false)
 	assert(getFuncKind(3)).Equals("", false)
@@ -60,7 +59,7 @@ func TestGetFuncKind(t *testing.T) {
 }
 
 func TestConvertTypeToString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	assert(convertTypeToString(nil)).Equals("<nil>")
 	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
 	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
@@ -77,7 +76,7 @@ func TestConvertTypeToString(t *testing.T) {
 }
 
 func TestGetArgumentsErrorPosition(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	fn1 := func() {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn1))).Equals(0)
@@ -106,7 +105,7 @@ func TestGetArgumentsErrorPosition(t *testing.T) {
 }
 
 func TestNewRPCProcessor(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	callbackFn := func(stream *RPCStream, success bool) {}
 
@@ -153,7 +152,7 @@ func TestNewRPCProcessor(t *testing.T) {
 }
 
 func TestRPCProcessor_Start_Stop(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.Stop()).IsNotNil()
@@ -184,7 +183,7 @@ func TestRPCProcessor_Start_Stop(t *testing.T) {
 }
 
 func TestRPCProcessor_PutStream(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.PutStream(NewRPCStream())).IsFalse()
 	processor.Start()
@@ -196,7 +195,7 @@ func TestRPCProcessor_PutStream(t *testing.T) {
 }
 
 func TestRPCProcessor_AddService(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
@@ -210,7 +209,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 }
 
 func TestRPCProcessor_BuildCache(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
 	processor0 := NewRPCProcessor(16, 32, nil, nil)
@@ -241,7 +240,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 }
 
 func TestRPCProcessor_mountNode(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, nil)
 
@@ -336,7 +335,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 }
 
 func TestRPCProcessor_mountEcho(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, &TestFuncCache{})
 	rootNode := processor.nodesMap[rootName]
@@ -450,7 +449,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"testOK",
 		true,
 		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
-		util.GetStackString(0),
+		GetStackString(0),
 	})).IsNil()
 
 	assert(processor.echosMap["$:testOK"].serviceNode).
@@ -471,7 +470,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 }
 
 func TestRPCProcessor_OutPutErrors(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, nil)
 

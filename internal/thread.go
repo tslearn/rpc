@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/util"
 	"reflect"
 	"strings"
 	"time"
@@ -21,7 +20,7 @@ type rpcThread struct {
 	execSuccessful bool
 	from           string
 	closeCH        chan bool
-	util.AutoLock
+	AutoLock
 }
 
 func newThread(threadPool *rpcThreadPool) *rpcThread {
@@ -77,7 +76,7 @@ func (p *rpcThread) put(stream *RPCStream) bool {
 
 func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	processor := p.threadPool.processor
-	timeStart := util.TimeNowNS()
+	timeStart := TimeNowNS()
 	// create context
 	p.inStream = inStream
 	p.execSuccessful = false
@@ -91,12 +90,12 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 					p.execEchoNode.callString,
 					err,
 				),
-				util.GetStackString(1),
+				GetStackString(1),
 			)
 		}
 		if p.execEchoNode != nil {
 			p.execEchoNode.indicator.Count(
-				time.Duration(util.TimeNowNS()-timeStart),
+				time.Duration(TimeNowNS()-timeStart),
 				p.from,
 				p.execSuccessful,
 			)

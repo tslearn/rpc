@@ -3,7 +3,6 @@ package rpcc
 import (
 	"github.com/gorilla/websocket"
 	"github.com/tslearn/rpcc/internal"
-	"github.com/tslearn/rpcc/util"
 	"net/http"
 	"time"
 )
@@ -23,11 +22,11 @@ func (p *webSocketConn) ReadStream(
 		conn.SetReadLimit(readLimit)
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
 			return nil, internal.NewRPCError(
-				util.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt, message, err := conn.ReadMessage(); err != nil {
 			return nil, internal.NewRPCError(
-				util.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt != websocket.BinaryMessage {
 			return nil, internal.NewRPCError(
@@ -65,14 +64,14 @@ func (p *webSocketConn) WriteStream(
 		)
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
 		return internal.NewRPCError(
-			util.ConcatString("webSocketConn: WriteStream: ", err.Error()),
+			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else if err := conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); err != nil {
 		return internal.NewRPCError(
-			util.ConcatString("webSocketConn: WriteStream: ", err.Error()),
+			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else {
 		return nil
@@ -86,7 +85,7 @@ func (p *webSocketConn) Close() Error {
 		)
 	} else if err := conn.Close(); err != nil {
 		return internal.NewRPCError(
-			util.ConcatString("webSocketConn: Close: ", err.Error()),
+			internal.ConcatString("webSocketConn: Close: ", err.Error()),
 		)
 	} else {
 		return nil
@@ -109,7 +108,7 @@ type WebSocketServerEndPoint struct {
 	path       string
 	closeCH    chan bool
 	httpServer *http.Server
-	util.AutoLock
+	internal.AutoLock
 }
 
 func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
@@ -153,7 +152,7 @@ func (p *WebSocketServerEndPoint) Open(
 			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
 				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 					onError(internal.NewRPCError(
-						util.ConcatString("WebSocketServerEndPoint: Open: ", err.Error()),
+						internal.ConcatString("WebSocketServerEndPoint: Open: ", err.Error()),
 					))
 				} else {
 					onConnRun((*webSocketConn)(conn))
@@ -177,7 +176,7 @@ func (p *WebSocketServerEndPoint) Open(
 				}()
 				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 					onError(internal.NewRPCError(
-						util.ConcatString("WebSocketServerEndPoint: Open: ", e.Error()),
+						internal.ConcatString("WebSocketServerEndPoint: Open: ", e.Error()),
 					))
 				}
 			}()
@@ -202,7 +201,7 @@ func (p *WebSocketServerEndPoint) Close(onError func(Error)) bool {
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
 			err = internal.NewRPCError(
-				util.ConcatString("WebSocketServerEndPoint: Close: ", e.Error()),
+				internal.ConcatString("WebSocketServerEndPoint: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -244,7 +243,7 @@ type WebSocketClientEndPoint struct {
 	conn          *webSocketConn
 	closeCH       chan bool
 	connectString string
-	util.AutoLock
+	internal.AutoLock
 }
 
 func NewWebSocketClientEndPoint(connectString string) IEndPoint {
@@ -282,7 +281,7 @@ func (p *WebSocketClientEndPoint) Open(
 			nil,
 		); err != nil {
 			err = internal.NewRPCError(
-				util.ConcatString("WebSocketClientEndPoint: Open: ", err.Error()),
+				internal.ConcatString("WebSocketClientEndPoint: Open: ", err.Error()),
 			)
 			return false
 		} else if wsConn == nil {
@@ -325,7 +324,7 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 			return nil
 		} else if e := p.conn.Close(); e != nil {
 			err = internal.NewRPCError(
-				util.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
+				internal.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
 			)
 			return nil
 		} else {

@@ -1,7 +1,5 @@
 package internal
 
-import "github.com/tslearn/rpcc/util"
-
 type rpcEchoMeta struct {
 	name    string      // the name of echo
 	export  bool        // weather echo is export to gateway
@@ -19,7 +17,7 @@ type rpcService struct {
 	children []*rpcNodeMeta // all the children node meta pointer
 	echos    []*rpcEchoMeta // all the echos meta pointer
 	debug    string         // where the service define in source file
-	util.AutoLock
+	AutoLock
 }
 
 // NewService define a new service
@@ -27,7 +25,7 @@ func NewService() Service {
 	return &rpcService{
 		children: make([]*rpcNodeMeta, 0, 0),
 		echos:    make([]*rpcEchoMeta, 0, 0),
-		debug:    util.GetStackString(1),
+		debug:    GetStackString(1),
 	}
 }
 
@@ -43,7 +41,7 @@ func (p *rpcService) Echo(
 			name:    name,
 			export:  export,
 			handler: handler,
-			debug:   util.GetStackString(3),
+			debug:   GetStackString(3),
 		})
 	})
 	return p
@@ -62,7 +60,7 @@ func (p *rpcService) AddService(name string, service Service) Service {
 		p.children = append(p.children, &rpcNodeMeta{
 			name:        name,
 			serviceMeta: serviceMeta,
-			debug:       util.GetStackString(3),
+			debug:       GetStackString(3),
 		})
 	})
 

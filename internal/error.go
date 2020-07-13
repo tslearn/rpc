@@ -1,7 +1,5 @@
 package internal
 
-import "github.com/tslearn/rpcc/util"
-
 // RPCError ...
 type RPCError interface {
 	GetMessage() string
@@ -78,7 +76,7 @@ func (p *rpcError) SetExtra(extra string) {
 }
 
 func (p *rpcError) Error() string {
-	sb := util.NewStringBuilder()
+	sb := NewStringBuilder()
 	defer sb.Release()
 
 	if len(p.message) > 0 {
@@ -88,7 +86,7 @@ func (p *rpcError) Error() string {
 
 	if len(p.debug) > 0 {
 		sb.AppendString("Debug:\n")
-		sb.AppendString(util.AddPrefixPerLine(p.debug, "\t"))
+		sb.AppendString(AddPrefixPerLine(p.debug, "\t"))
 		sb.AppendByte('\n')
 	}
 

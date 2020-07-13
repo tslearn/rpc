@@ -1,14 +1,13 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"math"
 	"testing"
 	"time"
 )
 
 func TestPerformanceIndicator_basic(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	performanceIndicator := NewPerformanceIndicator()
 
 	for i := 0; i < 1500; i++ {
@@ -32,14 +31,14 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 
 	for n := 0; n < 20; n++ {
 		time.Sleep(100 * time.Millisecond)
-		qps, duration := performanceIndicator.Calculate(util.TimeNowNS())
+		qps, duration := performanceIndicator.Calculate(TimeNowNS())
 		count := qps * int64(duration) / int64(time.Second)
 		assert(math.Abs(float64(count-3000)) < 50).IsTrue()
 	}
 
 	time.Sleep(200 * time.Millisecond)
 
-	nowNS := util.TimeNowNS()
+	nowNS := TimeNowNS()
 	performanceIndicator.Calculate(nowNS)
 	assert(performanceIndicator.Calculate(nowNS)).
 		Equals(int64(-1), time.Duration(0))
@@ -53,6 +52,6 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 
 	performanceIndicator2 := NewPerformanceIndicator()
 	performanceIndicator2.lastTotal = 10
-	assert(performanceIndicator2.Calculate(util.TimeNowNS()+100)).
+	assert(performanceIndicator2.Calculate(TimeNowNS()+100)).
 		Equals(int64(-1), time.Duration(0))
 }

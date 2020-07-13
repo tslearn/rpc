@@ -1,14 +1,12 @@
 package internal
 
-import "github.com/tslearn/rpcc/util"
-
 // rpcThreadPool
 type rpcThreadPool struct {
 	isRunning   bool
 	processor   *RPCProcessor
 	threads     []*rpcThread
 	freeThreads chan *rpcThread
-	util.AutoLock
+	AutoLock
 }
 
 func newThreadPool(processor *RPCProcessor) *rpcThreadPool {

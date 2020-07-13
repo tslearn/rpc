@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/util"
 	"io/ioutil"
 	"os"
 	"path"
@@ -30,7 +29,7 @@ func (p *fnCache) getOKName(idx int) string {
 
 func (p *fnCache) writeHeader(
 	pkgName string,
-	sb *util.StringBuilder,
+	sb *StringBuilder,
 	kinds []string,
 ) {
 	kindMap := make(map[int32]bool)
@@ -88,7 +87,7 @@ func (p *fnCache) writeHeader(
 	sb.AppendString("const at = true\n")
 }
 
-func (p *fnCache) writeGetFunc(sb *util.StringBuilder, kinds []string) {
+func (p *fnCache) writeGetFunc(sb *StringBuilder, kinds []string) {
 	sb.AppendString("\nfunc getFCache(fnString string) common.RPCCacheFunc {\n")
 	sb.AppendString("\tswitch fnString {\n")
 
@@ -103,19 +102,19 @@ func (p *fnCache) writeGetFunc(sb *util.StringBuilder, kinds []string) {
 	sb.AppendString("}\n")
 }
 
-func (p *fnCache) writeFunctions(sb *util.StringBuilder, kinds []string) {
+func (p *fnCache) writeFunctions(sb *StringBuilder, kinds []string) {
 	for _, kind := range kinds {
 		p.writeFunc(sb, kind)
 	}
 }
 
-func (p *fnCache) writeFunc(sb *util.StringBuilder, kind string) {
+func (p *fnCache) writeFunc(sb *StringBuilder, kind string) {
 	sb.AppendString(fmt.Sprintf("\nfunc fc%s(m o, q q, z z) n {\n", kind))
 
-	sbBody := util.NewStringBuilder()
-	sbType := util.NewStringBuilder()
-	sbParam := util.NewStringBuilder()
-	sbOK := util.NewStringBuilder()
+	sbBody := NewStringBuilder()
+	sbType := NewStringBuilder()
+	sbParam := NewStringBuilder()
+	sbOK := NewStringBuilder()
 	for idx, c := range kind {
 		paramName := p.getParamName(idx)
 		okName := p.getOKName(idx)
@@ -185,7 +184,7 @@ func (p *fnCache) writeFunc(sb *util.StringBuilder, kind string) {
 }
 
 func buildFuncCache(pkgName string, output string, kinds []string) RPCError {
-	sb := util.NewStringBuilder()
+	sb := NewStringBuilder()
 	defer sb.Release()
 	cache := &fnCache{}
 	cache.writeHeader(pkgName, sb, kinds)

@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,7 +13,7 @@ type PerformanceIndicator struct {
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	util.AutoLock
+	AutoLock
 }
 
 // NewPerformanceIndicator ...
@@ -23,7 +22,7 @@ func NewPerformanceIndicator() *PerformanceIndicator {
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
-		lastNS:       util.TimeNowNS(),
+		lastNS:       TimeNowNS(),
 		originMap:    sync.Map{},
 	}
 }

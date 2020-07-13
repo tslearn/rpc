@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"io/ioutil"
 	"os"
 	"path"
@@ -36,7 +35,7 @@ func (p *TestFuncCache) Get(fnString string) RPCCacheFunc {
 }
 
 func TestFnCache_basic(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
 	processor0 := NewRPCProcessor(16, 32, nil, nil)

@@ -2,7 +2,6 @@ package rpcc
 
 import (
 	"github.com/tslearn/rpcc/internal"
-	"github.com/tslearn/rpcc/util"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -96,7 +95,7 @@ type Client struct {
 	closeCH            chan bool
 	sessionString      string
 	conn               IStreamConn
-	logger             *util.Logger
+	logger             *internal.Logger
 	endPoint           IEndPoint
 	preSendHead        *sendItem
 	preSendTail        *sendItem
@@ -111,7 +110,7 @@ type Client struct {
 	callbackSize       int64
 	lastControlSendMS  int64
 	lastTimeoutCheckMS int64
-	util.AutoLock
+	internal.AutoLock
 }
 
 func NewClient(endPoint IEndPoint) *Client {
@@ -120,7 +119,7 @@ func NewClient(endPoint IEndPoint) *Client {
 		closeCH:            nil,
 		sessionString:      "",
 		conn:               nil,
-		logger:             util.NewLogger(nil),
+		logger:             internal.NewLogger(nil),
 		endPoint:           endPoint,
 		preSendHead:        nil,
 		preSendTail:        nil,
@@ -168,7 +167,7 @@ func (p *Client) Open() Error {
 						p.endPoint.Open(p.onConnRun, p.onError)
 					}
 
-					now := util.TimeNowMS()
+					now := internal.TimeNowMS()
 					p.tryToTimeout(now)
 					p.tryToDeliverControlMessage(now)
 					for p.tryToDeliverPreSendMessage() {
@@ -508,7 +507,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 				p.onError(err)
 				return false
 			} else {
-				item.sendMS = util.TimeNowMS()
+				item.sendMS = internal.TimeNowMS()
 				return true
 			}
 		}
@@ -524,7 +523,7 @@ func (p *Client) sendMessage(
 	item := newSendItem()
 	defer item.Release()
 
-	item.startMS = util.TimeNowMS()
+	item.startMS = internal.TimeNowMS()
 	item.timeoutMS = int64(timeout / time.Millisecond)
 
 	// write target

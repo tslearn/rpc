@@ -2,13 +2,13 @@ package rpcc
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/util"
+	"github.com/tslearn/rpcc/internal"
 	"testing"
 	"time"
 )
 
 func TestNewWebSocketServerEndPoint(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 
@@ -32,7 +32,7 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 }
 
 func TestNewWebSocketClientEndPoint(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := internal.NewAssert(t)
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 	server.Open(func(conn IStreamConn) {
 		time.Sleep(3 * time.Second)

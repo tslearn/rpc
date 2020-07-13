@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/util"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -39,7 +38,7 @@ func getFuncKind(fn interface{}) (string, bool) {
 		reflectFn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
 		return "", false
 	} else {
-		sb := util.NewStringBuilder()
+		sb := NewStringBuilder()
 		defer sb.Release()
 
 		for i := 1; i < reflectFn.Type().NumIn(); i++ {
@@ -158,7 +157,7 @@ type RPCProcessor struct {
 	threadPools  []*rpcThreadPool
 	maxNodeDepth uint64
 	maxCallDepth uint64
-	util.AutoLock
+	AutoLock
 }
 
 var fnGetRuntimeNumberOfCPU = func() int {
@@ -268,7 +267,7 @@ func (p *RPCProcessor) Stop() RPCError {
 			}
 
 			if len(errList) > 0 {
-				return NewRPCError(util.ConcatString(
+				return NewRPCError(ConcatString(
 					"RPCProcessor: Stop: The following routine still running: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
@@ -386,8 +385,8 @@ func (p *RPCProcessor) mountNode(
 			),
 			fmt.Sprintf(
 				"Current:\n%s\nConflict:\n%s",
-				util.AddPrefixPerLine(nodeMeta.debug, "\t"),
-				util.AddPrefixPerLine(item.addMeta.debug, "\t"),
+				AddPrefixPerLine(nodeMeta.debug, "\t"),
+				AddPrefixPerLine(item.addMeta.debug, "\t"),
 			),
 		)
 	}
@@ -454,8 +453,8 @@ func (p *RPCProcessor) mountEcho(
 			),
 			fmt.Sprintf(
 				"Current:\n%s\nConflict:\n%s",
-				util.AddPrefixPerLine(echoMeta.debug, "\t"),
-				util.AddPrefixPerLine(item.echoMeta.debug, "\t"),
+				AddPrefixPerLine(echoMeta.debug, "\t"),
+				AddPrefixPerLine(item.echoMeta.debug, "\t"),
 			),
 		)
 	}
@@ -495,7 +494,7 @@ func (p *RPCProcessor) mountEcho(
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Echo handler %s argument type <%s> not supported",
-				util.ConvertOrdinalToString(1+uint(argumentsErrorPos)),
+				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 				fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
 			),
 			echoMeta.debug,
@@ -516,7 +515,7 @@ func (p *RPCProcessor) mountEcho(
 
 	// mount the echoRecord
 	fileLine := ""
-	debugArr := util.FindLinesByPrefix(echoMeta.debug, "-01")
+	debugArr := FindLinesByPrefix(echoMeta.debug, "-01")
 	if len(debugArr) > 0 {
 		arr := strings.Split(debugArr[0], " ")
 		if len(arr) == 3 {

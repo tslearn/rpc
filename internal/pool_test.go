@@ -1,13 +1,12 @@
 package internal
 
 import (
-	"github.com/tslearn/rpcc/util"
 	"testing"
 	"time"
 )
 
 func TestNewThreadPool(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(pool).IsNotNil()
@@ -26,7 +25,7 @@ func TestNewThreadPool(t *testing.T) {
 }
 
 func TestRpcThreadPool_stop(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(pool.stop()).Equals(true, []string{})
 	assert(pool.freeThreads).IsNotNil()
@@ -39,7 +38,7 @@ func TestRpcThreadPool_stop(t *testing.T) {
 			time.Sleep(99999999 * time.Second)
 			return ctx.OK(true)
 		}),
-		util.GetStackString(0),
+		GetStackString(0),
 	)
 
 	stream := NewRPCStream()
@@ -53,7 +52,7 @@ func TestRpcThreadPool_stop(t *testing.T) {
 }
 
 func TestRpcThreadPool_allocThread(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(len(pool.freeThreads)).Equals(numOfThreadPerThreadPool)
 	thread := pool.allocThread()
@@ -64,7 +63,7 @@ func TestRpcThreadPool_allocThread(t *testing.T) {
 }
 
 func TestRpcThreadPool_freeThread(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := NewAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	thread := pool.allocThread()
 	assert(thread).IsNotNil()

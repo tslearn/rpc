@@ -3,7 +3,6 @@ package rpcc
 import (
 	"fmt"
 	"github.com/tslearn/rpcc/internal"
-	"github.com/tslearn/rpcc/util"
 	"path"
 	"runtime"
 	"strconv"
@@ -84,7 +83,7 @@ type serverSession struct {
 	controlSeed uint64
 	callMap     map[uint64]*serverSessionRecord
 	size        int64
-	util.AutoLock
+	internal.AutoLock
 }
 
 var serverSessionCache = &sync.Pool{
@@ -104,7 +103,7 @@ var serverSessionCache = &sync.Pool{
 func newServerSession(id uint64, size int64) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
-	ret.security = util.GetRandString(32)
+	ret.security = internal.GetRandString(32)
 	ret.dataSeed = 0
 	ret.controlSeed = 0
 	ret.callMap = make(map[uint64]*serverSessionRecord)
@@ -308,19 +307,19 @@ func (p *serverSession) Release() {
 // Begin ***** Server ***** //
 type Server struct {
 	isOpen      bool
-	logger      *util.Logger
+	logger      *internal.Logger
 	endPoints   []IEndPoint
 	processor   *internal.RPCProcessor
 	sessionMap  sync.Map
 	sessionSize int64
 	sessionSeed uint64
-	util.AutoLock
+	internal.AutoLock
 }
 
 func NewServer(sessionSize int64, fnCache internal.RPCCache) *Server {
 	server := &Server{
 		isOpen:      false,
-		logger:      util.NewLogger(nil),
+		logger:      internal.NewLogger(nil),
 		endPoints:   make([]IEndPoint, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},
@@ -395,7 +394,7 @@ func (p *Server) Close() {
 	})
 }
 
-func (p *Server) GetLogger() *util.Logger {
+func (p *Server) GetLogger() *internal.Logger {
 	return p.logger
 }
 
@@ -418,7 +417,7 @@ func (p *Server) AddService(
 	if err := p.processor.AddService(
 		name,
 		service,
-		util.GetStackString(1),
+		internal.GetStackString(1),
 	); err != nil {
 		p.onError(err)
 	}
