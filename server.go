@@ -307,7 +307,7 @@ func (p *serverSession) Release() {
 // Begin ***** Server ***** //
 type Server struct {
 	isOpen      bool
-	logger      *internal.Logger
+	logger      *internal.RPCLogger
 	endPoints   []IEndPoint
 	processor   *internal.RPCProcessor
 	sessionMap  sync.Map
@@ -319,7 +319,7 @@ type Server struct {
 func NewServer(sessionSize int64, fnCache internal.RPCCache) *Server {
 	server := &Server{
 		isOpen:      false,
-		logger:      internal.NewLogger(nil),
+		logger:      internal.NewRPCLogger(nil),
 		endPoints:   make([]IEndPoint, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},
@@ -394,7 +394,7 @@ func (p *Server) Close() {
 	})
 }
 
-func (p *Server) GetLogger() *internal.Logger {
+func (p *Server) GetLogger() *internal.RPCLogger {
 	return p.logger
 }
 

@@ -95,7 +95,7 @@ type Client struct {
 	closeCH            chan bool
 	sessionString      string
 	conn               IStreamConn
-	logger             *internal.Logger
+	logger             *internal.RPCLogger
 	endPoint           IEndPoint
 	preSendHead        *sendItem
 	preSendTail        *sendItem
@@ -119,7 +119,7 @@ func NewClient(endPoint IEndPoint) *Client {
 		closeCH:            nil,
 		sessionString:      "",
 		conn:               nil,
-		logger:             internal.NewLogger(nil),
+		logger:             internal.NewRPCLogger(nil),
 		endPoint:           endPoint,
 		preSendHead:        nil,
 		preSendTail:        nil,
