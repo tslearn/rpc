@@ -116,3 +116,21 @@ func GetStackString(skip uint) string {
 
 	return sb.String()
 }
+
+// ConvertOrdinalToString ...
+func ConvertOrdinalToString(n uint) string {
+	if n == 0 {
+		return ""
+	}
+
+	switch n {
+	case 1:
+		return "1st"
+	case 2:
+		return "2nd"
+	case 3:
+		return "3rd"
+	default:
+		return strconv.Itoa(int(n)) + "th"
+	}
+}

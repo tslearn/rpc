@@ -70,6 +70,18 @@ func TestFindLinesByPrefix(t *testing.T) {
 	assert(ret[1]).Equals("hello")
 }
 
+func TestConvertOrdinalToString(t *testing.T) {
+	assert := NewAssert(t)
+
+	assert(ConvertOrdinalToString(0)).Equals("")
+	assert(ConvertOrdinalToString(1)).Equals("1st")
+	assert(ConvertOrdinalToString(2)).Equals("2nd")
+	assert(ConvertOrdinalToString(3)).Equals("3rd")
+	assert(ConvertOrdinalToString(4)).Equals("4th")
+	assert(ConvertOrdinalToString(10)).Equals("10th")
+	assert(ConvertOrdinalToString(100)).Equals("100th")
+}
+
 func BenchmarkAddPrefixPerLine(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
