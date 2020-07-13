@@ -6,50 +6,50 @@ import (
 )
 
 const (
-	// LogTagDebug ...
-	LogTagDebug = "Debug"
-	// LogTagInfo ...
-	LogTagInfo = "Info"
-	// LogTagWarn ...
-	LogTagWarn = "Warn"
-	// LogTagError ...
-	LogTagError = "Error"
-	// LogTagFatal ...
-	LogTagFatal = "Fatal"
-	// LogMaskNone this level logs nothing
-	LogMaskNone = int32(0)
-	// LogMaskFatal this level logs Fatal
-	LogMaskFatal = int32(1 << 0)
-	// LogMaskError this level logs Error
-	LogMaskError = int32(1 << 1)
-	// LogMaskWarn this level logs Warn
-	LogMaskWarn = int32(1 << 2)
-	// LogMaskInfo this level logs Info
-	LogMaskInfo = int32(1 << 3)
-	// LogMaskDebug this level logs Debug
-	LogMaskDebug = int32(1 << 4)
-	// LogMaskAll this level logs Debug, Info, Warn, Error and Fatal
-	LogMaskAll = LogMaskFatal |
-		LogMaskError |
-		LogMaskWarn |
-		LogMaskInfo |
-		LogMaskDebug
+	// RPCLogTagDebug ...
+	RPCLogTagDebug = "Debug"
+	// RPCLogTagInfo ...
+	RPCLogTagInfo = "Info"
+	// RPCLogTagWarn ...
+	RPCLogTagWarn = "Warn"
+	// RPCLogTagError ...
+	RPCLogTagError = "Error"
+	// RPCLogTagFatal ...
+	RPCLogTagFatal = "Fatal"
+	// RPCLogMaskNone this level logs nothing
+	RPCLogMaskNone = int32(0)
+	// RPCLogMaskFatal this level logs Fatal
+	RPCLogMaskFatal = int32(1 << 0)
+	// RPCLogMaskError this level logs Error
+	RPCLogMaskError = int32(1 << 1)
+	// RPCLogMaskWarn this level logs Warn
+	RPCLogMaskWarn = int32(1 << 2)
+	// RPCLogMaskInfo this level logs Info
+	RPCLogMaskInfo = int32(1 << 3)
+	// RPCLogMaskDebug this level logs Debug
+	RPCLogMaskDebug = int32(1 << 4)
+	// RPCLogMaskAll this level logs Debug, Info, Warn, Error and Fatal
+	RPCLogMaskAll = RPCLogMaskFatal |
+		RPCLogMaskError |
+		RPCLogMaskWarn |
+		RPCLogMaskInfo |
+		RPCLogMaskDebug
 )
 
-// LogWriter ...
-type LogWriter interface {
+// RPCLogWriter ...
+type RPCLogWriter interface {
 	Write(isoTime string, tag string, msg string, extra string)
 }
 
-// StdLogWriter ...
-type StdLogWriter struct{}
+// RPCStdoutLogWriter ...
+type RPCStdoutLogWriter struct{}
 
-// NewStdLogWriter ...
-func NewStdLogWriter() LogWriter {
-	return &StdLogWriter{}
+// NewRPCStdoutLogWriter ...
+func NewRPCStdoutLogWriter() RPCLogWriter {
+	return &RPCStdoutLogWriter{}
 }
 
-func (p *StdLogWriter) Write(
+func (p *RPCStdoutLogWriter) Write(
 	isoTime string,
 	tag string,
 	msg string,
@@ -72,20 +72,20 @@ func (p *StdLogWriter) Write(
 	fmt.Print(sb.String())
 }
 
-// CallbackLogWriter ...
-type CallbackLogWriter struct {
+// RPCCallbackLogWriter ...
+type RPCCallbackLogWriter struct {
 	onWrite func(isoTime string, tag string, msg string, extra string)
 }
 
-// NewCallbackLogWriter ...
-func NewCallbackLogWriter(
+// NewRPCCallbackLogWriter ...
+func NewRPCCallbackLogWriter(
 	onWrite func(isoTime string, tag string, msg string, extra string),
-) *CallbackLogWriter {
-	return &CallbackLogWriter{onWrite: onWrite}
+) *RPCCallbackLogWriter {
+	return &RPCCallbackLogWriter{onWrite: onWrite}
 }
 
 // Write ...
-func (p *CallbackLogWriter) Write(
+func (p *RPCCallbackLogWriter) Write(
 	isoTime string,
 	tag string,
 	msg string,
@@ -99,28 +99,28 @@ func (p *CallbackLogWriter) Write(
 // Logger ...
 type Logger struct {
 	level  int32
-	writer LogWriter
+	writer RPCLogWriter
 	RPCLock
 }
 
 // NewLogger ...
-func NewLogger(writer LogWriter) *Logger {
+func NewLogger(writer RPCLogWriter) *Logger {
 	if writer == nil {
 		return &Logger{
-			level:  LogMaskAll,
-			writer: NewStdLogWriter(),
+			level:  RPCLogMaskAll,
+			writer: NewRPCStdoutLogWriter(),
 		}
 	}
 
 	return &Logger{
-		level:  LogMaskAll,
+		level:  RPCLogMaskAll,
 		writer: writer,
 	}
 }
 
 // SetLevel ...
 func (p *Logger) SetLevel(level int32) bool {
-	if level >= LogMaskNone && level <= LogMaskAll {
+	if level >= RPCLogMaskNone && level <= RPCLogMaskAll {
 		atomic.StoreInt32(&p.level, level)
 		return true
 	}
@@ -135,8 +135,8 @@ func (p *Logger) Debug(msg string) {
 
 // DebugExtra ...
 func (p *Logger) DebugExtra(msg string, extra string) {
-	if atomic.LoadInt32(&p.level)&LogMaskDebug > 0 {
-		p.writer.Write(TimeNowISOString(), LogTagDebug, msg, extra)
+	if atomic.LoadInt32(&p.level)&RPCLogMaskDebug > 0 {
+		p.writer.Write(TimeNowISOString(), RPCLogTagDebug, msg, extra)
 	}
 }
 
@@ -147,8 +147,8 @@ func (p *Logger) Info(msg string) {
 
 // InfoExtra ...
 func (p *Logger) InfoExtra(msg string, extra string) {
-	if atomic.LoadInt32(&p.level)&LogMaskInfo > 0 {
-		p.writer.Write(TimeNowISOString(), LogTagInfo, msg, extra)
+	if atomic.LoadInt32(&p.level)&RPCLogMaskInfo > 0 {
+		p.writer.Write(TimeNowISOString(), RPCLogTagInfo, msg, extra)
 	}
 }
 
@@ -159,8 +159,8 @@ func (p *Logger) Warn(msg string) {
 
 // WarnExtra ...
 func (p *Logger) WarnExtra(msg string, extra string) {
-	if atomic.LoadInt32(&p.level)&LogMaskWarn > 0 {
-		p.writer.Write(TimeNowISOString(), LogTagWarn, msg, extra)
+	if atomic.LoadInt32(&p.level)&RPCLogMaskWarn > 0 {
+		p.writer.Write(TimeNowISOString(), RPCLogTagWarn, msg, extra)
 	}
 }
 
@@ -171,8 +171,8 @@ func (p *Logger) Error(msg string) {
 
 // ErrorExtra ...
 func (p *Logger) ErrorExtra(msg string, extra string) {
-	if atomic.LoadInt32(&p.level)&LogMaskError > 0 {
-		p.writer.Write(TimeNowISOString(), LogTagError, msg, extra)
+	if atomic.LoadInt32(&p.level)&RPCLogMaskError > 0 {
+		p.writer.Write(TimeNowISOString(), RPCLogTagError, msg, extra)
 	}
 }
 
@@ -183,7 +183,7 @@ func (p *Logger) Fatal(msg string) {
 
 // FatalExtra ...
 func (p *Logger) FatalExtra(msg string, extra string) {
-	if atomic.LoadInt32(&p.level)&LogMaskFatal > 0 {
-		p.writer.Write(TimeNowISOString(), LogTagFatal, msg, extra)
+	if atomic.LoadInt32(&p.level)&RPCLogMaskFatal > 0 {
+		p.writer.Write(TimeNowISOString(), RPCLogTagFatal, msg, extra)
 	}
 }

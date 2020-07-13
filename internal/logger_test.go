@@ -17,7 +17,7 @@ func runStdWriterLogger(onRun func(logger *Logger)) string {
 			os.Stdout = old
 		}()
 
-		onRun(NewLogger(NewStdLogWriter()))
+		onRun(NewLogger(NewRPCStdoutLogWriter()))
 
 		retCH := make(chan string)
 
@@ -44,7 +44,7 @@ func runCallbackWriterLogger(
 	onRun func(logger *Logger),
 ) (isoTime string, tag string, msg string, extra string) {
 	wait := make(chan bool, 1)
-	onRun(NewLogger(NewCallbackLogWriter(
+	onRun(NewLogger(NewRPCCallbackLogWriter(
 		func(_isoTime string, _tag string, _msg string, _extra string) {
 			isoTime = _isoTime
 			tag = _tag
@@ -78,11 +78,11 @@ func TestStdLogWriter_Write(t *testing.T) {
 func TestNewLogger(t *testing.T) {
 	assert := NewRPCAssert(t)
 	logger1 := NewLogger(nil)
-	assert(logger1.level).Equals(LogMaskAll)
+	assert(logger1.level).Equals(RPCLogMaskAll)
 	assert(logger1.writer).IsNotNil()
 
-	logger2 := NewLogger(NewStdLogWriter())
-	assert(logger2.level).Equals(LogMaskAll)
+	logger2 := NewLogger(NewRPCStdoutLogWriter())
+	assert(logger2.level).Equals(RPCLogMaskAll)
 	assert(logger2.writer).IsNotNil()
 }
 
@@ -90,36 +90,36 @@ func TestLogger_SetLevel(t *testing.T) {
 	assert := NewRPCAssert(t)
 	logger := NewLogger(nil)
 
-	assert(logger.SetLevel(LogMaskNone - 1)).IsFalse()
-	assert(logger.level).Equals(LogMaskAll)
+	assert(logger.SetLevel(RPCLogMaskNone - 1)).IsFalse()
+	assert(logger.level).Equals(RPCLogMaskAll)
 
-	assert(logger.SetLevel(LogMaskAll + 1)).IsFalse()
-	assert(logger.level).Equals(LogMaskAll)
+	assert(logger.SetLevel(RPCLogMaskAll + 1)).IsFalse()
+	assert(logger.level).Equals(RPCLogMaskAll)
 
-	assert(logger.SetLevel(LogMaskNone)).IsTrue()
-	assert(logger.level).Equals(LogMaskNone)
+	assert(logger.SetLevel(RPCLogMaskNone)).IsTrue()
+	assert(logger.level).Equals(RPCLogMaskNone)
 
-	assert(logger.SetLevel(LogMaskAll)).IsTrue()
-	assert(logger.level).Equals(LogMaskAll)
+	assert(logger.SetLevel(RPCLogMaskAll)).IsTrue()
+	assert(logger.level).Equals(RPCLogMaskAll)
 
 	// test all level and logs
 	fnTestLogLevel := func(level int32) int32 {
 		ret := int32(0)
 
-		logger := NewLogger(NewCallbackLogWriter(
+		logger := NewLogger(NewRPCCallbackLogWriter(
 			func(_ string, tag string, msg string, _ string) {
 				if msg == "message" {
 					switch tag {
 					case "Debug":
-						atomic.AddInt32(&ret, LogMaskDebug)
+						atomic.AddInt32(&ret, RPCLogMaskDebug)
 					case "Info":
-						atomic.AddInt32(&ret, LogMaskInfo)
+						atomic.AddInt32(&ret, RPCLogMaskInfo)
 					case "Warn":
-						atomic.AddInt32(&ret, LogMaskWarn)
+						atomic.AddInt32(&ret, RPCLogMaskWarn)
 					case "Error":
-						atomic.AddInt32(&ret, LogMaskError)
+						atomic.AddInt32(&ret, RPCLogMaskError)
 					case "Fatal":
-						atomic.AddInt32(&ret, LogMaskFatal)
+						atomic.AddInt32(&ret, RPCLogMaskFatal)
 					}
 				}
 			},
@@ -134,11 +134,11 @@ func TestLogger_SetLevel(t *testing.T) {
 		return atomic.LoadInt32(&ret)
 	}
 
-	assert(fnTestLogLevel(LogMaskNone - 1)).Equals(LogMaskAll)
+	assert(fnTestLogLevel(RPCLogMaskNone - 1)).Equals(RPCLogMaskAll)
 	for i := int32(0); i < 32; i++ {
 		assert(fnTestLogLevel(i)).Equals(i)
 	}
-	assert(fnTestLogLevel(LogMaskAll + 1)).Equals(LogMaskAll)
+	assert(fnTestLogLevel(RPCLogMaskAll + 1)).Equals(RPCLogMaskAll)
 }
 
 func TestLogger_Debug(t *testing.T) {
