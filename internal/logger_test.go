@@ -57,7 +57,7 @@ func runCallbackWriterLogger(
 	return
 }
 
-func TestStdLogWriter_Write(t *testing.T) {
+func TestRPCStdoutLogWriter_Write(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	assert(strings.HasSuffix(
@@ -75,7 +75,7 @@ func TestStdLogWriter_Write(t *testing.T) {
 	)).IsTrue()
 }
 
-func TestNewLogger(t *testing.T) {
+func TestNewRPCLogger(t *testing.T) {
 	assert := NewRPCAssert(t)
 	logger1 := NewRPCLogger(nil)
 	assert(logger1.level).Equals(RPCLogMaskAll)
@@ -86,7 +86,7 @@ func TestNewLogger(t *testing.T) {
 	assert(logger2.writer).IsNotNil()
 }
 
-func TestLogger_SetLevel(t *testing.T) {
+func TestRPCLogger_SetLevel(t *testing.T) {
 	assert := NewRPCAssert(t)
 	logger := NewRPCLogger(nil)
 
@@ -141,7 +141,7 @@ func TestLogger_SetLevel(t *testing.T) {
 	assert(fnTestLogLevel(RPCLogMaskAll + 1)).Equals(RPCLogMaskAll)
 }
 
-func TestLogger_Debug(t *testing.T) {
+func TestRPCLogger_Debug(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -154,7 +154,7 @@ func TestLogger_Debug(t *testing.T) {
 	assert(extra).Equals("")
 }
 
-func TestLogger_DebugExtra(t *testing.T) {
+func TestRPCLogger_DebugExtra(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -167,7 +167,7 @@ func TestLogger_DebugExtra(t *testing.T) {
 	assert(extra).Equals("extra")
 }
 
-func TestLogger_Info(t *testing.T) {
+func TestRPCLogger_Info(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -180,7 +180,7 @@ func TestLogger_Info(t *testing.T) {
 	assert(extra).Equals("")
 }
 
-func TestLogger_InfoExtra(t *testing.T) {
+func TestRPCLogger_InfoExtra(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -193,7 +193,7 @@ func TestLogger_InfoExtra(t *testing.T) {
 	assert(extra).Equals("extra")
 }
 
-func TestLogger_Warn(t *testing.T) {
+func TestRPCLogger_Warn(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -206,7 +206,7 @@ func TestLogger_Warn(t *testing.T) {
 	assert(extra).Equals("")
 }
 
-func TestLogger_WarnExtra(t *testing.T) {
+func TestRPCLogger_WarnExtra(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -219,7 +219,7 @@ func TestLogger_WarnExtra(t *testing.T) {
 	assert(extra).Equals("extra")
 }
 
-func TestLogger_Error(t *testing.T) {
+func TestRPCLogger_Error(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -232,7 +232,7 @@ func TestLogger_Error(t *testing.T) {
 	assert(extra).Equals("")
 }
 
-func TestLogger_ErrorExtra(t *testing.T) {
+func TestRPCLogger_ErrorExtra(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -245,7 +245,7 @@ func TestLogger_ErrorExtra(t *testing.T) {
 	assert(extra).Equals("extra")
 }
 
-func TestLogger_Fatal(t *testing.T) {
+func TestRPCLogger_Fatal(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
@@ -258,7 +258,7 @@ func TestLogger_Fatal(t *testing.T) {
 	assert(extra).Equals("")
 }
 
-func TestLogger_FatalExtra(t *testing.T) {
+func TestRPCLogger_FatalExtra(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *RPCLogger) {
