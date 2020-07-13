@@ -70,11 +70,9 @@ func getFuncKind(fn interface{}) (string, bool) {
 }
 
 func convertTypeToString(reflectType reflect.Type) string {
-	if reflectType == nil {
-		return "<nil>"
-	}
-
 	switch reflectType {
+	case nil:
+		return "<nil>"
 	case contextType:
 		return "rpc.Context"
 	case returnType:
@@ -103,33 +101,33 @@ func convertTypeToString(reflectType reflect.Type) string {
 func getArgumentsErrorPosition(fn reflect.Value) int {
 	if fn.Type().NumIn() < 1 {
 		return 0
-	}
-
-	if fn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
+	} else if fn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
 		return 0
-	}
-
-	for i := 1; i < fn.Type().NumIn(); i++ {
-		argType := fn.Type().In(i)
-		switch argType.Kind() {
-		case reflect.Uint64:
-			continue
-		case reflect.Int64:
-			continue
-		case reflect.Float64:
-			continue
-		case reflect.Bool:
-			continue
-		case reflect.String:
-			continue
-		default:
-			if argType == bytesType || argType == arrayType || argType == mapType {
+	} else {
+		for i := 1; i < fn.Type().NumIn(); i++ {
+			switch fn.Type().In(i) {
+			case bytesType:
 				continue
+			case arrayType:
+				continue
+			case mapType:
+				continue
+			case int64Type:
+				continue
+			case uint64Type:
+				continue
+			case boolType:
+				continue
+			case float64Type:
+				continue
+			case stringType:
+				continue
+			default:
+				return i
 			}
-			return i
 		}
+		return -1
 	}
-	return -1
 }
 
 type rpcEchoNode struct {
