@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -28,6 +29,11 @@ func TestConcatString(t *testing.T) {
 	assert(ConcatString("a", "b")).Equals("ab")
 	assert(ConcatString("a", "b", "")).Equals("ab")
 	assert(ConcatString("a", "b", "c")).Equals("abc")
+}
+
+func TestGetStackString(t *testing.T) {
+	// assert := NewAssert(t)
+	fmt.Println(GetStackString(0))
 }
 
 func BenchmarkAddPrefixPerLine(b *testing.B) {

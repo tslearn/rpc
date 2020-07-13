@@ -14,43 +14,7 @@ var (
 		0x54, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E,
 		0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
 	}
-	intToStringCache2 = make([][]byte, 100, 100)
-	intToStringCache3 = make([][]byte, 1000, 1000)
-	intToStringCache4 = make([][]byte, 10000, 10000)
 )
-
-func init() {
-	charToASCII := [10]byte{
-		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-	}
-	for i := 0; i < 100; i++ {
-		for j := 0; j < 2; j++ {
-			intToStringCache2[i] = []byte{
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
-		}
-	}
-	for i := 0; i < 1000; i++ {
-		for j := 0; j < 3; j++ {
-			intToStringCache3[i] = []byte{
-				charToASCII[(i/100)%10],
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
-		}
-	}
-	for i := 0; i < 10000; i++ {
-		for j := 0; j < 4; j++ {
-			intToStringCache4[i] = []byte{
-				charToASCII[(i/1000)%10],
-				charToASCII[(i/100)%10],
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
-		}
-	}
-}
 
 func runStoreTime() {
 	defer atomic.StorePointer(&timeNowPointer, nil)
