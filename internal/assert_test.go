@@ -26,7 +26,7 @@ func runWithFail(fn func(assert func(args ...interface{}) *RPCAssert)) bool {
 	}
 }
 
-func TestNewAssert(t *testing.T) {
+func TestNewRPCAssert(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	assert(assert(3).args[0]).Equals(3)
@@ -36,14 +36,14 @@ func TestNewAssert(t *testing.T) {
 	assert(assert(3).t).Equals(t)
 }
 
-func TestAssert_Fail(t *testing.T) {
+func TestRPCAssert_Fail(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(runWithFail(func(assert func(args ...interface{}) *RPCAssert) {
 		assert(nil).Fail()
 	})).IsTrue()
 }
 
-func TestAssert_Equals(t *testing.T) {
+func TestRPCAssert_Equals(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(nil).Equals(nil)
 	assert(3).Equals(3)
@@ -82,7 +82,7 @@ func TestAssert_Equals(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestAssert_IsNil(t *testing.T) {
+func TestRPCAssert_IsNil(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	assert(nil).IsNil()
@@ -109,7 +109,7 @@ func TestAssert_IsNil(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestAssert_IsNotNil(t *testing.T) {
+func TestRPCAssert_IsNotNil(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(t).IsNotNil()
 
@@ -124,7 +124,7 @@ func TestAssert_IsNotNil(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestAssert_IsTrue(t *testing.T) {
+func TestRPCAssert_IsTrue(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(true).IsTrue()
 
@@ -145,7 +145,7 @@ func TestAssert_IsTrue(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestAssert_IsFalse(t *testing.T) {
+func TestRPCAssert_IsFalse(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(false).IsFalse()
 
@@ -161,23 +161,4 @@ func TestAssert_IsFalse(t *testing.T) {
 	assert(runWithFail(func(assert func(args ...interface{}) *RPCAssert) {
 		assert().IsFalse()
 	})).IsTrue()
-}
-
-type testAssertFail struct {
-	ch chan bool
-}
-
-func (p *testAssertFail) Fail() {
-	p.ch <- true
-}
-
-func Test_reportFail(t *testing.T) {
-	assert := NewRPCAssert(t)
-
-	ch := make(chan bool, 1)
-	target := NewRPCAssert(t)(3)
-	target.t = &testAssertFail{ch: ch}
-	target.Equals(4)
-
-	assert(<-target.t.(*testAssertFail).ch).IsTrue()
 }
