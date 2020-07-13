@@ -13,7 +13,7 @@ type PerformanceIndicator struct {
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	AutoLock
+	RPCLock
 }
 
 // NewPerformanceIndicator ...

@@ -6,7 +6,7 @@ type rpcThreadPool struct {
 	processor   *RPCProcessor
 	threads     []*rpcThread
 	freeThreads chan *rpcThread
-	AutoLock
+	RPCLock
 }
 
 func newThreadPool(processor *RPCProcessor) *rpcThreadPool {

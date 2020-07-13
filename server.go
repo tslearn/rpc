@@ -83,7 +83,7 @@ type serverSession struct {
 	controlSeed uint64
 	callMap     map[uint64]*serverSessionRecord
 	size        int64
-	internal.AutoLock
+	internal.RPCLock
 }
 
 var serverSessionCache = &sync.Pool{
@@ -313,7 +313,7 @@ type Server struct {
 	sessionMap  sync.Map
 	sessionSize int64
 	sessionSeed uint64
-	internal.AutoLock
+	internal.RPCLock
 }
 
 func NewServer(sessionSize int64, fnCache internal.RPCCache) *Server {

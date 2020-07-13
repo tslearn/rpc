@@ -54,7 +54,7 @@ type RPCProcessor struct {
 	threadPools  []*rpcThreadPool
 	maxNodeDepth uint64
 	maxCallDepth uint64
-	AutoLock
+	RPCLock
 }
 
 var fnGetRuntimeNumberOfCPU = func() int {

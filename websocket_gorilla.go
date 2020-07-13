@@ -108,7 +108,7 @@ type WebSocketServerEndPoint struct {
 	path       string
 	closeCH    chan bool
 	httpServer *http.Server
-	internal.AutoLock
+	internal.RPCLock
 }
 
 func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
@@ -243,7 +243,7 @@ type WebSocketClientEndPoint struct {
 	conn          *webSocketConn
 	closeCH       chan bool
 	connectString string
-	internal.AutoLock
+	internal.RPCLock
 }
 
 func NewWebSocketClientEndPoint(connectString string) IEndPoint {
