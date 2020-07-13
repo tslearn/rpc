@@ -67,6 +67,17 @@ func AddPrefixPerLine(text string, prefix string) string {
 	return sb.String()
 }
 
+// FindLinesByPrefix find the lines start with prefix string
+func FindLinesByPrefix(text string, prefix string) []string {
+	ret := make([]string, 0, 0)
+	for _, v := range strings.Split(text, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(v), strings.TrimSpace(prefix)) {
+			ret = append(ret, v)
+		}
+	}
+	return ret
+}
+
 // ConcatString ...
 func ConcatString(args ...string) string {
 	sb := NewStringBuilder()
@@ -83,23 +94,23 @@ func GetStackString(skip uint) string {
 	defer sb.Release()
 
 	for idx := 1; ; idx++ {
-		if pc, file, line, ok := runtime.Caller(int(skip) + idx); !ok || pc == 0 {
+		if pc, file, line, _ := runtime.Caller(int(skip) + idx); pc == 0 {
 			break
 		} else {
-			fn := runtime.FuncForPC(pc)
+			if fn := runtime.FuncForPC(pc); fn != nil {
+				if !sb.IsEmpty() {
+					sb.AppendByte('\n')
+				}
 
-			if !sb.IsEmpty() {
-				sb.AppendByte('\n')
+				sb.AppendByte('-')
+				sb.AppendBytes(intToStringCache2[idx%100])
+				sb.AppendByte(' ')
+				sb.AppendString(fn.Name())
+				sb.AppendString(": ")
+				sb.AppendString(file)
+				sb.AppendByte(':')
+				sb.AppendString(strconv.Itoa(line))
 			}
-
-			sb.AppendByte('-')
-			sb.AppendBytes(intToStringCache2[idx%100])
-			sb.AppendByte(' ')
-			sb.AppendString(fn.Name())
-			sb.AppendString(": ")
-			sb.AppendString(file)
-			sb.AppendByte(':')
-			sb.AppendString(strconv.Itoa(line))
 		}
 	}
 

@@ -1,7 +1,7 @@
 package util
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -32,8 +32,42 @@ func TestConcatString(t *testing.T) {
 }
 
 func TestGetStackString(t *testing.T) {
-	// assert := NewAssert(t)
-	fmt.Println(GetStackString(0))
+	assert := NewAssert(t)
+	assert(strings.Contains(FindLinesByPrefix(
+		GetStackString(0),
+		"-01",
+	)[0], "TestGetStackString")).IsTrue()
+	assert(strings.Contains(FindLinesByPrefix(
+		GetStackString(0),
+		"-01",
+	)[0], "helper_test")).IsTrue()
+}
+
+func TestFindLinesByPrefix(t *testing.T) {
+	assert := NewAssert(t)
+
+	ret := FindLinesByPrefix("", "")
+	assert(len(ret)).Equals(1)
+	assert(ret[0]).Equals("")
+
+	ret = FindLinesByPrefix("", "hello")
+	assert(len(ret)).Equals(0)
+
+	ret = FindLinesByPrefix("hello", "dd")
+	assert(len(ret)).Equals(0)
+
+	ret = FindLinesByPrefix("  hello world", "hello")
+	assert(len(ret)).Equals(1)
+	assert(ret[0]).Equals("  hello world")
+
+	ret = FindLinesByPrefix(" \t hello world", "hello")
+	assert(len(ret)).Equals(1)
+	assert(ret[0]).Equals(" \t hello world")
+
+	ret = FindLinesByPrefix(" \t hello world\nhello\n", "hello")
+	assert(len(ret)).Equals(2)
+	assert(ret[0]).Equals(" \t hello world")
+	assert(ret[1]).Equals("hello")
 }
 
 func BenchmarkAddPrefixPerLine(b *testing.B) {
@@ -47,5 +81,12 @@ func BenchmarkConcatString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		ConcatString("a", "b")
+	}
+}
+
+func BenchmarkGetStackString(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		GetStackString(0)
 	}
 }
