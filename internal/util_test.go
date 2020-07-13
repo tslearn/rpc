@@ -51,7 +51,7 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(fn11)).Equals("", true)
 
 	// no return
-	fn12 := func(ctx RPCContext, _ bool) {}
+	fn12 := func(ctx *RPCContext, _ bool) {}
 	assert(getFuncKind(fn12)).Equals("", false)
 
 	// value type not supported
@@ -93,24 +93,24 @@ func TestGetArgumentsErrorPosition(t *testing.T) {
 	fn2 := func(_ chan bool) {}
 
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn2))).Equals(0)
-	fn3 := func(ctx RPCContext, _ bool, _ chan bool) {}
+	fn3 := func(ctx *RPCContext, _ bool, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn3))).Equals(2)
-	fn4 := func(ctx RPCContext, _ int64, _ chan bool) {}
+	fn4 := func(ctx *RPCContext, _ int64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn4))).Equals(2)
-	fn5 := func(ctx RPCContext, _ uint64, _ chan bool) {}
+	fn5 := func(ctx *RPCContext, _ uint64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn5))).Equals(2)
-	fn6 := func(ctx RPCContext, _ float64, _ chan bool) {}
+	fn6 := func(ctx *RPCContext, _ float64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn6))).Equals(2)
-	fn7 := func(ctx RPCContext, _ string, _ chan bool) {}
+	fn7 := func(ctx *RPCContext, _ string, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn7))).Equals(2)
-	fn8 := func(ctx RPCContext, _ RPCBytes, _ chan bool) {}
+	fn8 := func(ctx *RPCContext, _ RPCBytes, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn8))).Equals(2)
-	fn9 := func(ctx RPCContext, _ RPCArray, _ chan bool) {}
+	fn9 := func(ctx *RPCContext, _ RPCArray, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn9))).Equals(2)
-	fn10 := func(ctx RPCContext, _ RPCMap, _ chan bool) {}
+	fn10 := func(ctx *RPCContext, _ RPCMap, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn10))).Equals(2)
 
-	fn11 := func(ctx RPCContext, _ bool) {}
+	fn11 := func(ctx *RPCContext, _ bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn11))).Equals(-1)
 }
 
@@ -298,7 +298,7 @@ func TestGetStackString(t *testing.T) {
 	assert(strings.Contains(FindLinesByPrefix(
 		GetStackString(0),
 		"-01",
-	)[0], "helper_test")).IsTrue()
+	)[0], "util_test")).IsTrue()
 }
 
 func TestFindLinesByPrefix(t *testing.T) {

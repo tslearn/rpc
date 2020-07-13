@@ -25,12 +25,10 @@ var (
 	intToStringCache4 = make([][]byte, 10000, 10000)
 )
 
-const (
-	base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-		"abcdefghijklmnopqrstuvwxyz" +
-		"0123456789" +
-		"+/"
-)
+const base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+	"abcdefghijklmnopqrstuvwxyz" +
+	"0123456789" +
+	"+/"
 
 type timeInfo struct {
 	timeNS        int64
