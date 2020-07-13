@@ -1,6 +1,6 @@
 package pkgName
 
-import "github.com/tslearn/kzserver/common"
+import "github.com/tslearn/rpcc/core"
 
 type rpcCache struct{}
 
