@@ -2,12 +2,12 @@ package internal
 
 import "testing"
 
-func TestNewAutoLock(t *testing.T) {
+func TestNewRPCLock(t *testing.T) {
 	assert := NewRPCAssert(t)
 	assert(NewRPCLock()).IsNotNil()
 }
 
-func TestAutoLock_DoWithLock(t *testing.T) {
+func TestRPCLock_DoWithLock(t *testing.T) {
 	assert := NewRPCAssert(t)
 	locker := NewRPCLock()
 	waits := make(chan bool)
@@ -31,7 +31,7 @@ func TestAutoLock_DoWithLock(t *testing.T) {
 	assert(sum).Equals(49950000)
 }
 
-func TestAutoLock_CallWithLock(t *testing.T) {
+func TestRPCLock_CallWithLock(t *testing.T) {
 	assert := NewRPCAssert(t)
 	locker := NewRPCLock()
 	waits := make(chan bool)
