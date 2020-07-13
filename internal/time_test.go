@@ -7,7 +7,7 @@ import (
 )
 
 func TestConvertToIsoDateString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	start, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"0001-01-01T00:00:00+00:00",
@@ -68,7 +68,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 }
 
 func TestTimeNowNS(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	for i := 0; i < 500000; i++ {
 		nowNS := TimeNowNS()
@@ -94,14 +94,14 @@ func TestTimeNowNS(t *testing.T) {
 }
 
 func TestTimeNowMS(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	nowNS := TimeNowMS() * int64(time.Millisecond)
 	assert(time.Now().UnixNano()-nowNS < int64(10*time.Millisecond)).IsTrue()
 	assert(time.Now().UnixNano()-nowNS > int64(-10*time.Millisecond)).IsTrue()
 }
 
 func TestTimeNowISOString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	for i := 0; i < 1000000; i++ {
 		if nowNS, err := time.Parse(
@@ -121,7 +121,7 @@ func TestTimeNowISOString(t *testing.T) {
 }
 
 func TestTimeSpanFrom(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	ns := TimeNowNS()
 	time.Sleep(50 * time.Millisecond)
 	dur := TimeSpanFrom(ns)
@@ -130,7 +130,7 @@ func TestTimeSpanFrom(t *testing.T) {
 }
 
 func TestTimeSpanBetween(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	start := TimeNowNS()
 	time.Sleep(50 * time.Millisecond)
 	dur := TimeSpanBetween(start, TimeNowNS())

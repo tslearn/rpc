@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewSpeedCounter(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	sc := NewSpeedCounter()
 	assert(sc.total).Equals(int64(0))
@@ -16,7 +16,7 @@ func TestNewSpeedCounter(t *testing.T) {
 }
 
 func TestSpeedCounter_Add(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	sc := NewSpeedCounter()
 	sc.Add(5)
 	assert(sc.Total()).Equals(int64(5))
@@ -25,7 +25,7 @@ func TestSpeedCounter_Add(t *testing.T) {
 }
 
 func TestSpeedCounter_Total(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	sc := NewSpeedCounter()
 	sc.Add(5)
 	sc.Add(10)
@@ -33,7 +33,7 @@ func TestSpeedCounter_Total(t *testing.T) {
 }
 
 func TestSpeedCounter_CalculateSpeed(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	// Add 100 and calculate
 	sc := NewSpeedCounter()

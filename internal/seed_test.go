@@ -3,7 +3,7 @@ package internal
 import "testing"
 
 func TestGetSeed(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	seed := GetSeed()
 	assert(seed > 10000).IsTrue()
 

@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewThreadPool(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(pool).IsNotNil()
@@ -25,7 +25,7 @@ func TestNewThreadPool(t *testing.T) {
 }
 
 func TestRpcThreadPool_stop(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(pool.stop()).Equals(true, []string{})
 	assert(pool.freeThreads).IsNotNil()
@@ -52,7 +52,7 @@ func TestRpcThreadPool_stop(t *testing.T) {
 }
 
 func TestRpcThreadPool_allocThread(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	assert(len(pool.freeThreads)).Equals(numOfThreadPerThreadPool)
 	thread := pool.allocThread()
@@ -63,7 +63,7 @@ func TestRpcThreadPool_allocThread(t *testing.T) {
 }
 
 func TestRpcThreadPool_freeThread(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	pool := newThreadPool(NewRPCProcessor(16, 16, nil, nil))
 	thread := pool.allocThread()
 	assert(thread).IsNotNil()

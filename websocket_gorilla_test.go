@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewWebSocketServerEndPoint(t *testing.T) {
-	assert := internal.NewAssert(t)
+	assert := internal.NewRPCAssert(t)
 
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 
@@ -32,7 +32,7 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 }
 
 func TestNewWebSocketClientEndPoint(t *testing.T) {
-	assert := internal.NewAssert(t)
+	assert := internal.NewRPCAssert(t)
 	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
 	server.Open(func(conn IStreamConn) {
 		time.Sleep(3 * time.Second)

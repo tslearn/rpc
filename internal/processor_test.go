@@ -11,101 +11,8 @@ import (
 	"time"
 )
 
-func TestGetFuncKind(t *testing.T) {
-	assert := NewAssert(t)
-
-	assert(getFuncKind(nil)).Equals("", false)
-	assert(getFuncKind(3)).Equals("", false)
-	fn1 := func() {}
-	assert(getFuncKind(fn1)).Equals("", false)
-	fn2 := func(_ chan bool) {}
-	assert(getFuncKind(fn2)).Equals("", false)
-	fn3 := func(ctx *RPCContext, _ bool) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn3)).Equals("B", true)
-	fn4 := func(ctx *RPCContext, _ int64) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn4)).Equals("I", true)
-	fn5 := func(ctx *RPCContext, _ uint64) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn5)).Equals("U", true)
-	fn6 := func(ctx *RPCContext, _ float64) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn6)).Equals("F", true)
-	fn7 := func(ctx *RPCContext, _ string) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn7)).Equals("S", true)
-	fn8 := func(ctx *RPCContext, _ RPCBytes) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn8)).Equals("X", true)
-	fn9 := func(ctx *RPCContext, _ RPCArray) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn9)).Equals("A", true)
-	fn10 := func(ctx *RPCContext, _ RPCMap) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn10)).Equals("M", true)
-
-	fn11 := func(ctx *RPCContext) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn11)).Equals("", true)
-
-	// no return
-	fn12 := func(ctx RPCContext, _ bool) {}
-	assert(getFuncKind(fn12)).Equals("", false)
-
-	// value type not supported
-	fn13 := func(ctx *RPCContext, _ chan bool) *RPCReturn { return nilReturn }
-	assert(getFuncKind(fn13)).Equals("", false)
-
-	fn14 := func(
-		ctx *RPCContext,
-		_ bool, _ int64, _ uint64, _ float64, _ string,
-		_ RPCBytes, _ RPCArray, _ RPCMap,
-	) *RPCReturn {
-		return nilReturn
-	}
-	assert(getFuncKind(fn14)).Equals("BIUFSXAM", true)
-}
-
-func TestConvertTypeToString(t *testing.T) {
-	assert := NewAssert(t)
-	assert(convertTypeToString(nil)).Equals("<nil>")
-	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
-	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
-	assert(convertTypeToString(mapType)).Equals("rpc.Map")
-	assert(convertTypeToString(boolType)).Equals("rpc.Bool")
-	assert(convertTypeToString(int64Type)).Equals("rpc.Int")
-	assert(convertTypeToString(uint64Type)).Equals("rpc.Uint")
-	assert(convertTypeToString(float64Type)).Equals("rpc.Float")
-	assert(convertTypeToString(stringType)).Equals("rpc.String")
-	assert(convertTypeToString(contextType)).Equals("rpc.Context")
-	assert(convertTypeToString(returnType)).Equals("rpc.Return")
-	assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
-		Equals("chan bool")
-}
-
-func TestGetArgumentsErrorPosition(t *testing.T) {
-	assert := NewAssert(t)
-
-	fn1 := func() {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn1))).Equals(0)
-	fn2 := func(_ chan bool) {}
-
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn2))).Equals(0)
-	fn3 := func(ctx RPCContext, _ bool, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn3))).Equals(2)
-	fn4 := func(ctx RPCContext, _ int64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn4))).Equals(2)
-	fn5 := func(ctx RPCContext, _ uint64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn5))).Equals(2)
-	fn6 := func(ctx RPCContext, _ float64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn6))).Equals(2)
-	fn7 := func(ctx RPCContext, _ string, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn7))).Equals(2)
-	fn8 := func(ctx RPCContext, _ RPCBytes, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn8))).Equals(2)
-	fn9 := func(ctx RPCContext, _ RPCArray, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn9))).Equals(2)
-	fn10 := func(ctx RPCContext, _ RPCMap, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn10))).Equals(2)
-
-	fn11 := func(ctx RPCContext, _ bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn11))).Equals(-1)
-}
-
 func TestNewRPCProcessor(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	callbackFn := func(stream *RPCStream, success bool) {}
 
@@ -152,7 +59,7 @@ func TestNewRPCProcessor(t *testing.T) {
 }
 
 func TestRPCProcessor_Start_Stop(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.Stop()).IsNotNil()
@@ -183,7 +90,7 @@ func TestRPCProcessor_Start_Stop(t *testing.T) {
 }
 
 func TestRPCProcessor_PutStream(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.PutStream(NewRPCStream())).IsFalse()
 	processor.Start()
@@ -195,7 +102,7 @@ func TestRPCProcessor_PutStream(t *testing.T) {
 }
 
 func TestRPCProcessor_AddService(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(16, 32, nil, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
@@ -209,7 +116,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 }
 
 func TestRPCProcessor_BuildCache(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
 	processor0 := NewRPCProcessor(16, 32, nil, nil)
@@ -240,7 +147,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 }
 
 func TestRPCProcessor_mountNode(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, nil)
 
@@ -335,7 +242,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 }
 
 func TestRPCProcessor_mountEcho(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, &TestFuncCache{})
 	rootNode := processor.nodesMap[rootName]
@@ -470,7 +377,7 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 }
 
 func TestRPCProcessor_OutPutErrors(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(16, 16, nil, nil)
 

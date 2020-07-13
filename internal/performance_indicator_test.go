@@ -7,7 +7,7 @@ import (
 )
 
 func TestPerformanceIndicator_basic(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	performanceIndicator := NewPerformanceIndicator()
 
 	for i := 0; i < 1500; i++ {

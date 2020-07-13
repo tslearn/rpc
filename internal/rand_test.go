@@ -5,7 +5,7 @@ import (
 )
 
 func TestGetRandString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	assert(GetRandString(-1)).Equals("")
 	for i := 0; i < 100; i++ {
 		assert(len(GetRandString(i))).Equals(i)

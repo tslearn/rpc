@@ -3,12 +3,12 @@ package internal
 import "testing"
 
 func TestNewAutoLock(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	assert(NewAutoLock()).IsNotNil()
 }
 
 func TestAutoLock_DoWithLock(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	locker := NewAutoLock()
 	waits := make(chan bool)
 	sum := 0
@@ -32,7 +32,7 @@ func TestAutoLock_DoWithLock(t *testing.T) {
 }
 
 func TestAutoLock_CallWithLock(t *testing.T) {
-	assert := NewAssert(t)
+	assert := NewRPCAssert(t)
 	locker := NewAutoLock()
 	waits := make(chan bool)
 	sum := 0
