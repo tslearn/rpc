@@ -316,7 +316,7 @@ type Server struct {
 	internal.RPCLock
 }
 
-func NewServer(sessionSize int64, fnCache internal.RPCCache) *Server {
+func NewServer(sessionSize int64, fnCache internal.RPCReplyCache) *Server {
 	server := &Server{
 		isOpen:      false,
 		logger:      internal.NewRPCLogger(nil),

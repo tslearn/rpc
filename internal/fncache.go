@@ -44,13 +44,13 @@ func (p *fnCache) writeHeader(
 	sb.AppendString("type rpcCache struct{}\n\n")
 
 	sb.AppendString("// NewRPCCache ...\n")
-	sb.AppendString("func NewRPCCache() common.RPCCache {\n")
+	sb.AppendString("func NewRPCCache() common.RPCReplyCache {\n")
 	sb.AppendString("\treturn &rpcCache{}\n")
 	sb.AppendString("}\n\n")
 
 	sb.AppendString("// Get ...\n")
 	sb.AppendString(
-		"func (p *rpcCache) Get(fnString string) common.RPCCacheFunc {\n",
+		"func (p *rpcCache) Get(fnString string) common.RPCReplyCacheFunc {\n",
 	)
 	sb.AppendString("\treturn getFCache(fnString)\n")
 	sb.AppendString("}\n\n")
@@ -88,7 +88,7 @@ func (p *fnCache) writeHeader(
 }
 
 func (p *fnCache) writeGetFunc(sb *StringBuilder, kinds []string) {
-	sb.AppendString("\nfunc getFCache(fnString string) common.RPCCacheFunc {\n")
+	sb.AppendString("\nfunc getFCache(fnString string) common.RPCReplyCacheFunc {\n")
 	sb.AppendString("\tswitch fnString {\n")
 
 	for _, kind := range kinds {

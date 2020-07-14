@@ -18,7 +18,7 @@ func readStringFromFile(filePath string) (string, error) {
 
 type TestFuncCache struct{}
 
-func (p *TestFuncCache) Get(fnString string) RPCCacheFunc {
+func (p *TestFuncCache) Get(fnString string) RPCReplyCacheFunc {
 	switch fnString {
 	case "S":
 		return func(c *RPCContext, s *RPCStream, f interface{}) bool {

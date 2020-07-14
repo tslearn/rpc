@@ -23,13 +23,13 @@ var (
 const StreamBodyPos = 33
 const closeTimeOut = 15 * time.Second
 
-// RPCCache ...
-type RPCCache interface {
-	Get(fnString string) RPCCacheFunc
+// RPCReplyCache ...
+type RPCReplyCache interface {
+	Get(fnString string) RPCReplyCacheFunc
 }
 
-// RPCCacheFunc ...
-type RPCCacheFunc = func(
+// RPCReplyCacheFunc ...
+type RPCReplyCacheFunc = func(
 	ctx *RPCContext,
 	stream *RPCStream,
 	fn interface{},
