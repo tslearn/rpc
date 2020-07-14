@@ -94,7 +94,7 @@ func (p *webSocketConn) Close() Error {
 
 // End ***** webSocketConn ***** //
 
-// Begin ***** WebSocketServerEndPoint ***** //
+// Begin ***** WebSocketServerAdapter ***** //
 var (
 	wsUpgradeManager = websocket.Upgrader{
 		ReadBufferSize:    2048,
@@ -103,7 +103,7 @@ var (
 	}
 )
 
-type WebSocketServerEndPoint struct {
+type WebSocketServerAdapter struct {
 	addr       string
 	path       string
 	closeCH    chan bool
@@ -111,12 +111,12 @@ type WebSocketServerEndPoint struct {
 	internal.RPCLock
 }
 
-func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
+func NewWebSocketServerAdapter(addr string, path string) IAdapter {
 	if path == "" || path[0] != '/' {
 		path = "/" + path
 	}
 
-	return &WebSocketServerEndPoint{
+	return &WebSocketServerAdapter{
 		addr:       addr,
 		path:       path,
 		closeCH:    nil,
@@ -125,8 +125,8 @@ func NewWebSocketServerEndPoint(addr string, path string) IEndPoint {
 }
 
 // Open it must be none block
-func (p *WebSocketServerEndPoint) Open(
-	onConnRun func(IStreamConn),
+func (p *WebSocketServerAdapter) Open(
+	onConnRun func(IStreamConnection),
 	onError func(Error),
 ) bool {
 	err := Error(nil)
@@ -139,12 +139,12 @@ func (p *WebSocketServerEndPoint) Open(
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
 			err = internal.NewRPCError(
-				"WebSocketServerEndPoint: Open: onConnRun is nil",
+				"WebSocketServerAdapter: Open: onConnRun is nil",
 			)
 			return false
 		} else if p.httpServer != nil {
 			err = internal.NewRPCError(
-				"WebSocketServerEndPoint: Open: it has already been opened",
+				"WebSocketServerAdapter: Open: it has already been opened",
 			)
 			return false
 		} else {
@@ -152,7 +152,7 @@ func (p *WebSocketServerEndPoint) Open(
 			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
 				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 					onError(internal.NewRPCError(
-						internal.ConcatString("WebSocketServerEndPoint: Open: ", err.Error()),
+						internal.ConcatString("WebSocketServerAdapter: Open: ", err.Error()),
 					))
 				} else {
 					onConnRun((*webSocketConn)(conn))
@@ -176,7 +176,7 @@ func (p *WebSocketServerEndPoint) Open(
 				}()
 				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 					onError(internal.NewRPCError(
-						internal.ConcatString("WebSocketServerEndPoint: Open: ", e.Error()),
+						internal.ConcatString("WebSocketServerAdapter: Open: ", e.Error()),
 					))
 				}
 			}()
@@ -185,7 +185,7 @@ func (p *WebSocketServerEndPoint) Open(
 	}).(bool)
 }
 
-func (p *WebSocketServerEndPoint) Close(onError func(Error)) bool {
+func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 	err := Error(nil)
 	defer func() {
 		if onError != nil && err != nil {
@@ -196,12 +196,12 @@ func (p *WebSocketServerEndPoint) Close(onError func(Error)) bool {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewRPCError(
-				"WebSocketServerEndPoint: Close: has not been opened",
+				"WebSocketServerAdapter: Close: has not been opened",
 			)
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
 			err = internal.NewRPCError(
-				internal.ConcatString("WebSocketServerEndPoint: Close: ", e.Error()),
+				internal.ConcatString("WebSocketServerAdapter: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -219,24 +219,24 @@ func (p *WebSocketServerEndPoint) Close(onError func(Error)) bool {
 			return true
 		case <-time.After(10 * time.Second):
 			err = internal.NewRPCError(
-				"WebSocketServerEndPoint: Close: can not close in 10 seconds",
+				"WebSocketServerAdapter: Close: can not close in 10 seconds",
 			)
 			return false
 		}
 	}
 }
 
-func (p *WebSocketServerEndPoint) IsRunning() bool {
+func (p *WebSocketServerAdapter) IsRunning() bool {
 	return p.CallWithLock(func() interface{} {
 		return p.closeCH != nil
 	}).(bool)
 }
 
-func (p *WebSocketServerEndPoint) ConnectString() string {
+func (p *WebSocketServerAdapter) ConnectString() string {
 	return "ws://" + p.addr + p.path
 }
 
-// End ***** WebSocketServerEndPoint ***** //
+// End ***** WebSocketServerAdapter ***** //
 
 // Begin ***** WebSocketClientEndPoint ***** //
 type WebSocketClientEndPoint struct {
@@ -246,7 +246,7 @@ type WebSocketClientEndPoint struct {
 	internal.RPCLock
 }
 
-func NewWebSocketClientEndPoint(connectString string) IEndPoint {
+func NewWebSocketClientEndPoint(connectString string) IAdapter {
 	return &WebSocketClientEndPoint{
 		conn:          nil,
 		closeCH:       nil,
@@ -255,7 +255,7 @@ func NewWebSocketClientEndPoint(connectString string) IEndPoint {
 }
 
 func (p *WebSocketClientEndPoint) Open(
-	onConnRun func(IStreamConn),
+	onConnRun func(IStreamConnection),
 	onError func(Error),
 ) bool {
 	err := Error(nil)

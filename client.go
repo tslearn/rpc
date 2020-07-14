@@ -94,9 +94,9 @@ type Client struct {
 	isOpen             bool
 	closeCH            chan bool
 	sessionString      string
-	conn               IStreamConn
+	conn               IStreamConnection
 	logger             *internal.RPCLogger
-	endPoint           IEndPoint
+	endPoint           IAdapter
 	preSendHead        *sendItem
 	preSendTail        *sendItem
 	sendMap            map[uint64]*sendItem
@@ -113,7 +113,7 @@ type Client struct {
 	internal.RPCLock
 }
 
-func NewClient(endPoint IEndPoint) *Client {
+func NewClient(endPoint IAdapter) *Client {
 	return &Client{
 		isOpen:             false,
 		closeCH:            nil,
@@ -224,7 +224,7 @@ func (p *Client) IsRunning() bool {
 	}).(bool)
 }
 
-func (p *Client) initConn(conn IStreamConn) Error {
+func (p *Client) initConn(conn IStreamConnection) Error {
 	// get the sequence
 	sequence := p.CallWithLock(func() interface{} {
 		p.systemSeed++
@@ -320,7 +320,7 @@ func (p *Client) initConn(conn IStreamConn) Error {
 	}
 }
 
-func (p *Client) onConnRun(conn IStreamConn) {
+func (p *Client) onConnRun(conn IStreamConnection) {
 	// init conn
 	if err := p.initConn(conn); err != nil {
 		p.onError(err)

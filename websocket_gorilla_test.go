@@ -10,11 +10,11 @@ import (
 func TestNewWebSocketServerEndPoint(t *testing.T) {
 	assert := internal.NewRPCAssert(t)
 
-	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
+	server := NewWebSocketServerAdapter("127.0.0.1:20080", "/test")
 
 	for i := 0; i < 2; i++ {
 		assert(
-			server.Open(func(conn IStreamConn) {
+			server.Open(func(conn IStreamConnection) {
 				fmt.Println(conn)
 			}, func(err Error) {
 				fmt.Println(err)
@@ -33,8 +33,8 @@ func TestNewWebSocketServerEndPoint(t *testing.T) {
 
 func TestNewWebSocketClientEndPoint(t *testing.T) {
 	assert := internal.NewRPCAssert(t)
-	server := NewWebSocketServerEndPoint("127.0.0.1:20080", "/test")
-	server.Open(func(conn IStreamConn) {
+	server := NewWebSocketServerAdapter("127.0.0.1:20080", "/test")
+	server.Open(func(conn IStreamConnection) {
 		time.Sleep(3 * time.Second)
 	}, func(err Error) {
 		fmt.Println(err)
@@ -42,7 +42,7 @@ func TestNewWebSocketClientEndPoint(t *testing.T) {
 
 	client := NewWebSocketClientEndPoint("ws://127.0.0.1:20080/test")
 	assert(
-		client.Open(func(conn IStreamConn) {
+		client.Open(func(conn IStreamConnection) {
 			time.Sleep(3 * time.Second)
 		}, func(err Error) {
 			fmt.Println(err)

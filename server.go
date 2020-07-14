@@ -78,7 +78,7 @@ func (p *serverSessionRecord) Release() {
 type serverSession struct {
 	id          uint64
 	security    string
-	conn        IStreamConn
+	conn        IStreamConnection
 	dataSeed    uint64
 	controlSeed uint64
 	callMap     map[uint64]*serverSessionRecord
@@ -308,7 +308,7 @@ func (p *serverSession) Release() {
 type Server struct {
 	isOpen      bool
 	logger      *internal.RPCLogger
-	endPoints   []IEndPoint
+	endPoints   []IAdapter
 	processor   *internal.RPCProcessor
 	sessionMap  sync.Map
 	sessionSize int64
@@ -320,7 +320,7 @@ func NewServer(sessionSize int64, fnCache internal.RPCCache) *Server {
 	server := &Server{
 		isOpen:      false,
 		logger:      internal.NewRPCLogger(nil),
-		endPoints:   make([]IEndPoint, 0),
+		endPoints:   make([]IAdapter, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},
 		sessionSize: sessionSize,
@@ -354,7 +354,7 @@ func (p *Server) Open() bool {
 			p.onError(internal.NewRPCError("Server: Open: can not start processor"))
 			return false
 		} else {
-			openList := make([]IEndPoint, 0)
+			openList := make([]IAdapter, 0)
 			defer func() {
 				if openList != nil {
 					for _, v := range openList {
@@ -424,12 +424,12 @@ func (p *Server) AddService(
 	return p
 }
 
-func (p *Server) AddEndPoint(endPoint IEndPoint) *Server {
+func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	if endPoint == nil {
-		p.onError(internal.NewRPCError("Server: AddEndPoint: endpoint is nil"))
+		p.onError(internal.NewRPCError("Server: AddAdapter: endpoint is nil"))
 	} else if endPoint.IsRunning() {
 		p.onError(internal.NewRPCError(fmt.Sprintf(
-			"Server: AddEndPoint: endpoint %s has already served",
+			"Server: AddAdapter: endpoint %s has already served",
 			endPoint.ConnectString(),
 		)))
 	} else {
@@ -444,7 +444,7 @@ func (p *Server) AddEndPoint(endPoint IEndPoint) *Server {
 	return p
 }
 
-func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
+func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	if conn == nil {
 		return nil, internal.NewRPCError(
 			"Server: getSession: conn is nil",
@@ -517,7 +517,7 @@ func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 	}
 }
 
-func (p *Server) onConnRun(conn IStreamConn) {
+func (p *Server) onConnRun(conn IStreamConnection) {
 	if conn == nil {
 		p.onError(internal.NewRPCError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {

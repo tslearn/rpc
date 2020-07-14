@@ -13,19 +13,15 @@ func TestServer_Debug(t *testing.T) {
 
 func TestServer_Basic(t *testing.T) {
 	// assert := common.NewAssert(t)
-	server := NewServer(32, nil).
-		AddService("user", NewService().
-			Reply("sayHello", true, func(
-				ctx Context,
-				name string,
-			) Return {
-				//time.Sleep(1000 * time.Second)
-				return ctx.OK("hello " + name)
-			}),
-		).
-		AddEndPoint(
-			NewWebSocketServerEndPoint("127.0.0.1:8080", "test"),
-		)
+	server := NewServer(32, nil).AddAdapter(
+		NewWebSocketServerAdapter("127.0.0.1:8080", "test"),
+	)
+	server.AddService("user", NewService().
+		Reply("sayHello", true, func(ctx Context, name string) Return {
+			return ctx.OK("hello " + name)
+		}),
+	)
+
 	server.Open()
 
 	// client
