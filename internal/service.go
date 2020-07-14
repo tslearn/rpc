@@ -29,7 +29,7 @@ type rpcNodeMeta struct {
 
 type rpcService struct {
 	children []*rpcNodeMeta // all the children node meta pointer
-	echos    []*rpcEchoMeta // all the echos meta pointer
+	replies  []*rpcEchoMeta // all the replies meta pointer
 	debug    string         // where the service define in source file
 	RPCLock
 }
@@ -38,7 +38,7 @@ type rpcService struct {
 func NewRPCService() Service {
 	return &rpcService{
 		children: make([]*rpcNodeMeta, 0, 0),
-		echos:    make([]*rpcEchoMeta, 0, 0),
+		replies:  make([]*rpcEchoMeta, 0, 0),
 		debug:    GetStackString(1),
 	}
 }
@@ -51,7 +51,7 @@ func (p *rpcService) Reply(
 ) Service {
 	p.DoWithLock(func() {
 		// add echo meta
-		p.echos = append(p.echos, &rpcEchoMeta{
+		p.replies = append(p.replies, &rpcEchoMeta{
 			name:    name,
 			export:  export,
 			handler: handler,

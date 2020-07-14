@@ -42,8 +42,8 @@ func (p *rpcThreadPool) stop() (bool, []string) {
 			// stop threads
 			for i := 0; i < numOfThreads; i++ {
 				go func(idx int) {
-					if !p.threads[idx].stop() && p.threads[idx].execEchoNode != nil {
-						closeCH <- p.threads[idx].execEchoNode.debugString
+					if !p.threads[idx].stop() && p.threads[idx].execReplyNode != nil {
+						closeCH <- p.threads[idx].execReplyNode.debugString
 					} else {
 						closeCH <- ""
 					}

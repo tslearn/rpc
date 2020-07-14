@@ -15,7 +15,7 @@ type rpcThread struct {
 	inStream       *RPCStream
 	outStream      *RPCStream
 	execDepth      uint64
-	execEchoNode   *rpcEchoNode
+	execReplyNode  *rpcReplyNode
 	execArgs       []reflect.Value
 	execSuccessful bool
 	from           string
@@ -31,7 +31,7 @@ func newThread(threadPool *rpcThreadPool) *rpcThread {
 		inStream:       nil,
 		outStream:      NewRPCStream(),
 		execDepth:      0,
-		execEchoNode:   nil,
+		execReplyNode:  nil,
 		execArgs:       make([]reflect.Value, 0, 16),
 		execSuccessful: false,
 		from:           "",
@@ -83,18 +83,18 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	ctx := &RPCContext{thread: unsafe.Pointer(p)}
 
 	defer func() {
-		if err := recover(); err != nil && p.execEchoNode != nil {
+		if err := recover(); err != nil && p.execReplyNode != nil {
 			ctx.writeError(
 				fmt.Sprintf(
 					"rpc-server: %s: runtime error: %s",
-					p.execEchoNode.callString,
+					p.execReplyNode.callString,
 					err,
 				),
 				GetStackString(1),
 			)
 		}
-		if p.execEchoNode != nil {
-			p.execEchoNode.indicator.Count(
+		if p.execReplyNode != nil {
+			p.execReplyNode.indicator.Count(
 				time.Duration(TimeNowNS()-timeStart),
 				p.from,
 				p.execSuccessful,
@@ -106,7 +106,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 		p.outStream = inStream
 		p.from = ""
 		p.execDepth = 0
-		p.execEchoNode = nil
+		p.execReplyNode = nil
 		p.execArgs = p.execArgs[:0]
 		if processor.callback != nil {
 			processor.callback(retStream, p.execSuccessful)
@@ -122,7 +122,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	if !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execEchoNode, ok = processor.echosMap[echoPath]; !ok {
+	if p.execReplyNode, ok = processor.echosMap[echoPath]; !ok {
 		return ctx.writeError(
 			fmt.Sprintf("rpc-server: echo path %s is not mounted", echoPath),
 			"",
@@ -149,14 +149,14 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	// build callArgs
 	argStartPos := inStream.GetReadPos()
 
-	if fnCache := p.execEchoNode.cacheFN; fnCache != nil {
-		ok = fnCache(ctx, inStream, p.execEchoNode.echoMeta.handler)
+	if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
+		ok = fnCache(ctx, inStream, p.execReplyNode.echoMeta.handler)
 	} else {
 		p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
-		for i := 1; i < len(p.execEchoNode.argTypes); i++ {
+		for i := 1; i < len(p.execReplyNode.argTypes); i++ {
 			var rv reflect.Value
 
-			switch p.execEchoNode.argTypes[i].Kind() {
+			switch p.execReplyNode.argTypes[i].Kind() {
 			case reflect.Int64:
 				if iVar, success := inStream.ReadInt64(); success {
 					rv = reflect.ValueOf(iVar)
@@ -194,7 +194,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 				}
 				break
 			default:
-				switch p.execEchoNode.argTypes[i] {
+				switch p.execReplyNode.argTypes[i] {
 				case bytesType:
 					if xVar, success := inStream.ReadBytes(); success {
 						rv = reflect.ValueOf(xVar)
@@ -229,7 +229,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 		}
 
 		if ok && !inStream.CanRead() {
-			p.execEchoNode.reflectFn.Call(p.execArgs)
+			p.execReplyNode.reflectFn.Call(p.execArgs)
 		}
 	}
 
@@ -246,8 +246,8 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 			}
 
 			if val == nil {
-				if len(remoteArgsType) < len(p.execEchoNode.argTypes) {
-					argType := p.execEchoNode.argTypes[len(remoteArgsType)]
+				if len(remoteArgsType) < len(p.execReplyNode.argTypes) {
+					argType := p.execReplyNode.argTypes[len(remoteArgsType)]
 
 					if argType == bytesType ||
 						argType == arrayType ||
@@ -276,9 +276,9 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 				echoPath,
 				strings.Join(remoteArgsType, ", "),
 				convertTypeToString(returnType),
-				p.execEchoNode.callString,
+				p.execReplyNode.callString,
 			),
-			p.execEchoNode.debugString,
+			p.execReplyNode.debugString,
 		)
 	}
 

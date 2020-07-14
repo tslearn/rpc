@@ -123,10 +123,10 @@ func TestRpcContext_Error(t *testing.T) {
 	assert(thread.outStream.ReadString()).Equals("errorMessage", true)
 	assert(thread.outStream.ReadString()).Equals("errorDebug", true)
 
-	// ctx have execEchoNode
+	// ctx have execReplyNode
 	thread1 := newThread(nil)
 	thread1.stop()
-	thread1.execEchoNode = &rpcEchoNode{debugString: "nodeDebug"}
+	thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
 	ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	assert(
 		ctx1.Error(NewRPCErrorByDebug("errorMessage", "errorDebug")),

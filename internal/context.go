@@ -51,9 +51,9 @@ func (p *RPCContext) Error(err RPCError) *RPCReturn {
 	}
 
 	if thread := (*rpcThread)(p.thread); thread != nil &&
-		thread.execEchoNode != nil &&
-		thread.execEchoNode.debugString != "" {
-		err.AddDebug(thread.execEchoNode.debugString)
+		thread.execReplyNode != nil &&
+		thread.execReplyNode.debugString != "" {
+		err.AddDebug(thread.execReplyNode.debugString)
 	}
 
 	return p.writeError(err.GetMessage(), err.GetDebug())

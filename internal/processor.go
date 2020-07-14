@@ -26,7 +26,7 @@ var (
 	echoNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
 )
 
-type rpcEchoNode struct {
+type rpcReplyNode struct {
 	serviceNode *rpcServiceNode
 	path        string
 	echoMeta    *rpcEchoMeta
@@ -49,7 +49,7 @@ type RPCProcessor struct {
 	isRunning    bool
 	fnCache      RPCCache
 	callback     func(stream *RPCStream, success bool)
-	echosMap     map[string]*rpcEchoNode
+	echosMap     map[string]*rpcReplyNode
 	nodesMap     map[string]*rpcServiceNode
 	threadPools  []*rpcThreadPool
 	maxNodeDepth uint64
@@ -80,7 +80,7 @@ func NewRPCProcessor(
 		isRunning:    false,
 		fnCache:      fnCache,
 		callback:     callback,
-		echosMap:     make(map[string]*rpcEchoNode),
+		echosMap:     make(map[string]*rpcReplyNode),
 		nodesMap:     make(map[string]*rpcServiceNode),
 		threadPools:  make([]*rpcThreadPool, numOfThreadPool, numOfThreadPool),
 		maxNodeDepth: uint64(maxNodeDepth),
@@ -297,8 +297,8 @@ func (p *RPCProcessor) mountNode(
 	// mount the node
 	p.nodesMap[servicePath] = node
 
-	// mount the echos
-	for _, echoMeta := range nodeMeta.serviceMeta.echos {
+	// mount the replies
+	for _, echoMeta := range nodeMeta.serviceMeta.replies {
 		err := p.mountEcho(node, echoMeta)
 		if err != nil {
 			delete(p.nodesMap, servicePath)
@@ -433,7 +433,7 @@ func (p *RPCProcessor) mountEcho(
 		cacheFN = p.fnCache.Get(fnTypeString)
 	}
 
-	p.echosMap[echoPath] = &rpcEchoNode{
+	p.echosMap[echoPath] = &rpcReplyNode{
 		serviceNode: serviceNode,
 		path:        echoPath,
 		echoMeta:    echoMeta,

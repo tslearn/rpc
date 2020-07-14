@@ -22,7 +22,7 @@ func TestNewThread(t *testing.T) {
 	assert(thread.inStream).IsNil()
 	assert(thread.outStream).IsNotNil()
 	assert(thread.execDepth).Equals(uint64(0))
-	assert(thread.execEchoNode).IsNil()
+	assert(thread.execReplyNode).IsNil()
 	assert(len(thread.execArgs)).Equals(0)
 	assert(cap(thread.execArgs)).Equals(16)
 	assert(thread.execSuccessful).IsFalse()
