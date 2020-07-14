@@ -48,7 +48,7 @@ type rpcServiceNode struct {
 type RPCProcessor struct {
 	isRunning    bool
 	fnCache      RPCCache
-	callback     fnProcessorCallback
+	callback     func(stream *RPCStream, success bool)
 	echosMap     map[string]*rpcEchoNode
 	nodesMap     map[string]*rpcServiceNode
 	threadPools  []*rpcThreadPool
@@ -65,7 +65,7 @@ var fnGetRuntimeNumberOfCPU = func() int {
 func NewRPCProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
-	callback fnProcessorCallback,
+	callback func(stream *RPCStream, success bool),
 	fnCache RPCCache,
 ) *RPCProcessor {
 	numOfThreadPool := uint32(fnGetRuntimeNumberOfCPU() * numOfThreadPoolPerCore)

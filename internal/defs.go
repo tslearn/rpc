@@ -35,8 +35,6 @@ type RPCCacheFunc = func(
 	fn interface{},
 ) bool
 
-type fnProcessorCallback = func(stream *RPCStream, success bool)
-
 // RPCBool ...
 type RPCBool = bool
 
