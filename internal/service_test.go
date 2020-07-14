@@ -36,7 +36,7 @@ func TestRpcService_Add(t *testing.T) {
 	assert(service.AddService("nil", nil)).Equals(service)
 }
 
-func TestRpcService_Echo(t *testing.T) {
+func TestRpcService_Reply(t *testing.T) {
 	assert := NewRPCAssert(t)
 	service := NewRPCService().Reply("sayHello", true, 2345)
 	assert(service).IsNotNil()
