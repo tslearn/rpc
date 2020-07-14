@@ -45,7 +45,7 @@ func runWithProcessor(
 			retStreamCH <- stream
 			retSuccessCH <- success
 		},
-		&TestFuncCache{},
+		&testFuncCache{},
 	)
 	_ = processor.AddService(
 		"user",

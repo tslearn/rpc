@@ -5,10 +5,8 @@ import (
 	"path"
 	"reflect"
 	"runtime"
-	"runtime/pprof"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestNewRPCProcessor(t *testing.T) {
@@ -244,7 +242,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 func TestRPCProcessor_mountEcho(t *testing.T) {
 	assert := NewRPCAssert(t)
 
-	processor := NewRPCProcessor(16, 16, nil, &TestFuncCache{})
+	processor := NewRPCProcessor(16, 16, nil, &testFuncCache{})
 	rootNode := processor.nodesMap[rootName]
 
 	// check the node is nil
@@ -424,7 +422,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		func(stream *RPCStream, success bool) {
 			stream.Release()
 		},
-		&TestFuncCache{},
+		&testFuncCache{},
 	)
 	processor.Start()
 	_ = processor.AddService(
@@ -438,10 +436,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			}),
 		"",
 	)
-	file, _ := os.Create("../cpu.prof")
-
-	time.Sleep(5000 * time.Millisecond)
-	_ = pprof.StartCPUProfile(file)
+	//file, _ := os.Create("../cpu.prof")
+	//_ = pprof.StartCPUProfile(file)
 
 	b.ReportAllocs()
 	b.N = 50000000
@@ -459,5 +455,5 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	})
 	b.StopTimer()
 
-	pprof.StopCPUProfile()
+	//pprof.StopCPUProfile()
 }

@@ -8,17 +8,9 @@ import (
 	"testing"
 )
 
-func readStringFromFile(filePath string) (string, error) {
-	ret, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
-	return string(ret), nil
-}
+type testFuncCache struct{}
 
-type TestFuncCache struct{}
-
-func (p *TestFuncCache) Get(fnString string) RPCReplyCacheFunc {
+func (p *testFuncCache) Get(fnString string) RPCReplyCacheFunc {
 	switch fnString {
 	case "S":
 		return func(c *RPCContext, s *RPCStream, f interface{}) bool {
@@ -32,6 +24,14 @@ func (p *TestFuncCache) Get(fnString string) RPCReplyCacheFunc {
 	default:
 		return nil
 	}
+}
+
+func readStringFromFile(filePath string) (string, error) {
+	ret, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(ret), nil
 }
 
 func TestFnCache_basic(t *testing.T) {

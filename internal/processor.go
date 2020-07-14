@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	rootName                 = "$"
-	numOfThreadPerThreadPool = 8
-	numOfThreadPoolPerCore   = 2
-	numOfMinThreadPool       = 2
-	numOfMaxThreadPool       = 2
-	//numOfThreadPerThreadPool = 8192
+	rootName = "$"
+	//numOfThreadPerThreadPool = 8
 	//numOfThreadPoolPerCore   = 2
 	//numOfMinThreadPool       = 2
-	//numOfMaxThreadPool       = 64
+	//numOfMaxThreadPool       = 2
+	numOfThreadPerThreadPool = 8192
+	numOfThreadPoolPerCore   = 2
+	numOfMinThreadPool       = 2
+	numOfMaxThreadPool       = 64
 )
 
 var (
