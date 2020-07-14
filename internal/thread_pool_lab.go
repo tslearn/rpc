@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-const numOfThreadGroup = 64
+const numOfThreadGroup = 256
 
 // rpcThreadPool
 type rpcThreadPoolLab struct {
