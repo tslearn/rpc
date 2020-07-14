@@ -328,6 +328,8 @@ func NewServer(sessionSize int64, fnCache internal.RPCReplyCache) *Server {
 	}
 
 	server.processor = internal.NewRPCProcessor(
+		true,
+		8192,
 		32,
 		32,
 		func(stream Stream, success bool) {
@@ -350,8 +352,8 @@ func (p *Server) Open() bool {
 		if p.isOpen {
 			p.onError(internal.NewRPCError("Server: Open: it is already opened"))
 			return false
-		} else if !p.processor.Start() {
-			p.onError(internal.NewRPCError("Server: Open: can not start processor"))
+		} else if err := p.processor.Start(); err != nil {
+			p.onError(err)
 			return false
 		} else {
 			openList := make([]IAdapter, 0)

@@ -2,24 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"math/rand"
 	"reflect"
 	"regexp"
-	"runtime"
 	"strings"
 )
 
-const (
-	rootName = "$"
-	//numOfThreadPerThreadPool = 8
-	//numOfThreadPoolPerCore   = 2
-	//numOfMinThreadPool       = 2
-	//numOfMaxThreadPool       = 2
-	numOfThreadPerThreadPool = 8192
-	numOfThreadPoolPerCore   = 2
-	numOfMinThreadPool       = 2
-	numOfMaxThreadPool       = 64
-)
+const rootName = "$"
 
 var (
 	nodeNameRegex = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
@@ -46,45 +34,34 @@ type rpcServiceNode struct {
 
 // RPCProcessor ...
 type RPCProcessor struct {
-	isRunning    bool
+	isDebug      bool
 	fnCache      RPCReplyCache
 	callback     func(stream *RPCStream, success bool)
 	echosMap     map[string]*rpcReplyNode
 	nodesMap     map[string]*rpcServiceNode
-	threadPools  []*rpcThreadPool
 	maxNodeDepth uint64
 	maxCallDepth uint64
-	RPCLock
-}
-
-var fnGetRuntimeNumberOfCPU = func() int {
-	return runtime.NumCPU()
+	threadPool   *rpcThreadPool
 }
 
 // NewRPCProcessor ...
 func NewRPCProcessor(
+	isDebug bool,
+	numOfThreads uint,
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	callback func(stream *RPCStream, success bool),
 	fnCache RPCReplyCache,
 ) *RPCProcessor {
-	numOfThreadPool := uint32(fnGetRuntimeNumberOfCPU() * numOfThreadPoolPerCore)
-	if numOfThreadPool < numOfMinThreadPool {
-		numOfThreadPool = numOfMinThreadPool
-	}
-	if numOfThreadPool > numOfMaxThreadPool {
-		numOfThreadPool = numOfMaxThreadPool
-	}
-
 	ret := &RPCProcessor{
-		isRunning:    false,
+		isDebug:      isDebug,
 		fnCache:      fnCache,
 		callback:     callback,
 		echosMap:     make(map[string]*rpcReplyNode),
 		nodesMap:     make(map[string]*rpcServiceNode),
-		threadPools:  make([]*rpcThreadPool, numOfThreadPool, numOfThreadPool),
 		maxNodeDepth: uint64(maxNodeDepth),
 		maxCallDepth: uint64(maxCallDepth),
+		threadPool:   nil,
 	}
 
 	// mount root node
@@ -94,101 +71,118 @@ func NewRPCProcessor(
 		depth:   0,
 	}
 
+	ret.threadPool = newThreadPool(ret, numOfThreads)
+
 	return ret
 }
 
-// Start ...
-func (p *RPCProcessor) Start() bool {
-	return p.CallWithLock(func() interface{} {
-		if !p.isRunning {
-			p.isRunning = true
-			for i := 0; i < len(p.threadPools); i++ {
-				p.threadPools[i] = newThreadPool(p)
-			}
-			return true
-		}
-
-		return false
-	}).(bool)
+func (p *RPCProcessor) Start() RPCError {
+	return p.threadPool.Start()
 }
 
-// Stop ...
-func (p *RPCProcessor) Stop() RPCError {
-	return ConvertToRPCError(p.CallWithLock(func() interface{} {
-		if !p.isRunning {
-			return NewRPCError("RPCProcessor: Stop: it has already benn stopped")
-		} else {
-			p.isRunning = false
-			numOfThreadPools := len(p.threadPools)
-			closeCH := make(chan []string, numOfThreadPools)
-			for i := 0; i < numOfThreadPools; i++ {
-				go func(idx int) {
-					if ok, errList := p.threadPools[idx].stop(); !ok {
-						closeCH <- errList
-					} else {
-						closeCH <- nil
-					}
-				}(i)
-			}
-
-			// wait all thread stop
-			errMap := make(map[string]int)
-			for i := 0; i < numOfThreadPools; i++ {
-				if errList := <-closeCH; errList != nil {
-					for _, errString := range errList {
-						if v, ok := errMap[errString]; ok {
-							errMap[errString] = v + 1
-						} else {
-							errMap[errString] = 1
-						}
-					}
-				}
-			}
-
-			errList := make([]string, 0)
-
-			for k, v := range errMap {
-				if v > 1 {
-					errList = append(errList, fmt.Sprintf(
-						"%s (%d routines)",
-						k,
-						v,
-					))
-				} else {
-					errList = append(errList, fmt.Sprintf(
-						"%s (%d routine)",
-						k,
-						v,
-					))
-				}
-			}
-
-			if len(errList) > 0 {
-				return NewRPCError(ConcatString(
-					"RPCProcessor: Stop: The following routine still running: \n\t",
-					strings.Join(errList, "\n\t"),
-				))
-			} else {
-				return nil
-			}
-		}
-	}))
-}
-
-// PutStream ...
 func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
-	// PutStream stream in a random thread pool
-	threadPool := p.threadPools[int(rand.Int31())%len(p.threadPools)]
-	if threadPool != nil {
-		if thread := threadPool.allocThread(); thread != nil {
-			thread.put(stream)
-			return true
-		}
-		return false
-	}
-
-	return false
+	return p.threadPool.PutStream(stream)
 }
+
+func (p *RPCProcessor) Stop() RPCError {
+	return p.threadPool.Stop()
+}
+
+//
+//// Start ...
+//func (p *RPCProcessor) Start() bool {
+//  return p.CallWithLock(func() interface{} {
+//    if !p.isRunning {
+//      p.isRunning = true
+//      for i := 0; i < len(p.threads); i++ {
+//        thread := newThread(ret)
+//        p.threads[i] = thread
+//        p.freeThreads <- thread
+//      }
+//      return true
+//    }
+//
+//    return false
+//  }).(bool)
+//}
+//
+//// Stop ...
+//func (p *RPCProcessor) Stop() RPCError {
+//  return ConvertToRPCError(p.CallWithLock(func() interface{} {
+//    if !p.isRunning {
+//      return NewRPCError("RPCProcessor: Stop: it has already benn stopped")
+//    } else {
+//      p.isRunning = false
+//      numOfThreadPools := len(p.threadPools)
+//      closeCH := make(chan []string, numOfThreadPools)
+//      for i := 0; i < numOfThreadPools; i++ {
+//        go func(idx int) {
+//          if ok, errList := p.threadPools[idx].stop(); !ok {
+//            closeCH <- errList
+//          } else {
+//            closeCH <- nil
+//          }
+//        }(i)
+//      }
+//
+//      // wait all thread stop
+//      errMap := make(map[string]int)
+//      for i := 0; i < numOfThreadPools; i++ {
+//        if errList := <-closeCH; errList != nil {
+//          for _, errString := range errList {
+//            if v, ok := errMap[errString]; ok {
+//              errMap[errString] = v + 1
+//            } else {
+//              errMap[errString] = 1
+//            }
+//          }
+//        }
+//      }
+//
+//      errList := make([]string, 0)
+//
+//      for k, v := range errMap {
+//        if v > 1 {
+//          errList = append(errList, fmt.Sprintf(
+//            "%s (%d routines)",
+//            k,
+//            v,
+//          ))
+//        } else {
+//          errList = append(errList, fmt.Sprintf(
+//            "%s (%d routine)",
+//            k,
+//            v,
+//          ))
+//        }
+//      }
+//
+//      if len(errList) > 0 {
+//        return NewRPCError(ConcatString(
+//          "RPCProcessor: Stop: The following routine still running: \n\t",
+//          strings.Join(errList, "\n\t"),
+//        ))
+//      } else {
+//        return nil
+//      }
+//    }
+//  }))
+//}
+//
+//// PutStream ...
+//func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
+//  // PutStream stream in a random thread pool
+//  threadPool := p.threadPools[int(rand.Int31())%len(p.threadPools)]
+//  if threadPool != nil {
+//    if thread := threadPool.allocThread(); thread != nil {
+//      thread.put(stream)
+//      return true
+//    }
+//    return false
+//  }
+//
+//  return false
+//}
 
 // BuildCache ...
 func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {

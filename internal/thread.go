@@ -9,7 +9,8 @@ import (
 )
 
 type rpcThread struct {
-	threadPool     *rpcThreadPool
+	processor      *RPCProcessor
+	freeThreadsCH  chan *rpcThread
 	isRunning      bool
 	ch             chan *RPCStream
 	inStream       *RPCStream
@@ -23,9 +24,17 @@ type rpcThread struct {
 	RPCLock
 }
 
-func newThread(threadPool *rpcThreadPool) *rpcThread {
+func newThread(
+	processor *RPCProcessor,
+	freeThreadsCH chan *rpcThread,
+) *rpcThread {
+	if processor == nil || freeThreadsCH == nil {
+		return nil
+	}
+
 	ret := &rpcThread{
-		threadPool:     threadPool,
+		processor:      processor,
+		freeThreadsCH:  freeThreadsCH,
 		isRunning:      true,
 		ch:             make(chan *RPCStream),
 		inStream:       nil,
@@ -48,7 +57,7 @@ func newThread(threadPool *rpcThreadPool) *rpcThread {
 	return ret
 }
 
-func (p *rpcThread) stop() bool {
+func (p *rpcThread) Stop() bool {
 	return p.CallWithLock(func() interface{} {
 		if !p.isRunning {
 			return false
@@ -56,7 +65,7 @@ func (p *rpcThread) stop() bool {
 			p.isRunning = false
 			close(p.ch)
 			select {
-			case <-time.After(closeTimeOut):
+			case <-time.After(10 * time.Second):
 				return false
 			case <-p.closeCH:
 				return true
@@ -65,7 +74,7 @@ func (p *rpcThread) stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) put(stream *RPCStream) bool {
+func (p *rpcThread) PutStream(stream *RPCStream) bool {
 	select {
 	case p.ch <- stream:
 		return true
@@ -75,7 +84,6 @@ func (p *rpcThread) put(stream *RPCStream) bool {
 }
 
 func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
-	processor := p.threadPool.processor
 	timeStart := TimeNowNS()
 	// create context
 	p.inStream = inStream
@@ -108,10 +116,10 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 		p.execDepth = 0
 		p.execReplyNode = nil
 		p.execArgs = p.execArgs[:0]
-		if processor.callback != nil {
-			processor.callback(retStream, p.execSuccessful)
+		if p.processor.callback != nil {
+			p.processor.callback(retStream, p.execSuccessful)
 		}
-		p.threadPool.freeThread(p)
+		p.freeThreadsCH <- p
 	}()
 
 	// copy head
@@ -122,7 +130,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	if !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execReplyNode, ok = processor.echosMap[echoPath]; !ok {
+	if p.execReplyNode, ok = p.processor.echosMap[echoPath]; !ok {
 		return ctx.writeError(
 			fmt.Sprintf("rpc-server: echo path %s is not mounted", echoPath),
 			"",
@@ -133,11 +141,11 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execDepth > processor.maxCallDepth {
+	if p.execDepth > p.processor.maxCallDepth {
 		return ctx.Errorf(
 			"rpc current call depth(%d) is overflow. limited(%d)",
 			p.execDepth,
-			processor.maxCallDepth,
+			p.processor.maxCallDepth,
 		)
 	}
 

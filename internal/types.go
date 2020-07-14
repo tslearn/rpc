@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"sync/atomic"
-	"time"
 	"unsafe"
 )
 
@@ -24,7 +23,6 @@ var (
 )
 
 const StreamBodyPos = 33
-const closeTimeOut = 15 * time.Second
 
 // RPCReplyCache ...
 type RPCReplyCache interface {
