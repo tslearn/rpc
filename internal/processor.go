@@ -41,7 +41,7 @@ type RPCProcessor struct {
 	nodesMap     map[string]*rpcServiceNode
 	maxNodeDepth uint64
 	maxCallDepth uint64
-	threadPool   *rpcThreadPool
+	threadPool   *rpcThreadPoolLab
 }
 
 // NewRPCProcessor ...
@@ -71,7 +71,7 @@ func NewRPCProcessor(
 		depth:   0,
 	}
 
-	ret.threadPool = newThreadPool(ret, numOfThreads)
+	ret.threadPool = newThreadPoolLab(ret, numOfThreads)
 
 	return ret
 }

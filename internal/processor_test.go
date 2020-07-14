@@ -7,7 +7,9 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewRPCProcessor(t *testing.T) {
@@ -386,12 +388,20 @@ func TestRPCProcessor_OutPutErrors(t *testing.T) {
 }
 
 func BenchmarkRpcProcessor_Execute(b *testing.B) {
+	total := uint64(0)
+	success := uint64(0)
+	failed := uint64(0)
 	processor := NewRPCProcessor(
 		true,
 		8192*24,
 		16,
 		16,
-		func(stream *RPCStream, success bool) {
+		func(stream *RPCStream, ok bool) {
+			if ok {
+				atomic.AddUint64(&success, 1)
+			} else {
+				atomic.AddUint64(&failed, 1)
+			}
 			stream.Release()
 		},
 		&testFuncCache{},
@@ -412,7 +422,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	//_ = pprof.StartCPUProfile(file)
 
 	b.ReportAllocs()
-	b.N = 50000000
+	b.N = 100000000
 	b.SetParallelism(1024)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -422,12 +432,18 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
-			processor.PutStream(stream)
+			atomic.AddUint64(&total, 1)
+			if !processor.PutStream(stream) {
+				fmt.Println("NONONONOf")
+			}
 		}
 	})
 	b.StopTimer()
 
+	time.Sleep(time.Second)
+
 	//pprof.StopCPUProfile()
 
 	fmt.Println(processor.Stop())
+	fmt.Println(total, success, failed)
 }

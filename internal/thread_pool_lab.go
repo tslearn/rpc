@@ -3,54 +3,65 @@ package internal
 import (
 	"fmt"
 	"strings"
+	"sync/atomic"
 )
 
+const numOfThreadGroup = 64
+
 // rpcThreadPool
-type rpcThreadPool struct {
-	processor     *RPCProcessor
-	threads       []*rpcThread
-	freeThreadsCH chan *rpcThread
+type rpcThreadPoolLab struct {
+	processor          *RPCProcessor
+	threads            []*rpcThread
+	freeThreadsCHGroup []chan *rpcThread
+	readPos            uint64
+	writePos           uint64
 	RPCLock
 }
 
-func newThreadPool(processor *RPCProcessor, size uint) *rpcThreadPool {
+func newThreadPoolLab(processor *RPCProcessor, size uint) *rpcThreadPoolLab {
 	if size == 0 {
 		size = 1
 	}
-	return &rpcThreadPool{
-		processor:     processor,
-		threads:       make([]*rpcThread, size, size),
-		freeThreadsCH: nil,
+	size = ((size + numOfThreadGroup - 1) / numOfThreadGroup) * numOfThreadGroup
+	return &rpcThreadPoolLab{
+		processor:          processor,
+		threads:            make([]*rpcThread, size, size),
+		freeThreadsCHGroup: nil,
 	}
 }
 
-func (p *rpcThreadPool) Start() RPCError {
+func (p *rpcThreadPoolLab) Start() RPCError {
 	return ConvertToRPCError(p.CallWithLock(func() interface{} {
 		size := len(p.threads)
 
-		if p.freeThreadsCH != nil {
+		if p.freeThreadsCHGroup != nil {
 			return NewRPCError("rpcThreadPool: Start: it has already benn started")
 		} else {
-			freeThreadsCH := make(chan *rpcThread, size)
-			p.freeThreadsCH = freeThreadsCH
+			freeThreadsCHGroup := make([]chan *rpcThread, numOfThreadGroup, numOfThreadGroup)
+			p.freeThreadsCHGroup = freeThreadsCHGroup
+			for i := 0; i < numOfThreadGroup; i++ {
+				p.freeThreadsCHGroup[i] = make(chan *rpcThread, len(p.threads)/numOfThreadGroup)
+			}
+
 			for i := 0; i < size; i++ {
 				thread := newThread(p.processor, func(thread *rpcThread, stream *RPCStream, success bool) {
 					p.processor.callback(stream, success)
-					freeThreadsCH <- thread
+					freeThreadsCHGroup[atomic.AddUint64(&p.writePos, 1)%numOfThreadGroup] <- thread
 				})
 				p.threads[i] = thread
-				p.freeThreadsCH <- thread
+				p.freeThreadsCHGroup[i%numOfThreadGroup] <- thread
 			}
 			return nil
 		}
 	}))
 }
 
-func (p *rpcThreadPool) Stop() RPCError {
+func (p *rpcThreadPoolLab) Stop() RPCError {
 	return ConvertToRPCError(p.CallWithLock(func() interface{} {
-		if p.freeThreadsCH == nil {
+		if p.freeThreadsCHGroup == nil {
 			return NewRPCError("rpcThreadPool: Start: it has already benn stopped")
 		} else {
+			p.freeThreadsCHGroup = nil
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
 
@@ -107,9 +118,9 @@ func (p *rpcThreadPool) Stop() RPCError {
 	}))
 }
 
-func (p *rpcThreadPool) PutStream(stream *RPCStream) bool {
-	if freeThreadsCH := p.freeThreadsCH; freeThreadsCH != nil {
-		thread := <-p.freeThreadsCH
+func (p *rpcThreadPoolLab) PutStream(stream *RPCStream) bool {
+	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup != nil {
+		thread := <-freeThreadsCHGroup[atomic.AddUint64(&p.readPos, 1)%numOfThreadGroup]
 		return thread.PutStream(stream)
 	} else {
 		return false

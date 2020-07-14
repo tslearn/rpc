@@ -10,7 +10,7 @@ import (
 
 type rpcThread struct {
 	processor      *RPCProcessor
-	freeThreadsCH  chan *rpcThread
+	onEvalFinish   func(*rpcThread, *RPCStream, bool)
 	isRunning      bool
 	ch             chan *RPCStream
 	inStream       *RPCStream
@@ -26,17 +26,17 @@ type rpcThread struct {
 
 func newThread(
 	processor *RPCProcessor,
-	freeThreadsCH chan *rpcThread,
+	onEvalFinish func(*rpcThread, *RPCStream, bool),
 ) *rpcThread {
-	if processor == nil || freeThreadsCH == nil {
+	if processor == nil || onEvalFinish == nil {
 		return nil
 	}
 
 	ret := &rpcThread{
 		processor:      processor,
-		freeThreadsCH:  freeThreadsCH,
+		onEvalFinish:   onEvalFinish,
 		isRunning:      true,
-		ch:             make(chan *RPCStream),
+		ch:             make(chan *RPCStream, 1),
 		inStream:       nil,
 		outStream:      NewRPCStream(),
 		execDepth:      0,
@@ -75,12 +75,8 @@ func (p *rpcThread) Stop() bool {
 }
 
 func (p *rpcThread) PutStream(stream *RPCStream) bool {
-	select {
-	case p.ch <- stream:
-		return true
-	default:
-		return false
-	}
+	p.ch <- stream
+	return true
 }
 
 func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
@@ -116,10 +112,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 		p.execDepth = 0
 		p.execReplyNode = nil
 		p.execArgs = p.execArgs[:0]
-		if p.processor.callback != nil {
-			p.processor.callback(retStream, p.execSuccessful)
-		}
-		p.freeThreadsCH <- p
+		p.onEvalFinish(p, retStream, p.execSuccessful)
 	}()
 
 	// copy head
