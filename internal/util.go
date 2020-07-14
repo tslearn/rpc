@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -23,6 +24,12 @@ var (
 	intToStringCache2 = make([][]byte, 100, 100)
 	intToStringCache3 = make([][]byte, 1000, 1000)
 	intToStringCache4 = make([][]byte, 10000, 10000)
+	littleBufCache    = sync.Pool{
+		New: func() interface{} {
+			buf := make([]byte, 32)
+			return &buf
+		},
+	}
 )
 
 const base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -398,4 +405,32 @@ func ConvertOrdinalToString(n uint) string {
 	default:
 		return strconv.Itoa(int(n)) + "th"
 	}
+}
+
+func CurrentGoroutineID() uint64 {
+	bp := littleBufCache.Get().(*[]byte)
+	defer littleBufCache.Put(bp)
+	b := *bp
+	b = b[:runtime.Stack(b, false)]
+	if !strings.HasPrefix(string(b), "goroutine ") {
+		return 0
+	}
+
+	pos := 0
+	for pos < 22 {
+		if ch := b[10+pos]; ch < 48 || ch > 57 {
+			break
+		} else {
+			b[pos] = ch - 48
+			pos++
+		}
+	}
+	weight := uint64(1)
+	ret := uint64(0)
+	for pos > 0 {
+		pos--
+		ret += uint64(b[pos]) * weight
+		weight *= 10
+	}
+	return ret
 }

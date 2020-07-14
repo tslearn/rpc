@@ -10,16 +10,12 @@ type RPCContext struct {
 	thread unsafe.Pointer
 }
 
-func (p *RPCContext) getThread() *rpcThread {
-	return (*rpcThread)(p.thread)
-}
-
 func (p *RPCContext) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
 func (p *RPCContext) writeError(message string, debug string) *RPCReturn {
-	if thread := p.getThread(); thread != nil {
+	if thread := (*rpcThread)(p.thread); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(StreamBodyPos)
 		execStream.WriteBool(false)
@@ -32,7 +28,7 @@ func (p *RPCContext) writeError(message string, debug string) *RPCReturn {
 
 // OK get success RPCReturn  by value
 func (p *RPCContext) OK(value interface{}) *RPCReturn {
-	if thread := p.getThread(); thread != nil {
+	if thread := (*rpcThread)(p.thread); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(StreamBodyPos)
 		stream.WriteBool(true)
@@ -54,7 +50,7 @@ func (p *RPCContext) Error(err RPCError) *RPCReturn {
 		return nilReturn
 	}
 
-	if thread := p.getThread(); thread != nil &&
+	if thread := (*rpcThread)(p.thread); thread != nil &&
 		thread.execEchoNode != nil &&
 		thread.execEchoNode.debugString != "" {
 		err.AddDebug(thread.execEchoNode.debugString)
@@ -64,9 +60,8 @@ func (p *RPCContext) Error(err RPCError) *RPCReturn {
 }
 
 func (p *RPCContext) Errorf(format string, a ...interface{}) *RPCReturn {
-	return p.Error(
-		NewRPCErrorByDebug(
-			fmt.Sprintf(format, a...),
-			GetStackString(1),
-		))
+	return p.Error(NewRPCErrorByDebug(
+		fmt.Sprintf(format, a...),
+		GetStackString(1),
+	))
 }

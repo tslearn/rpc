@@ -10,13 +10,13 @@ func TestRpcContext_getThread(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	ctx1 := RPCContext{}
-	assert(ctx1.getThread()).IsNil()
+	assert(ctx1.thread).IsNil()
 
 	thread := newThread(nil)
 	thread.stop()
 
 	ctx2 := RPCContext{thread: unsafe.Pointer(thread)}
-	assert(ctx2.getThread()).Equals(thread)
+	assert(ctx2.thread).Equals(unsafe.Pointer(thread))
 
 }
 
@@ -27,9 +27,9 @@ func TestRpcContext_stop(t *testing.T) {
 	thread.stop()
 
 	ctx := RPCContext{thread: unsafe.Pointer(thread)}
-	assert(ctx.getThread()).IsNotNil()
+	assert(ctx.thread).IsNotNil()
 	ctx.stop()
-	assert(ctx.getThread()).IsNil()
+	assert(ctx.thread).IsNil()
 }
 
 func TestRpcContext_OK(t *testing.T) {

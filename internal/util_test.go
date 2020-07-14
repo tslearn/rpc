@@ -381,3 +381,10 @@ func BenchmarkTimeNowISOString(b *testing.B) {
 		TimeNowISOString()
 	}
 }
+
+func BenchmarkCurGoroutineID(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		CurrentGoroutineID()
+	}
+}
