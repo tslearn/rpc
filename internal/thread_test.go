@@ -49,7 +49,7 @@ func runWithProcessor(
 	)
 	_ = processor.AddService(
 		"user",
-		NewRPCService().Echo("sayHello", true, handler),
+		NewRPCService().Reply("sayHello", true, handler),
 		"",
 	)
 

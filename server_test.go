@@ -15,7 +15,7 @@ func TestServer_Basic(t *testing.T) {
 	// assert := common.NewAssert(t)
 	server := NewServer(32, nil).
 		AddService("user", NewService().
-			Echo("sayHello", true, func(
+			Reply("sayHello", true, func(
 				ctx Context,
 				name string,
 			) Return {

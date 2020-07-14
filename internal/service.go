@@ -2,7 +2,7 @@ package internal
 
 // Service ...
 type Service interface {
-	Echo(
+	Reply(
 		name string,
 		export bool,
 		handler interface{},
@@ -43,8 +43,8 @@ func NewRPCService() Service {
 	}
 }
 
-// Echo add echo handler
-func (p *rpcService) Echo(
+// Reply add echo handler
+func (p *rpcService) Reply(
 	name string,
 	export bool,
 	handler interface{},

@@ -335,7 +335,7 @@ func (p *RPCProcessor) mountEcho(
 	// check the name
 	if !echoNameRegex.MatchString(echoMeta.name) {
 		return NewRPCErrorByDebug(
-			fmt.Sprintf("Echo name %s is illegal", echoMeta.name),
+			fmt.Sprintf("Reply name %s is illegal", echoMeta.name),
 			echoMeta.debug,
 		)
 	}
@@ -345,7 +345,7 @@ func (p *RPCProcessor) mountEcho(
 	if item, ok := p.echosMap[echoPath]; ok {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Echo name %s is duplicated",
+				"Reply name %s is duplicated",
 				echoMeta.name,
 			),
 			fmt.Sprintf(
@@ -359,7 +359,7 @@ func (p *RPCProcessor) mountEcho(
 	// check the echo handler is nil
 	if echoMeta.handler == nil {
 		return NewRPCErrorByDebug(
-			"Echo handler is nil",
+			"Reply handler is nil",
 			echoMeta.debug,
 		)
 	}
@@ -369,7 +369,7 @@ func (p *RPCProcessor) mountEcho(
 	if fn.Kind() != reflect.Func {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Echo handler must be func(ctx %s, ...) %s",
+				"Reply handler must be func(ctx %s, ...) %s",
 				convertTypeToString(contextType),
 				convertTypeToString(returnType),
 			),
@@ -382,7 +382,7 @@ func (p *RPCProcessor) mountEcho(
 	if argumentsErrorPos == 0 {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Echo handler 1st argument type must be %s",
+				"Reply handler 1st argument type must be %s",
 				convertTypeToString(contextType),
 			),
 			echoMeta.debug,
@@ -390,7 +390,7 @@ func (p *RPCProcessor) mountEcho(
 	} else if argumentsErrorPos > 0 {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Echo handler %s argument type <%s> not supported",
+				"Reply handler %s argument type <%s> not supported",
 				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 				fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
 			),
@@ -403,7 +403,7 @@ func (p *RPCProcessor) mountEcho(
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Echo handler return type must be %s",
+				"Reply handler return type must be %s",
 				convertTypeToString(returnType),
 			),
 			echoMeta.debug,

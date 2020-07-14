@@ -34,7 +34,7 @@ func TestRpcThreadPool_stop(t *testing.T) {
 	processor := NewRPCProcessor(16, 16, nil, nil)
 	_ = processor.AddService(
 		"user",
-		NewRPCService().Echo("sayHello", true, func(ctx *RPCContext) *RPCReturn {
+		NewRPCService().Reply("sayHello", true, func(ctx *RPCContext) *RPCReturn {
 			time.Sleep(99999999 * time.Second)
 			return ctx.OK(true)
 		}),
