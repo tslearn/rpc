@@ -8,7 +8,7 @@ import (
 func TestNewService(t *testing.T) {
 	assert := NewRPCAssert(t)
 
-	service := NewService()
+	service := NewRPCService()
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(0)
 	assert(len(service.(*rpcService).echos)).Equals(0)
@@ -20,8 +20,8 @@ func TestNewService(t *testing.T) {
 
 func TestRpcService_Add(t *testing.T) {
 	assert := NewRPCAssert(t)
-	childService := NewService()
-	service := NewService().AddService("user", childService)
+	childService := NewRPCService()
+	service := NewRPCService().AddService("user", childService)
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(1)
 	assert(len(service.(*rpcService).echos)).Equals(0)
@@ -38,7 +38,7 @@ func TestRpcService_Add(t *testing.T) {
 
 func TestRpcService_Echo(t *testing.T) {
 	assert := NewRPCAssert(t)
-	service := NewService().Echo("sayHello", true, 2345)
+	service := NewRPCService().Echo("sayHello", true, 2345)
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(0)
 	assert(len(service.(*rpcService).echos)).Equals(1)

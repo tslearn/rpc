@@ -37,20 +37,6 @@ type RPCCacheFunc = func(
 
 type fnProcessorCallback = func(stream *RPCStream, success bool)
 
-// Service ...
-type Service interface {
-	Echo(
-		name string,
-		export bool,
-		handler interface{},
-	) Service
-
-	AddService(
-		name string,
-		service Service,
-	) Service
-}
-
 // RPCBool ...
 type RPCBool = bool
 

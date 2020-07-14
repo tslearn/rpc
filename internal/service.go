@@ -1,5 +1,19 @@
 package internal
 
+// Service ...
+type Service interface {
+	Echo(
+		name string,
+		export bool,
+		handler interface{},
+	) Service
+
+	AddService(
+		name string,
+		service Service,
+	) Service
+}
+
 type rpcEchoMeta struct {
 	name    string      // the name of echo
 	export  bool        // weather echo is export to gateway
@@ -20,8 +34,8 @@ type rpcService struct {
 	RPCLock
 }
 
-// NewService define a new service
-func NewService() Service {
+// NewRPCService define a new service
+func NewRPCService() Service {
 	return &rpcService{
 		children: make([]*rpcNodeMeta, 0, 0),
 		echos:    make([]*rpcEchoMeta, 0, 0),
