@@ -74,7 +74,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service is nil",
+			"RPCService is nil",
 			"DebugMessage",
 		))
 
@@ -128,7 +128,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		serviceMeta: NewRPCService().(*rpcService),
 		debug:       "DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
-		"Service name \"+\" is illegal",
+		"RPCService name \"+\" is illegal",
 		"DebugMessage",
 	))
 
@@ -137,7 +137,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		serviceMeta: nil,
 		debug:       "DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
-		"Service is nil",
+		"RPCService is nil",
 		"DebugMessage",
 	))
 
@@ -156,7 +156,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		serviceMeta: NewRPCService().(*rpcService),
 		debug:       "DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
-		"Service path depth $.abc is too long, it must be less or equal than 0",
+		"RPCService path depth $.abc is too long, it must be less or equal than 0",
 		"DebugMessage",
 	))
 	processor.maxNodeDepth = 16
@@ -171,7 +171,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		serviceMeta: NewRPCService().(*rpcService),
 		debug:       "DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
-		"Service name \"abc\" is duplicated",
+		"RPCService name \"abc\" is duplicated",
 		"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 	))
 
@@ -335,30 +335,30 @@ func TestRPCProcessor_OutPutErrors(t *testing.T) {
 
 	processor := NewRPCProcessor(true, 8192, 16, 16, nil)
 
-	// Service is nil
+	// RPCService is nil
 	assert(processor.AddService("", nil, "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service is nil",
+			"RPCService is nil",
 			"DebugMessage",
 		))
 
 	assert(processor.AddService("abc", (*rpcService)(nil), "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service is nil",
+			"RPCService is nil",
 			"DebugMessage",
 		))
 
-	// Service name %s is illegal
+	// RPCService name %s is illegal
 	assert(processor.AddService("\"\"", NewRPCService(), "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service name \"\"\"\" is illegal",
+			"RPCService name \"\"\"\" is illegal",
 			"DebugMessage",
 		))
 
 	processor.maxNodeDepth = 0
 	assert(processor.AddService("abc", NewRPCService(), "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service path depth $.abc is too long, it must be less or equal than 0",
+			"RPCService path depth $.abc is too long, it must be less or equal than 0",
 			"DebugMessage",
 		))
 	processor.maxNodeDepth = 16
@@ -366,7 +366,7 @@ func TestRPCProcessor_OutPutErrors(t *testing.T) {
 	_ = processor.AddService("abc", NewRPCService(), "DebugMessage")
 	assert(processor.AddService("abc", NewRPCService(), "DebugMessage")).
 		Equals(NewRPCErrorByDebug(
-			"Service name \"abc\" is duplicated",
+			"RPCService name \"abc\" is duplicated",
 			"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 		))
 }

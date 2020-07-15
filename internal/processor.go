@@ -231,13 +231,13 @@ func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {
 // AddService ...
 func (p *RPCProcessor) AddService(
 	name string,
-	service Service,
+	service RPCService,
 	debug string,
 ) RPCError {
 	serviceMeta, ok := service.(*rpcService)
 	if !ok {
 		return NewRPCErrorByDebug(
-			"Service is nil",
+			"RPCService is nil",
 			debug,
 		)
 	}
@@ -261,7 +261,7 @@ func (p *RPCProcessor) mountNode(
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
 		return NewRPCErrorByDebug(
-			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
+			fmt.Sprintf("RPCService name \"%s\" is illegal", nodeMeta.name),
 			nodeMeta.debug,
 		)
 	}
@@ -269,7 +269,7 @@ func (p *RPCProcessor) mountNode(
 	// check nodeMeta.serviceMeta is not nil
 	if nodeMeta.serviceMeta == nil {
 		return NewRPCErrorByDebug(
-			"Service is nil",
+			"RPCService is nil",
 			nodeMeta.debug,
 		)
 	}
@@ -286,7 +286,7 @@ func (p *RPCProcessor) mountNode(
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Service path depth %s is too long, it must be less or equal than %d",
+				"RPCService path depth %s is too long, it must be less or equal than %d",
 				servicePath,
 				p.maxNodeDepth,
 			),
@@ -298,7 +298,7 @@ func (p *RPCProcessor) mountNode(
 	if item, ok := p.nodesMap[servicePath]; ok {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"Service name \"%s\" is duplicated",
+				"RPCService name \"%s\" is duplicated",
 				nodeMeta.name,
 			),
 			fmt.Sprintf(

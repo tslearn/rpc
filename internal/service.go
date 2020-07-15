@@ -1,16 +1,16 @@
 package internal
 
-// Service ...
-type Service interface {
+// RPCService ...
+type RPCService interface {
 	Reply(
 		name string,
 		handler interface{},
-	) Service
+	) RPCService
 
 	AddService(
 		name string,
-		service Service,
-	) Service
+		service RPCService,
+	) RPCService
 }
 
 type rpcReplyMeta struct {
@@ -33,7 +33,7 @@ type rpcService struct {
 }
 
 // NewRPCService define a new service
-func NewRPCService() Service {
+func NewRPCService() RPCService {
 	return &rpcService{
 		children: make([]*rpcNodeMeta, 0, 0),
 		replies:  make([]*rpcReplyMeta, 0, 0),
@@ -45,7 +45,7 @@ func NewRPCService() Service {
 func (p *rpcService) Reply(
 	name string,
 	handler interface{},
-) Service {
+) RPCService {
 	p.DoWithLock(func() {
 		// add reply meta
 		p.replies = append(p.replies, &rpcReplyMeta{
@@ -58,7 +58,7 @@ func (p *rpcService) Reply(
 }
 
 // AddService add child service
-func (p *rpcService) AddService(name string, service Service) Service {
+func (p *rpcService) AddService(name string, service RPCService) RPCService {
 	serviceMeta, ok := service.(*rpcService)
 	if !ok {
 		serviceMeta = (*rpcService)(nil)
