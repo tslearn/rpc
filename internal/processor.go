@@ -5,9 +5,11 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync/atomic"
 )
 
 const rootName = "$"
+const freeThreadsCHGroupSize = 1024
 
 var (
 	nodeNameRegex = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
@@ -34,14 +36,18 @@ type rpcServiceNode struct {
 
 // RPCProcessor ...
 type RPCProcessor struct {
-	isDebug      bool
-	fnCache      RPCReplyCache
-	callback     func(stream *RPCStream, success bool)
-	echosMap     map[string]*rpcReplyNode
-	nodesMap     map[string]*rpcServiceNode
-	maxNodeDepth uint64
-	maxCallDepth uint64
-	threadPool   *rpcThreadPoolLab
+	isDebug            bool
+	fnCache            RPCReplyCache
+	onEvalFinish       func(stream *RPCStream, success bool)
+	echosMap           map[string]*rpcReplyNode
+	nodesMap           map[string]*rpcServiceNode
+	maxNodeDepth       uint64
+	maxCallDepth       uint64
+	threads            []*rpcThread
+	freeThreadsCHGroup []chan *rpcThread
+	readThreadPos      uint64
+	writeThreadPos     uint64
+	RPCLock
 }
 
 // NewRPCProcessor ...
@@ -50,139 +56,160 @@ func NewRPCProcessor(
 	numOfThreads uint,
 	maxNodeDepth uint,
 	maxCallDepth uint,
-	callback func(stream *RPCStream, success bool),
+	onEvalFinish func(stream *RPCStream, success bool),
 	fnCache RPCReplyCache,
 ) *RPCProcessor {
-	ret := &RPCProcessor{
-		isDebug:      isDebug,
-		fnCache:      fnCache,
-		callback:     callback,
-		echosMap:     make(map[string]*rpcReplyNode),
-		nodesMap:     make(map[string]*rpcServiceNode),
-		maxNodeDepth: uint64(maxNodeDepth),
-		maxCallDepth: uint64(maxCallDepth),
-		threadPool:   nil,
+	if numOfThreads == 0 {
+		return nil
+	} else if maxNodeDepth == 0 {
+		return nil
+	} else if maxCallDepth == 0 {
+		return nil
+	} else if onEvalFinish == nil {
+		return nil
+	} else {
+		size := ((numOfThreads + freeThreadsCHGroupSize - 1) /
+			freeThreadsCHGroupSize) *
+			freeThreadsCHGroupSize
+		ret := &RPCProcessor{
+			isDebug:            isDebug,
+			fnCache:            fnCache,
+			onEvalFinish:       onEvalFinish,
+			echosMap:           make(map[string]*rpcReplyNode),
+			nodesMap:           make(map[string]*rpcServiceNode),
+			maxNodeDepth:       uint64(maxNodeDepth),
+			maxCallDepth:       uint64(maxCallDepth),
+			threads:            make([]*rpcThread, size, size),
+			freeThreadsCHGroup: nil,
+			readThreadPos:      0,
+			writeThreadPos:     0,
+		}
+		// mount root node
+		ret.nodesMap[rootName] = &rpcServiceNode{
+			path:    rootName,
+			addMeta: nil,
+			depth:   0,
+		}
+		return ret
 	}
-
-	// mount root node
-	ret.nodesMap[rootName] = &rpcServiceNode{
-		path:    rootName,
-		addMeta: nil,
-		depth:   0,
-	}
-
-	ret.threadPool = newThreadPoolLab(ret, numOfThreads)
-
-	return ret
 }
 
 func (p *RPCProcessor) Start() RPCError {
-	return p.threadPool.Start()
+	return ConvertToRPCError(p.CallWithLock(func() interface{} {
+		size := len(p.threads)
+
+		if p.freeThreadsCHGroup != nil {
+			return NewRPCError("RPCProcessor: Start: it has already benn started")
+		} else {
+			freeThreadsCHGroup := make(
+				[]chan *rpcThread,
+				freeThreadsCHGroupSize,
+				freeThreadsCHGroupSize,
+			)
+			for i := 0; i < freeThreadsCHGroupSize; i++ {
+				freeThreadsCHGroup[i] = make(
+					chan *rpcThread,
+					size/freeThreadsCHGroupSize,
+				)
+			}
+			p.freeThreadsCHGroup = freeThreadsCHGroup
+
+			for i := 0; i < size; i++ {
+				thread := newThread(
+					p,
+					func(thread *rpcThread, stream *RPCStream, success bool) {
+						p.onEvalFinish(stream, success)
+						freeThreadsCHGroup[atomic.AddUint64(
+							&p.writeThreadPos,
+							1,
+						)%freeThreadsCHGroupSize] <- thread
+					},
+				)
+				p.threads[i] = thread
+				p.freeThreadsCHGroup[i%freeThreadsCHGroupSize] <- thread
+			}
+			return nil
+		}
+	}))
 }
 
 func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
-	return p.threadPool.PutStream(stream)
+	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup != nil {
+		thread := <-freeThreadsCHGroup[atomic.AddUint64(
+			&p.readThreadPos,
+			1,
+		)%freeThreadsCHGroupSize]
+		if thread != nil {
+			return thread.PutStream(stream)
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }
 
 func (p *RPCProcessor) Stop() RPCError {
-	return p.threadPool.Stop()
-}
+	return ConvertToRPCError(p.CallWithLock(func() interface{} {
+		if p.freeThreadsCHGroup == nil {
+			return NewRPCError("RPCProcessor: Start: it has already benn stopped")
+		} else {
+			p.freeThreadsCHGroup = nil
+			numOfThreads := len(p.threads)
+			closeCH := make(chan string, numOfThreads)
 
-//
-//// Start ...
-//func (p *RPCProcessor) Start() bool {
-//  return p.CallWithLock(func() interface{} {
-//    if !p.isRunning {
-//      p.isRunning = true
-//      for i := 0; i < len(p.threads); i++ {
-//        thread := newThread(ret)
-//        p.threads[i] = thread
-//        p.freeThreads <- thread
-//      }
-//      return true
-//    }
-//
-//    return false
-//  }).(bool)
-//}
-//
-//// Stop ...
-//func (p *RPCProcessor) Stop() RPCError {
-//  return ConvertToRPCError(p.CallWithLock(func() interface{} {
-//    if !p.isRunning {
-//      return NewRPCError("RPCProcessor: Stop: it has already benn stopped")
-//    } else {
-//      p.isRunning = false
-//      numOfThreadPools := len(p.threadPools)
-//      closeCH := make(chan []string, numOfThreadPools)
-//      for i := 0; i < numOfThreadPools; i++ {
-//        go func(idx int) {
-//          if ok, errList := p.threadPools[idx].stop(); !ok {
-//            closeCH <- errList
-//          } else {
-//            closeCH <- nil
-//          }
-//        }(i)
-//      }
-//
-//      // wait all thread stop
-//      errMap := make(map[string]int)
-//      for i := 0; i < numOfThreadPools; i++ {
-//        if errList := <-closeCH; errList != nil {
-//          for _, errString := range errList {
-//            if v, ok := errMap[errString]; ok {
-//              errMap[errString] = v + 1
-//            } else {
-//              errMap[errString] = 1
-//            }
-//          }
-//        }
-//      }
-//
-//      errList := make([]string, 0)
-//
-//      for k, v := range errMap {
-//        if v > 1 {
-//          errList = append(errList, fmt.Sprintf(
-//            "%s (%d routines)",
-//            k,
-//            v,
-//          ))
-//        } else {
-//          errList = append(errList, fmt.Sprintf(
-//            "%s (%d routine)",
-//            k,
-//            v,
-//          ))
-//        }
-//      }
-//
-//      if len(errList) > 0 {
-//        return NewRPCError(ConcatString(
-//          "RPCProcessor: Stop: The following routine still running: \n\t",
-//          strings.Join(errList, "\n\t"),
-//        ))
-//      } else {
-//        return nil
-//      }
-//    }
-//  }))
-//}
-//
-//// PutStream ...
-//func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
-//  // PutStream stream in a random thread pool
-//  threadPool := p.threadPools[int(rand.Int31())%len(p.threadPools)]
-//  if threadPool != nil {
-//    if thread := threadPool.allocThread(); thread != nil {
-//      thread.put(stream)
-//      return true
-//    }
-//    return false
-//  }
-//
-//  return false
-//}
+			for i := 0; i < numOfThreads; i++ {
+				go func(idx int) {
+					if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
+						closeCH <- p.threads[idx].execReplyNode.debugString
+					} else {
+						closeCH <- ""
+					}
+					p.threads[idx] = nil
+				}(i)
+			}
+
+			// wait all thread stop
+			errMap := make(map[string]int)
+			for i := 0; i < numOfThreads; i++ {
+				if errString := <-closeCH; errString != "" {
+					if v, ok := errMap[errString]; ok {
+						errMap[errString] = v + 1
+					} else {
+						errMap[errString] = 1
+					}
+				}
+			}
+
+			errList := make([]string, 0)
+
+			for k, v := range errMap {
+				if v > 1 {
+					errList = append(errList, fmt.Sprintf(
+						"%s (%d routines)",
+						k,
+						v,
+					))
+				} else {
+					errList = append(errList, fmt.Sprintf(
+						"%s (%d routine)",
+						k,
+						v,
+					))
+				}
+			}
+
+			if len(errList) > 0 {
+				return NewRPCError(ConcatString(
+					"RPCProcessor: Stop: The following routine still running: \n\t",
+					strings.Join(errList, "\n\t"),
+				))
+			} else {
+				return nil
+			}
+		}
+	}))
+}
 
 // BuildCache ...
 func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {

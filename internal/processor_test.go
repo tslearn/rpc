@@ -19,7 +19,7 @@ func TestNewRPCProcessor(t *testing.T) {
 
 	processor := NewRPCProcessor(true, 8192, 16, 32, callbackFn, nil)
 	assert(processor).IsNotNil()
-	assert(processor.callback).IsNotNil()
+	assert(processor.onEvalFinish).IsNotNil()
 	assert(len(processor.echosMap)).Equals(0)
 	assert(len(processor.nodesMap)).Equals(1)
 	assert(processor.isDebug).IsTrue()
@@ -434,7 +434,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteString("world")
 			atomic.AddUint64(&total, 1)
 			if !processor.PutStream(stream) {
-				fmt.Println("NONONONOf")
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 	})
