@@ -231,21 +231,20 @@ func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {
 // AddChild ...
 func (p *RPCProcessor) AddService(
 	name string,
-	service RPCService,
+	service *Service,
 	debug string,
 ) RPCError {
-	serviceMeta, ok := service.(*rpcService)
-	if !ok {
+	if service == nil {
 		return NewRPCErrorByDebug(
-			"RPCService is nil",
+			"Service is nil",
 			debug,
 		)
 	}
 
 	return p.mountNode(rootName, &rpcNodeMeta{
-		name:        name,
-		serviceMeta: serviceMeta,
-		debug:       debug,
+		name:    name,
+		service: service,
+		debug:   debug,
 	})
 }
 
@@ -261,15 +260,15 @@ func (p *RPCProcessor) mountNode(
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
 		return NewRPCErrorByDebug(
-			fmt.Sprintf("RPCService name \"%s\" is illegal", nodeMeta.name),
+			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
 			nodeMeta.debug,
 		)
 	}
 
-	// check nodeMeta.serviceMeta is not nil
-	if nodeMeta.serviceMeta == nil {
+	// check nodeMeta.service is not nil
+	if nodeMeta.service == nil {
 		return NewRPCErrorByDebug(
-			"RPCService is nil",
+			"Service is nil",
 			nodeMeta.debug,
 		)
 	}
@@ -286,7 +285,7 @@ func (p *RPCProcessor) mountNode(
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"RPCService path depth %s is too long, it must be less or equal than %d",
+				"Service path depth %s is too long, it must be less or equal than %d",
 				servicePath,
 				p.maxNodeDepth,
 			),
@@ -298,7 +297,7 @@ func (p *RPCProcessor) mountNode(
 	if item, ok := p.nodesMap[servicePath]; ok {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
-				"RPCService name \"%s\" is duplicated",
+				"Service name \"%s\" is duplicated",
 				nodeMeta.name,
 			),
 			fmt.Sprintf(
@@ -319,7 +318,7 @@ func (p *RPCProcessor) mountNode(
 	p.nodesMap[servicePath] = node
 
 	// mount the replies
-	for _, replyMeta := range nodeMeta.serviceMeta.replies {
+	for _, replyMeta := range nodeMeta.service.replies {
 		err := p.mountReply(node, replyMeta)
 		if err != nil {
 			delete(p.nodesMap, servicePath)
@@ -328,7 +327,7 @@ func (p *RPCProcessor) mountNode(
 	}
 
 	// mount children
-	for _, v := range nodeMeta.serviceMeta.children {
+	for _, v := range nodeMeta.service.children {
 		err := p.mountNode(node.path, v)
 		if err != nil {
 			delete(p.nodesMap, servicePath)

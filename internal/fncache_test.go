@@ -49,7 +49,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-0.go")))
 
 	processor1 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor1.AddService("abc", NewRPCService().
+	_ = processor1.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -63,7 +63,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-1.go")))
 
 	processor2 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor2.AddService("abc", NewRPCService().
+	_ = processor2.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCBool) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -77,7 +77,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-2.go")))
 
 	processor3 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor3.AddService("abc", NewRPCService().
+	_ = processor3.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCInt) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -91,7 +91,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-3.go")))
 
 	processor4 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor4.AddService("abc", NewRPCService().
+	_ = processor4.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCUint) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -105,7 +105,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-4.go")))
 
 	processor5 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor5.AddService("abc", NewRPCService().
+	_ = processor5.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCFloat) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -119,7 +119,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-5.go")))
 
 	processor6 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor6.AddService("abc", NewRPCService().
+	_ = processor6.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCString) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -133,7 +133,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-6.go")))
 
 	processor7 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor7.AddService("abc", NewRPCService().
+	_ = processor7.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCBytes) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -147,7 +147,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-7.go")))
 
 	processor8 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor8.AddService("abc", NewRPCService().
+	_ = processor8.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCArray) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -161,7 +161,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-8.go")))
 
 	processor9 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor9.AddService("abc", NewRPCService().
+	_ = processor9.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, _ RPCMap) *RPCReturn {
 			return ctx.OK(true)
 		}), "")
@@ -175,7 +175,7 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-9.go")))
 
 	processor10 := NewRPCProcessor(true, 8192, 16, 32, nil)
-	_ = processor10.AddService("abc", NewRPCService().
+	_ = processor10.AddService("abc", NewService().
 		Reply("sayHello", func(
 			ctx *RPCContext, _ RPCBool, _ RPCInt, _ RPCUint, _ RPCFloat, _ RPCString,
 			_ RPCBytes, _ RPCArray, _ RPCMap,
