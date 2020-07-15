@@ -37,7 +37,6 @@ type rpcServiceNode struct {
 type RPCProcessor struct {
 	isDebug            bool
 	fnCache            RPCReplyCache
-	onEvalFinish       func(stream *RPCStream, success bool)
 	repliesMap         map[string]*rpcReplyNode
 	nodesMap           map[string]*rpcServiceNode
 	maxNodeDepth       uint64
@@ -55,7 +54,6 @@ func NewRPCProcessor(
 	numOfThreads uint,
 	maxNodeDepth uint,
 	maxCallDepth uint,
-	onEvalFinish func(stream *RPCStream, success bool),
 	fnCache RPCReplyCache,
 ) *RPCProcessor {
 	if numOfThreads == 0 {
@@ -64,14 +62,11 @@ func NewRPCProcessor(
 		return nil
 	} else if maxCallDepth == 0 {
 		return nil
-	} else if onEvalFinish == nil {
-		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &RPCProcessor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
-			onEvalFinish:       onEvalFinish,
 			repliesMap:         make(map[string]*rpcReplyNode),
 			nodesMap:           make(map[string]*rpcServiceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
@@ -91,7 +86,10 @@ func NewRPCProcessor(
 	}
 }
 
-func (p *RPCProcessor) Start() RPCError {
+func (p *RPCProcessor) Start(
+	onEvalFinish func(stream *RPCStream, success bool),
+	onPanic func(v interface{}, debug string),
+) RPCError {
 	return ConvertToRPCError(p.CallWithLock(func() interface{} {
 		size := len(p.threads)
 
@@ -115,7 +113,7 @@ func (p *RPCProcessor) Start() RPCError {
 				thread := newThread(
 					p,
 					func(thread *rpcThread, stream *RPCStream, success bool) {
-						p.onEvalFinish(stream, success)
+						onEvalFinish(stream, success)
 
 						defer func() {
 							// do not panic when freeThreadsCH was closed,
@@ -126,6 +124,7 @@ func (p *RPCProcessor) Start() RPCError {
 							1,
 						)%freeGroups] <- thread
 					},
+					onPanic,
 				)
 				p.threads[i] = thread
 				p.freeThreadsCHGroup[i%freeGroups] <- thread

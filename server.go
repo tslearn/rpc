@@ -332,27 +332,31 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 		numOfThreads,
 		32,
 		32,
-		func(stream Stream, success bool) {
-			if v, ok := server.sessionMap.Load(stream.GetSessionID()); ok {
-				if session, ok := v.(*serverSession); ok && session != nil {
-					if err := session.WriteStream(stream); err != nil {
-						server.logger.Error(err.Error())
-					}
-				}
-			}
-		},
 		fnCache,
 	)
 
 	return server
 }
 
-func (p *Server) Open() bool {
+func (p *Server) Start() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.isOpen {
-			p.onError(internal.NewRPCError("Server: Open: it is already opened"))
+			p.onError(internal.NewRPCError("Server: Start: it is already opened"))
 			return false
-		} else if err := p.processor.Start(); err != nil {
+		} else if err := p.processor.Start(
+			func(stream Stream, success bool) {
+				if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
+					if session, ok := v.(*serverSession); ok && session != nil {
+						if err := session.WriteStream(stream); err != nil {
+							p.logger.Error(err.Error())
+						}
+					}
+				}
+			},
+			func(v interface{}, debug string) {
+
+			},
+		); err != nil {
 			p.onError(err)
 			return false
 		} else {
@@ -378,10 +382,10 @@ func (p *Server) Open() bool {
 	}).(bool)
 }
 
-func (p *Server) Close() {
+func (p *Server) Stop() {
 	p.DoWithLock(func() {
 		if !p.isOpen {
-			p.onError(internal.NewRPCError("Server: Close: it is not opened"))
+			p.onError(internal.NewRPCError("Server: Stop: it is not opened"))
 		} else {
 			p.isOpen = false
 

@@ -81,11 +81,11 @@ func (p *webSocketConn) WriteStream(
 func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
 		return internal.NewRPCError(
-			"webSocketConn: Close: nil object",
+			"webSocketConn: Stop: nil object",
 		)
 	} else if err := conn.Close(); err != nil {
 		return internal.NewRPCError(
-			internal.ConcatString("webSocketConn: Close: ", err.Error()),
+			internal.ConcatString("webSocketConn: Stop: ", err.Error()),
 		)
 	} else {
 		return nil
@@ -124,7 +124,7 @@ func NewWebSocketServerAdapter(addr string, path string) IAdapter {
 	}
 }
 
-// Open it must be none block
+// Start it must be none block
 func (p *WebSocketServerAdapter) Open(
 	onConnRun func(IStreamConnection),
 	onError func(Error),
@@ -139,12 +139,12 @@ func (p *WebSocketServerAdapter) Open(
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
 			err = internal.NewRPCError(
-				"WebSocketServerAdapter: Open: onConnRun is nil",
+				"WebSocketServerAdapter: Start: onConnRun is nil",
 			)
 			return false
 		} else if p.httpServer != nil {
 			err = internal.NewRPCError(
-				"WebSocketServerAdapter: Open: it has already been opened",
+				"WebSocketServerAdapter: Start: it has already been opened",
 			)
 			return false
 		} else {
@@ -152,7 +152,7 @@ func (p *WebSocketServerAdapter) Open(
 			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
 				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 					onError(internal.NewRPCError(
-						internal.ConcatString("WebSocketServerAdapter: Open: ", err.Error()),
+						internal.ConcatString("WebSocketServerAdapter: Start: ", err.Error()),
 					))
 				} else {
 					onConnRun((*webSocketConn)(conn))
@@ -176,7 +176,7 @@ func (p *WebSocketServerAdapter) Open(
 				}()
 				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 					onError(internal.NewRPCError(
-						internal.ConcatString("WebSocketServerAdapter: Open: ", e.Error()),
+						internal.ConcatString("WebSocketServerAdapter: Start: ", e.Error()),
 					))
 				}
 			}()
@@ -196,12 +196,12 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewRPCError(
-				"WebSocketServerAdapter: Close: has not been opened",
+				"WebSocketServerAdapter: Stop: has not been opened",
 			)
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
 			err = internal.NewRPCError(
-				internal.ConcatString("WebSocketServerAdapter: Close: ", e.Error()),
+				internal.ConcatString("WebSocketServerAdapter: Stop: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -219,7 +219,7 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 			return true
 		case <-time.After(10 * time.Second):
 			err = internal.NewRPCError(
-				"WebSocketServerAdapter: Close: can not close in 10 seconds",
+				"WebSocketServerAdapter: Stop: can not close in 10 seconds",
 			)
 			return false
 		}
@@ -268,12 +268,12 @@ func (p *WebSocketClientEndPoint) Open(
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
 			err = internal.NewRPCError(
-				"WebSocketClientEndPoint: Open: onConnRun is nil",
+				"WebSocketClientEndPoint: Start: onConnRun is nil",
 			)
 			return false
 		} else if p.conn != nil {
 			err = internal.NewRPCError(
-				"WebSocketClientEndPoint: Open: it has already been opened",
+				"WebSocketClientEndPoint: Start: it has already been opened",
 			)
 			return false
 		} else if wsConn, _, err := websocket.DefaultDialer.Dial(
@@ -281,12 +281,12 @@ func (p *WebSocketClientEndPoint) Open(
 			nil,
 		); err != nil {
 			err = internal.NewRPCError(
-				internal.ConcatString("WebSocketClientEndPoint: Open: ", err.Error()),
+				internal.ConcatString("WebSocketClientEndPoint: Start: ", err.Error()),
 			)
 			return false
 		} else if wsConn == nil {
 			err = internal.NewRPCError(
-				"WebSocketClientEndPoint: Open: wsConn is nil",
+				"WebSocketClientEndPoint: Start: wsConn is nil",
 			)
 			return false
 		} else {
@@ -319,12 +319,12 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewRPCError(
-				"WebSocketClientEndPoint: Close: has not been opened",
+				"WebSocketClientEndPoint: Stop: has not been opened",
 			)
 			return nil
 		} else if e := p.conn.Close(); e != nil {
 			err = internal.NewRPCError(
-				internal.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
+				internal.ConcatString("WebSocketClientEndPoint: Stop: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -342,7 +342,7 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 			return true
 		case <-time.After(10 * time.Second):
 			err = internal.NewRPCError(
-				"WebSocketClientEndPoint: Close: can not close in 10 seconds",
+				"WebSocketClientEndPoint: Stop: can not close in 10 seconds",
 			)
 			return false
 		}

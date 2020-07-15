@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
@@ -10,7 +11,6 @@ import (
 
 type rpcThread struct {
 	processor      *RPCProcessor
-	onEvalFinish   func(*rpcThread, *RPCStream, bool)
 	isRunning      bool
 	ch             chan *RPCStream
 	inStream       *RPCStream
@@ -27,14 +27,14 @@ type rpcThread struct {
 func newThread(
 	processor *RPCProcessor,
 	onEvalFinish func(*rpcThread, *RPCStream, bool),
+	onPanic func(v interface{}, debug string),
 ) *rpcThread {
-	if processor == nil || onEvalFinish == nil {
+	if processor == nil || onEvalFinish == nil || onPanic == nil {
 		return nil
 	}
 
 	ret := &rpcThread{
 		processor:      processor,
-		onEvalFinish:   onEvalFinish,
 		isRunning:      true,
 		ch:             make(chan *RPCStream, 1),
 		inStream:       nil,
@@ -49,7 +49,7 @@ func newThread(
 
 	go func() {
 		for stream := <-ret.ch; stream != nil; stream = <-ret.ch {
-			ret.eval(stream)
+			ret.eval(stream, onEvalFinish, onPanic)
 		}
 		ret.closeCH <- true
 	}()
@@ -79,7 +79,11 @@ func (p *rpcThread) PutStream(stream *RPCStream) bool {
 	return true
 }
 
-func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
+func (p *rpcThread) eval(
+	inStream *RPCStream,
+	onEvalFinish func(*rpcThread, *RPCStream, bool),
+	onPanic func(v interface{}, debug string),
+) *RPCReturn {
 	timeStart := TimeNowNS()
 	// create context
 	p.inStream = inStream
@@ -87,16 +91,20 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	ctx := &RPCContext{thread: unsafe.Pointer(p)}
 
 	defer func() {
-		if err := recover(); err != nil && p.execReplyNode != nil {
-			ctx.writeError(
-				fmt.Sprintf(
-					"rpc-server: %s: runtime error: %s",
-					p.execReplyNode.callString,
-					err,
-				),
-				GetStackString(1),
-			)
+		if v := recover(); v != nil {
+			onPanic(v, string(debug.Stack()))
+			if p.execReplyNode != nil {
+				ctx.writeError(
+					fmt.Sprintf(
+						"Reply: %s: runtime error: %s",
+						p.execReplyNode.callString,
+						v,
+					),
+					GetStackString(1),
+				)
+			}
 		}
+
 		if p.execReplyNode != nil {
 			p.execReplyNode.indicator.Count(
 				time.Duration(TimeNowNS()-timeStart),
@@ -112,7 +120,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 		p.execDepth = 0
 		p.execReplyNode = nil
 		p.execArgs = p.execArgs[:0]
-		p.onEvalFinish(p, retStream, p.execSuccessful)
+		onEvalFinish(p, retStream, p.execSuccessful)
 	}()
 
 	// copy head

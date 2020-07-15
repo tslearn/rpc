@@ -18,12 +18,11 @@ func TestServer_Basic(t *testing.T) {
 	)
 	server.AddService("user", NewService().
 		Reply("sayHello", true, func(ctx Context, name string) Return {
-			time.Sleep(20 * time.Second)
 			return ctx.OK("hello " + name)
 		}),
 	)
 
-	server.Open()
+	server.Start()
 
 	// client
 	go func() {
@@ -49,7 +48,7 @@ func TestServer_Basic(t *testing.T) {
 		_ = client.Close()
 		fmt.Println("Finish")
 
-		server.Close()
+		server.Stop()
 	}()
 
 	time.Sleep(100 * time.Second)

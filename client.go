@@ -141,7 +141,7 @@ func (p *Client) Open() Error {
 	return internal.ConvertToRPCError(p.CallWithLock(func() interface{} {
 		if p.isOpen {
 			return internal.NewRPCError(
-				"Client: Open: it has already been opened",
+				"Client: Start: it has already been opened",
 			)
 		} else {
 			closeCH := make(chan bool, 1)
@@ -194,7 +194,7 @@ func (p *Client) Close() Error {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewRPCError(
-				"Client: Close: has not been opened",
+				"Client: Stop: has not been opened",
 			)
 			return nil
 		} else {
@@ -212,7 +212,7 @@ func (p *Client) Close() Error {
 			return nil
 		case <-time.After(10 * time.Second):
 			return internal.NewRPCError(
-				"Client: Close: can not close in 10 seconds",
+				"Client: Stop: can not close in 10 seconds",
 			)
 		}
 	}
