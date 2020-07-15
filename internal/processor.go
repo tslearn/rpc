@@ -17,7 +17,6 @@ var (
 )
 
 type rpcReplyNode struct {
-	//path        string
 	replyMeta   *rpcReplyMeta
 	cacheFN     RPCReplyCacheFunc
 	reflectFn   reflect.Value

@@ -38,12 +38,11 @@ func TestRpcService_Add(t *testing.T) {
 
 func TestRpcService_Reply(t *testing.T) {
 	assert := NewRPCAssert(t)
-	service := NewRPCService().Reply("sayHello", true, 2345)
+	service := NewRPCService().Reply("sayHello", 2345)
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(0)
 	assert(len(service.(*rpcService).replies)).Equals(1)
 	assert(service.(*rpcService).replies[0].name).Equals("sayHello")
-	assert(service.(*rpcService).replies[0].export).Equals(true)
 	assert(service.(*rpcService).replies[0].handler).Equals(2345)
 
 	assert(strings.Contains(

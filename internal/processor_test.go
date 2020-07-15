@@ -98,7 +98,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 
 	processor1 := NewRPCProcessor(true, 8192, 16, 32, nil)
 	_ = processor1.AddService("abc", NewRPCService().
-		Reply("sayHello", true, func(ctx *RPCContext, name string) *RPCReturn {
+		Reply("sayHello", func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		}), "")
 	assert(processor1.BuildCache(
@@ -177,7 +177,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 
 	// mount reply error
 	service := NewRPCService()
-	service.Reply("abc", true, nil)
+	service.Reply("abc", nil)
 	assert(processor.mountNode(rootName, &rpcNodeMeta{
 		name:        "test",
 		serviceMeta: service.(*rpcService),
@@ -198,7 +198,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	// OK
 	service2 := NewRPCService()
 	service2.AddService("user", NewRPCService().
-		Reply("sayHello", true, func(ctx *RPCContext) *RPCReturn {
+		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}))
 	assert(processor.mountNode(rootName, &rpcNodeMeta{
@@ -229,7 +229,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// check the name
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"###",
-		true,
 		nil,
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -240,13 +239,11 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// check the reply path is not occupied
 	_ = processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		true,
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		true,
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -257,7 +254,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// check the reply handler is nil
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerIsNil",
-		true,
 		nil,
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -268,7 +264,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// Check reply handler is Func
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerIsFunction",
-		true,
 		make(chan bool),
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -279,7 +274,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// Check reply handler arguments types
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
-		true,
 		func(ctx bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -289,7 +283,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
-		true,
 		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -300,7 +293,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// Check return type
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
-		true,
 		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -310,7 +302,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
-		true,
 		func(ctx RPCContext) bool { return true },
 		"DebugMessage",
 	})).Equals(NewRPCErrorByDebug(
@@ -321,7 +312,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	// ok
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOK",
-		true,
 		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
 		GetStackString(0),
 	})).IsNil()
@@ -408,7 +398,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	_ = processor.AddService(
 		"user",
 		NewRPCService().
-			Reply("sayHello", true, func(
+			Reply("sayHello", func(
 				ctx *RPCContext,
 				name string,
 			) *RPCReturn {

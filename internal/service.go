@@ -4,7 +4,6 @@ package internal
 type Service interface {
 	Reply(
 		name string,
-		export bool,
 		handler interface{},
 	) Service
 
@@ -16,7 +15,6 @@ type Service interface {
 
 type rpcReplyMeta struct {
 	name    string      // the name of reply
-	export  bool        // weather reply is export to gateway
 	handler interface{} // reply handler
 	debug   string      // where the reply add in source file
 }
@@ -46,14 +44,12 @@ func NewRPCService() Service {
 // Reply add reply handler
 func (p *rpcService) Reply(
 	name string,
-	export bool,
 	handler interface{},
 ) Service {
 	p.DoWithLock(func() {
 		// add reply meta
 		p.replies = append(p.replies, &rpcReplyMeta{
 			name:    name,
-			export:  export,
 			handler: handler,
 			debug:   GetStackString(3),
 		})
