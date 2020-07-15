@@ -117,8 +117,10 @@ func (p *RPCProcessor) Start() RPCError {
 					p,
 					func(thread *rpcThread, stream *RPCStream, success bool) {
 						p.onEvalFinish(stream, success)
-						groupIndex := atomic.AddUint64(&p.writeThreadPos, 1) % freeGroupSize
-						freeThreadsCHGroup[groupIndex] <- thread
+						freeThreadsCHGroup[atomic.AddUint64(
+							&p.writeThreadPos,
+							1,
+						)%freeGroupSize] <- thread
 					},
 				)
 				p.threads[i] = thread
@@ -131,8 +133,10 @@ func (p *RPCProcessor) Start() RPCError {
 
 func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
 	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup != nil {
-		groupIndex := atomic.AddUint64(&p.readThreadPos, 1) % freeGroupSize
-		thread := <-freeThreadsCHGroup[groupIndex]
+		thread := <-freeThreadsCHGroup[atomic.AddUint64(
+			&p.readThreadPos,
+			1,
+		)%freeGroupSize]
 		if thread != nil {
 			return thread.PutStream(stream)
 		} else {
