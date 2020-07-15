@@ -326,7 +326,6 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		GetStackString(0),
 	})).IsNil()
 
-	assert(processor.repliesMap["$:testOK"].path).Equals("$:testOK")
 	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
 	assert(processor.repliesMap["$:testOK"].reflectFn).IsNotNil()
 	assert(processor.repliesMap["$:testOK"].callString).

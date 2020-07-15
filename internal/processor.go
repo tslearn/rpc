@@ -17,7 +17,7 @@ var (
 )
 
 type rpcReplyNode struct {
-	path        string
+	//path        string
 	replyMeta   *rpcReplyMeta
 	cacheFN     RPCReplyCacheFunc
 	reflectFn   reflect.Value
@@ -456,7 +456,6 @@ func (p *RPCProcessor) mountReply(
 	}
 
 	p.repliesMap[replyPath] = &rpcReplyNode{
-		path:      replyPath,
 		replyMeta: replyMeta,
 		cacheFN:   cacheFN,
 		reflectFn: fn,
