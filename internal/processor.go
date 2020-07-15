@@ -17,7 +17,6 @@ var (
 )
 
 type rpcReplyNode struct {
-	serviceNode *rpcServiceNode
 	path        string
 	replyMeta   *rpcReplyMeta
 	cacheFN     RPCReplyCacheFunc
@@ -458,11 +457,10 @@ func (p *RPCProcessor) mountReply(
 	}
 
 	p.repliesMap[replyPath] = &rpcReplyNode{
-		serviceNode: serviceNode,
-		path:        replyPath,
-		replyMeta:   replyMeta,
-		cacheFN:     cacheFN,
-		reflectFn:   fn,
+		path:      replyPath,
+		replyMeta: replyMeta,
+		cacheFN:   cacheFN,
+		reflectFn: fn,
 		callString: fmt.Sprintf(
 			"%s(%s) %s",
 			replyPath,
