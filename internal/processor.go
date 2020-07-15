@@ -228,7 +228,7 @@ func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {
 	return buildFuncCache(pkgName, path, fnKinds)
 }
 
-// AddService ...
+// AddChild ...
 func (p *RPCProcessor) AddService(
 	name string,
 	service RPCService,

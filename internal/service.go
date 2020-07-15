@@ -7,7 +7,7 @@ type RPCService interface {
 		handler interface{},
 	) RPCService
 
-	AddService(
+	AddChild(
 		name string,
 		service RPCService,
 	) RPCService
@@ -57,8 +57,8 @@ func (p *rpcService) Reply(
 	return p
 }
 
-// AddService add child service
-func (p *rpcService) AddService(name string, service RPCService) RPCService {
+// AddChild add child service
+func (p *rpcService) AddChild(name string, service RPCService) RPCService {
 	serviceMeta, ok := service.(*rpcService)
 	if !ok {
 		serviceMeta = (*rpcService)(nil)

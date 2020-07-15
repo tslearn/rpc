@@ -186,7 +186,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 
 	// mount children error
 	service1 := NewRPCService()
-	service1.AddService("abc", NewRPCService())
+	service1.AddChild("abc", NewRPCService())
 	assert(len(service1.(*rpcService).children)).Equals(1)
 	service1.(*rpcService).children[0] = nil
 	assert(processor.mountNode(rootName, &rpcNodeMeta{
@@ -197,7 +197,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 
 	// OK
 	service2 := NewRPCService()
-	service2.AddService("user", NewRPCService().
+	service2.AddChild("user", NewRPCService().
 		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}))

@@ -21,7 +21,7 @@ func TestNewService(t *testing.T) {
 func TestRpcService_Add(t *testing.T) {
 	assert := NewRPCAssert(t)
 	childService := NewRPCService()
-	service := NewRPCService().AddService("user", childService)
+	service := NewRPCService().AddChild("user", childService)
 	assert(service).IsNotNil()
 	assert(len(service.(*rpcService).children)).Equals(1)
 	assert(len(service.(*rpcService).replies)).Equals(0)
@@ -33,7 +33,7 @@ func TestRpcService_Add(t *testing.T) {
 	)).IsTrue()
 
 	// add nil is ok
-	assert(service.AddService("nil", nil)).Equals(service)
+	assert(service.AddChild("nil", nil)).Equals(service)
 }
 
 func TestRpcService_Reply(t *testing.T) {

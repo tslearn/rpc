@@ -47,7 +47,7 @@ func runWithProcessor(
 	//	},
 	//	&testFuncCache{},
 	//)
-	//_ = processor.AddService(
+	//_ = processor.AddChild(
 	//	"user",
 	//	NewRPCService().Reply("sayHello", true, handler),
 	//	"",
