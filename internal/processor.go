@@ -9,7 +9,7 @@ import (
 )
 
 const rootName = "$"
-const freeThreadsCHGroupSize = 1024
+const freeGroupSize = 1024
 
 var (
 	nodeNameRegex = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
@@ -68,9 +68,7 @@ func NewRPCProcessor(
 	} else if onEvalFinish == nil {
 		return nil
 	} else {
-		size := ((numOfThreads + freeThreadsCHGroupSize - 1) /
-			freeThreadsCHGroupSize) *
-			freeThreadsCHGroupSize
+		size := ((numOfThreads + freeGroupSize - 1) / freeGroupSize) * freeGroupSize
 		ret := &RPCProcessor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
@@ -103,13 +101,13 @@ func (p *RPCProcessor) Start() RPCError {
 		} else {
 			freeThreadsCHGroup := make(
 				[]chan *rpcThread,
-				freeThreadsCHGroupSize,
-				freeThreadsCHGroupSize,
+				freeGroupSize,
+				freeGroupSize,
 			)
-			for i := 0; i < freeThreadsCHGroupSize; i++ {
+			for i := 0; i < freeGroupSize; i++ {
 				freeThreadsCHGroup[i] = make(
 					chan *rpcThread,
-					size/freeThreadsCHGroupSize,
+					size/freeGroupSize,
 				)
 			}
 			p.freeThreadsCHGroup = freeThreadsCHGroup
@@ -119,14 +117,12 @@ func (p *RPCProcessor) Start() RPCError {
 					p,
 					func(thread *rpcThread, stream *RPCStream, success bool) {
 						p.onEvalFinish(stream, success)
-						freeThreadsCHGroup[atomic.AddUint64(
-							&p.writeThreadPos,
-							1,
-						)%freeThreadsCHGroupSize] <- thread
+						groupIndex := atomic.AddUint64(&p.writeThreadPos, 1) % freeGroupSize
+						freeThreadsCHGroup[groupIndex] <- thread
 					},
 				)
 				p.threads[i] = thread
-				p.freeThreadsCHGroup[i%freeThreadsCHGroupSize] <- thread
+				p.freeThreadsCHGroup[i%freeGroupSize] <- thread
 			}
 			return nil
 		}
@@ -135,10 +131,8 @@ func (p *RPCProcessor) Start() RPCError {
 
 func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
 	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup != nil {
-		thread := <-freeThreadsCHGroup[atomic.AddUint64(
-			&p.readThreadPos,
-			1,
-		)%freeThreadsCHGroupSize]
+		groupIndex := atomic.AddUint64(&p.readThreadPos, 1) % freeGroupSize
+		thread := <-freeThreadsCHGroup[groupIndex]
 		if thread != nil {
 			return thread.PutStream(stream)
 		} else {
