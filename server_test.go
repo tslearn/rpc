@@ -13,11 +13,12 @@ func TestServer_Debug(t *testing.T) {
 
 func TestServer_Basic(t *testing.T) {
 	// assert := common.NewAssert(t)
-	server := NewServer(32, nil).AddAdapter(
+	server := NewServer(true, 1024, 32, nil).AddAdapter(
 		NewWebSocketServerAdapter("127.0.0.1:8080", "test"),
 	)
 	server.AddService("user", NewService().
 		Reply("sayHello", true, func(ctx Context, name string) Return {
+			time.Sleep(20 * time.Second)
 			return ctx.OK("hello " + name)
 		}),
 	)
@@ -32,7 +33,7 @@ func TestServer_Basic(t *testing.T) {
 
 		_ = client.Open()
 
-		for i := 0; i < 30000; i++ {
+		for i := 0; i < 100; i++ {
 			go func(idx int) {
 				fmt.Println(client.sendMessage(
 					5*time.Second,

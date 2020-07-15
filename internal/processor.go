@@ -117,6 +117,11 @@ func (p *RPCProcessor) Start() RPCError {
 					p,
 					func(thread *rpcThread, stream *RPCStream, success bool) {
 						p.onEvalFinish(stream, success)
+
+						defer func() {
+							// do not panic when freeThreadsCH was closed,
+							recover()
+						}()
 						freeThreadsCHGroup[atomic.AddUint64(
 							&p.writeThreadPos,
 							1,
@@ -132,18 +137,15 @@ func (p *RPCProcessor) Start() RPCError {
 }
 
 func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
-	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup != nil {
-		thread := <-freeThreadsCHGroup[atomic.AddUint64(
-			&p.readThreadPos,
-			1,
-		)%freeGroupSize]
-		if thread != nil {
-			return thread.PutStream(stream)
-		} else {
-			return false
-		}
-	} else {
+	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
 		return false
+	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
+		&p.readThreadPos,
+		1,
+	)%freeGroupSize]; thread == nil {
+		return false
+	} else {
+		return thread.PutStream(stream)
 	}
 }
 
@@ -152,6 +154,9 @@ func (p *RPCProcessor) Stop() RPCError {
 		if p.freeThreadsCHGroup == nil {
 			return NewRPCError("RPCProcessor: Start: it has already benn stopped")
 		} else {
+			for i := 0; i < freeGroupSize; i++ {
+				close(p.freeThreadsCHGroup[i])
+			}
 			p.freeThreadsCHGroup = nil
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
