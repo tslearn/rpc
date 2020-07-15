@@ -92,7 +92,7 @@ func TestRpcThread_eval(t *testing.T) {
 		},
 	)
 
-	// test read echo path error
+	// test read reply path error
 	runWithProcessor(
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
@@ -115,7 +115,7 @@ func TestRpcThread_eval(t *testing.T) {
 		},
 	)
 
-	// echo path is not mounted
+	// reply path is not mounted
 	runWithProcessor(
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
@@ -132,7 +132,7 @@ func TestRpcThread_eval(t *testing.T) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).
-				Equals("rpc-server: echo path $.system:sayHello is not mounted", true)
+				Equals("rpc-server: reply path $.system:sayHello is not mounted", true)
 			assert(out.Read()).Equals("", true)
 			assert(out.CanRead()).IsFalse()
 		},
@@ -265,7 +265,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Int, rpc.Int, rpc.Uint, "+
 				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -305,7 +305,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint, "+
 				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -345,7 +345,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Bool, "+
 				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -385,7 +385,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
 				"rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -425,7 +425,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
 				"rpc.Float, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -465,7 +465,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
 				"rpc.Float, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -505,7 +505,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
 				"rpc.Float, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -545,7 +545,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
 				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
@@ -638,8 +638,8 @@ func TestRpcThread_eval(t *testing.T) {
 			return ctx.OK(a)
 		},
 		func(processor *RPCProcessor) *RPCStream {
-			echoNode := processor.echosMap["$.user:sayHello"]
-			echoNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+			replyNode := processor.repliesMap["$.user:sayHello"]
+			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -650,7 +650,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, rpc.Bool) rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool) rpc.Return",
 				true,
@@ -680,7 +680,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(in *RPCStream, out *RPCStream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
-			assert(out.Read()).Equals("rpc echo arguments not match\n"+
+			assert(out.Read()).Equals("rpc reply arguments not match\n"+
 				"Called: $.user:sayHello(rpc.Context, <nil>, rpc.Map, <nil>) "+
 				"rpc.Return\n"+
 				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Map) rpc.Return",

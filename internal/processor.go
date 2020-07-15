@@ -9,17 +9,17 @@ import (
 )
 
 const rootName = "$"
-const freeGroupSize = 1024
+const freeGroups = 1024
 
 var (
-	nodeNameRegex = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
-	echoNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
+	nodeNameRegex  = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
+	replyNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
 )
 
 type rpcReplyNode struct {
 	serviceNode *rpcServiceNode
 	path        string
-	echoMeta    *rpcEchoMeta
+	replyMeta   *rpcReplyMeta
 	cacheFN     RPCReplyCacheFunc
 	reflectFn   reflect.Value
 	callString  string
@@ -39,7 +39,7 @@ type RPCProcessor struct {
 	isDebug            bool
 	fnCache            RPCReplyCache
 	onEvalFinish       func(stream *RPCStream, success bool)
-	echosMap           map[string]*rpcReplyNode
+	repliesMap         map[string]*rpcReplyNode
 	nodesMap           map[string]*rpcServiceNode
 	maxNodeDepth       uint64
 	maxCallDepth       uint64
@@ -68,12 +68,12 @@ func NewRPCProcessor(
 	} else if onEvalFinish == nil {
 		return nil
 	} else {
-		size := ((numOfThreads + freeGroupSize - 1) / freeGroupSize) * freeGroupSize
+		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &RPCProcessor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
 			onEvalFinish:       onEvalFinish,
-			echosMap:           make(map[string]*rpcReplyNode),
+			repliesMap:         make(map[string]*rpcReplyNode),
 			nodesMap:           make(map[string]*rpcServiceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
 			maxCallDepth:       uint64(maxCallDepth),
@@ -101,13 +101,13 @@ func (p *RPCProcessor) Start() RPCError {
 		} else {
 			freeThreadsCHGroup := make(
 				[]chan *rpcThread,
-				freeGroupSize,
-				freeGroupSize,
+				freeGroups,
+				freeGroups,
 			)
-			for i := 0; i < freeGroupSize; i++ {
+			for i := 0; i < freeGroups; i++ {
 				freeThreadsCHGroup[i] = make(
 					chan *rpcThread,
-					size/freeGroupSize,
+					size/freeGroups,
 				)
 			}
 			p.freeThreadsCHGroup = freeThreadsCHGroup
@@ -125,11 +125,11 @@ func (p *RPCProcessor) Start() RPCError {
 						freeThreadsCHGroup[atomic.AddUint64(
 							&p.writeThreadPos,
 							1,
-						)%freeGroupSize] <- thread
+						)%freeGroups] <- thread
 					},
 				)
 				p.threads[i] = thread
-				p.freeThreadsCHGroup[i%freeGroupSize] <- thread
+				p.freeThreadsCHGroup[i%freeGroups] <- thread
 			}
 			return nil
 		}
@@ -142,7 +142,7 @@ func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
 	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
 		&p.readThreadPos,
 		1,
-	)%freeGroupSize]; thread == nil {
+	)%freeGroups]; thread == nil {
 		return false
 	} else {
 		return thread.PutStream(stream)
@@ -154,7 +154,7 @@ func (p *RPCProcessor) Stop() RPCError {
 		if p.freeThreadsCHGroup == nil {
 			return NewRPCError("RPCProcessor: Start: it has already benn stopped")
 		} else {
-			for i := 0; i < freeGroupSize; i++ {
+			for i := 0; i < freeGroups; i++ {
 				close(p.freeThreadsCHGroup[i])
 			}
 			p.freeThreadsCHGroup = nil
@@ -217,8 +217,8 @@ func (p *RPCProcessor) Stop() RPCError {
 // BuildCache ...
 func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {
 	retMap := make(map[string]bool)
-	for _, echo := range p.echosMap {
-		if fnTypeString, ok := getFuncKind(echo.echoMeta.handler); ok {
+	for _, reply := range p.repliesMap {
+		if fnTypeString, ok := getFuncKind(reply.replyMeta.handler); ok {
 			retMap[fnTypeString] = true
 		}
 	}
@@ -322,8 +322,8 @@ func (p *RPCProcessor) mountNode(
 	p.nodesMap[servicePath] = node
 
 	// mount the replies
-	for _, echoMeta := range nodeMeta.serviceMeta.replies {
-		err := p.mountEcho(node, echoMeta)
+	for _, replyMeta := range nodeMeta.serviceMeta.replies {
+		err := p.mountReply(node, replyMeta)
 		if err != nil {
 			delete(p.nodesMap, servicePath)
 			return err
@@ -342,54 +342,54 @@ func (p *RPCProcessor) mountNode(
 	return nil
 }
 
-func (p *RPCProcessor) mountEcho(
+func (p *RPCProcessor) mountReply(
 	serviceNode *rpcServiceNode,
-	echoMeta *rpcEchoMeta,
+	replyMeta *rpcReplyMeta,
 ) RPCError {
 	// check the node is nil
 	if serviceNode == nil {
-		return NewRPCError("rpc: mountEcho: node is nil")
+		return NewRPCError("rpc: mountReply: node is nil")
 	}
 
-	// check the echoMeta is nil
-	if echoMeta == nil {
-		return NewRPCError("rpc: mountEcho: echoMeta is nil")
+	// check the replyMeta is nil
+	if replyMeta == nil {
+		return NewRPCError("rpc: mountReply: replyMeta is nil")
 	}
 
 	// check the name
-	if !echoNameRegex.MatchString(echoMeta.name) {
+	if !replyNameRegex.MatchString(replyMeta.name) {
 		return NewRPCErrorByDebug(
-			fmt.Sprintf("Reply name %s is illegal", echoMeta.name),
-			echoMeta.debug,
+			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
+			replyMeta.debug,
 		)
 	}
 
-	// check the echo path is not occupied
-	echoPath := serviceNode.path + ":" + echoMeta.name
-	if item, ok := p.echosMap[echoPath]; ok {
+	// check the reply path is not occupied
+	replyPath := serviceNode.path + ":" + replyMeta.name
+	if item, ok := p.repliesMap[replyPath]; ok {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
 				"Reply name %s is duplicated",
-				echoMeta.name,
+				replyMeta.name,
 			),
 			fmt.Sprintf(
 				"Current:\n%s\nConflict:\n%s",
-				AddPrefixPerLine(echoMeta.debug, "\t"),
-				AddPrefixPerLine(item.echoMeta.debug, "\t"),
+				AddPrefixPerLine(replyMeta.debug, "\t"),
+				AddPrefixPerLine(item.replyMeta.debug, "\t"),
 			),
 		)
 	}
 
-	// check the echo handler is nil
-	if echoMeta.handler == nil {
+	// check the reply handler is nil
+	if replyMeta.handler == nil {
 		return NewRPCErrorByDebug(
 			"Reply handler is nil",
-			echoMeta.debug,
+			replyMeta.debug,
 		)
 	}
 
-	// Check echo handler is Func
-	fn := reflect.ValueOf(echoMeta.handler)
+	// Check reply handler is Func
+	fn := reflect.ValueOf(replyMeta.handler)
 	if fn.Kind() != reflect.Func {
 		return NewRPCErrorByDebug(
 			fmt.Sprintf(
@@ -397,11 +397,11 @@ func (p *RPCProcessor) mountEcho(
 				convertTypeToString(contextType),
 				convertTypeToString(returnType),
 			),
-			echoMeta.debug,
+			replyMeta.debug,
 		)
 	}
 
-	// Check echo handler arguments types
+	// Check reply handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
 		return NewRPCErrorByDebug(
@@ -409,7 +409,7 @@ func (p *RPCProcessor) mountEcho(
 				"Reply handler 1st argument type must be %s",
 				convertTypeToString(contextType),
 			),
-			echoMeta.debug,
+			replyMeta.debug,
 		)
 	} else if argumentsErrorPos > 0 {
 		return NewRPCErrorByDebug(
@@ -418,7 +418,7 @@ func (p *RPCProcessor) mountEcho(
 				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 				fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
 			),
-			echoMeta.debug,
+			replyMeta.debug,
 		)
 	}
 
@@ -430,13 +430,13 @@ func (p *RPCProcessor) mountEcho(
 				"Reply handler return type must be %s",
 				convertTypeToString(returnType),
 			),
-			echoMeta.debug,
+			replyMeta.debug,
 		)
 	}
 
-	// mount the echoRecord
+	// mount the replyRecord
 	fileLine := ""
-	debugArr := FindLinesByPrefix(echoMeta.debug, "-01")
+	debugArr := FindLinesByPrefix(replyMeta.debug, "-01")
 	if len(debugArr) > 0 {
 		arr := strings.Split(debugArr[0], " ")
 		if len(arr) == 3 {
@@ -453,23 +453,23 @@ func (p *RPCProcessor) mountEcho(
 	argString := strings.Join(argStrings, ", ")
 
 	cacheFN := RPCReplyCacheFunc(nil)
-	if fnTypeString, ok := getFuncKind(echoMeta.handler); ok && p.fnCache != nil {
+	if fnTypeString, ok := getFuncKind(replyMeta.handler); ok && p.fnCache != nil {
 		cacheFN = p.fnCache.Get(fnTypeString)
 	}
 
-	p.echosMap[echoPath] = &rpcReplyNode{
+	p.repliesMap[replyPath] = &rpcReplyNode{
 		serviceNode: serviceNode,
-		path:        echoPath,
-		echoMeta:    echoMeta,
+		path:        replyPath,
+		replyMeta:   replyMeta,
 		cacheFN:     cacheFN,
 		reflectFn:   fn,
 		callString: fmt.Sprintf(
 			"%s(%s) %s",
-			echoPath,
+			replyPath,
 			argString,
 			convertTypeToString(returnType),
 		),
-		debugString: fmt.Sprintf("%s %s", echoPath, fileLine),
+		debugString: fmt.Sprintf("%s %s", replyPath, fileLine),
 		argTypes:    argTypes,
 		indicator:   NewRPCPerformanceIndicator(),
 	}

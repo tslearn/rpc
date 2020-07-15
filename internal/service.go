@@ -14,11 +14,11 @@ type Service interface {
 	) Service
 }
 
-type rpcEchoMeta struct {
-	name    string      // the name of echo
-	export  bool        // weather echo is export to gateway
-	handler interface{} // echo handler
-	debug   string      // where the echo add in source file
+type rpcReplyMeta struct {
+	name    string      // the name of reply
+	export  bool        // weather reply is export to gateway
+	handler interface{} // reply handler
+	debug   string      // where the reply add in source file
 }
 
 type rpcNodeMeta struct {
@@ -28,9 +28,9 @@ type rpcNodeMeta struct {
 }
 
 type rpcService struct {
-	children []*rpcNodeMeta // all the children node meta pointer
-	replies  []*rpcEchoMeta // all the replies meta pointer
-	debug    string         // where the service define in source file
+	children []*rpcNodeMeta  // all the children node meta pointer
+	replies  []*rpcReplyMeta // all the replies meta pointer
+	debug    string          // where the service define in source file
 	RPCLock
 }
 
@@ -38,20 +38,20 @@ type rpcService struct {
 func NewRPCService() Service {
 	return &rpcService{
 		children: make([]*rpcNodeMeta, 0, 0),
-		replies:  make([]*rpcEchoMeta, 0, 0),
+		replies:  make([]*rpcReplyMeta, 0, 0),
 		debug:    GetStackString(1),
 	}
 }
 
-// Reply add echo handler
+// Reply add reply handler
 func (p *rpcService) Reply(
 	name string,
 	export bool,
 	handler interface{},
 ) Service {
 	p.DoWithLock(func() {
-		// add echo meta
-		p.replies = append(p.replies, &rpcEchoMeta{
+		// add reply meta
+		p.replies = append(p.replies, &rpcReplyMeta{
 			name:    name,
 			export:  export,
 			handler: handler,

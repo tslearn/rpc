@@ -48,6 +48,6 @@ func TestRpcService_Reply(t *testing.T) {
 
 	assert(strings.Contains(
 		service.(*rpcService).replies[0].debug,
-		"TestRpcService_Echo",
+		"TestRpcService_Reply",
 	)).IsTrue()
 }

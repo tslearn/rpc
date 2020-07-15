@@ -118,14 +118,14 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	// copy head
 	copy(p.outStream.GetHeader(), inStream.GetHeader())
 
-	// read echo path
-	echoPath, ok := inStream.ReadUnsafeString()
+	// read reply path
+	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
 		return ctx.writeError("rpc data format error", "")
 	}
-	if p.execReplyNode, ok = p.processor.echosMap[echoPath]; !ok {
+	if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return ctx.writeError(
-			fmt.Sprintf("rpc-server: echo path %s is not mounted", echoPath),
+			fmt.Sprintf("rpc-server: reply path %s is not mounted", replyPath),
 			"",
 		)
 	}
@@ -151,7 +151,7 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 	argStartPos := inStream.GetReadPos()
 
 	if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
-		ok = fnCache(ctx, inStream, p.execReplyNode.echoMeta.handler)
+		ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
 	} else {
 		p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
 		for i := 1; i < len(p.execReplyNode.argTypes); i++ {
@@ -273,8 +273,8 @@ func (p *rpcThread) eval(inStream *RPCStream) *RPCReturn {
 
 		return ctx.writeError(
 			fmt.Sprintf(
-				"rpc echo arguments not match\nCalled: %s(%s) %s\nRequired: %s",
-				echoPath,
+				"rpc reply arguments not match\nCalled: %s(%s) %s\nRequired: %s",
+				replyPath,
 				strings.Join(remoteArgsType, ", "),
 				convertTypeToString(returnType),
 				p.execReplyNode.callString,

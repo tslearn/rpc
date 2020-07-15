@@ -20,7 +20,7 @@ func TestNewRPCProcessor(t *testing.T) {
 	processor := NewRPCProcessor(true, 8192, 16, 32, callbackFn, nil)
 	assert(processor).IsNotNil()
 	assert(processor.onEvalFinish).IsNotNil()
-	assert(len(processor.echosMap)).Equals(0)
+	assert(len(processor.repliesMap)).Equals(0)
 	assert(len(processor.nodesMap)).Equals(1)
 	assert(processor.isDebug).IsTrue()
 	assert(processor.maxNodeDepth).Equals(uint64(16))
@@ -178,7 +178,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 	))
 
-	// mount echo error
+	// mount reply error
 	service := NewRPCService()
 	service.Reply("abc", true, nil)
 	assert(processor.mountNode(rootName, &rpcNodeMeta{
@@ -211,26 +211,26 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	})).IsNil()
 }
 
-func TestRPCProcessor_mountEcho(t *testing.T) {
+func TestRPCProcessor_mountReply(t *testing.T) {
 	assert := NewRPCAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 16, nil, &testFuncCache{})
 	rootNode := processor.nodesMap[rootName]
 
 	// check the node is nil
-	assert(processor.mountEcho(nil, nil)).Equals(NewRPCErrorByDebug(
-		"rpc: mountEcho: node is nil",
+	assert(processor.mountReply(nil, nil)).Equals(NewRPCErrorByDebug(
+		"rpc: mountReply: node is nil",
 		"",
 	))
 
-	// check the echoMeta is nil
-	assert(processor.mountEcho(rootNode, nil)).Equals(NewRPCErrorByDebug(
-		"rpc: mountEcho: echoMeta is nil",
+	// check the replyMeta is nil
+	assert(processor.mountReply(rootNode, nil)).Equals(NewRPCErrorByDebug(
+		"rpc: mountReply: replyMeta is nil",
 		"",
 	))
 
 	// check the name
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"###",
 		true,
 		nil,
@@ -240,14 +240,14 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"DebugMessage",
 	))
 
-	// check the echo path is not occupied
-	_ = processor.mountEcho(rootNode, &rpcEchoMeta{
+	// check the reply path is not occupied
+	_ = processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
 		true,
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
 		true,
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
@@ -257,9 +257,9 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 	))
 
-	// check the echo handler is nil
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerIsNil",
+	// check the reply handler is nil
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerIsNil",
 		true,
 		nil,
 		"DebugMessage",
@@ -268,9 +268,9 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"DebugMessage",
 	))
 
-	// Check echo handler is Func
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerIsFunction",
+	// Check reply handler is Func
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerIsFunction",
 		true,
 		make(chan bool),
 		"DebugMessage",
@@ -279,9 +279,9 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"DebugMessage",
 	))
 
-	// Check echo handler arguments types
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerArguments",
+	// Check reply handler arguments types
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerArguments",
 		true,
 		func(ctx bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
@@ -290,8 +290,8 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerArguments",
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerArguments",
 		true,
 		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
@@ -301,8 +301,8 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	))
 
 	// Check return type
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerReturn",
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerReturn",
 		true,
 		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
 		"DebugMessage",
@@ -311,8 +311,8 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
-		"testEchoHandlerReturn",
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+		"testReplyHandlerReturn",
 		true,
 		func(ctx RPCContext) bool { return true },
 		"DebugMessage",
@@ -322,28 +322,28 @@ func TestRPCProcessor_mountEcho(t *testing.T) {
 	))
 
 	// ok
-	assert(processor.mountEcho(rootNode, &rpcEchoMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOK",
 		true,
 		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
 		GetStackString(0),
 	})).IsNil()
 
-	assert(processor.echosMap["$:testOK"].serviceNode).
+	assert(processor.repliesMap["$:testOK"].serviceNode).
 		Equals(processor.nodesMap[rootName])
-	assert(processor.echosMap["$:testOK"].path).Equals("$:testOK")
-	assert(processor.echosMap["$:testOK"].echoMeta.name).Equals("testOK")
-	assert(processor.echosMap["$:testOK"].reflectFn).IsNotNil()
-	assert(processor.echosMap["$:testOK"].callString).
+	assert(processor.repliesMap["$:testOK"].path).Equals("$:testOK")
+	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
+	assert(processor.repliesMap["$:testOK"].reflectFn).IsNotNil()
+	assert(processor.repliesMap["$:testOK"].callString).
 		Equals("$:testOK(rpc.Context, rpc.Bool, rpc.Map) rpc.Return")
 	assert(
-		strings.Contains(processor.echosMap["$:testOK"].debugString, "$:testOK"),
+		strings.Contains(processor.repliesMap["$:testOK"].debugString, "$:testOK"),
 	).IsTrue()
-	assert(processor.echosMap["$:testOK"].argTypes[0]).
+	assert(processor.repliesMap["$:testOK"].argTypes[0]).
 		Equals(reflect.ValueOf(nilContext).Type())
-	assert(processor.echosMap["$:testOK"].argTypes[1]).Equals(boolType)
-	assert(processor.echosMap["$:testOK"].argTypes[2]).Equals(mapType)
-	assert(processor.echosMap["$:testOK"].indicator).IsNotNil()
+	assert(processor.repliesMap["$:testOK"].argTypes[1]).Equals(boolType)
+	assert(processor.repliesMap["$:testOK"].argTypes[2]).Equals(mapType)
+	assert(processor.repliesMap["$:testOK"].indicator).IsNotNil()
 }
 
 func TestRPCProcessor_OutPutErrors(t *testing.T) {
