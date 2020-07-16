@@ -29,7 +29,7 @@ type IAdapter interface {
 }
 
 // Stream ...
-type Stream = *internal.RPCStream
+type Stream = *internal.Stream
 
 // Bool ...
 type Bool = internal.RPCBool

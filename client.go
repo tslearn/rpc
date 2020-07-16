@@ -31,7 +31,7 @@ var sendItemCache = &sync.Pool{
 			sendMS:    0,
 			timeoutMS: 0,
 			finishCH:  nil,
-			stream:    internal.NewRPCStream(),
+			stream:    internal.NewStream(),
 			next:      nil,
 		}
 	},
@@ -232,8 +232,8 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 		return ret
 	}).(uint64)
 
-	sendStream := internal.NewRPCStream()
-	backStream := (*internal.RPCStream)(nil)
+	sendStream := internal.NewStream()
+	backStream := (*internal.Stream)(nil)
 
 	defer func() {
 		sendStream.Release()
@@ -404,7 +404,7 @@ func (p *Client) tryToDeliverControlMessage(nowMS int64) {
 			p.lastControlSendMS = nowMS
 			p.systemSeed++
 
-			sendStream := internal.NewRPCStream()
+			sendStream := internal.NewStream()
 			sendStream.SetCallbackID(0)
 			sendStream.SetSequence(p.systemSeed)
 			sendStream.WriteInt64(SystemStreamKindRequestIds)

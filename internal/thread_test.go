@@ -33,15 +33,15 @@ func TestNewThread(t *testing.T) {
 
 func runWithProcessor(
 	handler interface{},
-	getStream func(processor *Processor) *RPCStream,
-	onTest func(in *RPCStream, out *RPCStream, success bool),
+	getStream func(processor *Processor) *Stream,
+	onTest func(in *Stream, out *Stream, success bool),
 ) {
-	//retStreamCH := make(chan *RPCStream)
+	//retStreamCH := make(chan *Stream)
 	//retSuccessCH := make(chan bool)
 	//processor := NewProcessor(
 	//	16,
 	//	16,
-	//	func(stream *RPCStream, success bool) {
+	//	func(stream *Stream, success bool) {
 	//		retStreamCH <- stream
 	//		retSuccessCH <- success
 	//	},
@@ -70,8 +70,8 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.SetCallbackID(345343535345343535)
 			stream.SetMachineID(345343535)
 			stream.WriteString("$.user:sayHello")
@@ -80,7 +80,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(true)
 			// inStream is reset
 			assert(in.GetHeader()).Equals(out.GetHeader())
@@ -97,8 +97,8 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			// path format error
 			stream.WriteBytes([]byte("$.user:sayHello"))
 			stream.WriteUint64(3)
@@ -106,7 +106,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc data format error", true)
@@ -120,15 +120,15 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.system:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).
@@ -143,8 +143,8 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			// depth type error
 			stream.WriteInt64(3)
@@ -152,7 +152,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc data format error", true)
@@ -166,15 +166,15 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(17)
 			stream.WriteString("#")
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals(
@@ -192,15 +192,15 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteBool(true)
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(false)
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc data format error", true)
@@ -216,8 +216,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -231,7 +231,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).Equals(true)
 			assert(out.ReadBool()).Equals(true, true)
 			assert(out.Read()).Equals(true, true)
@@ -247,8 +247,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -262,7 +262,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -287,8 +287,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -302,7 +302,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -327,8 +327,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -342,7 +342,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -367,8 +367,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -382,7 +382,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -407,8 +407,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -422,7 +422,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -447,8 +447,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -462,7 +462,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -487,8 +487,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -502,7 +502,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(RPCMap{"name": "world"})
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -527,8 +527,8 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -542,7 +542,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -568,15 +568,15 @@ func TestRpcThread_eval(t *testing.T) {
 
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsTrue()
 			assert(out.ReadBool()).Equals(true, true)
 			assert(out.Read()).Equals(true, true)
@@ -592,15 +592,15 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsTrue()
 			assert(out.ReadBool()).Equals(true, true)
 			assert(out.Read()).Equals(true, true)
@@ -616,15 +616,15 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsTrue()
 			assert(out.ReadBool()).Equals(true, true)
 			assert(out.Read()).Equals(true, true)
@@ -637,17 +637,17 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, a bool) *RPCReturn {
 			return ctx.OK(a)
 		},
-		func(processor *Processor) *RPCStream {
+		func(processor *Processor) *Stream {
 			replyNode := processor.repliesMap["$.user:sayHello"]
 			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
-			stream := NewRPCStream()
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -667,8 +667,8 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -677,7 +677,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(nil)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
@@ -698,8 +698,8 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
@@ -707,7 +707,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.SetWritePos(stream.GetWritePos() - 1)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc data format error", true)
@@ -724,15 +724,15 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *RPCStream {
-			stream := NewRPCStream()
+		func(_ *Processor) *Stream {
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
 			return stream
 		},
-		func(in *RPCStream, out *RPCStream, success bool) {
+		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals(

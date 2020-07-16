@@ -1,29 +1,29 @@
 package internal
 
-type rpcReplyMeta struct {
+type replyMeta struct {
 	name    string      // the name of reply
 	handler interface{} // reply handler
 	debug   string      // where the reply add in source file
 }
 
-type rpcAddChildMeta struct {
+type childMeta struct {
 	name    string   // the name of child service
 	service *Service // the real service
 	debug   string   // where the service add in source file
 }
 
 type Service struct {
-	children []*rpcAddChildMeta // all the children node meta pointer
-	replies  []*rpcReplyMeta    // all the replies meta pointer
-	debug    string             // where the service define in source file
+	children []*childMeta // all the children node meta pointer
+	replies  []*replyMeta // all the replies meta pointer
+	debug    string       // where the service define in source file
 	Lock
 }
 
 // NewService define a new service
 func NewService() *Service {
 	return &Service{
-		children: make([]*rpcAddChildMeta, 0, 0),
-		replies:  make([]*rpcReplyMeta, 0, 0),
+		children: make([]*childMeta, 0, 0),
+		replies:  make([]*replyMeta, 0, 0),
 		debug:    GetStackString(1),
 	}
 }
@@ -35,7 +35,7 @@ func (p *Service) Reply(
 ) *Service {
 	p.DoWithLock(func() {
 		// add reply meta
-		p.replies = append(p.replies, &rpcReplyMeta{
+		p.replies = append(p.replies, &replyMeta{
 			name:    name,
 			handler: handler,
 			debug:   GetStackString(3),
@@ -49,7 +49,7 @@ func (p *Service) AddChild(name string, service *Service) *Service {
 	// lock
 	p.DoWithLock(func() {
 		// add child meta
-		p.children = append(p.children, &rpcAddChildMeta{
+		p.children = append(p.children, &childMeta{
 			name:    name,
 			service: service,
 			debug:   GetStackString(3),

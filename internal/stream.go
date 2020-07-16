@@ -17,7 +17,7 @@ const (
 var (
 	rpcStreamCache = sync.Pool{
 		New: func() interface{} {
-			ret := RPCStream{
+			ret := Stream{
 				frames:     make([]*[]byte, 1, 8),
 				readSeg:    0,
 				readIndex:  StreamBodyPos,
@@ -138,8 +138,8 @@ func isUTF8Bytes(bytes []byte) bool {
 	return idx == length
 }
 
-// RPCStream ...
-type RPCStream struct {
+// Stream ...
+type Stream struct {
 	frames []*[]byte
 
 	readSeg   int
@@ -153,13 +153,13 @@ type RPCStream struct {
 	header []byte
 }
 
-// NewRPCStream ...
-func NewRPCStream() *RPCStream {
-	return rpcStreamCache.Get().(*RPCStream)
+// NewStream ...
+func NewStream() *Stream {
+	return rpcStreamCache.Get().(*Stream)
 }
 
 // Reset ...
-func (p *RPCStream) Reset() {
+func (p *Stream) Reset() {
 	// reset frames
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
@@ -183,7 +183,7 @@ func (p *RPCStream) Reset() {
 }
 
 // GetCallbackID ...
-func (p *RPCStream) GetCallbackID() uint64 {
+func (p *Stream) GetCallbackID() uint64 {
 	b := p.header[0:8]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -196,7 +196,7 @@ func (p *RPCStream) GetCallbackID() uint64 {
 }
 
 // SetCallbackID ...
-func (p *RPCStream) SetCallbackID(v uint64) {
+func (p *Stream) SetCallbackID(v uint64) {
 	b := p.header[0:8]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
@@ -209,7 +209,7 @@ func (p *RPCStream) SetCallbackID(v uint64) {
 }
 
 // GetSessionID ...
-func (p *RPCStream) GetSessionID() uint64 {
+func (p *Stream) GetSessionID() uint64 {
 	b := p.header[8:16]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -222,7 +222,7 @@ func (p *RPCStream) GetSessionID() uint64 {
 }
 
 // SetSessionID ...
-func (p *RPCStream) SetSessionID(v uint64) {
+func (p *Stream) SetSessionID(v uint64) {
 	b := p.header[8:16]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
@@ -235,7 +235,7 @@ func (p *RPCStream) SetSessionID(v uint64) {
 }
 
 // GetSequence ...
-func (p *RPCStream) GetSequence() uint64 {
+func (p *Stream) GetSequence() uint64 {
 	b := p.header[8:16]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -248,7 +248,7 @@ func (p *RPCStream) GetSequence() uint64 {
 }
 
 // SetSequence ...
-func (p *RPCStream) SetSequence(v uint64) {
+func (p *Stream) SetSequence(v uint64) {
 	b := p.header[8:16]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
@@ -261,7 +261,7 @@ func (p *RPCStream) SetSequence(v uint64) {
 }
 
 // GetMachineID ...
-func (p *RPCStream) GetMachineID() uint64 {
+func (p *Stream) GetMachineID() uint64 {
 	b := p.header[16:24]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -274,7 +274,7 @@ func (p *RPCStream) GetMachineID() uint64 {
 }
 
 // SetMachineID ...
-func (p *RPCStream) SetMachineID(v uint64) {
+func (p *Stream) SetMachineID(v uint64) {
 	b := p.header[16:24]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
@@ -286,19 +286,19 @@ func (p *RPCStream) SetMachineID(v uint64) {
 	b[7] = byte(v >> 56)
 }
 
-// Release clean the RPCStream
-func (p *RPCStream) Release() {
+// Release clean the Stream
+func (p *Stream) Release() {
 	p.Reset()
 	rpcStreamCache.Put(p)
 }
 
 // GetHeader ...
-func (p *RPCStream) GetHeader() []byte {
+func (p *Stream) GetHeader() []byte {
 	return p.header
 }
 
 // GetBuffer ...
-func (p *RPCStream) GetBuffer() []byte {
+func (p *Stream) GetBuffer() []byte {
 	length := p.GetWritePos()
 	ret := make([]byte, length, length)
 	for i := 0; i <= p.writeSeg; i++ {
@@ -308,7 +308,7 @@ func (p *RPCStream) GetBuffer() []byte {
 }
 
 // GetBufferUnsafe ...
-func (p *RPCStream) GetBufferUnsafe() []byte {
+func (p *Stream) GetBufferUnsafe() []byte {
 	if p.writeSeg == 0 {
 		return p.writeFrame[0:p.writeIndex]
 	}
@@ -316,12 +316,12 @@ func (p *RPCStream) GetBufferUnsafe() []byte {
 }
 
 // GetReadPos get the current read pos of the stream
-func (p *RPCStream) GetReadPos() int {
+func (p *Stream) GetReadPos() int {
 	return (p.readSeg << 9) | p.readIndex
 }
 
 // SetReadPos set the current read pos of the stream
-func (p *RPCStream) SetReadPos(pos int) bool {
+func (p *Stream) SetReadPos(pos int) bool {
 	readSeg := pos >> 9
 	readIndex := pos & 0x1FF
 	if (readSeg == p.writeSeg && readIndex <= p.writeIndex) ||
@@ -336,7 +336,7 @@ func (p *RPCStream) SetReadPos(pos int) bool {
 	return false
 }
 
-func (p *RPCStream) setReadPosUnsafe(pos int) {
+func (p *Stream) setReadPosUnsafe(pos int) {
 	p.readIndex = pos & 0x1FF
 	readSeg := pos >> 9
 	if p.readSeg != readSeg {
@@ -346,12 +346,12 @@ func (p *RPCStream) setReadPosUnsafe(pos int) {
 }
 
 // GetWritePos ...
-func (p *RPCStream) GetWritePos() int {
+func (p *Stream) GetWritePos() int {
 	return (p.writeSeg << 9) | p.writeIndex
 }
 
 // SetWritePos ...
-func (p *RPCStream) SetWritePos(length int) {
+func (p *Stream) SetWritePos(length int) {
 	numToCreate := length>>9 - len(p.frames) + 1
 
 	for numToCreate > 0 {
@@ -361,7 +361,7 @@ func (p *RPCStream) SetWritePos(length int) {
 	p.setWritePosUnsafe(length)
 }
 
-func (p *RPCStream) setWritePosUnsafe(pos int) {
+func (p *Stream) setWritePosUnsafe(pos int) {
 	p.writeIndex = pos & 0x1FF
 	writeSeg := pos >> 9
 	if p.writeSeg != writeSeg {
@@ -371,16 +371,16 @@ func (p *RPCStream) setWritePosUnsafe(pos int) {
 }
 
 // CanRead return true if the stream is not finish
-func (p *RPCStream) CanRead() bool {
+func (p *Stream) CanRead() bool {
 	return p.readIndex < p.writeIndex || p.readSeg < p.writeSeg
 }
 
 // IsReadFinish return true if the stream is finish
-func (p *RPCStream) IsReadFinish() bool {
+func (p *Stream) IsReadFinish() bool {
 	return p.readIndex == p.writeIndex && p.readSeg == p.writeSeg
 }
 
-func (p *RPCStream) gotoNextWriteFrame() {
+func (p *Stream) gotoNextWriteFrame() {
 	p.writeSeg++
 	p.writeIndex = 0
 	if p.writeSeg == len(p.frames) {
@@ -389,49 +389,49 @@ func (p *RPCStream) gotoNextWriteFrame() {
 	p.writeFrame = *p.frames[p.writeSeg]
 }
 
-func (p *RPCStream) gotoNextReadFrameUnsafe() {
+func (p *Stream) gotoNextReadFrameUnsafe() {
 	p.readSeg++
 	p.readIndex = 0
 	p.readFrame = *p.frames[p.readSeg]
 }
 
-func (p *RPCStream) gotoNextReadByteUnsafe() {
+func (p *Stream) gotoNextReadByteUnsafe() {
 	p.readIndex++
 	if p.readIndex == 512 {
 		p.gotoNextReadFrameUnsafe()
 	}
 }
 
-func (p *RPCStream) hasOneByteToRead() bool {
+func (p *Stream) hasOneByteToRead() bool {
 	return p.readIndex < p.writeIndex || p.readSeg < p.writeSeg
 }
 
-func (p *RPCStream) hasNBytesToRead(n int) bool {
+func (p *Stream) hasNBytesToRead(n int) bool {
 	return p.GetReadPos()+n <= p.GetWritePos()
 }
 
-func (p *RPCStream) isSafetyReadNBytesInCurrentFrame(n int) bool {
+func (p *Stream) isSafetyReadNBytesInCurrentFrame(n int) bool {
 	lineEnd := p.readIndex + n
 	return lineEnd < 512 && (lineEnd <= p.writeIndex || p.readSeg < p.writeSeg)
 }
 
-func (p *RPCStream) isSafetyRead3BytesInCurrentFrame() bool {
+func (p *Stream) isSafetyRead3BytesInCurrentFrame() bool {
 	return p.readIndex < 509 &&
 		(p.readIndex+2 < p.writeIndex || p.readSeg < p.writeSeg)
 }
 
-func (p *RPCStream) isSafetyRead5BytesInCurrentFrame() bool {
+func (p *Stream) isSafetyRead5BytesInCurrentFrame() bool {
 	return p.readIndex < 507 &&
 		(p.readIndex+4 < p.writeIndex || p.readSeg < p.writeSeg)
 }
 
-func (p *RPCStream) isSafetyRead9BytesInCurrentFrame() bool {
+func (p *Stream) isSafetyRead9BytesInCurrentFrame() bool {
 	return p.readIndex < 503 &&
 		(p.readIndex+8 < p.writeIndex || p.readSeg < p.writeSeg)
 }
 
 // PutBytes ...
-func (p *RPCStream) PutBytes(v []byte) {
+func (p *Stream) PutBytes(v []byte) {
 	if p.writeIndex+len(v) < 512 {
 		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
 	} else {
@@ -454,7 +454,7 @@ func (p *RPCStream) PutBytes(v []byte) {
 }
 
 // PutString ...
-func (p *RPCStream) PutString(v string) {
+func (p *Stream) PutString(v string) {
 	if p.writeIndex+len(v) < 512 {
 		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
 	} else {
@@ -476,7 +476,7 @@ func (p *RPCStream) PutString(v string) {
 	}
 }
 
-func (p *RPCStream) read3BytesCrossFrameUnsafe() []byte {
+func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 3, 3)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
@@ -485,14 +485,14 @@ func (p *RPCStream) read3BytesCrossFrameUnsafe() []byte {
 	return v
 }
 
-func (p *RPCStream) peek5BytesCrossFrameUnsafe() []byte {
+func (p *Stream) peek5BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 5, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	copy(v[copyBytes:], *p.frames[p.readSeg+1])
 	return v
 }
 
-func (p *RPCStream) read5BytesCrossFrameUnsafe() []byte {
+func (p *Stream) read5BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 5, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
@@ -501,7 +501,7 @@ func (p *RPCStream) read5BytesCrossFrameUnsafe() []byte {
 	return v
 }
 
-func (p *RPCStream) read9BytesCrossFrameUnsafe() []byte {
+func (p *Stream) read9BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 9, 9)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
@@ -510,7 +510,7 @@ func (p *RPCStream) read9BytesCrossFrameUnsafe() []byte {
 	return v
 }
 
-func (p *RPCStream) readNBytesUnsafe(n int) []byte {
+func (p *Stream) readNBytesUnsafe(n int) []byte {
 	ret := make([]byte, n, n)
 	reads := 0
 	for reads < n {
@@ -525,7 +525,7 @@ func (p *RPCStream) readNBytesUnsafe(n int) []byte {
 }
 
 // return how many bytes to skip
-func (p *RPCStream) peekSkip() int {
+func (p *Stream) peekSkip() int {
 	skip := readSkipArray[p.readFrame[p.readIndex]]
 	if skip > 0 {
 		return skip
@@ -554,7 +554,7 @@ func (p *RPCStream) peekSkip() int {
 
 // return the item read pos, and skip it
 // end must be a valid pos
-func (p *RPCStream) readSkipItem(end int) int {
+func (p *Stream) readSkipItem(end int) int {
 	ret := p.GetReadPos()
 	skip := p.peekSkip()
 
@@ -570,7 +570,7 @@ func (p *RPCStream) readSkipItem(end int) int {
 	return -1
 }
 
-func (p *RPCStream) writeStreamUnsafe(s *RPCStream, length int) {
+func (p *Stream) writeStreamUnsafe(s *Stream, length int) {
 	if p.writeIndex+length < 512 {
 		if s.readIndex+length < 512 {
 			copy(
@@ -669,7 +669,7 @@ func (p *RPCStream) writeStreamUnsafe(s *RPCStream, length int) {
 	}
 }
 
-func (p *RPCStream) writeStreamNext(s *RPCStream) bool {
+func (p *Stream) writeStreamNext(s *Stream) bool {
 	skip := s.peekSkip()
 	if skip > 0 {
 		if s.isSafetyReadNBytesInCurrentFrame(skip) && p.writeIndex+skip < 512 {
@@ -692,7 +692,7 @@ func (p *RPCStream) writeStreamNext(s *RPCStream) bool {
 }
 
 // WriteNil put nil value to stream
-func (p *RPCStream) WriteNil() {
+func (p *Stream) WriteNil() {
 	p.writeFrame[p.writeIndex] = 1
 	p.writeIndex++
 	if p.writeIndex == 512 {
@@ -701,7 +701,7 @@ func (p *RPCStream) WriteNil() {
 }
 
 // WriteBool write bool value to stream
-func (p *RPCStream) WriteBool(v bool) {
+func (p *Stream) WriteBool(v bool) {
 	switch v {
 	case true:
 		p.writeFrame[p.writeIndex] = 2
@@ -715,7 +715,7 @@ func (p *RPCStream) WriteBool(v bool) {
 }
 
 // WriteFloat64 write float64 value to stream
-func (p *RPCStream) WriteFloat64(value float64) {
+func (p *Stream) WriteFloat64(value float64) {
 	if value == 0 {
 		p.writeFrame[p.writeIndex] = 4
 		p.writeIndex++
@@ -753,7 +753,7 @@ func (p *RPCStream) WriteFloat64(value float64) {
 }
 
 // WriteInt64 write int64 value to stream
-func (p *RPCStream) WriteInt64(v int64) {
+func (p *Stream) WriteInt64(v int64) {
 	if v > -8 && v < 33 {
 		p.writeFrame[p.writeIndex] = byte(v + 21)
 		p.writeIndex++
@@ -833,7 +833,7 @@ func (p *RPCStream) WriteInt64(v int64) {
 }
 
 // WriteUint64 write uint64 value to stream
-func (p *RPCStream) WriteUint64(v uint64) {
+func (p *Stream) WriteUint64(v uint64) {
 	if v < 10 {
 		p.writeFrame[p.writeIndex] = byte(v + 54)
 		p.writeIndex++
@@ -902,7 +902,7 @@ func (p *RPCStream) WriteUint64(v uint64) {
 }
 
 // WriteString write string value to stream
-func (p *RPCStream) WriteString(v string) {
+func (p *Stream) WriteString(v string) {
 	length := len(v)
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 128
@@ -972,7 +972,7 @@ func (p *RPCStream) WriteString(v string) {
 }
 
 // WriteBytes write RPCBytes value to stream
-func (p *RPCStream) WriteBytes(v RPCBytes) {
+func (p *Stream) WriteBytes(v RPCBytes) {
 	if v == nil {
 		p.WriteNil()
 		return
@@ -1032,7 +1032,7 @@ func (p *RPCStream) WriteBytes(v RPCBytes) {
 }
 
 // WriteArray ...
-func (p *RPCStream) WriteArray(v RPCArray) int {
+func (p *Stream) WriteArray(v RPCArray) int {
 	if v == nil {
 		p.WriteNil()
 		return RPCStreamWriteOK
@@ -1112,7 +1112,7 @@ func (p *RPCStream) WriteArray(v RPCArray) int {
 }
 
 // WriteMap write RPCMap value to stream
-func (p *RPCStream) WriteMap(v RPCMap) int {
+func (p *Stream) WriteMap(v RPCMap) int {
 	if v == nil {
 		p.WriteNil()
 		return RPCStreamWriteOK
@@ -1194,7 +1194,7 @@ func (p *RPCStream) WriteMap(v RPCMap) int {
 }
 
 // Write write generic value to stream
-func (p *RPCStream) Write(v interface{}) int {
+func (p *Stream) Write(v interface{}) int {
 	switch v.(type) {
 	case nil:
 		p.WriteNil()
@@ -1254,7 +1254,7 @@ func (p *RPCStream) Write(v interface{}) int {
 }
 
 // ReadNil read a nil
-func (p *RPCStream) ReadNil() bool {
+func (p *Stream) ReadNil() bool {
 	if p.hasOneByteToRead() && p.readFrame[p.readIndex] == 1 {
 		p.gotoNextReadByteUnsafe()
 		return true
@@ -1263,7 +1263,7 @@ func (p *RPCStream) ReadNil() bool {
 }
 
 // ReadBool read a bool
-func (p *RPCStream) ReadBool() (bool, bool) {
+func (p *Stream) ReadBool() (bool, bool) {
 	if p.hasOneByteToRead() {
 		switch p.readFrame[p.readIndex] {
 		case 2:
@@ -1278,7 +1278,7 @@ func (p *RPCStream) ReadBool() (bool, bool) {
 }
 
 // ReadFloat64 read a float64
-func (p *RPCStream) ReadFloat64() (float64, bool) {
+func (p *Stream) ReadFloat64() (float64, bool) {
 	v := p.readFrame[p.readIndex]
 	if v == 4 {
 		if p.hasOneByteToRead() {
@@ -1318,7 +1318,7 @@ func (p *RPCStream) ReadFloat64() (float64, bool) {
 }
 
 // ReadInt64 read a int64
-func (p *RPCStream) ReadInt64() (int64, bool) {
+func (p *Stream) ReadInt64() (int64, bool) {
 	v := p.readFrame[p.readIndex]
 	if v > 13 && v < 54 {
 		if p.hasOneByteToRead() {
@@ -1390,7 +1390,7 @@ func (p *RPCStream) ReadInt64() (int64, bool) {
 }
 
 // ReadUint64 read a uint64
-func (p *RPCStream) ReadUint64() (uint64, bool) {
+func (p *Stream) ReadUint64() (uint64, bool) {
 	v := p.readFrame[p.readIndex]
 	if v > 53 && v < 64 {
 		if p.hasOneByteToRead() {
@@ -1454,7 +1454,7 @@ func (p *RPCStream) ReadUint64() (uint64, bool) {
 }
 
 // ReadString read a string value
-func (p *RPCStream) ReadString() (string, bool) {
+func (p *Stream) ReadString() (string, bool) {
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
@@ -1540,7 +1540,7 @@ func (p *RPCStream) ReadString() (string, bool) {
 }
 
 // ReadUnsafeString read a string value unsafe
-func (p *RPCStream) ReadUnsafeString() (ret string, ok bool) {
+func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
@@ -1634,7 +1634,7 @@ func (p *RPCStream) ReadUnsafeString() (ret string, ok bool) {
 }
 
 // ReadBytes read a rpcBytes value
-func (p *RPCStream) ReadBytes() (RPCBytes, bool) {
+func (p *Stream) ReadBytes() (RPCBytes, bool) {
 	// empty bytes
 	v := p.readFrame[p.readIndex]
 
@@ -1709,7 +1709,7 @@ func (p *RPCStream) ReadBytes() (RPCBytes, bool) {
 }
 
 // ReadUnsafeBytes read a RPCBytes value unsafe
-func (p *RPCStream) ReadUnsafeBytes() (ret RPCBytes, ok bool) {
+func (p *Stream) ReadUnsafeBytes() (ret RPCBytes, ok bool) {
 	// empty bytes
 	v := p.readFrame[p.readIndex]
 	if v == 1 {
@@ -1771,7 +1771,7 @@ func (p *RPCStream) ReadUnsafeBytes() (ret RPCBytes, ok bool) {
 }
 
 // ReadArray ...
-func (p *RPCStream) ReadArray() (RPCArray, bool) {
+func (p *Stream) ReadArray() (RPCArray, bool) {
 	v := p.readFrame[p.readIndex]
 	if v == 1 {
 		if p.hasOneByteToRead() {
@@ -1850,7 +1850,7 @@ func (p *RPCStream) ReadArray() (RPCArray, bool) {
 }
 
 // ReadMap read a RPCMap value
-func (p *RPCStream) ReadMap() (RPCMap, bool) {
+func (p *Stream) ReadMap() (RPCMap, bool) {
 	v := p.readFrame[p.readIndex]
 	if v == 1 {
 		if p.hasOneByteToRead() {
@@ -1935,7 +1935,7 @@ func (p *RPCStream) ReadMap() (RPCMap, bool) {
 }
 
 // Read read a generic value
-func (p *RPCStream) Read() (RPCAny, bool) {
+func (p *Stream) Read() (RPCAny, bool) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):

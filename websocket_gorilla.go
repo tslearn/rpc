@@ -37,7 +37,7 @@ func (p *webSocketConn) ReadStream(
 				"webSocketConn: ReadStream: stream data error",
 			)
 		} else {
-			stream := internal.NewRPCStream()
+			stream := internal.NewStream()
 			stream.SetWritePos(0)
 			stream.PutBytes(message)
 			return stream, nil

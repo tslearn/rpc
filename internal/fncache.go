@@ -57,7 +57,7 @@ func (p *fnCache) writeHeader(
 	sb.AppendString("type n = bool\n")
 	sb.AppendString("type o = common.RPCContext\n")
 	sb.AppendString("type p = common.RPCReturn\n")
-	sb.AppendString("type q = *common.RPCStream\n")
+	sb.AppendString("type q = *common.Stream\n")
 	if _, ok := kindMap['B']; ok {
 		sb.AppendString("type r = common.RPCBool\n")
 	}

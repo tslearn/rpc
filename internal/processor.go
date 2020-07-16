@@ -17,7 +17,7 @@ var (
 )
 
 type replyNode struct {
-	replyMeta   *rpcReplyMeta
+	replyMeta   *replyMeta
 	cacheFN     RPCReplyCacheFunc
 	reflectFn   reflect.Value
 	callString  string
@@ -28,7 +28,7 @@ type replyNode struct {
 
 type serviceNode struct {
 	path    string
-	addMeta *rpcAddChildMeta
+	addMeta *childMeta
 	depth   uint
 }
 
@@ -86,7 +86,7 @@ func NewProcessor(
 }
 
 func (p *Processor) Start(
-	onEvalFinish func(stream *RPCStream, success bool),
+	onEvalFinish func(stream *Stream, success bool),
 	onPanic func(v interface{}, debug string),
 ) Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
@@ -111,7 +111,7 @@ func (p *Processor) Start(
 			for i := 0; i < size; i++ {
 				thread := newThread(
 					p,
-					func(thread *rpcThread, stream *RPCStream, success bool) {
+					func(thread *rpcThread, stream *Stream, success bool) {
 						onEvalFinish(stream, success)
 
 						defer func() {
@@ -133,7 +133,7 @@ func (p *Processor) Start(
 	}))
 }
 
-func (p *Processor) PutStream(stream *RPCStream) bool {
+func (p *Processor) PutStream(stream *Stream) bool {
 	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
 		return false
 	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
@@ -241,7 +241,7 @@ func (p *Processor) AddService(
 		)
 	}
 
-	return p.mountNode(rootName, &rpcAddChildMeta{
+	return p.mountNode(rootName, &childMeta{
 		name:    name,
 		service: service,
 		debug:   debug,
@@ -250,7 +250,7 @@ func (p *Processor) AddService(
 
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
-	nodeMeta *rpcAddChildMeta,
+	nodeMeta *childMeta,
 ) Error {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
@@ -340,7 +340,7 @@ func (p *Processor) mountNode(
 
 func (p *Processor) mountReply(
 	serviceNode *serviceNode,
-	replyMeta *rpcReplyMeta,
+	replyMeta *replyMeta,
 ) Error {
 	// check the node is nil
 	if serviceNode == nil {

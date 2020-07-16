@@ -18,7 +18,7 @@ func TestNewService(t *testing.T) {
 	)).IsTrue()
 }
 
-func TestRpcService_Add(t *testing.T) {
+func TestService_Add(t *testing.T) {
 	assert := NewAssert(t)
 	childService := NewService()
 	service := NewService().AddChild("user", childService)
@@ -29,14 +29,14 @@ func TestRpcService_Add(t *testing.T) {
 	assert(service.children[0].service).Equals(childService)
 	assert(strings.Contains(
 		service.children[0].debug,
-		"TestRpcService_Add",
+		"TestService_Add",
 	)).IsTrue()
 
 	// add nil is ok
 	assert(service.AddChild("nil", nil)).Equals(service)
 }
 
-func TestRpcService_Reply(t *testing.T) {
+func TestService_Reply(t *testing.T) {
 	assert := NewAssert(t)
 	service := NewService().Reply("sayHello", 2345)
 	assert(service).IsNotNil()
@@ -47,6 +47,6 @@ func TestRpcService_Reply(t *testing.T) {
 
 	assert(strings.Contains(
 		service.replies[0].debug,
-		"TestRpcService_Reply",
+		"TestService_Reply",
 	)).IsTrue()
 }

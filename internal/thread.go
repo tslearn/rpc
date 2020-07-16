@@ -12,9 +12,9 @@ import (
 type rpcThread struct {
 	processor      *Processor
 	isRunning      bool
-	ch             chan *RPCStream
-	inStream       *RPCStream
-	outStream      *RPCStream
+	ch             chan *Stream
+	inStream       *Stream
+	outStream      *Stream
 	execDepth      uint64
 	execReplyNode  *replyNode
 	execArgs       []reflect.Value
@@ -26,7 +26,7 @@ type rpcThread struct {
 
 func newThread(
 	processor *Processor,
-	onEvalFinish func(*rpcThread, *RPCStream, bool),
+	onEvalFinish func(*rpcThread, *Stream, bool),
 	onPanic func(v interface{}, debug string),
 ) *rpcThread {
 	if processor == nil || onEvalFinish == nil || onPanic == nil {
@@ -36,9 +36,9 @@ func newThread(
 	ret := &rpcThread{
 		processor:      processor,
 		isRunning:      true,
-		ch:             make(chan *RPCStream, 1),
+		ch:             make(chan *Stream, 1),
 		inStream:       nil,
-		outStream:      NewRPCStream(),
+		outStream:      NewStream(),
 		execDepth:      0,
 		execReplyNode:  nil,
 		execArgs:       make([]reflect.Value, 0, 16),
@@ -74,14 +74,14 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) PutStream(stream *RPCStream) bool {
+func (p *rpcThread) PutStream(stream *Stream) bool {
 	p.ch <- stream
 	return true
 }
 
 func (p *rpcThread) eval(
-	inStream *RPCStream,
-	onEvalFinish func(*rpcThread, *RPCStream, bool),
+	inStream *Stream,
+	onEvalFinish func(*rpcThread, *Stream, bool),
 	onPanic func(v interface{}, debug string),
 ) *RPCReturn {
 	timeStart := TimeNowNS()

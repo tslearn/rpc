@@ -32,7 +32,7 @@ type RPCReplyCache interface {
 // RPCReplyCacheFunc ...
 type RPCReplyCacheFunc = func(
 	ctx *RPCContext,
-	stream *RPCStream,
+	stream *Stream,
 	fn interface{},
 ) bool
 

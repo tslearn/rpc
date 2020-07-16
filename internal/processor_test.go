@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func TestNewRPCProcessor(t *testing.T) {
+func TestNewProcessor(t *testing.T) {
 	assert := NewAssert(t)
 
 	processor := NewProcessor(true, 8192, 16, 32, nil)
@@ -25,7 +25,7 @@ func TestNewRPCProcessor(t *testing.T) {
 	processor.Stop()
 }
 
-func TestRPCProcessor_Start_Stop(t *testing.T) {
+func TestProcessor_Start_Stop(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//processor := NewProcessor(true, 8192, 16, 32, nil, nil)
@@ -56,19 +56,19 @@ func TestRPCProcessor_Start_Stop(t *testing.T) {
 	//}
 }
 
-func TestRPCProcessor_PutStream(t *testing.T) {
+func TestProcessor_PutStream(t *testing.T) {
 	//assert := NewAssert(t)
 	//processor := NewProcessor(16, 32, nil, nil)
-	//assert(processor.PutStream(NewRPCStream())).IsFalse()
+	//assert(processor.PutStream(NewStream())).IsFalse()
 	//processor.Start()
-	//assert(processor.PutStream(NewRPCStream())).IsTrue()
+	//assert(processor.PutStream(NewStream())).IsTrue()
 	//for i := 0; i < len(processor.threadPools); i++ {
 	//	processor.threadPools[i].stop()
 	//}
-	//assert(processor.PutStream(NewRPCStream())).IsFalse()
+	//assert(processor.PutStream(NewStream())).IsFalse()
 }
 
-func TestRPCProcessor_AddService(t *testing.T) {
+func TestProcessor_AddService(t *testing.T) {
 	assert := NewAssert(t)
 
 	processor := NewProcessor(true, 8192, 16, 32, nil)
@@ -82,7 +82,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 	assert(processor.AddService("test", service, "")).IsNil()
 }
 
-func TestRPCProcessor_BuildCache(t *testing.T) {
+func TestProcessor_BuildCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
@@ -113,7 +113,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 	_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
 }
 
-func TestRPCProcessor_mountNode(t *testing.T) {
+func TestProcessor_mountNode(t *testing.T) {
 	assert := NewAssert(t)
 
 	processor := NewProcessor(true, 8192, 16, 16, nil)
@@ -123,7 +123,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	assert(processor.mountNode(rootName, nil).GetDebug()).
 		Equals("")
 
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "+",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -132,7 +132,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "abc",
 		service: nil,
 		debug:   "DebugMessage",
@@ -141,7 +141,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountNode("123", &rpcAddChildMeta{
+	assert(processor.mountNode("123", &childMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -151,7 +151,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	))
 
 	processor.maxNodeDepth = 0
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -161,12 +161,12 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	))
 	processor.maxNodeDepth = 16
 
-	_ = processor.mountNode(rootName, &rpcAddChildMeta{
+	_ = processor.mountNode(rootName, &childMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
 	})
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -178,7 +178,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	// mount reply error
 	service := NewService()
 	service.Reply("abc", nil)
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "test",
 		service: service,
 		debug:   "DebugMessage",
@@ -189,7 +189,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	service1.AddChild("abc", NewService())
 	assert(len(service1.children)).Equals(1)
 	service1.children[0] = nil
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "003",
 		service: service1,
 		debug:   "DebugMessage",
@@ -201,14 +201,14 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}))
-	assert(processor.mountNode(rootName, &rpcAddChildMeta{
+	assert(processor.mountNode(rootName, &childMeta{
 		name:    "system",
 		service: service2,
 		debug:   "DebugMessage",
 	})).IsNil()
 }
 
-func TestRPCProcessor_mountReply(t *testing.T) {
+func TestProcessor_mountReply(t *testing.T) {
 	assert := NewAssert(t)
 
 	processor := NewProcessor(true, 8192, 16, 16, &testFuncCache{})
@@ -227,7 +227,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// check the name
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"###",
 		nil,
 		"DebugMessage",
@@ -237,12 +237,12 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// check the reply path is not occupied
-	_ = processor.mountReply(rootNode, &rpcReplyMeta{
+	_ = processor.mountReply(rootNode, &replyMeta{
 		"testOccupied",
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
 	})
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testOccupied",
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
@@ -252,7 +252,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// check the reply handler is nil
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerIsNil",
 		nil,
 		"DebugMessage",
@@ -262,7 +262,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// Check reply handler is Func
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerIsFunction",
 		make(chan bool),
 		"DebugMessage",
@@ -272,7 +272,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// Check reply handler arguments types
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerArguments",
 		func(ctx bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
@@ -281,7 +281,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerArguments",
 		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
@@ -291,7 +291,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// Check return type
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerReturn",
 		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
 		"DebugMessage",
@@ -300,7 +300,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerReturn",
 		func(ctx RPCContext) bool { return true },
 		"DebugMessage",
@@ -310,7 +310,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	))
 
 	// ok
-	assert(processor.mountReply(rootNode, &rpcReplyMeta{
+	assert(processor.mountReply(rootNode, &replyMeta{
 		"testOK",
 		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
 		GetStackString(0),
@@ -330,7 +330,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	assert(processor.repliesMap["$:testOK"].indicator).IsNotNil()
 }
 
-func TestRPCProcessor_OutPutErrors(t *testing.T) {
+func TestProcessor_OutPutErrors(t *testing.T) {
 	assert := NewAssert(t)
 
 	processor := NewProcessor(true, 8192, 16, 16, nil)
@@ -383,7 +383,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		&testFuncCache{},
 	)
 	processor.Start(
-		func(stream *RPCStream, ok bool) {
+		func(stream *Stream, ok bool) {
 			if ok {
 				atomic.AddUint64(&success, 1)
 			} else {
@@ -415,7 +415,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			stream := NewRPCStream()
+			stream := NewStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")

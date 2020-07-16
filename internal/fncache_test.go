@@ -13,7 +13,7 @@ type testFuncCache struct{}
 func (p *testFuncCache) Get(fnString string) RPCReplyCacheFunc {
 	switch fnString {
 	case "S":
-		return func(c *RPCContext, s *RPCStream, f interface{}) bool {
+		return func(c *RPCContext, s *Stream, f interface{}) bool {
 			h, ok := s.ReadString()
 			if !ok || s.CanRead() {
 				return false
