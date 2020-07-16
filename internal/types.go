@@ -75,7 +75,7 @@ func (p *RPCContext) OK(value interface{}) *RPCReturn {
 	return nilReturn
 }
 
-func (p *RPCContext) Error(err RPCError) *RPCReturn {
+func (p *RPCContext) Error(err Error) *RPCReturn {
 	if err == nil {
 		return nilReturn
 	}
@@ -90,7 +90,7 @@ func (p *RPCContext) Error(err RPCError) *RPCReturn {
 }
 
 func (p *RPCContext) Errorf(format string, a ...interface{}) *RPCReturn {
-	return p.Error(NewRPCErrorByDebug(
+	return p.Error(NewErrorByDebug(
 		fmt.Sprintf(format, a...),
 		GetStackString(1),
 	))

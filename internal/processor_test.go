@@ -73,7 +73,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 
 	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service is nil",
 			"DebugMessage",
 		))
@@ -127,7 +127,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		name:    "+",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Service name \"+\" is illegal",
 		"DebugMessage",
 	))
@@ -136,7 +136,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: nil,
 		debug:   "DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Service is nil",
 		"DebugMessage",
 	))
@@ -145,7 +145,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"rpc: mountNode: parentNode is nil",
 		"DebugMessage",
 	))
@@ -155,7 +155,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Service path depth $.abc is too long, it must be less or equal than 0",
 		"DebugMessage",
 	))
@@ -170,7 +170,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Service name \"abc\" is duplicated",
 		"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 	))
@@ -215,13 +215,13 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 	rootNode := processor.nodesMap[rootName]
 
 	// check the node is nil
-	assert(processor.mountReply(nil, nil)).Equals(NewRPCErrorByDebug(
+	assert(processor.mountReply(nil, nil)).Equals(NewErrorByDebug(
 		"rpc: mountReply: node is nil",
 		"",
 	))
 
 	// check the replyMeta is nil
-	assert(processor.mountReply(rootNode, nil)).Equals(NewRPCErrorByDebug(
+	assert(processor.mountReply(rootNode, nil)).Equals(NewErrorByDebug(
 		"rpc: mountReply: replyMeta is nil",
 		"",
 	))
@@ -231,7 +231,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"###",
 		nil,
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply name ### is illegal",
 		"DebugMessage",
 	))
@@ -246,7 +246,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testOccupied",
 		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply name testOccupied is duplicated",
 		"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 	))
@@ -256,7 +256,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerIsNil",
 		nil,
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler is nil",
 		"DebugMessage",
 	))
@@ -266,7 +266,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerIsFunction",
 		make(chan bool),
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler must be func(ctx rpc.Context, ...) rpc.Return",
 		"DebugMessage",
 	))
@@ -276,7 +276,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerArguments",
 		func(ctx bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler 1st argument type must be rpc.Context",
 		"DebugMessage",
 	))
@@ -285,7 +285,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerArguments",
 		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler 2nd argument type <chan bool> not supported",
 		"DebugMessage",
 	))
@@ -295,7 +295,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerReturn",
 		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler return type must be rpc.Return",
 		"DebugMessage",
 	))
@@ -304,7 +304,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 		"testReplyHandlerReturn",
 		func(ctx RPCContext) bool { return true },
 		"DebugMessage",
-	})).Equals(NewRPCErrorByDebug(
+	})).Equals(NewErrorByDebug(
 		"Reply handler return type must be rpc.Return",
 		"DebugMessage",
 	))
@@ -337,27 +337,27 @@ func TestRPCProcessor_OutPutErrors(t *testing.T) {
 
 	// Service is nil
 	assert(processor.AddService("", nil, "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service is nil",
 			"DebugMessage",
 		))
 
 	assert(processor.AddService("abc", (*Service)(nil), "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service is nil",
 			"DebugMessage",
 		))
 
 	// Service name %s is illegal
 	assert(processor.AddService("\"\"", NewService(), "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service name \"\"\"\" is illegal",
 			"DebugMessage",
 		))
 
 	processor.maxNodeDepth = 0
 	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service path depth $.abc is too long, it must be less or equal than 0",
 			"DebugMessage",
 		))
@@ -365,7 +365,7 @@ func TestRPCProcessor_OutPutErrors(t *testing.T) {
 
 	_ = processor.AddService("abc", NewService(), "DebugMessage")
 	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-		Equals(NewRPCErrorByDebug(
+		Equals(NewErrorByDebug(
 			"Service name \"abc\" is duplicated",
 			"Current:\n\tDebugMessage\nConflict:\n\tDebugMessage",
 		))

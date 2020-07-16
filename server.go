@@ -112,7 +112,7 @@ func newServerSession(id uint64, size int64) *serverSession {
 }
 
 func (p *serverSession) WriteStream(stream Stream) Error {
-	return internal.ConvertToRPCError(p.CallWithLock(func() interface{} {
+	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if p.conn != nil {
 			return p.conn.WriteStream(
 				stream,
@@ -120,7 +120,7 @@ func (p *serverSession) WriteStream(stream Stream) Error {
 				configServerWriteLimit,
 			)
 		} else {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"serverSession: WriteStream: conn is nil",
 			)
 		}
@@ -132,13 +132,13 @@ func (p *serverSession) OnDataStream(
 	processor *internal.RPCProcessor,
 ) Error {
 	if stream == nil {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"serverSession: OnDataStream: stream is nil",
 		)
 	}
 
 	if processor == nil {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"serverSession: OnDataStream: processor is nil",
 		)
 	}
@@ -146,7 +146,7 @@ func (p *serverSession) OnDataStream(
 	record, ok := p.callMap[stream.GetCallbackID()]
 
 	if !ok {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"serverSession: OnDataStream: stream callbackID error",
 		)
 	}
@@ -160,7 +160,7 @@ func (p *serverSession) OnDataStream(
 	stream.SetSessionID(p.id)
 
 	if !processor.PutStream(stream) {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"serverSession: OnDataStream: processor can not deal with stream",
 		)
 	}
@@ -171,22 +171,22 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnControlStream(
 	stream Stream,
 ) Error {
-	ret := internal.ConvertToRPCError(p.CallWithLock(func() interface{} {
+	ret := internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Server: OnControlStream: stream is nil",
 			)
 		}
 
 		if p.conn == nil {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Server: OnControlStream: conn is nil",
 			)
 		}
 
 		controlSequence := stream.GetSequence()
 		if controlSequence <= p.controlSeed {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Server: OnControlStream: sequence is omit",
 			)
 		}
@@ -194,7 +194,7 @@ func (p *serverSession) OnControlStream(
 
 		kind, ok := stream.ReadInt64()
 		if !ok {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
@@ -219,7 +219,7 @@ func (p *serverSession) OnControlStream(
 		case SystemStreamKindRequestIds:
 			currCallbackId, ok := stream.ReadUint64()
 			if !ok {
-				return internal.NewRPCError(
+				return internal.NewError(
 					"Server: OnControlStream: stream format error",
 				)
 			}
@@ -231,13 +231,13 @@ func (p *serverSession) OnControlStream(
 						v.mark = true
 					}
 				} else {
-					return internal.NewRPCError(
+					return internal.NewError(
 						"Server: OnControlStream: stream format error",
 					)
 				}
 			}
 			if !stream.IsReadFinish() {
-				return internal.NewRPCError(
+				return internal.NewError(
 					"Server: OnControlStream: stream format error",
 				)
 			}
@@ -270,7 +270,7 @@ func (p *serverSession) OnControlStream(
 				configServerWriteLimit,
 			)
 		default:
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
@@ -341,7 +341,7 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 func (p *Server) Start() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.isOpen {
-			p.onError(internal.NewRPCError("Server: Start: it is already opened"))
+			p.onError(internal.NewError("Server: Start: it is already opened"))
 			return false
 		} else if err := p.processor.Start(
 			func(stream Stream, success bool) {
@@ -385,7 +385,7 @@ func (p *Server) Start() bool {
 func (p *Server) Stop() {
 	p.DoWithLock(func() {
 		if !p.isOpen {
-			p.onError(internal.NewRPCError("Server: Stop: it is not opened"))
+			p.onError(internal.NewError("Server: Stop: it is not opened"))
 		} else {
 			p.isOpen = false
 
@@ -432,9 +432,9 @@ func (p *Server) AddService(
 
 func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	if endPoint == nil {
-		p.onError(internal.NewRPCError("Server: AddAdapter: endpoint is nil"))
+		p.onError(internal.NewError("Server: AddAdapter: endpoint is nil"))
 	} else if endPoint.IsRunning() {
-		p.onError(internal.NewRPCError(fmt.Sprintf(
+		p.onError(internal.NewError(fmt.Sprintf(
 			"Server: AddAdapter: endpoint %s has already served",
 			endPoint.ConnectString(),
 		)))
@@ -452,7 +452,7 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 
 func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	if conn == nil {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: conn is nil",
 		)
 	} else if stream, err := conn.ReadStream(
@@ -461,24 +461,24 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	); err != nil {
 		return nil, err
 	} else if stream.GetCallbackID() != 0 {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: stream format error",
 		)
 	} else if stream.GetSequence() == 0 {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: stream format error",
 		)
 	} else if kind, ok := stream.ReadInt64(); !ok ||
 		kind != SystemStreamKindInit {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: stream format error",
 		)
 	} else if sessionString, ok := stream.ReadString(); !ok {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: stream format error",
 		)
 	} else if !stream.IsReadFinish() {
-		return nil, internal.NewRPCError(
+		return nil, internal.NewError(
 			"Server: getSession: stream format error",
 		)
 	} else {
@@ -525,7 +525,7 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn IStreamConnection) {
 	if conn == nil {
-		p.onError(internal.NewRPCError("Server: onConnRun: conn is nil"))
+		p.onError(internal.NewError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
 		p.onError(err)
 	} else {

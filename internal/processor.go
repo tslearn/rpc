@@ -88,12 +88,12 @@ func NewRPCProcessor(
 func (p *RPCProcessor) Start(
 	onEvalFinish func(stream *RPCStream, success bool),
 	onPanic func(v interface{}, debug string),
-) RPCError {
-	return ConvertToRPCError(p.CallWithLock(func() interface{} {
+) Error {
+	return ConvertToError(p.CallWithLock(func() interface{} {
 		size := len(p.threads)
 
 		if p.freeThreadsCHGroup != nil {
-			return NewRPCError("RPCProcessor: Start: it has already benn started")
+			return NewError("RPCProcessor: Start: it has already benn started")
 		} else {
 			freeThreadsCHGroup := make(
 				[]chan *rpcThread,
@@ -146,10 +146,10 @@ func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
 	}
 }
 
-func (p *RPCProcessor) Stop() RPCError {
-	return ConvertToRPCError(p.CallWithLock(func() interface{} {
+func (p *RPCProcessor) Stop() Error {
+	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
-			return NewRPCError("RPCProcessor: Start: it has already benn stopped")
+			return NewError("RPCProcessor: Start: it has already benn stopped")
 		} else {
 			for i := 0; i < freeGroups; i++ {
 				close(p.freeThreadsCHGroup[i])
@@ -200,7 +200,7 @@ func (p *RPCProcessor) Stop() RPCError {
 			}
 
 			if len(errList) > 0 {
-				return NewRPCError(ConcatString(
+				return NewError(ConcatString(
 					"RPCProcessor: Stop: The following routine still running: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
@@ -212,7 +212,7 @@ func (p *RPCProcessor) Stop() RPCError {
 }
 
 // BuildCache ...
-func (p *RPCProcessor) BuildCache(pkgName string, path string) RPCError {
+func (p *RPCProcessor) BuildCache(pkgName string, path string) Error {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
 		if fnTypeString, ok := getFuncKind(reply.replyMeta.handler); ok {
@@ -233,9 +233,9 @@ func (p *RPCProcessor) AddService(
 	name string,
 	service *Service,
 	debug string,
-) RPCError {
+) Error {
 	if service == nil {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			"Service is nil",
 			debug,
 		)
@@ -251,15 +251,15 @@ func (p *RPCProcessor) AddService(
 func (p *RPCProcessor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *rpcAddChildMeta,
-) RPCError {
+) Error {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
-		return NewRPCError("rpc: mountNode: nodeMeta is nil")
+		return NewError("rpc: mountNode: nodeMeta is nil")
 	}
 
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
 			nodeMeta.debug,
 		)
@@ -267,7 +267,7 @@ func (p *RPCProcessor) mountNode(
 
 	// check nodeMeta.service is not nil
 	if nodeMeta.service == nil {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			"Service is nil",
 			nodeMeta.debug,
 		)
@@ -276,14 +276,14 @@ func (p *RPCProcessor) mountNode(
 	// check max node depth overflow
 	parentNode, ok := p.nodesMap[parentServiceNodePath]
 	if !ok {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			"rpc: mountNode: parentNode is nil",
 			nodeMeta.debug,
 		)
 	}
 	servicePath := parentServiceNodePath + "." + nodeMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Service path depth %s is too long, it must be less or equal than %d",
 				servicePath,
@@ -295,7 +295,7 @@ func (p *RPCProcessor) mountNode(
 
 	// check the mount path is not occupied
 	if item, ok := p.nodesMap[servicePath]; ok {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Service name \"%s\" is duplicated",
 				nodeMeta.name,
@@ -341,20 +341,20 @@ func (p *RPCProcessor) mountNode(
 func (p *RPCProcessor) mountReply(
 	serviceNode *rpcServiceNode,
 	replyMeta *rpcReplyMeta,
-) RPCError {
+) Error {
 	// check the node is nil
 	if serviceNode == nil {
-		return NewRPCError("rpc: mountReply: node is nil")
+		return NewError("rpc: mountReply: node is nil")
 	}
 
 	// check the replyMeta is nil
 	if replyMeta == nil {
-		return NewRPCError("rpc: mountReply: replyMeta is nil")
+		return NewError("rpc: mountReply: replyMeta is nil")
 	}
 
 	// check the name
 	if !replyNameRegex.MatchString(replyMeta.name) {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
 			replyMeta.debug,
 		)
@@ -363,7 +363,7 @@ func (p *RPCProcessor) mountReply(
 	// check the reply path is not occupied
 	replyPath := serviceNode.path + ":" + replyMeta.name
 	if item, ok := p.repliesMap[replyPath]; ok {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Reply name %s is duplicated",
 				replyMeta.name,
@@ -378,7 +378,7 @@ func (p *RPCProcessor) mountReply(
 
 	// check the reply handler is nil
 	if replyMeta.handler == nil {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			"Reply handler is nil",
 			replyMeta.debug,
 		)
@@ -387,7 +387,7 @@ func (p *RPCProcessor) mountReply(
 	// Check reply handler is Func
 	fn := reflect.ValueOf(replyMeta.handler)
 	if fn.Kind() != reflect.Func {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Reply handler must be func(ctx %s, ...) %s",
 				convertTypeToString(contextType),
@@ -400,7 +400,7 @@ func (p *RPCProcessor) mountReply(
 	// Check reply handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Reply handler 1st argument type must be %s",
 				convertTypeToString(contextType),
@@ -408,7 +408,7 @@ func (p *RPCProcessor) mountReply(
 			replyMeta.debug,
 		)
 	} else if argumentsErrorPos > 0 {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Reply handler %s argument type <%s> not supported",
 				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
@@ -421,7 +421,7 @@ func (p *RPCProcessor) mountReply(
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return NewRPCErrorByDebug(
+		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Reply handler return type must be %s",
 				convertTypeToString(returnType),

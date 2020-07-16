@@ -138,9 +138,9 @@ func NewClient(endPoint IAdapter) *Client {
 }
 
 func (p *Client) Open() Error {
-	return internal.ConvertToRPCError(p.CallWithLock(func() interface{} {
+	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if p.isOpen {
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Client: Start: it has already been opened",
 			)
 		} else {
@@ -193,7 +193,7 @@ func (p *Client) Close() Error {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = internal.NewRPCError(
+			err = internal.NewError(
 				"Client: Stop: has not been opened",
 			)
 			return nil
@@ -211,7 +211,7 @@ func (p *Client) Close() Error {
 		case <-closeCH.(chan bool):
 			return nil
 		case <-time.After(10 * time.Second):
-			return internal.NewRPCError(
+			return internal.NewError(
 				"Client: Stop: can not close in 10 seconds",
 			)
 		}
@@ -248,7 +248,7 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: conn is nil",
 		)
 	} else if err := conn.WriteStream(
@@ -263,50 +263,50 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 	); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if backStream.GetSequence() != sequence {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: sequence omit",
 		)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
 		kind != SystemStreamKindInitBack {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if readTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		readTimeoutMS <= 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if writeTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		writeTimeoutMS <= 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if readLimit, ok := backStream.ReadInt64(); !ok ||
 		readLimit <= 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if writeLimit, ok := backStream.ReadInt64(); !ok ||
 		writeLimit <= 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if callBackSize, ok := backStream.ReadInt64(); !ok ||
 		callBackSize <= 0 {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else if !backStream.IsReadFinish() {
-		return internal.NewRPCError(
+		return internal.NewError(
 			"Client: initConn: stream format error",
 		)
 	} else {
@@ -359,17 +359,17 @@ func (p *Client) onConnRun(conn IStreamConnection) {
 			})
 		} else if kind, ok := stream.ReadInt64(); !ok ||
 			kind != SystemStreamKindRequestIdsBack {
-			err = internal.NewRPCError(
+			err = internal.NewError(
 				"Client: initConn: stream format error",
 			)
 			return
 		} else if maxCallbackId, ok := stream.ReadUint64(); !ok {
-			err = internal.NewRPCError(
+			err = internal.NewError(
 				"Client: initConn: stream format error",
 			)
 			return
 		} else if !stream.IsReadFinish() {
-			err = internal.NewRPCError(
+			err = internal.NewError(
 				"Client: initConn: stream format error",
 			)
 			return
@@ -535,7 +535,7 @@ func (p *Client) sendMessage(
 	// write args
 	for i := 0; i < len(args); i++ {
 		if item.stream.Write(args[i]) != internal.RPCStreamWriteOK {
-			return nil, internal.NewRPCError(
+			return nil, internal.NewError(
 				"Client: send: args not supported",
 			)
 		}
@@ -554,22 +554,22 @@ func (p *Client) sendMessage(
 
 	// wait for response
 	if ok := <-item.finishCH; !ok {
-		return nil, internal.NewRPCError("timeout")
+		return nil, internal.NewError("timeout")
 	} else if success, ok := item.stream.ReadBool(); !ok {
-		return nil, internal.NewRPCError("data format error")
+		return nil, internal.NewError("data format error")
 	} else if success {
 		if ret, ok := item.stream.Read(); !ok {
-			return nil, internal.NewRPCError("data format error")
+			return nil, internal.NewError("data format error")
 		} else {
 			return ret, nil
 		}
 	} else {
 		if message, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewRPCError("data format error")
+			return nil, internal.NewError("data format error")
 		} else if debug, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewRPCError("data format error")
+			return nil, internal.NewError("data format error")
 		} else {
-			return nil, internal.NewRPCErrorByDebug(message, debug)
+			return nil, internal.NewErrorByDebug(message, debug)
 		}
 	}
 }

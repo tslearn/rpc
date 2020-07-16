@@ -1,7 +1,7 @@
 package internal
 
-// RPCError ...
-type RPCError interface {
+// Error ...
+type Error interface {
 	GetMessage() string
 	GetDebug() string
 	AddDebug(debug string)
@@ -10,9 +10,9 @@ type RPCError interface {
 	Error() string
 }
 
-// ConvertToRPCError convert interface{} to RPCError if type matches
-func ConvertToRPCError(v interface{}) RPCError {
-	if ret, ok := v.(RPCError); ok {
+// ConvertToError convert interface{} to Error if type matches
+func ConvertToError(v interface{}) Error {
+	if ret, ok := v.(Error); ok {
 		return ret
 	}
 
@@ -25,8 +25,8 @@ type rpcError struct {
 	extra   string
 }
 
-// NewRPCError create new error
-func NewRPCError(message string) RPCError {
+// NewError create new error
+func NewError(message string) Error {
 	return &rpcError{
 		message: message,
 		debug:   "",
@@ -34,22 +34,13 @@ func NewRPCError(message string) RPCError {
 	}
 }
 
-// NewRPCErrorByDebug create new error
-func NewRPCErrorByDebug(message string, debug string) RPCError {
+// NewErrorByDebug create new error
+func NewErrorByDebug(message string, debug string) Error {
 	return &rpcError{
 		message: message,
 		debug:   debug,
 		extra:   "",
 	}
-}
-
-// NewRPCErrorByError ...
-func NewRPCErrorByError(err error) RPCError {
-	if err == nil {
-		return nil
-	}
-
-	return NewRPCError(err.Error())
 }
 
 func (p *rpcError) GetMessage() string {

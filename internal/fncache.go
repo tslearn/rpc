@@ -183,7 +183,7 @@ func (p *fnCache) writeFunc(sb *StringBuilder, kind string) {
 	sbOK.Release()
 }
 
-func buildFuncCache(pkgName string, output string, kinds []string) RPCError {
+func buildFuncCache(pkgName string, output string, kinds []string) Error {
 	sb := NewStringBuilder()
 	defer sb.Release()
 	cache := &fnCache{}
@@ -192,13 +192,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) RPCError {
 	cache.writeFunctions(sb, kinds)
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return NewRPCError(err.Error())
+		return NewError(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return NewRPCError(err.Error())
+		return NewError(err.Error())
 	} else {
 		return nil
 	}

@@ -114,7 +114,7 @@ func TestRpcContext_Error(t *testing.T) {
 	//assert(thread.outStream.GetReadPos()).Equals(StreamBodyPos)
 	//
 	//assert(
-	//	ctx.Error(NewRPCErrorByDebug("errorMessage", "errorDebug")),
+	//	ctx.Error(NewErrorByDebug("errorMessage", "errorDebug")),
 	//).IsNil()
 	//thread.outStream.SetReadPos(StreamBodyPos)
 	//assert(thread.outStream.ReadBool()).Equals(false, true)
@@ -127,7 +127,7 @@ func TestRpcContext_Error(t *testing.T) {
 	//thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
 	//ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	//assert(
-	//	ctx1.Error(NewRPCErrorByDebug("errorMessage", "errorDebug")),
+	//	ctx1.Error(NewErrorByDebug("errorMessage", "errorDebug")),
 	//).IsNil()
 	//thread1.outStream.SetReadPos(StreamBodyPos)
 	//assert(thread1.outStream.ReadBool()).Equals(false, true)

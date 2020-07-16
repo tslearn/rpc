@@ -59,7 +59,7 @@ type Array = internal.RPCArray
 type Map = internal.RPCMap
 
 // Error ...
-type Error = internal.RPCError
+type Error = internal.Error
 
 // Return ...
 type Return = *internal.RPCReturn
