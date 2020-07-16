@@ -196,30 +196,33 @@ func getArgumentsErrorPosition(fn reflect.Value) int {
 func runStoreTime() {
 	defer atomic.StorePointer(&timeNowPointer, nil)
 
-	for i := 0; i < 800; i++ {
+	for i := 0; i < 1000; i++ {
 		now := time.Now()
 		atomic.StorePointer(&timeNowPointer, unsafe.Pointer(&timeInfo{
 			timeNS:        now.UnixNano(),
 			timeISOString: ConvertToIsoDateString(now),
 		}))
-		time.Sleep(time.Millisecond)
+		time.Sleep(850 * time.Microsecond)
 	}
 }
 
 func onCacheFailed() {
-	if timeCacheFailedCounter.Add(1)%10000 == 0 {
+	if timeCacheFailedCounter.Add(1)%20000 == 0 {
 		if timeCacheFailedCounter.CalculateSpeed() > 10000 {
-			now := time.Now()
-			if atomic.CompareAndSwapPointer(
-				&timeNowPointer,
-				nil,
-				unsafe.Pointer(&timeInfo{
-					timeNS:        now.UnixNano(),
-					timeISOString: ConvertToIsoDateString(now),
-				}),
-			) {
+			if atomic.LoadPointer(&timeNowPointer) == nil {
 				go runStoreTime()
 			}
+			//now := time.Now()
+			//if atomic.CompareAndSwapPointer(
+			//	&timeNowPointer,
+			//	nil,
+			//	unsafe.Pointer(&timeInfo{
+			//		timeNS:        now.UnixNano(),
+			//		timeISOString: ConvertToIsoDateString(now),
+			//	}),
+			//) {
+			//	go runStoreTime()
+			//}
 		}
 	}
 }

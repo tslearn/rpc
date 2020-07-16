@@ -101,7 +101,6 @@ const (
 type Logger struct {
 	level  int32
 	writer LogWriter
-	internal.Lock
 }
 
 // NewLogger ...

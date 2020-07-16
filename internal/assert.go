@@ -20,30 +20,24 @@ type Assert interface {
 func NewAssert(t *testing.T) func(args ...interface{}) Assert {
 	return func(args ...interface{}) Assert {
 		return &rpcAssert{
-			t:        t,
-			hookFail: nil,
-			args:     args,
+			t:    t,
+			args: args,
 		}
 	}
 }
 
 // rpcAssert ...
 type rpcAssert struct {
-	t        interface{ Fail() }
-	hookFail func()
-	args     []interface{}
+	t    interface{ Fail() }
+	args []interface{}
 }
 
 // Fail ...
 func (p *rpcAssert) Fail() {
-	if p.hookFail != nil {
-		p.hookFail()
-	} else {
-		if _, file, line, ok := runtime.Caller(2); ok {
-			fmt.Printf("%s:%d\n", file, line)
-		}
-		p.t.Fail()
+	if _, file, line, ok := runtime.Caller(2); ok {
+		fmt.Printf("%s:%d\n", file, line)
 	}
+	p.t.Fail()
 }
 
 // Equals ...

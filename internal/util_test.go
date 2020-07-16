@@ -71,16 +71,16 @@ func TestGetFuncKind(t *testing.T) {
 func TestConvertTypeToString(t *testing.T) {
 	assert := NewAssert(t)
 	assert(convertTypeToString(nil)).Equals("<nil>")
-	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
-	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
-	assert(convertTypeToString(mapType)).Equals("rpc.Map")
-	assert(convertTypeToString(boolType)).Equals("rpc.Bool")
-	assert(convertTypeToString(int64Type)).Equals("rpc.Int64")
-	assert(convertTypeToString(uint64Type)).Equals("rpc.Uint64")
-	assert(convertTypeToString(float64Type)).Equals("rpc.Float64")
-	assert(convertTypeToString(stringType)).Equals("rpc.String")
-	assert(convertTypeToString(contextType)).Equals("rpc.Context")
-	assert(convertTypeToString(returnType)).Equals("rpc.Return")
+	assert(convertTypeToString(bytesType)).Equals("rpcc.Bytes")
+	assert(convertTypeToString(arrayType)).Equals("rpcc.Array")
+	assert(convertTypeToString(mapType)).Equals("rpcc.Map")
+	assert(convertTypeToString(boolType)).Equals("rpcc.Bool")
+	assert(convertTypeToString(int64Type)).Equals("rpcc.Int64")
+	assert(convertTypeToString(uint64Type)).Equals("rpcc.Uint64")
+	assert(convertTypeToString(float64Type)).Equals("rpcc.Float64")
+	assert(convertTypeToString(stringType)).Equals("rpcc.String")
+	assert(convertTypeToString(contextType)).Equals("rpcc.Context")
+	assert(convertTypeToString(returnType)).Equals("rpcc.Return")
 	assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
 		Equals("chan bool")
 }
@@ -217,10 +217,10 @@ func TestTimeNowISOString(t *testing.T) {
 			TimeNowISOString(),
 		); err == nil {
 			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() < int64(30*time.Millisecond),
+				time.Now().UnixNano()-nowNS.UnixNano() < int64(15*time.Millisecond),
 			).IsTrue()
 			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() > int64(-30*time.Millisecond),
+				time.Now().UnixNano()-nowNS.UnixNano() > int64(-15*time.Millisecond),
 			).IsTrue()
 		} else {
 			assert().Fail()
