@@ -8,7 +8,7 @@ import (
 
 func TestRPCPerformanceIndicator_basic(t *testing.T) {
 	assert := NewAssert(t)
-	performanceIndicator := NewRPCPerformanceIndicator()
+	performanceIndicator := newPerformanceIndicator()
 
 	for i := 0; i < 1500; i++ {
 		go func(idx int) {
@@ -50,7 +50,7 @@ func TestRPCPerformanceIndicator_basic(t *testing.T) {
 	assert(performanceIndicator.lastTotal).Equals(int64(60000))
 	assert(performanceIndicator.lastNS).Equals(nowNS)
 
-	performanceIndicator2 := NewRPCPerformanceIndicator()
+	performanceIndicator2 := newPerformanceIndicator()
 	performanceIndicator2.lastTotal = 10
 	assert(performanceIndicator2.Calculate(TimeNowNS()+100)).
 		Equals(int64(-1), time.Duration(0))

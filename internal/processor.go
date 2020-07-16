@@ -23,7 +23,7 @@ type rpcReplyNode struct {
 	callString  string
 	debugString string
 	argTypes    []reflect.Type
-	indicator   *RPCPerformanceIndicator
+	indicator   *performanceIndicator
 }
 
 type rpcServiceNode struct {
@@ -465,7 +465,7 @@ func (p *RPCProcessor) mountReply(
 		),
 		debugString: fmt.Sprintf("%s %s", replyPath, fileLine),
 		argTypes:    argTypes,
-		indicator:   NewRPCPerformanceIndicator(),
+		indicator:   newPerformanceIndicator(),
 	}
 
 	return nil
