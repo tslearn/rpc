@@ -1833,7 +1833,7 @@ func TestStream_ReadArray(t *testing.T) {
 			for idx := i; idx < writePos-1; idx++ {
 				stream.SetReadPos(i)
 				stream.setWritePosUnsafe(idx)
-				assert(stream.ReadArray()).Equals(nil, false)
+				assert(stream.ReadArray()).Equals(Array(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1845,7 +1845,7 @@ func TestStream_ReadArray(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.PutBytes([]byte{13})
-			assert(stream.ReadArray()).Equals(nil, false)
+			assert(stream.ReadArray()).Equals(Array(nil), false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1859,7 +1859,7 @@ func TestStream_ReadArray(t *testing.T) {
 			if len(testData[0].(Array)) > 0 {
 				stream.SetWritePos(stream.GetWritePos() - 1)
 				stream.PutBytes([]byte{13})
-				assert(stream.ReadArray()).Equals(nil, false)
+				assert(stream.ReadArray()).Equals(Array(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1871,7 +1871,7 @@ func TestStream_ReadArray(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.PutBytes([]byte{0x41, 0x07, 0x00, 0x00, 0x00, 0x02, 0x02})
-			assert(stream.ReadArray()).Equals(nil, false)
+			assert(stream.ReadArray()).Equals(Array(nil), false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1909,7 +1909,7 @@ func TestStream_ReadMap(t *testing.T) {
 			for idx := i; idx < writePos-1; idx++ {
 				stream.SetReadPos(i)
 				stream.setWritePosUnsafe(idx)
-				assert(stream.ReadMap()).Equals(nil, false)
+				assert(stream.ReadMap()).Equals(Map(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1921,7 +1921,7 @@ func TestStream_ReadMap(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.PutBytes([]byte{13})
-			assert(stream.ReadMap()).Equals(nil, false)
+			assert(stream.ReadMap()).Equals(Map(nil), false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1935,7 +1935,7 @@ func TestStream_ReadMap(t *testing.T) {
 			if len(testData[0].(Map)) > 0 {
 				stream.SetWritePos(stream.GetWritePos() - 1)
 				stream.PutBytes([]byte{13})
-				assert(stream.ReadMap()).Equals(nil, false)
+				assert(stream.ReadMap()).Equals(Map(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1949,7 +1949,7 @@ func TestStream_ReadMap(t *testing.T) {
 			stream.PutBytes([]byte{
 				0x61, 0x0A, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02, 0x02,
 			})
-			assert(stream.ReadMap()).Equals(nil, false)
+			assert(stream.ReadMap()).Equals(Map(nil), false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1967,13 +1967,13 @@ func TestStream_ReadMap(t *testing.T) {
 				stream.setWritePosUnsafe(i + 9)
 				stream.PutBytes([]byte{13})
 				stream.setWritePosUnsafe(wPos)
-				assert(stream.ReadMap()).Equals(nil, false)
+				assert(stream.ReadMap()).Equals(Map(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			} else if mapSize > 0 {
 				stream.setWritePosUnsafe(i + 5)
 				stream.PutBytes([]byte{13})
 				stream.setWritePosUnsafe(wPos)
-				assert(stream.ReadMap()).Equals(nil, false)
+				assert(stream.ReadMap()).Equals(Map(nil), false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1995,7 +1995,11 @@ func TestStream_Read(t *testing.T) {
 	for _, item := range testCollections {
 		stream := NewStream()
 		stream.PutBytes(item[1].([]byte))
-		assert(stream.Read()).Equals(item[0], true)
+		if item[0] == nil {
+			assert(stream.Read()).Equals(nil, true)
+		} else {
+			assert(stream.Read()).Equals(item[0], true)
+		}
 	}
 
 	stream := NewStream()
