@@ -40,8 +40,8 @@ type Processor struct {
 	servicesMap        map[string]*serviceNode
 	maxNodeDepth       uint64
 	maxCallDepth       uint64
-	threads            []*rpcThread
-	freeThreadsCHGroup []chan *rpcThread
+	threads            []*thread
+	freeThreadsCHGroup []chan *thread
 	readThreadPos      uint64
 	writeThreadPos     uint64
 	Lock
@@ -70,7 +70,7 @@ func NewProcessor(
 			servicesMap:        make(map[string]*serviceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
 			maxCallDepth:       uint64(maxCallDepth),
-			threads:            make([]*rpcThread, size, size),
+			threads:            make([]*thread, size, size),
 			freeThreadsCHGroup: nil,
 			readThreadPos:      0,
 			writeThreadPos:     0,
@@ -96,13 +96,13 @@ func (p *Processor) Start(
 			return NewError("Processor: Start: it has already benn started")
 		} else {
 			freeThreadsCHGroup := make(
-				[]chan *rpcThread,
+				[]chan *thread,
 				freeGroups,
 				freeGroups,
 			)
 			for i := 0; i < freeGroups; i++ {
 				freeThreadsCHGroup[i] = make(
-					chan *rpcThread,
+					chan *thread,
 					size/freeGroups,
 				)
 			}
@@ -111,7 +111,7 @@ func (p *Processor) Start(
 			for i := 0; i < size; i++ {
 				thread := newThread(
 					p,
-					func(thread *rpcThread, stream *Stream, success bool) {
+					func(thread *thread, stream *Stream, success bool) {
 						onEvalFinish(stream, success)
 
 						defer func() {

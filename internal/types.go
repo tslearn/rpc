@@ -45,7 +45,7 @@ func (p *RPCContext) stop() {
 }
 
 func (p *RPCContext) writeError(message string, debug string) *Return {
-	if thread := (*rpcThread)(p.thread); thread != nil {
+	if thread := (*thread)(p.thread); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(StreamBodyPos)
 		execStream.WriteBool(false)
@@ -58,7 +58,7 @@ func (p *RPCContext) writeError(message string, debug string) *Return {
 
 // OK get success Return  by value
 func (p *RPCContext) OK(value interface{}) *Return {
-	if thread := (*rpcThread)(p.thread); thread != nil {
+	if thread := (*thread)(p.thread); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(StreamBodyPos)
 		stream.WriteBool(true)
@@ -80,7 +80,7 @@ func (p *RPCContext) Error(err Error) *Return {
 		return nilReturn
 	}
 
-	if thread := (*rpcThread)(p.thread); thread != nil &&
+	if thread := (*thread)(p.thread); thread != nil &&
 		thread.execReplyNode != nil &&
 		thread.execReplyNode.debugString != "" {
 		err.AddDebug(thread.execReplyNode.debugString)
