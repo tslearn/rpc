@@ -103,8 +103,8 @@ type Logger struct {
 	Lock
 }
 
-// NewRPCLogger ...
-func NewRPCLogger(writer LogWriter) *Logger {
+// NewLogger ...
+func NewLogger(writer LogWriter) *Logger {
 	if writer == nil {
 		return &Logger{
 			level:  LogMaskAll,

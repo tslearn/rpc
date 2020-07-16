@@ -319,7 +319,7 @@ type Server struct {
 func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.RPCReplyCache) *Server {
 	server := &Server{
 		isOpen:      false,
-		logger:      internal.NewRPCLogger(nil),
+		logger:      internal.NewLogger(nil),
 		endPoints:   make([]IAdapter, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},

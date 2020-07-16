@@ -119,7 +119,7 @@ func NewClient(endPoint IAdapter) *Client {
 		closeCH:            nil,
 		sessionString:      "",
 		conn:               nil,
-		logger:             internal.NewRPCLogger(nil),
+		logger:             internal.NewLogger(nil),
 		endPoint:           endPoint,
 		preSendHead:        nil,
 		preSendTail:        nil,
