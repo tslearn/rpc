@@ -123,7 +123,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	assert(processor.mountNode(rootName, nil).GetDebug()).
 		Equals("")
 
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "+",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -132,7 +132,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "abc",
 		service: nil,
 		debug:   "DebugMessage",
@@ -141,7 +141,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		"DebugMessage",
 	))
 
-	assert(processor.mountNode("123", &rpcNodeMeta{
+	assert(processor.mountNode("123", &rpcAddChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -151,7 +151,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	))
 
 	processor.maxNodeDepth = 0
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -161,12 +161,12 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	))
 	processor.maxNodeDepth = 16
 
-	_ = processor.mountNode(rootName, &rpcNodeMeta{
+	_ = processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
 	})
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -178,7 +178,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	// mount reply error
 	service := NewService()
 	service.Reply("abc", nil)
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "test",
 		service: service,
 		debug:   "DebugMessage",
@@ -189,7 +189,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 	service1.AddChild("abc", NewService())
 	assert(len(service1.children)).Equals(1)
 	service1.children[0] = nil
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "003",
 		service: service1,
 		debug:   "DebugMessage",
@@ -201,7 +201,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
 			return ctx.OK(true)
 		}))
-	assert(processor.mountNode(rootName, &rpcNodeMeta{
+	assert(processor.mountNode(rootName, &rpcAddChildMeta{
 		name:    "system",
 		service: service2,
 		debug:   "DebugMessage",

@@ -28,7 +28,7 @@ type rpcReplyNode struct {
 
 type rpcServiceNode struct {
 	path    string
-	addMeta *rpcNodeMeta
+	addMeta *rpcAddChildMeta
 	depth   uint
 }
 
@@ -241,7 +241,7 @@ func (p *RPCProcessor) AddService(
 		)
 	}
 
-	return p.mountNode(rootName, &rpcNodeMeta{
+	return p.mountNode(rootName, &rpcAddChildMeta{
 		name:    name,
 		service: service,
 		debug:   debug,
@@ -250,7 +250,7 @@ func (p *RPCProcessor) AddService(
 
 func (p *RPCProcessor) mountNode(
 	parentServiceNodePath string,
-	nodeMeta *rpcNodeMeta,
+	nodeMeta *rpcAddChildMeta,
 ) RPCError {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
