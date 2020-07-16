@@ -4,7 +4,6 @@ import (
 	"math"
 	"reflect"
 	"sync"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -154,12 +153,8 @@ type Stream struct {
 	header []byte
 }
 
-var TestStreamCreate = int64(0)
-var TestStreamRelease = int64(0)
-
 // NewStream ...
 func NewStream() *Stream {
-	atomic.AddInt64(&TestStreamCreate, 1)
 	return streamCache.Get().(*Stream)
 }
 
@@ -190,7 +185,6 @@ func (p *Stream) Reset() {
 // Release clean the Stream
 func (p *Stream) Release() {
 	p.Reset()
-	atomic.AddInt64(&TestStreamRelease, 1)
 	streamCache.Put(p)
 }
 
