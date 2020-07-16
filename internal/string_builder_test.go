@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_NewStringBuilder(t *testing.T) {
+func TestNewStringBuilder(t *testing.T) {
 	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
@@ -13,7 +13,7 @@ func Test_NewStringBuilder(t *testing.T) {
 	builder.Release()
 }
 
-func Test_StringBuilder_Release(t *testing.T) {
+func TestStringBuilder_Release(t *testing.T) {
 	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
@@ -37,7 +37,7 @@ func Test_StringBuilder_Release(t *testing.T) {
 	builder.Release()
 }
 
-func Test_StringBuilder_AppendByte(t *testing.T) {
+func TestStringBuilder_AppendByte(t *testing.T) {
 	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
@@ -48,7 +48,7 @@ func Test_StringBuilder_AppendByte(t *testing.T) {
 	builder.Release()
 }
 
-func Test_StringBuilder_AppendBytes(t *testing.T) {
+func TestStringBuilder_AppendBytes(t *testing.T) {
 	assert := NewAssert(t)
 
 	longString := ""
@@ -62,7 +62,7 @@ func Test_StringBuilder_AppendBytes(t *testing.T) {
 	builder.Release()
 }
 
-func Test_StringBuilder_AppendString(t *testing.T) {
+func TestStringBuilder_AppendString(t *testing.T) {
 	assert := NewAssert(t)
 
 	longString := ""
@@ -90,7 +90,7 @@ func Test_StringBuilder_AppendString(t *testing.T) {
 	}
 }
 
-func Test_StringBuilder_Merge(t *testing.T) {
+func TestStringBuilder_Merge(t *testing.T) {
 	assert := NewAssert(t)
 
 	sb1 := NewStringBuilder()
@@ -110,7 +110,7 @@ func Test_StringBuilder_Merge(t *testing.T) {
 	assert(sb1.String()).Equals("123123")
 }
 
-func Test_StringBuilder_IsEmpty(t *testing.T) {
+func TestStringBuilder_IsEmpty(t *testing.T) {
 	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
@@ -119,7 +119,7 @@ func Test_StringBuilder_IsEmpty(t *testing.T) {
 	assert(builder.IsEmpty()).IsFalse()
 }
 
-func Test_StringBuilder_String(t *testing.T) {
+func TestStringBuilder_String(t *testing.T) {
 	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
