@@ -3,6 +3,7 @@ package rpcc
 import (
 	"fmt"
 	"github.com/tslearn/rpcc/internal"
+	"github.com/tslearn/rpcc/lab"
 	"path"
 	"runtime"
 	"strconv"
@@ -307,7 +308,7 @@ func (p *serverSession) Release() {
 // Begin ***** Server ***** //
 type Server struct {
 	isOpen      bool
-	logger      *internal.Logger
+	logger      *lab.Logger
 	endPoints   []IAdapter
 	processor   *internal.Processor
 	sessionMap  sync.Map
@@ -319,7 +320,7 @@ type Server struct {
 func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
 	server := &Server{
 		isOpen:      false,
-		logger:      internal.NewLogger(nil),
+		logger:      lab.NewLogger(nil),
 		endPoints:   make([]IAdapter, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},
@@ -400,7 +401,7 @@ func (p *Server) Stop() {
 	})
 }
 
-func (p *Server) GetLogger() *internal.Logger {
+func (p *Server) GetLogger() *lab.Logger {
 	return p.logger
 }
 

@@ -26,6 +26,22 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	}
 }
 
+func getNewProcessor() *Processor {
+	return NewProcessor(
+		true,
+		8192,
+		16,
+		32,
+		nil,
+		func(tag string, err *rpcError) {
+
+		},
+		func(_ interface{}, debug string) {
+
+		},
+	)
+}
+
 func readStringFromFile(filePath string) (string, error) {
 	ret, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -38,7 +54,7 @@ func TestFnCache_basic(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
-	processor0 := NewProcessor(true, 8192, 16, 32, nil)
+	processor0 := getNewProcessor()
 	assert(processor0.BuildCache(
 		"pkgName",
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-0.go"),
@@ -48,7 +64,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-0.go")))
 
-	processor1 := NewProcessor(true, 8192, 16, 32, nil)
+	processor1 := getNewProcessor()
 	_ = processor1.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context) *Return {
 			return ctx.OK(true)
@@ -62,7 +78,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-1.go")))
 
-	processor2 := NewProcessor(true, 8192, 16, 32, nil)
+	processor2 := getNewProcessor()
 	_ = processor2.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Bool) *Return {
 			return ctx.OK(true)
@@ -76,7 +92,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-2.go")))
 
-	processor3 := NewProcessor(true, 8192, 16, 32, nil)
+	processor3 := getNewProcessor()
 	_ = processor3.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Int64) *Return {
 			return ctx.OK(true)
@@ -90,7 +106,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-3.go")))
 
-	processor4 := NewProcessor(true, 8192, 16, 32, nil)
+	processor4 := getNewProcessor()
 	_ = processor4.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Uint64) *Return {
 			return ctx.OK(true)
@@ -104,7 +120,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-4.go")))
 
-	processor5 := NewProcessor(true, 8192, 16, 32, nil)
+	processor5 := getNewProcessor()
 	_ = processor5.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Float64) *Return {
 			return ctx.OK(true)
@@ -118,7 +134,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-5.go")))
 
-	processor6 := NewProcessor(true, 8192, 16, 32, nil)
+	processor6 := getNewProcessor()
 	_ = processor6.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ String) *Return {
 			return ctx.OK(true)
@@ -132,7 +148,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-6.go")))
 
-	processor7 := NewProcessor(true, 8192, 16, 32, nil)
+	processor7 := getNewProcessor()
 	_ = processor7.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Bytes) *Return {
 			return ctx.OK(true)
@@ -146,7 +162,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-7.go")))
 
-	processor8 := NewProcessor(true, 8192, 16, 32, nil)
+	processor8 := getNewProcessor()
 	_ = processor8.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Array) *Return {
 			return ctx.OK(true)
@@ -160,7 +176,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-8.go")))
 
-	processor9 := NewProcessor(true, 8192, 16, 32, nil)
+	processor9 := getNewProcessor()
 	_ = processor9.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, _ Map) *Return {
 			return ctx.OK(true)
@@ -174,7 +190,7 @@ func TestFnCache_basic(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-9.go")))
 
-	processor10 := NewProcessor(true, 8192, 16, 32, nil)
+	processor10 := getNewProcessor()
 	_ = processor10.AddService("abc", NewService().
 		Reply("sayHello", func(
 			ctx *Context, _ Bool, _ Int64, _ Uint64, _ Float64, _ String,

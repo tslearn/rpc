@@ -4,25 +4,10 @@ package internal
 type Error interface {
 	GetMessage() string
 	GetDebug() string
-	AddDebug(debug string)
 	GetExtra() string
+	AddDebug(debug string)
 	SetExtra(extra string)
 	Error() string
-}
-
-// ConvertToError convert interface{} to Error if type matches
-func ConvertToError(v interface{}) Error {
-	if ret, ok := v.(Error); ok {
-		return ret
-	}
-
-	return nil
-}
-
-type rpcError struct {
-	message string
-	debug   string
-	extra   string
 }
 
 // NewError create new error
@@ -41,6 +26,21 @@ func NewErrorByDebug(message string, debug string) Error {
 		debug:   debug,
 		extra:   "",
 	}
+}
+
+// ConvertToError convert interface{} to Error if type matches
+func ConvertToError(v interface{}) Error {
+	if ret, ok := v.(Error); ok {
+		return ret
+	}
+
+	return nil
+}
+
+type rpcError struct {
+	message string
+	debug   string
+	extra   string
 }
 
 func (p *rpcError) GetMessage() string {

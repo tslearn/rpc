@@ -15,7 +15,7 @@ import (
 func TestNewProcessor(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewProcessor(true, 8192, 16, 32, nil)
+	processor := getNewProcessor()
 	assert(processor).IsNotNil()
 	assert(len(processor.repliesMap)).Equals(0)
 	assert(len(processor.servicesMap)).Equals(1)
@@ -71,7 +71,7 @@ func TestProcessor_PutStream(t *testing.T) {
 func TestProcessor_AddService(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewProcessor(true, 8192, 16, 32, nil)
+	processor := getNewProcessor()
 	assert(processor.AddService("test", nil, "DebugMessage")).
 		Equals(NewErrorByDebug(
 			"Service is nil",
@@ -86,7 +86,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
-	processor0 := NewProcessor(true, 8192, 16, 32, nil)
+	processor0 := getNewProcessor()
 	assert(processor0.BuildCache(
 		"pkgName",
 		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go"),
@@ -96,7 +96,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go")))
 
-	processor1 := NewProcessor(true, 8192, 16, 32, nil)
+	processor1 := getNewProcessor()
 	_ = processor1.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
@@ -116,7 +116,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 func TestProcessor_mountNode(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewProcessor(true, 8192, 16, 16, nil)
+	processor := getNewProcessor()
 
 	assert(processor.mountNode(rootName, nil).GetMessage()).
 		Equals("rpc: mountNode: nodeMeta is nil")
@@ -211,7 +211,19 @@ func TestProcessor_mountNode(t *testing.T) {
 func TestProcessor_mountReply(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewProcessor(true, 8192, 16, 16, &testFuncCache{})
+	processor := NewProcessor(
+		true,
+		8192,
+		16,
+		16,
+		&testFuncCache{},
+		func(tag string, err *rpcError) {
+
+		},
+		func(v interface{}, debug string) {
+
+		},
+	)
 	rootNode := processor.servicesMap[rootName]
 
 	// check the node is nil
@@ -333,7 +345,7 @@ func TestProcessor_mountReply(t *testing.T) {
 func TestProcessor_OutPutErrors(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewProcessor(true, 8192, 16, 16, nil)
+	processor := getNewProcessor()
 
 	// Service is nil
 	assert(processor.AddService("", nil, "DebugMessage")).
@@ -381,6 +393,12 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		16,
 		16,
 		&testFuncCache{},
+		func(tag string, err *rpcError) {
+
+		},
+		func(v interface{}, debug string) {
+
+		},
 	)
 	processor.Start(
 		func(stream *Stream, ok bool) {
@@ -390,9 +408,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 				atomic.AddUint64(&failed, 1)
 			}
 			stream.Release()
-		},
-		func(v interface{}, debug string) {
-			//
 		},
 	)
 	_ = processor.AddService(

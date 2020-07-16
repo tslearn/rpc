@@ -27,9 +27,8 @@ type thread struct {
 func newThread(
 	processor *Processor,
 	onEvalFinish func(*thread, *Stream, bool),
-	onPanic func(v interface{}, debug string),
 ) *thread {
-	if processor == nil || onEvalFinish == nil || onPanic == nil {
+	if processor == nil || onEvalFinish == nil {
 		return nil
 	}
 
@@ -49,7 +48,7 @@ func newThread(
 
 	go func() {
 		for stream := <-ret.ch; stream != nil; stream = <-ret.ch {
-			ret.eval(stream, onEvalFinish, onPanic)
+			ret.eval(stream, onEvalFinish)
 		}
 		ret.closeCH <- true
 	}()
@@ -82,7 +81,6 @@ func (p *thread) PutStream(stream *Stream) bool {
 func (p *thread) eval(
 	inStream *Stream,
 	onEvalFinish func(*thread, *Stream, bool),
-	onPanic func(v interface{}, debug string),
 ) *Return {
 	timeStart := TimeNowNS()
 	// create context
@@ -92,7 +90,7 @@ func (p *thread) eval(
 
 	defer func() {
 		if v := recover(); v != nil {
-			onPanic(v, string(debug.Stack()))
+			p.processor.onPanic(v, string(debug.Stack()))
 			if p.execReplyNode != nil {
 				ctx.writeError(
 					fmt.Sprintf(

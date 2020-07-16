@@ -1,6 +1,7 @@
-package internal
+package lab
 
 import (
+	"github.com/tslearn/rpcc/internal"
 	"io"
 	"os"
 	"strings"
@@ -58,7 +59,7 @@ func runCallbackWriterLogger(
 }
 
 func TestStdoutLogWriter_Write(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	assert(strings.HasSuffix(
 		runStdWriterLogger(func(logger *Logger) {
@@ -76,7 +77,7 @@ func TestStdoutLogWriter_Write(t *testing.T) {
 }
 
 func TestNewLogger(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 	logger1 := NewLogger(nil)
 	assert(logger1.level).Equals(LogMaskAll)
 	assert(logger1.writer).IsNotNil()
@@ -87,7 +88,7 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestLogger_SetLevel(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 	logger := NewLogger(nil)
 
 	assert(logger.SetLevel(LogMaskNone - 1)).IsFalse()
@@ -142,7 +143,7 @@ func TestLogger_SetLevel(t *testing.T) {
 }
 
 func TestLogger_Debug(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Debug("message")
@@ -155,7 +156,7 @@ func TestLogger_Debug(t *testing.T) {
 }
 
 func TestLogger_DebugExtra(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.DebugExtra("message", "extra")
@@ -168,7 +169,7 @@ func TestLogger_DebugExtra(t *testing.T) {
 }
 
 func TestLogger_Info(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Info("message")
@@ -181,7 +182,7 @@ func TestLogger_Info(t *testing.T) {
 }
 
 func TestLogger_InfoExtra(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.InfoExtra("message", "extra")
@@ -194,7 +195,7 @@ func TestLogger_InfoExtra(t *testing.T) {
 }
 
 func TestLogger_Warn(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Warn("message")
@@ -207,7 +208,7 @@ func TestLogger_Warn(t *testing.T) {
 }
 
 func TestLogger_WarnExtra(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.WarnExtra("message", "extra")
@@ -220,7 +221,7 @@ func TestLogger_WarnExtra(t *testing.T) {
 }
 
 func TestLogger_Error(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Error("message")
@@ -233,7 +234,7 @@ func TestLogger_Error(t *testing.T) {
 }
 
 func TestLogger_ErrorExtra(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.ErrorExtra("message", "extra")
@@ -246,7 +247,7 @@ func TestLogger_ErrorExtra(t *testing.T) {
 }
 
 func TestLogger_Fatal(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.Fatal("message")
@@ -259,7 +260,7 @@ func TestLogger_Fatal(t *testing.T) {
 }
 
 func TestLogger_FatalExtra(t *testing.T) {
-	assert := NewAssert(t)
+	assert := internal.NewAssert(t)
 
 	isoTime, tag, msg, extra := runCallbackWriterLogger(func(logger *Logger) {
 		logger.FatalExtra("message", "extra")

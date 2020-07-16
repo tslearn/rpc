@@ -7,17 +7,19 @@ import (
 	"testing"
 )
 
-// Assert ...
-type Assert struct {
-	t        interface{ Fail() }
-	hookFail func()
-	args     []interface{}
+type Assert interface {
+	Fail()
+	Equals(args ...interface{})
+	IsNil()
+	IsNotNil()
+	IsTrue()
+	IsFalse()
 }
 
 // NewAssert create new assert class
-func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
-	return func(args ...interface{}) *Assert {
-		return &Assert{
+func NewAssert(t *testing.T) func(args ...interface{}) Assert {
+	return func(args ...interface{}) Assert {
+		return &rpcAssert{
 			t:        t,
 			hookFail: nil,
 			args:     args,
@@ -25,8 +27,15 @@ func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
 	}
 }
 
+// rpcAssert ...
+type rpcAssert struct {
+	t        interface{ Fail() }
+	hookFail func()
+	args     []interface{}
+}
+
 // Fail ...
-func (p *Assert) Fail() {
+func (p *rpcAssert) Fail() {
 	if p.hookFail != nil {
 		p.hookFail()
 	} else {
@@ -38,7 +47,7 @@ func (p *Assert) Fail() {
 }
 
 // Equals ...
-func (p *Assert) Equals(args ...interface{}) {
+func (p *rpcAssert) Equals(args ...interface{}) {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else if len(p.args) != len(args) {
@@ -53,7 +62,7 @@ func (p *Assert) Equals(args ...interface{}) {
 }
 
 // IsNil ...
-func (p *Assert) IsNil() {
+func (p *rpcAssert) IsNil() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -66,7 +75,7 @@ func (p *Assert) IsNil() {
 }
 
 // IsNotNil ...
-func (p *Assert) IsNotNil() {
+func (p *rpcAssert) IsNotNil() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -79,7 +88,7 @@ func (p *Assert) IsNotNil() {
 }
 
 // IsTrue ...
-func (p *Assert) IsTrue() {
+func (p *rpcAssert) IsTrue() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -92,7 +101,7 @@ func (p *Assert) IsTrue() {
 }
 
 // IsFalse ...
-func (p *Assert) IsFalse() {
+func (p *rpcAssert) IsFalse() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {

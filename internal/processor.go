@@ -44,6 +44,8 @@ type Processor struct {
 	freeThreadsCHGroup []chan *thread
 	readThreadPos      uint64
 	writeThreadPos     uint64
+	onLog              func(tag string, err *rpcError)
+	onPanic            func(v interface{}, debug string)
 	Lock
 }
 
@@ -54,12 +56,18 @@ func NewProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache ReplyCache,
+	onLog func(tag string, err *rpcError),
+	onPanic func(v interface{}, debug string),
 ) *Processor {
 	if numOfThreads == 0 {
 		return nil
 	} else if maxNodeDepth == 0 {
 		return nil
 	} else if maxCallDepth == 0 {
+		return nil
+	} else if onLog == nil {
+		return nil
+	} else if onPanic == nil {
 		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
@@ -74,6 +82,8 @@ func NewProcessor(
 			freeThreadsCHGroup: nil,
 			readThreadPos:      0,
 			writeThreadPos:     0,
+			onLog:              onLog,
+			onPanic:            onPanic,
 		}
 		// mount root node
 		ret.servicesMap[rootName] = &serviceNode{
@@ -87,14 +97,14 @@ func NewProcessor(
 
 func (p *Processor) Start(
 	onEvalFinish func(stream *Stream, success bool),
-	onPanic func(v interface{}, debug string),
 ) Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
-		size := len(p.threads)
-
-		if p.freeThreadsCHGroup != nil {
+		if onEvalFinish == nil {
+			return NewError("Processor: Start: onEvalFinish is nil")
+		} else if p.freeThreadsCHGroup != nil {
 			return NewError("Processor: Start: it has already benn started")
 		} else {
+			size := len(p.threads)
 			freeThreadsCHGroup := make(
 				[]chan *thread,
 				freeGroups,
@@ -123,7 +133,6 @@ func (p *Processor) Start(
 							1,
 						)%freeGroups] <- thread
 					},
-					onPanic,
 				)
 				p.threads[i] = thread
 				p.freeThreadsCHGroup[i%freeGroups] <- thread
