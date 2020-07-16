@@ -108,7 +108,7 @@ type WebSocketServerAdapter struct {
 	path       string
 	closeCH    chan bool
 	httpServer *http.Server
-	internal.RPCLock
+	internal.Lock
 }
 
 func NewWebSocketServerAdapter(addr string, path string) IAdapter {
@@ -243,7 +243,7 @@ type WebSocketClientEndPoint struct {
 	conn          *webSocketConn
 	closeCH       chan bool
 	connectString string
-	internal.RPCLock
+	internal.Lock
 }
 
 func NewWebSocketClientEndPoint(connectString string) IAdapter {

@@ -100,7 +100,7 @@ func (p *RPCCallbackLogWriter) Write(
 type RPCLogger struct {
 	level  int32
 	writer RPCLogWriter
-	RPCLock
+	Lock
 }
 
 // NewRPCLogger ...

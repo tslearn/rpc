@@ -110,7 +110,7 @@ type Client struct {
 	callbackSize       int64
 	lastControlSendMS  int64
 	lastTimeoutCheckMS int64
-	internal.RPCLock
+	internal.Lock
 }
 
 func NewClient(endPoint IAdapter) *Client {

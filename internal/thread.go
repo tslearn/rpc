@@ -21,7 +21,7 @@ type rpcThread struct {
 	execSuccessful bool
 	from           string
 	closeCH        chan bool
-	RPCLock
+	Lock
 }
 
 func newThread(

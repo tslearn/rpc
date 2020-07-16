@@ -10,7 +10,7 @@ type SpeedCounter struct {
 	total     int64
 	lastCount int64
 	lastNS    int64
-	RPCLock
+	Lock
 }
 
 // NewSpeedCounter create a SpeedCounter

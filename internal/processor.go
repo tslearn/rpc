@@ -44,7 +44,7 @@ type RPCProcessor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	RPCLock
+	Lock
 }
 
 // NewRPCProcessor ...

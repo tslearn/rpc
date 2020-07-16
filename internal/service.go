@@ -16,7 +16,7 @@ type Service struct {
 	children []*rpcAddChildMeta // all the children node meta pointer
 	replies  []*rpcReplyMeta    // all the replies meta pointer
 	debug    string             // where the service define in source file
-	RPCLock
+	Lock
 }
 
 // NewService define a new service

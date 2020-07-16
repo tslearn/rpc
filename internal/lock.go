@@ -4,25 +4,25 @@ import (
 	"sync"
 )
 
-// RPCLock ...
-type RPCLock struct {
+// Lock ...
+type Lock struct {
 	sync.Mutex
 }
 
-// NewRPCLock ...
-func NewRPCLock() *RPCLock {
-	return &RPCLock{}
+// NewLock ...
+func NewLock() *Lock {
+	return &Lock{}
 }
 
 // DoWithLock ...
-func (p *RPCLock) DoWithLock(fn func()) {
+func (p *Lock) DoWithLock(fn func()) {
 	p.Lock()
 	defer p.Unlock()
 	fn()
 }
 
 // CallWithLock ...
-func (p *RPCLock) CallWithLock(fn func() interface{}) interface{} {
+func (p *Lock) CallWithLock(fn func() interface{}) interface{} {
 	p.Lock()
 	defer p.Unlock()
 	return fn()

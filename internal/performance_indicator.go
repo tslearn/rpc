@@ -13,7 +13,7 @@ type RPCPerformanceIndicator struct {
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	RPCLock
+	Lock
 }
 
 // NewRPCPerformanceIndicator ...
