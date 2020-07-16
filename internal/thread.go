@@ -14,7 +14,6 @@ type thread struct {
 	processor      *Processor
 	isRunning      bool
 	ch             chan *Stream
-	inStream       *Stream
 	outStream      *Stream
 	execDepth      uint64
 	execReplyNode  *rpcReplyNode
@@ -37,7 +36,6 @@ func newThread(
 		processor:      processor,
 		isRunning:      true,
 		ch:             make(chan *Stream, 1),
-		inStream:       nil,
 		outStream:      NewStream(),
 		execDepth:      0,
 		execReplyNode:  nil,
@@ -70,6 +68,10 @@ func (p *thread) Stop() bool {
 		case <-time.After(10 * time.Second):
 			return false
 		case <-p.closeCH:
+			if p.outStream != nil {
+				p.outStream.Release()
+				p.outStream = nil
+			}
 			return true
 		}
 	}
@@ -86,7 +88,6 @@ func (p *thread) eval(
 ) *Return {
 	timeStart := TimeNowNS()
 	// create context
-	p.inStream = inStream
 	p.execSuccessful = false
 	ctx := &Context{thread: unsafe.Pointer(p)}
 

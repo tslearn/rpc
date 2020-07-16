@@ -4,6 +4,7 @@ import (
 	"math"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -153,8 +154,12 @@ type Stream struct {
 	header []byte
 }
 
+var TestStreamCreate = int64(0)
+var TestStreamRelease = int64(0)
+
 // NewStream ...
 func NewStream() *Stream {
+	atomic.AddInt64(&TestStreamCreate, 1)
 	return streamCache.Get().(*Stream)
 }
 
@@ -180,6 +185,13 @@ func (p *Stream) Reset() {
 	p.writeSeg = 0
 	p.writeIndex = StreamBodyPos
 	p.writeFrame = *p.frames[0]
+}
+
+// Release clean the Stream
+func (p *Stream) Release() {
+	p.Reset()
+	atomic.AddInt64(&TestStreamRelease, 1)
+	streamCache.Put(p)
 }
 
 // GetCallbackID ...
@@ -284,12 +296,6 @@ func (p *Stream) SetMachineID(v uint64) {
 	b[5] = byte(v >> 40)
 	b[6] = byte(v >> 48)
 	b[7] = byte(v >> 56)
-}
-
-// Release clean the Stream
-func (p *Stream) Release() {
-	p.Reset()
-	streamCache.Put(p)
 }
 
 // GetHeader ...

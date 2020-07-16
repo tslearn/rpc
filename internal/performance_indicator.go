@@ -12,7 +12,6 @@ type rpcPerformanceIndicator struct {
 	successArray [10]int64
 	lastTotal    int64
 	lastNS       int64
-	originMap    sync.Map
 	sync.Mutex
 }
 
@@ -23,7 +22,6 @@ func newPerformanceIndicator() *rpcPerformanceIndicator {
 		successArray: [10]int64{},
 		lastTotal:    0,
 		lastNS:       TimeNowNS(),
-		originMap:    sync.Map{},
 	}
 }
 
@@ -84,9 +82,5 @@ func (p *rpcPerformanceIndicator) Count(
 		}
 	} else {
 		atomic.AddInt64(&p.failed, 1)
-	}
-
-	if _, ok := p.originMap.Load(origin); !ok {
-		p.originMap.Store(origin, true)
 	}
 }
