@@ -10,13 +10,13 @@ import (
 )
 
 type rpcThread struct {
-	processor      *RPCProcessor
+	processor      *Processor
 	isRunning      bool
 	ch             chan *RPCStream
 	inStream       *RPCStream
 	outStream      *RPCStream
 	execDepth      uint64
-	execReplyNode  *rpcReplyNode
+	execReplyNode  *replyNode
 	execArgs       []reflect.Value
 	execSuccessful bool
 	from           string
@@ -25,7 +25,7 @@ type rpcThread struct {
 }
 
 func newThread(
-	processor *RPCProcessor,
+	processor *Processor,
 	onEvalFinish func(*rpcThread, *RPCStream, bool),
 	onPanic func(v interface{}, debug string),
 ) *rpcThread {

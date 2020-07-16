@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestRPCPerformanceIndicator_basic(t *testing.T) {
+func TestPerformanceIndicator_basic(t *testing.T) {
 	assert := NewAssert(t)
 	performanceIndicator := newPerformanceIndicator()
 

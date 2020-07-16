@@ -16,7 +16,7 @@ var (
 	replyNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
 )
 
-type rpcReplyNode struct {
+type replyNode struct {
 	replyMeta   *rpcReplyMeta
 	cacheFN     RPCReplyCacheFunc
 	reflectFn   reflect.Value
@@ -26,18 +26,18 @@ type rpcReplyNode struct {
 	indicator   *performanceIndicator
 }
 
-type rpcServiceNode struct {
+type serviceNode struct {
 	path    string
 	addMeta *rpcAddChildMeta
 	depth   uint
 }
 
-// RPCProcessor ...
-type RPCProcessor struct {
+// Processor ...
+type Processor struct {
 	isDebug            bool
 	fnCache            RPCReplyCache
-	repliesMap         map[string]*rpcReplyNode
-	nodesMap           map[string]*rpcServiceNode
+	repliesMap         map[string]*replyNode
+	servicesMap        map[string]*serviceNode
 	maxNodeDepth       uint64
 	maxCallDepth       uint64
 	threads            []*rpcThread
@@ -47,14 +47,14 @@ type RPCProcessor struct {
 	Lock
 }
 
-// NewRPCProcessor ...
-func NewRPCProcessor(
+// NewProcessor ...
+func NewProcessor(
 	isDebug bool,
 	numOfThreads uint,
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache RPCReplyCache,
-) *RPCProcessor {
+) *Processor {
 	if numOfThreads == 0 {
 		return nil
 	} else if maxNodeDepth == 0 {
@@ -63,11 +63,11 @@ func NewRPCProcessor(
 		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
-		ret := &RPCProcessor{
+		ret := &Processor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
-			repliesMap:         make(map[string]*rpcReplyNode),
-			nodesMap:           make(map[string]*rpcServiceNode),
+			repliesMap:         make(map[string]*replyNode),
+			servicesMap:        make(map[string]*serviceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
 			maxCallDepth:       uint64(maxCallDepth),
 			threads:            make([]*rpcThread, size, size),
@@ -76,7 +76,7 @@ func NewRPCProcessor(
 			writeThreadPos:     0,
 		}
 		// mount root node
-		ret.nodesMap[rootName] = &rpcServiceNode{
+		ret.servicesMap[rootName] = &serviceNode{
 			path:    rootName,
 			addMeta: nil,
 			depth:   0,
@@ -85,7 +85,7 @@ func NewRPCProcessor(
 	}
 }
 
-func (p *RPCProcessor) Start(
+func (p *Processor) Start(
 	onEvalFinish func(stream *RPCStream, success bool),
 	onPanic func(v interface{}, debug string),
 ) Error {
@@ -93,7 +93,7 @@ func (p *RPCProcessor) Start(
 		size := len(p.threads)
 
 		if p.freeThreadsCHGroup != nil {
-			return NewError("RPCProcessor: Start: it has already benn started")
+			return NewError("Processor: Start: it has already benn started")
 		} else {
 			freeThreadsCHGroup := make(
 				[]chan *rpcThread,
@@ -133,7 +133,7 @@ func (p *RPCProcessor) Start(
 	}))
 }
 
-func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
+func (p *Processor) PutStream(stream *RPCStream) bool {
 	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
 		return false
 	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
@@ -146,10 +146,10 @@ func (p *RPCProcessor) PutStream(stream *RPCStream) bool {
 	}
 }
 
-func (p *RPCProcessor) Stop() Error {
+func (p *Processor) Stop() Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
-			return NewError("RPCProcessor: Start: it has already benn stopped")
+			return NewError("Processor: Start: it has already benn stopped")
 		} else {
 			for i := 0; i < freeGroups; i++ {
 				close(p.freeThreadsCHGroup[i])
@@ -201,7 +201,7 @@ func (p *RPCProcessor) Stop() Error {
 
 			if len(errList) > 0 {
 				return NewError(ConcatString(
-					"RPCProcessor: Stop: The following routine still running: \n\t",
+					"Processor: Stop: The following routine still running: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
 			} else {
@@ -212,7 +212,7 @@ func (p *RPCProcessor) Stop() Error {
 }
 
 // BuildCache ...
-func (p *RPCProcessor) BuildCache(pkgName string, path string) Error {
+func (p *Processor) BuildCache(pkgName string, path string) Error {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
 		if fnTypeString, ok := getFuncKind(reply.replyMeta.handler); ok {
@@ -229,7 +229,7 @@ func (p *RPCProcessor) BuildCache(pkgName string, path string) Error {
 }
 
 // AddChild ...
-func (p *RPCProcessor) AddService(
+func (p *Processor) AddService(
 	name string,
 	service *Service,
 	debug string,
@@ -248,7 +248,7 @@ func (p *RPCProcessor) AddService(
 	})
 }
 
-func (p *RPCProcessor) mountNode(
+func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *rpcAddChildMeta,
 ) Error {
@@ -274,7 +274,7 @@ func (p *RPCProcessor) mountNode(
 	}
 
 	// check max node depth overflow
-	parentNode, ok := p.nodesMap[parentServiceNodePath]
+	parentNode, ok := p.servicesMap[parentServiceNodePath]
 	if !ok {
 		return NewErrorByDebug(
 			"rpc: mountNode: parentNode is nil",
@@ -294,7 +294,7 @@ func (p *RPCProcessor) mountNode(
 	}
 
 	// check the mount path is not occupied
-	if item, ok := p.nodesMap[servicePath]; ok {
+	if item, ok := p.servicesMap[servicePath]; ok {
 		return NewErrorByDebug(
 			fmt.Sprintf(
 				"Service name \"%s\" is duplicated",
@@ -308,20 +308,20 @@ func (p *RPCProcessor) mountNode(
 		)
 	}
 
-	node := &rpcServiceNode{
+	node := &serviceNode{
 		path:    servicePath,
 		addMeta: nodeMeta,
 		depth:   parentNode.depth + 1,
 	}
 
 	// mount the node
-	p.nodesMap[servicePath] = node
+	p.servicesMap[servicePath] = node
 
 	// mount the replies
 	for _, replyMeta := range nodeMeta.service.replies {
 		err := p.mountReply(node, replyMeta)
 		if err != nil {
-			delete(p.nodesMap, servicePath)
+			delete(p.servicesMap, servicePath)
 			return err
 		}
 	}
@@ -330,7 +330,7 @@ func (p *RPCProcessor) mountNode(
 	for _, v := range nodeMeta.service.children {
 		err := p.mountNode(node.path, v)
 		if err != nil {
-			delete(p.nodesMap, servicePath)
+			delete(p.servicesMap, servicePath)
 			return err
 		}
 	}
@@ -338,8 +338,8 @@ func (p *RPCProcessor) mountNode(
 	return nil
 }
 
-func (p *RPCProcessor) mountReply(
-	serviceNode *rpcServiceNode,
+func (p *Processor) mountReply(
+	serviceNode *serviceNode,
 	replyMeta *rpcReplyMeta,
 ) Error {
 	// check the node is nil
@@ -453,7 +453,7 @@ func (p *RPCProcessor) mountReply(
 		cacheFN = p.fnCache.Get(fnTypeString)
 	}
 
-	p.repliesMap[replyPath] = &rpcReplyNode{
+	p.repliesMap[replyPath] = &replyNode{
 		replyMeta: replyMeta,
 		cacheFN:   cacheFN,
 		reflectFn: fn,

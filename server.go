@@ -129,7 +129,7 @@ func (p *serverSession) WriteStream(stream Stream) Error {
 
 func (p *serverSession) OnDataStream(
 	stream Stream,
-	processor *internal.RPCProcessor,
+	processor *internal.Processor,
 ) Error {
 	if stream == nil {
 		return internal.NewError(
@@ -309,7 +309,7 @@ type Server struct {
 	isOpen      bool
 	logger      *internal.Logger
 	endPoints   []IAdapter
-	processor   *internal.RPCProcessor
+	processor   *internal.Processor
 	sessionMap  sync.Map
 	sessionSize int64
 	sessionSeed uint64
@@ -327,7 +327,7 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 		sessionSeed: 0,
 	}
 
-	server.processor = internal.NewRPCProcessor(
+	server.processor = internal.NewProcessor(
 		isDebug,
 		numOfThreads,
 		32,

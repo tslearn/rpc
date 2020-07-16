@@ -9,7 +9,7 @@ import (
 func TestNewThread(t *testing.T) {
 	//assert := NewAssert(t)
 	//
-	//processor := NewRPCProcessor(true, 8192, 16, 16, nil, nil)
+	//processor := NewProcessor(true, 8192, 16, 16, nil, nil)
 	//threadPool := newThreadPool(processor, 8192)
 	//
 	//thread := newThread(processor, processor,fre)
@@ -33,12 +33,12 @@ func TestNewThread(t *testing.T) {
 
 func runWithProcessor(
 	handler interface{},
-	getStream func(processor *RPCProcessor) *RPCStream,
+	getStream func(processor *Processor) *RPCStream,
 	onTest func(in *RPCStream, out *RPCStream, success bool),
 ) {
 	//retStreamCH := make(chan *RPCStream)
 	//retSuccessCH := make(chan bool)
-	//processor := NewRPCProcessor(
+	//processor := NewProcessor(
 	//	16,
 	//	16,
 	//	func(stream *RPCStream, success bool) {
@@ -70,7 +70,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.SetCallbackID(345343535345343535)
 			stream.SetMachineID(345343535)
@@ -97,7 +97,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			// path format error
 			stream.WriteBytes([]byte("$.user:sayHello"))
@@ -120,7 +120,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.system:sayHello")
 			stream.WriteUint64(3)
@@ -143,7 +143,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			// depth type error
@@ -166,7 +166,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(17)
@@ -192,7 +192,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -216,7 +216,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -247,7 +247,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -287,7 +287,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -327,7 +327,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -367,7 +367,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -407,7 +407,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -447,7 +447,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -487,7 +487,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -527,7 +527,7 @@ func TestRpcThread_eval(t *testing.T) {
 		) *RPCReturn {
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -568,7 +568,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -592,7 +592,7 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -616,7 +616,7 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -637,7 +637,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, a bool) *RPCReturn {
 			return ctx.OK(a)
 		},
-		func(processor *RPCProcessor) *RPCStream {
+		func(processor *Processor) *RPCStream {
 			replyNode := processor.repliesMap["$.user:sayHello"]
 			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 			stream := NewRPCStream()
@@ -667,7 +667,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
 			return ctx.OK(bVal)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -698,7 +698,7 @@ func TestRpcThread_eval(t *testing.T) {
 		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
 			return ctx.OK(bVal)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
@@ -724,7 +724,7 @@ func TestRpcThread_eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func(_ *RPCProcessor) *RPCStream {
+		func(_ *Processor) *RPCStream {
 			stream := NewRPCStream()
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)

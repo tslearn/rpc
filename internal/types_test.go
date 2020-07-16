@@ -76,7 +76,7 @@ func TestRpcContext_writeError(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//// ctx is ok
-	//processor := NewRPCProcessor(16, 16, nil, nil)
+	//processor := NewProcessor(16, 16, nil, nil)
 	//thread := newThread(newThreadPool(processor))
 	//thread.stop()
 	//thread.execSuccessful = true
@@ -124,7 +124,7 @@ func TestRpcContext_Error(t *testing.T) {
 	//// ctx have execReplyNode
 	//thread1 := newThread(nil)
 	//thread1.stop()
-	//thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
+	//thread1.execReplyNode = &replyNode{debugString: "nodeDebug"}
 	//ctx1 := RPCContext{thread: unsafe.Pointer(thread1)}
 	//assert(
 	//	ctx1.Error(NewErrorByDebug("errorMessage", "errorDebug")),

@@ -15,10 +15,10 @@ import (
 func TestNewRPCProcessor(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
+	processor := NewProcessor(true, 8192, 16, 32, nil)
 	assert(processor).IsNotNil()
 	assert(len(processor.repliesMap)).Equals(0)
-	assert(len(processor.nodesMap)).Equals(1)
+	assert(len(processor.servicesMap)).Equals(1)
 	assert(processor.isDebug).IsTrue()
 	assert(processor.maxNodeDepth).Equals(uint64(16))
 	assert(processor.maxCallDepth).Equals(uint64(32))
@@ -28,7 +28,7 @@ func TestNewRPCProcessor(t *testing.T) {
 func TestRPCProcessor_Start_Stop(t *testing.T) {
 	//assert := NewAssert(t)
 	//
-	//processor := NewRPCProcessor(true, 8192, 16, 32, nil, nil)
+	//processor := NewProcessor(true, 8192, 16, 32, nil, nil)
 	//assert(processor.Stop()).IsNotNil()
 	//assert(processor.isRunning).IsFalse()
 	//for i := 0; i < len(processor.threadPools); i++ {
@@ -58,7 +58,7 @@ func TestRPCProcessor_Start_Stop(t *testing.T) {
 
 func TestRPCProcessor_PutStream(t *testing.T) {
 	//assert := NewAssert(t)
-	//processor := NewRPCProcessor(16, 32, nil, nil)
+	//processor := NewProcessor(16, 32, nil, nil)
 	//assert(processor.PutStream(NewRPCStream())).IsFalse()
 	//processor.Start()
 	//assert(processor.PutStream(NewRPCStream())).IsTrue()
@@ -71,7 +71,7 @@ func TestRPCProcessor_PutStream(t *testing.T) {
 func TestRPCProcessor_AddService(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
+	processor := NewProcessor(true, 8192, 16, 32, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
 		Equals(NewErrorByDebug(
 			"Service is nil",
@@ -86,7 +86,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
-	processor0 := NewRPCProcessor(true, 8192, 16, 32, nil)
+	processor0 := NewProcessor(true, 8192, 16, 32, nil)
 	assert(processor0.BuildCache(
 		"pkgName",
 		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go"),
@@ -96,7 +96,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 	)).Equals(readStringFromFile(
 		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go")))
 
-	processor1 := NewRPCProcessor(true, 8192, 16, 32, nil)
+	processor1 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor1.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *RPCContext, name string) *RPCReturn {
 			return ctx.OK("hello " + name)
@@ -116,7 +116,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 func TestRPCProcessor_mountNode(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewRPCProcessor(true, 8192, 16, 16, nil)
+	processor := NewProcessor(true, 8192, 16, 16, nil)
 
 	assert(processor.mountNode(rootName, nil).GetMessage()).
 		Equals("rpc: mountNode: nodeMeta is nil")
@@ -211,8 +211,8 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 func TestRPCProcessor_mountReply(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewRPCProcessor(true, 8192, 16, 16, &testFuncCache{})
-	rootNode := processor.nodesMap[rootName]
+	processor := NewProcessor(true, 8192, 16, 16, &testFuncCache{})
+	rootNode := processor.servicesMap[rootName]
 
 	// check the node is nil
 	assert(processor.mountReply(nil, nil)).Equals(NewErrorByDebug(
@@ -333,7 +333,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 func TestRPCProcessor_OutPutErrors(t *testing.T) {
 	assert := NewAssert(t)
 
-	processor := NewRPCProcessor(true, 8192, 16, 16, nil)
+	processor := NewProcessor(true, 8192, 16, 16, nil)
 
 	// Service is nil
 	assert(processor.AddService("", nil, "DebugMessage")).
@@ -375,7 +375,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	total := uint64(0)
 	success := uint64(0)
 	failed := uint64(0)
-	processor := NewRPCProcessor(
+	processor := NewProcessor(
 		true,
 		8192*24,
 		16,
