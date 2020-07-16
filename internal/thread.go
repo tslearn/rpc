@@ -83,7 +83,7 @@ func (p *rpcThread) eval(
 	inStream *Stream,
 	onEvalFinish func(*rpcThread, *Stream, bool),
 	onPanic func(v interface{}, debug string),
-) *RPCReturn {
+) *Return {
 	timeStart := TimeNowNS()
 	// create context
 	p.inStream = inStream

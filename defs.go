@@ -32,37 +32,37 @@ type IAdapter interface {
 type Stream = *internal.Stream
 
 // Bool ...
-type Bool = internal.RPCBool
+type Bool = internal.Bool
 
-// Int ...
-type Int = internal.RPCInt
+// Int64 ...
+type Int = internal.Int64
 
-// Uint ...
-type Uint = internal.RPCUint
+// Uint64 ...
+type Uint = internal.Uint64
 
-// Float ...
-type Float = internal.RPCFloat
+// Float64 ...
+type Float = internal.Float64
 
 // String ...
-type String = internal.RPCString
+type String = internal.String
 
 // Bytes ...
-type Bytes = internal.RPCBytes
+type Bytes = internal.Bytes
 
 // Any common Any type
-type Any = internal.RPCAny
+type Any = internal.Any
 
 // Array common Array type
-type Array = internal.RPCArray
+type Array = internal.Array
 
 // Map common Map type
-type Map = internal.RPCMap
+type Map = internal.Map
 
 // Error ...
 type Error = internal.Error
 
 // Return ...
-type Return = *internal.RPCReturn
+type Return = *internal.Return
 
 // Context ...
 type Context = *internal.RPCContext

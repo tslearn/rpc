@@ -9,7 +9,7 @@ import (
 
 var (
 	nilContext  = (*RPCContext)(nil)
-	nilReturn   = (*RPCReturn)(nil)
+	nilReturn   = (*Return)(nil)
 	contextType = reflect.ValueOf(nilContext).Type()
 	returnType  = reflect.ValueOf(nilReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
@@ -17,9 +17,9 @@ var (
 	uint64Type  = reflect.ValueOf(uint64(0)).Type()
 	float64Type = reflect.ValueOf(float64(0)).Type()
 	stringType  = reflect.ValueOf("").Type()
-	bytesType   = reflect.ValueOf(RPCBytes{}).Type()
-	arrayType   = reflect.ValueOf(RPCArray{}).Type()
-	mapType     = reflect.ValueOf(RPCMap{}).Type()
+	bytesType   = reflect.ValueOf(Bytes{}).Type()
+	arrayType   = reflect.ValueOf(Array{}).Type()
+	mapType     = reflect.ValueOf(Map{}).Type()
 )
 
 const StreamBodyPos = 33
@@ -44,7 +44,7 @@ func (p *RPCContext) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
-func (p *RPCContext) writeError(message string, debug string) *RPCReturn {
+func (p *RPCContext) writeError(message string, debug string) *Return {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(StreamBodyPos)
@@ -56,14 +56,14 @@ func (p *RPCContext) writeError(message string, debug string) *RPCReturn {
 	return nilReturn
 }
 
-// OK get success RPCReturn  by value
-func (p *RPCContext) OK(value interface{}) *RPCReturn {
+// OK get success Return  by value
+func (p *RPCContext) OK(value interface{}) *Return {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(StreamBodyPos)
 		stream.WriteBool(true)
 
-		if stream.Write(value) != RPCStreamWriteOK {
+		if stream.Write(value) != StreamWriteOK {
 			return p.writeError(
 				"return type is error",
 				GetStackString(1),
@@ -75,7 +75,7 @@ func (p *RPCContext) OK(value interface{}) *RPCReturn {
 	return nilReturn
 }
 
-func (p *RPCContext) Error(err Error) *RPCReturn {
+func (p *RPCContext) Error(err Error) *Return {
 	if err == nil {
 		return nilReturn
 	}
@@ -89,39 +89,39 @@ func (p *RPCContext) Error(err Error) *RPCReturn {
 	return p.writeError(err.GetMessage(), err.GetDebug())
 }
 
-func (p *RPCContext) Errorf(format string, a ...interface{}) *RPCReturn {
+func (p *RPCContext) Errorf(format string, a ...interface{}) *Return {
 	return p.Error(NewErrorByDebug(
 		fmt.Sprintf(format, a...),
 		GetStackString(1),
 	))
 }
 
-// RPCBool ...
-type RPCBool = bool
+// Bool ...
+type Bool = bool
 
-// RPCInt ...
-type RPCInt = int64
+// Int64 ...
+type Int64 = int64
 
-// RPCUint ...
-type RPCUint = uint64
+// Uint64 ...
+type Uint64 = uint64
 
-// RPCFloat ...
-type RPCFloat = float64
+// Float64 ...
+type Float64 = float64
 
-// RPCString ...
-type RPCString = string
+// String ...
+type String = string
 
-// RPCBytes ...
-type RPCBytes = []byte
+// Bytes ...
+type Bytes = []byte
 
-// RPCAny ...
-type RPCAny = interface{}
+// Any ...
+type Any = interface{}
 
-// RPCArray ...
-type RPCArray = []RPCAny
+// Array ...
+type Array = []Any
 
-// RPCMap common Map type
-type RPCMap = map[string]RPCAny
+// Map common Map type
+type Map = map[string]Any
 
-// RPCReturn ...
-type RPCReturn struct{}
+// Return ...
+type Return struct{}

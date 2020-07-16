@@ -534,7 +534,7 @@ func (p *Client) sendMessage(
 	item.stream.WriteString("@")
 	// write args
 	for i := 0; i < len(args); i++ {
-		if item.stream.Write(args[i]) != internal.RPCStreamWriteOK {
+		if item.stream.Write(args[i]) != internal.StreamWriteOK {
 			return nil, internal.NewError(
 				"Client: send: args not supported",
 			)

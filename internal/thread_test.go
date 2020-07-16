@@ -67,7 +67,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test basic
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -94,7 +94,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test read reply path error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -117,7 +117,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// reply path is not mounted
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -140,7 +140,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth data format error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -163,7 +163,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth is overflow
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -189,7 +189,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// from data format error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *RPCReturn {
+		func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -212,8 +212,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -227,8 +227,8 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
@@ -243,8 +243,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -258,18 +258,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Int, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -283,8 +283,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -298,18 +298,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -323,8 +323,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -338,18 +338,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Bool, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Bool, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -363,8 +363,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -378,18 +378,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(true)
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
 				"rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -403,8 +403,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -418,18 +418,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write(true)
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -443,8 +443,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -458,18 +458,18 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(true)
-			stream.Write(RPCArray{1})
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -483,8 +483,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -499,17 +499,17 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
 			stream.Write(true)
-			stream.Write(RPCMap{"name": "world"})
+			stream.Write(Map{"name": "world"})
 			return stream
 		},
 		func(in *Stream, out *Stream, success bool) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -523,8 +523,8 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *RPCContext,
 			b bool, i int64, u uint64, f float64, s string,
-			x RPCBytes, a RPCArray, m RPCMap,
-		) *RPCReturn {
+			x Bytes, a Array, m Map,
+		) *Return {
 			return ctx.OK(true)
 		},
 		func(_ *Processor) *Stream {
@@ -538,7 +538,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.Write(float64(3))
 			stream.Write("hello")
 			stream.Write(([]byte)("world"))
-			stream.Write(RPCArray{1})
+			stream.Write(Array{1})
 			stream.Write(true)
 			return stream
 		},
@@ -546,10 +546,10 @@ func TestRpcThread_eval(t *testing.T) {
 			assert(success).IsFalse()
 			assert(out.ReadBool()).Equals(false, true)
 			assert(out.Read()).Equals("rpc reply arguments not match\n"+
-				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return\n"+
-				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int, rpc.Uint, "+
-				"rpc.Float, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+				"Called: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return\n"+
+				"Required: $.user:sayHello(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, "+
+				"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 				true,
 			)
 			dbgMessage, ok := out.Read()
@@ -561,7 +561,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcBytes
 	runWithProcessor(
-		func(ctx *RPCContext, a RPCBytes) *RPCReturn {
+		func(ctx *RPCContext, a Bytes) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -586,7 +586,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcArray
 	runWithProcessor(
-		func(ctx *RPCContext, a RPCArray) *RPCReturn {
+		func(ctx *RPCContext, a Array) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -610,7 +610,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcMap
 	runWithProcessor(
-		func(ctx *RPCContext, a RPCMap) *RPCReturn {
+		func(ctx *RPCContext, a Map) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -634,7 +634,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test unsupported type
 	runWithProcessor(
-		func(ctx *RPCContext, a bool) *RPCReturn {
+		func(ctx *RPCContext, a bool) *Return {
 			return ctx.OK(a)
 		},
 		func(processor *Processor) *Stream {
@@ -664,7 +664,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// nil text
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
+		func(ctx *RPCContext, bVal bool, rpcMap Map) *Return {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -695,7 +695,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// stream is broken
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool, rpcMap RPCMap) *RPCReturn {
+		func(ctx *RPCContext, bVal bool, rpcMap Map) *Return {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -718,7 +718,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// call function error
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool) *RPCReturn {
+		func(ctx *RPCContext, bVal bool) *Return {
 			if bVal {
 				panic("this is a error")
 			}

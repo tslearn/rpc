@@ -98,7 +98,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	processor1 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor1.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, name string) *RPCReturn {
+		Reply("sayHello", func(ctx *RPCContext, name string) *Return {
 			return ctx.OK("hello " + name)
 		}), "")
 	assert(processor1.BuildCache(
@@ -198,7 +198,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	// OK
 	service2 := NewService()
 	service2.AddChild("user", NewService().
-		Reply("sayHello", func(ctx *RPCContext) *RPCReturn {
+		Reply("sayHello", func(ctx *RPCContext) *Return {
 			return ctx.OK(true)
 		}))
 	assert(processor.mountNode(rootName, &childMeta{
@@ -239,12 +239,12 @@ func TestProcessor_mountReply(t *testing.T) {
 	// check the reply path is not occupied
 	_ = processor.mountReply(rootNode, &replyMeta{
 		"testOccupied",
-		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
+		func(ctx *RPCContext) *Return { return ctx.OK(true) },
 		"DebugMessage",
 	})
 	assert(processor.mountReply(rootNode, &replyMeta{
 		"testOccupied",
-		func(ctx *RPCContext) *RPCReturn { return ctx.OK(true) },
+		func(ctx *RPCContext) *Return { return ctx.OK(true) },
 		"DebugMessage",
 	})).Equals(NewErrorByDebug(
 		"Reply name testOccupied is duplicated",
@@ -274,7 +274,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	// Check reply handler arguments types
 	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerArguments",
-		func(ctx bool) *RPCReturn { return nilReturn },
+		func(ctx bool) *Return { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewErrorByDebug(
 		"Reply handler 1st argument type must be rpc.Context",
@@ -283,7 +283,7 @@ func TestProcessor_mountReply(t *testing.T) {
 
 	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerArguments",
-		func(ctx *RPCContext, ch chan bool) *RPCReturn { return nilReturn },
+		func(ctx *RPCContext, ch chan bool) *Return { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewErrorByDebug(
 		"Reply handler 2nd argument type <chan bool> not supported",
@@ -293,7 +293,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	// Check return type
 	assert(processor.mountReply(rootNode, &replyMeta{
 		"testReplyHandlerReturn",
-		func(ctx *RPCContext) (*RPCReturn, bool) { return nilReturn, true },
+		func(ctx *RPCContext) (*Return, bool) { return nilReturn, true },
 		"DebugMessage",
 	})).Equals(NewErrorByDebug(
 		"Reply handler return type must be rpc.Return",
@@ -312,7 +312,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	// ok
 	assert(processor.mountReply(rootNode, &replyMeta{
 		"testOK",
-		func(ctx *RPCContext, _ bool, _ RPCMap) *RPCReturn { return nilReturn },
+		func(ctx *RPCContext, _ bool, _ Map) *Return { return nilReturn },
 		GetStackString(0),
 	})).IsNil()
 
@@ -401,7 +401,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			Reply("sayHello", func(
 				ctx *RPCContext,
 				name string,
-			) *RPCReturn {
+			) *Return {
 				return ctx.OK(name)
 			}),
 		"",

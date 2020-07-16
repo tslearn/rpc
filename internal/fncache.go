@@ -56,31 +56,31 @@ func (p *fnCache) writeHeader(
 	sb.AppendString("}\n\n")
 	sb.AppendString("type n = bool\n")
 	sb.AppendString("type o = common.RPCContext\n")
-	sb.AppendString("type p = common.RPCReturn\n")
+	sb.AppendString("type p = common.Return\n")
 	sb.AppendString("type q = *common.Stream\n")
 	if _, ok := kindMap['B']; ok {
-		sb.AppendString("type r = common.RPCBool\n")
+		sb.AppendString("type r = common.Bool\n")
 	}
 	if _, ok := kindMap['I']; ok {
-		sb.AppendString("type s = common.RPCInt\n")
+		sb.AppendString("type s = common.Int64\n")
 	}
 	if _, ok := kindMap['U']; ok {
-		sb.AppendString("type t = common.RPCUint\n")
+		sb.AppendString("type t = common.Uint64\n")
 	}
 	if _, ok := kindMap['F']; ok {
-		sb.AppendString("type u = common.RPCFloat\n")
+		sb.AppendString("type u = common.Float64\n")
 	}
 	if _, ok := kindMap['S']; ok {
-		sb.AppendString("type v = common.RPCString\n")
+		sb.AppendString("type v = common.String\n")
 	}
 	if _, ok := kindMap['X']; ok {
-		sb.AppendString("type w = common.RPCBytes\n")
+		sb.AppendString("type w = common.Bytes\n")
 	}
 	if _, ok := kindMap['A']; ok {
-		sb.AppendString("type x = common.RPCArray\n")
+		sb.AppendString("type x = common.Array\n")
 	}
 	if _, ok := kindMap['M']; ok {
-		sb.AppendString("type y = common.RPCMap\n")
+		sb.AppendString("type y = common.Map\n")
 	}
 	sb.AppendString("type z = interface{}\n\n")
 	sb.AppendString("const af = false\n")

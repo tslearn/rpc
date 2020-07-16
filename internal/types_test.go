@@ -42,7 +42,7 @@ func TestRpcContext_OK(t *testing.T) {
 	//assert(thread.execSuccessful).IsTrue()
 	//thread.outStream.SetReadPos(StreamBodyPos)
 	//assert(thread.outStream.ReadBool()).Equals(true, true)
-	//assert(thread.outStream.ReadUint64()).Equals(RPCUint(215), true)
+	//assert(thread.outStream.ReadUint64()).Equals(Uint64(215), true)
 	//assert(thread.outStream.CanRead()).IsFalse()
 	//
 	//// ctx is stop
