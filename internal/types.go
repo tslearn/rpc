@@ -118,10 +118,10 @@ type Bytes = []byte
 type Any = interface{}
 
 // Array ...
-type Array = []Any
+type Array = []interface{}
 
 // Map common Map type
-type Map = map[string]Any
+type Map = map[string]interface{}
 
 // Return ...
 type Return struct{}
