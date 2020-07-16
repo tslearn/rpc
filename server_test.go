@@ -17,7 +17,7 @@ func TestServer_Basic(t *testing.T) {
 		NewWebSocketServerAdapter("127.0.0.1:8080", "test"),
 	)
 	server.AddService("user", NewService().
-		Reply("sayHello", true, func(ctx Context, name string) Return {
+		Reply("sayHello", func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		}),
 	)

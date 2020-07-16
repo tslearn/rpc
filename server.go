@@ -418,7 +418,7 @@ func (p *Server) BuildFuncCache(
 // AddChild ...
 func (p *Server) AddService(
 	name string,
-	service Service,
+	service *Service,
 ) *Server {
 	if err := p.processor.AddService(
 		name,
