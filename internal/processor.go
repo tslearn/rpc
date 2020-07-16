@@ -18,7 +18,7 @@ var (
 )
 
 type rpcReplyNode struct {
-	replyMeta   *replyMeta
+	replyMeta   *rpcReplyMeta
 	cacheFN     ReplyCacheFunc
 	reflectFn   reflect.Value
 	callString  string
@@ -29,7 +29,7 @@ type rpcReplyNode struct {
 
 type rpcServiceNode struct {
 	path    string
-	addMeta *childMeta
+	addMeta *rpcChildMeta
 	depth   uint
 }
 
@@ -250,7 +250,7 @@ func (p *Processor) AddService(
 		return NewError("Service is nil").AddDebug(debug)
 	}
 
-	return p.mountNode(rootName, &childMeta{
+	return p.mountNode(rootName, &rpcChildMeta{
 		name:    name,
 		service: service,
 		debug:   debug,
@@ -259,7 +259,7 @@ func (p *Processor) AddService(
 
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
-	nodeMeta *childMeta,
+	nodeMeta *rpcChildMeta,
 ) Error {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
@@ -338,16 +338,16 @@ func (p *Processor) mountNode(
 
 func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
-	replyMeta *replyMeta,
+	replyMeta *rpcReplyMeta,
 ) Error {
 	// check the node is nil
 	if serviceNode == nil {
 		return NewError("rpc: mountReply: node is nil")
 	}
 
-	// check the replyMeta is nil
+	// check the rpcReplyMeta is nil
 	if replyMeta == nil {
-		return NewError("rpc: mountReply: replyMeta is nil")
+		return NewError("rpc: mountReply: rpcReplyMeta is nil")
 	}
 
 	// check the name

@@ -120,7 +120,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	assert(processor.mountNode(rootName, nil).GetDebug()).
 		Equals("")
 
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "+",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -128,7 +128,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"Service name \"+\" is illegal",
 	).AddDebug("DebugMessage"))
 
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "abc",
 		service: nil,
 		debug:   "DebugMessage",
@@ -136,7 +136,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"Service is nil",
 	).AddDebug("DebugMessage"))
 
-	assert(processor.mountNode("123", &childMeta{
+	assert(processor.mountNode("123", &rpcChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -145,7 +145,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	processor.maxNodeDepth = 0
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -154,12 +154,12 @@ func TestProcessor_mountNode(t *testing.T) {
 	).AddDebug("DebugMessage"))
 	processor.maxNodeDepth = 16
 
-	_ = processor.mountNode(rootName, &childMeta{
+	_ = processor.mountNode(rootName, &rpcChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
 	})
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
@@ -170,7 +170,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	// mount reply error
 	service := NewService()
 	service.Reply("abc", nil)
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "test",
 		service: service,
 		debug:   "DebugMessage",
@@ -181,7 +181,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	service1.AddChild("abc", NewService())
 	assert(len(service1.children)).Equals(1)
 	service1.children[0] = nil
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "003",
 		service: service1,
 		debug:   "DebugMessage",
@@ -193,7 +193,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		Reply("sayHello", func(ctx *Context) *Return {
 			return ctx.OK(true)
 		}))
-	assert(processor.mountNode(rootName, &childMeta{
+	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "system",
 		service: service2,
 		debug:   "DebugMessage",
@@ -223,13 +223,13 @@ func TestProcessor_mountReply(t *testing.T) {
 		"rpc: mountReply: node is nil",
 	))
 
-	// check the replyMeta is nil
+	// check the rpcReplyMeta is nil
 	assert(processor.mountReply(rootNode, nil)).Equals(NewError(
-		"rpc: mountReply: replyMeta is nil",
+		"rpc: mountReply: rpcReplyMeta is nil",
 	))
 
 	// check the name
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"###",
 		nil,
 		"DebugMessage",
@@ -238,12 +238,12 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	// check the reply path is not occupied
-	_ = processor.mountReply(rootNode, &replyMeta{
+	_ = processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
 		func(ctx *Context) *Return { return ctx.OK(true) },
 		"DebugMessage",
 	})
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
 		func(ctx *Context) *Return { return ctx.OK(true) },
 		"DebugMessage",
@@ -252,7 +252,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
 
 	// check the reply handler is nil
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerIsNil",
 		nil,
 		"DebugMessage",
@@ -261,7 +261,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	// Check reply handler is Func
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerIsFunction",
 		make(chan bool),
 		"DebugMessage",
@@ -270,7 +270,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	// Check reply handler arguments types
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
 		func(ctx bool) *Return { return nilReturn },
 		"DebugMessage",
@@ -278,7 +278,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		"Reply handler 1st argument type must be rpc.Context",
 	).AddDebug("DebugMessage"))
 
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
 		func(ctx *Context, ch chan bool) *Return { return nilReturn },
 		"DebugMessage",
@@ -287,7 +287,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	// Check return type
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
 		func(ctx *Context) (*Return, bool) { return nilReturn, true },
 		"DebugMessage",
@@ -295,7 +295,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		"Reply handler return type must be rpc.Return",
 	).AddDebug("DebugMessage"))
 
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
 		func(ctx Context) bool { return true },
 		"DebugMessage",
@@ -304,7 +304,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	).AddDebug("DebugMessage"))
 
 	// ok
-	assert(processor.mountReply(rootNode, &replyMeta{
+	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOK",
 		func(ctx *Context, _ bool, _ Map) *Return { return nilReturn },
 		GetStackString(0),
