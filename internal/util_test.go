@@ -178,7 +178,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 func TestTimeNowNS(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 5000000; i++ {
+	for i := 0; i < 10000000; i++ {
 		nowNS := TimeNowNS()
 		assert(time.Now().UnixNano()-nowNS < int64(20*time.Millisecond)).IsTrue()
 		assert(time.Now().UnixNano()-nowNS > int64(-20*time.Millisecond)).IsTrue()

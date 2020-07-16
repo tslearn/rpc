@@ -6,10 +6,10 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -398,11 +398,12 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			}),
 		"",
 	)
-	//file, _ := os.Create("../cpu.prof")
-	//_ = pprof.StartCPUProfile(file)
+
+	file, _ := os.Create("../cpu.prof")
+	_ = pprof.StartCPUProfile(file)
 
 	b.ReportAllocs()
-	b.N = 100000000
+	b.N = 200000000
 	b.SetParallelism(1024)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -413,16 +414,11 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteString("#")
 			stream.WriteString("world")
 			atomic.AddUint64(&total, 1)
-			if !processor.PutStream(stream) {
-				time.Sleep(10 * time.Millisecond)
-			}
+			processor.PutStream(stream)
 		}
 	})
 	b.StopTimer()
-
-	time.Sleep(time.Second)
-
-	//pprof.StopCPUProfile()
+	pprof.StopCPUProfile()
 
 	fmt.Println(processor.Stop())
 	fmt.Println(total, success, failed)
