@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var rpcStreamTestCollections = map[string][][2]interface{}{
+var streamTestCollections = map[string][][2]interface{}{
 	"nil": {
 		{nil, []byte{0x01}},
 	},
@@ -328,7 +328,7 @@ func TestIsUTF8Bytes(t *testing.T) {
 	assert(isUTF8Bytes([]byte{0xFF, 0x80, 0x80, 0x70})).IsFalse()
 }
 
-func TestRPCStream_basic(t *testing.T) {
+func TestStream_basic(t *testing.T) {
 	assert := NewAssert(t)
 
 	// test streamCache
@@ -372,7 +372,7 @@ func TestRPCStream_basic(t *testing.T) {
 	})
 }
 
-func TestRPCStream_newRPCStream_Release_Reset(t *testing.T) {
+func TestStream_newRPCStream_Release_Reset(t *testing.T) {
 	assert := NewAssert(t)
 
 	// test streamCache
@@ -394,7 +394,7 @@ func TestRPCStream_newRPCStream_Release_Reset(t *testing.T) {
 	}
 }
 
-func TestRPCStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
+func TestStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
@@ -410,7 +410,7 @@ func TestRPCStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetSessionID_SetSessionID(t *testing.T) {
+func TestStream_GetSessionID_SetSessionID(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
@@ -426,7 +426,7 @@ func TestRPCStream_GetSessionID_SetSessionID(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetSequence_SetSequence(t *testing.T) {
+func TestStream_GetSequence_SetSequence(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
@@ -442,7 +442,7 @@ func TestRPCStream_GetSequence_SetSequence(t *testing.T) {
 	}
 }
 
-func TestRPCStream_getMachineID_setMachineID(t *testing.T) {
+func TestStream_getMachineID_setMachineID(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
@@ -458,7 +458,7 @@ func TestRPCStream_getMachineID_setMachineID(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetHeader(t *testing.T) {
+func TestStream_GetHeader(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
@@ -474,7 +474,7 @@ func TestRPCStream_GetHeader(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetBuffer(t *testing.T) {
+func TestStream_GetBuffer(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
@@ -491,7 +491,7 @@ func TestRPCStream_GetBuffer(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetBufferUnsafe(t *testing.T) {
+func TestStream_GetBufferUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
@@ -509,7 +509,7 @@ func TestRPCStream_GetBufferUnsafe(t *testing.T) {
 	}
 }
 
-func TestRPCStream_GetReadPos(t *testing.T) {
+func TestStream_GetReadPos(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
@@ -521,7 +521,7 @@ func TestRPCStream_GetReadPos(t *testing.T) {
 	}
 }
 
-func TestRPCStream_SetReadPos(t *testing.T) {
+func TestStream_SetReadPos(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 1; i < 5000; i++ {
@@ -535,7 +535,7 @@ func TestRPCStream_SetReadPos(t *testing.T) {
 	}
 }
 
-func TestRPCStream_setReadPosUnsafe(t *testing.T) {
+func TestStream_setReadPosUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
@@ -548,7 +548,7 @@ func TestRPCStream_setReadPosUnsafe(t *testing.T) {
 	stream.Release()
 }
 
-func TestRPCStream_GetWritePos(t *testing.T) {
+func TestStream_GetWritePos(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
@@ -559,7 +559,7 @@ func TestRPCStream_GetWritePos(t *testing.T) {
 	}
 }
 
-func TestRPCStream_SetWritePos(t *testing.T) {
+func TestStream_SetWritePos(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 10000; i++ {
@@ -570,7 +570,7 @@ func TestRPCStream_SetWritePos(t *testing.T) {
 	}
 }
 
-func TestRPCStream_setWritePosUnsafe(t *testing.T) {
+func TestStream_setWritePosUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
@@ -581,7 +581,7 @@ func TestRPCStream_setWritePosUnsafe(t *testing.T) {
 	}
 }
 
-func TestRPCStream_CanRead(t *testing.T) {
+func TestStream_CanRead(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 1; i < 10000; i++ {
@@ -601,7 +601,7 @@ func TestRPCStream_CanRead(t *testing.T) {
 	}
 }
 
-func TestRPCStream_IsReadFinish(t *testing.T) {
+func TestStream_IsReadFinish(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 1; i < 10000; i++ {
@@ -621,7 +621,7 @@ func TestRPCStream_IsReadFinish(t *testing.T) {
 	}
 }
 
-func TestRPCStream_gotoNextReadFrameUnsafe(t *testing.T) {
+func TestStream_gotoNextReadFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
@@ -633,7 +633,7 @@ func TestRPCStream_gotoNextReadFrameUnsafe(t *testing.T) {
 	}
 }
 
-func TestRPCStream_gotoNextReadByteUnsafe(t *testing.T) {
+func TestStream_gotoNextReadByteUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
@@ -645,7 +645,7 @@ func TestRPCStream_gotoNextReadByteUnsafe(t *testing.T) {
 	}
 }
 
-func TestRPCStream_hasOneByteToRead(t *testing.T) {
+func TestStream_hasOneByteToRead(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 1; i < 2000; i++ {
@@ -663,7 +663,7 @@ func TestRPCStream_hasOneByteToRead(t *testing.T) {
 	}
 }
 
-func TestRPCStream_hasNBytesToRead(t *testing.T) {
+func TestStream_hasNBytesToRead(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
@@ -676,7 +676,7 @@ func TestRPCStream_hasNBytesToRead(t *testing.T) {
 	}
 }
 
-func TestRPCStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
+func TestStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
@@ -690,7 +690,7 @@ func TestRPCStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
 	}
 }
 
-func TestRPCStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
+func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
@@ -704,7 +704,7 @@ func TestRPCStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 	}
 }
 
-func TestRPCStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
+func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
@@ -718,7 +718,7 @@ func TestRPCStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 	}
 }
 
-func TestRPCStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
+func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
@@ -732,7 +732,7 @@ func TestRPCStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 	}
 }
 
-func TestRPCStream_putBytes(t *testing.T) {
+func TestStream_putBytes(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 600; i++ {
@@ -750,7 +750,7 @@ func TestRPCStream_putBytes(t *testing.T) {
 	}
 }
 
-func TestRPCStream_putString(t *testing.T) {
+func TestStream_putString(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 600; i++ {
@@ -769,7 +769,7 @@ func TestRPCStream_putString(t *testing.T) {
 	}
 }
 
-func TestRPCStream_read3BytesCrossFrameUnsafe(t *testing.T) {
+func TestStream_read3BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
@@ -786,7 +786,7 @@ func TestRPCStream_read3BytesCrossFrameUnsafe(t *testing.T) {
 	assert(stream0.GetReadPos()).Equals(514)
 }
 
-func TestRPCStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
+func TestStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
@@ -809,7 +809,7 @@ func TestRPCStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
 	assert(stream0.GetReadPos()).Equals(511)
 }
 
-func TestRPCStream_read5BytesCrossFrameUnsafe(t *testing.T) {
+func TestStream_read5BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
@@ -832,7 +832,7 @@ func TestRPCStream_read5BytesCrossFrameUnsafe(t *testing.T) {
 	assert(stream0.GetReadPos()).Equals(516)
 }
 
-func TestRPCStream_read9BytesCrossFrameUnsafe(t *testing.T) {
+func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
@@ -878,7 +878,7 @@ func TestRPCStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 	assert(stream0.GetReadPos()).Equals(520)
 }
 
-func TestRPCStream_readNBytesUnsafe(t *testing.T) {
+func TestStream_readNBytesUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	for i := 0; i < 2000; i++ {
@@ -895,7 +895,7 @@ func TestRPCStream_readNBytesUnsafe(t *testing.T) {
 	}
 }
 
-func TestRPCStream_peekSkip(t *testing.T) {
+func TestStream_peekSkip(t *testing.T) {
 	assert := NewAssert(t)
 
 	testCollection := Array{
@@ -947,7 +947,7 @@ func TestRPCStream_peekSkip(t *testing.T) {
 	}
 }
 
-func TestRPCStream_readSkipItem(t *testing.T) {
+func TestStream_readSkipItem(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 1; i < 600; i++ {
@@ -977,7 +977,7 @@ func TestRPCStream_readSkipItem(t *testing.T) {
 	}
 }
 
-func TestRPCStream_writeStreamUnsafe(t *testing.T) {
+func TestStream_writeStreamUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	dataStream := NewStream()
@@ -1024,7 +1024,7 @@ func TestRPCStream_writeStreamUnsafe(t *testing.T) {
 	fnTest(1100)
 }
 
-func TestRPCStream_writeStreamNext(t *testing.T) {
+func TestStream_writeStreamNext(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 550; i++ {
@@ -1069,10 +1069,10 @@ func TestRPCStream_writeStreamNext(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteNil(t *testing.T) {
+func TestStream_WriteNil(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["nil"] {
+	for _, testData := range streamTestCollections["nil"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1085,10 +1085,10 @@ func TestRPCStream_WriteNil(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteBool(t *testing.T) {
+func TestStream_WriteBool(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["bool"] {
+	for _, testData := range streamTestCollections["bool"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1101,10 +1101,10 @@ func TestRPCStream_WriteBool(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteFloat64(t *testing.T) {
+func TestStream_WriteFloat64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["float64"] {
+	for _, testData := range streamTestCollections["float64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1117,10 +1117,10 @@ func TestRPCStream_WriteFloat64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteInt64(t *testing.T) {
+func TestStream_WriteInt64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["int64"] {
+	for _, testData := range streamTestCollections["int64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1133,10 +1133,10 @@ func TestRPCStream_WriteInt64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteUInt64(t *testing.T) {
+func TestStream_WriteUInt64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["uint64"] {
+	for _, testData := range streamTestCollections["uint64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1149,10 +1149,10 @@ func TestRPCStream_WriteUInt64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteString(t *testing.T) {
+func TestStream_WriteString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["string"] {
+	for _, testData := range streamTestCollections["string"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1165,10 +1165,10 @@ func TestRPCStream_WriteString(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteBytes(t *testing.T) {
+func TestStream_WriteBytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["bytes"] {
+	for _, testData := range streamTestCollections["bytes"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1181,10 +1181,10 @@ func TestRPCStream_WriteBytes(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteArray(t *testing.T) {
+func TestStream_WriteArray(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["array"] {
+	for _, testData := range streamTestCollections["array"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1208,10 +1208,10 @@ func TestRPCStream_WriteArray(t *testing.T) {
 	}
 }
 
-func TestRPCStream_WriteMap(t *testing.T) {
+func TestStream_WriteMap(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["map"] {
+	for _, testData := range streamTestCollections["map"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1237,7 +1237,7 @@ func TestRPCStream_WriteMap(t *testing.T) {
 	}
 }
 
-func TestRPCStream_Write(t *testing.T) {
+func TestStream_Write(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
 	assert(stream.Write(nil)).Equals(StreamWriteOK)
@@ -1262,10 +1262,10 @@ func TestRPCStream_Write(t *testing.T) {
 	stream.Release()
 }
 
-func TestRPCStream_ReadNil(t *testing.T) {
+func TestStream_ReadNil(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["nil"] {
+	for _, testData := range streamTestCollections["nil"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1307,10 +1307,10 @@ func TestRPCStream_ReadNil(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadBool(t *testing.T) {
+func TestStream_ReadBool(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["bool"] {
+	for _, testData := range streamTestCollections["bool"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1351,10 +1351,10 @@ func TestRPCStream_ReadBool(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadFloat64(t *testing.T) {
+func TestStream_ReadFloat64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["float64"] {
+	for _, testData := range streamTestCollections["float64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1395,10 +1395,10 @@ func TestRPCStream_ReadFloat64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadInt64(t *testing.T) {
+func TestStream_ReadInt64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["int64"] {
+	for _, testData := range streamTestCollections["int64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1439,10 +1439,10 @@ func TestRPCStream_ReadInt64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadUint64(t *testing.T) {
+func TestStream_ReadUint64(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["uint64"] {
+	for _, testData := range streamTestCollections["uint64"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1483,10 +1483,10 @@ func TestRPCStream_ReadUint64(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadString(t *testing.T) {
+func TestStream_ReadString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["string"] {
+	for _, testData := range streamTestCollections["string"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1584,10 +1584,10 @@ func TestRPCStream_ReadString(t *testing.T) {
 	assert(stream3.GetReadPos()).Equals(StreamBodyPos)
 }
 
-func TestRPCStream_ReadUnsafeString(t *testing.T) {
+func TestStream_ReadUnsafeString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["string"] {
+	for _, testData := range streamTestCollections["string"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1685,10 +1685,10 @@ func TestRPCStream_ReadUnsafeString(t *testing.T) {
 	assert(stream3.GetReadPos()).Equals(StreamBodyPos)
 }
 
-func TestRPCStream_ReadBytes(t *testing.T) {
+func TestStream_ReadBytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["bytes"] {
+	for _, testData := range streamTestCollections["bytes"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1743,10 +1743,10 @@ func TestRPCStream_ReadBytes(t *testing.T) {
 	assert(stream1.GetReadPos()).Equals(StreamBodyPos)
 }
 
-func TestRPCStream_ReadUnsafeBytes(t *testing.T) {
+func TestStream_ReadUnsafeBytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["bytes"] {
+	for _, testData := range streamTestCollections["bytes"] {
 		// ok
 		for i := 1; i < 1100; i++ {
 			stream := NewStream()
@@ -1801,10 +1801,10 @@ func TestRPCStream_ReadUnsafeBytes(t *testing.T) {
 	assert(stream1.GetReadPos()).Equals(StreamBodyPos)
 }
 
-func TestRPCStream_ReadArray(t *testing.T) {
+func TestStream_ReadArray(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["array"] {
+	for _, testData := range streamTestCollections["array"] {
 		// ok
 		for i := 1; i < 530; i++ {
 			for j := 1; j < 530; j++ {
@@ -1878,10 +1878,10 @@ func TestRPCStream_ReadArray(t *testing.T) {
 	}
 }
 
-func TestRPCStream_ReadMap(t *testing.T) {
+func TestStream_ReadMap(t *testing.T) {
 	assert := NewAssert(t)
 
-	for _, testData := range rpcStreamTestCollections["map"] {
+	for _, testData := range streamTestCollections["map"] {
 		// ok
 		for i := 1; i < 530; i++ {
 			for j := 1; j < 530; j++ {
@@ -1981,13 +1981,13 @@ func TestRPCStream_ReadMap(t *testing.T) {
 	}
 }
 
-func TestRPCStream_Read(t *testing.T) {
+func TestStream_Read(t *testing.T) {
 	assert := NewAssert(t)
 
 	testCollections := make([][2]interface{}, 0, 0)
 
-	for key := range rpcStreamTestCollections {
-		for _, v := range rpcStreamTestCollections[key] {
+	for key := range streamTestCollections {
+		for _, v := range streamTestCollections[key] {
 			testCollections = append(testCollections, v)
 		}
 	}

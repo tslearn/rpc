@@ -1633,7 +1633,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 	return "", false
 }
 
-// ReadBytes read a rpcBytes value
+// ReadBytes read a Bytes value
 func (p *Stream) ReadBytes() (Bytes, bool) {
 	// empty bytes
 	v := p.readFrame[p.readIndex]
