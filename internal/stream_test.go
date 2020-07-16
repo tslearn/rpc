@@ -1995,7 +1995,7 @@ func TestStream_Read(t *testing.T) {
 	for _, item := range testCollections {
 		stream := NewStream()
 		stream.PutBytes(item[1].([]byte))
-		if item[0] == nil {
+		if isNil(item[0]) {
 			assert(stream.Read()).Equals(nil, true)
 		} else {
 			assert(stream.Read()).Equals(item[0], true)
