@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// performanceIndicator ...
-type performanceIndicator struct {
+// rpcPerformanceIndicator ...
+type rpcPerformanceIndicator struct {
 	failed       int64
 	successArray [10]int64
 	lastTotal    int64
@@ -17,8 +17,8 @@ type performanceIndicator struct {
 }
 
 // newPerformanceIndicator ...
-func newPerformanceIndicator() *performanceIndicator {
-	return &performanceIndicator{
+func newPerformanceIndicator() *rpcPerformanceIndicator {
+	return &rpcPerformanceIndicator{
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
@@ -28,7 +28,7 @@ func newPerformanceIndicator() *performanceIndicator {
 }
 
 // Calculate ...
-func (p *performanceIndicator) Calculate(
+func (p *rpcPerformanceIndicator) Calculate(
 	nowNS int64,
 ) (int64, time.Duration) {
 	p.Lock()
@@ -55,7 +55,7 @@ func (p *performanceIndicator) Calculate(
 }
 
 // Count ...
-func (p *performanceIndicator) Count(
+func (p *rpcPerformanceIndicator) Count(
 	duration time.Duration,
 	origin string,
 	successful bool,

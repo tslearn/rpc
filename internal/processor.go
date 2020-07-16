@@ -24,7 +24,7 @@ type rpcReplyNode struct {
 	callString  string
 	debugString string
 	argTypes    []reflect.Type
-	indicator   *performanceIndicator
+	indicator   *rpcPerformanceIndicator
 }
 
 type rpcServiceNode struct {
