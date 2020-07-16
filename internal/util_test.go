@@ -178,7 +178,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 func TestTimeNowNS(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 500000; i++ {
+	for i := 0; i < 5000000; i++ {
 		nowNS := TimeNowNS()
 		assert(time.Now().UnixNano()-nowNS < int64(20*time.Millisecond)).IsTrue()
 		assert(time.Now().UnixNano()-nowNS > int64(-20*time.Millisecond)).IsTrue()
@@ -217,7 +217,7 @@ func TestTimeNowISOString(t *testing.T) {
 			TimeNowISOString(),
 		); err == nil {
 			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() < int64(15*time.Millisecond),
+				time.Now().UnixNano()-nowNS.UnixNano() < int64(30*time.Millisecond),
 			).IsTrue()
 			assert(
 				time.Now().UnixNano()-nowNS.UnixNano() > int64(-15*time.Millisecond),
@@ -242,7 +242,7 @@ func TestTimeSpanBetween(t *testing.T) {
 	start := TimeNowNS()
 	time.Sleep(50 * time.Millisecond)
 	dur := TimeSpanBetween(start, TimeNowNS())
-	assert(int64(dur) > int64(40*time.Millisecond)).IsTrue()
+	assert(int64(dur) > int64(30*time.Millisecond)).IsTrue()
 	assert(int64(dur) < int64(60*time.Millisecond)).IsTrue()
 }
 

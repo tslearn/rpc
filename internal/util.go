@@ -202,7 +202,7 @@ func runStoreTime() {
 			timeNS:        now.UnixNano(),
 			timeISOString: ConvertToIsoDateString(now),
 		}))
-		time.Sleep(850 * time.Microsecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 }
 
