@@ -95,7 +95,7 @@ type Client struct {
 	closeCH            chan bool
 	sessionString      string
 	conn               IStreamConnection
-	logger             *internal.RPCLogger
+	logger             *internal.Logger
 	endPoint           IAdapter
 	preSendHead        *sendItem
 	preSendTail        *sendItem

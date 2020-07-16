@@ -307,7 +307,7 @@ func (p *serverSession) Release() {
 // Begin ***** Server ***** //
 type Server struct {
 	isOpen      bool
-	logger      *internal.RPCLogger
+	logger      *internal.Logger
 	endPoints   []IAdapter
 	processor   *internal.RPCProcessor
 	sessionMap  sync.Map
@@ -400,7 +400,7 @@ func (p *Server) Stop() {
 	})
 }
 
-func (p *Server) GetLogger() *internal.RPCLogger {
+func (p *Server) GetLogger() *internal.Logger {
 	return p.logger
 }
 
