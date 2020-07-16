@@ -244,10 +244,7 @@ func (p *Processor) AddService(
 	debug string,
 ) Error {
 	if service == nil {
-		return NewErrorByDebug(
-			"Service is nil",
-			debug,
-		)
+		return NewError("Service is nil").AddDebug(debug)
 	}
 
 	return p.mountNode(rootName, &childMeta{
@@ -268,53 +265,42 @@ func (p *Processor) mountNode(
 
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
-		return NewErrorByDebug(
+		return NewError(
 			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
-			nodeMeta.debug,
-		)
+		).AddDebug(nodeMeta.debug)
 	}
 
 	// check nodeMeta.service is not nil
 	if nodeMeta.service == nil {
-		return NewErrorByDebug(
-			"Service is nil",
-			nodeMeta.debug,
-		)
+		return NewError("Service is nil").AddDebug(nodeMeta.debug)
 	}
 
 	// check max node depth overflow
 	parentNode, ok := p.servicesMap[parentServiceNodePath]
 	if !ok {
-		return NewErrorByDebug(
+		return NewError(
 			"rpc: mountNode: parentNode is nil",
-			nodeMeta.debug,
-		)
+		).AddDebug(nodeMeta.debug)
 	}
 	servicePath := parentServiceNodePath + "." + nodeMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Service path depth %s is too long, it must be less or equal than %d",
-				servicePath,
-				p.maxNodeDepth,
-			),
-			nodeMeta.debug,
-		)
+		return NewError(fmt.Sprintf(
+			"Service path depth %s is too long, it must be less or equal than %d",
+			servicePath,
+			p.maxNodeDepth,
+		)).AddDebug(nodeMeta.debug)
 	}
 
 	// check the mount path is not occupied
 	if item, ok := p.servicesMap[servicePath]; ok {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Service name \"%s\" is duplicated",
-				nodeMeta.name,
-			),
-			fmt.Sprintf(
-				"Current:\n%s\nConflict:\n%s",
-				AddPrefixPerLine(nodeMeta.debug, "\t"),
-				AddPrefixPerLine(item.addMeta.debug, "\t"),
-			),
-		)
+		return NewError(fmt.Sprintf(
+			"Service name \"%s\" is duplicated",
+			nodeMeta.name,
+		)).AddDebug(fmt.Sprintf(
+			"Current:\n%s\nConflict:\n%s",
+			AddPrefixPerLine(nodeMeta.debug, "\t"),
+			AddPrefixPerLine(item.addMeta.debug, "\t"),
+		))
 	}
 
 	node := &serviceNode{
@@ -363,80 +349,62 @@ func (p *Processor) mountReply(
 
 	// check the name
 	if !replyNameRegex.MatchString(replyMeta.name) {
-		return NewErrorByDebug(
+		return NewError(
 			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
-			replyMeta.debug,
-		)
+		).AddDebug(replyMeta.debug)
 	}
 
 	// check the reply path is not occupied
 	replyPath := serviceNode.path + ":" + replyMeta.name
 	if item, ok := p.repliesMap[replyPath]; ok {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Reply name %s is duplicated",
-				replyMeta.name,
-			),
-			fmt.Sprintf(
-				"Current:\n%s\nConflict:\n%s",
-				AddPrefixPerLine(replyMeta.debug, "\t"),
-				AddPrefixPerLine(item.replyMeta.debug, "\t"),
-			),
-		)
+		return NewError(fmt.Sprintf(
+			"Reply name %s is duplicated",
+			replyMeta.name,
+		)).AddDebug(fmt.Sprintf(
+			"Current:\n%s\nConflict:\n%s",
+			AddPrefixPerLine(replyMeta.debug, "\t"),
+			AddPrefixPerLine(item.replyMeta.debug, "\t"),
+		))
 	}
 
 	// check the reply handler is nil
 	if replyMeta.handler == nil {
-		return NewErrorByDebug(
-			"Reply handler is nil",
-			replyMeta.debug,
-		)
+		return NewError("Reply handler is nil").AddDebug(replyMeta.debug)
 	}
 
 	// Check reply handler is Func
 	fn := reflect.ValueOf(replyMeta.handler)
 	if fn.Kind() != reflect.Func {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Reply handler must be func(ctx %s, ...) %s",
-				convertTypeToString(contextType),
-				convertTypeToString(returnType),
-			),
-			replyMeta.debug,
-		)
+		return NewError(fmt.Sprintf(
+			"Reply handler must be func(ctx %s, ...) %s",
+			convertTypeToString(contextType),
+			convertTypeToString(returnType),
+		)).AddDebug(replyMeta.debug)
 	}
 
 	// Check reply handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Reply handler 1st argument type must be %s",
-				convertTypeToString(contextType),
-			),
-			replyMeta.debug,
-		)
+		return NewError(fmt.Sprintf(
+			"Reply handler 1st argument type must be %s",
+			convertTypeToString(contextType),
+		)).AddDebug(replyMeta.debug)
 	} else if argumentsErrorPos > 0 {
-		return NewErrorByDebug(
-			fmt.Sprintf(
-				"Reply handler %s argument type <%s> not supported",
-				ConvertOrdinalToString(1+uint(argumentsErrorPos)),
-				fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
-			),
-			replyMeta.debug,
-		)
+		return NewError(fmt.Sprintf(
+			"Reply handler %s argument type <%s> not supported",
+			ConvertOrdinalToString(1+uint(argumentsErrorPos)),
+			fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
+		)).AddDebug(replyMeta.debug)
 	}
 
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return NewErrorByDebug(
+		return NewError(
 			fmt.Sprintf(
 				"Reply handler return type must be %s",
 				convertTypeToString(returnType),
-			),
-			replyMeta.debug,
-		)
+			)).AddDebug(replyMeta.debug)
 	}
 
 	// mount the replyRecord

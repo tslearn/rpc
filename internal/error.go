@@ -5,7 +5,7 @@ type Error interface {
 	GetMessage() string
 	GetDebug() string
 	GetExtra() string
-	AddDebug(debug string)
+	AddDebug(debug string) Error
 	SetExtra(extra string)
 	Error() string
 }
@@ -15,15 +15,6 @@ func NewError(message string) Error {
 	return &rpcError{
 		message: message,
 		debug:   "",
-		extra:   "",
-	}
-}
-
-// NewErrorByDebug create new error
-func NewErrorByDebug(message string, debug string) Error {
-	return &rpcError{
-		message: message,
-		debug:   debug,
 		extra:   "",
 	}
 }
@@ -51,11 +42,12 @@ func (p *rpcError) GetDebug() string {
 	return p.debug
 }
 
-func (p *rpcError) AddDebug(debug string) {
+func (p *rpcError) AddDebug(debug string) Error {
 	if p.debug != "" {
 		p.debug += "\n"
 	}
 	p.debug += debug
+	return p
 }
 
 func (p *rpcError) GetExtra() string {

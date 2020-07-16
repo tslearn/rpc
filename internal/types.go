@@ -90,10 +90,9 @@ func (p *Context) Error(err Error) *Return {
 }
 
 func (p *Context) Errorf(format string, a ...interface{}) *Return {
-	return p.Error(NewErrorByDebug(
+	return p.Error(NewError(
 		fmt.Sprintf(format, a...),
-		GetStackString(1),
-	))
+	).AddDebug(GetStackString(1)))
 }
 
 // Bool ...

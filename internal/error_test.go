@@ -16,16 +16,16 @@ func TestNewErrorByDebug(t *testing.T) {
 
 	var testCollection = [][2]interface{}{
 		{
-			NewErrorByDebug("", ""),
+			NewError("").AddDebug(""),
 			"",
 		}, {
-			NewErrorByDebug("message", ""),
+			NewError("message").AddDebug(""),
 			"message\n",
 		}, {
-			NewErrorByDebug("", "debug"),
+			NewError("").AddDebug("debug"),
 			"Debug:\n\tdebug\n",
 		}, {
-			NewErrorByDebug("message", "debug"),
+			NewError("message").AddDebug("debug"),
 			"message\nDebug:\n\tdebug\n",
 		},
 	}
@@ -45,12 +45,12 @@ func TestConvertToError(t *testing.T) {
 
 func TestRpcError_GetMessage(t *testing.T) {
 	assert := NewAssert(t)
-	assert(NewErrorByDebug("message", "debug").GetMessage()).Equals("message")
+	assert(NewError("message").AddDebug("debug").GetMessage()).Equals("message")
 }
 
 func TestRpcError_GetDebug(t *testing.T) {
 	assert := NewAssert(t)
-	assert(NewErrorByDebug("message", "debug").GetDebug()).Equals("debug")
+	assert(NewError("message").AddDebug("debug").GetDebug()).Equals("debug")
 }
 
 func TestRpcError_AddDebug(t *testing.T) {
