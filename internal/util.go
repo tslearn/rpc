@@ -212,17 +212,6 @@ func onCacheFailed() {
 			if atomic.LoadPointer(&timeNowPointer) == nil {
 				go runStoreTime()
 			}
-			//now := time.Now()
-			//if atomic.CompareAndSwapPointer(
-			//	&timeNowPointer,
-			//	nil,
-			//	unsafe.Pointer(&timeInfo{
-			//		timeNS:        now.UnixNano(),
-			//		timeISOString: ConvertToIsoDateString(now),
-			//	}),
-			//) {
-			//	go runStoreTime()
-			//}
 		}
 	}
 }
