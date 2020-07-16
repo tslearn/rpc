@@ -44,7 +44,7 @@ type Processor struct {
 	freeThreadsCHGroup []chan *thread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	onLog              func(tag string, err *rpcError)
+	onLog              func(tag string, err Error)
 	onPanic            func(v interface{}, debug string)
 	Lock
 }
@@ -56,7 +56,7 @@ func NewProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache ReplyCache,
-	onLog func(tag string, err *rpcError),
+	onLog func(tag string, err Error),
 	onPanic func(v interface{}, debug string),
 ) *Processor {
 	if numOfThreads == 0 {
