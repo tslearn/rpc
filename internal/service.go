@@ -1,5 +1,7 @@
 package internal
 
+import "sync"
+
 type replyMeta struct {
 	name    string      // the name of reply
 	handler interface{} // reply handler
@@ -16,7 +18,7 @@ type Service struct {
 	children []*childMeta // all the children node meta pointer
 	replies  []*replyMeta // all the replies meta pointer
 	debug    string       // where the service define in source file
-	Lock
+	sync.Mutex
 }
 
 // NewService define a new service
@@ -33,28 +35,27 @@ func (p *Service) Reply(
 	name string,
 	handler interface{},
 ) *Service {
-	p.DoWithLock(func() {
-		// add reply meta
-		p.replies = append(p.replies, &replyMeta{
-			name:    name,
-			handler: handler,
-			debug:   GetStackString(3),
-		})
+	p.Lock()
+	defer p.Unlock()
+	// add reply meta
+	p.replies = append(p.replies, &replyMeta{
+		name:    name,
+		handler: handler,
+		debug:   GetStackString(3),
 	})
 	return p
 }
 
 // AddChild add child service
 func (p *Service) AddChild(name string, service *Service) *Service {
-	// lock
-	p.DoWithLock(func() {
-		// add child meta
-		p.children = append(p.children, &childMeta{
-			name:    name,
-			service: service,
-			debug:   GetStackString(3),
-		})
-	})
+	p.Lock()
+	defer p.Unlock()
 
+	// add child meta
+	p.children = append(p.children, &childMeta{
+		name:    name,
+		service: service,
+		debug:   GetStackString(3),
+	})
 	return p
 }

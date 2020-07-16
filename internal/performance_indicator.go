@@ -13,7 +13,7 @@ type performanceIndicator struct {
 	lastTotal    int64
 	lastNS       int64
 	originMap    sync.Map
-	Lock
+	sync.Mutex
 }
 
 // newPerformanceIndicator ...
@@ -30,31 +30,28 @@ func newPerformanceIndicator() *performanceIndicator {
 // Calculate ...
 func (p *performanceIndicator) Calculate(
 	nowNS int64,
-) (speed int64, interval time.Duration) {
-	p.DoWithLock(func() {
-		// calculate total called
-		total := atomic.LoadInt64(&p.failed)
-		for i := 0; i < 10; i++ {
-			total += atomic.LoadInt64(&p.successArray[i])
-		}
-		deltaCount := total - p.lastTotal
-		deltaNS := nowNS - p.lastNS
+) (int64, time.Duration) {
+	p.Lock()
+	defer p.Unlock()
 
-		if deltaNS <= 0 {
-			speed = -1
-			interval = time.Duration(0)
-		} else if deltaCount < 0 {
-			speed = -1
-			interval = time.Duration(0)
-		} else {
-			p.lastNS = nowNS
-			p.lastTotal = total
-			speed = (deltaCount * int64(time.Second)) / deltaNS
-			interval = time.Duration(deltaNS)
-		}
-	})
+	// calculate total called
+	total := atomic.LoadInt64(&p.failed)
+	for i := 0; i < 10; i++ {
+		total += atomic.LoadInt64(&p.successArray[i])
+	}
+	deltaCount := total - p.lastTotal
+	deltaNS := nowNS - p.lastNS
 
-	return
+	if deltaNS <= 0 {
+		return -1, time.Duration(0)
+	} else if deltaCount < 0 {
+		return -1, time.Duration(0)
+	} else {
+		p.lastNS = nowNS
+		p.lastTotal = total
+		return (deltaCount * int64(time.Second)) / deltaNS,
+			time.Duration(deltaNS)
+	}
 }
 
 // Count ...

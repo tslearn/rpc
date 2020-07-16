@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -21,7 +22,7 @@ type thread struct {
 	execSuccessful bool
 	from           string
 	closeCH        chan bool
-	Lock
+	sync.Mutex
 }
 
 func newThread(
@@ -57,20 +58,21 @@ func newThread(
 }
 
 func (p *thread) Stop() bool {
-	return p.CallWithLock(func() interface{} {
-		if !p.isRunning {
+	p.Lock()
+	defer p.Unlock()
+
+	if !p.isRunning {
+		return false
+	} else {
+		p.isRunning = false
+		close(p.ch)
+		select {
+		case <-time.After(10 * time.Second):
 			return false
-		} else {
-			p.isRunning = false
-			close(p.ch)
-			select {
-			case <-time.After(10 * time.Second):
-				return false
-			case <-p.closeCH:
-				return true
-			}
+		case <-p.closeCH:
+			return true
 		}
-	}).(bool)
+	}
 }
 
 func (p *thread) PutStream(stream *Stream) bool {

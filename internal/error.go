@@ -6,7 +6,7 @@ type Error interface {
 	GetDebug() string
 	GetExtra() string
 	AddDebug(debug string) Error
-	SetExtra(extra string)
+	SetExtra(extra string) Error
 	Error() string
 }
 
@@ -54,8 +54,9 @@ func (p *rpcError) GetExtra() string {
 	return p.extra
 }
 
-func (p *rpcError) SetExtra(extra string) {
+func (p *rpcError) SetExtra(extra string) Error {
 	p.extra = extra
+	return p
 }
 
 func (p *rpcError) Error() string {
