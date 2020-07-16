@@ -26,7 +26,7 @@ func runWithFail(fn func(assert func(args ...interface{}) *Assert)) bool {
 	}
 }
 
-func TestNewRPCAssert(t *testing.T) {
+func TestNewAssert(t *testing.T) {
 	assert := NewAssert(t)
 
 	assert(assert(3).args[0]).Equals(3)
@@ -36,14 +36,14 @@ func TestNewRPCAssert(t *testing.T) {
 	assert(assert(3).t).Equals(t)
 }
 
-func TestRPCAssert_Fail(t *testing.T) {
+func TestAssert_Fail(t *testing.T) {
 	assert := NewAssert(t)
 	assert(runWithFail(func(assert func(args ...interface{}) *Assert) {
 		assert(nil).Fail()
 	})).IsTrue()
 }
 
-func TestRPCAssert_Equals(t *testing.T) {
+func TestAssert_Equals(t *testing.T) {
 	assert := NewAssert(t)
 	assert(nil).Equals(nil)
 	assert(3).Equals(3)
@@ -82,7 +82,7 @@ func TestRPCAssert_Equals(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestRPCAssert_IsNil(t *testing.T) {
+func TestAssert_IsNil(t *testing.T) {
 	assert := NewAssert(t)
 
 	assert(nil).IsNil()
@@ -109,7 +109,7 @@ func TestRPCAssert_IsNil(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestRPCAssert_IsNotNil(t *testing.T) {
+func TestAssert_IsNotNil(t *testing.T) {
 	assert := NewAssert(t)
 	assert(t).IsNotNil()
 
@@ -124,7 +124,7 @@ func TestRPCAssert_IsNotNil(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestRPCAssert_IsTrue(t *testing.T) {
+func TestAssert_IsTrue(t *testing.T) {
 	assert := NewAssert(t)
 	assert(true).IsTrue()
 
@@ -145,7 +145,7 @@ func TestRPCAssert_IsTrue(t *testing.T) {
 	})).IsTrue()
 }
 
-func TestRPCAssert_IsFalse(t *testing.T) {
+func TestAssert_IsFalse(t *testing.T) {
 	assert := NewAssert(t)
 	assert(false).IsFalse()
 
