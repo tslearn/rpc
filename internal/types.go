@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	nilContext  = (*RPCContext)(nil)
+	nilContext  = (*Context)(nil)
 	nilReturn   = (*Return)(nil)
 	contextType = reflect.ValueOf(nilContext).Type()
 	returnType  = reflect.ValueOf(nilReturn).Type()
@@ -24,27 +24,27 @@ var (
 
 const StreamBodyPos = 33
 
-// RPCReplyCache ...
-type RPCReplyCache interface {
-	Get(fnString string) RPCReplyCacheFunc
+// ReplyCache ...
+type ReplyCache interface {
+	Get(fnString string) ReplyCacheFunc
 }
 
-// RPCReplyCacheFunc ...
-type RPCReplyCacheFunc = func(
-	ctx *RPCContext,
+// ReplyCacheFunc ...
+type ReplyCacheFunc = func(
+	ctx *Context,
 	stream *Stream,
 	fn interface{},
 ) bool
 
-type RPCContext struct {
+type Context struct {
 	thread unsafe.Pointer
 }
 
-func (p *RPCContext) stop() {
+func (p *Context) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
-func (p *RPCContext) writeError(message string, debug string) *Return {
+func (p *Context) writeError(message string, debug string) *Return {
 	if thread := (*thread)(p.thread); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(StreamBodyPos)
@@ -57,7 +57,7 @@ func (p *RPCContext) writeError(message string, debug string) *Return {
 }
 
 // OK get success Return  by value
-func (p *RPCContext) OK(value interface{}) *Return {
+func (p *Context) OK(value interface{}) *Return {
 	if thread := (*thread)(p.thread); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(StreamBodyPos)
@@ -75,7 +75,7 @@ func (p *RPCContext) OK(value interface{}) *Return {
 	return nilReturn
 }
 
-func (p *RPCContext) Error(err Error) *Return {
+func (p *Context) Error(err Error) *Return {
 	if err == nil {
 		return nilReturn
 	}
@@ -89,7 +89,7 @@ func (p *RPCContext) Error(err Error) *Return {
 	return p.writeError(err.GetMessage(), err.GetDebug())
 }
 
-func (p *RPCContext) Errorf(format string, a ...interface{}) *Return {
+func (p *Context) Errorf(format string, a ...interface{}) *Return {
 	return p.Error(NewErrorByDebug(
 		fmt.Sprintf(format, a...),
 		GetStackString(1),

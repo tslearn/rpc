@@ -18,7 +18,7 @@ var (
 
 type replyNode struct {
 	replyMeta   *replyMeta
-	cacheFN     RPCReplyCacheFunc
+	cacheFN     ReplyCacheFunc
 	reflectFn   reflect.Value
 	callString  string
 	debugString string
@@ -35,7 +35,7 @@ type serviceNode struct {
 // Processor ...
 type Processor struct {
 	isDebug            bool
-	fnCache            RPCReplyCache
+	fnCache            ReplyCache
 	repliesMap         map[string]*replyNode
 	servicesMap        map[string]*serviceNode
 	maxNodeDepth       uint64
@@ -53,7 +53,7 @@ func NewProcessor(
 	numOfThreads uint,
 	maxNodeDepth uint,
 	maxCallDepth uint,
-	fnCache RPCReplyCache,
+	fnCache ReplyCache,
 ) *Processor {
 	if numOfThreads == 0 {
 		return nil
@@ -448,7 +448,7 @@ func (p *Processor) mountReply(
 	}
 	argString := strings.Join(argStrings, ", ")
 
-	cacheFN := RPCReplyCacheFunc(nil)
+	cacheFN := ReplyCacheFunc(nil)
 	if fnTypeString, ok := getFuncKind(replyMeta.handler); ok && p.fnCache != nil {
 		cacheFN = p.fnCache.Get(fnTypeString)
 	}

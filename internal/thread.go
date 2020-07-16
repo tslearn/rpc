@@ -88,7 +88,7 @@ func (p *thread) eval(
 	// create context
 	p.inStream = inStream
 	p.execSuccessful = false
-	ctx := &RPCContext{thread: unsafe.Pointer(p)}
+	ctx := &Context{thread: unsafe.Pointer(p)}
 
 	defer func() {
 		if v := recover(); v != nil {

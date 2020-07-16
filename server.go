@@ -316,7 +316,7 @@ type Server struct {
 	internal.Lock
 }
 
-func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.RPCReplyCache) *Server {
+func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
 	server := &Server{
 		isOpen:      false,
 		logger:      internal.NewLogger(nil),

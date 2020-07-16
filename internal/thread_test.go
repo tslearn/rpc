@@ -67,7 +67,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test basic
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -94,7 +94,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test read reply path error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -117,7 +117,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// reply path is not mounted
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -140,7 +140,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth data format error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -163,7 +163,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// depth is overflow
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -189,7 +189,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// from data format error
 	runWithProcessor(
-		func(ctx *RPCContext, name string) *Return {
+		func(ctx *Context, name string) *Return {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -210,7 +210,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// OK, call with all type value
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -241,7 +241,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 1st param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -281,7 +281,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 2nd param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -321,7 +321,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 3rd param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -361,7 +361,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 4th param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -401,7 +401,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 5th param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -441,7 +441,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 6th param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -481,7 +481,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 7th param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -521,7 +521,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// error with 8th param
 	runWithProcessor(
-		func(ctx *RPCContext,
+		func(ctx *Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *Return {
@@ -561,7 +561,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcBytes
 	runWithProcessor(
-		func(ctx *RPCContext, a Bytes) *Return {
+		func(ctx *Context, a Bytes) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -586,7 +586,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcArray
 	runWithProcessor(
-		func(ctx *RPCContext, a Array) *Return {
+		func(ctx *Context, a Array) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -610,7 +610,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test nil rpcMap
 	runWithProcessor(
-		func(ctx *RPCContext, a Map) *Return {
+		func(ctx *Context, a Map) *Return {
 			if a != nil {
 				return ctx.Errorf("param is not nil")
 			}
@@ -634,7 +634,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// test unsupported type
 	runWithProcessor(
-		func(ctx *RPCContext, a bool) *Return {
+		func(ctx *Context, a bool) *Return {
 			return ctx.OK(a)
 		},
 		func(processor *Processor) *Stream {
@@ -664,7 +664,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// nil text
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool, rpcMap Map) *Return {
+		func(ctx *Context, bVal bool, rpcMap Map) *Return {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -695,7 +695,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// stream is broken
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool, rpcMap Map) *Return {
+		func(ctx *Context, bVal bool, rpcMap Map) *Return {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -718,7 +718,7 @@ func TestRpcThread_eval(t *testing.T) {
 
 	// call function error
 	runWithProcessor(
-		func(ctx *RPCContext, bVal bool) *Return {
+		func(ctx *Context, bVal bool) *Return {
 			if bVal {
 				panic("this is a error")
 			}

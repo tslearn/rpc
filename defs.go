@@ -65,7 +65,7 @@ type Error = internal.Error
 type Return = *internal.Return
 
 // Context ...
-type Context = *internal.RPCContext
+type Context = *internal.Context
 
 // Service ...
 type Service = internal.Service

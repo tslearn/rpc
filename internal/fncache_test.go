@@ -10,15 +10,15 @@ import (
 
 type testFuncCache struct{}
 
-func (p *testFuncCache) Get(fnString string) RPCReplyCacheFunc {
+func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	switch fnString {
 	case "S":
-		return func(c *RPCContext, s *Stream, f interface{}) bool {
+		return func(c *Context, s *Stream, f interface{}) bool {
 			h, ok := s.ReadString()
 			if !ok || s.CanRead() {
 				return false
 			}
-			f.(func(*RPCContext, string) *Return)(c, h)
+			f.(func(*Context, string) *Return)(c, h)
 			return true
 		}
 	default:
@@ -50,7 +50,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor1 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor1.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext) *Return {
+		Reply("sayHello", func(ctx *Context) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor1.BuildCache(
@@ -64,7 +64,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor2 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor2.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Bool) *Return {
+		Reply("sayHello", func(ctx *Context, _ Bool) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor2.BuildCache(
@@ -78,7 +78,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor3 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor3.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Int64) *Return {
+		Reply("sayHello", func(ctx *Context, _ Int64) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor3.BuildCache(
@@ -92,7 +92,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor4 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor4.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Uint64) *Return {
+		Reply("sayHello", func(ctx *Context, _ Uint64) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor4.BuildCache(
@@ -106,7 +106,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor5 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor5.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Float64) *Return {
+		Reply("sayHello", func(ctx *Context, _ Float64) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor5.BuildCache(
@@ -120,7 +120,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor6 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor6.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ String) *Return {
+		Reply("sayHello", func(ctx *Context, _ String) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor6.BuildCache(
@@ -134,7 +134,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor7 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor7.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Bytes) *Return {
+		Reply("sayHello", func(ctx *Context, _ Bytes) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor7.BuildCache(
@@ -148,7 +148,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor8 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor8.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Array) *Return {
+		Reply("sayHello", func(ctx *Context, _ Array) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor8.BuildCache(
@@ -162,7 +162,7 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor9 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor9.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *RPCContext, _ Map) *Return {
+		Reply("sayHello", func(ctx *Context, _ Map) *Return {
 			return ctx.OK(true)
 		}), "")
 	assert(processor9.BuildCache(
@@ -177,7 +177,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor10 := NewProcessor(true, 8192, 16, 32, nil)
 	_ = processor10.AddService("abc", NewService().
 		Reply("sayHello", func(
-			ctx *RPCContext, _ Bool, _ Int64, _ Uint64, _ Float64, _ String,
+			ctx *Context, _ Bool, _ Int64, _ Uint64, _ Float64, _ String,
 			_ Bytes, _ Array, _ Map,
 		) *Return {
 			return ctx.OK(true)
