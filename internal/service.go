@@ -41,7 +41,7 @@ func (p *Service) Reply(
 	p.replies = append(p.replies, &replyMeta{
 		name:    name,
 		handler: handler,
-		debug:   GetStackString(3),
+		debug:   GetStackString(1),
 	})
 	return p
 }
@@ -55,7 +55,7 @@ func (p *Service) AddChild(name string, service *Service) *Service {
 	p.children = append(p.children, &childMeta{
 		name:    name,
 		service: service,
-		debug:   GetStackString(3),
+		debug:   GetStackString(1),
 	})
 	return p
 }
