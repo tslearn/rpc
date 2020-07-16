@@ -7,17 +7,17 @@ import (
 	"testing"
 )
 
-// RPCAssert ...
-type RPCAssert struct {
+// Assert ...
+type Assert struct {
 	t        interface{ Fail() }
 	hookFail func()
 	args     []interface{}
 }
 
-// NewRPCAssert create new assert class
-func NewRPCAssert(t *testing.T) func(args ...interface{}) *RPCAssert {
-	return func(args ...interface{}) *RPCAssert {
-		return &RPCAssert{
+// NewAssert create new assert class
+func NewAssert(t *testing.T) func(args ...interface{}) *Assert {
+	return func(args ...interface{}) *Assert {
+		return &Assert{
 			t:        t,
 			hookFail: nil,
 			args:     args,
@@ -26,7 +26,7 @@ func NewRPCAssert(t *testing.T) func(args ...interface{}) *RPCAssert {
 }
 
 // Fail ...
-func (p *RPCAssert) Fail() {
+func (p *Assert) Fail() {
 	if p.hookFail != nil {
 		p.hookFail()
 	} else {
@@ -38,7 +38,7 @@ func (p *RPCAssert) Fail() {
 }
 
 // Equals ...
-func (p *RPCAssert) Equals(args ...interface{}) {
+func (p *Assert) Equals(args ...interface{}) {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else if len(p.args) != len(args) {
@@ -53,7 +53,7 @@ func (p *RPCAssert) Equals(args ...interface{}) {
 }
 
 // IsNil ...
-func (p *RPCAssert) IsNil() {
+func (p *Assert) IsNil() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -66,7 +66,7 @@ func (p *RPCAssert) IsNil() {
 }
 
 // IsNotNil ...
-func (p *RPCAssert) IsNotNil() {
+func (p *Assert) IsNotNil() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -79,7 +79,7 @@ func (p *RPCAssert) IsNotNil() {
 }
 
 // IsTrue ...
-func (p *RPCAssert) IsTrue() {
+func (p *Assert) IsTrue() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {
@@ -92,7 +92,7 @@ func (p *RPCAssert) IsTrue() {
 }
 
 // IsFalse ...
-func (p *RPCAssert) IsFalse() {
+func (p *Assert) IsFalse() {
 	if len(p.args) < 1 {
 		p.Fail()
 	} else {

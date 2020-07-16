@@ -35,7 +35,7 @@ func readStringFromFile(filePath string) (string, error) {
 }
 
 func TestFnCache_basic(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
 	processor0 := NewRPCProcessor(true, 8192, 16, 32, nil)

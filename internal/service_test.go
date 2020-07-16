@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewService(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	service := NewService()
 	assert(service).IsNotNil()
@@ -19,7 +19,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestRpcService_Add(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 	childService := NewService()
 	service := NewService().AddChild("user", childService)
 	assert(service).IsNotNil()
@@ -37,7 +37,7 @@ func TestRpcService_Add(t *testing.T) {
 }
 
 func TestRpcService_Reply(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 	service := NewService().Reply("sayHello", 2345)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(0)

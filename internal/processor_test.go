@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewRPCProcessor(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
 	assert(processor).IsNotNil()
@@ -26,7 +26,7 @@ func TestNewRPCProcessor(t *testing.T) {
 }
 
 func TestRPCProcessor_Start_Stop(t *testing.T) {
-	//assert := NewRPCAssert(t)
+	//assert := NewAssert(t)
 	//
 	//processor := NewRPCProcessor(true, 8192, 16, 32, nil, nil)
 	//assert(processor.Stop()).IsNotNil()
@@ -57,7 +57,7 @@ func TestRPCProcessor_Start_Stop(t *testing.T) {
 }
 
 func TestRPCProcessor_PutStream(t *testing.T) {
-	//assert := NewRPCAssert(t)
+	//assert := NewAssert(t)
 	//processor := NewRPCProcessor(16, 32, nil, nil)
 	//assert(processor.PutStream(NewRPCStream())).IsFalse()
 	//processor.Start()
@@ -69,7 +69,7 @@ func TestRPCProcessor_PutStream(t *testing.T) {
 }
 
 func TestRPCProcessor_AddService(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 32, nil)
 	assert(processor.AddService("test", nil, "DebugMessage")).
@@ -83,7 +83,7 @@ func TestRPCProcessor_AddService(t *testing.T) {
 }
 
 func TestRPCProcessor_BuildCache(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 
 	processor0 := NewRPCProcessor(true, 8192, 16, 32, nil)
@@ -114,7 +114,7 @@ func TestRPCProcessor_BuildCache(t *testing.T) {
 }
 
 func TestRPCProcessor_mountNode(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 16, nil)
 
@@ -209,7 +209,7 @@ func TestRPCProcessor_mountNode(t *testing.T) {
 }
 
 func TestRPCProcessor_mountReply(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 16, &testFuncCache{})
 	rootNode := processor.nodesMap[rootName]
@@ -331,7 +331,7 @@ func TestRPCProcessor_mountReply(t *testing.T) {
 }
 
 func TestRPCProcessor_OutPutErrors(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	processor := NewRPCProcessor(true, 8192, 16, 16, nil)
 

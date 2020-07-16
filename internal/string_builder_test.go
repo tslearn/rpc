@@ -5,7 +5,7 @@ import (
 )
 
 func Test_NewStringBuilder(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
 	assert(len(builder.buffer)).Equals(0)
@@ -14,7 +14,7 @@ func Test_NewStringBuilder(t *testing.T) {
 }
 
 func Test_StringBuilder_Release(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
 
@@ -38,7 +38,7 @@ func Test_StringBuilder_Release(t *testing.T) {
 }
 
 func Test_StringBuilder_AppendByte(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
 	builder.AppendByte('a')
@@ -49,7 +49,7 @@ func Test_StringBuilder_AppendByte(t *testing.T) {
 }
 
 func Test_StringBuilder_AppendBytes(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	longString := ""
 	for i := 0; i < 1000; i++ {
@@ -63,7 +63,7 @@ func Test_StringBuilder_AppendBytes(t *testing.T) {
 }
 
 func Test_StringBuilder_AppendString(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	longString := ""
 	for i := 0; i < 1000; i++ {
@@ -91,7 +91,7 @@ func Test_StringBuilder_AppendString(t *testing.T) {
 }
 
 func Test_StringBuilder_Merge(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	sb1 := NewStringBuilder()
 	sb2 := NewStringBuilder()
@@ -111,7 +111,7 @@ func Test_StringBuilder_Merge(t *testing.T) {
 }
 
 func Test_StringBuilder_IsEmpty(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
 	assert(builder.IsEmpty()).IsTrue()
@@ -120,7 +120,7 @@ func Test_StringBuilder_IsEmpty(t *testing.T) {
 }
 
 func Test_StringBuilder_String(t *testing.T) {
-	assert := NewRPCAssert(t)
+	assert := NewAssert(t)
 
 	builder := NewStringBuilder()
 	builder.AppendString("a")
