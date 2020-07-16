@@ -17,7 +17,7 @@ var (
 	replyNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
 )
 
-type replyNode struct {
+type rpcReplyNode struct {
 	replyMeta   *replyMeta
 	cacheFN     ReplyCacheFunc
 	reflectFn   reflect.Value
@@ -27,7 +27,7 @@ type replyNode struct {
 	indicator   *performanceIndicator
 }
 
-type serviceNode struct {
+type rpcServiceNode struct {
 	path    string
 	addMeta *childMeta
 	depth   uint
@@ -37,8 +37,8 @@ type serviceNode struct {
 type Processor struct {
 	isDebug            bool
 	fnCache            ReplyCache
-	repliesMap         map[string]*replyNode
-	servicesMap        map[string]*serviceNode
+	repliesMap         map[string]*rpcReplyNode
+	servicesMap        map[string]*rpcServiceNode
 	maxNodeDepth       uint64
 	maxCallDepth       uint64
 	threads            []*thread
@@ -75,8 +75,8 @@ func NewProcessor(
 		ret := &Processor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
-			repliesMap:         make(map[string]*replyNode),
-			servicesMap:        make(map[string]*serviceNode),
+			repliesMap:         make(map[string]*rpcReplyNode),
+			servicesMap:        make(map[string]*rpcServiceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
 			maxCallDepth:       uint64(maxCallDepth),
 			threads:            make([]*thread, size, size),
@@ -87,7 +87,7 @@ func NewProcessor(
 			onPanic:            onPanic,
 		}
 		// mount root node
-		ret.servicesMap[rootName] = &serviceNode{
+		ret.servicesMap[rootName] = &rpcServiceNode{
 			path:    rootName,
 			addMeta: nil,
 			depth:   0,
@@ -306,7 +306,7 @@ func (p *Processor) mountNode(
 		))
 	}
 
-	node := &serviceNode{
+	node := &rpcServiceNode{
 		path:    servicePath,
 		addMeta: nodeMeta,
 		depth:   parentNode.depth + 1,
@@ -337,7 +337,7 @@ func (p *Processor) mountNode(
 }
 
 func (p *Processor) mountReply(
-	serviceNode *serviceNode,
+	serviceNode *rpcServiceNode,
 	replyMeta *replyMeta,
 ) Error {
 	// check the node is nil
@@ -433,7 +433,7 @@ func (p *Processor) mountReply(
 		cacheFN = p.fnCache.Get(fnTypeString)
 	}
 
-	p.repliesMap[replyPath] = &replyNode{
+	p.repliesMap[replyPath] = &rpcReplyNode{
 		replyMeta: replyMeta,
 		cacheFN:   cacheFN,
 		reflectFn: fn,

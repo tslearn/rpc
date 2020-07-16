@@ -124,7 +124,7 @@ func TestContext_Error(t *testing.T) {
 	//// ctx have execReplyNode
 	//thread1 := newThread(nil)
 	//thread1.stop()
-	//thread1.execReplyNode = &replyNode{debugString: "nodeDebug"}
+	//thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
 	//ctx1 := Context{thread: unsafe.Pointer(thread1)}
 	//assert(
 	//	ctx1.Error(NewErrorByDebug("errorMessage", "errorDebug")),

@@ -17,7 +17,7 @@ type thread struct {
 	inStream       *Stream
 	outStream      *Stream
 	execDepth      uint64
-	execReplyNode  *replyNode
+	execReplyNode  *rpcReplyNode
 	execArgs       []reflect.Value
 	execSuccessful bool
 	from           string
