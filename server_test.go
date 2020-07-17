@@ -32,7 +32,7 @@ func TestServer_Basic(t *testing.T) {
 
 		_ = client.Open()
 
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 500; i++ {
 			go func(idx int) {
 				fmt.Println(client.sendMessage(
 					5*time.Second,

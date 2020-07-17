@@ -113,7 +113,7 @@ func newServerSession(id uint64, size int64) *serverSession {
 }
 
 func (p *serverSession) WriteStream(stream Stream) Error {
-	return p.CallWithLock(func() interface{} {
+	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if p.conn != nil {
 			return p.conn.WriteStream(
 				stream,
@@ -125,7 +125,7 @@ func (p *serverSession) WriteStream(stream Stream) Error {
 				"serverSession: WriteStream: conn is nil",
 			)
 		}
-	}).(Error)
+	}))
 }
 
 func (p *serverSession) OnDataStream(
@@ -172,7 +172,7 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnControlStream(
 	stream Stream,
 ) Error {
-	return p.CallWithLock(func() interface{} {
+	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
 			return internal.NewError(
 				"Server: OnControlStream: stream is nil",
@@ -276,7 +276,7 @@ func (p *serverSession) OnControlStream(
 				"Server: OnControlStream: stream format error",
 			)
 		}
-	}).(Error)
+	}))
 }
 
 func (p *serverSession) Release() {

@@ -98,7 +98,7 @@ func NewProcessor(
 func (p *Processor) Start(
 	onEvalFinish func(stream *Stream, success bool),
 ) Error {
-	return p.CallWithLock(func() interface{} {
+	return ConvertToError(p.CallWithLock(func() interface{} {
 		if onEvalFinish == nil {
 			return NewError("Processor: Start: onEvalFinish is nil")
 		} else if p.freeThreadsCHGroup != nil {
@@ -140,7 +140,7 @@ func (p *Processor) Start(
 			}
 			return Error(nil)
 		}
-	}).(Error)
+	}))
 }
 
 func (p *Processor) PutStream(stream *Stream) bool {
@@ -157,8 +157,7 @@ func (p *Processor) PutStream(stream *Stream) bool {
 }
 
 func (p *Processor) Stop() Error {
-	return p.CallWithLock(func() interface{} {
-
+	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
 			return NewError("Processor: Start: it has already benn stopped")
 		} else {
@@ -219,7 +218,7 @@ func (p *Processor) Stop() Error {
 				return Error(nil)
 			}
 		}
-	}).(Error)
+	}))
 }
 
 // BuildCache ...

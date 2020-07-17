@@ -570,7 +570,7 @@ func (p *Client) sendMessage(
 		} else if debug, ok := item.stream.ReadString(); !ok {
 			return nil, internal.NewError("data format error")
 		} else {
-			return nil, internal.NewErrorByDebug(message, debug)
+			return nil, internal.NewError(message).AddDebug(debug)
 		}
 	}
 }
