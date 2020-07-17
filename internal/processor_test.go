@@ -366,7 +366,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	failed := uint64(0)
 	processor := NewProcessor(
 		true,
-		1024,
+		8192*24,
 		16,
 		16,
 		&testFuncCache{},
