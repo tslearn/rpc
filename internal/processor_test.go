@@ -22,7 +22,7 @@ func TestNewProcessor(t *testing.T) {
 	assert(processor.isDebug).IsTrue()
 	assert(processor.maxNodeDepth).Equals(uint64(16))
 	assert(processor.maxCallDepth).Equals(uint64(32))
-	processor.Stop()
+	assert(processor.Stop()).IsNotNil()
 }
 
 func TestProcessor_Start_Stop(t *testing.T) {
@@ -377,7 +377,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 
 		},
 	)
-	processor.Start(
+	_ = processor.Start(
 		func(stream *Stream, ok bool) {
 			if ok {
 				atomic.AddUint64(&success, 1)
