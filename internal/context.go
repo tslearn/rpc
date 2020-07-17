@@ -17,7 +17,7 @@ func (p *Context) stop() {
 func (p *Context) writeError(message string, debug string) *Return {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		execStream := thread.outStream
-		execStream.SetWritePos(StreamBodyPos)
+		execStream.SetWritePos(streamBodyPos)
 		execStream.WriteBool(false)
 		execStream.WriteString(message)
 		execStream.WriteString(debug)
@@ -30,7 +30,7 @@ func (p *Context) writeError(message string, debug string) *Return {
 func (p *Context) OK(value interface{}) *Return {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		stream := thread.outStream
-		stream.SetWritePos(StreamBodyPos)
+		stream.SetWritePos(streamBodyPos)
 		stream.WriteBool(true)
 
 		if stream.Write(value) != StreamWriteOK {

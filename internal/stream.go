@@ -7,6 +7,8 @@ import (
 	"unsafe"
 )
 
+const streamBodyPos = 33
+
 const (
 	// StreamWriteOK ...
 	StreamWriteOK int = iota
@@ -20,16 +22,16 @@ var (
 			ret := Stream{
 				frames:     make([]*[]byte, 1, 8),
 				readSeg:    0,
-				readIndex:  StreamBodyPos,
+				readIndex:  streamBodyPos,
 				writeSeg:   0,
-				writeIndex: StreamBodyPos,
+				writeIndex: streamBodyPos,
 			}
 			zeroFrame := make([]byte, 512, 512)
 			ret.frames[0] = &zeroFrame
 			ret.readFrame = zeroFrame
 			ret.writeFrame = zeroFrame
 			ret.writeFrame[0] = 1
-			ret.header = zeroFrame[1:StreamBodyPos]
+			ret.header = zeroFrame[1:streamBodyPos]
 			return &ret
 		},
 	}
@@ -174,11 +176,11 @@ func (p *Stream) Reset() {
 	}
 
 	p.readSeg = 0
-	p.readIndex = StreamBodyPos
+	p.readIndex = streamBodyPos
 	p.readFrame = *p.frames[0]
 
 	p.writeSeg = 0
-	p.writeIndex = StreamBodyPos
+	p.writeIndex = streamBodyPos
 	p.writeFrame = *p.frames[0]
 }
 

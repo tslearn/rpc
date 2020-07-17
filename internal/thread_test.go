@@ -84,8 +84,8 @@ func TestRpcThread_eval(t *testing.T) {
 			assert(success).Equals(true)
 			// inStream is reset
 			assert(in.GetHeader()).Equals(out.GetHeader())
-			assert(in.GetReadPos()).Equals(StreamBodyPos)
-			assert(in.GetWritePos()).Equals(StreamBodyPos)
+			assert(in.GetReadPos()).Equals(streamBodyPos)
+			assert(in.GetWritePos()).Equals(streamBodyPos)
 			assert(out.ReadBool()).Equals(true, true)
 			assert(out.Read()).Equals("hello world", true)
 			assert(out.CanRead()).IsFalse()

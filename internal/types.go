@@ -19,8 +19,6 @@ var (
 	mapType     = reflect.ValueOf(Map{}).Type()
 )
 
-const StreamBodyPos = 33
-
 // Bool ...
 type Bool = bool
 

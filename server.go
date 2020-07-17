@@ -514,7 +514,7 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 		session.conn = conn
 
 		// Set stream read pos to start
-		stream.SetReadPos(internal.StreamBodyPos)
+		stream.SetReadPos(internal.streamBodyPos)
 		if err := session.OnControlStream(stream); err != nil {
 			return nil, err
 		} else {

@@ -32,7 +32,7 @@ func (p *webSocketConn) ReadStream(
 			return nil, internal.NewError(
 				"webSocketConn: ReadStream: unsupported protocol",
 			)
-		} else if len(message) < internal.StreamBodyPos {
+		} else if len(message) < internal.streamBodyPos {
 			return nil, internal.NewError(
 				"webSocketConn: ReadStream: stream data error",
 			)
