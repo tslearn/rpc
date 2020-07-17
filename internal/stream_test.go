@@ -535,6 +535,19 @@ func TestStream_SetReadPos(t *testing.T) {
 	}
 }
 
+func TestStream_SetReadPosToBodyStart(t *testing.T) {
+	assert := NewAssert(t)
+
+	for i := streamBodyPos; i < streamBodyPos+5000; i++ {
+		stream := NewStream()
+		stream.SetWritePos(i + 1)
+		stream.SetReadPos(i)
+		assert(stream.GetReadPos()).Equals(i)
+		stream.SetReadPosToBodyStart()
+		assert(stream.GetReadPos()).Equals(streamBodyPos)
+	}
+}
+
 func TestStream_setReadPosUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 	stream := NewStream()
@@ -567,6 +580,18 @@ func TestStream_SetWritePos(t *testing.T) {
 		stream.SetWritePos(i)
 		assert(stream.GetWritePos()).Equals(i)
 		stream.Release()
+	}
+}
+
+func TestStream_SetWritePosToBodyStart(t *testing.T) {
+	assert := NewAssert(t)
+
+	for i := 1; i < 5000; i++ {
+		stream := NewStream()
+		stream.SetWritePos(i)
+		assert(stream.GetWritePos()).Equals(i)
+		stream.SetWritePosToBodyStart()
+		assert(stream.GetWritePos()).Equals(streamBodyPos)
 	}
 }
 

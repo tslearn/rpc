@@ -310,7 +310,7 @@ type Server struct {
 	sessionMap  sync.Map
 	sessionSize int64
 	sessionSeed uint64
-	internal.Lock
+	sync.Mutex
 }
 
 func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
@@ -342,62 +342,64 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 }
 
 func (p *Server) Start() bool {
-	return p.CallWithLock(func() interface{} {
-		if p.isOpen {
-			p.onError(internal.NewError("Server: Start: it is already opened"))
-			return false
-		} else if err := p.processor.Start(
-			func(stream Stream, success bool) {
-				if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
-					if session, ok := v.(*serverSession); ok && session != nil {
-						if err := session.WriteStream(stream); err != nil {
-							p.logger.Error(err.Error())
-						}
+	p.Lock()
+	defer p.Unlock()
+
+	if p.isOpen {
+		p.onError(internal.NewError("Server: Start: it is already opened"))
+		return false
+	} else if err := p.processor.Start(
+		func(stream Stream, success bool) {
+			if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
+				if session, ok := v.(*serverSession); ok && session != nil {
+					if err := session.WriteStream(stream); err != nil {
+						p.logger.Error(err.Error())
 					}
-				}
-			},
-		); err != nil {
-			p.onError(err)
-			return false
-		} else {
-			openList := make([]IAdapter, 0)
-			defer func() {
-				if openList != nil {
-					for _, v := range openList {
-						v.Close(p.onError)
-					}
-				}
-			}()
-			for _, endPoint := range p.endPoints {
-				if endPoint.Open(p.onConnRun, p.onError) {
-					openList = append(openList, endPoint)
-				} else {
-					return false
 				}
 			}
-			openList = nil
-			p.isOpen = true
-			return true
+		},
+	); err != nil {
+		p.onError(err)
+		return false
+	} else {
+		openList := make([]IAdapter, 0)
+		defer func() {
+			if openList != nil {
+				for _, v := range openList {
+					v.Close(p.onError)
+				}
+			}
+		}()
+		for _, endPoint := range p.endPoints {
+			if endPoint.Open(p.onConnRun, p.onError) {
+				openList = append(openList, endPoint)
+			} else {
+				return false
+			}
 		}
-	}).(bool)
+		openList = nil
+		p.isOpen = true
+		return true
+	}
 }
 
 func (p *Server) Stop() {
-	p.DoWithLock(func() {
-		if !p.isOpen {
-			p.onError(internal.NewError("Server: Stop: it is not opened"))
-		} else {
-			p.isOpen = false
+	p.Lock()
+	defer p.Unlock()
 
-			for _, endPoint := range p.endPoints {
-				endPoint.Close(p.onError)
-			}
+	if !p.isOpen {
+		p.onError(internal.NewError("Server: Stop: it is not opened"))
+	} else {
+		p.isOpen = false
 
-			if err := p.processor.Stop(); err != nil {
-				p.onError(err)
-			}
+		for _, endPoint := range p.endPoints {
+			endPoint.Close(p.onError)
 		}
-	})
+
+		if err := p.processor.Stop(); err != nil {
+			p.onError(err)
+		}
+	}
 }
 
 func (p *Server) GetLogger() *lab.Logger {
@@ -439,12 +441,13 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 			endPoint.ConnectString(),
 		)))
 	} else {
-		p.DoWithLock(func() {
-			p.endPoints = append(p.endPoints, endPoint)
-			if p.isOpen {
-				endPoint.Open(p.onConnRun, p.onError)
-			}
-		})
+		p.Lock()
+		defer p.Unlock()
+
+		p.endPoints = append(p.endPoints, endPoint)
+		if p.isOpen {
+			endPoint.Open(p.onConnRun, p.onError)
+		}
 	}
 
 	return p
@@ -514,7 +517,7 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 		session.conn = conn
 
 		// Set stream read pos to start
-		stream.SetReadPos(internal.streamBodyPos)
+		stream.SetReadPosToBodyStart()
 		if err := session.OnControlStream(stream); err != nil {
 			return nil, err
 		} else {

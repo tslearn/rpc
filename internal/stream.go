@@ -338,6 +338,10 @@ func (p *Stream) SetReadPos(pos int) bool {
 	return false
 }
 
+func (p *Stream) SetReadPosToBodyStart() bool {
+	return p.SetReadPos(streamBodyPos)
+}
+
 func (p *Stream) setReadPosUnsafe(pos int) {
 	p.readIndex = pos & 0x1FF
 	readSeg := pos >> 9
@@ -361,6 +365,10 @@ func (p *Stream) SetWritePos(length int) {
 		numToCreate--
 	}
 	p.setWritePosUnsafe(length)
+}
+
+func (p *Stream) SetWritePosToBodyStart() {
+	p.SetWritePos(streamBodyPos)
 }
 
 func (p *Stream) setWritePosUnsafe(pos int) {
