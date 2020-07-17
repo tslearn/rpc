@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	seed                   = int64(10000)
+	seedInt64              = int64(10000)
 	timeNowPointer         = (unsafe.Pointer)(nil)
 	timeCacheFailedCounter = NewSpeedCounter()
 	defaultISODateBuffer   = []byte{
@@ -30,12 +30,12 @@ var (
 			return &buf
 		},
 	}
+	goroutinePrefix = "goroutine "
+	base64String    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789" +
+		"+/"
 )
-
-const base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-	"abcdefghijklmnopqrstuvwxyz" +
-	"0123456789" +
-	"+/"
 
 type timeInfo struct {
 	timeNS        int64
@@ -291,7 +291,7 @@ func TimeSpanBetween(startNS int64, endNS int64) time.Duration {
 
 // GetSeed get int64 seed, it is goroutine safety
 func GetSeed() int64 {
-	return atomic.AddInt64(&seed, 1)
+	return atomic.AddInt64(&seedInt64, 1)
 }
 
 // GetRandString get random string
@@ -399,29 +399,32 @@ func ConvertOrdinalToString(n uint) string {
 	}
 }
 
-func CurrentGoroutineID() uint64 {
+func CurrentGoroutineID() int64 {
 	bp := littleBufCache.Get().(*[]byte)
 	defer littleBufCache.Put(bp)
 	b := *bp
 	b = b[:runtime.Stack(b, false)]
-	if !strings.HasPrefix(string(b), "goroutine ") {
+
+	if !strings.HasPrefix(string(b), goroutinePrefix) {
 		return 0
+	} else {
+		b = b[len(goroutinePrefix):]
 	}
 
 	pos := 0
 	for pos < 22 {
-		if ch := b[10+pos]; ch < 48 || ch > 57 {
+		if ch := b[pos]; ch < 48 || ch > 57 {
 			break
 		} else {
 			b[pos] = ch - 48
 			pos++
 		}
 	}
-	weight := uint64(1)
-	ret := uint64(0)
+	weight := int64(1)
+	ret := int64(0)
 	for pos > 0 {
 		pos--
-		ret += uint64(b[pos]) * weight
+		ret += int64(b[pos]) * weight
 		weight *= 10
 	}
 	return ret

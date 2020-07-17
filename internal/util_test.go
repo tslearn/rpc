@@ -3,6 +3,7 @@ package internal
 import (
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -338,6 +339,36 @@ func TestConvertOrdinalToString(t *testing.T) {
 	assert(ConvertOrdinalToString(4)).Equals("4th")
 	assert(ConvertOrdinalToString(10)).Equals("10th")
 	assert(ConvertOrdinalToString(100)).Equals("100th")
+}
+
+func TestCurrentGoroutineID(t *testing.T) {
+	assert := NewAssert(t)
+	idMap := make(map[int64]bool)
+	lock := &sync.Mutex{}
+	waitCH := make(chan bool)
+	testCount := 100000
+
+	for i := 0; i < testCount; i++ {
+		go func() {
+			id := CurrentGoroutineID()
+			assert(id > 0).IsTrue()
+			lock.Lock()
+			defer lock.Unlock()
+			idMap[id] = true
+			waitCH <- true
+		}()
+	}
+
+	for i := 0; i < testCount; i++ {
+		<-waitCH
+	}
+	assert(len(idMap)).Equals(testCount)
+
+	// make fake error
+	temp := goroutinePrefix
+	goroutinePrefix = "fake "
+	assert(CurrentGoroutineID()).Equals(int64(0))
+	goroutinePrefix = temp
 }
 
 func BenchmarkAddPrefixPerLine(b *testing.B) {
