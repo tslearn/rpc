@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-	"sync"
 	"sync/atomic"
 )
 
@@ -47,7 +46,7 @@ type Processor struct {
 	writeThreadPos     uint64
 	onLog              func(tag string, err Error)
 	onPanic            func(v interface{}, debug string)
-	sync.Mutex
+	Lock
 }
 
 // NewProcessor ...
@@ -99,50 +98,49 @@ func NewProcessor(
 func (p *Processor) Start(
 	onEvalFinish func(stream *Stream, success bool),
 ) Error {
-	p.Lock()
-	defer p.Unlock()
-
-	if onEvalFinish == nil {
-		return NewError("Processor: Start: onEvalFinish is nil")
-	} else if p.freeThreadsCHGroup != nil {
-		return NewError("Processor: Start: it has already benn started")
-	} else {
-		size := len(p.threads)
-		freeThreadsCHGroup := make(
-			[]chan *rpcThread,
-			freeGroups,
-			freeGroups,
-		)
-		for i := 0; i < freeGroups; i++ {
-			freeThreadsCHGroup[i] = make(
-				chan *rpcThread,
-				size/freeGroups,
+	return p.CallWithLock(func() interface{} {
+		if onEvalFinish == nil {
+			return NewError("Processor: Start: onEvalFinish is nil")
+		} else if p.freeThreadsCHGroup != nil {
+			return NewError("Processor: Start: it has already benn started")
+		} else {
+			size := len(p.threads)
+			freeThreadsCHGroup := make(
+				[]chan *rpcThread,
+				freeGroups,
+				freeGroups,
 			)
+			for i := 0; i < freeGroups; i++ {
+				freeThreadsCHGroup[i] = make(
+					chan *rpcThread,
+					size/freeGroups,
+				)
+			}
+			p.freeThreadsCHGroup = freeThreadsCHGroup
+
+			for i := 0; i < size; i++ {
+				thread := newThread(
+					p,
+					func(thread *rpcThread, stream *Stream, success bool) {
+						defer func() {
+							// do not panic when freeThreadsCH was closed,
+							recover()
+						}()
+
+						onEvalFinish(stream, success)
+
+						freeThreadsCHGroup[atomic.AddUint64(
+							&p.writeThreadPos,
+							1,
+						)%freeGroups] <- thread
+					},
+				)
+				p.threads[i] = thread
+				p.freeThreadsCHGroup[i%freeGroups] <- thread
+			}
+			return Error(nil)
 		}
-		p.freeThreadsCHGroup = freeThreadsCHGroup
-
-		for i := 0; i < size; i++ {
-			thread := newThread(
-				p,
-				func(thread *rpcThread, stream *Stream, success bool) {
-					defer func() {
-						// do not panic when freeThreadsCH was closed,
-						recover()
-					}()
-
-					onEvalFinish(stream, success)
-
-					freeThreadsCHGroup[atomic.AddUint64(
-						&p.writeThreadPos,
-						1,
-					)%freeGroups] <- thread
-				},
-			)
-			p.threads[i] = thread
-			p.freeThreadsCHGroup[i%freeGroups] <- thread
-		}
-		return nil
-	}
+	}).(Error)
 }
 
 func (p *Processor) PutStream(stream *Stream) bool {
@@ -159,69 +157,69 @@ func (p *Processor) PutStream(stream *Stream) bool {
 }
 
 func (p *Processor) Stop() Error {
-	p.Lock()
-	defer p.Unlock()
+	return p.CallWithLock(func() interface{} {
 
-	if p.freeThreadsCHGroup == nil {
-		return NewError("Processor: Start: it has already benn stopped")
-	} else {
-		for i := 0; i < freeGroups; i++ {
-			close(p.freeThreadsCHGroup[i])
-		}
-		p.freeThreadsCHGroup = nil
-		numOfThreads := len(p.threads)
-		closeCH := make(chan string, numOfThreads)
+		if p.freeThreadsCHGroup == nil {
+			return NewError("Processor: Start: it has already benn stopped")
+		} else {
+			for i := 0; i < freeGroups; i++ {
+				close(p.freeThreadsCHGroup[i])
+			}
+			p.freeThreadsCHGroup = nil
+			numOfThreads := len(p.threads)
+			closeCH := make(chan string, numOfThreads)
 
-		for i := 0; i < numOfThreads; i++ {
-			go func(idx int) {
-				if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
-					closeCH <- p.threads[idx].execReplyNode.debugString
-				} else {
-					closeCH <- ""
-				}
-				p.threads[idx] = nil
-			}(i)
-		}
+			for i := 0; i < numOfThreads; i++ {
+				go func(idx int) {
+					if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
+						closeCH <- p.threads[idx].execReplyNode.debugString
+					} else {
+						closeCH <- ""
+					}
+					p.threads[idx] = nil
+				}(i)
+			}
 
-		// wait all rpcThread stop
-		errMap := make(map[string]int)
-		for i := 0; i < numOfThreads; i++ {
-			if errString := <-closeCH; errString != "" {
-				if v, ok := errMap[errString]; ok {
-					errMap[errString] = v + 1
-				} else {
-					errMap[errString] = 1
+			// wait all rpcThread stop
+			errMap := make(map[string]int)
+			for i := 0; i < numOfThreads; i++ {
+				if errString := <-closeCH; errString != "" {
+					if v, ok := errMap[errString]; ok {
+						errMap[errString] = v + 1
+					} else {
+						errMap[errString] = 1
+					}
 				}
 			}
-		}
 
-		errList := make([]string, 0)
+			errList := make([]string, 0)
 
-		for k, v := range errMap {
-			if v > 1 {
-				errList = append(errList, fmt.Sprintf(
-					"%s (%d routines)",
-					k,
-					v,
+			for k, v := range errMap {
+				if v > 1 {
+					errList = append(errList, fmt.Sprintf(
+						"%s (%d routines)",
+						k,
+						v,
+					))
+				} else {
+					errList = append(errList, fmt.Sprintf(
+						"%s (%d routine)",
+						k,
+						v,
+					))
+				}
+			}
+
+			if len(errList) > 0 {
+				return NewError(ConcatString(
+					"Processor: Stop: The following routine still running: \n\t",
+					strings.Join(errList, "\n\t"),
 				))
 			} else {
-				errList = append(errList, fmt.Sprintf(
-					"%s (%d routine)",
-					k,
-					v,
-				))
+				return Error(nil)
 			}
 		}
-
-		if len(errList) > 0 {
-			return NewError(ConcatString(
-				"Processor: Stop: The following routine still running: \n\t",
-				strings.Join(errList, "\n\t"),
-			))
-		} else {
-			return nil
-		}
-	}
+	}).(Error)
 }
 
 // BuildCache ...
