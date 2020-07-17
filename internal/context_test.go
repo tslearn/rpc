@@ -1,8 +1,6 @@
 package internal
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestContext_getThread(t *testing.T) {
 	//assert := NewAssert(t)

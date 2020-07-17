@@ -7,6 +7,18 @@ import (
 	"path"
 )
 
+// ReplyCache ...
+type ReplyCache interface {
+	Get(fnString string) ReplyCacheFunc
+}
+
+// ReplyCacheFunc ...
+type ReplyCacheFunc = func(
+	ctx *Context,
+	stream *Stream,
+	fn interface{},
+) bool
+
 type fnCache struct{}
 
 func (p *fnCache) getParamName(idx int) string {
