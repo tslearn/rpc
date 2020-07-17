@@ -392,7 +392,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		NewService().
 			Reply("sayHello", func(
 				ctx *Context,
-				name string,
+				name String,
 			) *Return {
 				return ctx.OK(name)
 			}),
@@ -413,7 +413,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
-			stream.WriteString("world")
+			stream.WriteString("")
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}
