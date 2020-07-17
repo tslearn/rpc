@@ -3,7 +3,6 @@ package internal
 import (
 	"reflect"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -344,7 +343,7 @@ func TestConvertOrdinalToString(t *testing.T) {
 func TestCurrentGoroutineID(t *testing.T) {
 	assert := NewAssert(t)
 	idMap := make(map[int64]bool)
-	lock := &sync.Mutex{}
+	lock := NewLock()
 	waitCH := make(chan bool)
 	testCount := 100000
 
@@ -352,10 +351,11 @@ func TestCurrentGoroutineID(t *testing.T) {
 		go func() {
 			id := CurrentGoroutineID()
 			assert(id > 0).IsTrue()
-			lock.Lock()
-			defer lock.Unlock()
-			idMap[id] = true
-			waitCH <- true
+
+			lock.DoWithLock(func() {
+				idMap[id] = true
+				waitCH <- true
+			})
 		}()
 	}
 

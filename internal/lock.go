@@ -6,7 +6,7 @@ import (
 
 // Lock ...
 type Lock struct {
-	sync.Mutex
+	mutex sync.Mutex
 }
 
 // NewLock ...
@@ -16,14 +16,14 @@ func NewLock() *Lock {
 
 // DoWithLock ...
 func (p *Lock) DoWithLock(fn func()) {
-	p.Lock()
-	defer p.Unlock()
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	fn()
 }
 
 // CallWithLock ...
 func (p *Lock) CallWithLock(fn func() interface{}) interface{} {
-	p.Lock()
-	defer p.Unlock()
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	return fn()
 }

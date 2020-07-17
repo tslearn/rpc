@@ -84,7 +84,7 @@ type serverSession struct {
 	controlSeed uint64
 	callMap     map[uint64]*serverSessionRecord
 	size        int64
-	sync.Mutex
+	internal.Lock
 }
 
 var serverSessionCache = &sync.Pool{
@@ -113,20 +113,19 @@ func newServerSession(id uint64, size int64) *serverSession {
 }
 
 func (p *serverSession) WriteStream(stream Stream) Error {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.conn != nil {
-		return p.conn.WriteStream(
-			stream,
-			configWriteTimeout,
-			configServerWriteLimit,
-		)
-	} else {
-		return internal.NewError(
-			"serverSession: WriteStream: conn is nil",
-		)
-	}
+	return p.CallWithLock(func() interface{} {
+		if p.conn != nil {
+			return p.conn.WriteStream(
+				stream,
+				configWriteTimeout,
+				configServerWriteLimit,
+			)
+		} else {
+			return internal.NewError(
+				"serverSession: WriteStream: conn is nil",
+			)
+		}
+	}).(Error)
 }
 
 func (p *serverSession) OnDataStream(
@@ -173,124 +172,124 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnControlStream(
 	stream Stream,
 ) Error {
-	p.Lock()
-	defer p.Unlock()
+	return p.CallWithLock(func() interface{} {
+		if stream == nil {
+			return internal.NewError(
+				"Server: OnControlStream: stream is nil",
+			)
+		}
+		defer stream.Release()
 
-	if stream == nil {
-		return internal.NewError(
-			"Server: OnControlStream: stream is nil",
-		)
-	}
-	defer stream.Release()
+		if p.conn == nil {
+			return internal.NewError(
+				"Server: OnControlStream: conn is nil",
+			)
+		}
 
-	if p.conn == nil {
-		return internal.NewError(
-			"Server: OnControlStream: conn is nil",
-		)
-	}
+		controlSequence := stream.GetSequence()
+		if controlSequence <= p.controlSeed {
+			return internal.NewError(
+				"Server: OnControlStream: sequence is omit",
+			)
+		}
+		p.controlSeed = controlSequence
 
-	controlSequence := stream.GetSequence()
-	if controlSequence <= p.controlSeed {
-		return internal.NewError(
-			"Server: OnControlStream: sequence is omit",
-		)
-	}
-	p.controlSeed = controlSequence
-
-	kind, ok := stream.ReadInt64()
-	if !ok {
-		return internal.NewError(
-			"Server: OnControlStream: stream format error",
-		)
-	}
-
-	switch kind {
-	case SystemStreamKindInit:
-		stream.Reset()
-		stream.SetCallbackID(0)
-		stream.SetSequence(controlSequence)
-		stream.WriteInt64(SystemStreamKindInitBack)
-		stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-		stream.WriteInt64(int64(configReadTimeout / time.Millisecond))
-		stream.WriteInt64(int64(configWriteTimeout / time.Millisecond))
-		stream.WriteInt64(configServerWriteLimit)
-		stream.WriteInt64(configServerReadLimit)
-		stream.WriteInt64(p.size)
-		return p.conn.WriteStream(
-			stream,
-			configWriteTimeout,
-			configServerWriteLimit,
-		)
-	case SystemStreamKindRequestIds:
-		currCallbackId, ok := stream.ReadUint64()
+		kind, ok := stream.ReadInt64()
 		if !ok {
 			return internal.NewError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
 
-		// mark
-		for stream.CanRead() {
-			if markId, ok := stream.ReadUint64(); ok {
-				if v, ok := p.callMap[markId]; ok {
-					v.mark = true
-				}
-			} else {
+		switch kind {
+		case SystemStreamKindInit:
+			stream.Reset()
+			stream.SetCallbackID(0)
+			stream.SetSequence(controlSequence)
+			stream.WriteInt64(SystemStreamKindInitBack)
+			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
+			stream.WriteInt64(int64(configReadTimeout / time.Millisecond))
+			stream.WriteInt64(int64(configWriteTimeout / time.Millisecond))
+			stream.WriteInt64(configServerWriteLimit)
+			stream.WriteInt64(configServerReadLimit)
+			stream.WriteInt64(p.size)
+			return p.conn.WriteStream(
+				stream,
+				configWriteTimeout,
+				configServerWriteLimit,
+			)
+		case SystemStreamKindRequestIds:
+			currCallbackId, ok := stream.ReadUint64()
+			if !ok {
 				return internal.NewError(
 					"Server: OnControlStream: stream format error",
 				)
 			}
-		}
-		if !stream.IsReadFinish() {
+
+			// mark
+			for stream.CanRead() {
+				if markId, ok := stream.ReadUint64(); ok {
+					if v, ok := p.callMap[markId]; ok {
+						v.mark = true
+					}
+				} else {
+					return internal.NewError(
+						"Server: OnControlStream: stream format error",
+					)
+				}
+			}
+			if !stream.IsReadFinish() {
+				return internal.NewError(
+					"Server: OnControlStream: stream format error",
+				)
+			}
+			// swipe
+			count := int64(0)
+			for k, v := range p.callMap {
+				if v.id <= currCallbackId && !v.mark {
+					delete(p.callMap, k)
+					v.Release()
+				} else {
+					v.mark = false
+					count++
+				}
+			}
+			// alloc
+			for count < p.size {
+				p.dataSeed++
+				p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
+				count++
+			}
+			// return stream
+			stream.Reset()
+			stream.SetCallbackID(0)
+			stream.SetSequence(controlSequence)
+			stream.WriteInt64(SystemStreamKindRequestIdsBack)
+			stream.WriteUint64(p.dataSeed)
+			return p.conn.WriteStream(
+				stream,
+				configWriteTimeout,
+				configServerWriteLimit,
+			)
+		default:
 			return internal.NewError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
-		// swipe
-		count := int64(0)
-		for k, v := range p.callMap {
-			if v.id <= currCallbackId && !v.mark {
-				delete(p.callMap, k)
-				v.Release()
-			} else {
-				v.mark = false
-				count++
-			}
-		}
-		// alloc
-		for count < p.size {
-			p.dataSeed++
-			p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
-			count++
-		}
-		// return stream
-		stream.Reset()
-		stream.SetCallbackID(0)
-		stream.SetSequence(controlSequence)
-		stream.WriteInt64(SystemStreamKindRequestIdsBack)
-		stream.WriteUint64(p.dataSeed)
-		return p.conn.WriteStream(
-			stream,
-			configWriteTimeout,
-			configServerWriteLimit,
-		)
-	default:
-		return internal.NewError(
-			"Server: OnControlStream: stream format error",
-		)
-	}
+	}).(Error)
 }
 
 func (p *serverSession) Release() {
-	p.Lock()
-	defer p.Unlock()
-	if p.callMap != nil {
-		for _, v := range p.callMap {
-			v.Release()
+	p.DoWithLock(func() {
+		if p.callMap != nil {
+			for _, v := range p.callMap {
+				v.Release()
+			}
+			p.callMap = nil
 		}
-		p.callMap = nil
-	}
-	p.conn = nil
+		p.conn = nil
+	})
+
 	p.id = 0
 	p.security = ""
 	p.dataSeed = 0
@@ -310,7 +309,7 @@ type Server struct {
 	sessionMap  sync.Map
 	sessionSize int64
 	sessionSeed uint64
-	sync.Mutex
+	internal.Lock
 }
 
 func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
@@ -342,64 +341,62 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 }
 
 func (p *Server) Start() bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.isOpen {
-		p.onError(internal.NewError("Server: Start: it is already opened"))
-		return false
-	} else if err := p.processor.Start(
-		func(stream Stream, success bool) {
-			if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
-				if session, ok := v.(*serverSession); ok && session != nil {
-					if err := session.WriteStream(stream); err != nil {
-						p.logger.Error(err.Error())
+	return p.CallWithLock(func() interface{} {
+		if p.isOpen {
+			p.onError(internal.NewError("Server: Start: it is already opened"))
+			return false
+		} else if err := p.processor.Start(
+			func(stream Stream, success bool) {
+				if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
+					if session, ok := v.(*serverSession); ok && session != nil {
+						if err := session.WriteStream(stream); err != nil {
+							p.logger.Error(err.Error())
+						}
 					}
 				}
-			}
-		},
-	); err != nil {
-		p.onError(err)
-		return false
-	} else {
-		openList := make([]IAdapter, 0)
-		defer func() {
-			if openList != nil {
-				for _, v := range openList {
-					v.Close(p.onError)
+			},
+		); err != nil {
+			p.onError(err)
+			return false
+		} else {
+			openList := make([]IAdapter, 0)
+			defer func() {
+				if openList != nil {
+					for _, v := range openList {
+						v.Close(p.onError)
+					}
+				}
+			}()
+			for _, endPoint := range p.endPoints {
+				if endPoint.Open(p.onConnRun, p.onError) {
+					openList = append(openList, endPoint)
+				} else {
+					return false
 				}
 			}
-		}()
-		for _, endPoint := range p.endPoints {
-			if endPoint.Open(p.onConnRun, p.onError) {
-				openList = append(openList, endPoint)
-			} else {
-				return false
-			}
+			openList = nil
+			p.isOpen = true
+			return true
 		}
-		openList = nil
-		p.isOpen = true
-		return true
-	}
+	}).(bool)
 }
 
 func (p *Server) Stop() {
-	p.Lock()
-	defer p.Unlock()
+	p.DoWithLock(func() {
+		if !p.isOpen {
+			p.onError(internal.NewError("Server: Stop: it is not opened"))
+		} else {
+			p.isOpen = false
 
-	if !p.isOpen {
-		p.onError(internal.NewError("Server: Stop: it is not opened"))
-	} else {
-		p.isOpen = false
+			for _, endPoint := range p.endPoints {
+				endPoint.Close(p.onError)
+			}
 
-		for _, endPoint := range p.endPoints {
-			endPoint.Close(p.onError)
+			if err := p.processor.Stop(); err != nil {
+				p.onError(err)
+			}
 		}
-
-		if err := p.processor.Stop(); err != nil {
-			p.onError(err)
-		}
-	}
+	})
 }
 
 func (p *Server) GetLogger() *lab.Logger {
@@ -441,13 +438,12 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 			endPoint.ConnectString(),
 		)))
 	} else {
-		p.Lock()
-		defer p.Unlock()
-
-		p.endPoints = append(p.endPoints, endPoint)
-		if p.isOpen {
-			endPoint.Open(p.onConnRun, p.onError)
-		}
+		p.DoWithLock(func() {
+			p.endPoints = append(p.endPoints, endPoint)
+			if p.isOpen {
+				endPoint.Open(p.onConnRun, p.onError)
+			}
+		})
 	}
 
 	return p
