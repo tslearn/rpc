@@ -109,7 +109,6 @@ func (p *rpcThread) eval(
 		if p.execReplyNode != nil {
 			p.execReplyNode.indicator.Count(
 				time.Duration(TimeNowNS()-timeStart),
-				p.from,
 				p.execSuccessful,
 			)
 		}

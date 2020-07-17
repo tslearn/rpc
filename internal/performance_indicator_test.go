@@ -16,12 +16,10 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 			for k := 0; k < 20; k++ {
 				performanceIndicator.Count(
 					time.Duration(idx*2)*time.Millisecond,
-					"#",
 					true,
 				)
 				performanceIndicator.Count(
 					time.Duration(idx*2)*time.Millisecond,
-					"#",
 					false,
 				)
 				time.Sleep(100 * time.Millisecond)

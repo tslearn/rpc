@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -12,7 +11,7 @@ type rpcPerformanceIndicator struct {
 	successArray [10]int64
 	lastTotal    int64
 	lastNS       int64
-	sync.Mutex
+	Lock
 }
 
 // newPerformanceIndicator ...
@@ -28,34 +27,36 @@ func newPerformanceIndicator() *rpcPerformanceIndicator {
 // Calculate ...
 func (p *rpcPerformanceIndicator) Calculate(
 	nowNS int64,
-) (int64, time.Duration) {
-	p.Lock()
-	defer p.Unlock()
+) (speed int64, duration time.Duration) {
+	p.DoWithLock(func() {
+		// calculate total called
+		total := atomic.LoadInt64(&p.failed)
+		for i := 0; i < 10; i++ {
+			total += atomic.LoadInt64(&p.successArray[i])
+		}
+		deltaCount := total - p.lastTotal
+		deltaNS := nowNS - p.lastNS
 
-	// calculate total called
-	total := atomic.LoadInt64(&p.failed)
-	for i := 0; i < 10; i++ {
-		total += atomic.LoadInt64(&p.successArray[i])
-	}
-	deltaCount := total - p.lastTotal
-	deltaNS := nowNS - p.lastNS
+		if deltaNS <= 0 {
+			speed = -1
+			duration = time.Duration(0)
+		} else if deltaCount < 0 {
+			speed = -1
+			duration = time.Duration(0)
+		} else {
+			p.lastNS = nowNS
+			p.lastTotal = total
+			speed = (deltaCount * int64(time.Second)) / deltaNS
+			duration = time.Duration(deltaNS)
+		}
+	})
 
-	if deltaNS <= 0 {
-		return -1, time.Duration(0)
-	} else if deltaCount < 0 {
-		return -1, time.Duration(0)
-	} else {
-		p.lastNS = nowNS
-		p.lastTotal = total
-		return (deltaCount * int64(time.Second)) / deltaNS,
-			time.Duration(deltaNS)
-	}
+	return
 }
 
 // Count ...
 func (p *rpcPerformanceIndicator) Count(
 	duration time.Duration,
-	origin string,
 	successful bool,
 ) {
 	if successful {

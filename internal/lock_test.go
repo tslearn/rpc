@@ -4,12 +4,12 @@ import "testing"
 
 func TestNewRPCLock(t *testing.T) {
 	assert := NewAssert(t)
-	assert(NewRPCLock()).IsNotNil()
+	assert(NewLock()).IsNotNil()
 }
 
 func TestRPCLock_DoWithLock(t *testing.T) {
 	assert := NewAssert(t)
-	locker := NewRPCLock()
+	locker := NewLock()
 	waits := make(chan bool)
 	sum := 0
 
@@ -33,7 +33,7 @@ func TestRPCLock_DoWithLock(t *testing.T) {
 
 func TestRPCLock_CallWithLock(t *testing.T) {
 	assert := NewAssert(t)
-	locker := NewRPCLock()
+	locker := NewLock()
 	waits := make(chan bool)
 	sum := 0
 
