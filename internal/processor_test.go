@@ -366,7 +366,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	failed := uint64(0)
 	processor := NewProcessor(
 		true,
-		8192*24,
+		1024,
 		16,
 		16,
 		&testFuncCache{},
@@ -422,6 +422,12 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	// pprof.StopCPUProfile()
 
 	time.Sleep(3 * time.Second)
+
+	sumFrees := 0
+	for _, ch := range processor.freeThreadsCHGroup {
+		sumFrees += len(ch)
+	}
+	fmt.Println(sumFrees)
 	fmt.Println(processor.Stop())
 	fmt.Println(total, success, failed)
 }

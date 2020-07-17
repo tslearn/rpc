@@ -125,12 +125,13 @@ func (p *Processor) Start(
 			thread := newThread(
 				p,
 				func(thread *rpcThread, stream *Stream, success bool) {
-					onEvalFinish(stream, success)
-
 					defer func() {
 						// do not panic when freeThreadsCH was closed,
 						recover()
 					}()
+
+					onEvalFinish(stream, success)
+
 					freeThreadsCHGroup[atomic.AddUint64(
 						&p.writeThreadPos,
 						1,
