@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-type thread struct {
+type rpcThread struct {
 	processor      *Processor
 	isRunning      bool
 	ch             chan *Stream
@@ -26,13 +26,13 @@ type thread struct {
 
 func newThread(
 	processor *Processor,
-	onEvalFinish func(*thread, *Stream, bool),
-) *thread {
+	onEvalFinish func(*rpcThread, *Stream, bool),
+) *rpcThread {
 	if processor == nil || onEvalFinish == nil {
 		return nil
 	}
 
-	ret := &thread{
+	ret := &rpcThread{
 		processor:      processor,
 		isRunning:      true,
 		ch:             make(chan *Stream, 1),
@@ -55,7 +55,7 @@ func newThread(
 	return ret
 }
 
-func (p *thread) Stop() bool {
+func (p *rpcThread) Stop() bool {
 	p.Lock()
 	defer p.Unlock()
 
@@ -77,14 +77,14 @@ func (p *thread) Stop() bool {
 	}
 }
 
-func (p *thread) PutStream(stream *Stream) bool {
+func (p *rpcThread) PutStream(stream *Stream) bool {
 	p.ch <- stream
 	return true
 }
 
-func (p *thread) eval(
+func (p *rpcThread) eval(
 	inStream *Stream,
-	onEvalFinish func(*thread, *Stream, bool),
+	onEvalFinish func(*rpcThread, *Stream, bool),
 ) *Return {
 	timeStart := TimeNowNS()
 	// create context

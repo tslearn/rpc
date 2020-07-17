@@ -41,8 +41,8 @@ type Processor struct {
 	servicesMap        map[string]*rpcServiceNode
 	maxNodeDepth       uint64
 	maxCallDepth       uint64
-	threads            []*thread
-	freeThreadsCHGroup []chan *thread
+	threads            []*rpcThread
+	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
 	onLog              func(tag string, err Error)
@@ -79,7 +79,7 @@ func NewProcessor(
 			servicesMap:        make(map[string]*rpcServiceNode),
 			maxNodeDepth:       uint64(maxNodeDepth),
 			maxCallDepth:       uint64(maxCallDepth),
-			threads:            make([]*thread, size, size),
+			threads:            make([]*rpcThread, size, size),
 			freeThreadsCHGroup: nil,
 			readThreadPos:      0,
 			writeThreadPos:     0,
@@ -109,13 +109,13 @@ func (p *Processor) Start(
 	} else {
 		size := len(p.threads)
 		freeThreadsCHGroup := make(
-			[]chan *thread,
+			[]chan *rpcThread,
 			freeGroups,
 			freeGroups,
 		)
 		for i := 0; i < freeGroups; i++ {
 			freeThreadsCHGroup[i] = make(
-				chan *thread,
+				chan *rpcThread,
 				size/freeGroups,
 			)
 		}
@@ -124,7 +124,7 @@ func (p *Processor) Start(
 		for i := 0; i < size; i++ {
 			thread := newThread(
 				p,
-				func(thread *thread, stream *Stream, success bool) {
+				func(thread *rpcThread, stream *Stream, success bool) {
 					onEvalFinish(stream, success)
 
 					defer func() {
@@ -182,7 +182,7 @@ func (p *Processor) Stop() Error {
 			}(i)
 		}
 
-		// wait all thread stop
+		// wait all rpcThread stop
 		errMap := make(map[string]int)
 		for i := 0; i < numOfThreads; i++ {
 			if errString := <-closeCH; errString != "" {

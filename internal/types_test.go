@@ -8,48 +8,48 @@ func TestContext_getThread(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//ctx1 := Context{}
-	//assert(ctx1.thread).IsNil()
+	//assert(ctx1.rpcThread).IsNil()
 	//
-	//thread := newThread(nil)
-	//thread.stop()
+	//rpcThread := newThread(nil)
+	//rpcThread.stop()
 	//
-	//ctx2 := Context{thread: unsafe.Pointer(thread)}
-	//assert(ctx2.thread).Equals(unsafe.Pointer(thread))
+	//ctx2 := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//assert(ctx2.rpcThread).Equals(unsafe.Pointer(rpcThread))
 
 }
 
 func TestContext_stop(t *testing.T) {
 	//assert := NewAssert(t)
 	//
-	//thread := newThread(nil)
-	//thread.stop()
+	//rpcThread := newThread(nil)
+	//rpcThread.stop()
 	//
-	//ctx := Context{thread: unsafe.Pointer(thread)}
-	//assert(ctx.thread).IsNotNil()
+	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//assert(ctx.rpcThread).IsNotNil()
 	//ctx.stop()
-	//assert(ctx.thread).IsNil()
+	//assert(ctx.rpcThread).IsNil()
 }
 
 func TestContext_OK(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//// ctx is ok
-	//thread := newThread(nil)
-	//thread.stop()
-	//assert(thread.execSuccessful).IsFalse()
-	//ctx := Context{thread: unsafe.Pointer(thread)}
+	//rpcThread := newThread(nil)
+	//rpcThread.stop()
+	//assert(rpcThread.execSuccessful).IsFalse()
+	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
 	//ctx.OK(uint(215))
-	//assert(thread.execSuccessful).IsTrue()
-	//thread.outStream.SetReadPos(StreamBodyPos)
-	//assert(thread.outStream.ReadBool()).Equals(true, true)
-	//assert(thread.outStream.ReadUint64()).Equals(Uint64(215), true)
-	//assert(thread.outStream.CanRead()).IsFalse()
+	//assert(rpcThread.execSuccessful).IsTrue()
+	//rpcThread.outStream.SetReadPos(StreamBodyPos)
+	//assert(rpcThread.outStream.ReadBool()).Equals(true, true)
+	//assert(rpcThread.outStream.ReadUint64()).Equals(Uint64(215), true)
+	//assert(rpcThread.outStream.CanRead()).IsFalse()
 	//
 	//// ctx is stop
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//assert(thread1.execSuccessful).IsFalse()
-	//ctx1 := Context{thread: unsafe.Pointer(thread1)}
+	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
 	//ctx1.stop()
 	//ctx1.OK(uint(215))
 	//thread1.outStream.SetReadPos(StreamBodyPos)
@@ -60,7 +60,7 @@ func TestContext_OK(t *testing.T) {
 	//thread2 := newThread(nil)
 	//thread2.stop()
 	//assert(thread2.execSuccessful).IsFalse()
-	//ctx2 := Context{thread: unsafe.Pointer(thread2)}
+	//ctx2 := Context{rpcThread: unsafe.Pointer(thread2)}
 	//ctx2.OK(make(chan bool))
 	//assert(thread2.execSuccessful).IsFalse()
 	//thread2.outStream.SetReadPos(StreamBodyPos)
@@ -77,23 +77,23 @@ func TestContext_writeError(t *testing.T) {
 	//
 	//// ctx is ok
 	//processor := NewProcessor(16, 16, nil, nil)
-	//thread := newThread(newThreadPool(processor))
-	//thread.stop()
-	//thread.execSuccessful = true
-	//ctx := Context{thread: unsafe.Pointer(thread)}
+	//rpcThread := newThread(newThreadPool(processor))
+	//rpcThread.stop()
+	//rpcThread.execSuccessful = true
+	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
 	//ctx.writeError("errorMessage", "errorDebug")
-	//assert(thread.execSuccessful).IsFalse()
-	//thread.outStream.SetReadPos(StreamBodyPos)
-	//assert(thread.outStream.ReadBool()).Equals(false, true)
-	//assert(thread.outStream.ReadString()).Equals("errorMessage", true)
-	//assert(thread.outStream.ReadString()).Equals("errorDebug", true)
-	//assert(thread.outStream.CanRead()).IsFalse()
+	//assert(rpcThread.execSuccessful).IsFalse()
+	//rpcThread.outStream.SetReadPos(StreamBodyPos)
+	//assert(rpcThread.outStream.ReadBool()).Equals(false, true)
+	//assert(rpcThread.outStream.ReadString()).Equals("errorMessage", true)
+	//assert(rpcThread.outStream.ReadString()).Equals("errorDebug", true)
+	//assert(rpcThread.outStream.CanRead()).IsFalse()
 	//
 	//// ctx is stop
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//thread1.execSuccessful = true
-	//ctx1 := Context{thread: unsafe.Pointer(thread1)}
+	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
 	//ctx1.stop()
 	//ctx1.writeError("errorMessage", "errorDebug")
 	//thread1.outStream.SetReadPos(StreamBodyPos)
@@ -106,26 +106,26 @@ func TestContext_Error(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//// ctx is ok
-	//thread := newThread(nil)
-	//thread.stop()
-	//ctx := Context{thread: unsafe.Pointer(thread)}
+	//rpcThread := newThread(nil)
+	//rpcThread.stop()
+	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx.Error(nil)).IsNil()
-	//assert(thread.outStream.GetWritePos()).Equals(StreamBodyPos)
-	//assert(thread.outStream.GetReadPos()).Equals(StreamBodyPos)
+	//assert(rpcThread.outStream.GetWritePos()).Equals(StreamBodyPos)
+	//assert(rpcThread.outStream.GetReadPos()).Equals(StreamBodyPos)
 	//
 	//assert(
 	//	ctx.Error(NewErrorByDebug("errorMessage", "errorDebug")),
 	//).IsNil()
-	//thread.outStream.SetReadPos(StreamBodyPos)
-	//assert(thread.outStream.ReadBool()).Equals(false, true)
-	//assert(thread.outStream.ReadString()).Equals("errorMessage", true)
-	//assert(thread.outStream.ReadString()).Equals("errorDebug", true)
+	//rpcThread.outStream.SetReadPos(StreamBodyPos)
+	//assert(rpcThread.outStream.ReadBool()).Equals(false, true)
+	//assert(rpcThread.outStream.ReadString()).Equals("errorMessage", true)
+	//assert(rpcThread.outStream.ReadString()).Equals("errorDebug", true)
 	//
 	//// ctx have execReplyNode
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
-	//ctx1 := Context{thread: unsafe.Pointer(thread1)}
+	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
 	//assert(
 	//	ctx1.Error(NewErrorByDebug("errorMessage", "errorDebug")),
 	//).IsNil()
@@ -139,14 +139,14 @@ func TestContext_Errorf(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//// ctx is ok
-	//thread := newThread(nil)
-	//thread.stop()
-	//ctx := Context{thread: unsafe.Pointer(thread)}
+	//rpcThread := newThread(nil)
+	//rpcThread.stop()
+	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx.Errorf("error%s", "Message")).IsNil()
-	//thread.outStream.SetReadPos(StreamBodyPos)
-	//assert(thread.outStream.ReadBool()).Equals(false, true)
-	//assert(thread.outStream.ReadString()).Equals("errorMessage", true)
-	//dbgMessage, ok := thread.outStream.ReadString()
+	//rpcThread.outStream.SetReadPos(StreamBodyPos)
+	//assert(rpcThread.outStream.ReadBool()).Equals(false, true)
+	//assert(rpcThread.outStream.ReadString()).Equals("errorMessage", true)
+	//dbgMessage, ok := rpcThread.outStream.ReadString()
 	//assert(ok).IsTrue()
 	//
 	//assert(strings.Contains(dbgMessage, "TestRpcContext_Errorf")).IsTrue()
