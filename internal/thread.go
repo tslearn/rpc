@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strings"
-	"sync"
 	"time"
 	"unsafe"
 )
@@ -21,7 +20,7 @@ type rpcThread struct {
 	execSuccessful bool
 	from           string
 	closeCH        chan bool
-	sync.Mutex
+	Lock
 }
 
 func newThread(
@@ -56,25 +55,24 @@ func newThread(
 }
 
 func (p *rpcThread) Stop() bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if !p.isRunning {
-		return false
-	} else {
-		p.isRunning = false
-		close(p.ch)
-		select {
-		case <-time.After(10 * time.Second):
+	return p.CallWithLock(func() interface{} {
+		if !p.isRunning {
 			return false
-		case <-p.closeCH:
-			if p.outStream != nil {
-				p.outStream.Release()
-				p.outStream = nil
+		} else {
+			p.isRunning = false
+			close(p.ch)
+			select {
+			case <-time.After(10 * time.Second):
+				return false
+			case <-p.closeCH:
+				if p.outStream != nil {
+					p.outStream.Release()
+					p.outStream = nil
+				}
+				return true
 			}
-			return true
 		}
-	}
+	}).(bool)
 }
 
 func (p *rpcThread) PutStream(stream *Stream) bool {
