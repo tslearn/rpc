@@ -33,12 +33,6 @@ func getNewProcessor() *Processor {
 		16,
 		32,
 		nil,
-		func(tag string, err Error) {
-
-		},
-		func(_ interface{}, debug string) {
-
-		},
 	)
 }
 

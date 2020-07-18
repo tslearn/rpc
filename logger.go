@@ -8,7 +8,7 @@ import (
 
 // LogWriter ...
 type LogWriter interface {
-	Write(isoTime string, tag string, msg string, extra string)
+	Write(isoTime string, tag string, kind string, msg string)
 }
 
 // StdoutLogWriter ...
@@ -22,15 +22,15 @@ func NewStdoutLogWriter() LogWriter {
 func (p *StdoutLogWriter) Write(
 	isoTime string,
 	tag string,
+	kind string,
 	msg string,
-	extra string,
 ) {
 	sb := internal.NewStringBuilder()
 	defer sb.Release()
 	sb.AppendString(isoTime)
-	if len(extra) > 0 {
+	if len(kind) > 0 {
 		sb.AppendByte('(')
-		sb.AppendString(extra)
+		sb.AppendString(kind)
 		sb.AppendByte(')')
 	}
 	sb.AppendByte(' ')

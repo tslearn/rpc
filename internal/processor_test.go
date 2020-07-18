@@ -209,12 +209,6 @@ func TestProcessor_mountReply(t *testing.T) {
 		16,
 		16,
 		&testFuncCache{},
-		func(tag string, err Error) {
-
-		},
-		func(v interface{}, debug string) {
-
-		},
 	)
 	rootNode := processor.servicesMap[rootName]
 
@@ -370,12 +364,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		16,
 		16,
 		&testFuncCache{},
-		func(tag string, err Error) {
-
-		},
-		func(v interface{}, debug string) {
-
-		},
 	)
 	_ = processor.Start(
 		func(stream *Stream, ok bool) {

@@ -44,8 +44,8 @@ type Processor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	onLog              func(tag string, err Error)
-	onPanic            func(v interface{}, debug string)
+	onStreamError      func(Error)
+	onSystemError      func(Error)
 	Lock
 }
 
@@ -56,18 +56,12 @@ func NewProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache ReplyCache,
-	onLog func(tag string, err Error),
-	onPanic func(v interface{}, debug string),
 ) *Processor {
 	if numOfThreads == 0 {
 		return nil
 	} else if maxNodeDepth == 0 {
 		return nil
 	} else if maxCallDepth == 0 {
-		return nil
-	} else if onLog == nil {
-		return nil
-	} else if onPanic == nil {
 		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
@@ -82,8 +76,6 @@ func NewProcessor(
 			freeThreadsCHGroup: nil,
 			readThreadPos:      0,
 			writeThreadPos:     0,
-			onLog:              onLog,
-			onPanic:            onPanic,
 		}
 		// mount root node
 		ret.servicesMap[rootName] = &rpcServiceNode{

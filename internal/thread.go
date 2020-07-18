@@ -86,6 +86,10 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
+func (p *rpcThread) CheckGoroutine() bool {
+	return p.goid <= 0 || p.goid == CurrentGoroutineID()
+}
+
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 	defer func() {
 		if v := recover(); v != nil {
@@ -109,7 +113,10 @@ func (p *rpcThread) Eval(
 
 	defer func() {
 		if v := recover(); v != nil {
-			p.processor.onPanic(v, string(debug.Stack()))
+			p.processor.onSystemError(
+				NewError(fmt.Sprintf("%v", v)).AddDebug(string(debug.Stack())),
+			)
+
 			if p.execReplyNode != nil {
 				ctx.writeError(
 					fmt.Sprintf(
