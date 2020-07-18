@@ -9,7 +9,7 @@ import (
 type SpeedCounter struct {
 	total     int64
 	lastCount int64
-	lastNS    int64
+	lastTime  time.Time
 	Lock
 }
 
@@ -18,7 +18,7 @@ func NewSpeedCounter() *SpeedCounter {
 	return &SpeedCounter{
 		total:     0,
 		lastCount: 0,
-		lastNS:    time.Now().UnixNano(),
+		lastTime:  time.Now(),
 	}
 }
 
@@ -35,13 +35,13 @@ func (p *SpeedCounter) Total() int64 {
 // CalculateSpeed ...
 func (p *SpeedCounter) CalculateSpeed() int64 {
 	return p.CallWithLock(func() interface{} {
-		deltaNS := time.Now().UnixNano() - p.lastNS
-		if deltaNS <= 0 {
+		deltaTime := time.Now().Sub(p.lastTime)
+		if deltaTime <= 0 {
 			return int64(0)
 		}
 		deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
 		p.lastCount += deltaCount
-		p.lastNS += deltaNS
-		return (deltaCount * int64(time.Second)) / deltaNS
+		p.lastTime.Add(deltaTime)
+		return (deltaCount * int64(time.Second)) / int64(deltaTime)
 	}).(int64)
 }

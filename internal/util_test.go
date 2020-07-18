@@ -174,7 +174,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 		Equals("2222-12-22T11:11:11.333+00:00")
 }
 
-func TestTimeNowNS(t *testing.T) {
+func TestTimeNow(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 10000000; i++ {
@@ -196,16 +196,12 @@ func TestTimeNowISOString(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 1000000; i++ {
-		if nowNS, err := time.Parse(
+		if now, err := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
-			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() < int64(30*time.Millisecond),
-			).IsTrue()
-			assert(
-				time.Now().UnixNano()-nowNS.UnixNano() > int64(-15*time.Millisecond),
-			).IsTrue()
+			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
+			assert(time.Now().Sub(now) > -15*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail()
 		}
@@ -365,7 +361,7 @@ func BenchmarkGetRandString(b *testing.B) {
 	}
 }
 
-func BenchmarkTimeNowNS(b *testing.B) {
+func BenchmarkTimeNow(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		TimeNow()
