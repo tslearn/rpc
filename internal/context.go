@@ -6,15 +6,15 @@ import (
 	"unsafe"
 )
 
-type Context struct {
+type ContextObject struct {
 	thread unsafe.Pointer
 }
 
-func (p *Context) stop() {
+func (p *ContextObject) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
-func (p *Context) writeError(message string, debug string) *Return {
+func (p *ContextObject) writeError(message string, debug string) *ReturnObject {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(streamBodyPos)
@@ -26,8 +26,8 @@ func (p *Context) writeError(message string, debug string) *Return {
 	return nilReturn
 }
 
-// OK get success Return  by value
-func (p *Context) OK(value interface{}) *Return {
+// OK get success ReturnObject  by value
+func (p *ContextObject) OK(value interface{}) *ReturnObject {
 	if thread := (*rpcThread)(p.thread); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(streamBodyPos)
@@ -45,7 +45,7 @@ func (p *Context) OK(value interface{}) *Return {
 	return nilReturn
 }
 
-func (p *Context) Error(err Error) *Return {
+func (p *ContextObject) Error(err Error) *ReturnObject {
 	if err == nil {
 		return nilReturn
 	}
@@ -59,7 +59,7 @@ func (p *Context) Error(err Error) *Return {
 	return p.writeError(err.GetMessage(), err.GetDebug())
 }
 
-func (p *Context) Errorf(format string, a ...interface{}) *Return {
+func (p *ContextObject) Errorf(format string, a ...interface{}) *ReturnObject {
 	return p.Error(NewError(
 		fmt.Sprintf(format, a...),
 	).AddDebug(GetStackString(1)))

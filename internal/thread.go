@@ -83,11 +83,11 @@ func (p *rpcThread) PutStream(stream *Stream) bool {
 func (p *rpcThread) eval(
 	inStream *Stream,
 	onEvalFinish func(*rpcThread, *Stream, bool),
-) *Return {
+) *ReturnObject {
 	timeStart := TimeNowNS()
 	// create context
 	p.execSuccessful = false
-	ctx := &Context{thread: unsafe.Pointer(p)}
+	ctx := &ContextObject{thread: unsafe.Pointer(p)}
 
 	defer func() {
 		if v := recover(); v != nil {

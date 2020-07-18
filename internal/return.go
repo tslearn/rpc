@@ -1,4 +1,4 @@
 package internal
 
-// Return ...
-type Return struct{}
+// ReturnObject ...
+type ReturnObject struct{}

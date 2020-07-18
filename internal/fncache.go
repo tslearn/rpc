@@ -14,7 +14,7 @@ type ReplyCache interface {
 
 // ReplyCacheFunc ...
 type ReplyCacheFunc = func(
-	ctx *Context,
+	ctx *ContextObject,
 	stream *Stream,
 	fn interface{},
 ) bool
@@ -67,8 +67,8 @@ func (p *fnCache) writeHeader(
 	sb.AppendString("\treturn getFCache(fnString)\n")
 	sb.AppendString("}\n\n")
 	sb.AppendString("type n = bool\n")
-	sb.AppendString("type o = common.Context\n")
-	sb.AppendString("type p = common.Return\n")
+	sb.AppendString("type o = common.ContextObject\n")
+	sb.AppendString("type p = common.ReturnObject\n")
 	sb.AppendString("type q = *common.Stream\n")
 	if _, ok := kindMap['B']; ok {
 		sb.AppendString("type r = common.Bool\n")

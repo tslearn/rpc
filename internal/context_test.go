@@ -5,13 +5,13 @@ import "testing"
 func TestContext_getThread(t *testing.T) {
 	//assert := NewAssert(t)
 	//
-	//ctx1 := Context{}
+	//ctx1 := ContextObject{}
 	//assert(ctx1.rpcThread).IsNil()
 	//
 	//rpcThread := newThread(nil)
 	//rpcThread.stop()
 	//
-	//ctx2 := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx2 := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx2.rpcThread).Equals(unsafe.Pointer(rpcThread))
 
 }
@@ -22,7 +22,7 @@ func TestContext_stop(t *testing.T) {
 	//rpcThread := newThread(nil)
 	//rpcThread.stop()
 	//
-	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx.rpcThread).IsNotNil()
 	//ctx.stop()
 	//assert(ctx.rpcThread).IsNil()
@@ -35,7 +35,7 @@ func TestContext_OK(t *testing.T) {
 	//rpcThread := newThread(nil)
 	//rpcThread.stop()
 	//assert(rpcThread.execSuccessful).IsFalse()
-	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//ctx.OK(uint(215))
 	//assert(rpcThread.execSuccessful).IsTrue()
 	//rpcThread.outStream.SetReadPos(streamBodyPos)
@@ -47,7 +47,7 @@ func TestContext_OK(t *testing.T) {
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//assert(thread1.execSuccessful).IsFalse()
-	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
+	//ctx1 := ContextObject{rpcThread: unsafe.Pointer(thread1)}
 	//ctx1.stop()
 	//ctx1.OK(uint(215))
 	//thread1.outStream.SetReadPos(streamBodyPos)
@@ -58,7 +58,7 @@ func TestContext_OK(t *testing.T) {
 	//thread2 := newThread(nil)
 	//thread2.stop()
 	//assert(thread2.execSuccessful).IsFalse()
-	//ctx2 := Context{rpcThread: unsafe.Pointer(thread2)}
+	//ctx2 := ContextObject{rpcThread: unsafe.Pointer(thread2)}
 	//ctx2.OK(make(chan bool))
 	//assert(thread2.execSuccessful).IsFalse()
 	//thread2.outStream.SetReadPos(streamBodyPos)
@@ -78,7 +78,7 @@ func TestContext_writeError(t *testing.T) {
 	//rpcThread := newThread(newThreadPool(processor))
 	//rpcThread.stop()
 	//rpcThread.execSuccessful = true
-	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//ctx.writeError("errorMessage", "errorDebug")
 	//assert(rpcThread.execSuccessful).IsFalse()
 	//rpcThread.outStream.SetReadPos(streamBodyPos)
@@ -91,7 +91,7 @@ func TestContext_writeError(t *testing.T) {
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//thread1.execSuccessful = true
-	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
+	//ctx1 := ContextObject{rpcThread: unsafe.Pointer(thread1)}
 	//ctx1.stop()
 	//ctx1.writeError("errorMessage", "errorDebug")
 	//thread1.outStream.SetReadPos(streamBodyPos)
@@ -106,7 +106,7 @@ func TestContext_Error(t *testing.T) {
 	//// ctx is ok
 	//rpcThread := newThread(nil)
 	//rpcThread.stop()
-	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx.Error(nil)).IsNil()
 	//assert(rpcThread.outStream.GetWritePos()).Equals(streamBodyPos)
 	//assert(rpcThread.outStream.GetReadPos()).Equals(streamBodyPos)
@@ -123,7 +123,7 @@ func TestContext_Error(t *testing.T) {
 	//thread1 := newThread(nil)
 	//thread1.stop()
 	//thread1.execReplyNode = &rpcReplyNode{debugString: "nodeDebug"}
-	//ctx1 := Context{rpcThread: unsafe.Pointer(thread1)}
+	//ctx1 := ContextObject{rpcThread: unsafe.Pointer(thread1)}
 	//assert(
 	//	ctx1.Error(NewErrorByDebug("errorMessage", "errorDebug")),
 	//).IsNil()
@@ -139,7 +139,7 @@ func TestContext_Errorf(t *testing.T) {
 	//// ctx is ok
 	//rpcThread := newThread(nil)
 	//rpcThread.stop()
-	//ctx := Context{rpcThread: unsafe.Pointer(rpcThread)}
+	//ctx := ContextObject{rpcThread: unsafe.Pointer(rpcThread)}
 	//assert(ctx.Errorf("error%s", "Message")).IsNil()
 	//rpcThread.outStream.SetReadPos(streamBodyPos)
 	//assert(rpcThread.outStream.ReadBool()).Equals(false, true)

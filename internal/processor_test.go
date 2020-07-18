@@ -95,7 +95,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	processor1 := getNewProcessor()
 	_ = processor1.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *Context, name string) *Return {
+		Reply("sayHello", func(ctx *ContextObject, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		}), "")
 	assert(processor1.BuildCache(
@@ -190,7 +190,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	// OK
 	service2 := NewService()
 	service2.AddChild("user", NewService().
-		Reply("sayHello", func(ctx *Context) *Return {
+		Reply("sayHello", func(ctx *ContextObject) *ReturnObject {
 			return ctx.OK(true)
 		}))
 	assert(processor.mountNode(rootName, &rpcChildMeta{
@@ -240,12 +240,12 @@ func TestProcessor_mountReply(t *testing.T) {
 	// check the reply path is not occupied
 	_ = processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		func(ctx *Context) *Return { return ctx.OK(true) },
+		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
 		"DebugMessage",
 	})
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		func(ctx *Context) *Return { return ctx.OK(true) },
+		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
 		"DebugMessage",
 	})).Equals(NewError(
 		"Reply name testOccupied is duplicated",
@@ -266,21 +266,21 @@ func TestProcessor_mountReply(t *testing.T) {
 		make(chan bool),
 		"DebugMessage",
 	})).Equals(NewError(
-		"Reply handler must be func(ctx rpc.Context, ...) rpc.Return",
+		"Reply handler must be func(ctx rpc.ContextObject, ...) rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	// Check reply handler arguments types
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
-		func(ctx bool) *Return { return nilReturn },
+		func(ctx bool) *ReturnObject { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewError(
-		"Reply handler 1st argument type must be rpc.Context",
+		"Reply handler 1st argument type must be rpc.ContextObject",
 	).AddDebug("DebugMessage"))
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerArguments",
-		func(ctx *Context, ch chan bool) *Return { return nilReturn },
+		func(ctx *ContextObject, ch chan bool) *ReturnObject { return nilReturn },
 		"DebugMessage",
 	})).Equals(NewError(
 		"Reply handler 2nd argument type <chan bool> not supported",
@@ -289,31 +289,31 @@ func TestProcessor_mountReply(t *testing.T) {
 	// Check return type
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
-		func(ctx *Context) (*Return, bool) { return nilReturn, true },
+		func(ctx *ContextObject) (*ReturnObject, bool) { return nilReturn, true },
 		"DebugMessage",
 	})).Equals(NewError(
-		"Reply handler return type must be rpc.Return",
+		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testReplyHandlerReturn",
-		func(ctx Context) bool { return true },
+		func(ctx ContextObject) bool { return true },
 		"DebugMessage",
 	})).Equals(NewError(
-		"Reply handler return type must be rpc.Return",
+		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	// ok
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOK",
-		func(ctx *Context, _ bool, _ Map) *Return { return nilReturn },
+		func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
 		GetStackString(0),
 	})).IsNil()
 
 	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
 	assert(processor.repliesMap["$:testOK"].reflectFn).IsNotNil()
 	assert(processor.repliesMap["$:testOK"].callString).
-		Equals("$:testOK(rpc.Context, rpc.Bool, rpc.Map) rpc.Return")
+		Equals("$:testOK(rpc.ContextObject, rpc.Bool, rpc.Map) rpc.ReturnObject")
 	assert(
 		strings.Contains(processor.repliesMap["$:testOK"].debugString, "$:testOK"),
 	).IsTrue()
@@ -391,9 +391,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"user",
 		NewService().
 			Reply("sayHello", func(
-				ctx *Context,
+				ctx *ContextObject,
 				name String,
-			) *Return {
+			) *ReturnObject {
 				return ctx.OK(name)
 			}),
 		"",

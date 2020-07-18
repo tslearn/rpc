@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	nilContext  = (*Context)(nil)
-	nilReturn   = (*Return)(nil)
+	nilContext  = (*ContextObject)(nil)
+	nilReturn   = (*ReturnObject)(nil)
 	contextType = reflect.ValueOf(nilContext).Type()
 	returnType  = reflect.ValueOf(nilReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
@@ -152,9 +152,9 @@ func convertTypeToString(reflectType reflect.Type) string {
 	case nil:
 		return "<nil>"
 	case contextType:
-		return "rpcc.Context"
+		return "rpcc.ContextObject"
 	case returnType:
-		return "rpcc.Return"
+		return "rpcc.ReturnObject"
 	case bytesType:
 		return "rpcc.Bytes"
 	case arrayType:
