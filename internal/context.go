@@ -19,18 +19,6 @@ func (p *ContextObject) getThread() *rpcThread {
 	return (*rpcThread)(atomic.LoadPointer(&p.thread))
 }
 
-func (p *ContextObject) writeError(message string, debug string) Return {
-	if thread := p.getThread(); thread != nil {
-		execStream := thread.outStream
-		execStream.SetWritePos(streamBodyPos)
-		execStream.WriteBool(false)
-		execStream.WriteString(message)
-		execStream.WriteString(debug)
-		thread.execSuccessful = false
-	}
-	return nilReturn
-}
-
 // OK get success ReturnObject  by value
 func (p *ContextObject) OK(value interface{}) Return {
 	if thread := p.getThread(); thread != nil {
@@ -39,27 +27,24 @@ func (p *ContextObject) OK(value interface{}) Return {
 		stream.WriteBool(true)
 
 		if stream.Write(value) != StreamWriteOK {
-			return p.writeError(
-				"return type is error",
-				GetStackString(1),
-			)
+			thread.WriteError("return type is error", GetStackString(1))
+		} else {
+			thread.execSuccessful = true
 		}
-
-		thread.execSuccessful = true
 	}
 	return nilReturn
 }
 
 func (p *ContextObject) Error(err Error) Return {
-	if err == nil {
-		return nilReturn
+	if thread := (*rpcThread)(p.thread); thread != nil {
+		if err == nil {
+			thread.WriteError("return error is nil", GetStackString(1))
+		} else {
+			if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
+				err.AddDebug(thread.execReplyNode.debugString)
+			}
+			thread.WriteError(err.GetMessage(), err.GetDebug())
+		}
 	}
-
-	if thread := (*rpcThread)(p.thread); thread != nil &&
-		thread.execReplyNode != nil &&
-		thread.execReplyNode.debugString != "" {
-		err.AddDebug(thread.execReplyNode.debugString)
-	}
-
-	return p.writeError(err.GetMessage(), err.GetDebug())
+	return nilReturn
 }

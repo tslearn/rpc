@@ -89,6 +89,29 @@ func (p *rpcThread) IsCurrentGoroutineThread() bool {
 	return p.goid <= 0 || p.goid == CurrentGoroutineID()
 }
 
+func (p *rpcThread) WriteError(message string, debug string) {
+	stream := p.outStream
+	stream.SetWritePos(streamBodyPos)
+	stream.WriteBool(false)
+	stream.WriteString(message)
+	stream.WriteString(debug)
+	p.execSuccessful = false
+}
+
+func (p *rpcThread) WriteOK(value interface{}) {
+	stream := p.outStream
+	stream.SetWritePos(streamBodyPos)
+	stream.WriteBool(true)
+	if stream.Write(value) != StreamWriteOK {
+		p.WriteError(
+			"return type is error",
+			GetStackString(1),
+		)
+	} else {
+		p.execSuccessful = true
+	}
+}
+
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 	defer func() {
 		if v := recover(); v != nil {
