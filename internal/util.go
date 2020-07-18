@@ -269,7 +269,7 @@ func ConvertToIsoDateString(date time.Time) string {
 	return string(buf)
 }
 
-// TimeNowNS get now nanoseconds from 1970-01-01
+// TimeNow get now nanoseconds from 1970-01-01
 func TimeNow() time.Time {
 	if item := (*timeInfo)(atomic.LoadPointer(&timeNowPointer)); item != nil {
 		return item.time
