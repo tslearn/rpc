@@ -328,12 +328,6 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 		32,
 		32,
 		fnCache,
-		func(tag string, err internal.Error) {
-
-		},
-		func(v interface{}, debug string) {
-
-		},
 	)
 
 	return server

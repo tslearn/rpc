@@ -14,9 +14,9 @@ const sendItemStatusFinish = int32(2)
 type sendItem struct {
 	id        uint64
 	status    int32
-	startMS   int64
-	sendMS    int64
-	timeoutMS int64
+	startTime time.Time
+	sendTime  time.Time
+	timeout   time.Duration
 	finishCH  chan bool
 	stream    Stream
 	next      *sendItem
@@ -27,9 +27,9 @@ var sendItemCache = &sync.Pool{
 		return &sendItem{
 			id:        0,
 			status:    sendItemStatusRunning,
-			startMS:   0,
-			sendMS:    0,
-			timeoutMS: 0,
+			startTime: time.Time{},
+			sendTime:  time.Time{},
+			timeout:   0,
 			finishCH:  nil,
 			stream:    internal.NewStream(),
 			next:      nil,
@@ -41,9 +41,9 @@ func newSendItem() *sendItem {
 	ret := sendItemCache.Get().(*sendItem)
 	ret.id = 0
 	ret.status = sendItemStatusRunning
-	ret.startMS = 0
-	ret.sendMS = 0
-	ret.timeoutMS = 0
+	ret.startTime = time.Time{}
+	ret.sendTime = time.Time{}
+	ret.timeout = 0
 	ret.finishCH = make(chan bool, 1)
 	ret.next = nil
 	return ret
@@ -91,49 +91,49 @@ func (p *sendItem) Release() {
 
 // Begin ***** Client ***** //
 type Client struct {
-	isOpen             bool
-	closeCH            chan bool
-	sessionString      string
-	conn               IStreamConnection
-	logger             *Logger
-	endPoint           IAdapter
-	preSendHead        *sendItem
-	preSendTail        *sendItem
-	sendMap            map[uint64]*sendItem
-	systemSeed         uint64
-	readTimeout        time.Duration
-	writeTimeout       time.Duration
-	readLimit          int64
-	writeLimit         int64
-	currCallbackId     uint64
-	maxCallbackId      uint64
-	callbackSize       int64
-	lastControlSendMS  int64
-	lastTimeoutCheckMS int64
+	isOpen               bool
+	closeCH              chan bool
+	sessionString        string
+	conn                 IStreamConnection
+	logger               *Logger
+	endPoint             IAdapter
+	preSendHead          *sendItem
+	preSendTail          *sendItem
+	sendMap              map[uint64]*sendItem
+	systemSeed           uint64
+	readTimeout          time.Duration
+	writeTimeout         time.Duration
+	readLimit            int64
+	writeLimit           int64
+	currCallbackId       uint64
+	maxCallbackId        uint64
+	callbackSize         int64
+	lastControlSendTime  time.Time
+	lastTimeoutCheckTime time.Time
 	internal.Lock
 }
 
 func NewClient(endPoint IAdapter) *Client {
 	return &Client{
-		isOpen:             false,
-		closeCH:            nil,
-		sessionString:      "",
-		conn:               nil,
-		logger:             NewLogger(nil),
-		endPoint:           endPoint,
-		preSendHead:        nil,
-		preSendTail:        nil,
-		sendMap:            make(map[uint64]*sendItem),
-		systemSeed:         0,
-		readTimeout:        0,
-		writeTimeout:       0,
-		readLimit:          0,
-		writeLimit:         0,
-		currCallbackId:     0,
-		maxCallbackId:      0,
-		callbackSize:       0,
-		lastControlSendMS:  0,
-		lastTimeoutCheckMS: 0,
+		isOpen:               false,
+		closeCH:              nil,
+		sessionString:        "",
+		conn:                 nil,
+		logger:               NewLogger(nil),
+		endPoint:             endPoint,
+		preSendHead:          nil,
+		preSendTail:          nil,
+		sendMap:              make(map[uint64]*sendItem),
+		systemSeed:           0,
+		readTimeout:          0,
+		writeTimeout:         0,
+		readLimit:            0,
+		writeLimit:           0,
+		currCallbackId:       0,
+		maxCallbackId:        0,
+		callbackSize:         0,
+		lastControlSendTime:  time.Now().Add(-10 * time.Second),
+		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
 	}
 }
 
@@ -167,7 +167,7 @@ func (p *Client) Open() Error {
 						p.endPoint.Open(p.onConnRun, p.onError)
 					}
 
-					now := internal.TimeNowMS()
+					now := internal.TimeNow()
 					p.tryToTimeout(now)
 					p.tryToDeliverControlMessage(now)
 					for p.tryToDeliverPreSendMessage() {
@@ -383,25 +383,25 @@ func (p *Client) onConnRun(conn IStreamConnection) {
 	}
 }
 
-func (p *Client) getHeartbeatMS() int64 {
-	return int64(float64(p.readTimeout/time.Millisecond) * 0.8)
+func (p *Client) getHeartbeatDuration() time.Duration {
+	return time.Duration(float64(p.readTimeout/time.Millisecond) * 0.8)
 }
 
-func (p *Client) tryToDeliverControlMessage(nowMS int64) {
+func (p *Client) tryToDeliverControlMessage(now time.Time) {
 	p.DoWithLock(func() {
-		delta := nowMS - p.lastControlSendMS
+		deltaTime := now.Sub(p.lastControlSendTime)
 		if p.conn == nil {
 			return
-		} else if delta < 500 {
+		} else if deltaTime < 500*time.Millisecond {
 			return
-		} else if delta < p.getHeartbeatMS() &&
+		} else if deltaTime < p.getHeartbeatDuration() &&
 			int64(len(p.sendMap)) > p.callbackSize/2 {
 			return
-		} else if delta < p.getHeartbeatMS() &&
+		} else if deltaTime < p.getHeartbeatDuration() &&
 			int64(p.maxCallbackId-p.currCallbackId) > p.callbackSize/2 {
 			return
 		} else {
-			p.lastControlSendMS = nowMS
+			p.lastControlSendTime = now
 			p.systemSeed++
 
 			sendStream := internal.NewStream()
@@ -427,18 +427,18 @@ func (p *Client) tryToDeliverControlMessage(nowMS int64) {
 	})
 }
 
-func (p *Client) tryToTimeout(nowMS int64) {
+func (p *Client) tryToTimeout(now time.Time) {
 	p.DoWithLock(func() {
-		if nowMS-p.lastTimeoutCheckMS < 600 {
+		if now.Sub(p.lastTimeoutCheckTime) < 600*time.Millisecond {
 			return
 		} else {
-			p.lastTimeoutCheckMS = nowMS
+			p.lastTimeoutCheckTime = now
 
 			// sweep pre send list
 			preValidItem := (*sendItem)(nil)
 			item := p.preSendHead
 			for item != nil {
-				if nowMS-item.startMS > item.timeoutMS && item.Timeout() {
+				if now.Sub(item.startTime) > item.timeout && item.Timeout() {
 					nextItem := item.next
 
 					if preValidItem == nil {
@@ -462,7 +462,7 @@ func (p *Client) tryToTimeout(nowMS int64) {
 
 			// sweep send map
 			for key, value := range p.sendMap {
-				if nowMS-value.startMS > value.timeoutMS && value.Timeout() {
+				if now.Sub(value.startTime) > value.timeout && value.Timeout() {
 					delete(p.sendMap, key)
 				}
 			}
@@ -507,7 +507,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 				p.onError(err)
 				return false
 			} else {
-				item.sendMS = internal.TimeNowMS()
+				item.sendTime = internal.TimeNow()
 				return true
 			}
 		}
@@ -523,8 +523,8 @@ func (p *Client) sendMessage(
 	item := newSendItem()
 	defer item.Release()
 
-	item.startMS = internal.TimeNowMS()
-	item.timeoutMS = int64(timeout / time.Millisecond)
+	item.startTime = internal.TimeNow()
+	item.timeout = timeout
 
 	// write target
 	item.stream.WriteString(target)
