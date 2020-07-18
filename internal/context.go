@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"sync/atomic"
 	"unsafe"
 )
@@ -59,10 +58,4 @@ func (p *ContextObject) Error(err Error) *ReturnObject {
 	}
 
 	return p.writeError(err.GetMessage(), err.GetDebug())
-}
-
-func (p *ContextObject) Errorf(format string, a ...interface{}) *ReturnObject {
-	return p.Error(NewError(
-		fmt.Sprintf(format, a...),
-	).AddDebug(GetStackString(1)))
 }

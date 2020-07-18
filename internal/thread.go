@@ -141,11 +141,11 @@ func (p *rpcThread) eval(
 		return ctx.writeError("rpc data format error", "")
 	}
 	if p.execDepth > p.processor.maxCallDepth {
-		return ctx.Errorf(
+		return ctx.Error(NewError(fmt.Sprintf(
 			"rpc current call depth(%d) is overflow. limited(%d)",
 			p.execDepth,
 			p.processor.maxCallDepth,
-		)
+		)))
 	}
 
 	// read from
