@@ -46,7 +46,7 @@ func newThread(
 
 	go func() {
 		for stream := <-ret.ch; stream != nil; stream = <-ret.ch {
-			ret.eval(stream, onEvalFinish)
+			ret.Eval(stream, onEvalFinish)
 		}
 		ret.closeCH <- true
 	}()
@@ -75,12 +75,19 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) PutStream(stream *Stream) bool {
+func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
+	defer func() {
+		if v := recover(); v != nil {
+			ret = false
+		} else {
+			ret = true
+		}
+	}()
 	p.ch <- stream
-	return true
+	return
 }
 
-func (p *rpcThread) eval(
+func (p *rpcThread) Eval(
 	inStream *Stream,
 	onEvalFinish func(*rpcThread, *Stream, bool),
 ) *ReturnObject {

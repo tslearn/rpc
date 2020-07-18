@@ -15,8 +15,12 @@ func (p *ContextObject) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
-func (p *ContextObject) writeError(message string, debug string) *ReturnObject {
-	if thread := (*rpcThread)(p.thread); thread != nil {
+func (p *ContextObject) getThread() *rpcThread {
+	return (*rpcThread)(atomic.LoadPointer(&p.thread))
+}
+
+func (p *ContextObject) writeError(message string, debug string) Return {
+	if thread := p.getThread(); thread != nil {
 		execStream := thread.outStream
 		execStream.SetWritePos(streamBodyPos)
 		execStream.WriteBool(false)
@@ -28,8 +32,8 @@ func (p *ContextObject) writeError(message string, debug string) *ReturnObject {
 }
 
 // OK get success ReturnObject  by value
-func (p *ContextObject) OK(value interface{}) *ReturnObject {
-	if thread := (*rpcThread)(p.thread); thread != nil {
+func (p *ContextObject) OK(value interface{}) Return {
+	if thread := p.getThread(); thread != nil {
 		stream := thread.outStream
 		stream.SetWritePos(streamBodyPos)
 		stream.WriteBool(true)
@@ -46,7 +50,7 @@ func (p *ContextObject) OK(value interface{}) *ReturnObject {
 	return nilReturn
 }
 
-func (p *ContextObject) Error(err Error) *ReturnObject {
+func (p *ContextObject) Error(err Error) Return {
 	if err == nil {
 		return nilReturn
 	}
