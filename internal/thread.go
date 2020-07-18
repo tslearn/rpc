@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"reflect"
-	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
@@ -86,7 +85,7 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) CheckGoroutine() bool {
+func (p *rpcThread) IsCurrentGoroutineThread() bool {
 	return p.goid <= 0 || p.goid == CurrentGoroutineID()
 }
 
@@ -113,9 +112,9 @@ func (p *rpcThread) Eval(
 
 	defer func() {
 		if v := recover(); v != nil {
-			p.processor.onSystemError(
-				NewError(fmt.Sprintf("%v", v)).AddDebug(string(debug.Stack())),
-			)
+			//p.processor.onSystemError(
+			//	NewError(fmt.Sprintf("%v", v)).AddDebug(string(debug.Stack())),
+			//)
 
 			if p.execReplyNode != nil {
 				ctx.writeError(

@@ -44,8 +44,6 @@ type Processor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	onStreamError      func(Error)
-	onSystemError      func(Error)
 	Lock
 }
 
