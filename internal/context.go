@@ -6,6 +6,8 @@ import (
 	"unsafe"
 )
 
+type Context = *ContextObject
+
 type ContextObject struct {
 	thread unsafe.Pointer
 }
