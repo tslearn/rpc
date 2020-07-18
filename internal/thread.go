@@ -89,16 +89,17 @@ func (p *rpcThread) IsCurrentGoroutineThread() bool {
 	return p.goid <= 0 || p.goid == CurrentGoroutineID()
 }
 
-func (p *rpcThread) WriteError(message string, debug string) {
+func (p *rpcThread) WriteError(message string, debug string) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
 	stream.WriteBool(false)
 	stream.WriteString(message)
 	stream.WriteString(debug)
 	p.execSuccessful = false
+	return nilReturn
 }
 
-func (p *rpcThread) WriteOK(value interface{}) {
+func (p *rpcThread) WriteOK(value interface{}) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
 	stream.WriteBool(true)
@@ -110,6 +111,7 @@ func (p *rpcThread) WriteOK(value interface{}) {
 	} else {
 		p.execSuccessful = true
 	}
+	return nilReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
@@ -140,7 +142,7 @@ func (p *rpcThread) Eval(
 			//)
 
 			if p.execReplyNode != nil {
-				ctx.writeError(
+				p.WriteError(
 					fmt.Sprintf(
 						"Reply: %s: runtime error: %s",
 						p.execReplyNode.callString,
@@ -174,10 +176,10 @@ func (p *rpcThread) Eval(
 	// read reply path
 	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
-		return ctx.writeError("rpc data format error", "")
+		return p.WriteError("rpc data format error", "")
 	}
 	if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return ctx.writeError(
+		return p.WriteError(
 			fmt.Sprintf("rpc-server: reply path %s is not mounted", replyPath),
 			"",
 		)
@@ -185,7 +187,7 @@ func (p *rpcThread) Eval(
 
 	// read depth
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
-		return ctx.writeError("rpc data format error", "")
+		return p.WriteError("rpc data format error", "")
 	}
 	if p.execDepth > p.processor.maxCallDepth {
 		return ctx.Error(NewError(fmt.Sprintf(
@@ -197,7 +199,7 @@ func (p *rpcThread) Eval(
 
 	// read from
 	if p.from, ok = inStream.ReadUnsafeString(); !ok {
-		return ctx.writeError("rpc data format error", "")
+		return p.WriteError("rpc data format error", "")
 	}
 
 	// build callArgs
@@ -296,7 +298,7 @@ func (p *rpcThread) Eval(
 			val, ok := inStream.Read()
 
 			if !ok {
-				return ctx.writeError("rpc data format error", "")
+				return p.WriteError("rpc data format error", "")
 			}
 
 			if val == nil {
@@ -324,7 +326,7 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		return ctx.writeError(
+		return p.WriteError(
 			fmt.Sprintf(
 				"rpc reply arguments not match\nCalled: %s(%s) %s\nRequired: %s",
 				replyPath,
