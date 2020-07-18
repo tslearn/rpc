@@ -13,10 +13,24 @@ import (
 )
 
 var (
+	nilContext  = (*Context)(nil)
+	nilReturn   = (*Return)(nil)
+	contextType = reflect.ValueOf(nilContext).Type()
+	returnType  = reflect.ValueOf(nilReturn).Type()
+	boolType    = reflect.ValueOf(true).Type()
+	int64Type   = reflect.ValueOf(int64(0)).Type()
+	uint64Type  = reflect.ValueOf(uint64(0)).Type()
+	float64Type = reflect.ValueOf(float64(0)).Type()
+	stringType  = reflect.ValueOf("").Type()
+	bytesType   = reflect.ValueOf(Bytes{}).Type()
+	arrayType   = reflect.ValueOf(Array{}).Type()
+	mapType     = reflect.ValueOf(Map{}).Type()
+
 	seedInt64              = int64(10000)
 	timeNowPointer         = (unsafe.Pointer)(nil)
 	timeCacheFailedCounter = NewSpeedCounter()
-	defaultISODateBuffer   = []byte{
+
+	defaultISODateBuffer = []byte{
 		0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x2D, 0x30, 0x30,
 		0x54, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E,
 		0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
@@ -24,7 +38,8 @@ var (
 	intToStringCache2 = make([][]byte, 100, 100)
 	intToStringCache3 = make([][]byte, 1000, 1000)
 	intToStringCache4 = make([][]byte, 10000, 10000)
-	littleBufCache    = sync.Pool{
+
+	littleBufCache = sync.Pool{
 		New: func() interface{} {
 			buf := make([]byte, 32)
 			return &buf
