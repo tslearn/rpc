@@ -29,16 +29,16 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 
 	for n := 0; n < 20; n++ {
 		time.Sleep(100 * time.Millisecond)
-		qps, duration := performanceIndicator.Calculate(TimeNowNS())
+		qps, duration := performanceIndicator.Calculate(TimeNow())
 		count := qps * int64(duration) / int64(time.Second)
 		assert(math.Abs(float64(count-3000)) < 50).IsTrue()
 	}
 
 	time.Sleep(200 * time.Millisecond)
 
-	nowNS := TimeNowNS()
-	performanceIndicator.Calculate(nowNS)
-	assert(performanceIndicator.Calculate(nowNS)).
+	now := TimeNow()
+	performanceIndicator.Calculate(now)
+	assert(performanceIndicator.Calculate(now)).
 		Equals(int64(-1), time.Duration(0))
 
 	assert(performanceIndicator.failed).Equals(int64(30000))
@@ -46,10 +46,10 @@ func TestPerformanceIndicator_basic(t *testing.T) {
 		20, 40, 40, 100, 200, 200, 400, 2000, 7000, 20000,
 	})
 	assert(performanceIndicator.lastTotal).Equals(int64(60000))
-	assert(performanceIndicator.lastNS).Equals(nowNS)
+	assert(performanceIndicator.lastTime).Equals(now)
 
 	performanceIndicator2 := newPerformanceIndicator()
 	performanceIndicator2.lastTotal = 10
-	assert(performanceIndicator2.Calculate(TimeNowNS()+100)).
+	assert(performanceIndicator2.Calculate(TimeNow().Add(time.Duration(100)))).
 		Equals(int64(-1), time.Duration(0))
 }

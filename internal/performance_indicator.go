@@ -10,7 +10,7 @@ type rpcPerformanceIndicator struct {
 	failed       int64
 	successArray [10]int64
 	lastTotal    int64
-	lastNS       int64
+	lastTime     time.Time
 	Lock
 }
 
@@ -20,13 +20,13 @@ func newPerformanceIndicator() *rpcPerformanceIndicator {
 		failed:       0,
 		successArray: [10]int64{},
 		lastTotal:    0,
-		lastNS:       TimeNowNS(),
+		lastTime:     TimeNow(),
 	}
 }
 
 // Calculate ...
 func (p *rpcPerformanceIndicator) Calculate(
-	nowNS int64,
+	now time.Time,
 ) (speed int64, duration time.Duration) {
 	p.DoWithLock(func() {
 		// calculate total called
@@ -35,19 +35,19 @@ func (p *rpcPerformanceIndicator) Calculate(
 			total += atomic.LoadInt64(&p.successArray[i])
 		}
 		deltaCount := total - p.lastTotal
-		deltaNS := nowNS - p.lastNS
+		deltaTime := now.Sub(p.lastTime)
 
-		if deltaNS <= 0 {
+		if deltaTime <= 0 {
 			speed = -1
 			duration = time.Duration(0)
 		} else if deltaCount < 0 {
 			speed = -1
 			duration = time.Duration(0)
 		} else {
-			p.lastNS = nowNS
+			p.lastTime = now
 			p.lastTotal = total
-			speed = (deltaCount * int64(time.Second)) / deltaNS
-			duration = time.Duration(deltaNS)
+			speed = (deltaCount * int64(time.Second)) / int64(deltaTime)
+			duration = deltaTime
 		}
 	})
 

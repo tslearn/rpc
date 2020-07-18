@@ -105,7 +105,7 @@ func (p *rpcThread) Eval(
 	inStream *Stream,
 	onEvalFinish func(*rpcThread, *Stream, bool),
 ) *ReturnObject {
-	timeStart := TimeNowNS()
+	timeStart := TimeNow()
 	// create context
 	p.execSuccessful = false
 	ctx := &ContextObject{thread: unsafe.Pointer(p)}
@@ -130,7 +130,7 @@ func (p *rpcThread) Eval(
 
 		if p.execReplyNode != nil {
 			p.execReplyNode.indicator.Count(
-				time.Duration(TimeNowNS()-timeStart),
+				TimeNow().Sub(timeStart),
 				p.execSuccessful,
 			)
 		}

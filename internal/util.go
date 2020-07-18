@@ -53,7 +53,7 @@ var (
 )
 
 type timeInfo struct {
-	timeNS        int64
+	time          time.Time
 	timeISOString string
 }
 
@@ -214,7 +214,7 @@ func runStoreTime() {
 	for i := 0; i < 800; i++ {
 		now := time.Now()
 		atomic.StorePointer(&timeNowPointer, unsafe.Pointer(&timeInfo{
-			timeNS:        now.UnixNano(),
+			time:          now,
 			timeISOString: ConvertToIsoDateString(now),
 		}))
 		time.Sleep(1 * time.Millisecond)
@@ -270,18 +270,13 @@ func ConvertToIsoDateString(date time.Time) string {
 }
 
 // TimeNowNS get now nanoseconds from 1970-01-01
-func TimeNowNS() int64 {
+func TimeNow() time.Time {
 	if item := (*timeInfo)(atomic.LoadPointer(&timeNowPointer)); item != nil {
-		return item.timeNS
+		return item.time
 	}
 
 	onCacheFailed()
-	return time.Now().UnixNano()
-}
-
-// TimeNowMS get now milliseconds from 1970-01-01
-func TimeNowMS() int64 {
-	return TimeNowNS() / int64(time.Millisecond)
+	return time.Now()
 }
 
 // TimeNowISOString get now iso string like this: 2019-09-09T09:47:16.180+08:00
@@ -292,16 +287,6 @@ func TimeNowISOString() string {
 
 	onCacheFailed()
 	return ConvertToIsoDateString(time.Now())
-}
-
-// TimeSpanFrom get time.Duration from fromNS
-func TimeSpanFrom(startNS int64) time.Duration {
-	return time.Duration(TimeNowNS() - startNS)
-}
-
-// TimeSpanBetween get time.Duration between startNS and endNS
-func TimeSpanBetween(startNS int64, endNS int64) time.Duration {
-	return time.Duration(endNS - startNS)
 }
 
 // GetSeed get int64 seed, it is goroutine safety

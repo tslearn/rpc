@@ -3,7 +3,6 @@ package internal
 import (
 	"reflect"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -179,33 +178,18 @@ func TestTimeNowNS(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 10000000; i++ {
-		nowNS := TimeNowNS()
-		assert(time.Now().UnixNano()-nowNS < int64(20*time.Millisecond)).IsTrue()
-		assert(time.Now().UnixNano()-nowNS > int64(-20*time.Millisecond)).IsTrue()
+		now := TimeNow()
+		assert(time.Now().Sub(now) < 20*time.Millisecond).IsTrue()
+		assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
 	}
 
-	for i := 0; i < 500; i++ {
-		nowNS := TimeNowNS()
-		assert(time.Now().UnixNano()-nowNS < int64(10*time.Millisecond)).IsTrue()
-		assert(time.Now().UnixNano()-nowNS > int64(-10*time.Millisecond)).IsTrue()
-		time.Sleep(time.Millisecond)
-	}
+	for i := 0; i < 10; i++ {
+		now := TimeNow()
+		time.Sleep(50 * time.Millisecond)
+		assert(time.Now().Sub(now) < 70*time.Millisecond).IsTrue()
+		assert(time.Now().Sub(now) > 30*time.Millisecond).IsTrue()
 
-	// hack timeNowPointer to nil
-	atomic.StorePointer(&timeNowPointer, nil)
-	for i := 0; i < 500; i++ {
-		nowNS := TimeNowNS()
-		assert(time.Now().UnixNano()-nowNS < int64(10*time.Millisecond)).IsTrue()
-		assert(time.Now().UnixNano()-nowNS > int64(-10*time.Millisecond)).IsTrue()
-		time.Sleep(time.Millisecond)
 	}
-}
-
-func TestTimeNowMS(t *testing.T) {
-	assert := NewAssert(t)
-	nowNS := TimeNowMS() * int64(time.Millisecond)
-	assert(time.Now().UnixNano()-nowNS < int64(10*time.Millisecond)).IsTrue()
-	assert(time.Now().UnixNano()-nowNS > int64(-10*time.Millisecond)).IsTrue()
 }
 
 func TestTimeNowISOString(t *testing.T) {
@@ -226,24 +210,6 @@ func TestTimeNowISOString(t *testing.T) {
 			assert().Fail()
 		}
 	}
-}
-
-func TestTimeSpanFrom(t *testing.T) {
-	assert := NewAssert(t)
-	ns := TimeNowNS()
-	time.Sleep(50 * time.Millisecond)
-	dur := TimeSpanFrom(ns)
-	assert(int64(dur) > int64(40*time.Millisecond)).IsTrue()
-	assert(int64(dur) < int64(60*time.Millisecond)).IsTrue()
-}
-
-func TestTimeSpanBetween(t *testing.T) {
-	assert := NewAssert(t)
-	start := TimeNowNS()
-	time.Sleep(50 * time.Millisecond)
-	dur := TimeSpanBetween(start, TimeNowNS())
-	assert(int64(dur) > int64(30*time.Millisecond)).IsTrue()
-	assert(int64(dur) < int64(60*time.Millisecond)).IsTrue()
 }
 
 func TestGetRandString(t *testing.T) {
@@ -402,7 +368,7 @@ func BenchmarkGetRandString(b *testing.B) {
 func BenchmarkTimeNowNS(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		TimeNowNS()
+		TimeNow()
 	}
 }
 
