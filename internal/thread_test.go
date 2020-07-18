@@ -563,7 +563,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Bytes) *ReturnObject {
 			if a != nil {
-				return ctx.Errorf("param is not nil")
+				return ctx.Error(NewError("param is not nil"))
 			}
 
 			return ctx.OK(true)
@@ -588,7 +588,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Array) *ReturnObject {
 			if a != nil {
-				return ctx.Errorf("param is not nil")
+				return ctx.Error(NewError("param is not nil"))
 			}
 			return ctx.OK(true)
 		},
@@ -612,7 +612,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Map) *ReturnObject {
 			if a != nil {
-				return ctx.Errorf("param is not nil")
+				return ctx.Error(NewError("param is not nil"))
 			}
 			return ctx.OK(true)
 		},
