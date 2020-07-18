@@ -1,8 +1,8 @@
-package rpcc
+package rpc
 
 import (
 	"fmt"
-	"github.com/tslearn/rpcc/internal"
+	"github.com/rpccloud/rpc/internal"
 	"testing"
 	"time"
 )

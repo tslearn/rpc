@@ -1,8 +1,8 @@
-package rpcc
+package rpc
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/tslearn/rpcc/internal"
+	"github.com/rpccloud/rpc/internal"
 	"net/http"
 	"time"
 )

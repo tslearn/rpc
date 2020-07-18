@@ -152,25 +152,25 @@ func convertTypeToString(reflectType reflect.Type) string {
 	case nil:
 		return "<nil>"
 	case contextType:
-		return "rpcc.ContextObject"
+		return "rpc.ContextObject"
 	case returnType:
-		return "rpcc.ReturnObject"
+		return "rpc.ReturnObject"
 	case bytesType:
-		return "rpcc.Bytes"
+		return "rpc.Bytes"
 	case arrayType:
-		return "rpcc.Array"
+		return "rpc.Array"
 	case mapType:
-		return "rpcc.Map"
+		return "rpc.Map"
 	case boolType:
-		return "rpcc.Bool"
+		return "rpc.Bool"
 	case int64Type:
-		return "rpcc.Int64"
+		return "rpc.Int64"
 	case uint64Type:
-		return "rpcc.Uint64"
+		return "rpc.Uint64"
 	case float64Type:
-		return "rpcc.Float64"
+		return "rpc.Float64"
 	case stringType:
-		return "rpcc.String"
+		return "rpc.String"
 	default:
 		return reflectType.String()
 	}

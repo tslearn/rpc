@@ -1,4 +1,4 @@
-module github.com/tslearn/rpcc
+module github.com/rpccloud/rpc
 
 go 1.14
 

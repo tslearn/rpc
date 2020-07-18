@@ -1,7 +1,7 @@
-package lab
+package rpc
 
 import (
-	"github.com/tslearn/rpcc/internal"
+	"github.com/rpccloud/rpc/internal"
 	"io"
 	"os"
 	"strings"

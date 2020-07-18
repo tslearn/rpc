@@ -51,7 +51,7 @@ func (p *fnCache) writeHeader(
 		}
 	}
 	sb.AppendString(fmt.Sprintf("package %s\n\n", pkgName))
-	sb.AppendString("import \"github.com/tslearn/rpcc/core\"\n\n")
+	sb.AppendString("import \"github.com/rpccloud/rpc/core\"\n\n")
 
 	sb.AppendString("type rpcCache struct{}\n\n")
 

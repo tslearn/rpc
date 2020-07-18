@@ -1,7 +1,7 @@
-package rpcc
+package rpc
 
 import (
-	"github.com/tslearn/rpcc/internal"
+	"github.com/rpccloud/rpc/internal"
 	"time"
 )
 

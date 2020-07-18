@@ -1,8 +1,7 @@
-package rpcc
+package rpc
 
 import (
-	"github.com/tslearn/rpcc/internal"
-	"github.com/tslearn/rpcc/lab"
+	"github.com/rpccloud/rpc/internal"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -96,7 +95,7 @@ type Client struct {
 	closeCH            chan bool
 	sessionString      string
 	conn               IStreamConnection
-	logger             *lab.Logger
+	logger             *Logger
 	endPoint           IAdapter
 	preSendHead        *sendItem
 	preSendTail        *sendItem
@@ -120,7 +119,7 @@ func NewClient(endPoint IAdapter) *Client {
 		closeCH:            nil,
 		sessionString:      "",
 		conn:               nil,
-		logger:             lab.NewLogger(nil),
+		logger:             NewLogger(nil),
 		endPoint:           endPoint,
 		preSendHead:        nil,
 		preSendTail:        nil,
