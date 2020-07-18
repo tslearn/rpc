@@ -20,6 +20,7 @@ type rpcThread struct {
 	execSuccessful bool
 	from           string
 	closeCH        chan bool
+	goid           int64
 	Lock
 }
 
@@ -31,27 +32,37 @@ func newThread(
 		return nil
 	}
 
-	ret := &rpcThread{
-		processor:      processor,
-		isRunning:      true,
-		ch:             make(chan *Stream, 1),
-		outStream:      NewStream(),
-		execDepth:      0,
-		execReplyNode:  nil,
-		execArgs:       make([]reflect.Value, 0, 16),
-		execSuccessful: false,
-		from:           "",
-		closeCH:        make(chan bool),
-	}
+	retCH := make(chan *rpcThread)
 
 	go func() {
-		for stream := <-ret.ch; stream != nil; stream = <-ret.ch {
-			ret.Eval(stream, onEvalFinish)
+		thread := &rpcThread{
+			processor:      processor,
+			isRunning:      true,
+			ch:             make(chan *Stream, 1),
+			outStream:      NewStream(),
+			execDepth:      0,
+			execReplyNode:  nil,
+			execArgs:       make([]reflect.Value, 0, 16),
+			execSuccessful: false,
+			from:           "",
+			closeCH:        make(chan bool),
+			goid:           0,
 		}
-		ret.closeCH <- true
+
+		if processor.IsDebug() {
+			thread.goid = CurrentGoroutineID()
+		}
+
+		retCH <- thread
+
+		for stream := <-thread.ch; stream != nil; stream = <-thread.ch {
+			thread.Eval(stream, onEvalFinish)
+		}
+
+		thread.closeCH <- true
 	}()
 
-	return ret
+	return <-retCH
 }
 
 func (p *rpcThread) Stop() bool {

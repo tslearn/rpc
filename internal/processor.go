@@ -95,6 +95,10 @@ func NewProcessor(
 	}
 }
 
+func (p *Processor) IsDebug() bool {
+	return p.isDebug
+}
+
 func (p *Processor) Start(
 	onEvalFinish func(stream *Stream, success bool),
 ) Error {
