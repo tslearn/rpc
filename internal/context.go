@@ -36,7 +36,7 @@ func (p *ContextObject) OK(value interface{}) Return {
 }
 
 func (p *ContextObject) Error(err Error) Return {
-	if thread := (*rpcThread)(p.thread); thread != nil {
+	if thread := p.getThread(); thread != nil {
 		if err == nil {
 			thread.WriteError("return error is nil", GetStackString(1))
 		} else {
