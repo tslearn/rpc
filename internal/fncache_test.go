@@ -60,8 +60,8 @@ func TestFnCache_basic(t *testing.T) {
 
 	processor1 := getNewProcessor()
 	_ = processor1.AddService("abc", NewService().
-		Reply("sayHello", func(ctx *ContextObject) *ReturnObject {
-			return ctx.OK(true)
+		Reply("sayHello", func(ctx *ContextObject) Return {
+			return ctx.Return(true)
 		}), "")
 	assert(processor1.BuildCache(
 		"pkgName",
@@ -75,7 +75,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor2 := getNewProcessor()
 	_ = processor2.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Bool) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor2.BuildCache(
 		"pkgName",
@@ -89,7 +89,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor3 := getNewProcessor()
 	_ = processor3.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Int64) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor3.BuildCache(
 		"pkgName",
@@ -103,7 +103,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor4 := getNewProcessor()
 	_ = processor4.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Uint64) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor4.BuildCache(
 		"pkgName",
@@ -117,7 +117,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor5 := getNewProcessor()
 	_ = processor5.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Float64) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor5.BuildCache(
 		"pkgName",
@@ -131,7 +131,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor6 := getNewProcessor()
 	_ = processor6.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ String) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor6.BuildCache(
 		"pkgName",
@@ -145,7 +145,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor7 := getNewProcessor()
 	_ = processor7.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Bytes) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor7.BuildCache(
 		"pkgName",
@@ -159,7 +159,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor8 := getNewProcessor()
 	_ = processor8.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Array) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor8.BuildCache(
 		"pkgName",
@@ -173,7 +173,7 @@ func TestFnCache_basic(t *testing.T) {
 	processor9 := getNewProcessor()
 	_ = processor9.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, _ Map) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor9.BuildCache(
 		"pkgName",
@@ -190,7 +190,7 @@ func TestFnCache_basic(t *testing.T) {
 			ctx *ContextObject, _ Bool, _ Int64, _ Uint64, _ Float64, _ String,
 			_ Bytes, _ Array, _ Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		}), "")
 	assert(processor10.BuildCache(
 		"pkgName",

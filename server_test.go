@@ -18,7 +18,7 @@ func TestServer_Basic(t *testing.T) {
 	)
 	server.AddService("user", NewService().
 		Reply("sayHello", func(ctx Context, name string) Return {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		}),
 	)
 

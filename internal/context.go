@@ -19,33 +19,41 @@ func (p *ContextObject) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
-// OK ...
-// this
-func (p *ContextObject) OK(value interface{}) Return {
-	if thread := p.getThread(); thread != nil {
-		stream := thread.outStream
-		stream.SetWritePos(streamBodyPos)
-		stream.WriteBool(true)
-
-		if stream.Write(value) != StreamWriteOK {
-			thread.WriteError("return type is error", GetStackString(1))
-		} else {
-			thread.execSuccessful = true
-		}
-	}
-	return nilReturn
-}
-
-func (p *ContextObject) Error(err Error) Return {
-	if thread := p.getThread(); thread != nil {
-		if err == nil {
-			thread.WriteError("parameter is nil", GetStackString(1))
-		} else {
+// Return ...
+func (p *ContextObject) Return(value interface{}) Return {
+	if thread := p.getThread(); thread == nil {
+		panic("rpc: running out of reply goroutine")
+	} else {
+		if value == nil {
+			return thread.WriteOK(value, 2)
+		} else if rpcErr, ok := value.(Error); ok {
+			if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
+				_ = rpcErr.AddDebug(thread.execReplyNode.debugString)
+			}
+			return thread.WriteError(rpcErr)
+		} else if sysErr, ok := value.(error); ok {
+			err := NewError(sysErr.Error())
 			if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
 				_ = err.AddDebug(thread.execReplyNode.debugString)
 			}
-			thread.WriteError(err.GetMessage(), err.GetDebug())
+			return thread.WriteError(err)
+		} else {
+			return thread.WriteOK(value, 2)
 		}
 	}
-	return nilReturn
 }
+
+//
+//// Error ...
+//func (p *ContextObject) Error(err Error) Return {
+//  if thread := p.getThread(); thread == nil {
+//    panic(NewError(ErrStringContextErrorOutsideScope))
+//  } else if err == nil {
+//    return thread.WriteOK(nil, GetStackString(1))
+//  } else {
+//    if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
+//      _ = err.AddDebug(thread.execReplyNode.debugString)
+//    }
+//    thread.WriteError(err.GetMessage(), err.GetDebug())
+//  }
+//}

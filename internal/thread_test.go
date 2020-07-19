@@ -68,7 +68,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// test basic
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -95,7 +95,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// test read reply path error
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -118,7 +118,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// reply path is not mounted
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -141,7 +141,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// depth data format error
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -164,7 +164,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// depth is overflow
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -190,7 +190,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// from data format error
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK("hello " + name)
+			return ctx.Return("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -214,7 +214,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -245,7 +245,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -285,7 +285,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -325,7 +325,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -365,7 +365,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -405,7 +405,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -445,7 +445,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -485,7 +485,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -525,7 +525,7 @@ func TestRpcThread_eval(t *testing.T) {
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -563,10 +563,10 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Bytes) *ReturnObject {
 			if a != nil {
-				return ctx.Error(NewError("param is not nil"))
+				return ctx.Return(NewError("param is not nil"))
 			}
 
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -588,9 +588,9 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Array) *ReturnObject {
 			if a != nil {
-				return ctx.Error(NewError("param is not nil"))
+				return ctx.Return(NewError("param is not nil"))
 			}
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -612,9 +612,9 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Map) *ReturnObject {
 			if a != nil {
-				return ctx.Error(NewError("param is not nil"))
+				return ctx.Return(NewError("param is not nil"))
 			}
-			return ctx.OK(true)
+			return ctx.Return(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -635,7 +635,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// test unsupported type
 	runWithProcessor(
 		func(ctx *ContextObject, a bool) *ReturnObject {
-			return ctx.OK(a)
+			return ctx.Return(a)
 		},
 		func(processor *Processor) *Stream {
 			replyNode := processor.repliesMap["$.user:sayHello"]
@@ -665,7 +665,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// nil text
 	runWithProcessor(
 		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-			return ctx.OK(bVal)
+			return ctx.Return(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -696,7 +696,7 @@ func TestRpcThread_eval(t *testing.T) {
 	// stream is broken
 	runWithProcessor(
 		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-			return ctx.OK(bVal)
+			return ctx.Return(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -722,7 +722,7 @@ func TestRpcThread_eval(t *testing.T) {
 			if bVal {
 				panic("this is a error")
 			}
-			return ctx.OK(bVal)
+			return ctx.Return(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()

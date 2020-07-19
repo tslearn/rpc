@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
@@ -89,29 +90,39 @@ func (p *rpcThread) IsCurrentGoroutineThread() bool {
 	return p.goid <= 0 || p.goid == CurrentGoroutineID()
 }
 
-func (p *rpcThread) WriteError(message string, debug string) Return {
+func (p *rpcThread) WriteError(err Error) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
 	stream.WriteBool(false)
-	stream.WriteString(message)
-	stream.WriteString(debug)
+	stream.WriteString(err.GetMessage())
+	stream.WriteString(err.GetDebug())
 	p.execSuccessful = false
 	return nilReturn
 }
 
-func (p *rpcThread) WriteOK(value interface{}) Return {
+func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
 	stream.WriteBool(true)
-	if stream.Write(value) != StreamWriteOK {
-		p.WriteError(
-			"return type is error",
-			GetStackString(1),
-		)
-	} else {
+
+	if stream.Write(value) == StreamWriteOK {
 		p.execSuccessful = true
+		return nilReturn
+	} else if reason := CheckValue(value, 64); reason != "" {
+		if p.processor.IsDebug() {
+			return p.WriteError(
+				NewError(ConcatString("rpc: ", reason)).AddDebug(GetStackString(skip)),
+			)
+		} else {
+			return p.WriteError(
+				NewError("rpc: internal error"),
+			)
+		}
+	} else {
+		return p.WriteError(
+			NewError("rpc: value is not supproted").AddDebug(GetStackString(skip)),
+		)
 	}
-	return nilReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
@@ -137,18 +148,13 @@ func (p *rpcThread) Eval(
 
 	defer func() {
 		if v := recover(); v != nil {
-			//p.processor.onSystemError(
-			//	NewError(fmt.Sprintf("%v", v)).AddDebug(string(debug.Stack())),
-			//)
-
 			if p.execReplyNode != nil {
 				p.WriteError(
-					fmt.Sprintf(
-						"Reply: %s: runtime error: %s",
+					NewError(fmt.Sprintf(
+						"rpc: %s: runtime error: %s",
 						p.execReplyNode.callString,
 						v,
-					),
-					GetStackString(1),
+					)).AddDebug(string(debug.Stack())),
 				)
 			}
 		}
@@ -176,21 +182,21 @@ func (p *rpcThread) Eval(
 	// read reply path
 	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
-		return p.WriteError("rpc data format error", "")
+		return p.WriteError(NewError("rpc data format error"))
 	}
 	if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return p.WriteError(
-			fmt.Sprintf("rpc-server: reply path %s is not mounted", replyPath),
-			"",
-		)
+		return p.WriteError(NewError(fmt.Sprintf(
+			"rpc-server: reply path %s is not mounted",
+			replyPath,
+		)))
 	}
 
 	// read depth
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
-		return p.WriteError("rpc data format error", "")
+		return p.WriteError(NewError("rpc data format error"))
 	}
 	if p.execDepth > p.processor.maxCallDepth {
-		return ctx.Error(NewError(fmt.Sprintf(
+		return p.WriteError(NewError(fmt.Sprintf(
 			"rpc current call depth(%d) is overflow. limited(%d)",
 			p.execDepth,
 			p.processor.maxCallDepth,
@@ -199,7 +205,7 @@ func (p *rpcThread) Eval(
 
 	// read from
 	if p.from, ok = inStream.ReadUnsafeString(); !ok {
-		return p.WriteError("rpc data format error", "")
+		return p.WriteError(NewError("rpc data format error"))
 	}
 
 	// build callArgs
@@ -298,7 +304,7 @@ func (p *rpcThread) Eval(
 			val, ok := inStream.Read()
 
 			if !ok {
-				return p.WriteError("rpc data format error", "")
+				return p.WriteError(NewError("rpc data format error"))
 			}
 
 			if val == nil {
@@ -326,16 +332,13 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		return p.WriteError(
-			fmt.Sprintf(
-				"rpc reply arguments not match\nCalled: %s(%s) %s\nRequired: %s",
-				replyPath,
-				strings.Join(remoteArgsType, ", "),
-				convertTypeToString(returnType),
-				p.execReplyNode.callString,
-			),
-			p.execReplyNode.debugString,
-		)
+		return p.WriteError(NewError(fmt.Sprintf(
+			"rpc reply arguments not match\nCalled: %s(%s) %s\nRequired: %s",
+			replyPath,
+			strings.Join(remoteArgsType, ", "),
+			convertTypeToString(returnType),
+			p.execReplyNode.callString,
+		)).AddDebug(p.execReplyNode.debugString))
 	}
 
 	return nilReturn

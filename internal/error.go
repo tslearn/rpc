@@ -1,5 +1,16 @@
 package internal
 
+const (
+	ErrFromUnknown   = 0
+	ErrFromClient    = 1
+	ErrFromReply     = 2
+	ErrFromKernel    = 3
+	ErrFromProtocol  = 4
+	ErrFromTransport = 5
+	ErrFromDeny      = 6
+	ErrFromTimeout   = 7
+)
+
 // Error ...
 type Error interface {
 	GetMessage() string
