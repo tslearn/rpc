@@ -429,3 +429,94 @@ func CurrentGoroutineID() int64 {
 	}
 	return ret
 }
+
+func checkArray(v Array, path string, depth int) string {
+	if v == nil {
+		return ""
+	} else {
+		for idx, item := range v {
+			if reason := checkValue(
+				item,
+				ConcatString(path, "[", strconv.Itoa(idx), "]"),
+				depth-1,
+			); reason != "" {
+				return reason
+			}
+		}
+		return ""
+	}
+}
+
+func checkMap(v Map, path string, depth int) string {
+	if v == nil {
+		return ""
+	} else {
+		for key, item := range v {
+			if reason := checkValue(
+				item,
+				ConcatString(path, "[\"", key, "\"]"),
+				depth-1,
+			); reason != "" {
+				return reason
+			}
+		}
+		return ""
+	}
+}
+
+func checkValue(v interface{}, path string, depth int) string {
+	if depth == 0 {
+		return ConcatString(path, " is too complicated")
+	}
+
+	switch v.(type) {
+	case nil:
+		return ""
+	case bool:
+		return ""
+	case int:
+		return ""
+	case int8:
+		return ""
+	case int16:
+		return ""
+	case int32:
+		return ""
+	case int64:
+		return ""
+	case uint:
+		return ""
+	case uint8:
+		return ""
+	case uint16:
+		return ""
+	case uint32:
+		return ""
+	case uint64:
+		return ""
+	case float32:
+		return ""
+	case float64:
+		return ""
+	case string:
+		return ""
+	case Bytes:
+		return ""
+	case Array:
+		return checkArray(v.(Array), path, depth)
+	case Map:
+		return checkMap(v.(Map), path, depth)
+	default:
+		return ConcatString(
+			path,
+			" type (",
+			convertTypeToString(reflect.ValueOf(v).Type()),
+			") is not supported",
+		)
+	}
+}
+
+// CheckValue ...
+func CheckValue(v interface{}, depth int) string {
+	return checkValue(v, "value", depth)
+}
