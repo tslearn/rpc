@@ -3,6 +3,7 @@ package internal
 import (
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -188,7 +189,6 @@ func TestTimeNow(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		assert(time.Now().Sub(now) < 70*time.Millisecond).IsTrue()
 		assert(time.Now().Sub(now) > 30*time.Millisecond).IsTrue()
-
 	}
 }
 
@@ -201,7 +201,20 @@ func TestTimeNowISOString(t *testing.T) {
 			TimeNowISOString(),
 		); err == nil {
 			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
-			assert(time.Now().Sub(now) > -15*time.Millisecond).IsTrue()
+			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
+		} else {
+			assert().Fail()
+		}
+	}
+
+	for i := 0; i < 1000000; i++ {
+		atomic.StorePointer(&timeNowPointer, nil)
+		if now, err := time.Parse(
+			"2006-01-02T15:04:05.999Z07:00",
+			TimeNowISOString(),
+		); err == nil {
+			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
+			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail()
 		}

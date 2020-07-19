@@ -35,13 +35,14 @@ func (p *SpeedCounter) Total() int64 {
 // CalculateSpeed ...
 func (p *SpeedCounter) CalculateSpeed() int64 {
 	return p.CallWithLock(func() interface{} {
-		deltaTime := time.Now().Sub(p.lastTime)
+		now := time.Now()
+		deltaTime := now.Sub(p.lastTime)
 		if deltaTime <= 0 {
 			return int64(0)
 		}
 		deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
 		p.lastCount += deltaCount
-		p.lastTime.Add(deltaTime)
+		p.lastTime = now
 		return (deltaCount * int64(time.Second)) / int64(deltaTime)
 	}).(int64)
 }
