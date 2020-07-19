@@ -11,15 +11,16 @@ type ContextObject struct {
 	thread unsafe.Pointer
 }
 
-func (p *ContextObject) stop() {
-	atomic.StorePointer(&p.thread, nil)
-}
-
 func (p *ContextObject) getThread() *rpcThread {
 	return (*rpcThread)(atomic.LoadPointer(&p.thread))
 }
 
-// OK get success ReturnObject  by value
+func (p *ContextObject) stop() {
+	atomic.StorePointer(&p.thread, nil)
+}
+
+// OK ...
+// this
 func (p *ContextObject) OK(value interface{}) Return {
 	if thread := p.getThread(); thread != nil {
 		stream := thread.outStream
@@ -38,10 +39,10 @@ func (p *ContextObject) OK(value interface{}) Return {
 func (p *ContextObject) Error(err Error) Return {
 	if thread := p.getThread(); thread != nil {
 		if err == nil {
-			thread.WriteError("return error is nil", GetStackString(1))
+			thread.WriteError("parameter is nil", GetStackString(1))
 		} else {
 			if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
-				err.AddDebug(thread.execReplyNode.debugString)
+				_ = err.AddDebug(thread.execReplyNode.debugString)
 			}
 			thread.WriteError(err.GetMessage(), err.GetDebug())
 		}
