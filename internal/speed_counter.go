@@ -33,16 +33,23 @@ func (p *SpeedCounter) Total() int64 {
 }
 
 // CalculateSpeed ...
-func (p *SpeedCounter) CalculateSpeed() int64 {
-	return p.CallWithLock(func() interface{} {
-		now := time.Now()
-		deltaTime := now.Sub(p.lastTime)
-		if deltaTime <= 0 {
-			return int64(0)
-		}
+func (p *SpeedCounter) CalculateSpeed(
+	now time.Time,
+) (speed int64, duration time.Duration) {
+	p.DoWithLock(func() {
 		deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
-		p.lastCount += deltaCount
-		p.lastTime = now
-		return (deltaCount * int64(time.Second)) / int64(deltaTime)
-	}).(int64)
+		deltaTime := now.Sub(p.lastTime)
+
+		if deltaTime <= 0 {
+			speed = 0
+			duration = 0
+		} else {
+			speed = (deltaCount * int64(time.Second)) / int64(deltaTime)
+			duration = deltaTime
+			p.lastCount += deltaCount
+			p.lastTime = now
+		}
+	})
+
+	return
 }

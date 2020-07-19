@@ -38,10 +38,10 @@ func (p *rpcPerformanceIndicator) Calculate(
 		deltaTime := now.Sub(p.lastTime)
 
 		if deltaTime <= 0 {
-			speed = -1
+			speed = 0
 			duration = time.Duration(0)
 		} else if deltaCount < 0 {
-			speed = -1
+			speed = 0
 			duration = time.Duration(0)
 		} else {
 			p.lastTime = now

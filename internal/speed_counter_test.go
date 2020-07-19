@@ -40,20 +40,25 @@ func TestSpeedCounter_CalculateSpeed(t *testing.T) {
 	sc := NewSpeedCounter()
 	sc.Add(100)
 	time.Sleep(100 * time.Millisecond)
-	speed := sc.CalculateSpeed()
+	speed, duration := sc.CalculateSpeed(TimeNow())
 	assert(speed > 700 && speed < 1100).IsTrue()
+	assert(duration > 90*time.Millisecond)
+	assert(duration < 110*time.Millisecond)
 
 	// Add -100 and calculate
 	sc = NewSpeedCounter()
 	sc.Add(-100)
 	time.Sleep(100 * time.Millisecond)
-	speed = sc.CalculateSpeed()
+	speed, duration = sc.CalculateSpeed(TimeNow())
 	assert(speed > -1100 && speed < -700).IsTrue()
+	assert(duration > 90*time.Millisecond)
+	assert(duration < 110*time.Millisecond)
 
 	// time interval is zero
+	now := TimeNow()
 	sc = NewSpeedCounter()
-	sc.CalculateSpeed()
-	assert(sc.CalculateSpeed()).Equals(int64(0))
+	sc.CalculateSpeed(now)
+	assert(sc.CalculateSpeed(now)).Equals(int64(0), time.Duration(0))
 }
 
 func TestSpeedCounter_CalculateSpeed_Parallels(t *testing.T) {
@@ -68,7 +73,7 @@ func TestSpeedCounter_CalculateSpeed_Parallels(t *testing.T) {
 	}
 	fnCalculate := func() {
 		for atomic.LoadInt32(&start) > 0 {
-			sc.CalculateSpeed()
+			sc.CalculateSpeed(TimeNow())
 			time.Sleep(time.Millisecond)
 		}
 	}
