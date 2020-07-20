@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -563,7 +564,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Bytes) *ReturnObject {
 			if a != nil {
-				return ctx.Return(NewError("param is not nil"))
+				return ctx.Return(errors.New("param is not nil"))
 			}
 
 			return ctx.Return(true)
@@ -588,7 +589,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Array) *ReturnObject {
 			if a != nil {
-				return ctx.Return(NewError("param is not nil"))
+				return ctx.Return(errors.New("param is not nil"))
 			}
 			return ctx.Return(true)
 		},
@@ -612,7 +613,7 @@ func TestRpcThread_eval(t *testing.T) {
 	runWithProcessor(
 		func(ctx *ContextObject, a Map) *ReturnObject {
 			if a != nil {
-				return ctx.Return(NewError("param is not nil"))
+				return ctx.Return(errors.New("param is not nil"))
 			}
 			return ctx.Return(true)
 		},

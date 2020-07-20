@@ -1,33 +1,63 @@
 package internal
 
+type ErrKind uint64
+
 const (
-	ErrFromUnknown   = 0
-	ErrFromClient    = 1
-	ErrFromReply     = 2
-	ErrFromKernel    = 3
-	ErrFromProtocol  = 4
-	ErrFromTransport = 5
-	ErrFromDeny      = 6
-	ErrFromTimeout   = 7
+	ErrKindFromNone      ErrKind = 0
+	ErrKindFromService   ErrKind = 2
+	ErrKindFromProtocol  ErrKind = 4
+	ErrKindFromTransport ErrKind = 5
+	ErrKindFromTimeout   ErrKind = 7
+	ErrKindFromAccess    ErrKind = 6
+	ErrKindFromKernel    ErrKind = 3
 )
 
 // Error ...
 type Error interface {
+	GetKind() ErrKind
 	GetMessage() string
 	GetDebug() string
-	GetExtra() string
 	AddDebug(debug string) Error
-	SetExtra(extra string) Error
 	Error() string
 }
 
 // NewError create new error
-func NewError(message string) Error {
+func NewError(kind ErrKind, message string) Error {
 	return &rpcError{
+		kind:    kind,
 		message: message,
 		debug:   "",
-		extra:   "",
 	}
+}
+
+// NewRPCError ...
+func NewServiceError(message string) Error {
+	return NewError(ErrKindFromService, message)
+}
+
+// NewProtocolError ...
+func NewProtocolError(message string) Error {
+	return NewError(ErrKindFromProtocol, message)
+}
+
+// NewTransportError ...
+func NewTransportError(message string) Error {
+	return NewError(ErrKindFromTransport, message)
+}
+
+// NewTimeoutError ...
+func NewTimeoutError(message string) Error {
+	return NewError(ErrKindFromTimeout, message)
+}
+
+// NewAccessError ...
+func NewAccessError(message string) Error {
+	return NewError(ErrKindFromAccess, message)
+}
+
+// NewKernelError ...
+func NewKernelError(message string) Error {
+	return NewError(ErrKindFromKernel, message)
 }
 
 // ConvertToError convert interface{} to Error if type matches
@@ -42,7 +72,11 @@ func ConvertToError(v interface{}) Error {
 type rpcError struct {
 	message string
 	debug   string
-	extra   string
+	kind    ErrKind
+}
+
+func (p *rpcError) GetKind() ErrKind {
+	return p.kind
 }
 
 func (p *rpcError) GetMessage() string {
@@ -58,15 +92,6 @@ func (p *rpcError) AddDebug(debug string) Error {
 		p.debug += "\n"
 	}
 	p.debug += debug
-	return p
-}
-
-func (p *rpcError) GetExtra() string {
-	return p.extra
-}
-
-func (p *rpcError) SetExtra(extra string) Error {
-	p.extra = extra
 	return p
 }
 
