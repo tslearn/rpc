@@ -96,7 +96,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	processor1 := getNewProcessor()
 	_ = processor1.AddService("abc", NewService().
 		Reply("sayHello", func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.Return("hello " + name)
+			return ctx.OK("hello " + name)
 		}), "")
 	assert(processor1.BuildCache(
 		"pkgName",
@@ -191,7 +191,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	service2 := NewService()
 	service2.AddChild("user", NewService().
 		Reply("sayHello", func(ctx *ContextObject) *ReturnObject {
-			return ctx.Return(true)
+			return ctx.OK(true)
 		}))
 	assert(processor.mountNode(rootName, &rpcChildMeta{
 		name:    "system",
@@ -234,12 +234,12 @@ func TestProcessor_mountReply(t *testing.T) {
 	// check the reply path is not occupied
 	_ = processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		func(ctx *ContextObject) *ReturnObject { return ctx.Return(true) },
+		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
 		"DebugMessage",
 	})
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOccupied",
-		func(ctx *ContextObject) *ReturnObject { return ctx.Return(true) },
+		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
 		"DebugMessage",
 	})).Equals(NewError(
 		"Reply name testOccupied is duplicated",
@@ -382,7 +382,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 				ctx *ContextObject,
 				name String,
 			) *ReturnObject {
-				return ctx.Return(name)
+				return ctx.OK(name)
 			}),
 		"",
 	)
