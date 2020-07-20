@@ -100,6 +100,13 @@ func (p *rpcThread) WriteError(err Error) Return {
 	return nilReturn
 }
 
+func (p *rpcThread) GetExecReplyNodeDebugString() string {
+	if node := p.execReplyNode; node != nil {
+		return node.debugString
+	}
+	return ""
+}
+
 func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)

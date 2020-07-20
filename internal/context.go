@@ -19,6 +19,30 @@ func (p *ContextObject) stop() {
 	atomic.StorePointer(&p.thread, nil)
 }
 
+func (p *ContextObject) OK(value interface{}) Return {
+	return nilReturn
+}
+
+func (p *ContextObject) Error(value error) {
+	if thread := p.getThread(); thread == nil {
+		panic("rpc: running out of reply goroutine")
+	} else if err, ok := value.(Error); ok && err != nil {
+		thread.WriteError(
+			err.AddDebug(thread.GetExecReplyNodeDebugString()),
+		)
+	} else if value != nil {
+		NewError(value.Error()).
+			AddDebug(GetStackString(1)).
+			AddDebug(thread.GetExecReplyNodeDebugString())
+	} else {
+		thread.WriteError(
+			NewError("value is nil").
+				AddDebug(GetStackString(1)).
+				AddDebug(thread.GetExecReplyNodeDebugString()),
+		)
+	}
+}
+
 // Return ...
 func (p *ContextObject) Return(value interface{}) Return {
 	if thread := p.getThread(); thread == nil {
