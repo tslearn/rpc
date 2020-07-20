@@ -14,12 +14,8 @@ type Assert interface {
 	IsFalse()
 }
 
-type testReporter interface {
-	Fail()
-}
-
 // NewAssert create new assert class
-func NewAssert(t testReporter) func(args ...interface{}) Assert {
+func NewAssert(t interface{ Fail() }) func(args ...interface{}) Assert {
 	return func(args ...interface{}) Assert {
 		return &rpcAssert{
 			t:    t,
@@ -30,7 +26,7 @@ func NewAssert(t testReporter) func(args ...interface{}) Assert {
 
 // rpcAssert ...
 type rpcAssert struct {
-	t    testReporter
+	t    interface{ Fail() }
 	args []interface{}
 }
 
