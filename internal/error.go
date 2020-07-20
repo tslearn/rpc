@@ -22,7 +22,7 @@ type Error interface {
 }
 
 // NewError create new error
-func NewError(kind ErrKind, message string) Error {
+func newError(kind ErrKind, message string) Error {
 	return &rpcError{
 		kind:    kind,
 		message: message,
@@ -30,34 +30,38 @@ func NewError(kind ErrKind, message string) Error {
 	}
 }
 
+func NewError(message string) Error {
+	return newError(ErrKindFromNone, message)
+}
+
 // NewRPCError ...
 func NewServiceError(message string) Error {
-	return NewError(ErrKindFromService, message)
+	return newError(ErrKindFromService, message)
 }
 
 // NewProtocolError ...
 func NewProtocolError(message string) Error {
-	return NewError(ErrKindFromProtocol, message)
+	return newError(ErrKindFromProtocol, message)
 }
 
 // NewTransportError ...
 func NewTransportError(message string) Error {
-	return NewError(ErrKindFromTransport, message)
+	return newError(ErrKindFromTransport, message)
 }
 
 // NewTimeoutError ...
 func NewTimeoutError(message string) Error {
-	return NewError(ErrKindFromTimeout, message)
+	return newError(ErrKindFromTimeout, message)
 }
 
 // NewAccessError ...
 func NewAccessError(message string) Error {
-	return NewError(ErrKindFromAccess, message)
+	return newError(ErrKindFromAccess, message)
 }
 
 // NewKernelError ...
 func NewKernelError(message string) Error {
-	return NewError(ErrKindFromKernel, message)
+	return newError(ErrKindFromKernel, message)
 }
 
 // ConvertToError convert interface{} to Error if type matches
