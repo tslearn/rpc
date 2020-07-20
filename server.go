@@ -415,7 +415,7 @@ func (p *Server) AddService(
 	if err := p.processor.AddService(
 		name,
 		service,
-		internal.GetStackString(1),
+		internal.GetCodePosition("", 1),
 	); err != nil {
 		p.onError(err)
 	}
