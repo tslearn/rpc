@@ -359,7 +359,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	success := uint64(0)
 	failed := uint64(0)
 	processor := NewProcessor(
-		true,
+		false,
 		8192*24,
 		16,
 		16,
@@ -389,7 +389,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 
 	time.Sleep(3 * time.Second)
 	b.ReportAllocs()
-	b.N = 500000
+	b.N = 50000000
 	b.SetParallelism(1024)
 
 	// file, _ := os.Create("../cpu.prof")
