@@ -1,6 +1,7 @@
 package internal
 
 const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
+const ErrInternalErrorReplyMetaIsNil = "rpc: internal error: reply meta is nil"
 
 // Bool ...
 type Bool = bool

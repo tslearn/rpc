@@ -224,84 +224,84 @@ func TestProcessor_mountReply(t *testing.T) {
 
 	// check the name
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"###",
-		nil,
-		"DebugMessage",
+		name:    "###",
+		handler: nil,
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply name ### is illegal",
 	).AddDebug("DebugMessage"))
 
 	// check the reply path is not occupied
 	_ = processor.mountReply(rootNode, &rpcReplyMeta{
-		"testOccupied",
-		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
-		"DebugMessage",
+		name:    "testOccupied",
+		handler: func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
+		debug:   "DebugMessage",
 	})
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testOccupied",
-		func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
-		"DebugMessage",
+		name:    "testOccupied",
+		handler: func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply name testOccupied is duplicated",
 	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
 
 	// check the reply handler is nil
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerIsNil",
-		nil,
-		"DebugMessage",
+		name:    "testReplyHandlerIsNil",
+		handler: nil,
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler is nil",
 	).AddDebug("DebugMessage"))
 
 	// Check reply handler is Func
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerIsFunction",
-		make(chan bool),
-		"DebugMessage",
+		name:    "testReplyHandlerIsFunction",
+		handler: make(chan bool),
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler must be func(ctx rpc.ContextObject, ...) rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	// Check reply handler arguments types
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerArguments",
-		func(ctx bool) *ReturnObject { return nilReturn },
-		"DebugMessage",
+		name:    "testReplyHandlerArguments",
+		handler: func(ctx bool) *ReturnObject { return nilReturn },
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler 1st argument type must be rpc.ContextObject",
 	).AddDebug("DebugMessage"))
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerArguments",
-		func(ctx *ContextObject, ch chan bool) *ReturnObject { return nilReturn },
-		"DebugMessage",
+		name:    "testReplyHandlerArguments",
+		handler: func(ctx *ContextObject, ch chan bool) *ReturnObject { return nilReturn },
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler 2nd argument type <chan bool> not supported",
 	).AddDebug("DebugMessage"))
 
 	// Check return type
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerReturn",
-		func(ctx *ContextObject) (*ReturnObject, bool) { return nilReturn, true },
-		"DebugMessage",
+		name:    "testReplyHandlerReturn",
+		handler: func(ctx *ContextObject) (*ReturnObject, bool) { return nilReturn, true },
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testReplyHandlerReturn",
-		func(ctx ContextObject) bool { return true },
-		"DebugMessage",
+		name:    "testReplyHandlerReturn",
+		handler: func(ctx ContextObject) bool { return true },
+		debug:   "DebugMessage",
 	})).Equals(NewError(
 		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
 	// ok
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-		"testOK",
-		func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
-		GetCodePosition("", 0),
+		name:    "testOK",
+		handler: func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
+		debug:   GetCodePosition("", 0),
 	})).IsNil()
 
 	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
@@ -359,7 +359,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	success := uint64(0)
 	failed := uint64(0)
 	processor := NewProcessor(
-		false,
+		true,
 		8192*24,
 		16,
 		16,
@@ -389,7 +389,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 
 	time.Sleep(3 * time.Second)
 	b.ReportAllocs()
-	b.N = 50000000
+	b.N = 20000000
 	b.SetParallelism(1024)
 
 	// file, _ := os.Create("../cpu.prof")
