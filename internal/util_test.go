@@ -346,6 +346,42 @@ func TestCurrentGoroutineID(t *testing.T) {
 	goroutinePrefix = temp
 }
 
+func TestCheckValue(t *testing.T) {
+	assert := NewAssert(t)
+	assert(CheckValue(nil, 1)).Equals("")
+	assert(CheckValue(Array(nil), 1)).Equals("")
+	assert(CheckValue(Map(nil), 1)).Equals("")
+	assert(CheckValue(true, 1)).Equals("")
+	assert(CheckValue(int(1), 1)).Equals("")
+	assert(CheckValue(int8(1), 1)).Equals("")
+	assert(CheckValue(int16(1), 1)).Equals("")
+	assert(CheckValue(int32(1), 1)).Equals("")
+	assert(CheckValue(int64(1), 1)).Equals("")
+	assert(CheckValue(uint(1), 1)).Equals("")
+	assert(CheckValue(uint8(1), 1)).Equals("")
+	assert(CheckValue(uint16(1), 1)).Equals("")
+	assert(CheckValue(uint32(1), 1)).Equals("")
+	assert(CheckValue(uint64(1), 1)).Equals("")
+	assert(CheckValue(float32(1), 1)).Equals("")
+	assert(CheckValue(float64(1), 1)).Equals("")
+	assert(CheckValue("", 1)).Equals("")
+	assert(CheckValue(Bytes{}, 1)).Equals("")
+	assert(CheckValue(Array{}, 1)).Equals("")
+	assert(CheckValue(Map{}, 1)).Equals("")
+
+	assert(CheckValue(nil, 0)).
+		Equals("value is too complicated")
+	assert(CheckValue(make(chan bool), 1)).
+		Equals("value type (chan bool) is not supported")
+
+	assert(CheckValue(Array{true}, 1)).
+		Equals("value[0] is too complicated")
+	assert(CheckValue(Array{true}, 2)).Equals("")
+	assert(CheckValue(Map{"key": "value"}, 1)).
+		Equals("value[\"key\"] is too complicated")
+	assert(CheckValue(Map{"key": "value"}, 2)).Equals("")
+}
+
 func BenchmarkAddPrefixPerLine(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
@@ -393,40 +429,4 @@ func BenchmarkCurGoroutineID(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		CurrentGoroutineID()
 	}
-}
-
-func TestCheckValue(t *testing.T) {
-	assert := NewAssert(t)
-	assert(CheckValue(nil, 1)).Equals("")
-	assert(CheckValue(Array(nil), 1)).Equals("")
-	assert(CheckValue(Map(nil), 1)).Equals("")
-	assert(CheckValue(true, 1)).Equals("")
-	assert(CheckValue(int(1), 1)).Equals("")
-	assert(CheckValue(int8(1), 1)).Equals("")
-	assert(CheckValue(int16(1), 1)).Equals("")
-	assert(CheckValue(int32(1), 1)).Equals("")
-	assert(CheckValue(int64(1), 1)).Equals("")
-	assert(CheckValue(uint(1), 1)).Equals("")
-	assert(CheckValue(uint8(1), 1)).Equals("")
-	assert(CheckValue(uint16(1), 1)).Equals("")
-	assert(CheckValue(uint32(1), 1)).Equals("")
-	assert(CheckValue(uint64(1), 1)).Equals("")
-	assert(CheckValue(float32(1), 1)).Equals("")
-	assert(CheckValue(float64(1), 1)).Equals("")
-	assert(CheckValue("", 1)).Equals("")
-	assert(CheckValue(Bytes{}, 1)).Equals("")
-	assert(CheckValue(Array{}, 1)).Equals("")
-	assert(CheckValue(Map{}, 1)).Equals("")
-
-	assert(CheckValue(nil, 0)).
-		Equals("value is too complicated")
-	assert(CheckValue(make(chan bool), 1)).
-		Equals("value type (chan bool) is not supported")
-
-	assert(CheckValue(Array{true}, 1)).
-		Equals("value[0] is too complicated")
-	assert(CheckValue(Array{true}, 2)).Equals("")
-	assert(CheckValue(Map{"key": "value"}, 1)).
-		Equals("value[\"key\"] is too complicated")
-	assert(CheckValue(Map{"key": "value"}, 2)).Equals("")
 }
