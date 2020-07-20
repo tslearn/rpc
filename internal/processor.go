@@ -204,7 +204,7 @@ func (p *Processor) Stop() Error {
 			}
 
 			if len(errList) > 0 {
-				return NewServiceError(ConcatString(
+				return NewError(ConcatString(
 					"Processor: Stop: The following routine still running: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
@@ -239,7 +239,7 @@ func (p *Processor) AddService(
 	debug string,
 ) Error {
 	if service == nil {
-		return NewServiceError("Service is nil").AddDebug(debug)
+		return NewError("Service is nil").AddDebug(debug)
 	}
 
 	return p.mountNode(rootName, &rpcChildMeta{
@@ -255,31 +255,31 @@ func (p *Processor) mountNode(
 ) Error {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
-		return NewServiceError("rpc: mountNode: nodeMeta is nil")
+		return NewError("rpc: mountNode: nodeMeta is nil")
 	}
 
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
-		return NewServiceError(
+		return NewError(
 			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
 		).AddDebug(nodeMeta.debug)
 	}
 
 	// check nodeMeta.service is not nil
 	if nodeMeta.service == nil {
-		return NewServiceError("Service is nil").AddDebug(nodeMeta.debug)
+		return NewError("Service is nil").AddDebug(nodeMeta.debug)
 	}
 
 	// check max node depth overflow
 	parentNode, ok := p.servicesMap[parentServiceNodePath]
 	if !ok {
-		return NewServiceError(
+		return NewError(
 			"rpc: mountNode: parentNode is nil",
 		).AddDebug(nodeMeta.debug)
 	}
 	servicePath := parentServiceNodePath + "." + nodeMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Service path depth %s is too long, it must be less or equal than %d",
 			servicePath,
 			p.maxNodeDepth,
@@ -288,7 +288,7 @@ func (p *Processor) mountNode(
 
 	// check the mount path is not occupied
 	if item, ok := p.servicesMap[servicePath]; ok {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Service name \"%s\" is duplicated",
 			nodeMeta.name,
 		)).AddDebug(fmt.Sprintf(
@@ -334,17 +334,17 @@ func (p *Processor) mountReply(
 ) Error {
 	// check the node is nil
 	if serviceNode == nil {
-		return NewServiceError("rpc: mountReply: node is nil")
+		return NewError("rpc: mountReply: node is nil")
 	}
 
 	// check the rpcReplyMeta is nil
 	if replyMeta == nil {
-		return NewServiceError("rpc: mountReply: rpcReplyMeta is nil")
+		return NewError("rpc: mountReply: rpcReplyMeta is nil")
 	}
 
 	// check the name
 	if !replyNameRegex.MatchString(replyMeta.name) {
-		return NewServiceError(
+		return NewError(
 			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
 		).AddDebug(replyMeta.debug)
 	}
@@ -352,7 +352,7 @@ func (p *Processor) mountReply(
 	// check the reply path is not occupied
 	replyPath := serviceNode.path + ":" + replyMeta.name
 	if item, ok := p.repliesMap[replyPath]; ok {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Reply name %s is duplicated",
 			replyMeta.name,
 		)).AddDebug(fmt.Sprintf(
@@ -364,13 +364,13 @@ func (p *Processor) mountReply(
 
 	// check the reply handler is nil
 	if replyMeta.handler == nil {
-		return NewServiceError("Reply handler is nil").AddDebug(replyMeta.debug)
+		return NewError("Reply handler is nil").AddDebug(replyMeta.debug)
 	}
 
 	// Check reply handler is Func
 	fn := reflect.ValueOf(replyMeta.handler)
 	if fn.Kind() != reflect.Func {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Reply handler must be func(ctx %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
@@ -380,12 +380,12 @@ func (p *Processor) mountReply(
 	// Check reply handler arguments types
 	argumentsErrorPos := getArgumentsErrorPosition(fn)
 	if argumentsErrorPos == 0 {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Reply handler 1st argument type must be %s",
 			convertTypeToString(contextType),
 		)).AddDebug(replyMeta.debug)
 	} else if argumentsErrorPos > 0 {
-		return NewServiceError(fmt.Sprintf(
+		return NewError(fmt.Sprintf(
 			"Reply handler %s argument type <%s> not supported",
 			ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 			fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
@@ -395,7 +395,7 @@ func (p *Processor) mountReply(
 	// Check return type
 	if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return NewServiceError(
+		return NewError(
 			fmt.Sprintf(
 				"Reply handler return type must be %s",
 				convertTypeToString(returnType),

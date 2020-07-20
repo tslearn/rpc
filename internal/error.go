@@ -4,7 +4,6 @@ type ErrKind uint64
 
 const (
 	ErrKindFromNone      ErrKind = 0
-	ErrKindFromService   ErrKind = 2
 	ErrKindFromProtocol  ErrKind = 4
 	ErrKindFromTransport ErrKind = 5
 	ErrKindFromTimeout   ErrKind = 7
@@ -21,7 +20,6 @@ type Error interface {
 	Error() string
 }
 
-// NewError create new error
 func newError(kind ErrKind, message string) Error {
 	return &rpcError{
 		kind:    kind,
@@ -30,13 +28,9 @@ func newError(kind ErrKind, message string) Error {
 	}
 }
 
+// NewError ...
 func NewError(message string) Error {
 	return newError(ErrKindFromNone, message)
-}
-
-// NewRPCError ...
-func NewServiceError(message string) Error {
-	return newError(ErrKindFromService, message)
 }
 
 // NewProtocolError ...

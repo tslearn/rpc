@@ -32,7 +32,7 @@ func (p *ContextObject) Return(value interface{}) Return {
 			}
 			return thread.WriteError(rpcErr)
 		} else if sysErr, ok := value.(error); ok {
-			err := NewServiceError(sysErr.Error())
+			err := NewError(sysErr.Error())
 			if thread.execReplyNode != nil && thread.execReplyNode.debugString != "" {
 				_ = err.AddDebug(thread.execReplyNode.debugString)
 			}

@@ -111,17 +111,17 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	} else if reason := CheckValue(value, 64); reason != "" {
 		if p.processor.IsDebug() {
 			return p.WriteError(
-				NewServiceError(ConcatString("rpc: ", reason)).
+				NewError(ConcatString("rpc: ", reason)).
 					AddDebug(GetStackString(skip)),
 			)
 		} else {
 			return p.WriteError(
-				NewServiceError(ConcatString("rpc: ", reason)),
+				NewError(ConcatString("rpc: ", reason)),
 			)
 		}
 	} else {
 		return p.WriteError(
-			NewServiceError("rpc: value is not supproted").AddDebug(GetStackString(skip)),
+			NewError("rpc: value is not supproted").AddDebug(GetStackString(skip)),
 		)
 	}
 }
@@ -151,7 +151,7 @@ func (p *rpcThread) Eval(
 		if v := recover(); v != nil {
 			if p.execReplyNode != nil {
 				p.WriteError(
-					NewServiceError(fmt.Sprintf(
+					NewError(fmt.Sprintf(
 						"rpc: %s: runtime error: %s",
 						p.execReplyNode.callString,
 						v,
