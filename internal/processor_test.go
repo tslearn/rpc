@@ -301,7 +301,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		"testOK",
 		func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
-		GetStackString(0),
+		GetCodePosition("", 0),
 	})).IsNil()
 
 	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
@@ -309,7 +309,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	assert(processor.repliesMap["$:testOK"].callString).
 		Equals("$:testOK(rpc.ContextObject, rpc.Bool, rpc.Map) rpc.ReturnObject")
 	assert(
-		strings.Contains(processor.repliesMap["$:testOK"].debugString, "$:testOK"),
+		strings.Contains(processor.repliesMap["$:testOK"].GetDebug(), "$:testOK"),
 	).IsTrue()
 	assert(processor.repliesMap["$:testOK"].argTypes[0]).
 		Equals(reflect.ValueOf(nilContext).Type())

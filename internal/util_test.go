@@ -2,7 +2,6 @@ package internal
 
 import (
 	"reflect"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -264,17 +263,17 @@ func TestConcatString(t *testing.T) {
 	assert(ConcatString("a", "b", "c")).Equals("abc")
 }
 
-func TestGetStackString(t *testing.T) {
-	assert := NewAssert(t)
-	assert(strings.Contains(FindLinesByPrefix(
-		GetStackString(0),
-		"-01",
-	)[0], "TestGetStackString")).IsTrue()
-	assert(strings.Contains(FindLinesByPrefix(
-		GetStackString(0),
-		"-01",
-	)[0], "util_test")).IsTrue()
-}
+//func TestGetStackString(t *testing.T) {
+//	assert := NewAssert(t)
+//	assert(strings.Contains(FindLinesByPrefix(
+//		GetStackString(0),
+//		"-01",
+//	)[0], "TestGetStackString")).IsTrue()
+//	assert(strings.Contains(FindLinesByPrefix(
+//		GetStackString(0),
+//		"-01",
+//	)[0], "util_test")).IsTrue()
+//}
 
 func TestFindLinesByPrefix(t *testing.T) {
 	assert := NewAssert(t)
@@ -398,19 +397,11 @@ func BenchmarkConcatString(b *testing.B) {
 
 func BenchmarkGetCodePosition(b *testing.B) {
 	b.ReportAllocs()
-	b.N = 100000000
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			GetCodePosition("test", 0)
 		}
 	})
-}
-
-func BenchmarkGetStackString(b *testing.B) {
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		GetStackString(0)
-	}
 }
 
 func BenchmarkGetRandString(b *testing.B) {

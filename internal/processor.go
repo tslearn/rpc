@@ -17,13 +17,24 @@ var (
 )
 
 type rpcReplyNode struct {
-	replyMeta   *rpcReplyMeta
-	cacheFN     ReplyCacheFunc
-	reflectFn   reflect.Value
-	callString  string
-	debugString string
-	argTypes    []reflect.Type
-	indicator   *rpcPerformanceIndicator
+	path       string
+	replyMeta  *rpcReplyMeta
+	cacheFN    ReplyCacheFunc
+	reflectFn  reflect.Value
+	callString string
+	argTypes   []reflect.Type
+	indicator  *rpcPerformanceIndicator
+}
+
+func (p *rpcReplyNode) GetPath() string {
+	return p.path
+}
+
+func (p *rpcReplyNode) GetDebug() string {
+	if p.replyMeta != nil {
+		return ConcatString(p.path, " ", p.replyMeta.debug)
+	}
+	return p.path
 }
 
 type rpcServiceNode struct {
@@ -165,7 +176,7 @@ func (p *Processor) Stop() Error {
 			for i := 0; i < numOfThreads; i++ {
 				go func(idx int) {
 					if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
-						closeCH <- p.threads[idx].execReplyNode.debugString
+						closeCH <- p.threads[idx].execReplyNode.GetDebug()
 					} else {
 						closeCH <- ""
 					}
@@ -403,15 +414,6 @@ func (p *Processor) mountReply(
 	}
 
 	// mount the replyRecord
-	fileLine := ""
-	debugArr := FindLinesByPrefix(replyMeta.debug, "-01")
-	if len(debugArr) > 0 {
-		arr := strings.Split(debugArr[0], " ")
-		if len(arr) == 3 {
-			fileLine = arr[2]
-		}
-	}
-
 	argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
 	argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
 	for i := 0; i < len(argTypes); i++ {
@@ -426,6 +428,7 @@ func (p *Processor) mountReply(
 	}
 
 	p.repliesMap[replyPath] = &rpcReplyNode{
+		path:      replyPath,
 		replyMeta: replyMeta,
 		cacheFN:   cacheFN,
 		reflectFn: fn,
@@ -435,9 +438,8 @@ func (p *Processor) mountReply(
 			argString,
 			convertTypeToString(returnType),
 		),
-		debugString: fmt.Sprintf("%s %s", replyPath, fileLine),
-		argTypes:    argTypes,
-		indicator:   newPerformanceIndicator(),
+		argTypes:  argTypes,
+		indicator: newPerformanceIndicator(),
 	}
 
 	return nil

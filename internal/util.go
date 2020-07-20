@@ -354,48 +354,23 @@ func ConcatString(args ...string) string {
 	return sb.String()
 }
 
+// GetCodePosition ...
 func GetCodePosition(header string, skip uint) string {
 	sb := NewStringBuilder()
 	defer sb.Release()
 
 	if _, file, line, ok := runtime.Caller(int(skip) + 1); ok && line > 0 {
-		sb.AppendString(header)
-		sb.AppendByte(' ')
+		if header != "" {
+			sb.AppendString(header)
+			sb.AppendByte(' ')
+		}
+
 		sb.AppendString(file)
 		sb.AppendByte(':')
 		if line < 10000 {
 			sb.AppendBytes(intToStringCache4[line])
 		} else {
 			sb.AppendString(strconv.Itoa(line))
-		}
-	}
-
-	return sb.String()
-}
-
-// GetStackString reports the call stack information
-func GetStackString(skip uint) string {
-	sb := NewStringBuilder()
-	defer sb.Release()
-
-	for idx := 1; ; idx++ {
-		if pc, file, line, _ := runtime.Caller(int(skip) + idx); pc == 0 {
-			break
-		} else {
-			if fn := runtime.FuncForPC(pc); fn != nil {
-				if !sb.IsEmpty() {
-					sb.AppendByte('\n')
-				}
-
-				sb.AppendByte('-')
-				sb.AppendBytes(intToStringCache2[idx%100])
-				sb.AppendByte(' ')
-				sb.AppendString(fn.Name())
-				sb.AppendString(": ")
-				sb.AppendString(file)
-				sb.AppendByte(':')
-				sb.AppendString(strconv.Itoa(line))
-			}
 		}
 	}
 

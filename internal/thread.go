@@ -100,9 +100,16 @@ func (p *rpcThread) WriteError(err Error) Return {
 	return nilReturn
 }
 
-func (p *rpcThread) GetExecReplyNodeDebugString() string {
+func (p *rpcThread) GetExecReplyNodePath() string {
 	if node := p.execReplyNode; node != nil {
-		return node.debugString
+		return node.GetPath()
+	}
+	return ""
+}
+
+func (p *rpcThread) GetExecReplyNodeDebug() string {
+	if node := p.execReplyNode; node != nil {
+		return node.GetDebug()
 	}
 	return ""
 }
@@ -116,19 +123,14 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		p.execSuccessful = true
 		return nilReturn
 	} else if reason := CheckValue(value, 64); reason != "" {
-		if p.processor.IsDebug() {
-			return p.WriteError(
-				NewError(ConcatString("rpc: ", reason)).
-					AddDebug(GetStackString(skip)),
-			)
-		} else {
-			return p.WriteError(
-				NewError(ConcatString("rpc: ", reason)),
-			)
-		}
+		return p.WriteError(
+			NewError(ConcatString("rpc: ", reason)).
+				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
+		)
 	} else {
 		return p.WriteError(
-			NewError("rpc: value is not supproted").AddDebug(GetStackString(skip)),
+			NewError("rpc: value is not supported").
+				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
 		)
 	}
 }
@@ -346,7 +348,7 @@ func (p *rpcThread) Eval(
 			strings.Join(remoteArgsType, ", "),
 			convertTypeToString(returnType),
 			p.execReplyNode.callString,
-		)).AddDebug(p.execReplyNode.debugString))
+		)).AddDebug(p.GetExecReplyNodeDebug()))
 	}
 
 	return nilReturn

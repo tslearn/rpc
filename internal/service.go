@@ -24,7 +24,7 @@ func NewService() *Service {
 	return &Service{
 		children: make([]*rpcChildMeta, 0, 0),
 		replies:  make([]*rpcReplyMeta, 0, 0),
-		debug:    GetStackString(1),
+		debug:    GetCodePosition("", 1),
 	}
 }
 
@@ -38,7 +38,7 @@ func (p *Service) Reply(
 		p.replies = append(p.replies, &rpcReplyMeta{
 			name:    name,
 			handler: handler,
-			debug:   GetStackString(1),
+			debug:   GetCodePosition("", 1),
 		})
 	})
 	return p
@@ -51,7 +51,7 @@ func (p *Service) AddChild(name string, service *Service) *Service {
 		p.children = append(p.children, &rpcChildMeta{
 			name:    name,
 			service: service,
-			debug:   GetStackString(1),
+			debug:   GetCodePosition("", 1),
 		})
 	})
 	return p
