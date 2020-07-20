@@ -354,6 +354,25 @@ func ConcatString(args ...string) string {
 	return sb.String()
 }
 
+func GetCodePosition(header string, skip uint) string {
+	sb := NewStringBuilder()
+	defer sb.Release()
+
+	if _, file, line, ok := runtime.Caller(int(skip) + 1); ok && line > 0 {
+		sb.AppendString(header)
+		sb.AppendByte(' ')
+		sb.AppendString(file)
+		sb.AppendByte(':')
+		if line < 10000 {
+			sb.AppendBytes(intToStringCache4[line])
+		} else {
+			sb.AppendString(strconv.Itoa(line))
+		}
+	}
+
+	return sb.String()
+}
+
 // GetStackString reports the call stack information
 func GetStackString(skip uint) string {
 	sb := NewStringBuilder()

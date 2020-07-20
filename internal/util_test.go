@@ -396,6 +396,16 @@ func BenchmarkConcatString(b *testing.B) {
 	}
 }
 
+func BenchmarkGetCodePosition(b *testing.B) {
+	b.ReportAllocs()
+	b.N = 100000000
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			GetCodePosition("test", 0)
+		}
+	})
+}
+
 func BenchmarkGetStackString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
