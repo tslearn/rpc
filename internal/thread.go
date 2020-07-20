@@ -86,8 +86,10 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) IsCurrentGoroutineThread() bool {
-	return p.goid <= 0 || p.goid == CurrentGoroutineID()
+func (p *rpcThread) CheckGoroutineWhenDebug() {
+	if p.processor.IsDebug() && p.goid != CurrentGoroutineID() {
+		panic(ErrStringRunningOutOfScope)
+	}
 }
 
 func (p *rpcThread) WriteError(err Error) Return {

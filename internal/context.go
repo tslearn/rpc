@@ -21,30 +21,35 @@ func (p *ContextObject) stop() {
 
 func (p *ContextObject) OK(value interface{}) Return {
 	if thread := p.getThread(); thread == nil {
-		panic("rpc: running out of reply goroutine")
+		panic(ErrStringRunningOutOfScope)
 	} else {
+		thread.CheckGoroutineWhenDebug()
 		return thread.WriteOK(value, 2)
 	}
 }
 
 func (p *ContextObject) Error(value error) Return {
 	if thread := p.getThread(); thread == nil {
-		panic("rpc: running out of reply goroutine")
-	} else if err, ok := value.(Error); ok && err != nil {
-		thread.WriteError(
-			err.AddDebug(thread.GetExecReplyNodeDebug()),
-		)
-	} else if value != nil {
-		thread.WriteError(
-			NewError(value.Error()).
-				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
-		)
+		panic(ErrStringRunningOutOfScope)
 	} else {
-		thread.WriteError(
-			NewError("value is nil").
-				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
-		)
-	}
+		thread.CheckGoroutineWhenDebug()
 
-	return nilReturn
+		if err, ok := value.(Error); ok && err != nil {
+			thread.WriteError(
+				err.AddDebug(thread.GetExecReplyNodeDebug()),
+			)
+		} else if value != nil {
+			thread.WriteError(
+				NewError(value.Error()).
+					AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
+			)
+		} else {
+			thread.WriteError(
+				NewError("value is nil").
+					AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
+			)
+		}
+
+		return nilReturn
+	}
 }

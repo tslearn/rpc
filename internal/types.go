@@ -1,5 +1,7 @@
 package internal
 
+const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
+
 // Bool ...
 type Bool = bool
 
