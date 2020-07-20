@@ -55,7 +55,7 @@ func TestNewAssert(t *testing.T) {
 func TestAssert_Fail(t *testing.T) {
 	assert := NewAssert(t)
 	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-		assert(nil).Fail()
+		assert(nil).Fail("test")
 	})).IsTrue()
 }
 

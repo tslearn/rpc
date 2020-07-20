@@ -202,7 +202,7 @@ func TestTimeNowISOString(t *testing.T) {
 			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
 			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
 		} else {
-			assert().Fail()
+			assert().Fail("time parse error")
 		}
 	}
 
@@ -215,7 +215,7 @@ func TestTimeNowISOString(t *testing.T) {
 			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
 			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
 		} else {
-			assert().Fail()
+			assert().Fail("time parse error")
 		}
 	}
 }
