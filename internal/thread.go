@@ -9,18 +9,24 @@ import (
 	"unsafe"
 )
 
+const (
+	rpcThreadExecFailed  = -1
+	rpcThreadExecNone    = 0
+	rpcThreadExecSuccess = 1
+)
+
 type rpcThread struct {
-	processor      *Processor
-	isRunning      bool
-	ch             chan *Stream
-	outStream      *Stream
-	execDepth      uint64
-	execReplyNode  *rpcReplyNode
-	execArgs       []reflect.Value
-	execSuccessful bool
-	from           string
-	closeCH        chan bool
-	goid           int64
+	processor     *Processor
+	isRunning     bool
+	ch            chan *Stream
+	outStream     *Stream
+	execDepth     uint64
+	execReplyNode *rpcReplyNode
+	execArgs      []reflect.Value
+	execStatus    int
+	from          string
+	closeCH       chan bool
+	goid          int64
 	Lock
 }
 
@@ -36,17 +42,17 @@ func newThread(
 
 	go func() {
 		thread := &rpcThread{
-			processor:      processor,
-			isRunning:      true,
-			ch:             make(chan *Stream, 1),
-			outStream:      NewStream(),
-			execDepth:      0,
-			execReplyNode:  nil,
-			execArgs:       make([]reflect.Value, 0, 16),
-			execSuccessful: false,
-			from:           "",
-			closeCH:        make(chan bool),
-			goid:           0,
+			processor:     processor,
+			isRunning:     true,
+			ch:            make(chan *Stream, 1),
+			outStream:     NewStream(),
+			execDepth:     0,
+			execReplyNode: nil,
+			execArgs:      make([]reflect.Value, 0, 16),
+			execStatus:    rpcThreadExecNone,
+			from:          "",
+			closeCH:       make(chan bool),
+			goid:          0,
 		}
 
 		if processor.IsDebug() {
@@ -101,7 +107,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 	stream.WriteUint64(uint64(err.GetKind()))
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
-	p.execSuccessful = false
+	p.execStatus = rpcThreadExecFailed
 	return nilReturn
 }
 
@@ -125,7 +131,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	stream.WriteBool(true)
 
 	if stream.Write(value) == StreamWriteOK {
-		p.execSuccessful = true
+		p.execStatus = rpcThreadExecSuccess
 		return nilReturn
 	} else if reason := CheckValue(value, 64); reason != "" {
 		return p.WriteError(
@@ -158,8 +164,10 @@ func (p *rpcThread) Eval(
 ) *ReturnObject {
 	timeStart := TimeNow()
 	// create context
-	p.execSuccessful = false
-	ctx := &ContextObject{thread: unsafe.Pointer(p)}
+	p.execStatus = rpcThreadExecNone
+	ctx := &ContextObject{
+		thread: unsafe.Pointer(p),
+	}
 
 	defer func() {
 		if v := recover(); v != nil {
@@ -174,12 +182,13 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		if p.execReplyNode != nil {
+		if p.execReplyNode != nil && p.execReplyNode.indicator != nil {
 			p.execReplyNode.indicator.Count(
 				TimeNow().Sub(timeStart),
-				p.execSuccessful,
+				p.execStatus == rpcThreadExecSuccess,
 			)
 		}
+
 		ctx.stop()
 		inStream.Reset()
 		retStream := p.outStream
@@ -188,7 +197,7 @@ func (p *rpcThread) Eval(
 		p.execDepth = 0
 		p.execReplyNode = nil
 		p.execArgs = p.execArgs[:0]
-		onEvalFinish(p, retStream, p.execSuccessful)
+		onEvalFinish(p, retStream, p.execStatus == rpcThreadExecSuccess)
 	}()
 
 	// copy head
