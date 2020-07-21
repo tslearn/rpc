@@ -354,6 +354,10 @@ func ConcatString(args ...string) string {
 	return sb.String()
 }
 
+func GetFileLine(skip uint) string {
+	return AddFileLine("", skip+1)
+}
+
 // AddFileLine ...
 func AddFileLine(header string, skip uint) string {
 	sb := NewStringBuilder()

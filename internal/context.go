@@ -14,23 +14,23 @@ type ContextObject struct {
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(AddFileLine("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(AddFileLine("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
 		ReportFatal(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
 		)
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
 	} else {
-		codeSource := AddFileLine("", 2)
+		codeSource := GetFileLine(2)
 		switch meta.GetCheck(codeSource) {
 		case rpcReplyCheckStatusOK:
 			return thread
@@ -56,7 +56,9 @@ func (p *ContextObject) getThread() *rpcThread {
 
 func (p *ContextObject) stop() {
 	if p == nil {
-		ReportFatal(NewKernelError(ErrStringUnexpectedNil))
+		ReportFatal(
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
+		)
 	} else {
 		atomic.StorePointer(&p.thread, nil)
 	}
@@ -65,31 +67,29 @@ func (p *ContextObject) stop() {
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
-	}
-
-	if thread := p.getThread(); thread != nil {
+	} else if thread := p.getThread(); thread == nil {
+		// ReportFatal has already run
+		return nilReturn
+	} else {
 		return thread.WriteOK(value, 2)
 	}
-
-	// do nothing, FatalReport has already run
-	return nilReturn
 }
 
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyError(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
-	}
-
-	thread := p.getThread()
-	if err, ok := value.(Error); ok && err != nil {
+	} else if thread := p.getThread(); thread == nil {
+		// ReportFatal has already run
+		return nilReturn
+	} else if err, ok := value.(Error); ok && err != nil {
 		return thread.WriteError(
-			err.AddDebug(thread.GetExecReplyNodeDebug()),
+			err.AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 	} else if value != nil {
 		return thread.WriteError(
