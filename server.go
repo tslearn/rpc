@@ -120,7 +120,7 @@ func (p *serverSession) WriteStream(stream Stream) Error {
 				configServerWriteLimit,
 			)
 		} else {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"serverSession: WriteStream: conn is nil",
 			)
 		}
@@ -132,13 +132,11 @@ func (p *serverSession) OnDataStream(
 	processor *internal.Processor,
 ) Error {
 	if stream == nil {
-		return internal.NewError(
-			"serverSession: OnDataStream: stream is nil",
-		)
+		return internal.NewBaseError("stream is nil")
 	}
 
 	if processor == nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"serverSession: OnDataStream: processor is nil",
 		)
 	}
@@ -146,7 +144,7 @@ func (p *serverSession) OnDataStream(
 	record, ok := p.callMap[stream.GetCallbackID()]
 
 	if !ok {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"serverSession: OnDataStream: stream callbackID error",
 		)
 	}
@@ -160,7 +158,7 @@ func (p *serverSession) OnDataStream(
 	stream.SetSessionID(p.id)
 
 	if !processor.PutStream(stream) {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"serverSession: OnDataStream: processor can not deal with stream",
 		)
 	}
@@ -173,21 +171,21 @@ func (p *serverSession) OnControlStream(
 ) Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Server: OnControlStream: stream is nil",
 			)
 		}
 		defer stream.Release()
 
 		if p.conn == nil {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Server: OnControlStream: conn is nil",
 			)
 		}
 
 		controlSequence := stream.GetSequence()
 		if controlSequence <= p.controlSeed {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Server: OnControlStream: sequence is omit",
 			)
 		}
@@ -195,7 +193,7 @@ func (p *serverSession) OnControlStream(
 
 		kind, ok := stream.ReadInt64()
 		if !ok {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
@@ -220,9 +218,7 @@ func (p *serverSession) OnControlStream(
 		case SystemStreamKindRequestIds:
 			currCallbackId, ok := stream.ReadUint64()
 			if !ok {
-				return internal.NewError(
-					"Server: OnControlStream: stream format error",
-				)
+				return internal.NewProtocolError(internal.ErrStringBadStream)
 			}
 
 			// mark
@@ -232,15 +228,11 @@ func (p *serverSession) OnControlStream(
 						v.mark = true
 					}
 				} else {
-					return internal.NewError(
-						"Server: OnControlStream: stream format error",
-					)
+					return internal.NewProtocolError(internal.ErrStringBadStream)
 				}
 			}
 			if !stream.IsReadFinish() {
-				return internal.NewError(
-					"Server: OnControlStream: stream format error",
-				)
+				return internal.NewProtocolError(internal.ErrStringBadStream)
 			}
 			// swipe
 			count := int64(0)
@@ -271,9 +263,7 @@ func (p *serverSession) OnControlStream(
 				configServerWriteLimit,
 			)
 		default:
-			return internal.NewError(
-				"Server: OnControlStream: stream format error",
-			)
+			return internal.NewProtocolError(internal.ErrStringBadStream)
 		}
 	}))
 }
@@ -336,7 +326,7 @@ func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache inter
 func (p *Server) Start() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.isOpen {
-			p.onError(internal.NewError("Server: Start: it is already opened"))
+			p.onError(internal.NewBaseError("Server: Start: it is already opened"))
 			return false
 		} else if err := p.processor.Start(
 			func(stream Stream, success bool) {
@@ -377,7 +367,7 @@ func (p *Server) Start() bool {
 func (p *Server) Stop() {
 	p.DoWithLock(func() {
 		if !p.isOpen {
-			p.onError(internal.NewError("Server: Stop: it is not opened"))
+			p.onError(internal.NewBaseError("Server: Stop: it is not opened"))
 		} else {
 			p.isOpen = false
 
@@ -424,9 +414,9 @@ func (p *Server) AddService(
 
 func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	if endPoint == nil {
-		p.onError(internal.NewError("Server: AddAdapter: endpoint is nil"))
+		p.onError(internal.NewBaseError("Server: AddAdapter: endpoint is nil"))
 	} else if endPoint.IsRunning() {
-		p.onError(internal.NewError(fmt.Sprintf(
+		p.onError(internal.NewBaseError(fmt.Sprintf(
 			"Server: AddAdapter: endpoint %s has already served",
 			endPoint.ConnectString(),
 		)))
@@ -444,7 +434,7 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 
 func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	if conn == nil {
-		return nil, internal.NewError(
+		return nil, internal.NewBaseError(
 			"Server: getSession: conn is nil",
 		)
 	} else if stream, err := conn.ReadStream(
@@ -453,26 +443,16 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	); err != nil {
 		return nil, err
 	} else if stream.GetCallbackID() != 0 {
-		return nil, internal.NewError(
-			"Server: getSession: stream format error",
-		)
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if stream.GetSequence() == 0 {
-		return nil, internal.NewError(
-			"Server: getSession: stream format error",
-		)
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := stream.ReadInt64(); !ok ||
 		kind != SystemStreamKindInit {
-		return nil, internal.NewError(
-			"Server: getSession: stream format error",
-		)
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := stream.ReadString(); !ok {
-		return nil, internal.NewError(
-			"Server: getSession: stream format error",
-		)
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if !stream.IsReadFinish() {
-		return nil, internal.NewError(
-			"Server: getSession: stream format error",
-		)
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
 		session := (*serverSession)(nil)
 		// try to find session by session string
@@ -517,7 +497,7 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn IStreamConnection) {
 	if conn == nil {
-		p.onError(internal.NewError("Server: onConnRun: conn is nil"))
+		p.onError(internal.NewBaseError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
 		p.onError(err)
 	} else {

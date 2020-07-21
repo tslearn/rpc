@@ -15,21 +15,21 @@ func (p *webSocketConn) ReadStream(
 	readLimit int64,
 ) (Stream, Error) {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return nil, internal.NewError(
+		return nil, internal.NewBaseError(
 			"webSocketConn: ReadStream: nil object",
 		)
 	} else {
 		conn.SetReadLimit(readLimit)
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-			return nil, internal.NewError(
+			return nil, internal.NewBaseError(
 				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt, message, err := conn.ReadMessage(); err != nil {
-			return nil, internal.NewError(
+			return nil, internal.NewBaseError(
 				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
 			)
 		} else if mt != websocket.BinaryMessage {
-			return nil, internal.NewError(
+			return nil, internal.NewBaseError(
 				"webSocketConn: ReadStream: unsupported protocol",
 			)
 		} else {
@@ -47,26 +47,26 @@ func (p *webSocketConn) WriteStream(
 	writeLimit int64,
 ) Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"webSocketConn: WriteStream: nil object",
 		)
 	} else if stream == nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"webSocketConn: WriteStream: stream is nil",
 		)
 	} else if writeLimit > 0 && writeLimit < int64(stream.GetWritePos()) {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"webSocketConn: WriteStream: stream data overflow",
 		)
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else if err := conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); err != nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
 		)
 	} else {
@@ -76,11 +76,11 @@ func (p *webSocketConn) WriteStream(
 
 func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"webSocketConn: Stop: nil object",
 		)
 	} else if err := conn.Close(); err != nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			internal.ConcatString("webSocketConn: Stop: ", err.Error()),
 		)
 	} else {
@@ -134,12 +134,12 @@ func (p *WebSocketServerAdapter) Open(
 
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketServerAdapter: Start: onConnRun is nil",
 			)
 			return false
 		} else if p.httpServer != nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketServerAdapter: Start: it has already been opened",
 			)
 			return false
@@ -147,7 +147,7 @@ func (p *WebSocketServerAdapter) Open(
 			mux := http.NewServeMux()
 			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
 				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-					onError(internal.NewError(
+					onError(internal.NewBaseError(
 						internal.ConcatString("WebSocketServerAdapter: Start: ", err.Error()),
 					))
 				} else {
@@ -171,7 +171,7 @@ func (p *WebSocketServerAdapter) Open(
 					})
 				}()
 				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-					onError(internal.NewError(
+					onError(internal.NewBaseError(
 						internal.ConcatString("WebSocketServerAdapter: Start: ", e.Error()),
 					))
 				}
@@ -191,12 +191,12 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketServerAdapter: Stop: has not been opened",
 			)
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				internal.ConcatString("WebSocketServerAdapter: Stop: ", e.Error()),
 			)
 			return nil
@@ -214,7 +214,7 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 		case <-closeCH.(chan bool):
 			return true
 		case <-time.After(10 * time.Second):
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketServerAdapter: Stop: can not close in 10 seconds",
 			)
 			return false
@@ -263,12 +263,12 @@ func (p *WebSocketClientEndPoint) Open(
 
 	return p.CallWithLock(func() interface{} {
 		if onConnRun == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketClientEndPoint: Start: onConnRun is nil",
 			)
 			return false
 		} else if p.conn != nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketClientEndPoint: Start: it has already been opened",
 			)
 			return false
@@ -276,12 +276,12 @@ func (p *WebSocketClientEndPoint) Open(
 			p.connectString,
 			nil,
 		); err != nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				internal.ConcatString("WebSocketClientEndPoint: Start: ", err.Error()),
 			)
 			return false
 		} else if wsConn == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketClientEndPoint: Start: wsConn is nil",
 			)
 			return false
@@ -314,12 +314,12 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketClientEndPoint: Stop: has not been opened",
 			)
 			return nil
 		} else if e := p.conn.Close(); e != nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				internal.ConcatString("WebSocketClientEndPoint: Stop: ", e.Error()),
 			)
 			return nil
@@ -337,7 +337,7 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 		case <-closeCH.(chan bool):
 			return true
 		case <-time.After(10 * time.Second):
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"WebSocketClientEndPoint: Stop: can not close in 10 seconds",
 			)
 			return false

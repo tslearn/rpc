@@ -140,7 +140,7 @@ func NewClient(endPoint IAdapter) *Client {
 func (p *Client) Open() Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if p.isOpen {
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Client: Start: it has already been opened",
 			)
 		} else {
@@ -193,7 +193,7 @@ func (p *Client) Close() Error {
 
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
-			err = internal.NewError(
+			err = internal.NewBaseError(
 				"Client: Stop: has not been opened",
 			)
 			return nil
@@ -211,7 +211,7 @@ func (p *Client) Close() Error {
 		case <-closeCH.(chan bool):
 			return nil
 		case <-time.After(10 * time.Second):
-			return internal.NewError(
+			return internal.NewBaseError(
 				"Client: Stop: can not close in 10 seconds",
 			)
 		}
@@ -248,7 +248,7 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
-		return internal.NewError(
+		return internal.NewBaseError(
 			"Client: initConn: conn is nil",
 		)
 	} else if err := conn.WriteStream(
@@ -263,52 +263,32 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 	); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if backStream.GetSequence() != sequence {
-		return internal.NewError(
-			"Client: initConn: sequence omit",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
 		kind != SystemStreamKindInitBack {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if readTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		readTimeoutMS <= 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if writeTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		writeTimeoutMS <= 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if readLimit, ok := backStream.ReadInt64(); !ok ||
 		readLimit <= 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if writeLimit, ok := backStream.ReadInt64(); !ok ||
 		writeLimit <= 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if callBackSize, ok := backStream.ReadInt64(); !ok ||
 		callBackSize <= 0 {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if !backStream.IsReadFinish() {
-		return internal.NewError(
-			"Client: initConn: stream format error",
-		)
+		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
 		p.sessionString = sessionString
 		p.readTimeout = time.Duration(readTimeoutMS) * time.Millisecond
@@ -359,19 +339,13 @@ func (p *Client) onConnRun(conn IStreamConnection) {
 			})
 		} else if kind, ok := stream.ReadInt64(); !ok ||
 			kind != SystemStreamKindRequestIdsBack {
-			err = internal.NewError(
-				"Client: initConn: stream format error",
-			)
+			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else if maxCallbackId, ok := stream.ReadUint64(); !ok {
-			err = internal.NewError(
-				"Client: initConn: stream format error",
-			)
+			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else if !stream.IsReadFinish() {
-			err = internal.NewError(
-				"Client: initConn: stream format error",
-			)
+			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else {
 			p.DoWithLock(func() {
@@ -535,7 +509,7 @@ func (p *Client) sendMessage(
 	// write args
 	for i := 0; i < len(args); i++ {
 		if item.stream.Write(args[i]) != internal.StreamWriteOK {
-			return nil, internal.NewError(
+			return nil, internal.NewBaseError(
 				"Client: send: args not supported",
 			)
 		}
@@ -554,27 +528,24 @@ func (p *Client) sendMessage(
 
 	// wait for response
 	if ok := <-item.finishCH; !ok {
-		return nil, internal.NewError("timeout")
+		return nil, internal.NewTimeoutError(internal.ErrStringTimeout)
 	} else if success, ok := item.stream.ReadBool(); !ok {
-		return nil, internal.NewError("data format error")
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if success {
 		if ret, ok := item.stream.Read(); !ok {
-			return nil, internal.NewError("data format error")
+			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
 			return ret, nil
 		}
 	} else {
-	  if errKind, ok := item.stream.ReadUint64(); !ok {
-      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-    } else  if message, ok := item.stream.ReadString(); !ok {
-      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		if errKind, ok := item.stream.ReadUint64(); !ok {
+			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		} else if message, ok := item.stream.ReadString(); !ok {
+			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else if debug, ok := item.stream.ReadString(); !ok {
-      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
-		  switch internal.ErrKind(errKind) {
-      case
-      }
-			return nil, internal.NewError(message).AddDebug(debug)
+			return nil, internal.NewError(internal.ErrKind(errKind), message, debug)
 		}
 	}
 }

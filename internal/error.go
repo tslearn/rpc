@@ -5,6 +5,7 @@ type ErrKind uint64
 const ErrStringUnexpectedNil = "rpc: unexpected nil"
 const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
 const ErrStringBadStream = "rpc: bad stream"
+const ErrStringTimeout = "rpc: timeout"
 
 const (
 	ErrKindFromNone       ErrKind = 0
