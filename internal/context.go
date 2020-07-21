@@ -13,17 +13,17 @@ type ContextObject struct {
 
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
-		ReportFatal(
+		ReportPanic(
 			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
-		ReportFatal(
+		ReportPanic(
 			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
-		ReportFatal(
+		ReportPanic(
 			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
 		)
 		return nil
@@ -35,14 +35,14 @@ func (p *ContextObject) getThread() *rpcThread {
 		case rpcReplyCheckStatusOK:
 			return thread
 		case rpcReplyCheckStatusError:
-			ReportFatal(
+			ReportPanic(
 				NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
 			)
 			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
-				ReportFatal(
+				ReportPanic(
 					NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
 				)
 				return nil
@@ -56,7 +56,7 @@ func (p *ContextObject) getThread() *rpcThread {
 
 func (p *ContextObject) stop() {
 	if p == nil {
-		ReportFatal(
+		ReportPanic(
 			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
 		)
 	} else {
@@ -66,12 +66,12 @@ func (p *ContextObject) stop() {
 
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
-		ReportFatal(
+		ReportPanic(
 			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
-		// ReportFatal has already run
+		// ReportPanic has already run
 		return nilReturn
 	} else {
 		return thread.WriteOK(value, 2)
@@ -80,12 +80,12 @@ func (p *ContextObject) OK(value interface{}) Return {
 
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
-		ReportFatal(
+		ReportPanic(
 			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
-		// ReportFatal has already run
+		// ReportPanic has already run
 		return nilReturn
 	} else if err, ok := value.(Error); ok && err != nil {
 		return thread.WriteError(

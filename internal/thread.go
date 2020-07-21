@@ -172,7 +172,7 @@ func (p *rpcThread) Eval(
 	defer func() {
 		if v := recover(); v != nil {
 			if p.execReplyNode != nil {
-				ReportFatal(
+				ReportPanic(
 					NewReplyPanic(fmt.Sprintf(
 						"rpc: %s: runtime error: %s",
 						p.execReplyNode.callString,

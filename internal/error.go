@@ -19,7 +19,7 @@ const (
 
 var gFatalErrorReporter = newErrorReporter()
 
-func ReportFatal(err Error) {
+func ReportPanic(err Error) {
 	gFatalErrorReporter.fatalError(err)
 }
 
