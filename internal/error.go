@@ -2,6 +2,7 @@ package internal
 
 type ErrKind uint64
 
+const ErrStringUnexpectedNil = "rpc: unexpected nil"
 const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
 
 const (
@@ -146,7 +147,7 @@ func NewAccessError(message string) Error {
 
 // NewKernelError ...
 func NewKernelError(message string) Error {
-	return newError(ErrKindFromKernel, message)
+	return newError(ErrKindFromKernel, message).AddDebug(GetCodePosition("", 1))
 }
 
 // ConvertToError convert interface{} to Error if type matches
@@ -194,9 +195,7 @@ func (p *rpcError) Error() string {
 	}
 
 	if len(p.debug) > 0 {
-		sb.AppendString("Debug:\n")
 		sb.AppendString(AddPrefixPerLine(p.debug, "\t"))
-		sb.AppendByte('\n')
 	}
 
 	return sb.String()
