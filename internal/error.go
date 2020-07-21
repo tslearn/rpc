@@ -4,23 +4,26 @@ type ErrKind uint64
 
 const ErrStringUnexpectedNil = "rpc: unexpected nil"
 const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
+const ErrStringBadStream = "rpc: bad stream"
 
 const (
-	ErrKindFromNone      ErrKind = 0
-	ErrKindFromProtocol  ErrKind = 1
-	ErrKindFromTransport ErrKind = 2
-	ErrKindFromTimeout   ErrKind = 3
-	ErrKindFromAccess    ErrKind = 4
-	ErrKindFromKernel    ErrKind = 5
+	ErrKindFromNone       ErrKind = 0
+	ErrKindFromReply      ErrKind = 1
+	ErrKindFromReplyFatal ErrKind = 2
+	ErrKindFromProtocol   ErrKind = 3
+	ErrKindFromTransport  ErrKind = 4
+	ErrKindFromTimeout    ErrKind = 5
+	ErrKindFromKernel     ErrKind = 6
+	ErrKindFromBase       ErrKind = 7
 )
 
 var gFatalErrorReporter = newErrorReporter()
 
-func ReportFatalError(err Error) {
+func ReportFatal(err Error) {
 	gFatalErrorReporter.fatalError(err)
 }
 
-func SubscribeFatalError(onFatal func(Error)) *rpcFatalSubscription {
+func SubscribeFatal(onFatal func(Error)) *rpcFatalSubscription {
 	return gFatalErrorReporter.subscribe(onFatal)
 }
 
@@ -112,42 +115,50 @@ type Error interface {
 	Error() string
 }
 
-func newError(kind ErrKind, message string) Error {
+func newError(kind ErrKind, message string, debug string) Error {
 	return &rpcError{
 		kind:    kind,
 		message: message,
-		debug:   "",
+		debug:   debug,
 	}
 }
 
 // NewError ...
-func NewError(message string) Error {
-	return newError(ErrKindFromNone, message)
+func NewError(kind ErrKind, message string, debug string) Error {
+	return newError(kind, message, debug)
+}
+
+func NewReplyError(message string) Error {
+	return newError(ErrKindFromReply, message, "")
+}
+
+func NewReplyFatal(message string) Error {
+	return newError(ErrKindFromReplyFatal, message, "")
 }
 
 // NewProtocolError ...
 func NewProtocolError(message string) Error {
-	return newError(ErrKindFromProtocol, message)
+	return newError(ErrKindFromProtocol, message, "")
 }
 
 // NewTransportError ...
 func NewTransportError(message string) Error {
-	return newError(ErrKindFromTransport, message)
+	return newError(ErrKindFromTransport, message, "")
 }
 
 // NewTimeoutError ...
 func NewTimeoutError(message string) Error {
-	return newError(ErrKindFromTimeout, message)
-}
-
-// NewAccessError ...
-func NewAccessError(message string) Error {
-	return newError(ErrKindFromAccess, message)
+	return newError(ErrKindFromTimeout, message, "")
 }
 
 // NewKernelError ...
 func NewKernelError(message string) Error {
-	return newError(ErrKindFromKernel, message).AddDebug(GetCodePosition("", 1))
+	return newError(ErrKindFromKernel, message, "")
+}
+
+// NewBaseError
+func NewBaseError(message string) Error {
+	return newError(ErrKindFromBase, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches

@@ -13,24 +13,24 @@ type ContextObject struct {
 
 func (p *ContextObject) getThread() *rpcThread {
 	if p == nil {
-		ReportFatalError(
+		ReportFatal(
 			NewKernelError(ErrStringUnexpectedNil),
 		)
 		return nil
 	} else if thread := (*rpcThread)(atomic.LoadPointer(
 		&p.thread,
 	)); thread == nil {
-		ReportFatalError(
-			NewError(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
+		ReportFatal(
+			NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
-		ReportFatalError(
-			NewError(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
+		ReportFatal(
+			NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
-		ReportFatalError(
+		ReportFatal(
 			NewKernelError(ErrStringUnexpectedNil),
 		)
 		return nil
@@ -42,15 +42,15 @@ func (p *ContextObject) getThread() *rpcThread {
 		case rpcReplyCheckStatusOK:
 			return thread
 		case rpcReplyCheckStatusError:
-			ReportFatalError(
-				NewError(ErrStringRunningOutOfScope),
+			ReportFatal(
+				NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(codeSource),
 			)
 			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
-				ReportFatalError(
-					NewError(ErrStringRunningOutOfScope),
+				ReportFatal(
+					NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(codeSource),
 				)
 				return nil
 			} else {
@@ -63,7 +63,7 @@ func (p *ContextObject) getThread() *rpcThread {
 
 func (p *ContextObject) stop() {
 	if p == nil {
-		ReportFatalError(NewKernelError(ErrStringUnexpectedNil))
+		ReportFatal(NewKernelError(ErrStringUnexpectedNil))
 	} else {
 		atomic.StorePointer(&p.thread, nil)
 	}
@@ -71,8 +71,8 @@ func (p *ContextObject) stop() {
 
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
-		ReportFatalError(
-			NewError(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
+		ReportFatal(
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
 		)
 		return nilReturn
 	}
@@ -87,8 +87,8 @@ func (p *ContextObject) OK(value interface{}) Return {
 
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
-		ReportFatalError(
-			NewError(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
+		ReportFatal(
+			NewReplyError(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
 		)
 		return nilReturn
 	}
@@ -100,12 +100,12 @@ func (p *ContextObject) Error(value error) Return {
 		)
 	} else if value != nil {
 		return thread.WriteError(
-			NewError(value.Error()).
+			NewReplyError(value.Error()).
 				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
 		)
 	} else {
 		return thread.WriteError(
-			NewError("value is nil").
+			NewReplyError(ErrStringUnexpectedNil).
 				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
 		)
 	}

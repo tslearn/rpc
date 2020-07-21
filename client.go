@@ -564,11 +564,16 @@ func (p *Client) sendMessage(
 			return ret, nil
 		}
 	} else {
-		if message, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewError("data format error")
+	  if errKind, ok := item.stream.ReadUint64(); !ok {
+      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+    } else  if message, ok := item.stream.ReadString(); !ok {
+      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else if debug, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewError("data format error")
+      return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
+		  switch internal.ErrKind(errKind) {
+      case
+      }
 			return nil, internal.NewError(message).AddDebug(debug)
 		}
 	}

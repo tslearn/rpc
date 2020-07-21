@@ -204,13 +204,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) Error {
 	cache.writeFunctions(sb, kinds)
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return NewError(err.Error())
+		return NewBaseError(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return NewError(err.Error())
+		return NewBaseError(err.Error())
 	} else {
 		return nil
 	}

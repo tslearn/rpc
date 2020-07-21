@@ -98,6 +98,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
 	stream.WriteBool(false)
+	stream.WriteUint64(uint64(err.GetKind()))
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
 	p.execSuccessful = false
@@ -128,12 +129,12 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		return nilReturn
 	} else if reason := CheckValue(value, 64); reason != "" {
 		return p.WriteError(
-			NewError(ConcatString("rpc: ", reason)).
+			NewReplyError(ConcatString("rpc: ", reason)).
 				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
 		)
 	} else {
 		return p.WriteError(
-			NewError("rpc: value is not supported").
+			NewReplyError("rpc: value is not supported").
 				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
 		)
 	}
@@ -163,8 +164,8 @@ func (p *rpcThread) Eval(
 	defer func() {
 		if v := recover(); v != nil {
 			if p.execReplyNode != nil {
-				p.WriteError(
-					NewError(fmt.Sprintf(
+				ReportFatal(
+					NewReplyFatal(fmt.Sprintf(
 						"rpc: %s: runtime error: %s",
 						p.execReplyNode.callString,
 						v,

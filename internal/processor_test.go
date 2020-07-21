@@ -124,7 +124,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		name:    "+",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Service name \"+\" is illegal",
 	).AddDebug("DebugMessage"))
 
@@ -132,7 +132,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: nil,
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Service is nil",
 	).AddDebug("DebugMessage"))
 
@@ -140,7 +140,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"rpc: mountNode: parentNode is nil",
 	).AddDebug("DebugMessage"))
 
@@ -149,7 +149,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Service path depth $.abc is too long, it must be less or equal than 0",
 	).AddDebug("DebugMessage"))
 	processor.maxNodeDepth = 16
@@ -163,7 +163,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		name:    "abc",
 		service: NewService(),
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Service name \"abc\" is duplicated",
 	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
 
@@ -213,12 +213,12 @@ func TestProcessor_mountReply(t *testing.T) {
 	rootNode := processor.servicesMap[rootName]
 
 	// check the node is nil
-	assert(processor.mountReply(nil, nil)).Equals(NewError(
+	assert(processor.mountReply(nil, nil)).Equals(NewBaseError(
 		"rpc: mountReply: node is nil",
 	))
 
 	// check the rpcReplyMeta is nil
-	assert(processor.mountReply(rootNode, nil)).Equals(NewError(
+	assert(processor.mountReply(rootNode, nil)).Equals(NewBaseError(
 		"rpc: mountReply: rpcReplyMeta is nil",
 	))
 
@@ -227,7 +227,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "###",
 		handler: nil,
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply name ### is illegal",
 	).AddDebug("DebugMessage"))
 
@@ -241,7 +241,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testOccupied",
 		handler: func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply name testOccupied is duplicated",
 	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
 
@@ -250,7 +250,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerIsNil",
 		handler: nil,
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler is nil",
 	).AddDebug("DebugMessage"))
 
@@ -259,7 +259,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerIsFunction",
 		handler: make(chan bool),
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler must be func(ctx rpc.ContextObject, ...) rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
@@ -268,7 +268,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerArguments",
 		handler: func(ctx bool) *ReturnObject { return nilReturn },
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler 1st argument type must be rpc.ContextObject",
 	).AddDebug("DebugMessage"))
 
@@ -276,7 +276,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerArguments",
 		handler: func(ctx *ContextObject, ch chan bool) *ReturnObject { return nilReturn },
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler 2nd argument type <chan bool> not supported",
 	).AddDebug("DebugMessage"))
 
@@ -285,7 +285,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerReturn",
 		handler: func(ctx *ContextObject) (*ReturnObject, bool) { return nilReturn, true },
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
@@ -293,7 +293,7 @@ func TestProcessor_mountReply(t *testing.T) {
 		name:    "testReplyHandlerReturn",
 		handler: func(ctx ContextObject) bool { return true },
 		debug:   "DebugMessage",
-	})).Equals(NewError(
+	})).Equals(NewBaseError(
 		"Reply handler return type must be rpc.ReturnObject",
 	).AddDebug("DebugMessage"))
 
@@ -325,31 +325,31 @@ func TestProcessor_OutPutErrors(t *testing.T) {
 
 	// Service is nil
 	assert(processor.AddService("", nil, "DebugMessage")).
-		Equals(NewError(
+		Equals(NewBaseError(
 			"Service is nil",
 		).AddDebug("DebugMessage"))
 
 	assert(processor.AddService("abc", (*Service)(nil), "DebugMessage")).
-		Equals(NewError(
+		Equals(NewBaseError(
 			"Service is nil",
 		).AddDebug("DebugMessage"))
 
 	// Service name %s is illegal
 	assert(processor.AddService("\"\"", NewService(), "DebugMessage")).
-		Equals(NewError(
+		Equals(NewBaseError(
 			"Service name \"\"\"\" is illegal",
 		).AddDebug("DebugMessage"))
 
 	processor.maxNodeDepth = 0
 	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-		Equals(NewError(
+		Equals(NewBaseError(
 			"Service path depth $.abc is too long, it must be less or equal than 0",
 		).AddDebug("DebugMessage"))
 	processor.maxNodeDepth = 16
 
 	_ = processor.AddService("abc", NewService(), "DebugMessage")
 	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-		Equals(NewError(
+		Equals(NewBaseError(
 			"Service name \"abc\" is duplicated",
 		).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
 }
