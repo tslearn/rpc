@@ -431,3 +431,15 @@ func BenchmarkCurGoroutineID(b *testing.B) {
 		CurrentGoroutineID()
 	}
 }
+
+func BenchmarkRunWithPanicCatch(b *testing.B) {
+	a := uint64(0)
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			RunWithPanicCatch(func() {
+				a = a + 1
+			})
+		}
+	})
+}

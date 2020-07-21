@@ -182,22 +182,32 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		if p.execReplyNode != nil && p.execReplyNode.indicator != nil {
-			p.execReplyNode.indicator.Count(
-				TimeNow().Sub(timeStart),
-				p.execStatus == rpcThreadExecSuccess,
-			)
-		}
+		func() {
+			defer func() {
+				if v := recover(); v != nil {
+					ReportPanic(
+						NewKernelError("rpc: kernel error").AddDebug(string(debug.Stack())),
+					)
+				}
+			}()
 
-		ctx.stop()
-		inStream.Reset()
-		retStream := p.outStream
-		p.outStream = inStream
-		p.from = ""
-		p.execDepth = 0
-		p.execReplyNode = nil
-		p.execArgs = p.execArgs[:0]
-		onEvalFinish(p, retStream, p.execStatus == rpcThreadExecSuccess)
+			if p.execReplyNode != nil && p.execReplyNode.indicator != nil {
+				p.execReplyNode.indicator.Count(
+					TimeNow().Sub(timeStart),
+					p.execStatus == rpcThreadExecSuccess,
+				)
+			}
+
+			ctx.stop()
+			inStream.Reset()
+			retStream := p.outStream
+			p.outStream = inStream
+			p.from = ""
+			p.execDepth = 0
+			p.execReplyNode = nil
+			p.execArgs = p.execArgs[:0]
+			onEvalFinish(p, retStream, p.execStatus == rpcThreadExecSuccess)
+		}()
 	}()
 
 	// copy head

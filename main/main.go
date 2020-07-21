@@ -30,9 +30,24 @@ func Bad() {
 	panic("NONO")
 }
 
+func RunWithPanicCatch(fn func()) (ret interface{}) {
+	defer func() {
+		ret = recover()
+	}()
+
+	fn()
+	return
+}
+
 func main() {
 	go StartServer()
 
+	go func() {
+		RunWithPanicCatch(func() {
+			time.Sleep(3 * time.Second)
+			panic("NONO")
+		})
+	}()
 	GoSafe(Bad)
 
 	for {
