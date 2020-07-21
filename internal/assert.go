@@ -31,7 +31,8 @@ type rpcAssert struct {
 }
 
 func (p *rpcAssert) fail(reason string) {
-	fmt.Println("\t", GetCodePosition(reason, 2))
+	fmt.Println(AddPrefixPerLine(reason, "\t"))
+	fmt.Println(GetCodePosition("\t", 2))
 	p.t.Fail()
 }
 
@@ -50,7 +51,7 @@ func (p *rpcAssert) Equals(args ...interface{}) {
 		for i := 0; i < len(p.args); i++ {
 			if !reflect.DeepEqual(p.args[i], args[i]) {
 				p.fail(fmt.Sprintf(
-					"%s argment is not equal, want %v, got %v",
+					"%s argment is not equal\n\twant: %v\n\tgot: %v",
 					ConvertOrdinalToString(uint(i+1)),
 					args[i],
 					p.args[i],
