@@ -4,12 +4,101 @@ type ErrKind uint64
 
 const (
 	ErrKindFromNone      ErrKind = 0
-	ErrKindFromProtocol  ErrKind = 4
-	ErrKindFromTransport ErrKind = 5
-	ErrKindFromTimeout   ErrKind = 7
-	ErrKindFromAccess    ErrKind = 6
-	ErrKindFromKernel    ErrKind = 3
+	ErrKindFromProtocol  ErrKind = 1
+	ErrKindFromTransport ErrKind = 2
+	ErrKindFromTimeout   ErrKind = 3
+	ErrKindFromAccess    ErrKind = 4
+	ErrKindFromKernel    ErrKind = 5
 )
+
+var gFatalErrorReporter = newErrorReporter()
+
+func ReportFatalError(err Error) {
+	gFatalErrorReporter.fatalError(err)
+}
+
+func SubscribeFatalError(onFatal func(Error)) *rpcFatalSubscription {
+	return gFatalErrorReporter.subscribe(onFatal)
+}
+
+type rpcErrorReporter struct {
+	subscriptions []*rpcFatalSubscription
+	Lock
+}
+
+func newErrorReporter() *rpcErrorReporter {
+	return &rpcErrorReporter{
+		subscriptions: make([]*rpcFatalSubscription, 0),
+	}
+}
+
+func (p *rpcErrorReporter) subscribe(
+	onFatal func(Error),
+) *rpcFatalSubscription {
+	if p == nil || onFatal == nil {
+		return nil
+	}
+
+	return p.CallWithLock(func() interface{} {
+		ret := &rpcFatalSubscription{
+			id:       GetSeed(),
+			reporter: p,
+			onFatal:  onFatal,
+		}
+		p.subscriptions = append(p.subscriptions, ret)
+		return ret
+	}).(*rpcFatalSubscription)
+}
+
+func (p *rpcErrorReporter) removeSubscription(id int64) bool {
+	if p == nil {
+		return false
+	}
+
+	return p.CallWithLock(func() interface{} {
+		for i := 0; i < len(p.subscriptions); i++ {
+			if p.subscriptions[i].id == id {
+				p.subscriptions[i].id = 0
+				array := p.subscriptions
+				p.subscriptions = append(array[:i], array[i+1:]...)
+				return true
+			}
+		}
+		return false
+	}).(bool)
+}
+
+func (p *rpcErrorReporter) fatalError(err Error) {
+	if p != nil {
+		subscriptions := p.CallWithLock(func() interface{} {
+			return p.subscriptions
+		}).([]*rpcFatalSubscription)
+
+		for _, sub := range subscriptions {
+			if sub != nil && sub.onFatal != nil {
+				sub.onFatal(err)
+			}
+		}
+	}
+}
+
+// LogSubscription ...
+type rpcFatalSubscription struct {
+	id       int64
+	reporter *rpcErrorReporter
+	onFatal  func(err Error)
+}
+
+// Close ...
+func (p *rpcFatalSubscription) Close() bool {
+	if p == nil {
+		return false
+	} else if reporter := p.reporter; reporter == nil {
+		return false
+	} else {
+		return reporter.removeSubscription(p.id)
+	}
+}
 
 // Error ...
 type Error interface {
