@@ -55,6 +55,7 @@ type Processor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
+	fatalSubscription  *rpcFatalSubscription
 	Lock
 }
 
@@ -109,6 +110,10 @@ func (p *Processor) Start(
 		} else if p.freeThreadsCHGroup != nil {
 			return NewKernelError("Processor: Start: it has already benn started")
 		} else {
+			p.fatalSubscription = SubscribeFatalError(func(e Error) {
+				//  stream := NewStream()
+			})
+
 			size := len(p.threads)
 			freeThreadsCHGroup := make(
 				[]chan *rpcThread,
@@ -169,7 +174,7 @@ func (p *Processor) Stop() Error {
 			for i := 0; i < freeGroups; i++ {
 				close(p.freeThreadsCHGroup[i])
 			}
-			p.freeThreadsCHGroup = nil
+
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
 
@@ -213,6 +218,10 @@ func (p *Processor) Stop() Error {
 					))
 				}
 			}
+
+			p.freeThreadsCHGroup = nil
+			p.fatalSubscription.Close()
+			p.fatalSubscription = nil
 
 			if len(errList) > 0 {
 				return NewError(ConcatString(
