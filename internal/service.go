@@ -17,7 +17,7 @@ type rpcReplyMeta struct {
 	sync.Map
 }
 
-func (p *rpcReplyMeta) GetCheck(key string) rpcReplyCheckStatus {
+func (p *rpcReplyMeta) GetCheckStatus(key string) rpcReplyCheckStatus {
 	if v, ok := p.Load(key); ok {
 		return v.(rpcReplyCheckStatus)
 	}

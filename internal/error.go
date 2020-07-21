@@ -10,12 +10,11 @@ const ErrStringTimeout = "rpc: timeout"
 const (
 	ErrKindFromNone       ErrorKind = 0
 	ErrKindFromReply      ErrorKind = 1
-	ErrKindFromReplyFatal ErrorKind = 2
+	ErrKindFromReplyPanic ErrorKind = 2
 	ErrKindFromProtocol   ErrorKind = 3
 	ErrKindFromTransport  ErrorKind = 4
 	ErrKindFromTimeout    ErrorKind = 5
 	ErrKindFromKernel     ErrorKind = 6
-	ErrKindFromBase       ErrorKind = 7
 )
 
 var gFatalErrorReporter = newErrorReporter()
@@ -129,12 +128,18 @@ func NewError(kind ErrorKind, message string, debug string) Error {
 	return newError(kind, message, debug)
 }
 
+// NewBaseError ...
+func NewBaseError(message string) Error {
+	return newError(ErrKindFromNone, message, "")
+}
+
+//
 func NewReplyError(message string) Error {
 	return newError(ErrKindFromReply, message, "")
 }
 
-func NewReplyFatal(message string) Error {
-	return newError(ErrKindFromReplyFatal, message, "")
+func NewReplyPanic(message string) Error {
+	return newError(ErrKindFromReplyPanic, message, "")
 }
 
 // NewProtocolError ...
@@ -155,11 +160,6 @@ func NewTimeoutError(message string) Error {
 // NewKernelError ...
 func NewKernelError(message string) Error {
 	return newError(ErrKindFromKernel, message, "")
-}
-
-// NewBaseError
-func NewBaseError(message string) Error {
-	return newError(ErrKindFromBase, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches

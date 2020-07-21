@@ -14,12 +14,12 @@ type ContextObject struct {
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
+			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
+			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
@@ -31,19 +31,19 @@ func (p *ContextObject) getThread() *rpcThread {
 		return thread
 	} else {
 		codeSource := GetFileLine(2)
-		switch meta.GetCheck(codeSource) {
+		switch meta.GetCheckStatus(codeSource) {
 		case rpcReplyCheckStatusOK:
 			return thread
 		case rpcReplyCheckStatusError:
 			ReportFatal(
-				NewReplyFatal(ErrStringRunOutOfScope).AddDebug(codeSource),
+				NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
 			)
 			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
 				ReportFatal(
-					NewReplyFatal(ErrStringRunOutOfScope).AddDebug(codeSource),
+					NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
 				)
 				return nil
 			} else {
@@ -67,7 +67,7 @@ func (p *ContextObject) stop() {
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
@@ -81,7 +81,7 @@ func (p *ContextObject) OK(value interface{}) Return {
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
