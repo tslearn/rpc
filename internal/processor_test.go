@@ -301,7 +301,7 @@ func TestProcessor_mountReply(t *testing.T) {
 	assert(processor.mountReply(rootNode, &rpcReplyMeta{
 		name:    "testOK",
 		handler: func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
-		debug:   GetCodePosition("", 0),
+		debug:   AddFileLine("", 0),
 	})).IsNil()
 
 	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")

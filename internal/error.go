@@ -3,7 +3,7 @@ package internal
 type ErrorKind uint64
 
 const ErrStringUnexpectedNil = "rpc: unexpected nil"
-const ErrStringRunOutOfScope = "rpc: running out of reply goroutine"
+const ErrStringRunOutOfScope = "rpc: run out of reply goroutine"
 const ErrStringBadStream = "rpc: bad stream"
 const ErrStringTimeout = "rpc: timeout"
 

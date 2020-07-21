@@ -32,7 +32,7 @@ type rpcAssert struct {
 
 func (p *rpcAssert) fail(reason string) {
 	fmt.Println(AddPrefixPerLine(reason, "\t"))
-	fmt.Println(GetCodePosition("\t", 2))
+	fmt.Println(AddFileLine("\t", 2))
 	p.t.Fail()
 }
 

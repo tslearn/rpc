@@ -405,7 +405,7 @@ func (p *Server) AddService(
 	if err := p.processor.AddService(
 		name,
 		service,
-		internal.GetCodePosition("", 1),
+		internal.AddFileLine("", 1),
 	); err != nil {
 		p.onError(err)
 	}

@@ -130,12 +130,12 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	} else if reason := CheckValue(value, 64); reason != "" {
 		return p.WriteError(
 			NewReplyError(ConcatString("rpc: ", reason)).
-				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
+				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
 	} else {
 		return p.WriteError(
 			NewReplyError("rpc: value is not supported").
-				AddDebug(GetCodePosition(p.GetExecReplyNodePath(), skip)),
+				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
 	}
 }

@@ -354,8 +354,8 @@ func ConcatString(args ...string) string {
 	return sb.String()
 }
 
-// GetCodePosition ...
-func GetCodePosition(header string, skip uint) string {
+// AddFileLine ...
+func AddFileLine(header string, skip uint) string {
 	sb := NewStringBuilder()
 	defer sb.Release()
 

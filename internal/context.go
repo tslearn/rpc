@@ -12,32 +12,25 @@ type ContextObject struct {
 }
 
 func (p *ContextObject) getThread() *rpcThread {
-	if p == nil {
+	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportFatal(
-			NewKernelError(ErrStringUnexpectedNil),
-		)
-		return nil
-	} else if thread := (*rpcThread)(atomic.LoadPointer(
-		&p.thread,
-	)); thread == nil {
-		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetCodePosition("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(AddFileLine("", 2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetCodePosition("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(AddFileLine("", 2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
 		ReportFatal(
-			NewKernelError(ErrStringUnexpectedNil),
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
 		)
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
 	} else {
-		codeSource := GetCodePosition("", 2)
+		codeSource := AddFileLine("", 2)
 		switch meta.GetCheck(codeSource) {
 		case rpcReplyCheckStatusOK:
 			return thread
@@ -72,7 +65,7 @@ func (p *ContextObject) stop() {
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
 		)
 		return nilReturn
 	}
@@ -88,7 +81,7 @@ func (p *ContextObject) OK(value interface{}) Return {
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
 		ReportFatal(
-			NewReplyError(ErrStringUnexpectedNil).AddDebug(GetCodePosition("", 1)),
+			NewReplyError(ErrStringUnexpectedNil).AddDebug(AddFileLine("", 1)),
 		)
 		return nilReturn
 	}
@@ -101,12 +94,12 @@ func (p *ContextObject) Error(value error) Return {
 	} else if value != nil {
 		return thread.WriteError(
 			NewReplyError(value.Error()).
-				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
+				AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 	} else {
 		return thread.WriteError(
 			NewReplyError(ErrStringUnexpectedNil).
-				AddDebug(GetCodePosition(thread.GetExecReplyNodePath(), 1)),
+				AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 	}
 }
