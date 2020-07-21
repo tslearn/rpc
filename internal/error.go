@@ -2,6 +2,8 @@ package internal
 
 type ErrKind uint64
 
+const ErrStringRunningOutOfScope = "rpc: running out of reply goroutine"
+
 const (
 	ErrKindFromNone      ErrKind = 0
 	ErrKindFromProtocol  ErrKind = 1

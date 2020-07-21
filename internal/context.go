@@ -12,12 +12,18 @@ type ContextObject struct {
 }
 
 func (p *ContextObject) getThread() *rpcThread {
-	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
-		panic(ErrStringRunningOutOfScope)
+	if p == nil {
+		ReportFatalError(NewKernelError("rpc: kernel error: object is nil"))
+		return nil
+	} else if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
+		ReportFatalError(NewError(ErrStringRunningOutOfScope))
+		return nil
 	} else if node := thread.execReplyNode; node == nil {
-		panic(ErrStringRunningOutOfScope)
+		ReportFatalError(NewError(ErrStringRunningOutOfScope))
+		return nil
 	} else if meta := node.replyMeta; meta == nil {
-		panic(ErrInternalErrorReplyMetaIsNil)
+		ReportFatalError(NewKernelError("rpc: kernel error: meta is nil"))
+		return nil
 	} else if !thread.IsDebug() {
 		return thread
 	} else {
@@ -26,11 +32,13 @@ func (p *ContextObject) getThread() *rpcThread {
 		case rpcReplyCheckStatusOK:
 			return thread
 		case rpcReplyCheckStatusError:
-			panic(ErrStringRunningOutOfScope)
+			ReportFatalError(NewError(ErrStringRunningOutOfScope))
+			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
-				panic(ErrStringRunningOutOfScope)
+				ReportFatalError(NewError(ErrStringRunningOutOfScope))
+				return nil
 			} else {
 				meta.SetCheckOK(codeSource)
 				return thread
