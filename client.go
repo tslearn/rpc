@@ -545,7 +545,7 @@ func (p *Client) sendMessage(
 		} else if debug, ok := item.stream.ReadString(); !ok {
 			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
-			return nil, internal.NewError(internal.ErrKind(errKind), message, debug)
+			return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
 		}
 	}
 }

@@ -1,6 +1,6 @@
 package internal
 
-type ErrKind uint64
+type ErrorKind uint64
 
 const ErrStringUnexpectedNil = "rpc: unexpected nil"
 const ErrStringRunOutOfScope = "rpc: running out of reply goroutine"
@@ -8,14 +8,14 @@ const ErrStringBadStream = "rpc: bad stream"
 const ErrStringTimeout = "rpc: timeout"
 
 const (
-	ErrKindFromNone       ErrKind = 0
-	ErrKindFromReply      ErrKind = 1
-	ErrKindFromReplyFatal ErrKind = 2
-	ErrKindFromProtocol   ErrKind = 3
-	ErrKindFromTransport  ErrKind = 4
-	ErrKindFromTimeout    ErrKind = 5
-	ErrKindFromKernel     ErrKind = 6
-	ErrKindFromBase       ErrKind = 7
+	ErrKindFromNone       ErrorKind = 0
+	ErrKindFromReply      ErrorKind = 1
+	ErrKindFromReplyFatal ErrorKind = 2
+	ErrKindFromProtocol   ErrorKind = 3
+	ErrKindFromTransport  ErrorKind = 4
+	ErrKindFromTimeout    ErrorKind = 5
+	ErrKindFromKernel     ErrorKind = 6
+	ErrKindFromBase       ErrorKind = 7
 )
 
 var gFatalErrorReporter = newErrorReporter()
@@ -109,14 +109,14 @@ func (p *rpcFatalSubscription) Close() bool {
 
 // Error ...
 type Error interface {
-	GetKind() ErrKind
+	GetKind() ErrorKind
 	GetMessage() string
 	GetDebug() string
 	AddDebug(debug string) Error
 	Error() string
 }
 
-func newError(kind ErrKind, message string, debug string) Error {
+func newError(kind ErrorKind, message string, debug string) Error {
 	return &rpcError{
 		kind:    kind,
 		message: message,
@@ -125,7 +125,7 @@ func newError(kind ErrKind, message string, debug string) Error {
 }
 
 // NewError ...
-func NewError(kind ErrKind, message string, debug string) Error {
+func NewError(kind ErrorKind, message string, debug string) Error {
 	return newError(kind, message, debug)
 }
 
@@ -174,10 +174,10 @@ func ConvertToError(v interface{}) Error {
 type rpcError struct {
 	message string
 	debug   string
-	kind    ErrKind
+	kind    ErrorKind
 }
 
-func (p *rpcError) GetKind() ErrKind {
+func (p *rpcError) GetKind() ErrorKind {
 	return p.kind
 }
 
