@@ -21,12 +21,12 @@ func (p *ContextObject) getThread() *rpcThread {
 		&p.thread,
 	)); thread == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetCodePosition("", 2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportFatal(
-			NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(GetCodePosition("", 2)),
+			NewReplyFatal(ErrStringRunOutOfScope).AddDebug(GetCodePosition("", 2)),
 		)
 		return nil
 	} else if meta := node.replyMeta; meta == nil {
@@ -43,14 +43,14 @@ func (p *ContextObject) getThread() *rpcThread {
 			return thread
 		case rpcReplyCheckStatusError:
 			ReportFatal(
-				NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(codeSource),
+				NewReplyFatal(ErrStringRunOutOfScope).AddDebug(codeSource),
 			)
 			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
 				ReportFatal(
-					NewReplyFatal(ErrStringRunningOutOfScope).AddDebug(codeSource),
+					NewReplyFatal(ErrStringRunOutOfScope).AddDebug(codeSource),
 				)
 				return nil
 			} else {
