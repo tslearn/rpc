@@ -22,13 +22,13 @@ func (p *ContextObject) getThread() *rpcThread {
 			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
+	} else if !thread.IsDebug() {
+		return thread
 	} else if meta := node.replyMeta; meta == nil {
 		ReportPanic(
 			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
 		)
 		return nil
-	} else if !thread.IsDebug() {
-		return thread
 	} else {
 		codeSource := GetFileLine(2)
 		switch meta.GetCheckStatus(codeSource) {

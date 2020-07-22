@@ -209,7 +209,7 @@ func (p *rpcError) Error() string {
 	}
 
 	if len(p.debug) > 0 {
-		sb.AppendString(AddPrefixPerLine(p.debug, "\t"))
+		sb.AppendString(p.debug)
 	}
 
 	return sb.String()
