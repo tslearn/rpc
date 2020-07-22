@@ -143,9 +143,9 @@ func ConvertToError(v interface{}) Error {
 }
 
 type rpcError struct {
+	kind    ErrorKind
 	message string
 	debug   string
-	kind    ErrorKind
 }
 
 func (p *rpcError) GetKind() ErrorKind {
@@ -161,10 +161,13 @@ func (p *rpcError) GetDebug() string {
 }
 
 func (p *rpcError) AddDebug(debug string) Error {
-	if p.debug != "" {
+	if p.debug == "" {
+		p.debug = debug
+	} else {
 		p.debug += "\n"
+		p.debug += debug
 	}
-	p.debug += debug
+
 	return p
 }
 
@@ -174,10 +177,12 @@ func (p *rpcError) Error() string {
 
 	if len(p.message) > 0 {
 		sb.AppendString(p.message)
-		sb.AppendByte('\n')
 	}
 
 	if len(p.debug) > 0 {
+		if !sb.IsEmpty() {
+			sb.AppendByte('\n')
+		}
 		sb.AppendString(p.debug)
 	}
 
