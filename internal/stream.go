@@ -12,13 +12,13 @@ const streamBodyPos = 34
 type StreamKind uint8
 
 const (
-	StreamTypeNone          = StreamKind(0)
-	StreamTypeRequest       = StreamKind(1)
-	StreamTypeResponseOK    = StreamKind(2)
-	StreamTypeResponseError = StreamKind(3)
-	StreamTypeResponsePanic = StreamKind(4)
-	StreamTypeBroadcast     = StreamKind(5)
-	StreamTypeControl       = StreamKind(6)
+	StreamKindNone          = StreamKind(0)
+	StreamKindRequest       = StreamKind(1)
+	StreamKindResponseOK    = StreamKind(2)
+	StreamKindResponseError = StreamKind(3)
+	StreamKindResponsePanic = StreamKind(4)
+	StreamKindBroadcast     = StreamKind(5)
+	StreamKindControl       = StreamKind(6)
 )
 
 const (

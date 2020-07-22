@@ -500,6 +500,7 @@ func (p *Client) sendMessage(
 	item.startTime = internal.TimeNow()
 	item.timeout = timeout
 
+	item.stream.SetStreamKind(internal.StreamKindRequest)
 	// write target
 	item.stream.WriteString(target)
 	// write depth
@@ -529,15 +530,13 @@ func (p *Client) sendMessage(
 	// wait for response
 	if ok := <-item.finishCH; !ok {
 		return nil, internal.NewBaseError(internal.ErrStringTimeout)
-	} else if success, ok := item.stream.ReadBool(); !ok {
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if success {
+	} else if item.stream.GetStreamKind() == internal.StreamKindResponseOK {
 		if ret, ok := item.stream.Read(); !ok {
 			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
 			return ret, nil
 		}
-	} else {
+	} else if item.stream.GetStreamKind() == internal.StreamKindResponseError {
 		if errKind, ok := item.stream.ReadUint64(); !ok {
 			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else if message, ok := item.stream.ReadString(); !ok {
@@ -547,6 +546,8 @@ func (p *Client) sendMessage(
 		} else {
 			return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
 		}
+	} else {
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	}
 }
 

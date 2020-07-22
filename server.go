@@ -135,6 +135,10 @@ func (p *serverSession) OnDataStream(
 		return internal.NewBaseError("stream is nil")
 	}
 
+	if stream.GetStreamKind() != internal.StreamKindRequest {
+		return internal.NewBaseError("stream kind error")
+	}
+
 	if processor == nil {
 		return internal.NewBaseError(
 			"serverSession: OnDataStream: processor is nil",

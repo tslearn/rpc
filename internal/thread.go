@@ -100,17 +100,6 @@ func (p *rpcThread) IsDebug() bool {
 	return p.processor.IsDebug()
 }
 
-func (p *rpcThread) WriteError(err Error) Return {
-	stream := p.outStream
-	stream.SetWritePos(streamBodyPos)
-	stream.WriteBool(false)
-	stream.WriteUint64(uint64(err.GetKind()))
-	stream.WriteString(err.GetMessage())
-	stream.WriteString(err.GetDebug())
-	p.execStatus = rpcThreadExecFailed
-	return nilReturn
-}
-
 func (p *rpcThread) GetExecReplyNodePath() string {
 	if node := p.execReplyNode; node != nil {
 		return node.GetPath()
@@ -125,10 +114,21 @@ func (p *rpcThread) GetExecReplyNodeDebug() string {
 	return ""
 }
 
+func (p *rpcThread) WriteError(err Error) Return {
+	stream := p.outStream
+	stream.SetWritePos(streamBodyPos)
+	stream.SetStreamKind(StreamKindResponseError)
+	stream.WriteUint64(uint64(err.GetKind()))
+	stream.WriteString(err.GetMessage())
+	stream.WriteString(err.GetDebug())
+	p.execStatus = rpcThreadExecFailed
+	return nilReturn
+}
+
 func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	stream := p.outStream
 	stream.SetWritePos(streamBodyPos)
-	stream.WriteBool(true)
+	stream.SetStreamKind(StreamKindResponseOK)
 
 	if stream.Write(value) == StreamWriteOK {
 		p.execStatus = rpcThreadExecSuccess
