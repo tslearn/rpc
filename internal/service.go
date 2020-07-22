@@ -1,35 +1,11 @@
 package internal
 
-import "sync"
-
 type rpcReplyCheckStatus int
-
-const (
-	rpcReplyCheckStatusNone rpcReplyCheckStatus = iota
-	rpcReplyCheckStatusOK
-	rpcReplyCheckStatusError
-)
 
 type rpcReplyMeta struct {
 	name    string      // the name of reply
 	handler interface{} // reply handler
 	debug   string      // where the reply add in source file
-	sync.Map
-}
-
-func (p *rpcReplyMeta) GetCheckStatus(key string) rpcReplyCheckStatus {
-	if v, ok := p.Load(key); ok {
-		return v.(rpcReplyCheckStatus)
-	}
-	return rpcReplyCheckStatusNone
-}
-
-func (p *rpcReplyMeta) SetCheckOK(key string) {
-	p.Store(key, rpcReplyCheckStatusOK)
-}
-
-func (p *rpcReplyMeta) SetCheckError(key string) {
-	p.Store(key, rpcReplyCheckStatusError)
 }
 
 type rpcChildMeta struct {

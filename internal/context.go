@@ -24,33 +24,13 @@ func (p *ContextObject) getThread() *rpcThread {
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
-	} else if meta := node.replyMeta; meta == nil {
+	} else if thread.GetGoId() != CurrentGoroutineID() {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else {
-		codeSource := GetFileLine(2)
-		switch meta.GetCheckStatus(codeSource) {
-		case rpcReplyCheckStatusOK:
-			return thread
-		case rpcReplyCheckStatusError:
-			ReportPanic(
-				NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(codeSource),
-			)
-			return nil
-		default:
-			if thread.GetGoId() != CurrentGoroutineID() {
-				meta.SetCheckError(codeSource)
-				ReportPanic(
-					NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(codeSource),
-				)
-				return nil
-			} else {
-				meta.SetCheckOK(codeSource)
-				return thread
-			}
-		}
+		return thread
 	}
 }
 
