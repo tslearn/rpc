@@ -8,7 +8,7 @@ import (
 // rpcPerformanceIndicator ...
 type rpcPerformanceIndicator struct {
 	failed       int64
-	successArray [10]int64
+	successArray [8]int64
 	lastTotal    int64
 	lastTime     time.Time
 	Lock
@@ -18,7 +18,7 @@ type rpcPerformanceIndicator struct {
 func newPerformanceIndicator() *rpcPerformanceIndicator {
 	return &rpcPerformanceIndicator{
 		failed:       0,
-		successArray: [10]int64{},
+		successArray: [8]int64{},
 		lastTotal:    0,
 		lastTime:     TimeNow(),
 	}
@@ -31,7 +31,7 @@ func (p *rpcPerformanceIndicator) Calculate(
 	p.DoWithLock(func() {
 		// calculate total called
 		total := atomic.LoadInt64(&p.failed)
-		for i := 0; i < 10; i++ {
+		for i := 0; i < len(p.successArray); i++ {
 			total += atomic.LoadInt64(&p.successArray[i])
 		}
 		deltaCount := total - p.lastTotal
@@ -60,26 +60,22 @@ func (p *rpcPerformanceIndicator) Count(
 	successful bool,
 ) {
 	if successful {
-		if duration < 2*time.Millisecond {
+		if duration < 5*time.Millisecond {
 			atomic.AddInt64(&p.successArray[0], 1)
-		} else if duration < 6*time.Millisecond {
-			atomic.AddInt64(&p.successArray[1], 1)
-		} else if duration < 10*time.Millisecond {
-			atomic.AddInt64(&p.successArray[2], 1)
 		} else if duration < 20*time.Millisecond {
-			atomic.AddInt64(&p.successArray[3], 1)
-		} else if duration < 40*time.Millisecond {
-			atomic.AddInt64(&p.successArray[4], 1)
-		} else if duration < 60*time.Millisecond {
-			atomic.AddInt64(&p.successArray[5], 1)
+			atomic.AddInt64(&p.successArray[1], 1)
+		} else if duration < 50*time.Millisecond {
+			atomic.AddInt64(&p.successArray[2], 1)
 		} else if duration < 100*time.Millisecond {
-			atomic.AddInt64(&p.successArray[6], 1)
-		} else if duration < 300*time.Millisecond {
-			atomic.AddInt64(&p.successArray[7], 1)
+			atomic.AddInt64(&p.successArray[3], 1)
+		} else if duration < 200*time.Millisecond {
+			atomic.AddInt64(&p.successArray[4], 1)
+		} else if duration < 500*time.Millisecond {
+			atomic.AddInt64(&p.successArray[5], 1)
 		} else if duration < 1000*time.Millisecond {
-			atomic.AddInt64(&p.successArray[8], 1)
+			atomic.AddInt64(&p.successArray[6], 1)
 		} else {
-			atomic.AddInt64(&p.successArray[9], 1)
+			atomic.AddInt64(&p.successArray[7], 1)
 		}
 	} else {
 		atomic.AddInt64(&p.failed, 1)
