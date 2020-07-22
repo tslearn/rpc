@@ -528,7 +528,7 @@ func (p *Client) sendMessage(
 
 	// wait for response
 	if ok := <-item.finishCH; !ok {
-		return nil, internal.NewTimeoutError(internal.ErrStringTimeout)
+		return nil, internal.NewBaseError(internal.ErrStringTimeout)
 	} else if success, ok := item.stream.ReadBool(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if success {

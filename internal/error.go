@@ -13,8 +13,7 @@ const (
 	ErrKindFromReplyPanic ErrorKind = 2
 	ErrKindFromProtocol   ErrorKind = 3
 	ErrKindFromTransport  ErrorKind = 4
-	ErrKindFromTimeout    ErrorKind = 5
-	ErrKindFromKernel     ErrorKind = 6
+	ErrKindFromKernel     ErrorKind = 5
 )
 
 var gFatalErrorReporter = newErrorReporter()
@@ -135,11 +134,12 @@ func NewBaseError(message string) Error {
 	return newError(ErrKindFromNone, message, "")
 }
 
-//
+// NewReplyError ...
 func NewReplyError(message string) Error {
 	return newError(ErrKindFromReply, message, "")
 }
 
+//
 func NewReplyPanic(message string) Error {
 	return newError(ErrKindFromReplyPanic, message, "")
 }
@@ -152,11 +152,6 @@ func NewProtocolError(message string) Error {
 // NewTransportError ...
 func NewTransportError(message string) Error {
 	return newError(ErrKindFromTransport, message, "")
-}
-
-// NewTimeoutError ...
-func NewTimeoutError(message string) Error {
-	return newError(ErrKindFromTimeout, message, "")
 }
 
 // NewKernelError ...
