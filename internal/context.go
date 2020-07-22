@@ -14,12 +14,12 @@ type ContextObject struct {
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringRunOutOfScope).AddDebug(GetFileLine(2)),
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if !thread.IsDebug() {
@@ -36,14 +36,14 @@ func (p *ContextObject) getThread() *rpcThread {
 			return thread
 		case rpcReplyCheckStatusError:
 			ReportPanic(
-				NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
+				NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(codeSource),
 			)
 			return nil
 		default:
 			if thread.GetGoId() != CurrentGoroutineID() {
 				meta.SetCheckError(codeSource)
 				ReportPanic(
-					NewReplyPanic(ErrStringRunOutOfScope).AddDebug(codeSource),
+					NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(codeSource),
 				)
 				return nil
 			} else {
