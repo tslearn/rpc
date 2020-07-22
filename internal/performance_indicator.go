@@ -55,11 +55,8 @@ func (p *rpcPerformanceIndicator) Calculate(
 }
 
 // Count ...
-func (p *rpcPerformanceIndicator) Count(
-	duration time.Duration,
-	successful bool,
-) {
-	if successful {
+func (p *rpcPerformanceIndicator) Count(duration time.Duration, success bool) {
+	if success {
 		if duration < 5*time.Millisecond {
 			atomic.AddInt64(&p.successArray[0], 1)
 		} else if duration < 20*time.Millisecond {
