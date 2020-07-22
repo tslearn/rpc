@@ -8,13 +8,13 @@ const ErrStringBadStream = "rpc: bad stream"
 const ErrStringTimeout = "rpc: timeout"
 
 const (
-	ErrKindNone       ErrorKind = 0
+	ErrKindBase       ErrorKind = 0
 	ErrKindReply      ErrorKind = 1
 	ErrKindReplyPanic ErrorKind = 2
 	ErrKindRuntime    ErrorKind = 3
 	ErrKindProtocol   ErrorKind = 4
 	ErrKindTransport  ErrorKind = 5
-	ErrKindKernel     ErrorKind = 5
+	ErrKindKernel     ErrorKind = 6
 )
 
 var (
@@ -100,7 +100,7 @@ func NewError(kind ErrorKind, message string, debug string) Error {
 
 // NewBaseError ...
 func NewBaseError(message string) Error {
-	return newError(ErrKindNone, message, "")
+	return newError(ErrKindBase, message, "")
 }
 
 // NewReplyError ...
