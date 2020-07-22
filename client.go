@@ -95,7 +95,7 @@ type Client struct {
 	closeCH              chan bool
 	sessionString        string
 	conn                 IStreamConnection
-	logger               *Logger
+	logWriter            LogWriter
 	endPoint             IAdapter
 	preSendHead          *sendItem
 	preSendTail          *sendItem
@@ -119,7 +119,7 @@ func NewClient(endPoint IAdapter) *Client {
 		closeCH:              nil,
 		sessionString:        "",
 		conn:                 nil,
-		logger:               NewLogger(nil),
+		logWriter:            NewStdoutLogWriter(),
 		endPoint:             endPoint,
 		preSendHead:          nil,
 		preSendTail:          nil,
@@ -552,7 +552,7 @@ func (p *Client) sendMessage(
 }
 
 func (p *Client) onError(err Error) {
-	p.logger.Error(err.Error())
+	p.logWriter.Write(0, err)
 }
 
 // End ***** Client ***** //

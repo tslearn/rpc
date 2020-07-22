@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-func getFakeOnEvalFinish() func(*rpcThread, *Stream, bool) {
-	return func(thread *rpcThread, stream *Stream, b bool) {}
+func getFakeOnEvalFinish() func(*rpcThread, *Stream) {
+	return func(thread *rpcThread, stream *Stream) {}
 }
 
 func getFakeProcessor(debug bool) *Processor {

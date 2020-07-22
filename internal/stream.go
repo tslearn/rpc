@@ -231,8 +231,8 @@ func (p *Stream) SetCallbackID(v uint64) {
 	b[7] = byte(v >> 56)
 }
 
-// GetSessionID ...
-func (p *Stream) GetSessionID() uint64 {
+// GetSessionId ...
+func (p *Stream) GetSessionId() uint64 {
 	b := p.header[8:16]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -244,8 +244,8 @@ func (p *Stream) GetSessionID() uint64 {
 		uint64(b[7])<<56
 }
 
-// SetSessionID ...
-func (p *Stream) SetSessionID(v uint64) {
+// SetSessionId ...
+func (p *Stream) SetSessionId(v uint64) {
 	b := p.header[8:16]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)

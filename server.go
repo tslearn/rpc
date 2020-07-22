@@ -159,7 +159,7 @@ func (p *serverSession) OnDataStream(
 	}
 
 	stream.GetCallbackID()
-	stream.SetSessionID(p.id)
+	stream.SetSessionId(p.id)
 
 	if !processor.PutStream(stream) {
 		return internal.NewBaseError(
@@ -296,7 +296,7 @@ func (p *serverSession) Release() {
 // Begin ***** Server ***** //
 type Server struct {
 	isOpen      bool
-	logger      *Logger
+	logWriter   LogWriter
 	endPoints   []IAdapter
 	processor   *internal.Processor
 	sessionMap  sync.Map
@@ -308,7 +308,7 @@ type Server struct {
 func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
 	server := &Server{
 		isOpen:      false,
-		logger:      NewLogger(nil),
+		logWriter:   NewStdoutLogWriter(),
 		endPoints:   make([]IAdapter, 0),
 		processor:   nil,
 		sessionMap:  sync.Map{},
@@ -333,14 +333,38 @@ func (p *Server) Start() bool {
 			p.onError(internal.NewBaseError("Server: Start: it is already opened"))
 			return false
 		} else if err := p.processor.Start(
-			func(stream Stream, success bool) {
-				if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
-					if session, ok := v.(*serverSession); ok && session != nil {
-						if err := session.WriteStream(stream); err != nil {
-							p.logger.Error(err.Error())
+			func(stream Stream) {
+				kind := stream.GetStreamKind()
+				if kind == internal.StreamKindResponseOK ||
+					kind == internal.StreamKindResponseError {
+					if v, ok := p.sessionMap.Load(stream.GetSessionId()); ok {
+						if session, ok := v.(*serverSession); ok && session != nil {
+							if err := session.WriteStream(stream); err != nil {
+								p.logWriter.Write(stream.GetSessionId(), err)
+							}
 						}
 					}
+				} else if kind == internal.StreamKindResponsePanic {
+					// report Panic
+					stream.SetReadPosToBodyStart()
+
+					if errKind, ok := stream.ReadUint64(); !ok {
+						stream.SetReadPosToBodyStart()
+					} else if message, ok := stream.ReadString(); !ok {
+						stream.SetReadPosToBodyStart()
+					} else if debug, ok := stream.ReadString(); !ok {
+						stream.SetReadPosToBodyStart()
+					} else {
+						p.logWriter.Write(
+							stream.GetSessionId(),
+							internal.NewError(internal.ErrorKind(errKind), message, debug),
+						)
+					}
+
+				} else {
+					// ignore stream
 				}
+
 			},
 		); err != nil {
 			p.onError(err)
@@ -384,10 +408,6 @@ func (p *Server) Stop() {
 			}
 		}
 	})
-}
-
-func (p *Server) GetLogger() *Logger {
-	return p.logger
 }
 
 func (p *Server) BuildFuncCache(
@@ -542,8 +562,7 @@ func (p *Server) onConnRun(conn IStreamConnection) {
 }
 
 func (p *Server) onError(err Error) {
-	p.logger.Error(err.Error())
-	//fmt.Println(err.Error())
+	p.logWriter.Write(0, err)
 }
 
 // End ***** Server ***** //

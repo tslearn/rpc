@@ -102,7 +102,7 @@ func (p *Processor) IsDebug() bool {
 }
 
 func (p *Processor) Start(
-	onReturnStream func(stream *Stream, success bool),
+	onReturnStream func(stream *Stream),
 ) Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if onReturnStream == nil {
@@ -110,8 +110,14 @@ func (p *Processor) Start(
 		} else if p.freeThreadsCHGroup != nil {
 			return NewKernelError("Processor: Start: it has already benn started")
 		} else {
-			p.fatalSubscription = SubscribePanic(func(e Error) {
-				//  stream := NewStream()
+			p.fatalSubscription = SubscribePanic(func(err Error) {
+				stream := NewStream()
+				stream.SetStreamKind(StreamKindResponsePanic)
+				stream.WriteUint64(uint64(err.GetKind()))
+				stream.WriteString(err.GetMessage())
+				stream.WriteString(err.GetDebug())
+				onReturnStream(stream)
+				stream.Release()
 			})
 
 			size := len(p.threads)
@@ -131,12 +137,12 @@ func (p *Processor) Start(
 			for i := 0; i < size; i++ {
 				thread := newThread(
 					p,
-					func(thread *rpcThread, stream *Stream, success bool) {
+					func(thread *rpcThread, stream *Stream) {
 						defer func() {
 							recover()
 						}()
 
-						onReturnStream(stream, success)
+						onReturnStream(stream)
 
 						freeThreadsCHGroup[atomic.AddUint64(
 							&p.writeThreadPos,

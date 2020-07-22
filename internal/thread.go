@@ -32,7 +32,7 @@ type rpcThread struct {
 
 func newThread(
 	processor *Processor,
-	onEvalFinish func(*rpcThread, *Stream, bool),
+	onEvalFinish func(*rpcThread, *Stream),
 ) *rpcThread {
 	if processor == nil || onEvalFinish == nil {
 		return nil
@@ -160,7 +160,7 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 
 func (p *rpcThread) Eval(
 	inStream *Stream,
-	onEvalFinish func(*rpcThread, *Stream, bool),
+	onEvalFinish func(*rpcThread, *Stream),
 ) *ReturnObject {
 	timeStart := TimeNow()
 	// create context
@@ -206,7 +206,7 @@ func (p *rpcThread) Eval(
 			p.execDepth = 0
 			p.execReplyNode = nil
 			p.execArgs = p.execArgs[:0]
-			onEvalFinish(p, retStream, p.execStatus == rpcThreadExecSuccess)
+			onEvalFinish(p, retStream)
 		}()
 	}()
 

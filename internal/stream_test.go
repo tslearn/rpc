@@ -410,7 +410,7 @@ func TestStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
 	}
 }
 
-func TestStream_GetSessionID_SetSessionID(t *testing.T) {
+func TestStream_GetSessionId_SetSessionId(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
@@ -419,10 +419,10 @@ func TestStream_GetSessionID_SetSessionID(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
 		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetSessionID(v)
+		stream.SetSessionId(v)
 		assert(stream.header[8:16]).Equals(bytes8)
 		assert(stream.GetBufferUnsafe()[9:17]).Equals(bytes8)
-		assert(stream.GetSessionID()).Equals(v)
+		assert(stream.GetSessionId()).Equals(v)
 	}
 }
 

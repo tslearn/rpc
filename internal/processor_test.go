@@ -366,8 +366,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		&testFuncCache{},
 	)
 	_ = processor.Start(
-		func(stream *Stream, ok bool) {
-			if ok {
+		func(stream *Stream) {
+			if stream.GetStreamKind() == StreamKindResponseOK {
 				atomic.AddUint64(&success, 1)
 			} else {
 				atomic.AddUint64(&failed, 1)
