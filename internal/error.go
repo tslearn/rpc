@@ -170,11 +170,11 @@ func (p *rpcError) Error() string {
 	sb := NewStringBuilder()
 	defer sb.Release()
 
-	if len(p.message) > 0 {
+	if p.message != "" {
 		sb.AppendString(p.message)
 	}
 
-	if len(p.debug) > 0 {
+	if p.debug != "" {
 		if !sb.IsEmpty() {
 			sb.AppendByte('\n')
 		}
