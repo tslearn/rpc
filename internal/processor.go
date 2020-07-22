@@ -110,7 +110,7 @@ func (p *Processor) Start(
 		} else if p.freeThreadsCHGroup != nil {
 			return NewKernelError("Processor: Start: it has already benn started")
 		} else {
-			p.fatalSubscription = SubscribeFatal(func(e Error) {
+			p.fatalSubscription = SubscribePanic(func(e Error) {
 				//  stream := NewStream()
 			})
 

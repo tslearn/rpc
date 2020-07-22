@@ -11,30 +11,27 @@ const (
 	ErrKindFromNone       ErrorKind = 0
 	ErrKindFromReply      ErrorKind = 1
 	ErrKindFromReplyPanic ErrorKind = 2
-	ErrKindFromProtocol   ErrorKind = 3
-	ErrKindFromTransport  ErrorKind = 4
+	ErrKindRuntime        ErrorKind = 3
+	ErrKindFromProtocol   ErrorKind = 4
+	ErrKindFromTransport  ErrorKind = 5
 	ErrKindFromKernel     ErrorKind = 5
 )
 
-var gFatalErrorReporter = newErrorReporter()
+var gFatalErrorReporter = &rpcErrorReporter{
+	subscriptions: make([]*rpcFatalSubscription, 0),
+}
 
 func ReportPanic(err Error) {
 	gFatalErrorReporter.fatalError(err)
 }
 
-func SubscribeFatal(onFatal func(Error)) *rpcFatalSubscription {
+func SubscribePanic(onFatal func(Error)) *rpcFatalSubscription {
 	return gFatalErrorReporter.subscribe(onFatal)
 }
 
 type rpcErrorReporter struct {
 	subscriptions []*rpcFatalSubscription
 	Lock
-}
-
-func newErrorReporter() *rpcErrorReporter {
-	return &rpcErrorReporter{
-		subscriptions: make([]*rpcFatalSubscription, 0),
-	}
 }
 
 func (p *rpcErrorReporter) subscribe(
@@ -139,9 +136,14 @@ func NewReplyError(message string) Error {
 	return newError(ErrKindFromReply, message, "")
 }
 
-//
+// NewReplyPanic ...
 func NewReplyPanic(message string) Error {
 	return newError(ErrKindFromReplyPanic, message, "")
+}
+
+// NewRuntimeError ...
+func NewRuntimeError(message string) Error {
+	return newError(ErrKindRuntime, message, "")
 }
 
 // NewProtocolError ...
