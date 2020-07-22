@@ -29,6 +29,7 @@ const (
 )
 
 var (
+	zeroHeader  = make([]byte, streamBodyPos-1)
 	streamCache = sync.Pool{
 		New: func() interface{} {
 			ret := Stream{
@@ -174,6 +175,7 @@ func NewStream() *Stream {
 
 // Reset ...
 func (p *Stream) Reset() {
+	copy(p.header, zeroHeader)
 	// reset frames
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
