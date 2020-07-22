@@ -29,22 +29,22 @@ func ReportPanic(err Error) {
 
 	gPanicLocker.DoWithLock(func() {
 		for _, sub := range gPanicSubscriptions {
-			if sub != nil && sub.onFatal != nil {
-				sub.onFatal(err)
+			if sub != nil && sub.onPanic != nil {
+				sub.onPanic(err)
 			}
 		}
 	})
 }
 
-func SubscribePanic(onFatal func(Error)) *rpcPanicSubscription {
-	if onFatal == nil {
+func SubscribePanic(onPanic func(Error)) *rpcPanicSubscription {
+	if onPanic == nil {
 		return nil
 	}
 
 	return gPanicLocker.CallWithLock(func() interface{} {
 		ret := &rpcPanicSubscription{
 			id:      GetSeed(),
-			onFatal: onFatal,
+			onPanic: onPanic,
 		}
 		gPanicSubscriptions = append(gPanicSubscriptions, ret)
 		return ret
@@ -53,7 +53,7 @@ func SubscribePanic(onFatal func(Error)) *rpcPanicSubscription {
 
 type rpcPanicSubscription struct {
 	id      int64
-	onFatal func(err Error)
+	onPanic func(err Error)
 }
 
 func (p *rpcPanicSubscription) Close() bool {
@@ -63,7 +63,6 @@ func (p *rpcPanicSubscription) Close() bool {
 		return gPanicLocker.CallWithLock(func() interface{} {
 			for i := 0; i < len(gPanicSubscriptions); i++ {
 				if gPanicSubscriptions[i].id == p.id {
-					p.id = 0
 					gPanicSubscriptions = append(
 						gPanicSubscriptions[:i],
 						gPanicSubscriptions[i+1:]...,
@@ -85,7 +84,8 @@ type Error interface {
 	Error() string
 }
 
-func newError(kind ErrorKind, message string, debug string) Error {
+// NewError ...
+func NewError(kind ErrorKind, message string, debug string) Error {
 	return &rpcError{
 		kind:    kind,
 		message: message,
@@ -93,44 +93,39 @@ func newError(kind ErrorKind, message string, debug string) Error {
 	}
 }
 
-// NewError ...
-func NewError(kind ErrorKind, message string, debug string) Error {
-	return newError(kind, message, debug)
-}
-
 // NewBaseError ...
 func NewBaseError(message string) Error {
-	return newError(ErrKindBase, message, "")
+	return NewError(ErrKindBase, message, "")
 }
 
 // NewReplyError ...
 func NewReplyError(message string) Error {
-	return newError(ErrKindReply, message, "")
+	return NewError(ErrKindReply, message, "")
 }
 
 // NewReplyPanic ...
 func NewReplyPanic(message string) Error {
-	return newError(ErrKindReplyPanic, message, "")
+	return NewError(ErrKindReplyPanic, message, "")
 }
 
 // NewRuntimeError ...
 func NewRuntimeError(message string) Error {
-	return newError(ErrKindRuntime, message, "")
+	return NewError(ErrKindRuntime, message, "")
 }
 
 // NewProtocolError ...
 func NewProtocolError(message string) Error {
-	return newError(ErrKindProtocol, message, "")
+	return NewError(ErrKindProtocol, message, "")
 }
 
 // NewTransportError ...
 func NewTransportError(message string) Error {
-	return newError(ErrKindTransport, message, "")
+	return NewError(ErrKindTransport, message, "")
 }
 
 // NewKernelError ...
 func NewKernelError(message string) Error {
-	return newError(ErrKindKernel, message, "")
+	return NewError(ErrKindKernel, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches
