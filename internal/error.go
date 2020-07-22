@@ -75,16 +75,18 @@ func (p *rpcErrorReporter) removeSubscription(id int64) bool {
 }
 
 func (p *rpcErrorReporter) fatalError(err Error) {
-	if p != nil {
-		subscriptions := p.CallWithLock(func() interface{} {
-			return p.subscriptions
-		}).([]*rpcFatalSubscription)
+	defer func() {
+		recover()
+	}()
 
-		for _, sub := range subscriptions {
-			if sub != nil && sub.onFatal != nil {
-				sub.onFatal(err)
+	if p != nil {
+		p.DoWithLock(func() {
+			for _, sub := range p.subscriptions {
+				if sub != nil && sub.onFatal != nil {
+					sub.onFatal(err)
+				}
 			}
-		}
+		})
 	}
 }
 

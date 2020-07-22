@@ -389,7 +389,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 
 	time.Sleep(3 * time.Second)
 	b.ReportAllocs()
-	b.N = 30000000
+	b.N = 100000000
 	b.SetParallelism(1024)
 
 	// file, _ := os.Create("../cpu.prof")
