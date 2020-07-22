@@ -102,10 +102,10 @@ func (p *Processor) IsDebug() bool {
 }
 
 func (p *Processor) Start(
-	onEvalFinish func(stream *Stream, success bool),
+	onReturnStream func(stream *Stream, success bool),
 ) Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
-		if onEvalFinish == nil {
+		if onReturnStream == nil {
 			return NewKernelError("Processor: Start: onEvalFinish is nil")
 		} else if p.freeThreadsCHGroup != nil {
 			return NewKernelError("Processor: Start: it has already benn started")
@@ -133,11 +133,10 @@ func (p *Processor) Start(
 					p,
 					func(thread *rpcThread, stream *Stream, success bool) {
 						defer func() {
-							// do not panic when freeThreadsCH was closed,
 							recover()
 						}()
 
-						onEvalFinish(stream, success)
+						onReturnStream(stream, success)
 
 						freeThreadsCHGroup[atomic.AddUint64(
 							&p.writeThreadPos,

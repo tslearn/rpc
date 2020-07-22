@@ -8,27 +8,13 @@ import (
 func TestReportPanic(t *testing.T) {
 	assert := NewAssert(t)
 
-	fnTestPanic := func(producePanic func()) Error {
-		ch := make(chan Error, 1)
-		sub := SubscribePanic(func(err Error) {
-			ch <- err
-		})
-		defer sub.Close()
-
-		producePanic()
-
-		select {
-		case err := <-ch:
-			return err
-		case <-time.After(time.Second):
-			return nil
-		}
-	}
-
 	// Test(1)
-	assert(fnTestPanic(func() {
-		ReportPanic(NewReplyPanic("reply panic error"))
-	})).Equals(NewReplyPanic("reply panic error"))
+	assert(testRunAndCatchPanic(
+		func() {
+			ReportPanic(NewReplyPanic("reply panic error"))
+		},
+		time.Second,
+	)).Equals(NewReplyPanic("reply panic error"))
 }
 
 func TestSubscribePanic(t *testing.T) {
