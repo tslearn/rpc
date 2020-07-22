@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
 	gPanicLocker        = NewLock()
+	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
 )
 
 func ReportPanic(err Error) {

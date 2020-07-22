@@ -32,7 +32,7 @@ func TestServer_Basic(t *testing.T) {
 
 		_ = client.Open()
 
-		for i := 0; i < 500; i++ {
+		for i := 0; i < 50; i++ {
 			go func(idx int) {
 				fmt.Println(client.sendMessage(
 					5*time.Second,
@@ -44,12 +44,12 @@ func TestServer_Basic(t *testing.T) {
 			time.Sleep(30 * time.Millisecond)
 		}
 
-		time.Sleep(10 * time.Second)
+		time.Sleep(3 * time.Second)
 		_ = client.Close()
 		fmt.Println("Finish")
 
 		server.Stop()
 	}()
 
-	time.Sleep(100 * time.Second)
+	time.Sleep(5 * time.Second)
 }
