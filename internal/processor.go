@@ -55,7 +55,7 @@ type Processor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	fatalSubscription  *rpcFatalSubscription
+	fatalSubscription  *rpcPanicSubscription
 	Lock
 }
 

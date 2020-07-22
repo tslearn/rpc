@@ -17,90 +17,62 @@ const (
 	ErrKindFromKernel     ErrorKind = 5
 )
 
-var gFatalErrorReporter = &rpcErrorReporter{
-	subscriptions: make([]*rpcFatalSubscription, 0),
-}
+var (
+	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
+	gPanicLocker        = NewLock()
+)
 
 func ReportPanic(err Error) {
-	gFatalErrorReporter.fatalError(err)
-}
-
-func SubscribePanic(onFatal func(Error)) *rpcFatalSubscription {
-	return gFatalErrorReporter.subscribe(onFatal)
-}
-
-type rpcErrorReporter struct {
-	subscriptions []*rpcFatalSubscription
-	Lock
-}
-
-func (p *rpcErrorReporter) subscribe(
-	onFatal func(Error),
-) *rpcFatalSubscription {
-	if p == nil || onFatal == nil {
-		return nil
-	}
-
-	return p.CallWithLock(func() interface{} {
-		ret := &rpcFatalSubscription{
-			id:       GetSeed(),
-			reporter: p,
-			onFatal:  onFatal,
-		}
-		p.subscriptions = append(p.subscriptions, ret)
-		return ret
-	}).(*rpcFatalSubscription)
-}
-
-func (p *rpcErrorReporter) removeSubscription(id int64) bool {
-	if p == nil {
-		return false
-	}
-
-	return p.CallWithLock(func() interface{} {
-		for i := 0; i < len(p.subscriptions); i++ {
-			if p.subscriptions[i].id == id {
-				p.subscriptions[i].id = 0
-				array := p.subscriptions
-				p.subscriptions = append(array[:i], array[i+1:]...)
-				return true
-			}
-		}
-		return false
-	}).(bool)
-}
-
-func (p *rpcErrorReporter) fatalError(err Error) {
 	defer func() {
 		recover()
 	}()
 
-	if p != nil {
-		p.DoWithLock(func() {
-			for _, sub := range p.subscriptions {
-				if sub != nil && sub.onFatal != nil {
-					sub.onFatal(err)
-				}
+	gPanicLocker.DoWithLock(func() {
+		for _, sub := range gPanicSubscriptions {
+			if sub != nil && sub.onFatal != nil {
+				sub.onFatal(err)
 			}
-		})
+		}
+	})
+}
+
+func SubscribePanic(onFatal func(Error)) *rpcPanicSubscription {
+	if onFatal == nil {
+		return nil
 	}
+
+	return gPanicLocker.CallWithLock(func() interface{} {
+		ret := &rpcPanicSubscription{
+			id:      GetSeed(),
+			onFatal: onFatal,
+		}
+		gPanicSubscriptions = append(gPanicSubscriptions, ret)
+		return ret
+	}).(*rpcPanicSubscription)
 }
 
-// LogSubscription ...
-type rpcFatalSubscription struct {
-	id       int64
-	reporter *rpcErrorReporter
-	onFatal  func(err Error)
+type rpcPanicSubscription struct {
+	id      int64
+	onFatal func(err Error)
 }
 
-// Close ...
-func (p *rpcFatalSubscription) Close() bool {
+func (p *rpcPanicSubscription) Close() bool {
 	if p == nil {
 		return false
-	} else if reporter := p.reporter; reporter == nil {
-		return false
 	} else {
-		return reporter.removeSubscription(p.id)
+		return gPanicLocker.CallWithLock(func() interface{} {
+			for i := 0; i < len(gPanicSubscriptions); i++ {
+				if gPanicSubscriptions[i].id == p.id {
+					p.id = 0
+					gPanicSubscriptions = append(
+						gPanicSubscriptions[:i],
+						gPanicSubscriptions[i+1:]...,
+					)
+					return true
+				}
+			}
+			return false
+		}).(bool)
 	}
 }
 
