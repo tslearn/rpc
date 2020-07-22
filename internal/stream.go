@@ -175,6 +175,7 @@ func NewStream() *Stream {
 
 // Reset ...
 func (p *Stream) Reset() {
+	// reset header
 	copy(p.header, zeroHeader)
 	// reset frames
 	for i := 1; i < len(p.frames); i++ {
