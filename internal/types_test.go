@@ -1,8 +1,6 @@
 package internal
 
-import (
-	"time"
-)
+import "unsafe"
 
 func getFakeOnEvalFinish() func(*rpcThread, *Stream) {
 	return func(thread *rpcThread, stream *Stream) {}
@@ -16,7 +14,11 @@ func getFakeThread(debug bool) *rpcThread {
 	return newThread(getFakeProcessor(debug), getFakeOnEvalFinish())
 }
 
-func testRunAndCatchPanic(fn func(), timeout time.Duration) Error {
+func getFakeContext(debug bool) *ContextObject {
+	return &ContextObject{thread: unsafe.Pointer(getFakeThread(debug))}
+}
+
+func testRunAndCatchPanic(fn func()) Error {
 	ch := make(chan Error, 1)
 	sub := SubscribePanic(func(err Error) {
 		ch <- err
@@ -28,7 +30,7 @@ func testRunAndCatchPanic(fn func(), timeout time.Duration) Error {
 	select {
 	case err := <-ch:
 		return err
-	case <-time.After(timeout):
+	default:
 		return nil
 	}
 }

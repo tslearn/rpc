@@ -36,13 +36,15 @@ func (p *ContextObject) getThread() *rpcThread {
 	}
 }
 
-func (p *ContextObject) stop() {
+func (p *ContextObject) stop() bool {
 	if p == nil {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(0)),
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
+		return false
 	} else {
 		atomic.StorePointer(&p.thread, nil)
+		return true
 	}
 }
 

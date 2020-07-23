@@ -2,7 +2,6 @@ package internal
 
 import (
 	"testing"
-	"time"
 )
 
 func TestReportPanic(t *testing.T) {
@@ -13,8 +12,8 @@ func TestReportPanic(t *testing.T) {
 		func() {
 			ReportPanic(NewReplyPanic("reply panic error"))
 		},
-		time.Second,
 	)).Equals(NewReplyPanic("reply panic error"))
+
 }
 
 func TestSubscribePanic(t *testing.T) {

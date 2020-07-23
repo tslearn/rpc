@@ -80,65 +80,53 @@ func TestContextObject_getThread(t *testing.T) {
 	assert(ret5, error5, panic5).Equals(true, nil, nil)
 }
 
-func TestContext_stop(t *testing.T) {
+func TestContextObject_stop(t *testing.T) {
 	assert := NewAssert(t)
 
-	// Test(1) thread is nil
-	ctx1 := &ContextObject{thread: nil}
-	assert(ctx1.getThread()).IsNil()
-	ctx1.stop()
-	assert(ctx1.getThread()).IsNil()
+	// Test(1)
+	source1 := ""
+	assert(testRunAndCatchPanic(func() {
+		ret, source := Context(nil).stop(), GetFileLine(0)
+		source1 = source
+		assert(ret).IsFalse()
+	})).Equals(NewKernelError(ErrStringUnexpectedNil).AddDebug(source1))
 
-	// Test(2) thread is not nil
-	fakeThread2 := getFakeThread()
-	defer fakeThread2.Stop()
-	ctx2 := &ContextObject{thread: unsafe.Pointer(fakeThread2)}
-	assert(ctx2.getThread()).IsNotNil()
-	ctx2.stop()
-	assert(ctx2.getThread()).IsNil()
+	// Test(2)
+	ctx2 := getFakeContext(true)
+	assert(ctx2.thread).IsNotNil()
+	assert(ctx2.stop()).IsTrue()
+	assert(ctx2.thread).IsNil()
 }
 
-func TestContext_OK(t *testing.T) {
-	// prepare
-	//assert := NewAssert(t)
+func TestContextObject_OK(t *testing.T) {
+	assert := NewAssert(t)
 
-	//// Test(1) ctx is ok
-	//fakeThread1 := getFakeThread()
-	//defer fakeThread1.Stop()
-	//ctx1 := &ContextObject{thread: unsafe.Pointer(fakeThread1)}
-	//ctx1.OK("Hello World")
-	//assert(fakeThread1.execSuccessful).IsTrue()
-	//fakeThread1.outStream.SetReadPosToBodyStart()
-	//assert(fakeThread1.outStream.ReadBool()).Equals(true, true)
-	//assert(fakeThread1.outStream.ReadString()).Equals("Hello World", true)
-	//assert(fakeThread1.outStream.CanRead()).IsFalse()
-	//
-	//// Test(2) ctx is stop
-	//fakeThread2 := getFakeThread()
-	//defer fakeThread2.Stop()
-	//ctx2 := &ContextObject{thread: unsafe.Pointer(fakeThread2)}
-	//ctx2.stop()
-	//ctx2.OK("Hello World")
-	//fakeThread2.outStream.SetReadPosToBodyStart()
-	//assert(fakeThread2.outStream.GetWritePos()).Equals(streamBodyPos)
-	//assert(fakeThread2.outStream.GetReadPos()).Equals(streamBodyPos)
+	// Test(1)
+	source1 := ""
+	assert(testRunAndCatchPanic(func() {
+		ret, source := Context(nil).OK(true), GetFileLine(0)
+		source1 = source
+		assert(ret).Equals(nilReturn)
+	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
 
-	//// Test(3) value is illegal
-	//fakeThread3 := getFakeThread()
-	//defer fakeThread3.Stop()
-	//ctx3 := ContextObject{thread: unsafe.Pointer(fakeThread3)}
-	//ctx3.OK(make(chan bool))
-	//assert(fakeThread3.execSuccessful).IsFalse()
-	//fakeThread3.outStream.SetReadPosToBodyStart()
-	//assert(fakeThread3.outStream.ReadBool()).Equals(false, true)
-	//assert(fakeThread3.outStream.ReadString()).Equals("return type is error", true)
-	//dbgMessage, ok := thread2.outStream.ReadString()
-	//assert(ok).IsTrue()
-	//assert(strings.Contains(dbgMessage, "TestRpcContext_OK")).IsTrue()
-	//assert(thread2.outStream.CanRead()).IsFalse()
+	// Test(2)
+	source2 := ""
+	assert(testRunAndCatchPanic(func() {
+		ret, source := (&ContextObject{thread: nil}).OK(true), GetFileLine(0)
+		source2 = source
+		assert(ret).Equals(nilReturn)
+	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
+
+	// Test(3)
+	ret3, error3, panic3, _ :=
+		testRunOnContext(true, func(ctx Context) Return {
+			assert(ctx.getThread()).IsNotNil()
+			return ctx.OK(true)
+		})
+	assert(ret3, error3, panic3).Equals(true, nil, nil)
 }
 
-func TestContext_writeError(t *testing.T) {
+func TestContextObject_Error(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//// ctx is ok
