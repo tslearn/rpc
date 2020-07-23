@@ -4,10 +4,12 @@ import (
 	"sync"
 )
 
+const stringBuilderBufferSize = 1024
+
 var stringBuilderCache = &sync.Pool{
 	New: func() interface{} {
 		return &StringBuilder{
-			buffer: make([]byte, 0, 4096),
+			buffer: make([]byte, 0, stringBuilderBufferSize),
 		}
 	},
 }
@@ -24,10 +26,10 @@ func NewStringBuilder() *StringBuilder {
 
 // Reset Reset the builder
 func (p *StringBuilder) Reset() {
-	if cap(p.buffer) == 4096 {
+	if cap(p.buffer) == stringBuilderBufferSize {
 		p.buffer = p.buffer[:0]
 	} else {
-		p.buffer = make([]byte, 0, 4096)
+		p.buffer = make([]byte, 0, stringBuilderBufferSize)
 	}
 }
 

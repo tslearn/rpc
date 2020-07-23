@@ -7,80 +7,75 @@ import (
 func TestNewStringBuilder(t *testing.T) {
 	assert := NewAssert(t)
 
-	builder := NewStringBuilder()
-	assert(len(builder.buffer)).Equals(0)
-	assert(cap(builder.buffer)).Equals(4096)
-	builder.Release()
+	// Test(1)
+	sb1 := NewStringBuilder()
+	defer sb1.Release()
+	assert(len(sb1.buffer)).Equals(0)
+	assert(cap(sb1.buffer)).Equals(stringBuilderBufferSize)
 }
 
-func TestStringBuilder_Release(t *testing.T) {
+func TestStringBuilder_Reset(t *testing.T) {
 	assert := NewAssert(t)
 
-	builder := NewStringBuilder()
-
-	for i := 0; i < 4096; i++ {
-		builder.AppendString("S")
+	// Test(1)
+	sb1 := NewStringBuilder()
+	defer sb1.Release()
+	for i := 0; i < stringBuilderBufferSize; i++ {
+		sb1.AppendString("S")
 	}
-	builder.Release()
-	builder = NewStringBuilder()
-	assert(len(builder.buffer)).Equals(0)
-	assert(cap(builder.buffer)).Equals(4096)
+	sb1.Reset()
+	assert(len(sb1.buffer)).Equals(0)
+	assert(cap(sb1.buffer)).Equals(stringBuilderBufferSize)
 
-	for i := 0; i < 4097; i++ {
-		builder.AppendString("S")
+	// Test(2)
+	sb2 := NewStringBuilder()
+	defer sb2.Release()
+	for i := 0; i < 2*stringBuilderBufferSize; i++ {
+		sb2.AppendString("S")
 	}
-	builder.Release()
-	builder = NewStringBuilder()
-	assert(len(builder.buffer)).Equals(0)
-	assert(cap(builder.buffer)).Equals(4096)
-
-	builder.Release()
+	sb2.Reset()
+	assert(len(sb2.buffer)).Equals(0)
+	assert(cap(sb2.buffer)).Equals(stringBuilderBufferSize)
 }
 
 func TestStringBuilder_AppendByte(t *testing.T) {
 	assert := NewAssert(t)
 
-	builder := NewStringBuilder()
-	builder.AppendByte('a')
-	builder.AppendByte('b')
-	builder.AppendByte('c')
-	assert(builder.String()).Equals("abc")
-	builder.Release()
+	// Test(1)
+	sb1 := NewStringBuilder()
+	defer sb1.Release()
+	sb1.AppendByte('a')
+	sb1.AppendByte('b')
+	sb1.AppendByte('c')
+	assert(sb1.String()).Equals("abc")
 }
 
 func TestStringBuilder_AppendBytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	longString := ""
-	for i := 0; i < 1000; i++ {
-		longString += "hello"
-	}
-
-	builder := NewStringBuilder()
-	builder.AppendBytes([]byte(longString))
-	assert(builder.String()).Equals(longString)
-	builder.Release()
+	// Test(1)
+	longString1 := GetRandString(128)
+	sb1 := NewStringBuilder()
+	defer sb1.Release()
+	sb1.AppendBytes([]byte(longString1))
+	assert(sb1.String()).Equals(longString1)
 }
 
 func TestStringBuilder_AppendString(t *testing.T) {
 	assert := NewAssert(t)
 
-	longString := ""
-	for i := 0; i < 1000; i++ {
-		longString += "hello"
-	}
-
-	var testCollection = [][2]interface{}{
+	// Test(1)
+	longString1 := getTestLongString()
+	var testCollection1 = [][2]interface{}{
 		{[]string{""}, ""},
 		{[]string{"a"}, "a"},
 		{[]string{"中国"}, "中国"},
 		{[]string{"🀄🀄🀄🀄🀄🀄🀄️"}, "🀄🀄🀄🀄🀄🀄🀄️"},
-		{[]string{longString}, longString},
 		{[]string{"", "🀄🀄🀄🀄🀄🀄🀄️"}, "🀄🀄🀄🀄🀄🀄🀄️"},
 		{[]string{"中国", "🀄🀄🀄🀄🀄🀄🀄️"}, "中国🀄🀄🀄🀄🀄🀄🀄️"},
+		{[]string{longString1}, longString1},
 	}
-
-	for _, item := range testCollection {
+	for _, item := range testCollection1 {
 		builder := NewStringBuilder()
 		for i := 0; i < len(item[0].([]string)); i++ {
 			builder.AppendString(item[0].([]string)[i])
