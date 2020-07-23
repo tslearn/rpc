@@ -36,11 +36,12 @@ func testRunAndCatchPanic(fn func(), timeout time.Duration) Error {
 func testRunOnContext(
 	debug bool,
 	fn func(ctx Context) Return,
-) (interface{}, Error, Error) {
+) (interface{}, Error, Error, string) {
 	done := make(chan bool)
 	ret := interface{}(nil)
 	retError := Error(nil)
 	retPanic := Error(nil)
+	codeSource := ""
 
 	processor := getFakeProcessor(debug)
 
@@ -51,7 +52,9 @@ func testRunOnContext(
 				defer func() {
 					done <- true
 				}()
-				return fn(ctx)
+				ret, fileLine := fn(ctx), GetFileLine(0)
+				codeSource = fileLine
+				return ret
 			}),
 		"",
 	); err != nil {
@@ -102,5 +105,5 @@ func testRunOnContext(
 	if err := processor.Stop(); err != nil {
 		panic(err)
 	}
-	return ret, retError, retPanic
+	return ret, retError, retPanic, codeSource
 }

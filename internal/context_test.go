@@ -2,6 +2,8 @@ package internal
 
 import (
 	"testing"
+	"time"
+	"unsafe"
 )
 
 func TestContextObject_nilContext(t *testing.T) {
@@ -15,42 +17,85 @@ func TestContextObject_getThread(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
+	ret1, error1, panic1, source1 :=
+		testRunOnContext(false, func(ctx Context) Return {
+			o1 := ContextObject{thread: nil}
+			assert(o1.getThread()).IsNil()
+			return ctx.OK(false)
+		})
+	assert(ret1, error1, panic1).Equals(
+		false,
+		nil,
+		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source1),
+	)
 
-	assert(testRunOnContext(false, func(ctx Context) Return {
-		o1 := ContextObject{thread: nil}
-		assert(o1.getThread()).IsNil()
-		return ctx.OK(true)
-	})).Equals(true, nil, nil)
-	//assert := NewAssert(t)
-	//
-	//// Test(1) thread is nil
-	//ctx1 := &ContextObject{thread: nil}
-	//assert(ctx1.getThread()).IsNil()
+	// Test(2)
+	ret2, error2, panic2, source2 :=
+		testRunOnContext(false, func(ctx Context) Return {
+			thread := getFakeThread(false)
+			thread.execReplyNode = nil
+			o1 := ContextObject{thread: unsafe.Pointer(thread)}
+			assert(o1.getThread()).IsNil()
+			return ctx.OK(false)
+		})
+	assert(ret2, error2, panic2).Equals(
+		false,
+		nil,
+		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2),
+	)
 
-	//
-	//// Test(2) thread is not nil\
-	//fakeThread2 := getFakeThread()
-	//defer fakeThread2.Stop()
-	//ctx2 := &ContextObject{thread: unsafe.Pointer(fakeThread2)}
-	//assert(ctx2.getThread()).Equals(fakeThread2)
+	// Test(3)
+	ret3, error3, panic3, _ :=
+		testRunOnContext(false, func(ctx Context) Return {
+			assert(ctx.getThread()).IsNotNil()
+			return ctx.OK(true)
+		})
+	assert(ret3, error3, panic3).Equals(true, nil, nil)
+
+	// Test(4)
+	source4 := ""
+	ret4, error4, panic4, _ :=
+		testRunOnContext(true, func(ctx Context) Return {
+			go func() {
+				func(source string) {
+					source4 = source
+					assert(ctx.getThread()).IsNil()
+				}(GetFileLine(0))
+			}()
+			time.Sleep(200 * time.Millisecond)
+			return ctx.OK(false)
+		})
+	assert(ret4, error4, panic4).Equals(
+		false,
+		nil,
+		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source4),
+	)
+
+	// Test(5)
+	ret5, error5, panic5, _ :=
+		testRunOnContext(true, func(ctx Context) Return {
+			assert(ctx.getThread()).IsNotNil()
+			return ctx.OK(true)
+		})
+	assert(ret5, error5, panic5).Equals(true, nil, nil)
 }
 
 func TestContext_stop(t *testing.T) {
-	//assert := NewAssert(t)
-	//
-	//// Test(1) thread is nil
-	//ctx1 := &ContextObject{thread: nil}
-	//assert(ctx1.getThread()).IsNil()
-	//ctx1.stop()
-	//assert(ctx1.getThread()).IsNil()
-	//
-	//// Test(2) thread is not nil
-	//fakeThread2 := getFakeThread()
-	//defer fakeThread2.Stop()
-	//ctx2 := &ContextObject{thread: unsafe.Pointer(fakeThread2)}
-	//assert(ctx2.getThread()).IsNotNil()
-	//ctx2.stop()
-	//assert(ctx2.getThread()).IsNil()
+	assert := NewAssert(t)
+
+	// Test(1) thread is nil
+	ctx1 := &ContextObject{thread: nil}
+	assert(ctx1.getThread()).IsNil()
+	ctx1.stop()
+	assert(ctx1.getThread()).IsNil()
+
+	// Test(2) thread is not nil
+	fakeThread2 := getFakeThread()
+	defer fakeThread2.Stop()
+	ctx2 := &ContextObject{thread: unsafe.Pointer(fakeThread2)}
+	assert(ctx2.getThread()).IsNotNil()
+	ctx2.stop()
+	assert(ctx2.getThread()).IsNil()
 }
 
 func TestContext_OK(t *testing.T) {
