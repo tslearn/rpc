@@ -421,7 +421,7 @@ func (p *Server) BuildFuncCache(
 	)
 }
 
-// AddChild ...
+// AddChildService ...
 func (p *Server) AddService(
 	name string,
 	service *Service,

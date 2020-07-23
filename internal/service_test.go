@@ -13,7 +13,7 @@ func TestNewService(t *testing.T) {
 	assert(len(service.children)).Equals(0)
 	assert(len(service.replies)).Equals(0)
 	assert(strings.Contains(
-		service.debug,
+		service.fileLine,
 		"TestNewService",
 	)).IsTrue()
 }
@@ -21,19 +21,19 @@ func TestNewService(t *testing.T) {
 func TestService_Add(t *testing.T) {
 	assert := NewAssert(t)
 	childService := NewService()
-	service := NewService().AddChild("user", childService)
+	service := NewService().AddChildService("user", childService)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(1)
 	assert(len(service.replies)).Equals(0)
 	assert(service.children[0].name).Equals("user")
 	assert(service.children[0].service).Equals(childService)
 	assert(strings.Contains(
-		service.children[0].debug,
+		service.children[0].fileLine,
 		"TestService_Add",
 	)).IsTrue()
 
 	// add nil is ok
-	assert(service.AddChild("nil", nil)).Equals(service)
+	assert(service.AddChildService("nil", nil)).Equals(service)
 }
 
 func TestService_Reply(t *testing.T) {
@@ -46,7 +46,7 @@ func TestService_Reply(t *testing.T) {
 	assert(service.replies[0].handler).Equals(2345)
 
 	assert(strings.Contains(
-		service.replies[0].debug,
+		service.replies[0].fileLine,
 		"TestService_Reply",
 	)).IsTrue()
 }

@@ -78,8 +78,8 @@ func TestConvertTypeToString(t *testing.T) {
 	assert(convertTypeToString(uint64Type)).Equals("rpc.Uint64")
 	assert(convertTypeToString(float64Type)).Equals("rpc.Float64")
 	assert(convertTypeToString(stringType)).Equals("rpc.String")
-	assert(convertTypeToString(contextType)).Equals("rpc.ContextObject")
-	assert(convertTypeToString(returnType)).Equals("rpc.ReturnObject")
+	assert(convertTypeToString(contextType)).Equals("rpc.Context")
+	assert(convertTypeToString(returnType)).Equals("rpc.Return")
 	assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
 		Equals("chan bool")
 }

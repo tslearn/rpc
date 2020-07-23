@@ -54,10 +54,10 @@ func TestNewError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindRuntime, "message", "debug")
+	o1 := NewError(ErrorKindRuntime, "message", "fileLine")
 	assert(o1.GetKind()).Equals(ErrorKindRuntime)
 	assert(o1.GetMessage()).Equals("message")
-	assert(o1.GetDebug()).Equals("debug")
+	assert(o1.GetDebug()).Equals("fileLine")
 }
 
 func TestNewBaseError(t *testing.T) {
@@ -136,7 +136,7 @@ func TestRpcError_GetKind(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernel, "message", "debug")
+	o1 := NewError(ErrorKindKernel, "message", "fileLine")
 	assert(o1.GetKind()).Equals(ErrorKindKernel)
 }
 
@@ -144,7 +144,7 @@ func TestRpcError_GetMessage(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernel, "message", "debug")
+	o1 := NewError(ErrorKindKernel, "message", "fileLine")
 	assert(o1.GetMessage()).Equals("message")
 }
 
@@ -152,8 +152,8 @@ func TestRpcError_GetDebug(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernel, "message", "debug")
-	assert(o1.GetDebug()).Equals("debug")
+	o1 := NewError(ErrorKindKernel, "message", "fileLine")
+	assert(o1.GetDebug()).Equals("fileLine")
 }
 
 func TestRpcError_AddDebug(t *testing.T) {
@@ -161,11 +161,11 @@ func TestRpcError_AddDebug(t *testing.T) {
 
 	// Test(1)
 	o1 := NewError(ErrorKindKernel, "message", "")
-	assert(o1.AddDebug("debug").GetDebug()).Equals("debug")
+	assert(o1.AddDebug("fileLine").GetDebug()).Equals("fileLine")
 
 	// Test(2)
-	o2 := NewError(ErrorKindKernel, "message", "debug")
-	assert(o2.AddDebug("debug").GetDebug()).Equals("debug\ndebug")
+	o2 := NewError(ErrorKindKernel, "message", "fileLine")
+	assert(o2.AddDebug("fileLine").GetDebug()).Equals("fileLine\nfileLine")
 }
 
 func TestRpcError_Error(t *testing.T) {
@@ -178,9 +178,9 @@ func TestRpcError_Error(t *testing.T) {
 	assert(NewError(ErrorKindKernel, "message", "").Error()).Equals("message")
 
 	// Test(3)
-	assert(NewError(ErrorKindKernel, "", "debug").Error()).Equals("debug")
+	assert(NewError(ErrorKindKernel, "", "fileLine").Error()).Equals("fileLine")
 
 	// Test(4)
-	assert(NewError(ErrorKindKernel, "message", "debug").Error()).
-		Equals("message\ndebug")
+	assert(NewError(ErrorKindKernel, "message", "fileLine").Error()).
+		Equals("message\nfileLine")
 }

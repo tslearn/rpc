@@ -48,7 +48,7 @@ func runWithProcessor(
 	//	},
 	//	&testFuncCache{},
 	//)
-	//_ = processor.AddChild(
+	//_ = processor.AddChildService(
 	//	"user",
 	//	NewService().Reply("sayHello", true, handler),
 	//	"",

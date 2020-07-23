@@ -1,23 +1,21 @@
 package internal
 
-type rpcReplyCheckStatus int
-
 type rpcReplyMeta struct {
-	name    string      // the name of reply
-	handler interface{} // reply handler
-	debug   string      // where the reply add in source file
+	name     string      // the name of reply
+	handler  interface{} // reply handler
+	fileLine string      // where the reply add in source file
 }
 
 type rpcChildMeta struct {
-	name    string   // the name of child service
-	service *Service // the real service
-	debug   string   // where the service add in source file
+	name     string   // the name of child service
+	service  *Service // the real service
+	fileLine string   // where the service add in source file
 }
 
 type Service struct {
 	children []*rpcChildMeta // all the children node meta pointer
 	replies  []*rpcReplyMeta // all the replies meta pointer
-	debug    string          // where the service define in source file
+	fileLine string          // where the service define in source file
 	Lock
 }
 
@@ -26,7 +24,7 @@ func NewService() *Service {
 	return &Service{
 		children: make([]*rpcChildMeta, 0, 0),
 		replies:  make([]*rpcReplyMeta, 0, 0),
-		debug:    AddFileLine("", 1),
+		fileLine: AddFileLine("", 1),
 	}
 }
 
@@ -38,22 +36,22 @@ func (p *Service) Reply(
 	// add reply meta
 	p.DoWithLock(func() {
 		p.replies = append(p.replies, &rpcReplyMeta{
-			name:    name,
-			handler: handler,
-			debug:   AddFileLine("", 1),
+			name:     name,
+			handler:  handler,
+			fileLine: AddFileLine("", 1),
 		})
 	})
 	return p
 }
 
-// AddChild add child service
-func (p *Service) AddChild(name string, service *Service) *Service {
+// AddChildService ...
+func (p *Service) AddChildService(name string, service *Service) *Service {
 	// add child meta
 	p.DoWithLock(func() {
 		p.children = append(p.children, &rpcChildMeta{
-			name:    name,
-			service: service,
-			debug:   AddFileLine("", 1),
+			name:     name,
+			service:  service,
+			fileLine: AddFileLine("", 1),
 		})
 	})
 	return p

@@ -32,7 +32,7 @@ func (p *rpcReplyNode) GetPath() string {
 
 func (p *rpcReplyNode) GetDebug() string {
 	if p.replyMeta != nil {
-		return ConcatString(p.path, " ", p.replyMeta.debug)
+		return ConcatString(p.path, " ", p.replyMeta.fileLine)
 	}
 	return p.path
 }
@@ -258,7 +258,7 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 	return buildFuncCache(pkgName, path, fnKinds)
 }
 
-// AddChild ...
+// AddChildService ...
 func (p *Processor) AddService(
 	name string,
 	service *Service,
@@ -269,9 +269,9 @@ func (p *Processor) AddService(
 	}
 
 	return p.mountNode(rootName, &rpcChildMeta{
-		name:    name,
-		service: service,
-		debug:   debug,
+		name:     name,
+		service:  service,
+		fileLine: debug,
 	})
 }
 
@@ -288,12 +288,12 @@ func (p *Processor) mountNode(
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
 		return NewBaseError(
 			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
-		).AddDebug(nodeMeta.debug)
+		).AddDebug(nodeMeta.fileLine)
 	}
 
 	// check nodeMeta.service is not nil
 	if nodeMeta.service == nil {
-		return NewBaseError("Service is nil").AddDebug(nodeMeta.debug)
+		return NewBaseError("Service is nil").AddDebug(nodeMeta.fileLine)
 	}
 
 	// check max node depth overflow
@@ -301,7 +301,7 @@ func (p *Processor) mountNode(
 	if !ok {
 		return NewBaseError(
 			"rpc: mountNode: parentNode is nil",
-		).AddDebug(nodeMeta.debug)
+		).AddDebug(nodeMeta.fileLine)
 	}
 	servicePath := parentServiceNodePath + "." + nodeMeta.name
 	if uint64(parentNode.depth+1) > p.maxNodeDepth {
@@ -309,7 +309,7 @@ func (p *Processor) mountNode(
 			"Service path depth %s is too long, it must be less or equal than %d",
 			servicePath,
 			p.maxNodeDepth,
-		)).AddDebug(nodeMeta.debug)
+		)).AddDebug(nodeMeta.fileLine)
 	}
 
 	// check the mount path is not occupied
@@ -319,8 +319,8 @@ func (p *Processor) mountNode(
 			nodeMeta.name,
 		)).AddDebug(fmt.Sprintf(
 			"Current:\n%s\nConflict:\n%s",
-			AddPrefixPerLine(nodeMeta.debug, "\t"),
-			AddPrefixPerLine(item.addMeta.debug, "\t"),
+			AddPrefixPerLine(nodeMeta.fileLine, "\t"),
+			AddPrefixPerLine(item.addMeta.fileLine, "\t"),
 		))
 	}
 
@@ -372,7 +372,7 @@ func (p *Processor) mountReply(
 	if !replyNameRegex.MatchString(replyMeta.name) {
 		return NewBaseError(
 			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
-		).AddDebug(replyMeta.debug)
+		).AddDebug(replyMeta.fileLine)
 	}
 
 	// check the reply path is not occupied
@@ -383,14 +383,14 @@ func (p *Processor) mountReply(
 			replyMeta.name,
 		)).AddDebug(fmt.Sprintf(
 			"Current:\n%s\nConflict:\n%s",
-			AddPrefixPerLine(replyMeta.debug, "\t"),
-			AddPrefixPerLine(item.replyMeta.debug, "\t"),
+			AddPrefixPerLine(replyMeta.fileLine, "\t"),
+			AddPrefixPerLine(item.replyMeta.fileLine, "\t"),
 		))
 	}
 
 	// check the reply handler is nil
 	if replyMeta.handler == nil {
-		return NewBaseError("Reply handler is nil").AddDebug(replyMeta.debug)
+		return NewBaseError("Reply handler is nil").AddDebug(replyMeta.fileLine)
 	}
 
 	// Check reply handler is Func
@@ -400,7 +400,7 @@ func (p *Processor) mountReply(
 			"Reply handler must be func(ctx %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
-		)).AddDebug(replyMeta.debug)
+		)).AddDebug(replyMeta.fileLine)
 	}
 
 	// Check reply handler arguments types
@@ -409,13 +409,13 @@ func (p *Processor) mountReply(
 		return NewBaseError(fmt.Sprintf(
 			"Reply handler 1st argument type must be %s",
 			convertTypeToString(contextType),
-		)).AddDebug(replyMeta.debug)
+		)).AddDebug(replyMeta.fileLine)
 	} else if argumentsErrorPos > 0 {
 		return NewBaseError(fmt.Sprintf(
 			"Reply handler %s argument type <%s> not supported",
 			ConvertOrdinalToString(1+uint(argumentsErrorPos)),
 			fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
-		)).AddDebug(replyMeta.debug)
+		)).AddDebug(replyMeta.fileLine)
 	}
 
 	// Check return type
@@ -425,7 +425,7 @@ func (p *Processor) mountReply(
 			fmt.Sprintf(
 				"Reply handler return type must be %s",
 				convertTypeToString(returnType),
-			)).AddDebug(replyMeta.debug)
+			)).AddDebug(replyMeta.fileLine)
 	}
 
 	// mount the replyRecord
