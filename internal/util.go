@@ -220,7 +220,7 @@ func runStoreTime() {
 }
 
 func onCacheFailed() {
-	if timeCacheFailedCounter.Add(1)%20000 == 0 {
+	if timeCacheFailedCounter.Count()%20000 == 0 {
 		if speed, _ := timeCacheFailedCounter.CalculateSpeed(
 			TimeNow(),
 		); speed > 10000 {

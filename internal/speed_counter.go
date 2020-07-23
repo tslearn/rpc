@@ -22,9 +22,9 @@ func NewSpeedCounter() *SpeedCounter {
 	}
 }
 
-// Add count n times
-func (p *SpeedCounter) Add(n int64) int64 {
-	return atomic.AddInt64(&p.total, n)
+// Count count n times
+func (p *SpeedCounter) Count() int64 {
+	return atomic.AddInt64(&p.total, 1)
 }
 
 // Total get the total count
@@ -41,6 +41,9 @@ func (p *SpeedCounter) CalculateSpeed(
 		deltaTime := now.Sub(p.lastTime)
 
 		if deltaTime <= 0 {
+			speed = 0
+			duration = 0
+		} else if deltaCount < 0 {
 			speed = 0
 			duration = 0
 		} else {
