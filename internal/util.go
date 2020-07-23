@@ -395,9 +395,7 @@ func ConvertOrdinalToString(n uint) string {
 
 func CurrentGoroutineID() (ret int64) {
 	defer func() {
-		if v := recover(); v != nil {
-			ret = 0
-		}
+		recover()
 	}()
 
 	bp := littleBufCache.Get().(*[]byte)
@@ -411,6 +409,7 @@ func CurrentGoroutineID() (ret int64) {
 		b = b[len(goroutinePrefix):]
 	}
 
+	ret = 0
 	pos := 0
 	for pos < 22 {
 		if ch := b[pos]; ch < 48 || ch > 57 {
@@ -421,7 +420,6 @@ func CurrentGoroutineID() (ret int64) {
 		}
 	}
 
-	ret = 0
 	weight := int64(1)
 	for pos > 0 {
 		pos--

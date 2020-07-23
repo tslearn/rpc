@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -387,14 +386,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"",
 	)
 
-	time.Sleep(3 * time.Second)
 	b.ReportAllocs()
 	b.N = 100000000
 	b.SetParallelism(1024)
-
-	// file, _ := os.Create("../cpu.prof")
-	// _ = pprof.StartCPUProfile(file)
-	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
@@ -407,16 +401,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			processor.PutStream(stream)
 		}
 	})
-	b.StopTimer()
-	// pprof.StopCPUProfile()
 
-	time.Sleep(3 * time.Second)
-
-	sumFrees := 0
-	for _, ch := range processor.freeThreadsCHGroup {
-		sumFrees += len(ch)
-	}
-	fmt.Println(sumFrees)
 	fmt.Println(processor.Stop())
 	fmt.Println(total, success, failed)
 }
