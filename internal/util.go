@@ -221,7 +221,7 @@ func runStoreTime() {
 
 func onCacheFailed() {
 	if timeCacheFailedCounter.Count()%20000 == 0 {
-		if speed, _ := timeCacheFailedCounter.CalculateSpeed(
+		if speed, _ := timeCacheFailedCounter.Calculate(
 			TimeNow(),
 		); speed > 10000 {
 			if atomic.LoadPointer(&timeNowPointer) == nil {

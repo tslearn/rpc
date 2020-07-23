@@ -13,7 +13,7 @@ type SpeedCounter struct {
 	Lock
 }
 
-// NewSpeedCounter create a SpeedCounter
+// NewSpeedCounter ...
 func NewSpeedCounter() *SpeedCounter {
 	return &SpeedCounter{
 		total:     0,
@@ -22,18 +22,18 @@ func NewSpeedCounter() *SpeedCounter {
 	}
 }
 
-// Count count n times
+// Count ...
 func (p *SpeedCounter) Count() int64 {
 	return atomic.AddInt64(&p.total, 1)
 }
 
-// Total get the total count
+// Total ...
 func (p *SpeedCounter) Total() int64 {
 	return atomic.LoadInt64(&p.total)
 }
 
-// CalculateSpeed ...
-func (p *SpeedCounter) CalculateSpeed(
+// Calculate ...
+func (p *SpeedCounter) Calculate(
 	now time.Time,
 ) (speed int64, duration time.Duration) {
 	p.DoWithLock(func() {

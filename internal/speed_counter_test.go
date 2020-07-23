@@ -71,15 +71,15 @@ func TestSpeedCounter_CalculateSpeed(t *testing.T) {
 		for i := 0; i < 10000; i++ {
 			<-waitCH
 		}
-		assert(sc1.CalculateSpeed(sc1.lastTime)).
+		assert(sc1.Calculate(sc1.lastTime)).
 			Equals(int64(0), time.Duration(0))
-		assert(sc1.CalculateSpeed(sc1.lastTime.Add(time.Second))).
+		assert(sc1.Calculate(sc1.lastTime.Add(time.Second))).
 			Equals(int64(10000), time.Second)
 	}
 
 	// Test(1)
 	sc2 := NewSpeedCounter()
 	atomic.StoreInt64(&sc2.lastCount, 10)
-	assert(sc2.CalculateSpeed(sc2.lastTime.Add(time.Second))).
+	assert(sc2.Calculate(sc2.lastTime.Add(time.Second))).
 		Equals(int64(0), time.Duration(0))
 }
