@@ -8,13 +8,13 @@ const ErrStringBadStream = "rpc: bad stream"
 const ErrStringTimeout = "rpc: timeout"
 
 const (
-	ErrKindBase       ErrorKind = 0
-	ErrKindReply      ErrorKind = 1
-	ErrKindReplyPanic ErrorKind = 2
-	ErrKindRuntime    ErrorKind = 3
-	ErrKindProtocol   ErrorKind = 4
-	ErrKindTransport  ErrorKind = 5
-	ErrKindKernel     ErrorKind = 6
+	ErrorKindBase       ErrorKind = 0
+	ErrorKindReply      ErrorKind = 1
+	ErrorKindReplyPanic ErrorKind = 2
+	ErrorKindRuntime    ErrorKind = 3
+	ErrorKindProtocol   ErrorKind = 4
+	ErrorKindTransport  ErrorKind = 5
+	ErrorKindKernel     ErrorKind = 6
 )
 
 var (
@@ -95,37 +95,37 @@ func NewError(kind ErrorKind, message string, debug string) Error {
 
 // NewBaseError ...
 func NewBaseError(message string) Error {
-	return NewError(ErrKindBase, message, "")
+	return NewError(ErrorKindBase, message, "")
 }
 
 // NewReplyError ...
 func NewReplyError(message string) Error {
-	return NewError(ErrKindReply, message, "")
+	return NewError(ErrorKindReply, message, "")
 }
 
 // NewReplyPanic ...
 func NewReplyPanic(message string) Error {
-	return NewError(ErrKindReplyPanic, message, "")
+	return NewError(ErrorKindReplyPanic, message, "")
 }
 
 // NewRuntimeError ...
 func NewRuntimeError(message string) Error {
-	return NewError(ErrKindRuntime, message, "")
+	return NewError(ErrorKindRuntime, message, "")
 }
 
 // NewProtocolError ...
 func NewProtocolError(message string) Error {
-	return NewError(ErrKindProtocol, message, "")
+	return NewError(ErrorKindProtocol, message, "")
 }
 
 // NewTransportError ...
 func NewTransportError(message string) Error {
-	return NewError(ErrKindTransport, message, "")
+	return NewError(ErrorKindTransport, message, "")
 }
 
 // NewKernelError ...
 func NewKernelError(message string) Error {
-	return NewError(ErrKindKernel, message, "")
+	return NewError(ErrorKindKernel, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches

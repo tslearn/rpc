@@ -54,8 +54,8 @@ func TestNewError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrKindRuntime, "message", "debug")
-	assert(o1.GetKind()).Equals(ErrKindRuntime)
+	o1 := NewError(ErrorKindRuntime, "message", "debug")
+	assert(o1.GetKind()).Equals(ErrorKindRuntime)
 	assert(o1.GetMessage()).Equals("message")
 	assert(o1.GetDebug()).Equals("debug")
 }
@@ -65,7 +65,7 @@ func TestNewBaseError(t *testing.T) {
 
 	// Test(1)
 	assert(NewBaseError("message")).
-		Equals(NewError(ErrKindBase, "message", ""))
+		Equals(NewError(ErrorKindBase, "message", ""))
 }
 
 func TestNewReplyError(t *testing.T) {
@@ -73,7 +73,7 @@ func TestNewReplyError(t *testing.T) {
 
 	// Test(1)
 	assert(NewReplyError("message")).
-		Equals(NewError(ErrKindReply, "message", ""))
+		Equals(NewError(ErrorKindReply, "message", ""))
 }
 
 func TestNewReplyPanic(t *testing.T) {
@@ -81,7 +81,7 @@ func TestNewReplyPanic(t *testing.T) {
 
 	// Test(1)
 	assert(NewReplyPanic("message")).
-		Equals(NewError(ErrKindReplyPanic, "message", ""))
+		Equals(NewError(ErrorKindReplyPanic, "message", ""))
 }
 
 func TestNewRuntimeError(t *testing.T) {
@@ -89,7 +89,7 @@ func TestNewRuntimeError(t *testing.T) {
 
 	// Test(1)
 	assert(NewRuntimeError("message")).
-		Equals(NewError(ErrKindRuntime, "message", ""))
+		Equals(NewError(ErrorKindRuntime, "message", ""))
 }
 
 func TestNewProtocolError(t *testing.T) {
@@ -97,7 +97,7 @@ func TestNewProtocolError(t *testing.T) {
 
 	// Test(1)
 	assert(NewProtocolError("message")).
-		Equals(NewError(ErrKindProtocol, "message", ""))
+		Equals(NewError(ErrorKindProtocol, "message", ""))
 }
 
 func TestNewTransportError(t *testing.T) {
@@ -105,7 +105,7 @@ func TestNewTransportError(t *testing.T) {
 
 	// Test(1)
 	assert(NewTransportError("message")).
-		Equals(NewError(ErrKindTransport, "message", ""))
+		Equals(NewError(ErrorKindTransport, "message", ""))
 }
 
 func TestNewKernelError(t *testing.T) {
@@ -113,7 +113,7 @@ func TestNewKernelError(t *testing.T) {
 
 	// Test(1)
 	assert(NewKernelError("message")).
-		Equals(NewError(ErrKindKernel, "message", ""))
+		Equals(NewError(ErrorKindKernel, "message", ""))
 }
 
 func TestConvertToError(t *testing.T) {
@@ -136,15 +136,15 @@ func TestRpcError_GetKind(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrKindKernel, "message", "debug")
-	assert(o1.GetKind()).Equals(ErrKindKernel)
+	o1 := NewError(ErrorKindKernel, "message", "debug")
+	assert(o1.GetKind()).Equals(ErrorKindKernel)
 }
 
 func TestRpcError_GetMessage(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrKindKernel, "message", "debug")
+	o1 := NewError(ErrorKindKernel, "message", "debug")
 	assert(o1.GetMessage()).Equals("message")
 }
 
@@ -152,7 +152,7 @@ func TestRpcError_GetDebug(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrKindKernel, "message", "debug")
+	o1 := NewError(ErrorKindKernel, "message", "debug")
 	assert(o1.GetDebug()).Equals("debug")
 }
 
@@ -160,11 +160,11 @@ func TestRpcError_AddDebug(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrKindKernel, "message", "")
+	o1 := NewError(ErrorKindKernel, "message", "")
 	assert(o1.AddDebug("debug").GetDebug()).Equals("debug")
 
 	// Test(2)
-	o2 := NewError(ErrKindKernel, "message", "debug")
+	o2 := NewError(ErrorKindKernel, "message", "debug")
 	assert(o2.AddDebug("debug").GetDebug()).Equals("debug\ndebug")
 }
 
@@ -172,15 +172,15 @@ func TestRpcError_Error(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewError(ErrKindKernel, "", "").Error()).Equals("")
+	assert(NewError(ErrorKindKernel, "", "").Error()).Equals("")
 
 	// Test(2)
-	assert(NewError(ErrKindKernel, "message", "").Error()).Equals("message")
+	assert(NewError(ErrorKindKernel, "message", "").Error()).Equals("message")
 
 	// Test(3)
-	assert(NewError(ErrKindKernel, "", "debug").Error()).Equals("debug")
+	assert(NewError(ErrorKindKernel, "", "debug").Error()).Equals("debug")
 
 	// Test(4)
-	assert(NewError(ErrKindKernel, "message", "debug").Error()).
+	assert(NewError(ErrorKindKernel, "message", "debug").Error()).
 		Equals("message\ndebug")
 }
