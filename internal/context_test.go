@@ -1,10 +1,22 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
 )
 
-func TestContext_getThread(t *testing.T) {
+func TestContextObject_nilContext(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	assert(nilContext).Equals(Context(nil))
+}
+
+func TestContextObject_getThread(t *testing.T) {
+	fmt.Println(testRunOnContext(false, func(ctx Context) Return {
+		panic("no")
+		return ctx.Error(NewError(ErrKindRuntime, "message", "debug"))
+	}))
 	//assert := NewAssert(t)
 	//
 	//// Test(1) thread is nil

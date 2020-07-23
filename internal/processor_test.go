@@ -398,6 +398,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
+			stream.SetStreamKind(StreamKindRequest)
 			stream.WriteString("$.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("#")

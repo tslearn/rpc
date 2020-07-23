@@ -150,9 +150,9 @@ func convertTypeToString(reflectType reflect.Type) string {
 	case nil:
 		return "<nil>"
 	case contextType:
-		return "rpc.ContextObject"
+		return "rpc.Context"
 	case returnType:
-		return "rpc.ReturnObject"
+		return "rpc.Return"
 	case bytesType:
 		return "rpc.Bytes"
 	case arrayType:
