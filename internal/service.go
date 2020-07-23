@@ -24,24 +24,8 @@ func NewService() *Service {
 	return &Service{
 		children: make([]*rpcChildMeta, 0, 0),
 		replies:  make([]*rpcReplyMeta, 0, 0),
-		fileLine: AddFileLine("", 1),
+		fileLine: GetFileLine(1),
 	}
-}
-
-// Reply add reply handler
-func (p *Service) Reply(
-	name string,
-	handler interface{},
-) *Service {
-	// add reply meta
-	p.DoWithLock(func() {
-		p.replies = append(p.replies, &rpcReplyMeta{
-			name:     name,
-			handler:  handler,
-			fileLine: AddFileLine("", 1),
-		})
-	})
-	return p
 }
 
 // AddChildService ...
@@ -51,7 +35,20 @@ func (p *Service) AddChildService(name string, service *Service) *Service {
 		p.children = append(p.children, &rpcChildMeta{
 			name:     name,
 			service:  service,
-			fileLine: AddFileLine("", 1),
+			fileLine: GetFileLine(3),
+		})
+	})
+	return p
+}
+
+// Reply add reply handler
+func (p *Service) Reply(name string, handler interface{}) *Service {
+	// add reply meta
+	p.DoWithLock(func() {
+		p.replies = append(p.replies, &rpcReplyMeta{
+			name:     name,
+			handler:  handler,
+			fileLine: GetFileLine(3),
 		})
 	})
 	return p
