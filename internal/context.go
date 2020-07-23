@@ -11,6 +11,8 @@ type ContextObject struct {
 	thread unsafe.Pointer
 }
 
+var nilContext = (Context)(nil)
+
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportPanic(

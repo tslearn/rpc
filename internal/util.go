@@ -13,8 +13,6 @@ import (
 )
 
 var (
-	nilContext  = (*ContextObject)(nil)
-	nilReturn   = (*ReturnObject)(nil)
 	contextType = reflect.ValueOf(nilContext).Type()
 	returnType  = reflect.ValueOf(nilReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
