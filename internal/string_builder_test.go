@@ -1,8 +1,18 @@
 package internal
 
 import (
+	"math/rand"
 	"testing"
+	"time"
 )
+
+func getRandomTestBuilder() (*StringBuilder, string) {
+	rand.Seed(time.Now().UnixNano())
+	str := GetRandString(rand.Int() % 10000)
+	sb := NewStringBuilder()
+	sb.AppendString(str)
+	return sb, str
+}
 
 func TestNewStringBuilder(t *testing.T) {
 	assert := NewAssert(t)
@@ -42,82 +52,78 @@ func TestStringBuilder_AppendByte(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	sb1 := NewStringBuilder()
-	defer sb1.Release()
-	sb1.AppendByte('a')
-	sb1.AppendByte('b')
-	sb1.AppendByte('c')
-	assert(sb1.String()).Equals("abc")
+	for i := 0; i < 2000; i++ {
+		sb1, str1 := getRandomTestBuilder()
+		sb1.AppendByte('a')
+		assert(sb1.String()).Equals(str1 + "a")
+		sb1.Release()
+	}
 }
 
 func TestStringBuilder_AppendBytes(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	longString1 := GetRandString(128)
-	sb1 := NewStringBuilder()
-	defer sb1.Release()
-	sb1.AppendBytes([]byte(longString1))
-	assert(sb1.String()).Equals(longString1)
+	for i := 0; i < 2000; i++ {
+		sb1, str1 := getRandomTestBuilder()
+		add1 := GetRandString(rand.Int() % 10000)
+		sb1.AppendBytes(([]byte)(add1))
+		assert(sb1.String()).Equals(str1 + add1)
+		sb1.Release()
+	}
 }
 
 func TestStringBuilder_AppendString(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	longString1 := getTestLongString()
-	var testCollection1 = [][2]interface{}{
-		{[]string{""}, ""},
-		{[]string{"a"}, "a"},
-		{[]string{"中国"}, "中国"},
-		{[]string{"🀄🀄🀄🀄🀄🀄🀄️"}, "🀄🀄🀄🀄🀄🀄🀄️"},
-		{[]string{"", "🀄🀄🀄🀄🀄🀄🀄️"}, "🀄🀄🀄🀄🀄🀄🀄️"},
-		{[]string{"中国", "🀄🀄🀄🀄🀄🀄🀄️"}, "中国🀄🀄🀄🀄🀄🀄🀄️"},
-		{[]string{longString1}, longString1},
-	}
-	for _, item := range testCollection1 {
-		builder := NewStringBuilder()
-		for i := 0; i < len(item[0].([]string)); i++ {
-			builder.AppendString(item[0].([]string)[i])
-		}
-		assert(builder.String()).Equals(item[1])
-		builder.Release()
+	for i := 0; i < 2000; i++ {
+		sb1, str1 := getRandomTestBuilder()
+		add1 := GetRandString(rand.Int() % 10000)
+		sb1.AppendString(add1)
+		assert(sb1.String()).Equals(str1 + add1)
+		sb1.Release()
 	}
 }
 
 func TestStringBuilder_Merge(t *testing.T) {
 	assert := NewAssert(t)
 
-	sb1 := NewStringBuilder()
-	sb2 := NewStringBuilder()
+	// Test(1)
+	for i := 0; i < 2000; i++ {
+		sb1, str1 := getRandomTestBuilder()
+		mergeSb1, mergeStr1 := getRandomTestBuilder()
+		sb1.Merge(mergeSb1)
+		assert(sb1.String()).Equals(str1 + mergeStr1)
+		sb1.Release()
+		mergeSb1.Release()
+	}
 
-	sb1.Merge(sb2)
-	assert(sb1.String()).Equals("")
-	sb2.AppendString("123")
-
-	sb1.Merge(sb2)
-	assert(sb1.String()).Equals("123")
-
-	sb1.Merge(sb2)
-	assert(sb1.String()).Equals("123123")
-
-	sb1.Merge(nil)
-	assert(sb1.String()).Equals("123123")
+	// Test(2)
+	for i := 0; i < 2000; i++ {
+		sb1, str1 := getRandomTestBuilder()
+		sb1.Merge(nil)
+		assert(sb1.String()).Equals(str1)
+		sb1.Release()
+		sb1.Release()
+	}
 }
 
 func TestStringBuilder_IsEmpty(t *testing.T) {
 	assert := NewAssert(t)
 
-	builder := NewStringBuilder()
-	assert(builder.IsEmpty()).IsTrue()
-	builder.AppendString("a")
-	assert(builder.IsEmpty()).IsFalse()
+	// Test(1)
+	sb1 := NewStringBuilder()
+	assert(sb1.IsEmpty()).IsTrue()
+	sb1.AppendString("a")
+	assert(sb1.IsEmpty()).IsFalse()
 }
 
 func TestStringBuilder_String(t *testing.T) {
 	assert := NewAssert(t)
 
-	builder := NewStringBuilder()
-	builder.AppendString("a")
-	assert(builder.String()).Equals("a")
+	// Test(1)
+	sb1 := NewStringBuilder()
+	sb1.AppendString("a")
+	assert(sb1.String()).Equals("a")
 }
