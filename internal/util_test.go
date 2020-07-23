@@ -2,6 +2,7 @@ package internal
 
 import (
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -312,6 +313,28 @@ func TestConvertOrdinalToString(t *testing.T) {
 	assert(ConvertOrdinalToString(4)).Equals("4th")
 	assert(ConvertOrdinalToString(10)).Equals("10th")
 	assert(ConvertOrdinalToString(100)).Equals("100th")
+}
+
+func TestAddFileLine(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	fileLine1 := AddFileLine("header", 0)
+	assert(strings.HasPrefix(fileLine1, "header ")).IsTrue()
+	assert(strings.Contains(fileLine1, "util_test.go")).IsTrue()
+
+	// Test(2)
+	fileLine := AddFileLine("", 0)
+	assert(strings.HasPrefix(fileLine, " ")).IsFalse()
+	assert(strings.Contains(fileLine, "util_test.go")).IsTrue()
+}
+
+func TestGetFileLine(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	fileLine1 := GetFileLine(0)
+	assert(strings.Contains(fileLine1, "util_test.go")).IsTrue()
 }
 
 func TestCurrentGoroutineID(t *testing.T) {
