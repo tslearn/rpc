@@ -437,7 +437,7 @@ func BenchmarkRunWithPanicCatch(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			RunWithPanicCatch(func() {
+			runWithPanicCatch(func() {
 				a = a + 1
 			})
 		}

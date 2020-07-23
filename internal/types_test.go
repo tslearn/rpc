@@ -106,3 +106,12 @@ func testRunOnContext(
 	}
 	return ret, retError, retPanic
 }
+
+func runWithPanicCatch(fn func()) (ret interface{}) {
+	defer func() {
+		ret = recover()
+	}()
+
+	fn()
+	return
+}

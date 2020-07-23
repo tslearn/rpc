@@ -521,12 +521,3 @@ func checkValue(v interface{}, path string, depth int) string {
 func CheckValue(v interface{}, depth int) string {
 	return checkValue(v, "value", depth)
 }
-
-func RunWithPanicCatch(fn func()) (ret interface{}) {
-	defer func() {
-		ret = recover()
-	}()
-
-	fn()
-	return
-}
