@@ -31,8 +31,8 @@ type rpcAssert struct {
 }
 
 func (p *rpcAssert) fail(reason string) {
-	fmt.Println(AddPrefixPerLine(reason, "\t"))
-	fmt.Println(AddFileLine("\t", 2))
+	fmt.Println(reason)
+	fmt.Println(GetFileLine(2))
 	p.t.Fail()
 }
 
@@ -51,10 +51,10 @@ func (p *rpcAssert) Equals(args ...interface{}) {
 		for i := 0; i < len(p.args); i++ {
 			if !reflect.DeepEqual(p.args[i], args[i]) {
 				p.fail(fmt.Sprintf(
-					"%s argment is not equal\n\twant: %v\n\tgot: %v",
+					"%s argment is not equal\n\twant: \n%s\n\tgot: \n%s",
 					ConvertOrdinalToString(uint(i+1)),
-					args[i],
-					p.args[i],
+					AddPrefixPerLine(fmt.Sprintf("%v", args[i]), "\t\t"),
+					AddPrefixPerLine(fmt.Sprintf("%v", p.args[i]), "\t\t"),
 				))
 			}
 		}

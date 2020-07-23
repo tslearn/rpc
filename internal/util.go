@@ -369,11 +369,7 @@ func AddFileLine(header string, skip uint) string {
 
 		sb.AppendString(file)
 		sb.AppendByte(':')
-		if line < 10000 {
-			sb.AppendBytes(intToStringCache4[line])
-		} else {
-			sb.AppendString(strconv.Itoa(line))
-		}
+		sb.AppendString(strconv.Itoa(line))
 	}
 
 	return sb.String()
