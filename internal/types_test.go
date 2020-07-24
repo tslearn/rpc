@@ -118,8 +118,8 @@ func testRunWithPanicCatch(fn func()) (ret interface{}) {
 
 func testRunWithProcessor(
 	isDebug bool,
-	handler interface{},
 	fnCache ReplyCache,
+	handler interface{},
 	getStream func(processor *Processor) *Stream,
 ) (ret interface{}, retError Error, retPanic Error) {
 	done := make(chan bool)

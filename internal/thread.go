@@ -1,9 +1,9 @@
 package internal
 
 import (
-	"fmt"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -76,7 +76,7 @@ func (p *rpcThread) Stop() bool {
 		} else {
 			close(p.inputCH)
 			select {
-			case <-time.After(20 * time.Second):
+			case <-time.After(10 * time.Second):
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:
@@ -183,19 +183,36 @@ func (p *rpcThread) Eval(
 
 	defer func() {
 		if v := recover(); v != nil {
+			// report panic
 			ReportPanic(
-				NewReplyPanic(ErrStringRuntime).AddDebug(string(debug.Stack())),
+				NewReplyPanic(
+					ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+				).AddDebug(string(debug.Stack())),
 			)
-			p.WriteError(
-				NewReplyError(ErrStringRuntime),
-			)
+
+			// write runtime error
+			if p.IsDebug() {
+				p.WriteError(
+					NewReplyError(
+						ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+					).AddDebug(p.GetExecReplyNodeDebug()),
+				)
+			} else {
+				p.WriteError(
+					NewReplyError(
+						ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+					),
+				)
+			}
 		}
 
 		func() {
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelError(ErrStringRuntime).AddDebug(string(debug.Stack())),
+						NewKernelError(
+							ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+						).AddDebug(string(debug.Stack())),
 					)
 				}
 			}()
@@ -240,7 +257,13 @@ func (p *rpcThread) Eval(
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else if p.execDepth > p.processor.maxCallDepth {
 		return p.WriteError(
-			NewReplyError(ConcatString("rpc: call ", replyPath, " overflows")),
+			NewReplyError(ConcatString(
+				"rpc: call ",
+				replyPath,
+				" level(",
+				strconv.FormatUint(p.execDepth, 10),
+				") overflows",
+			)),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
@@ -322,14 +345,12 @@ func (p *rpcThread) Eval(
 
 		if ok {
 			return nilReturn
-		} else if !inStream.IsReadFinish() {
-			return p.WriteError(NewProtocolError(ErrStringBadStream))
 		} else if !p.IsDebug() {
 			return p.WriteError(
 				NewReplyError(ConcatString(
-					"rpc: reply ",
+					"rpc: ",
 					replyPath,
-					" arguments does not match",
+					" reply arguments does not match",
 				)),
 			)
 		} else {
@@ -365,16 +386,15 @@ func (p *rpcThread) Eval(
 
 			return p.WriteError(
 				NewReplyError(ConcatString(
-					"rpc: reply ",
+					"rpc: ",
 					replyPath,
-					" arguments does not match",
-				)).AddDebug(fmt.Sprintf(
-					"want: %s(%s) %s\ngot: %s",
-					replyPath,
-					strings.Join(remoteArgsType, ", "),
-					convertTypeToString(returnType),
+					" reply arguments does not match\nwant: ",
 					p.execReplyNode.callString,
-				)),
+					"\ngot: ",
+					replyPath,
+					"(", strings.Join(remoteArgsType, ", "), ") ",
+					convertTypeToString(returnType),
+				)).AddDebug(p.execReplyNode.GetDebug()),
 			)
 		}
 	}

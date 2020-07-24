@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -30,722 +32,800 @@ func TestNewThread(t *testing.T) {
 }
 
 func TestRpcThread_Eval(t *testing.T) {
-	//assert := NewAssert(t)
+	assert := NewAssert(t)
+
+	//// Test(0) basic
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals("hello world", nil, nil)
 	//
-	// // test basic
-	// runWithProcessor(
-	//   true,
-	//   func(ctx *ContextObject, name string) *ReturnObject {
-	//     return ctx.OK("hello " + name)
-	//   },
-	//   func(_ *Processor) *Stream {
-	//     stream := NewStream()
-	//     stream.SetCallbackID(345343535345343535)
-	//     stream.SetMachineID(345343535)
-	//     stream.WriteString("$.user:sayHello")
-	//     stream.WriteUint64(3)
-	//     stream.WriteString("#")
-	//     stream.WriteString("world")
-	//     return stream
-	//   },
-	//   func(in *Stream, out *Stream) {
-	//     // inStream is reset
-	//     assert(in.GetHeader()).Equals(out.GetHeader())
-	//     assert(in.GetReadPos()).Equals(streamBodyPos)
-	//     assert(in.GetWritePos()).Equals(streamBodyPos)
-	//     assert(out.ReadBool()).Equals(true, true)
-	//     assert(out.Read()).Equals("hello world", true)
-	//     assert(out.CanRead()).IsFalse()
-	//   },
-	// )
+	//// Test(1) read reply path error
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		// path format error
+	//		stream.WriteBytes([]byte("$.test:Eval"))
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+	//
+	//// Test(2) reply path is not mounted
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		// reply path is not mounted
+	//		stream.WriteString("$.system:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals(nil, NewReplyError("rpc: target $.system:Eval does not exist"), nil)
+	//
+	//// Test(3) depth data format error
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		// depth type error
+	//		stream.WriteInt64(3)
+	//		stream.WriteString("#")
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+	//
+	//// Test(4) depth is overflow
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		//  depth is overflow
+	//		stream.WriteUint64(17)
+	//		stream.WriteString("#")
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: call $.test:Eval level(17) overflows"),
+	//	nil,
+	//)
+	//
+	//// Test(5) execFrom data format error
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		// execFrom data format error
+	//		stream.WriteBool(true)
+	//		stream.WriteString("world")
+	//		return stream
+	//	},
+	//)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+	//
+	//// Test(6) ok call with all type value
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint64(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(true, nil, nil)
+	//
+	//// Test(7) error with 1st param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		// error rpc.Bool
+	//		stream.Write(2)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint64(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(8) error with 1st param
+	//ret8, error8, panic8 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		// error rpc.Bool
+	//		stream.Write(2)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint64(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)
+	//assert(ret8, panic8).IsNil()
+	//assert(error8.GetKind()).Equals(ErrorKindReply)
+	//assert(error8.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error8.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error8.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(9) error with 2nd param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		// error rpc.Int64
+	//		stream.Write(true)
+	//		stream.Write(uint64(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(10) error with 2nd param
+	//ret10, error10, panic10 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		// error rpc.Int64
+	//		stream.Write(true)
+	//		stream.Write(uint64(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)
+	//assert(ret10, panic10).IsNil()
+	//assert(error10.GetKind()).Equals(ErrorKindReply)
+	//assert(error10.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error10.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error10.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(11) error with 3rd param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		// error rpc.Uint64
+	//		stream.Write(true)
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(12) error with 3rd param
+	//ret12, error12, panic12 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		// error rpc.Uint64
+	//		stream.Write(true)
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)
+	//assert(ret12, panic12).IsNil()
+	//assert(error12.GetKind()).Equals(ErrorKindReply)
+	//assert(error12.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Bool, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error12.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error12.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(13) error with 4th param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		// error rpc.Float64
+	//		stream.Write(true)
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(14) error with 4th param
+	//ret14, error14, panic14 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		// error rpc.Float64
+	//		stream.Write(true)
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)
+	//assert(ret14, panic14).IsNil()
+	//assert(error14.GetKind()).Equals(ErrorKindReply)
+	//assert(error14.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error14.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error14.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(15) error with 5th param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		stream.Write(float64(3))
+	//		// error rpc.String
+	//		stream.Write(true)
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(16) error with 5th param
+	//ret16, error16, panic16 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		stream.Write(float64(3))
+	//		// error rpc.String
+	//		stream.Write(true)
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)
+	//assert(ret16, panic16).IsNil()
+	//assert(error16.GetKind()).Equals(ErrorKindReply)
+	//assert(error16.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//		"rpc.Float64, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error16.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error16.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(17) error with 6th param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		// error rpc.Bytes
+	//		stream.Write(true)
+	//		stream.Write(Array{1})
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(18) error with 6th param
+	//ret18, error18, panic18 := testRunWithProcessor(true, nil,
+	// func(ctx *ContextObject,
+	//   b bool, i int64, u uint64, f float64, s string,
+	//   x Bytes, a Array, m Map,
+	// ) *ReturnObject {
+	//   return ctx.OK(true)
+	// },
+	// func(_ *Processor) *Stream {
+	//   stream := NewStream()
+	//   stream.WriteString("$.test:Eval")
+	//   stream.WriteUint64(3)
+	//   stream.WriteString("#")
+	//   stream.Write(true)
+	//   stream.Write(int64(3))
+	//   stream.Write(uint(3))
+	//   stream.Write(float64(3))
+	//   stream.Write("hello")
+	//   // error rpc.Bytes
+	//   stream.Write(true)
+	//   stream.Write(Array{1})
+	//   stream.Write(Map{"name": "world"})
+	//   return stream
+	// },
+	//)
+	//assert(ret18, panic18).IsNil()
+	//assert(error18.GetKind()).Equals(ErrorKindReply)
+	//assert(error18.GetMessage()).Equals(
+	// "rpc: $.test:Eval reply arguments does not match\n" +
+	//   "want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//   "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//   "got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//   "rpc.Float64, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error18.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error18.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(19) error with 7th param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		// error rpc.Array
+	//		stream.Write(true)
+	//		stream.Write(Map{"name": "world"})
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(20) error with 6th param
+	//ret20, error20, panic20 := testRunWithProcessor(true, nil,
+	// func(ctx *ContextObject,
+	//   b bool, i int64, u uint64, f float64, s string,
+	//   x Bytes, a Array, m Map,
+	// ) *ReturnObject {
+	//   return ctx.OK(true)
+	// },
+	// func(_ *Processor) *Stream {
+	//   stream := NewStream()
+	//   stream.WriteString("$.test:Eval")
+	//   stream.WriteUint64(3)
+	//   stream.WriteString("#")
+	//   stream.Write(true)
+	//   stream.Write(int64(3))
+	//   stream.Write(uint(3))
+	//   stream.Write(float64(3))
+	//   stream.Write("hello")
+	//   stream.Write(([]byte)("world"))
+	//   // error rpc.Array
+	//   stream.Write(true)
+	//   stream.Write(Map{"name": "world"})
+	//   return stream
+	// },
+	//)
+	//assert(ret20, panic20).IsNil()
+	//assert(error20.GetKind()).Equals(ErrorKindReply)
+	//assert(error20.GetMessage()).Equals(
+	// "rpc: $.test:Eval reply arguments does not match\n" +
+	//   "want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//   "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//   "got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//   "rpc.Float64, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return",
+	//)
+	//assert(strings.Contains(error20.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error20.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(21) error with 8th param
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject,
+	//		b bool, i int64, u uint64, f float64, s string,
+	//		x Bytes, a Array, m Map,
+	//	) *ReturnObject {
+	//		return ctx.OK(true)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		stream.Write(int64(3))
+	//		stream.Write(uint(3))
+	//		stream.Write(float64(3))
+	//		stream.Write("hello")
+	//		stream.Write(([]byte)("world"))
+	//		stream.Write(Array{1})
+	//		// error rpc.Map
+	//		stream.Write(true)
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(22) error with 8th param
+	//ret22, error22, panic22 := testRunWithProcessor(true, nil,
+	//  func(ctx *ContextObject,
+	//    b bool, i int64, u uint64, f float64, s string,
+	//    x Bytes, a Array, m Map,
+	//  ) *ReturnObject {
+	//    return ctx.OK(true)
+	//  },
+	//  func(_ *Processor) *Stream {
+	//    stream := NewStream()
+	//    stream.WriteString("$.test:Eval")
+	//    stream.WriteUint64(3)
+	//    stream.WriteString("#")
+	//    stream.Write(true)
+	//    stream.Write(int64(3))
+	//    stream.Write(uint(3))
+	//    stream.Write(float64(3))
+	//    stream.Write("hello")
+	//    stream.Write(([]byte)("world"))
+	//    stream.Write(Array{1})
+	//    // error rpc.Map
+	//    stream.Write(true)
+	//    return stream
+	//  },
+	//)
+	//assert(ret22, panic22).IsNil()
+	//assert(error22.GetKind()).Equals(ErrorKindReply)
+	//assert(error22.GetMessage()).Equals(
+	//  "rpc: $.test:Eval reply arguments does not match\n" +
+	//    "want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//    "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+	//    "got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+	//    "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return",
+	//)
+	//assert(strings.Contains(error22.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error22.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(23) nil rpcBytes
+	//assert(testRunWithProcessor(true, nil,
+	// func(ctx *ContextObject, a Bytes) *ReturnObject {
+	//   if a != nil {
+	//     return ctx.Error(errors.New("param is not nil"))
+	//   }
+	//   return ctx.OK(true)
+	// },
+	// func(_ *Processor) *Stream {
+	//   stream := NewStream()
+	//   stream.WriteString("$.test:Eval")
+	//   stream.WriteUint64(3)
+	//   stream.WriteString("#")
+	//   stream.Write(nil)
+	//   return stream
+	// },
+	//)).Equals(true, nil, nil)
+	//
+	//// Test(24) nil rpcArray
+	//assert(testRunWithProcessor(true, nil,
+	// func(ctx *ContextObject, a Array) *ReturnObject {
+	//   if a != nil {
+	//     return ctx.Error(errors.New("param is not nil"))
+	//   }
+	//   return ctx.OK(true)
+	// },
+	// func(_ *Processor) *Stream {
+	//   stream := NewStream()
+	//   stream.WriteString("$.test:Eval")
+	//   stream.WriteUint64(3)
+	//   stream.WriteString("#")
+	//   stream.Write(nil)
+	//   return stream
+	// },
+	//)).Equals(true, nil, nil)
+	//
+	//// Test(25) nil rpcMap
+	//assert(testRunWithProcessor(true, nil,
+	// func(ctx *ContextObject, a Map) *ReturnObject {
+	//   if a != nil {
+	//     return ctx.Error(errors.New("param is not nil"))
+	//   }
+	//   return ctx.OK(true)
+	// },
+	// func(_ *Processor) *Stream {
+	//   stream := NewStream()
+	//   stream.WriteString("$.test:Eval")
+	//   stream.WriteUint64(3)
+	//   stream.WriteString("#")
+	//   stream.Write(nil)
+	//   return stream
+	// },
+	//)).Equals(true, nil, nil)
 
+	// Test(26) unsupported type
+	assert(testRunWithProcessor(false, nil,
+		func(ctx *ContextObject, a bool) *ReturnObject {
+			return ctx.OK(a)
+		},
+		func(processor *Processor) *Stream {
+			replyNode := processor.repliesMap["$.test:Eval"]
+			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(true)
+			return stream
+		},
+	)).Equals(
+		nil,
+		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		nil,
+	)
+
+	// Test(27) test
+	ret27, error27, panic27 := testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+			return ctx.OK(bVal)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(nil)
+			stream.Write(nil)
+			stream.Write(nil)
+			return stream
+		},
+	)
+	assert(ret27, panic27).IsNil()
+	assert(error27.GetKind()).Equals(ErrorKindReply)
+	assert(error27.GetMessage()).Equals(
+		"rpc: $.test:Eval reply arguments does not match\n" +
+			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
+			"got: $.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
+	)
+	assert(strings.Contains(error27.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error27.GetDebug(), "types_test.go:")).IsTrue()
+
+	// Test(28) badStream
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+			return ctx.OK(bVal)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write("helloWorld")
+			stream.SetWritePos(stream.GetWritePos() - 1)
+			return stream
+		},
+	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+
+	// Test(29) call function error
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, bVal bool) *ReturnObject {
+			if bVal {
+				panic("this is a error")
+			}
+			return ctx.OK(bVal)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(true)
+			return stream
+		},
+	)).Equals(nil, nil, nil)
 }
-
-//
-//func TestRpcThread_eval(t *testing.T) {
-//  assert := NewAssert(t)
-//
-//  // test basic
-//  runWithProcessor(
-//    true,
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.SetCallbackID(345343535345343535)
-//      stream.SetMachineID(345343535)
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream) {
-//      // inStream is reset
-//      assert(in.GetHeader()).Equals(out.GetHeader())
-//      assert(in.GetReadPos()).Equals(streamBodyPos)
-//      assert(in.GetWritePos()).Equals(streamBodyPos)
-//      assert(out.ReadBool()).Equals(true, true)
-//      assert(out.Read()).Equals("hello world", true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // test read reply path error
-//  runWithProcessor(
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      // path format error
-//      stream.WriteBytes([]byte("$.user:sayHello"))
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(false)
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc data format error", true)
-//      assert(out.Read()).Equals("", true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // reply path is not mounted
-//  runWithProcessor(
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.system:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(false)
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).
-//        Equals("rpc-server: reply path $.system:sayHello is not mounted", true)
-//      assert(out.Read()).Equals("", true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // depth data format error
-//  runWithProcessor(
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      // depth type error
-//      stream.WriteInt64(3)
-//      stream.WriteString("#")
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(false)
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc data format error", true)
-//      assert(out.Read()).Equals("", true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // depth is overflow
-//  runWithProcessor(
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(17)
-//      stream.WriteString("#")
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(false)
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals(
-//        "rpc current call depth(17) is overflow. limited(16)",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//    },
-//  )
-//
-//  // execFrom data format error
-//  runWithProcessor(
-//    func(ctx *ContextObject, name string) *ReturnObject {
-//      return ctx.OK("hello " + name)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteBool(true)
-//      stream.WriteString("world")
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(false)
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc data format error", true)
-//      assert(out.Read()).Equals("", true)
-//    },
-//  )
-//
-//  // OK, call with all type value
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint64(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).Equals(true)
-//      assert(out.ReadBool()).Equals(true, true)
-//      assert(out.Read()).Equals(true, true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 1st param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(3)
-//      stream.Write(int64(3))
-//      stream.Write(uint64(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Int64, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 2nd param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(true)
-//      stream.Write(uint64(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Bool, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 3rd param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(true)
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Bool, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 4th param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint(3))
-//      stream.Write(true)
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 5th param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint(3))
-//      stream.Write(float64(3))
-//      stream.Write(true)
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 6th param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(true)
-//      stream.Write(Array{1})
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 7th param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(true)
-//      stream.Write(Map{"name": "world"})
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // error with 8th param
-//  runWithProcessor(
-//    func(ctx *ContextObject,
-//      b bool, i int64, u uint64, f float64, s string,
-//      x Bytes, a Array, m Map,
-//    ) *ReturnObject {
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      stream.Write(int64(3))
-//      stream.Write(uint(3))
-//      stream.Write(float64(3))
-//      stream.Write("hello")
-//      stream.Write(([]byte)("world"))
-//      stream.Write(Array{1})
-//      stream.Write(true)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Int64, rpc.Uint64, "+
-//        "rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // test nil rpcBytes
-//  runWithProcessor(
-//    func(ctx *ContextObject, a Bytes) *ReturnObject {
-//      if a != nil {
-//        return ctx.Error(errors.New("param is not nil"))
-//      }
-//
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(nil)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsTrue()
-//      assert(out.ReadBool()).Equals(true, true)
-//      assert(out.Read()).Equals(true, true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // test nil rpcArray
-//  runWithProcessor(
-//    func(ctx *ContextObject, a Array) *ReturnObject {
-//      if a != nil {
-//        return ctx.Error(errors.New("param is not nil"))
-//      }
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(nil)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsTrue()
-//      assert(out.ReadBool()).Equals(true, true)
-//      assert(out.Read()).Equals(true, true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // test nil rpcMap
-//  runWithProcessor(
-//    func(ctx *ContextObject, a Map) *ReturnObject {
-//      if a != nil {
-//        return ctx.Error(errors.New("param is not nil"))
-//      }
-//      return ctx.OK(true)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(nil)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsTrue()
-//      assert(out.ReadBool()).Equals(true, true)
-//      assert(out.Read()).Equals(true, true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // test unsupported type
-//  runWithProcessor(
-//    func(ctx *ContextObject, a bool) *ReturnObject {
-//      return ctx.OK(a)
-//    },
-//    func(processor *Processor) *Stream {
-//      replyNode := processor.repliesMap["$.user:sayHello"]
-//      replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, rpc.Bool) rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // nil text
-//  runWithProcessor(
-//    func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-//      return ctx.OK(bVal)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(nil)
-//      stream.Write(nil)
-//      stream.Write(nil)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc reply arguments not match\n"+
-//        "Called: $.user:sayHello(rpc.ContextObject, <nil>, rpc.Map, <nil>) "+
-//        "rpc.ReturnObject\n"+
-//        "Required: $.user:sayHello(rpc.ContextObject, rpc.Bool, rpc.Map) rpc.ReturnObject",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(ok).IsTrue()
-//      assert(strings.Contains(dbgMessage.(string), "$.user:sayHello")).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // stream is broken
-//  runWithProcessor(
-//    func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-//      return ctx.OK(bVal)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write("helloWorld")
-//      stream.SetWritePos(stream.GetWritePos() - 1)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals("rpc data format error", true)
-//      assert(out.Read()).Equals("", true)
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//
-//  // call function error
-//  runWithProcessor(
-//    func(ctx *ContextObject, bVal bool) *ReturnObject {
-//      if bVal {
-//        panic("this is a error")
-//      }
-//      return ctx.OK(bVal)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("$.user:sayHello")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      return stream
-//    },
-//    func(in *Stream, out *Stream, success bool) {
-//      assert(success).IsFalse()
-//      assert(out.ReadBool()).Equals(false, true)
-//      assert(out.Read()).Equals(
-//        "rpc-server: $.user:sayHello(rpc.ContextObject, rpc.Bool) rpc.ReturnObject: "+
-//          "runtime error: this is a error",
-//        true,
-//      )
-//      dbgMessage, ok := out.Read()
-//      assert(
-//        strings.Contains(dbgMessage.(string), "TestRpcThread_eval"),
-//      ).IsTrue()
-//      assert(ok).IsTrue()
-//      assert(out.CanRead()).IsFalse()
-//    },
-//  )
-//}
