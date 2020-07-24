@@ -113,7 +113,6 @@ func (p *rpcThread) GetExecReplyNodeDebug() string {
 
 func (p *rpcThread) WriteError(err Error) Return {
 	if stream := p.execStream; stream != nil {
-		stream := p.execStream
 		stream.SetWritePosToBodyStart()
 		stream.SetStreamKind(StreamKindResponseError)
 		stream.WriteUint64(uint64(err.GetKind()))
