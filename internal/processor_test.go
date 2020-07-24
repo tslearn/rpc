@@ -377,10 +377,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	_ = processor.AddService(
 		"user",
 		NewService().
-			Reply("sayHello", func(
-				ctx *ContextObject,
-				name String,
-			) *ReturnObject {
+			Reply("sayHello", func(ctx Context, name String) Return {
 				return ctx.OK(name)
 			}),
 		"",
