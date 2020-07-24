@@ -115,3 +115,81 @@ func runWithPanicCatch(fn func()) (ret interface{}) {
 	fn()
 	return
 }
+
+func runWithProcessor(
+	isDebug bool,
+	handler interface{},
+	fnCache ReplyCache,
+	getStream func(processor *Processor) *Stream,
+) (ret interface{}, retError Error, retPanic Error) {
+	done := make(chan bool)
+	fnDealStream := func(stream *Stream) {
+		stream.SetReadPosToBodyStart()
+		if stream.GetStreamKind() == StreamKindResponseOK {
+			if v, ok := stream.Read(); ok {
+				if ret != nil {
+					panic("internal error")
+				} else {
+					ret = v
+					done <- true
+				}
+			} else {
+				panic("internal error")
+			}
+		} else {
+			if errKind, ok := stream.ReadUint64(); !ok {
+				panic("internal error")
+			} else if message, ok := stream.ReadString(); !ok {
+				panic("internal error")
+			} else if debug, ok := stream.ReadString(); !ok {
+				panic("internal error")
+			} else {
+				err := NewError(ErrorKind(errKind), message, debug)
+				if stream.GetStreamKind() == StreamKindResponseError {
+					if retError != nil {
+						panic("internal error")
+					} else {
+						retError = err
+						done <- true
+					}
+				} else if stream.GetStreamKind() == StreamKindResponsePanic {
+					if retPanic != nil {
+						panic("internal error")
+					} else {
+						retPanic = err
+						done <- true
+					}
+				}
+			}
+		}
+		stream.Release()
+	}
+
+	processor := NewProcessor(
+		isDebug,
+		8192,
+		16,
+		16,
+		fnCache,
+	)
+	if err := processor.AddService(
+		"test",
+		NewService().Reply("Eval", handler),
+		"",
+	); err != nil {
+		panic(err)
+	}
+
+	if err := processor.Start(func(stream *Stream) {
+		fnDealStream(stream)
+	}); err != nil {
+		panic(err)
+	}
+
+	// wait for finish
+	<-done
+	if err := processor.Stop(); err != nil {
+		panic(err)
+	}
+	return
+}

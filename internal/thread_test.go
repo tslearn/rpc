@@ -32,42 +32,12 @@ func TestNewThread(t *testing.T) {
 	//assert(cap(rpcThread.closeCH)).Equals(0)
 }
 
-func runWithProcessor(
-	handler interface{},
-	getStream func(processor *Processor) *Stream,
-	onTest func(in *Stream, out *Stream, success bool),
-) {
-	//retStreamCH := make(chan *Stream)
-	//retSuccessCH := make(chan bool)
-	//processor := NewProcessor(
-	//	16,
-	//	16,
-	//	func(stream *Stream, success bool) {
-	//		retStreamCH <- stream
-	//		retSuccessCH <- success
-	//	},
-	//	&testFuncCache{},
-	//)
-	//_ = processor.AddChildService(
-	//	"user",
-	//	NewService().Reply("sayHello", true, handler),
-	//	"",
-	//)
-	//
-	//inStream := getStream(processor)
-	//processor.Start()
-	//processor.PutStream(inStream)
-	//retStream := <-retStreamCH
-	//retSuccess := <-retSuccessCH
-	//onTest(inStream, retStream, retSuccess)
-	//processor.Stop()
-}
-
 func TestRpcThread_eval(t *testing.T) {
 	assert := NewAssert(t)
 
 	// test basic
 	runWithProcessor(
+		true,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
@@ -81,8 +51,7 @@ func TestRpcThread_eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-		func(in *Stream, out *Stream, success bool) {
-			assert(success).Equals(true)
+		func(in *Stream, out *Stream) {
 			// inStream is reset
 			assert(in.GetHeader()).Equals(out.GetHeader())
 			assert(in.GetReadPos()).Equals(streamBodyPos)
