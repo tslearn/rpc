@@ -196,12 +196,22 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelError("rpc: kernel error").AddDebug(string(debug.Stack())),
+						NewKernelError(ErrStringRuntime).AddDebug(string(debug.Stack())),
 					)
 				}
 			}()
 
-			if p.execReplyNode != nil && p.execReplyNode.indicator != nil {
+			if p.execReplyNode != nil {
+				if p.execStatus == rpcThreadExecNone {
+					p.WriteError(
+						NewReplyPanic(ConcatString(
+							"rpc: ",
+							p.execReplyNode.GetPath(),
+							" must return through Context.OK or Context.Error",
+						)),
+					)
+				}
+
 				p.execReplyNode.indicator.Count(
 					TimeNow().Sub(timeStart),
 					p.execStatus == rpcThreadExecSuccess,
