@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"reflect"
 	"runtime/debug"
 	"strconv"
@@ -186,7 +187,7 @@ func (p *rpcThread) Eval(
 			// report panic
 			ReportPanic(
 				NewReplyPanic(
-					ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+					fmt.Sprintf("rpc: %s runtime error: %v", p.GetExecReplyNodePath(), v),
 				).AddDebug(string(debug.Stack())),
 			)
 
@@ -210,8 +211,11 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelError(
-							ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+						NewKernelError(fmt.Sprintf(
+							"rpc: %s runtime error: %v",
+							p.GetExecReplyNodePath(),
+							v,
+						),
 						).AddDebug(string(debug.Stack())),
 					)
 				}

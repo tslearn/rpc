@@ -1,6 +1,8 @@
 package internal
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 func getFakeOnEvalFinish() func(*rpcThread, *Stream) {
 	return func(thread *rpcThread, stream *Stream) {}
@@ -122,8 +124,9 @@ func testRunWithProcessor(
 	handler interface{},
 	getStream func(processor *Processor) *Stream,
 ) (ret interface{}, retError Error, retPanic Error) {
-	done := make(chan bool)
+	done := make(chan bool, 1024)
 	fnDealStream := func(stream *Stream) {
+		done <- true
 		stream.SetReadPosToBodyStart()
 		if stream.GetStreamKind() == StreamKindResponseOK {
 			if v, ok := stream.Read(); ok {
@@ -131,7 +134,6 @@ func testRunWithProcessor(
 					panic("internal error")
 				} else {
 					ret = v
-					done <- true
 				}
 			} else {
 				panic("internal error")
@@ -150,14 +152,12 @@ func testRunWithProcessor(
 						panic("internal error")
 					} else {
 						retError = err
-						done <- true
 					}
 				} else if stream.GetStreamKind() == StreamKindResponsePanic {
 					if retPanic != nil {
 						panic("internal error")
 					} else {
 						retPanic = err
-						done <- true
 					}
 				}
 			}
@@ -167,7 +167,7 @@ func testRunWithProcessor(
 
 	processor := NewProcessor(
 		isDebug,
-		8192,
+		1024,
 		16,
 		16,
 		fnCache,
@@ -194,8 +194,10 @@ func testRunWithProcessor(
 
 	// wait for finish
 	<-done
+
 	if err := processor.Stop(); err != nil {
 		panic(err)
 	}
+
 	return
 }

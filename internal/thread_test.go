@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -747,15 +745,79 @@ func TestRpcThread_Eval(t *testing.T) {
 	//   return stream
 	// },
 	//)).Equals(true, nil, nil)
+	//
+	//// Test(26) unsupported type
+	//assert(testRunWithProcessor(false, nil,
+	//	func(ctx *ContextObject, a bool) *ReturnObject {
+	//		return ctx.OK(a)
+	//	},
+	//	func(processor *Processor) *Stream {
+	//		replyNode := processor.repliesMap["$.test:Eval"]
+	//		replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(true)
+	//		return stream
+	//	},
+	//)).Equals(
+	//	nil,
+	//	NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+	//	nil,
+	//)
+	//
+	//// Test(27) test
+	//ret27, error27, panic27 := testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+	//		return ctx.OK(bVal)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write(nil)
+	//		stream.Write(nil)
+	//		stream.Write(nil)
+	//		return stream
+	//	},
+	//)
+	//assert(ret27, panic27).IsNil()
+	//assert(error27.GetKind()).Equals(ErrorKindReply)
+	//assert(error27.GetMessage()).Equals(
+	//	"rpc: $.test:Eval reply arguments does not match\n" +
+	//		"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
+	//		"got: $.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
+	//)
+	//assert(strings.Contains(error27.GetDebug(), "$.test:Eval")).IsTrue()
+	//assert(strings.Contains(error27.GetDebug(), "types_test.go:")).IsTrue()
+	//
+	//// Test(28) badStream
+	//assert(testRunWithProcessor(true, nil,
+	//	func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+	//		return ctx.OK(bVal)
+	//	},
+	//	func(_ *Processor) *Stream {
+	//		stream := NewStream()
+	//		stream.WriteString("$.test:Eval")
+	//		stream.WriteUint64(3)
+	//		stream.WriteString("#")
+	//		stream.Write("helloWorld")
+	//		stream.SetWritePos(stream.GetWritePos() - 1)
+	//		return stream
+	//	},
+	//)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
-	// Test(26) unsupported type
-	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject, a bool) *ReturnObject {
-			return ctx.OK(a)
+	// Test(29) call function error
+	ret29, error29, panic29 := testRunWithProcessor(false, nil,
+		func(ctx *ContextObject, bVal bool) *ReturnObject {
+			if bVal {
+				panic("this is a error")
+			}
+			return ctx.OK(bVal)
 		},
-		func(processor *Processor) *Stream {
-			replyNode := processor.repliesMap["$.test:Eval"]
-			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("$.test:Eval")
 			stream.WriteUint64(3)
@@ -763,55 +825,11 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
-	)).Equals(
-		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
-		nil,
 	)
+	assert(ret29, error29).Equals(nil, NewReplyError("rpc: $.test:Eval runtime error"))
+	assert(panic29.GetKind()).Equals()
 
-	// Test(27) test
-	ret27, error27, panic27 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-			return ctx.OK(bVal)
-		},
-		func(_ *Processor) *Stream {
-			stream := NewStream()
-			stream.WriteString("$.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.Write(nil)
-			stream.Write(nil)
-			stream.Write(nil)
-			return stream
-		},
-	)
-	assert(ret27, panic27).IsNil()
-	assert(error27.GetKind()).Equals(ErrorKindReply)
-	assert(error27.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
-	)
-	assert(strings.Contains(error27.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error27.GetDebug(), "types_test.go:")).IsTrue()
-
-	// Test(28) badStream
-	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
-			return ctx.OK(bVal)
-		},
-		func(_ *Processor) *Stream {
-			stream := NewStream()
-			stream.WriteString("$.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.Write("helloWorld")
-			stream.SetWritePos(stream.GetWritePos() - 1)
-			return stream
-		},
-	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
-
-	// Test(29) call function error
+	// Test(30) call function error
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, bVal bool) *ReturnObject {
 			if bVal {
