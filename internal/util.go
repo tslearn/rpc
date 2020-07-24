@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -24,11 +23,11 @@ var (
 	arrayType   = reflect.ValueOf(Array{}).Type()
 	mapType     = reflect.ValueOf(Map{}).Type()
 
-	seedInt64              = int64(10000)
+	seedInt64 = int64(10000)
+
 	timeNowPointer         = (unsafe.Pointer)(nil)
 	timeCacheFailedCounter = NewSpeedCounter()
-
-	defaultISODateBuffer = []byte{
+	defaultISODateBuffer   = []byte{
 		0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x2D, 0x30, 0x30,
 		0x54, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E,
 		0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
@@ -37,12 +36,6 @@ var (
 	intToStringCache3 = make([][]byte, 1000, 1000)
 	intToStringCache4 = make([][]byte, 10000, 10000)
 
-	littleBufCache = sync.Pool{
-		New: func() interface{} {
-			buf := make([]byte, 32)
-			return &buf
-		},
-	}
 	goroutinePrefix = "goroutine "
 	base64String    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"abcdefghijklmnopqrstuvwxyz" +
@@ -61,30 +54,24 @@ func init() {
 		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
 	}
 	for i := 0; i < 100; i++ {
-		for j := 0; j < 2; j++ {
-			intToStringCache2[i] = []byte{
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
+		intToStringCache2[i] = []byte{
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
 		}
 	}
 	for i := 0; i < 1000; i++ {
-		for j := 0; j < 3; j++ {
-			intToStringCache3[i] = []byte{
-				charToASCII[(i/100)%10],
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
+		intToStringCache3[i] = []byte{
+			charToASCII[(i/100)%10],
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
 		}
 	}
 	for i := 0; i < 10000; i++ {
-		for j := 0; j < 4; j++ {
-			intToStringCache4[i] = []byte{
-				charToASCII[(i/1000)%10],
-				charToASCII[(i/100)%10],
-				charToASCII[(i/10)%10],
-				charToASCII[i%10],
-			}
+		intToStringCache4[i] = []byte{
+			charToASCII[(i/1000)%10],
+			charToASCII[(i/100)%10],
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
 		}
 	}
 }
@@ -219,8 +206,8 @@ func runStoreTime() {
 	}
 }
 
-func onCacheFailed() {
-	if timeCacheFailedCounter.Count()%20000 == 0 {
+func onTimeCacheFailed() {
+	if timeCacheFailedCounter.Count()%10000 == 0 {
 		if speed, _ := timeCacheFailedCounter.Calculate(
 			TimeNow(),
 		); speed > 10000 {
@@ -275,7 +262,7 @@ func TimeNow() time.Time {
 		return item.time
 	}
 
-	onCacheFailed()
+	onTimeCacheFailed()
 	return time.Now()
 }
 
@@ -285,7 +272,7 @@ func TimeNowISOString() string {
 		return item.timeISOString
 	}
 
-	onCacheFailed()
+	onTimeCacheFailed()
 	return ConvertToIsoDateString(time.Now())
 }
 
@@ -298,6 +285,7 @@ func GetSeed() int64 {
 func GetRandString(strLen int) string {
 	sb := NewStringBuilder()
 	defer sb.Release()
+
 	for strLen > 0 {
 		rand64 := rand.Uint64()
 		for used := 0; used < 10 && strLen > 0; used++ {
@@ -331,17 +319,6 @@ func AddPrefixPerLine(text string, prefix string) string {
 	return sb.String()
 }
 
-// FindLinesByPrefix find the lines start with prefix string
-func FindLinesByPrefix(text string, prefix string) []string {
-	ret := make([]string, 0, 0)
-	for _, v := range strings.Split(text, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(v), strings.TrimSpace(prefix)) {
-			ret = append(ret, v)
-		}
-	}
-	return ret
-}
-
 // ConcatString ...
 func ConcatString(args ...string) string {
 	sb := NewStringBuilder()
@@ -352,6 +329,7 @@ func ConcatString(args ...string) string {
 	return sb.String()
 }
 
+// GetFileLine ...
 func GetFileLine(skip uint) string {
 	return AddFileLine("", skip+1)
 }
@@ -370,6 +348,8 @@ func AddFileLine(header string, skip uint) string {
 		sb.AppendString(file)
 		sb.AppendByte(':')
 		sb.AppendString(strconv.Itoa(line))
+	} else {
+		sb.AppendString(header)
 	}
 
 	return sb.String()
@@ -394,39 +374,21 @@ func ConvertOrdinalToString(n uint) string {
 }
 
 func CurrentGoroutineID() (ret int64) {
-	defer func() {
-		recover()
-	}()
+	buf := [32]byte{}
 
-	bp := littleBufCache.Get().(*[]byte)
-	defer littleBufCache.Put(bp)
-	b := *bp
-	b = b[:runtime.Stack(b, false)]
+	// Parse the 4707 out of "goroutine 4707 ["
+	str := strings.TrimPrefix(
+		string(buf[:runtime.Stack(buf[:], false)]),
+		goroutinePrefix,
+	)
 
-	if !strings.HasPrefix(string(b), goroutinePrefix) {
-		return 0
-	} else {
-		b = b[len(goroutinePrefix):]
-	}
-
-	ret = 0
-	pos := 0
-	for pos < 22 {
-		if ch := b[pos]; ch < 48 || ch > 57 {
-			break
-		} else {
-			b[pos] = ch - 48
-			pos++
+	if lastPos := strings.IndexByte(str, ' '); lastPos > 0 {
+		if id, err := strconv.ParseInt(str[:lastPos], 10, 64); err == nil {
+			return id
 		}
 	}
 
-	weight := int64(1)
-	for pos > 0 {
-		pos--
-		ret += int64(b[pos]) * weight
-		weight *= 10
-	}
-	return ret
+	return 0
 }
 
 func checkArray(v Array, path string, depth int) string {

@@ -30,39 +30,39 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(fn1)).Equals("", false)
 	fn2 := func(_ chan bool) {}
 	assert(getFuncKind(fn2)).Equals("", false)
-	fn3 := func(ctx *ContextObject, _ bool) *ReturnObject { return nilReturn }
+	fn3 := func(ctx Context, _ bool) Return { return nilReturn }
 	assert(getFuncKind(fn3)).Equals("B", true)
-	fn4 := func(ctx *ContextObject, _ int64) *ReturnObject { return nilReturn }
+	fn4 := func(ctx Context, _ int64) Return { return nilReturn }
 	assert(getFuncKind(fn4)).Equals("I", true)
-	fn5 := func(ctx *ContextObject, _ uint64) *ReturnObject { return nilReturn }
+	fn5 := func(ctx Context, _ uint64) Return { return nilReturn }
 	assert(getFuncKind(fn5)).Equals("U", true)
-	fn6 := func(ctx *ContextObject, _ float64) *ReturnObject { return nilReturn }
+	fn6 := func(ctx Context, _ float64) Return { return nilReturn }
 	assert(getFuncKind(fn6)).Equals("F", true)
-	fn7 := func(ctx *ContextObject, _ string) *ReturnObject { return nilReturn }
+	fn7 := func(ctx Context, _ string) Return { return nilReturn }
 	assert(getFuncKind(fn7)).Equals("S", true)
-	fn8 := func(ctx *ContextObject, _ Bytes) *ReturnObject { return nilReturn }
+	fn8 := func(ctx Context, _ Bytes) Return { return nilReturn }
 	assert(getFuncKind(fn8)).Equals("X", true)
-	fn9 := func(ctx *ContextObject, _ Array) *ReturnObject { return nilReturn }
+	fn9 := func(ctx Context, _ Array) Return { return nilReturn }
 	assert(getFuncKind(fn9)).Equals("A", true)
-	fn10 := func(ctx *ContextObject, _ Map) *ReturnObject { return nilReturn }
+	fn10 := func(ctx Context, _ Map) Return { return nilReturn }
 	assert(getFuncKind(fn10)).Equals("M", true)
 
-	fn11 := func(ctx *ContextObject) *ReturnObject { return nilReturn }
+	fn11 := func(ctx Context) Return { return nilReturn }
 	assert(getFuncKind(fn11)).Equals("", true)
 
 	// no return
-	fn12 := func(ctx *ContextObject, _ bool) {}
+	fn12 := func(ctx Context, _ bool) {}
 	assert(getFuncKind(fn12)).Equals("", false)
 
 	// value type not supported
-	fn13 := func(ctx *ContextObject, _ chan bool) *ReturnObject { return nilReturn }
+	fn13 := func(ctx Context, _ chan bool) Return { return nilReturn }
 	assert(getFuncKind(fn13)).Equals("", false)
 
 	fn14 := func(
-		ctx *ContextObject,
+		ctx Context,
 		_ bool, _ int64, _ uint64, _ float64, _ string,
 		_ Bytes, _ Array, _ Map,
-	) *ReturnObject {
+	) Return {
 		return nilReturn
 	}
 	assert(getFuncKind(fn14)).Equals("BIUFSXAM", true)
@@ -93,24 +93,24 @@ func TestGetArgumentsErrorPosition(t *testing.T) {
 	fn2 := func(_ chan bool) {}
 
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn2))).Equals(0)
-	fn3 := func(ctx *ContextObject, _ bool, _ chan bool) {}
+	fn3 := func(ctx Context, _ bool, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn3))).Equals(2)
-	fn4 := func(ctx *ContextObject, _ int64, _ chan bool) {}
+	fn4 := func(ctx Context, _ int64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn4))).Equals(2)
-	fn5 := func(ctx *ContextObject, _ uint64, _ chan bool) {}
+	fn5 := func(ctx Context, _ uint64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn5))).Equals(2)
-	fn6 := func(ctx *ContextObject, _ float64, _ chan bool) {}
+	fn6 := func(ctx Context, _ float64, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn6))).Equals(2)
-	fn7 := func(ctx *ContextObject, _ string, _ chan bool) {}
+	fn7 := func(ctx Context, _ string, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn7))).Equals(2)
-	fn8 := func(ctx *ContextObject, _ Bytes, _ chan bool) {}
+	fn8 := func(ctx Context, _ Bytes, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn8))).Equals(2)
-	fn9 := func(ctx *ContextObject, _ Array, _ chan bool) {}
+	fn9 := func(ctx Context, _ Array, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn9))).Equals(2)
-	fn10 := func(ctx *ContextObject, _ Map, _ chan bool) {}
+	fn10 := func(ctx Context, _ Map, _ chan bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn10))).Equals(2)
 
-	fn11 := func(ctx *ContextObject, _ bool) {}
+	fn11 := func(ctx Context, _ bool) {}
 	assert(getArgumentsErrorPosition(reflect.ValueOf(fn11))).Equals(-1)
 }
 
@@ -264,45 +264,6 @@ func TestConcatString(t *testing.T) {
 	assert(ConcatString("a", "b", "c")).Equals("abc")
 }
 
-//func TestGetStackString(t *testing.T) {
-//	assert := NewAssert(t)
-//	assert(strings.Contains(FindLinesByPrefix(
-//		GetStackString(0),
-//		"-01",
-//	)[0], "TestGetStackString")).IsTrue()
-//	assert(strings.Contains(FindLinesByPrefix(
-//		GetStackString(0),
-//		"-01",
-//	)[0], "util_test")).IsTrue()
-//}
-
-func TestFindLinesByPrefix(t *testing.T) {
-	assert := NewAssert(t)
-
-	ret := FindLinesByPrefix("", "")
-	assert(len(ret)).Equals(1)
-	assert(ret[0]).Equals("")
-
-	ret = FindLinesByPrefix("", "hello")
-	assert(len(ret)).Equals(0)
-
-	ret = FindLinesByPrefix("hello", "dd")
-	assert(len(ret)).Equals(0)
-
-	ret = FindLinesByPrefix("  hello world", "hello")
-	assert(len(ret)).Equals(1)
-	assert(ret[0]).Equals("  hello world")
-
-	ret = FindLinesByPrefix(" \t hello world", "hello")
-	assert(len(ret)).Equals(1)
-	assert(ret[0]).Equals(" \t hello world")
-
-	ret = FindLinesByPrefix(" \t hello world\nhello\n", "hello")
-	assert(len(ret)).Equals(2)
-	assert(ret[0]).Equals(" \t hello world")
-	assert(ret[1]).Equals("hello")
-}
-
 func TestConvertOrdinalToString(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -324,9 +285,12 @@ func TestAddFileLine(t *testing.T) {
 	assert(strings.Contains(fileLine1, "util_test.go")).IsTrue()
 
 	// Test(2)
-	fileLine := AddFileLine("", 0)
-	assert(strings.HasPrefix(fileLine, " ")).IsFalse()
-	assert(strings.Contains(fileLine, "util_test.go")).IsTrue()
+	fileLine2 := AddFileLine("", 0)
+	assert(strings.HasPrefix(fileLine2, " ")).IsFalse()
+	assert(strings.Contains(fileLine2, "util_test.go")).IsTrue()
+
+	// Test(3)
+	assert(AddFileLine("header", 1000)).Equals("header")
 }
 
 func TestGetFileLine(t *testing.T) {
@@ -374,7 +338,7 @@ func TestCheckValue(t *testing.T) {
 	assert(CheckValue(Array(nil), 1)).Equals("")
 	assert(CheckValue(Map(nil), 1)).Equals("")
 	assert(CheckValue(true, 1)).Equals("")
-	assert(CheckValue(int(1), 1)).Equals("")
+	assert(CheckValue(1, 1)).Equals("")
 	assert(CheckValue(int8(1), 1)).Equals("")
 	assert(CheckValue(int16(1), 1)).Equals("")
 	assert(CheckValue(int32(1), 1)).Equals("")
@@ -450,9 +414,11 @@ func BenchmarkTimeNowISOString(b *testing.B) {
 
 func BenchmarkCurGoroutineID(b *testing.B) {
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		CurrentGoroutineID()
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			CurrentGoroutineID()
+		}
+	})
 }
 
 func BenchmarkRunWithPanicCatch(b *testing.B) {

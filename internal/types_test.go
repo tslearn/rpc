@@ -14,7 +14,7 @@ func getFakeThread(debug bool) *rpcThread {
 	return newThread(getFakeProcessor(debug), getFakeOnEvalFinish())
 }
 
-func getFakeContext(debug bool) *ContextObject {
+func getFakeContext(debug bool) Context {
 	return &ContextObject{thread: unsafe.Pointer(getFakeThread(debug))}
 }
 
