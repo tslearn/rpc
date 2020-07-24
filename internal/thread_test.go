@@ -21,7 +21,7 @@ func TestNewThread(t *testing.T) {
 	//assert(len(rpcThread.ch)).Equals(0)
 	//assert(cap(rpcThread.ch)).Equals(0)
 	//assert(rpcThread.inStream).IsNil()
-	//assert(rpcThread.outStream).IsNotNil()
+	//assert(rpcThread.execStream).IsNotNil()
 	//assert(rpcThread.execDepth).Equals(uint64(0))
 	//assert(rpcThread.execReplyNode).IsNil()
 	//assert(len(rpcThread.execArgs)).Equals(0)

@@ -18,7 +18,7 @@ const (
 type rpcThread struct {
 	processor     *Processor
 	ch            chan *Stream
-	outStream     *Stream
+	execStream    *Stream
 	execDepth     uint64
 	execReplyNode *rpcReplyNode
 	execArgs      []reflect.Value
@@ -43,7 +43,7 @@ func newThread(
 		thread := &rpcThread{
 			processor:     processor,
 			ch:            make(chan *Stream),
-			outStream:     NewStream(),
+			execStream:    NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
@@ -74,17 +74,17 @@ func (p *rpcThread) Stop() bool {
 		if p.closeCH != nil {
 			return false
 		} else {
-			closeCH := p.closeCH
-			p.closeCH = nil
 			close(p.ch)
 			select {
 			case <-time.After(10 * time.Second):
+				p.closeCH = nil
 				return false
-			case <-closeCH:
-				if p.outStream != nil {
-					p.outStream.Release()
-					p.outStream = nil
+			case <-p.closeCH:
+				if p.execStream != nil {
+					p.execStream.Release()
+					p.execStream = nil
 				}
+				p.closeCH = nil
 				return true
 			}
 		}
@@ -114,7 +114,7 @@ func (p *rpcThread) GetExecReplyNodeDebug() string {
 }
 
 func (p *rpcThread) WriteError(err Error) Return {
-	stream := p.outStream
+	stream := p.execStream
 	stream.SetWritePos(streamBodyPos)
 	stream.SetStreamKind(StreamKindResponseError)
 	stream.WriteUint64(uint64(err.GetKind()))
@@ -125,7 +125,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 }
 
 func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
-	stream := p.outStream
+	stream := p.execStream
 	stream.SetWritePos(streamBodyPos)
 	stream.SetStreamKind(StreamKindResponseOK)
 
@@ -199,8 +199,8 @@ func (p *rpcThread) Eval(
 
 			ctx.stop()
 			inStream.Reset()
-			retStream := p.outStream
-			p.outStream = inStream
+			retStream := p.execStream
+			p.execStream = inStream
 			p.from = ""
 			p.execDepth = 0
 			p.execReplyNode = nil
@@ -210,7 +210,7 @@ func (p *rpcThread) Eval(
 	}()
 
 	// copy head
-	copy(p.outStream.GetHeader(), inStream.GetHeader())
+	copy(p.execStream.GetHeader(), inStream.GetHeader())
 
 	// read reply path
 	replyPath, ok := inStream.ReadUnsafeString()
