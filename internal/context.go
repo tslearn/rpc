@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"runtime/debug"
 	"sync/atomic"
 	"unsafe"
 )
@@ -39,7 +40,7 @@ func (p *ContextObject) getThread() *rpcThread {
 func (p *ContextObject) stop() bool {
 	if p == nil {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return false
 	} else {

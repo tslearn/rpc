@@ -71,12 +71,12 @@ func newThread(
 
 func (p *rpcThread) Stop() bool {
 	return p.CallWithLock(func() interface{} {
-		if p.closeCH != nil {
+		if p.closeCH == nil {
 			return false
 		} else {
 			close(p.inputCH)
 			select {
-			case <-time.After(10 * time.Second):
+			case <-time.After(20 * time.Second):
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:
@@ -114,34 +114,47 @@ func (p *rpcThread) GetExecReplyNodeDebug() string {
 }
 
 func (p *rpcThread) WriteError(err Error) Return {
-	stream := p.execStream
-	stream.SetWritePos(streamBodyPos)
-	stream.SetStreamKind(StreamKindResponseError)
-	stream.WriteUint64(uint64(err.GetKind()))
-	stream.WriteString(err.GetMessage())
-	stream.WriteString(err.GetDebug())
-	p.execStatus = rpcThreadExecFailed
-	return nilReturn
+	if stream := p.execStream; stream != nil {
+		stream := p.execStream
+		stream.SetWritePosToBodyStart()
+		stream.SetStreamKind(StreamKindResponseError)
+		stream.WriteUint64(uint64(err.GetKind()))
+		stream.WriteString(err.GetMessage())
+		stream.WriteString(err.GetDebug())
+		p.execStatus = rpcThreadExecFailed
+		return nilReturn
+	} else {
+		ReportPanic(
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+		)
+		return nilReturn
+	}
 }
 
 func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
-	stream := p.execStream
-	stream.SetWritePos(streamBodyPos)
-	stream.SetStreamKind(StreamKindResponseOK)
+	if stream := p.execStream; stream != nil {
+		stream.SetWritePosToBodyStart()
+		stream.SetStreamKind(StreamKindResponseOK)
 
-	if stream.Write(value) == StreamWriteOK {
-		p.execStatus = rpcThreadExecSuccess
-		return nilReturn
-	} else if reason := CheckValue(value, 64); reason != "" {
-		return p.WriteError(
-			NewReplyError(ConcatString("rpc: ", reason)).
-				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
-		)
+		if stream.Write(value) == StreamWriteOK {
+			p.execStatus = rpcThreadExecSuccess
+			return nilReturn
+		} else if reason := CheckValue(value, 64); reason != "" {
+			return p.WriteError(
+				NewReplyError(ConcatString("rpc: ", reason)).
+					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
+			)
+		} else {
+			return p.WriteError(
+				NewReplyError("rpc: value is not supported").
+					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
+			)
+		}
 	} else {
-		return p.WriteError(
-			NewReplyError("rpc: value is not supported").
-				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
+		ReportPanic(
+			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
+		return nilReturn
 	}
 }
 
