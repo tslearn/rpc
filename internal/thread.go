@@ -17,7 +17,6 @@ const (
 
 type rpcThread struct {
 	processor     *Processor
-	isRunning     bool
 	ch            chan *Stream
 	outStream     *Stream
 	execDepth     uint64
@@ -26,7 +25,7 @@ type rpcThread struct {
 	execStatus    int
 	from          string
 	closeCH       chan bool
-	goid          int64
+	goroutineId   int64
 	Lock
 }
 
@@ -43,7 +42,6 @@ func newThread(
 	go func() {
 		thread := &rpcThread{
 			processor:     processor,
-			isRunning:     true,
 			ch:            make(chan *Stream, 1),
 			outStream:     NewStream(),
 			execDepth:     0,
@@ -51,12 +49,12 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			from:          "",
-			closeCH:       make(chan bool),
-			goid:          0,
+			closeCH:       make(chan bool, 1),
+			goroutineId:   0,
 		}
 
 		if processor.IsDebug() {
-			thread.goid = CurrentGoroutineID()
+			thread.goroutineId = CurrentGoroutineID()
 		}
 
 		retCH <- thread
@@ -73,15 +71,15 @@ func newThread(
 
 func (p *rpcThread) Stop() bool {
 	return p.CallWithLock(func() interface{} {
-		if !p.isRunning {
+		if closeCH := p.closeCH; closeCH == nil {
 			return false
 		} else {
-			p.isRunning = false
+			p.closeCH = nil
 			close(p.ch)
 			select {
 			case <-time.After(10 * time.Second):
 				return false
-			case <-p.closeCH:
+			case <-closeCH:
 				if p.outStream != nil {
 					p.outStream.Release()
 					p.outStream = nil
@@ -92,8 +90,8 @@ func (p *rpcThread) Stop() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) GetGoId() int64 {
-	return p.goid
+func (p *rpcThread) GetGoroutineId() int64 {
+	return p.goroutineId
 }
 
 func (p *rpcThread) IsDebug() bool {

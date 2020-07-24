@@ -26,7 +26,7 @@ func (p *ContextObject) getThread() *rpcThread {
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
-	} else if thread.GetGoId() != CurrentGoroutineID() {
+	} else if thread.GetGoroutineId() != CurrentGoroutineID() {
 		ReportPanic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
