@@ -80,10 +80,8 @@ func (p *rpcThread) Stop() bool {
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:
-				if p.execStream != nil {
-					p.execStream.Release()
-					p.execStream = nil
-				}
+				p.execStream.Release()
+				p.execStream = nil
 				p.closeCH = nil
 				return true
 			}
@@ -173,10 +171,13 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 func (p *rpcThread) Eval(
 	inStream *Stream,
 	onEvalFinish func(*rpcThread, *Stream),
-) *ReturnObject {
+) Return {
 	timeStart := TimeNow()
-	// create context
+	inStream.SetReadPosToBodyStart()
 	p.execStatus = rpcThreadExecNone
+	// copy head
+	copy(p.execStream.GetHeader(), inStream.GetHeader())
+	// create context
 	ctx := &ContextObject{
 		thread: unsafe.Pointer(p),
 	}
@@ -222,170 +223,151 @@ func (p *rpcThread) Eval(
 		}()
 	}()
 
-	// copy head
-	copy(p.execStream.GetHeader(), inStream.GetHeader())
-
 	// read reply path
-	replyPath, ok := inStream.ReadUnsafeString()
-	if !ok {
-		return p.WriteError(NewProtocolError("rpc data format error"))
-	}
-	if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return p.WriteError(NewProtocolError(fmt.Sprintf(
-			"rpc-server: reply path %s is not mounted",
-			replyPath,
-		)))
-	}
-
-	// read depth
-	if p.execDepth, ok = inStream.ReadUint64(); !ok {
-		return p.WriteError(NewProtocolError("rpc data format error"))
-	}
-	if p.execDepth > p.processor.maxCallDepth {
-		return p.WriteError(NewProtocolError(fmt.Sprintf(
-			"rpc current call depth(%d) is overflow. limited(%d)",
-			p.execDepth,
-			p.processor.maxCallDepth,
-		)))
-	}
-
-	// read execFrom
-	if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
-		return p.WriteError(NewProtocolError("rpc data format error"))
-	}
-
-	// build callArgs
-	argStartPos := inStream.GetReadPos()
-
-	if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
-		ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
+	if replyPath, ok := inStream.ReadUnsafeString(); !ok {
+		return p.WriteError(NewProtocolError(ErrStringBadStream))
+	} else if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
+		return p.WriteError(
+			NewReplyError(ConcatString("rpc: target ", replyPath, " does not exist")),
+		)
+	} else if p.execDepth, ok = inStream.ReadUint64(); !ok {
+		return p.WriteError(NewProtocolError(ErrStringBadStream))
+	} else if p.execDepth > p.processor.maxCallDepth {
+		return p.WriteError(
+			NewReplyError(ConcatString("rpc: call ", replyPath, " overflows")),
+		)
+	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
+		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else {
-		p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
-		for i := 1; i < len(p.execReplyNode.argTypes); i++ {
-			var rv reflect.Value
+		if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
+			ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
+		} else {
+			p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
+			for i := 1; i < len(p.execReplyNode.argTypes); i++ {
+				var rv reflect.Value
 
-			switch p.execReplyNode.argTypes[i].Kind() {
-			case reflect.Int64:
-				if iVar, success := inStream.ReadInt64(); success {
-					rv = reflect.ValueOf(iVar)
-				} else {
-					ok = false
-				}
-				break
-			case reflect.Uint64:
-				if uVar, success := inStream.ReadUint64(); success {
-					rv = reflect.ValueOf(uVar)
-				} else {
-					ok = false
-				}
-				break
-			case reflect.Float64:
-				if fVar, success := inStream.ReadFloat64(); success {
-					rv = reflect.ValueOf(fVar)
-				} else {
-					ok = false
-				}
-				break
-			case reflect.Bool:
-				if bVar, success := inStream.ReadBool(); success {
-					rv = reflect.ValueOf(bVar)
-				} else {
-					ok = false
-				}
-				break
-			case reflect.String:
-				sVar, success := inStream.ReadString()
-				if !success {
-					ok = false
-				} else {
-					rv = reflect.ValueOf(sVar)
-				}
-				break
-			default:
 				switch p.execReplyNode.argTypes[i] {
+				case int64Type:
+					if iVar, success := inStream.ReadInt64(); success {
+						rv = reflect.ValueOf(iVar)
+					} else {
+						ok = false
+					}
+				case uint64Type:
+					if uVar, success := inStream.ReadUint64(); success {
+						rv = reflect.ValueOf(uVar)
+					} else {
+						ok = false
+					}
+				case float64Type:
+					if fVar, success := inStream.ReadFloat64(); success {
+						rv = reflect.ValueOf(fVar)
+					} else {
+						ok = false
+					}
+				case boolType:
+					if bVar, success := inStream.ReadBool(); success {
+						rv = reflect.ValueOf(bVar)
+					} else {
+						ok = false
+					}
+				case stringType:
+					if sVar, success := inStream.ReadString(); success {
+						rv = reflect.ValueOf(sVar)
+					} else {
+						ok = false
+					}
 				case bytesType:
 					if xVar, success := inStream.ReadBytes(); success {
 						rv = reflect.ValueOf(xVar)
 					} else {
 						ok = false
 					}
-					break
 				case arrayType:
 					if aVar, success := inStream.ReadArray(); success {
 						rv = reflect.ValueOf(aVar)
 					} else {
 						ok = false
 					}
-					break
 				case mapType:
 					if mVar, success := inStream.ReadMap(); success {
 						rv = reflect.ValueOf(mVar)
 					} else {
 						ok = false
 					}
-					break
 				default:
 					ok = false
 				}
+
+				if !ok {
+					break
+				} else {
+					p.execArgs = append(p.execArgs, rv)
+				}
 			}
 
-			if !ok {
-				break
+			if ok {
+				if !inStream.IsReadFinish() {
+					ok = false
+				} else {
+					p.execReplyNode.reflectFn.Call(p.execArgs)
+				}
 			}
-
-			p.execArgs = append(p.execArgs, rv)
 		}
 
-		if ok && !inStream.CanRead() {
-			p.execReplyNode.reflectFn.Call(p.execArgs)
-		}
-	}
-
-	// if stream data format error
-	if !ok || inStream.CanRead() {
-		inStream.SetReadPos(argStartPos)
-		remoteArgsType := make([]string, 0, 0)
-		remoteArgsType = append(remoteArgsType, convertTypeToString(contextType))
-		for inStream.CanRead() {
-			val, ok := inStream.Read()
-
-			if !ok {
-				return p.WriteError(NewProtocolError("rpc data format error"))
-			}
-
-			if val == nil {
-				if len(remoteArgsType) < len(p.execReplyNode.argTypes) {
-					argType := p.execReplyNode.argTypes[len(remoteArgsType)]
-
-					if argType == bytesType ||
-						argType == arrayType ||
-						argType == mapType {
-						remoteArgsType = append(
-							remoteArgsType,
-							convertTypeToString(argType),
-						)
+		if ok {
+			return nilReturn
+		} else if !p.IsDebug() {
+			return p.WriteError(
+				NewReplyError(ConcatString(
+					"rpc: reply ",
+					replyPath,
+					" arguments does not match",
+				)),
+			)
+		} else {
+			remoteArgsType := make([]string, 0, 0)
+			remoteArgsType = append(remoteArgsType, convertTypeToString(contextType))
+			for inStream.CanRead() {
+				if val, ok := inStream.Read(); !ok {
+					return p.WriteError(NewProtocolError(ErrStringBadStream))
+				} else if val != nil {
+					remoteArgsType = append(
+						remoteArgsType,
+						convertTypeToString(reflect.ValueOf(val).Type()),
+					)
+				} else {
+					if len(remoteArgsType) < len(p.execReplyNode.argTypes) {
+						argType := p.execReplyNode.argTypes[len(remoteArgsType)]
+						if argType == bytesType ||
+							argType == arrayType ||
+							argType == mapType {
+							remoteArgsType = append(
+								remoteArgsType,
+								convertTypeToString(argType),
+							)
+						} else {
+							remoteArgsType = append(remoteArgsType, "<nil>")
+						}
 					} else {
 						remoteArgsType = append(remoteArgsType, "<nil>")
 					}
-				} else {
-					remoteArgsType = append(remoteArgsType, "<nil>")
 				}
-			} else {
-				remoteArgsType = append(
-					remoteArgsType,
-					convertTypeToString(reflect.ValueOf(val).Type()),
-				)
 			}
+
+			return p.WriteError(
+				NewReplyError(ConcatString(
+					"rpc: reply ",
+					replyPath,
+					" arguments does not match",
+				)).AddDebug(fmt.Sprintf(
+					"want: %s(%s) %s\ngot: %s",
+					replyPath,
+					strings.Join(remoteArgsType, ", "),
+					convertTypeToString(returnType),
+					p.execReplyNode.callString,
+				)),
+			)
 		}
-
-		return p.WriteError(NewProtocolError(fmt.Sprintf(
-			"rpc reply arguments not match\nCalled: %s(%s) %s\nRequired: %s",
-			replyPath,
-			strings.Join(remoteArgsType, ", "),
-			convertTypeToString(returnType),
-			p.execReplyNode.callString,
-		)).AddDebug(p.GetExecReplyNodeDebug()))
 	}
-
-	return nilReturn
 }
