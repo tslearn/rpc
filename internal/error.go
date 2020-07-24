@@ -6,6 +6,7 @@ const ErrStringUnexpectedNil = "rpc: unexpected nil"
 const ErrStringRunOutOfReplyScope = "rpc: run out of reply goroutine"
 const ErrStringBadStream = "rpc: bad stream"
 const ErrStringTimeout = "rpc: timeout"
+const ErrStringRuntime = "rpc: runtime error"
 
 const (
 	ErrorKindBase       ErrorKind = 0
