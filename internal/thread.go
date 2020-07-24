@@ -245,6 +245,8 @@ func (p *rpcThread) Eval(
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else {
+		argsStreamPos := inStream.GetReadPos()
+
 		if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
 		} else {
@@ -312,17 +314,16 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			if ok {
-				if !inStream.IsReadFinish() {
-					ok = false
-				} else {
-					p.execReplyNode.reflectFn.Call(p.execArgs)
-				}
+			if ok && inStream.IsReadFinish() {
+				p.execReplyNode.reflectFn.Call(p.execArgs)
+				return nilReturn
 			}
 		}
 
 		if ok {
 			return nilReturn
+		} else if !inStream.IsReadFinish() {
+			return p.WriteError(NewProtocolError(ErrStringBadStream))
 		} else if !p.IsDebug() {
 			return p.WriteError(
 				NewReplyError(ConcatString(
@@ -334,6 +335,7 @@ func (p *rpcThread) Eval(
 		} else {
 			remoteArgsType := make([]string, 0, 0)
 			remoteArgsType = append(remoteArgsType, convertTypeToString(contextType))
+			inStream.setReadPosUnsafe(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
 					return p.WriteError(NewProtocolError(ErrStringBadStream))
