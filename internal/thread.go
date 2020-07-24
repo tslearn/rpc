@@ -42,7 +42,7 @@ func newThread(
 	go func() {
 		thread := &rpcThread{
 			processor:     processor,
-			ch:            make(chan *Stream, 1),
+			ch:            make(chan *Stream),
 			outStream:     NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
@@ -71,9 +71,10 @@ func newThread(
 
 func (p *rpcThread) Stop() bool {
 	return p.CallWithLock(func() interface{} {
-		if closeCH := p.closeCH; closeCH == nil {
+		if p.closeCH != nil {
 			return false
 		} else {
+			closeCH := p.closeCH
 			p.closeCH = nil
 			close(p.ch)
 			select {
