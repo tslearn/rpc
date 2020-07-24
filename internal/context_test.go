@@ -86,7 +86,7 @@ func TestContextObject_stop(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(testRunAndCatchPanic(func() {
+	assert(testRunWithCatchPanic(func() {
 		ret, source := Context(nil).stop(), GetFileLine(0)
 		source1 = source
 		assert(ret).IsFalse()
@@ -104,7 +104,7 @@ func TestContextObject_OK(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(testRunAndCatchPanic(func() {
+	assert(testRunWithCatchPanic(func() {
 		ret, source := Context(nil).OK(true), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
@@ -112,7 +112,7 @@ func TestContextObject_OK(t *testing.T) {
 
 	// Test(2)
 	source2 := ""
-	assert(testRunAndCatchPanic(func() {
+	assert(testRunWithCatchPanic(func() {
 		ret, source := (&ContextObject{thread: nil}).OK(true), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
@@ -131,7 +131,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(testRunAndCatchPanic(func() {
+	assert(testRunWithCatchPanic(func() {
 		err := NewBaseError("error")
 		ret, source := Context(nil).Error(err), GetFileLine(0)
 		source1 = source
@@ -140,7 +140,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(2)
 	source2 := ""
-	assert(testRunAndCatchPanic(func() {
+	assert(testRunWithCatchPanic(func() {
 		err := NewReplyError("error")
 		ret, source := (&ContextObject{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source

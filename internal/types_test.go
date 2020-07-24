@@ -18,7 +18,7 @@ func getFakeContext(debug bool) Context {
 	return &ContextObject{thread: unsafe.Pointer(getFakeThread(debug))}
 }
 
-func testRunAndCatchPanic(fn func()) Error {
+func testRunWithCatchPanic(fn func()) Error {
 	ch := make(chan Error, 1)
 	sub := SubscribePanic(func(err Error) {
 		ch <- err
@@ -107,7 +107,7 @@ func testRunOnContext(
 	return ret, retError, retPanic
 }
 
-func runWithPanicCatch(fn func()) (ret interface{}) {
+func testRunWithPanicCatch(fn func()) (ret interface{}) {
 	defer func() {
 		ret = recover()
 	}()
@@ -116,7 +116,7 @@ func runWithPanicCatch(fn func()) (ret interface{}) {
 	return
 }
 
-func runWithProcessor(
+func testRunWithProcessor(
 	isDebug bool,
 	handler interface{},
 	fnCache ReplyCache,
@@ -185,6 +185,12 @@ func runWithProcessor(
 	}); err != nil {
 		panic(err)
 	}
+
+	inStream := getStream(processor)
+	if inStream == nil {
+		panic("internal error")
+	}
+	processor.PutStream(inStream)
 
 	// wait for finish
 	<-done
