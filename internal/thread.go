@@ -16,16 +16,16 @@ const (
 )
 
 type rpcThread struct {
+	goroutineId   int64
 	processor     *Processor
-	ch            chan *Stream
+	inputCH       chan *Stream
+	closeCH       chan bool
 	execStream    *Stream
 	execDepth     uint64
 	execReplyNode *rpcReplyNode
 	execArgs      []reflect.Value
 	execStatus    int
-	from          string
-	closeCH       chan bool
-	goroutineId   int64
+	execFrom      string
 	Lock
 }
 
@@ -42,13 +42,13 @@ func newThread(
 	go func() {
 		thread := &rpcThread{
 			processor:     processor,
-			ch:            make(chan *Stream),
+			inputCH:       make(chan *Stream),
 			execStream:    NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
-			from:          "",
+			execFrom:      "",
 			closeCH:       make(chan bool, 1),
 			goroutineId:   0,
 		}
@@ -59,7 +59,7 @@ func newThread(
 
 		retCH <- thread
 
-		for stream := <-thread.ch; stream != nil; stream = <-thread.ch {
+		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
 			thread.Eval(stream, onEvalFinish)
 		}
 
@@ -74,7 +74,7 @@ func (p *rpcThread) Stop() bool {
 		if p.closeCH != nil {
 			return false
 		} else {
-			close(p.ch)
+			close(p.inputCH)
 			select {
 			case <-time.After(10 * time.Second):
 				p.closeCH = nil
@@ -153,7 +153,7 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 			ret = true
 		}
 	}()
-	p.ch <- stream
+	p.inputCH <- stream
 	return
 }
 
@@ -201,7 +201,7 @@ func (p *rpcThread) Eval(
 			inStream.Reset()
 			retStream := p.execStream
 			p.execStream = inStream
-			p.from = ""
+			p.execFrom = ""
 			p.execDepth = 0
 			p.execReplyNode = nil
 			p.execArgs = p.execArgs[:0]
@@ -236,8 +236,8 @@ func (p *rpcThread) Eval(
 		)))
 	}
 
-	// read from
-	if p.from, ok = inStream.ReadUnsafeString(); !ok {
+	// read execFrom
+	if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError("rpc data format error"))
 	}
 

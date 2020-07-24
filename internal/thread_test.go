@@ -18,8 +18,8 @@ func TestNewThread(t *testing.T) {
 	//assert(rpcThread.threadPool).Equals(threadPool)
 	//assert(rpcThread.isRunning).Equals(true)
 	//assert(rpcThread.threadPool.processor).Equals(processor)
-	//assert(len(rpcThread.ch)).Equals(0)
-	//assert(cap(rpcThread.ch)).Equals(0)
+	//assert(len(rpcThread.inputCH)).Equals(0)
+	//assert(cap(rpcThread.inputCH)).Equals(0)
 	//assert(rpcThread.inStream).IsNil()
 	//assert(rpcThread.execStream).IsNotNil()
 	//assert(rpcThread.execDepth).Equals(uint64(0))
@@ -27,7 +27,7 @@ func TestNewThread(t *testing.T) {
 	//assert(len(rpcThread.execArgs)).Equals(0)
 	//assert(cap(rpcThread.execArgs)).Equals(16)
 	//assert(rpcThread.execSuccessful).IsFalse()
-	//assert(rpcThread.from).Equals("")
+	//assert(rpcThread.execFrom).Equals("")
 	//assert(len(rpcThread.closeCH)).Equals(0)
 	//assert(cap(rpcThread.closeCH)).Equals(0)
 }
@@ -188,7 +188,7 @@ func TestRpcThread_eval(t *testing.T) {
 		},
 	)
 
-	// from data format error
+	// execFrom data format error
 	runWithProcessor(
 		func(ctx *ContextObject, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
