@@ -41,16 +41,16 @@ func newThread(
 
 	go func() {
 		thread := &rpcThread{
+			goroutineId:   0,
 			processor:     processor,
 			inputCH:       make(chan *Stream),
+			closeCH:       make(chan bool, 1),
 			execStream:    NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
-			closeCH:       make(chan bool, 1),
-			goroutineId:   0,
 		}
 
 		if processor.IsDebug() {
