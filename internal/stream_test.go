@@ -328,6 +328,42 @@ func TestIsUTF8Bytes(t *testing.T) {
 	assert(isUTF8Bytes([]byte{0xFF, 0x80, 0x80, 0x70})).IsFalse()
 }
 
+func TestCheckValue(t *testing.T) {
+	assert := NewAssert(t)
+	assert(checkValue(nil, "value", 1)).Equals("")
+	assert(checkValue(Array(nil), "value", 1)).Equals("")
+	assert(checkValue(Map(nil), "value", 1)).Equals("")
+	assert(checkValue(true, "value", 1)).Equals("")
+	assert(checkValue(1, "value", 1)).Equals("")
+	assert(checkValue(int8(1), "value", 1)).Equals("")
+	assert(checkValue(int16(1), "value", 1)).Equals("")
+	assert(checkValue(int32(1), "value", 1)).Equals("")
+	assert(checkValue(int64(1), "value", 1)).Equals("")
+	assert(checkValue(uint(1), "value", 1)).Equals("")
+	assert(checkValue(uint8(1), "value", 1)).Equals("")
+	assert(checkValue(uint16(1), "value", 1)).Equals("")
+	assert(checkValue(uint32(1), "value", 1)).Equals("")
+	assert(checkValue(uint64(1), "value", 1)).Equals("")
+	assert(checkValue(float32(1), "value", 1)).Equals("")
+	assert(checkValue(float64(1), "value", 1)).Equals("")
+	assert(checkValue("", "value", 1)).Equals("")
+	assert(checkValue(Bytes{}, "value", 1)).Equals("")
+	assert(checkValue(Array{}, "value", 1)).Equals("")
+	assert(checkValue(Map{}, "value", 1)).Equals("")
+
+	assert(checkValue(nil, "value", 0)).
+		Equals("value is too complicated")
+	assert(checkValue(make(chan bool), "value", 1)).
+		Equals("value type (chan bool) is not supported")
+
+	assert(checkValue(Array{true}, "value", 1)).
+		Equals("value[0] is too complicated")
+	assert(checkValue(Array{true}, "value", 2)).Equals("")
+	assert(checkValue(Map{"key": "value"}, "value", 1)).
+		Equals("value[\"key\"] is too complicated")
+	assert(checkValue(Map{"key": "value"}, "value", 2)).Equals("")
+}
+
 func TestStream_basic(t *testing.T) {
 	assert := NewAssert(t)
 

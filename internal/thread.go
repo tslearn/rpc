@@ -137,7 +137,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		if stream.Write(value) == StreamWriteOK {
 			p.execStatus = rpcThreadExecSuccess
 			return nilReturn
-		} else if reason := CheckValue(value, 64); reason != "" {
+		} else if reason := checkValue(value, "value", 64); reason != "" {
 			return p.WriteError(
 				NewReplyError(ConcatString("rpc: ", reason)).
 					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
