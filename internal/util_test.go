@@ -402,13 +402,43 @@ type testFuncCache struct{}
 func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	switch fnString {
 	case "S":
-		return func(c *ContextObject, s *Stream, f interface{}) bool {
-			h, ok := s.ReadString()
-			if !ok || s.CanRead() {
+		return func(ctx Context, stream *Stream, fn interface{}) bool {
+			if arg0, ok := stream.ReadString(); !ok {
 				return false
+			} else if !stream.IsReadFinish() {
+				return true
+			} else {
+				fn.(func(Context, String) Return)(ctx, arg0)
+				return true
 			}
-			f.(func(*ContextObject, string) *ReturnObject)(c, h)
-			return true
+		}
+	case "BIUFSXAM":
+		return func(ctx Context, stream *Stream, fn interface{}) bool {
+			if arg0, ok := stream.ReadBool(); !ok {
+				return false
+			} else if arg1, ok := stream.ReadInt64(); !ok {
+				return false
+			} else if arg2, ok := stream.ReadUint64(); !ok {
+				return false
+			} else if arg3, ok := stream.ReadFloat64(); !ok {
+				return false
+			} else if arg4, ok := stream.ReadString(); !ok {
+				return false
+			} else if arg5, ok := stream.ReadBytes(); !ok {
+				return false
+			} else if arg6, ok := stream.ReadArray(); !ok {
+				return false
+			} else if arg7, ok := stream.ReadMap(); !ok {
+				return false
+			} else if !stream.IsReadFinish() {
+				return true
+			} else {
+				fn.(func(
+					Context, Bool, Int64, Uint64,
+					Float64, String, Bytes, Array, Map,
+				) Return)(ctx, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+				return true
+			}
 		}
 	default:
 		return nil

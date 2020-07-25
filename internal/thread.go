@@ -181,6 +181,7 @@ func (p *rpcThread) Eval(
 	ctx := &ContextObject{
 		thread: unsafe.Pointer(p),
 	}
+	hasFuncReturn := false
 
 	defer func() {
 		if v := recover(); v != nil {
@@ -210,7 +211,7 @@ func (p *rpcThread) Eval(
 			}()
 
 			if p.execReplyNode != nil {
-				if p.execStatus == rpcThreadExecNone {
+				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
 					p.WriteError(
 						NewReplyPanic(ConcatString(
 							"rpc: ",
@@ -264,6 +265,10 @@ func (p *rpcThread) Eval(
 
 		if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
+			hasFuncReturn = true
+			if ok && inStream.IsReadFinish() {
+				return nilReturn
+			}
 		} else {
 			p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
 			for i := 1; i < len(p.execReplyNode.argTypes); i++ {
@@ -331,16 +336,13 @@ func (p *rpcThread) Eval(
 
 			if ok && inStream.IsReadFinish() {
 				p.execReplyNode.reflectFn.Call(p.execArgs)
+				hasFuncReturn = true
 				return nilReturn
 			}
 		}
 
-		if ok {
-			if !inStream.IsReadFinish() {
-				return p.WriteError(NewProtocolError(ErrStringBadStream))
-			} else {
-				return nilReturn
-			}
+		if ok && !inStream.IsReadFinish() {
+			return p.WriteError(NewProtocolError(ErrStringBadStream))
 		} else if !p.IsDebug() {
 			return p.WriteError(
 				NewReplyError(ConcatString(

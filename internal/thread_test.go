@@ -223,8 +223,9 @@ func TestRpcThread_Eval(t *testing.T) {
 			"got: $.test:Eval(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
+
 	assert(strings.Contains(error8.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error8.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error8.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(9) error with 2nd param
 	assert(testRunWithProcessor(false, nil,
@@ -291,7 +292,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error10.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error10.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error10.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(11) error with 3rd param
 	assert(testRunWithProcessor(false, nil,
@@ -358,7 +359,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error12.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error12.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error12.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(13) error with 4th param
 	assert(testRunWithProcessor(false, nil,
@@ -425,7 +426,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error14.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error14.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error14.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(15) error with 5th param
 	assert(testRunWithProcessor(false, nil,
@@ -492,7 +493,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error16.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error16.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error16.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(17) error with 6th param
 	assert(testRunWithProcessor(false, nil,
@@ -559,7 +560,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error18.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error18.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error18.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(19) error with 7th param
 	assert(testRunWithProcessor(false, nil,
@@ -626,7 +627,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return",
 	)
 	assert(strings.Contains(error20.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error20.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error20.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(21) error with 8th param
 	assert(testRunWithProcessor(false, nil,
@@ -693,7 +694,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return",
 	)
 	assert(strings.Contains(error22.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error22.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error22.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(23) nil rpcBytes
 	assert(testRunWithProcessor(true, nil,
@@ -794,7 +795,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			"got: $.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
 	)
 	assert(strings.Contains(error27.GetDebug(), "$.test:Eval")).IsTrue()
-	assert(strings.Contains(error27.GetDebug(), "types_test.go:")).IsTrue()
+	assert(strings.Contains(error27.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(28) badStream
 	assert(testRunWithProcessor(true, nil,
@@ -835,7 +836,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(error29.GetKind()).Equals(ErrorKindReply)
 		assert(error29.GetMessage()).Equals("rpc: $.test:Eval runtime error")
 		assert(strings.Contains(error29.GetDebug(), "$.test:Eval")).IsTrue()
-		assert(strings.Contains(error29.GetDebug(), "types_test.go")).IsTrue()
+		assert(strings.Contains(error29.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic29 != nil {
 		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
@@ -867,7 +868,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(error30.GetKind()).Equals(ErrorKindReply)
 		assert(error30.GetMessage()).Equals("rpc: $.test:Eval runtime error")
 		assert(strings.Contains(error30.GetDebug(), "$.test:Eval")).IsTrue()
-		assert(strings.Contains(error30.GetDebug(), "types_test.go")).IsTrue()
+		assert(strings.Contains(error30.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic30 != nil {
 		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
@@ -896,7 +897,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(panic31.GetKind()).Equals(ErrorKindKernel)
 		assert(panic31.GetMessage()).
 			Equals("rpc: kernel error: test panic")
-		assert(strings.Contains(panic31.GetDebug(), "types_test.go")).IsTrue()
+		assert(strings.Contains(panic31.GetDebug(), "util_test.go")).IsTrue()
 	}
 
 	// Test(32) return without ctx
@@ -919,16 +920,95 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(error32.GetMessage()).
 			Equals("rpc: $.test:Eval must return through Context.OK or Context.Error")
-		assert(strings.Contains(error32.GetDebug(), "types_test.go")).IsTrue()
+		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
 	}
+
+	// Test(33) ok call with  cache
+	assert(testRunWithProcessor(true, &testFuncCache{},
+		func(ctx *ContextObject,
+			b bool, i int64, u uint64, f float64, s string,
+			x Bytes, a Array, m Map,
+		) *ReturnObject {
+			return ctx.OK(true)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(true)
+			stream.Write(int64(3))
+			stream.Write(uint64(3))
+			stream.Write(float64(3))
+			stream.Write("hello")
+			stream.Write(([]byte)("world"))
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
+			return stream
+		},
+	)).Equals(true, nil, nil)
+
+	// Test(34) stream is not finish
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject,
+			b bool, i int64, u uint64, f float64, s string,
+			x Bytes, a Array, m Map,
+		) *ReturnObject {
+			return ctx.OK(true)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(true)
+			stream.Write(int64(3))
+			stream.Write(uint64(3))
+			stream.Write(float64(3))
+			stream.Write("hello")
+			stream.Write(([]byte)("world"))
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
+			// error
+			stream.Write(true)
+			return stream
+		},
+	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+
+	// Test(35) stream is not finish
+	assert(testRunWithProcessor(true, &testFuncCache{},
+		func(ctx *ContextObject,
+			b bool, i int64, u uint64, f float64, s string,
+			x Bytes, a Array, m Map,
+		) *ReturnObject {
+			return ctx.OK(true)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.Write(true)
+			stream.Write(int64(3))
+			stream.Write(uint64(3))
+			stream.Write(float64(3))
+			stream.Write("hello")
+			stream.Write(([]byte)("world"))
+			stream.Write(Array{1})
+			stream.Write(Map{"name": "world"})
+			// error
+			stream.Write(true)
+			return stream
+		},
+	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 }
 
 func TestRpcThread_Eval2(t *testing.T) {
 	assert := NewAssert(t)
 
-	// Test(32) return without ctx
+	// Test(33) return without ctx
 	ret32, error32, panic32 := testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, bVal bool) *ReturnObject {
 			return Return(nil)
@@ -948,7 +1028,7 @@ func TestRpcThread_Eval2(t *testing.T) {
 		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(error32.GetMessage()).
 			Equals("rpc: $.test:Eval must return through Context.OK or Context.Error")
-		assert(strings.Contains(error32.GetDebug(), "types_test.go")).IsTrue()
+		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
 	}
