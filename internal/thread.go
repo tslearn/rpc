@@ -336,7 +336,11 @@ func (p *rpcThread) Eval(
 		}
 
 		if ok {
-			return nilReturn
+			if !inStream.IsReadFinish() {
+				return p.WriteError(NewProtocolError(ErrStringBadStream))
+			} else {
+				return nilReturn
+			}
 		} else if !p.IsDebug() {
 			return p.WriteError(
 				NewReplyError(ConcatString(

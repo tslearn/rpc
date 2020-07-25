@@ -1,10 +1,14 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 // ReplyCache ...
@@ -14,194 +18,167 @@ type ReplyCache interface {
 
 // ReplyCacheFunc ...
 type ReplyCacheFunc = func(
-	ctx *ContextObject,
+	ctx Context,
 	stream *Stream,
 	fn interface{},
 ) bool
 
-type fnCache struct{}
-
-func (p *fnCache) getParamName(idx int) string {
-	if idx < 6 {
-		return []string{
-			"a", "b", "c", "d", "e", "f",
-		}[idx]
-	}
-	return fmt.Sprintf("pa%d", idx)
+type rpcFuncMeta struct {
+	name       string
+	body       string
+	identifier string
 }
 
-func (p *fnCache) getOKName(idx int) string {
-	if idx < 6 {
-		return []string{
-			"g", "h", "i", "j", "k", "l",
-		}[idx]
-	}
-	return fmt.Sprintf("ok%d", idx)
-}
-
-func (p *fnCache) writeHeader(
-	pkgName string,
-	sb *StringBuilder,
-	kinds []string,
-) {
-	kindMap := make(map[int32]bool)
-	for _, kind := range kinds {
-		for _, char := range kind {
-			kindMap[char] = true
-		}
-	}
-	sb.AppendString(fmt.Sprintf("package %s\n\n", pkgName))
-	sb.AppendString("import \"github.com/rpccloud/rpc/core\"\n\n")
-
-	sb.AppendString("type rpcCache struct{}\n\n")
-
-	sb.AppendString("// NewRPCCache ...\n")
-	sb.AppendString("func NewRPCCache() common.ReplyCache {\n")
-	sb.AppendString("\treturn &rpcCache{}\n")
-	sb.AppendString("}\n\n")
-
-	sb.AppendString("// Get ...\n")
-	sb.AppendString(
-		"func (p *rpcCache) Get(fnString string) common.ReplyCacheFunc {\n",
-	)
-	sb.AppendString("\treturn getFCache(fnString)\n")
-	sb.AppendString("}\n\n")
-	sb.AppendString("type n = bool\n")
-	sb.AppendString("type o = common.ContextObject\n")
-	sb.AppendString("type p = common.ReturnObject\n")
-	sb.AppendString("type q = *common.Stream\n")
-	if _, ok := kindMap['B']; ok {
-		sb.AppendString("type r = common.Bool\n")
-	}
-	if _, ok := kindMap['I']; ok {
-		sb.AppendString("type s = common.Int64\n")
-	}
-	if _, ok := kindMap['U']; ok {
-		sb.AppendString("type t = common.Uint64\n")
-	}
-	if _, ok := kindMap['F']; ok {
-		sb.AppendString("type u = common.Float64\n")
-	}
-	if _, ok := kindMap['S']; ok {
-		sb.AppendString("type v = common.String\n")
-	}
-	if _, ok := kindMap['X']; ok {
-		sb.AppendString("type w = common.Bytes\n")
-	}
-	if _, ok := kindMap['A']; ok {
-		sb.AppendString("type x = common.Array\n")
-	}
-	if _, ok := kindMap['M']; ok {
-		sb.AppendString("type y = common.Map\n")
-	}
-	sb.AppendString("type z = interface{}\n\n")
-	sb.AppendString("const af = false\n")
-	sb.AppendString("const at = true\n")
-}
-
-func (p *fnCache) writeGetFunc(sb *StringBuilder, kinds []string) {
-	sb.AppendString("\nfunc getFCache(fnString string) common.ReplyCacheFunc {\n")
-	sb.AppendString("\tswitch fnString {\n")
-
-	for _, kind := range kinds {
-		sb.AppendString(fmt.Sprintf("\tcase \"%s\":\n", kind))
-		sb.AppendString(fmt.Sprintf("\t\treturn fc%s\n", kind))
-	}
-
-	sb.AppendString("\t}\n\n")
-	sb.AppendString("\treturn nil\n")
-
-	sb.AppendString("}\n")
-}
-
-func (p *fnCache) writeFunctions(sb *StringBuilder, kinds []string) {
-	for _, kind := range kinds {
-		p.writeFunc(sb, kind)
-	}
-}
-
-func (p *fnCache) writeFunc(sb *StringBuilder, kind string) {
-	sb.AppendString(fmt.Sprintf("\nfunc fc%s(m o, q q, z z) n {\n", kind))
-
-	sbBody := NewStringBuilder()
-	sbType := NewStringBuilder()
-	sbParam := NewStringBuilder()
-	sbOK := NewStringBuilder()
-	for idx, c := range kind {
-		paramName := p.getParamName(idx)
-		okName := p.getOKName(idx)
-		sbParam.AppendString(fmt.Sprintf(", %s", paramName))
-		sbOK.AppendString(fmt.Sprintf("!%s || ", okName))
-		switch c {
-		case 'B':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadBool()\n", paramName, okName),
-			)
-			sbType.AppendString(", r")
-		case 'I':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadInt64()\n", paramName, okName),
-			)
-			sbType.AppendString(", s")
-		case 'U':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadUint64()\n", paramName, okName),
-			)
-			sbType.AppendString(", t")
-		case 'F':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadFloat64()\n", paramName, okName),
-			)
-			sbType.AppendString(", u")
-		case 'S':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadString()\n", paramName, okName),
-			)
-			sbType.AppendString(", v")
-		case 'X':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadBytes()\n", paramName, okName),
-			)
-			sbType.AppendString(", w")
-		case 'A':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadArray()\n", paramName, okName),
-			)
-			sbType.AppendString(", x")
-		case 'M':
-			sbBody.AppendString(
-				fmt.Sprintf("\t%s, %s := q.ReadMap()\n", paramName, okName),
-			)
-			sbType.AppendString(", y")
-		}
-	}
-
-	sb.AppendString(sbBody.String())
-	sb.AppendString(fmt.Sprintf("\tif %sq.CanRead() {\n", sbOK.String()))
-	sb.AppendString("\t\treturn af\n")
-	sb.AppendString("\t}\n")
-
-	sb.AppendString(fmt.Sprintf(
-		"\tz.(func(o%s) p)(m%s)\n",
-		sbType.String(),
-		sbParam.String(),
-	))
-	sb.AppendString("\treturn at\n")
-	sb.AppendString("}\n")
-
-	sbBody.Release()
-	sbType.Release()
-	sbParam.Release()
-	sbOK.Release()
-}
-
-func buildFuncCache(pkgName string, output string, kinds []string) Error {
+func getFuncBodyByKind(name string, kind string) (string, error) {
 	sb := NewStringBuilder()
 	defer sb.Release()
-	cache := &fnCache{}
-	cache.writeHeader(pkgName, sb, kinds)
-	cache.writeGetFunc(sb, kinds)
-	cache.writeFunctions(sb, kinds)
+
+	sb.AppendString(fmt.Sprintf(
+		"func %s(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {\n",
+		name,
+	))
+
+	argArray := []string{"ctx"}
+	typeArray := []string{"rpc.Context"}
+
+	if kind == "" {
+		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn true\n\t}")
+	} else {
+		for idx, c := range kind {
+			argName := "arg" + strconv.Itoa(idx)
+			argArray = append(argArray, argName)
+			callString := ""
+
+			switch c {
+			case 'B':
+				callString = "ReadBool"
+				typeArray = append(typeArray, "rpc.Bool")
+			case 'I':
+				callString = "ReadInt64"
+				typeArray = append(typeArray, "rpc.Int64")
+			case 'U':
+				callString = "ReadUint64"
+				typeArray = append(typeArray, "rpc.Uint64")
+			case 'F':
+				callString = "ReadFloat64"
+				typeArray = append(typeArray, "rpc.Float64")
+			case 'S':
+				callString = "ReadString"
+				typeArray = append(typeArray, "rpc.String")
+			case 'X':
+				callString = "ReadBytes"
+				typeArray = append(typeArray, "rpc.Bytes")
+			case 'A':
+				callString = "ReadArray"
+				typeArray = append(typeArray, "rpc.Array")
+			case 'M':
+				callString = "ReadMap"
+				typeArray = append(typeArray, "rpc.Map")
+			default:
+				return "nil", errors.New(fmt.Sprintf("error kind %s", kind))
+			}
+
+			condString := " else if"
+
+			if idx == 0 {
+				condString = "\tif"
+			}
+
+			sb.AppendString(fmt.Sprintf(
+				"%s %s, ok := stream.%s(); !ok {\n\t\treturn false\n\t}",
+				condString,
+				argName,
+				callString,
+			))
+		}
+
+		sb.AppendString(" else if !stream.IsReadFinish() {\n\t\t return true\n\t}")
+	}
+
+	sb.AppendString(fmt.Sprintf(
+		" else {\n\t\tfn.(func(%s) rpc.Return)(%s)\n\t\treturn true\n\t}\n}",
+		strings.Join(typeArray, ", "),
+		strings.Join(argArray, ", "),
+	))
+	return sb.String(), nil
+}
+
+func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
+	sortKinds := make([]string, len(kinds))
+	copy(sortKinds, kinds)
+	sort.SliceStable(sortKinds, func(i, j int) bool {
+		if len(sortKinds[i]) < len(sortKinds[j]) {
+			return true
+		} else if len(sortKinds[i]) > len(sortKinds[j]) {
+			return false
+		} else {
+			return strings.Compare(sortKinds[i], sortKinds[j]) < 0
+		}
+	})
+
+	funcMap := make(map[string]bool)
+	ret := make([]*rpcFuncMeta, 0)
+
+	for idx, kind := range sortKinds {
+		fnName := "fnCache" + strconv.Itoa(idx)
+		if _, ok := funcMap[kind]; ok {
+			return nil, errors.New(fmt.Sprintf("duplicate kind %s", kind))
+		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
+			return nil, err
+		} else {
+			funcMap[kind] = true
+			ret = append(ret, &rpcFuncMeta{
+				name:       fnName,
+				body:       fnBody,
+				identifier: kind,
+			})
+		}
+	}
+
+	return ret, nil
+}
+
+func buildFuncCache(pkgName string, output string, kinds []string) error {
+	sb := NewStringBuilder()
+	defer sb.Release()
+	if metas, err := getFuncMetas(kinds); err != nil {
+		return err
+	} else {
+		sb.AppendString(fmt.Sprintf("package %s\n\n", pkgName))
+		sb.AppendString("import \"github.com/rpccloud/rpc\"\n\n")
+
+		sb.AppendString("type rpcCache struct{}\n\n")
+
+		sb.AppendString("// NewRPCCache ...\n")
+		sb.AppendString("func NewRPCCache() rpc.ReplyCache {\n")
+		sb.AppendString("\treturn &rpcCache{}\n")
+		sb.AppendString("}\n\n")
+
+		sb.AppendString("// Get ...\n")
+		sb.AppendString(
+			"func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {\n",
+		)
+		sb.AppendString(
+			"\tswitch fnString {\n",
+		)
+		for _, meta := range metas {
+			sb.AppendString(
+				fmt.Sprintf("\tcase \"%s\":\n", meta.identifier),
+			)
+			sb.AppendString(
+				fmt.Sprintf("\t\treturn %s\n", meta.name),
+			)
+		}
+		sb.AppendString(
+			"\tdefault: \n\t\treturn nil\n\t}\n}\n\n",
+		)
+
+		for _, meta := range metas {
+			sb.AppendString(
+				fmt.Sprintf("%s\n\n", meta.body),
+			)
+		}
+	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
 		return NewBaseError(err.Error())

@@ -250,7 +250,11 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 		fnKinds = append(fnKinds, key)
 	}
 
-	return buildFuncCache(pkgName, path, fnKinds)
+	if err := buildFuncCache(pkgName, path, fnKinds); err != nil {
+		return NewBaseError(err.Error())
+	}
+
+	return nil
 }
 
 // AddChildService ...

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -42,6 +43,29 @@ func readStringFromFile(filePath string) (string, error) {
 		return "", err
 	}
 	return string(ret), nil
+}
+
+func TestBuildFuncCache(t *testing.T) {
+	_, file, _, _ := runtime.Caller(0)
+	processor1 := getNewProcessor()
+	_ = processor1.AddService(
+		"user",
+		NewService().
+			Reply("hello", func(ctx Context,
+				b bool, i int64, u uint64, f float64, s string,
+				x Bytes, a Array, m Map,
+			) Return {
+				return ctx.OK(true)
+			}).
+			Reply("ok", func(ctx Context) Return {
+				return ctx.OK(true)
+			}),
+		"",
+	)
+	processor1.BuildCache(
+		"pkgName",
+		path.Join(path.Dir(file), "_tmp_/fncache-basic-1.go"),
+	)
 }
 
 func TestFnCache_basic(t *testing.T) {
@@ -202,4 +226,16 @@ func TestFnCache_basic(t *testing.T) {
 		path.Join(path.Dir(file), "_tmp_/fncache-basic-10.go")))
 
 	_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+}
+
+func Test_debug(t *testing.T) {
+	metas, _ := getFuncMetas([]string{"AM", "AI", "U", "AMI", ""})
+
+	for _, meta := range metas {
+		fmt.Println(meta.name)
+		fmt.Println(meta.identifier)
+		fmt.Println(meta.body)
+	}
+
+	// fmt.Println(getFuncBodyByKind("fnCache1", "AM"))
 }

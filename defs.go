@@ -35,13 +35,13 @@ type Stream = *internal.Stream
 type Bool = internal.Bool
 
 // Int64 ...
-type Int = internal.Int64
+type Int64 = internal.Int64
 
 // Uint64 ...
-type Uint = internal.Uint64
+type Uint64 = internal.Uint64
 
 // Float64 ...
-type Float = internal.Float64
+type Float64 = internal.Float64
 
 // String ...
 type String = internal.String
@@ -72,3 +72,9 @@ type Service = internal.Service
 
 // NewService ...
 var NewService = internal.NewService
+
+// ReplyCache ...
+type ReplyCache = internal.ReplyCache
+
+// ReplyCacheFunc ...
+type ReplyCacheFunc = internal.ReplyCacheFunc
