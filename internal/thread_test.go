@@ -83,6 +83,67 @@ func TestRpcThread_Stop(t *testing.T) {
 	assert(thread3.Stop()).IsFalse()
 }
 
+func TestRpcThread_GetGoroutineId(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) debug
+	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread1.Stop()
+	assert(thread1.GetGoroutineId() > 0).IsTrue()
+
+	// Test(2) release
+	thread2 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	defer thread2.Stop()
+	assert(thread2.GetGoroutineId() > 0).IsTrue()
+}
+
+func TestRpcThread_IsDebug(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) debug
+	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread1.Stop()
+	assert(thread1.IsDebug()).IsTrue()
+
+	// Test(2) release
+	thread2 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	defer thread2.Stop()
+	assert(thread2.IsDebug()).IsFalse()
+}
+
+func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) debug
+	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread1.Stop()
+	assert(thread1.GetExecReplyNodePath()).Equals("")
+
+	// Test(2) debug
+	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread2.Stop()
+	thread2.execReplyNode = &rpcReplyNode{path: "$.test.Eval"}
+	assert(thread2.GetExecReplyNodePath()).Equals("$.test.Eval")
+}
+
+func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) debug
+	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread1.Stop()
+	assert(thread1.GetExecReplyNodeDebug()).Equals("")
+
+	// Test(2) debug
+	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread2.Stop()
+	thread2.execReplyNode = &rpcReplyNode{
+		path:      "$.test.Eval",
+		replyMeta: &rpcReplyMeta{fileLine: "/test_file:234"},
+	}
+	assert(thread2.GetExecReplyNodeDebug()).Equals("$.test.Eval /test_file:234")
+}
+
 func TestRpcThread_Eval(t *testing.T) {
 	assert := NewAssert(t)
 
