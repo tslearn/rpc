@@ -94,7 +94,7 @@ func TestRpcThread_GetGoroutineId(t *testing.T) {
 	// Test(2) release
 	thread2 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
 	defer thread2.Stop()
-	assert(thread2.GetGoroutineId() > 0).IsTrue()
+	assert(thread2.GetGoroutineId()).Equals(int64(0))
 }
 
 func TestRpcThread_IsDebug(t *testing.T) {
@@ -159,9 +159,12 @@ func TestRpcThread_WriteError(t *testing.T) {
 	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
 
 	// Test(2) ok
+	source2 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.Error(errors.New("error"))
+			ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+			source2 = source
+			return ret
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -171,7 +174,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(nil, NewReplyError("error"), nil)
+	)).Equals(nil, NewReplyError("error").AddDebug("$.test:Eval "+source2), nil)
 }
 
 func TestRpcThread_WriteOK(t *testing.T) {
