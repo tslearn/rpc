@@ -180,8 +180,8 @@ func TestTimeNow(t *testing.T) {
 
 	for i := 0; i < 10000000; i++ {
 		now := TimeNow()
-		assert(time.Now().Sub(now) < 20*time.Millisecond).IsTrue()
-		assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
+		assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
+		assert(time.Now().Sub(now) > -30*time.Millisecond).IsTrue()
 	}
 
 	for i := 0; i < 10; i++ {
