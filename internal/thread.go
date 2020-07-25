@@ -137,20 +137,15 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		if stream.Write(value) == StreamWriteOK {
 			p.execStatus = rpcThreadExecSuccess
 			return nilReturn
-		} else if reason := checkValue(value, "value", 64); reason != "" {
+		} else {
 			ReportPanic(
-				NewReplyPanic(ConcatString("rpc: ", reason)).
+				NewReplyPanic(ConcatString("rpc: ", checkValue(value, "value", 64))).
 					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 			)
 			return p.WriteError(
-				NewReplyError("rpc: reply return is error").
+				NewReplyError("rpc: reply return value error").
 					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 			)
-		} else {
-			ReportPanic(
-				NewKernelError(ErrStringUnknown).AddDebug(string(debug.Stack())),
-			)
-			return nilReturn
 		}
 	} else {
 		ReportPanic(

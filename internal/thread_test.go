@@ -189,30 +189,6 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
 
 	// Test(2) value is endless loop
-	source3 := ""
-	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
-			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
-			source3 = source
-			return ret
-		},
-		func(_ *Processor) *Stream {
-			stream := NewStream()
-			stream.WriteString("$.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.WriteString("world")
-			return stream
-		},
-	)).Equals(
-		nil,
-		NewReplyError("rpc: reply return is too complicated").
-			AddDebug("$.test:Eval "+source3),
-		NewReplyPanic("rpc: value type (chan bool) is not supported").
-			AddDebug("$.test:Eval "+source3),
-	)
-
-	// Test(2) value is endless loop
 	source2 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
@@ -232,7 +208,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: reply return is too complicated").
+		NewReplyError("rpc: reply return value error").
 			AddDebug("$.test:Eval "+source2),
 		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -244,8 +220,58 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			AddDebug("$.test:Eval "+source2),
 	)
 
-	// Test(3) value is endless loop
+	// Test(3) value is not support
+	source3 := ""
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+			source3 = source
+			return ret
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals(
+		nil,
+		NewReplyError("rpc: reply return value error").
+			AddDebug("$.test:Eval "+source3),
+		NewReplyPanic("rpc: value type (chan bool) is not supported").
+			AddDebug("$.test:Eval "+source3),
+	)
 
+	// Test(4) ok
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			return ctx.OK("hello " + name)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals("hello world", nil, nil)
+}
+
+func TestRpcThread_PutStream(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	thread1 := getFakeThread(true)
+	defer thread1.Stop()
+	assert(thread1.PutStream(NewStream())).IsTrue()
+
+	// Test(2)
+	thread2 := getFakeThread(true)
+	thread2.Stop()
+	assert(thread2.PutStream(NewStream())).IsFalse()
 }
 
 func TestRpcThread_Eval(t *testing.T) {
