@@ -192,31 +192,19 @@ func (p *rpcThread) Eval(
 			)
 
 			// write runtime error
-			if p.IsDebug() {
-				p.WriteError(
-					NewReplyError(
-						ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
-					).AddDebug(p.GetExecReplyNodeDebug()),
-				)
-			} else {
-				p.WriteError(
-					NewReplyError(
-						ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
-					),
-				)
-			}
+			p.WriteError(
+				NewReplyError(
+					ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
+				).AddDebug(p.GetExecReplyNodeDebug()),
+			)
 		}
 
 		func() {
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelError(fmt.Sprintf(
-							"rpc: %s runtime error: %v",
-							p.GetExecReplyNodePath(),
-							v,
-						),
-						).AddDebug(string(debug.Stack())),
+						NewKernelError(fmt.Sprintf("rpc: kernel error: %v", v)).
+							AddDebug(string(debug.Stack())),
 					)
 				}
 			}()
@@ -228,7 +216,7 @@ func (p *rpcThread) Eval(
 							"rpc: ",
 							p.execReplyNode.GetPath(),
 							" must return through Context.OK or Context.Error",
-						)),
+						)).AddDebug(p.GetExecReplyNodeDebug()),
 					)
 				}
 

@@ -138,12 +138,7 @@ func (p *Processor) Start(
 				thread := newThread(
 					p,
 					func(thread *rpcThread, stream *Stream) {
-						defer func() {
-							recover()
-						}()
-
 						onReturnStream(stream)
-
 						freeThreadsCHGroup[atomic.AddUint64(
 							&p.writeThreadPos,
 							1,

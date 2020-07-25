@@ -141,6 +141,8 @@ func testRunWithProcessor(
 		} else {
 			if errKind, ok := stream.ReadUint64(); !ok {
 				panic("internal error")
+			} else if ErrorKind(errKind) == ErrorKindTransport {
+				panic("test panic")
 			} else if message, ok := stream.ReadString(); !ok {
 				panic("internal error")
 			} else if debug, ok := stream.ReadString(); !ok {
@@ -159,6 +161,8 @@ func testRunWithProcessor(
 					} else {
 						retPanic = err
 					}
+				} else {
+					panic("internal error")
 				}
 			}
 		}
