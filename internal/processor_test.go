@@ -358,7 +358,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		8192*24,
 		16,
 		16,
-		nil,
+		&testFuncCache{},
 	)
 	_ = processor.Start(
 		func(stream *Stream) {
