@@ -144,6 +144,110 @@ func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 	assert(thread2.GetExecReplyNodeDebug()).Equals("$.test.Eval /test_file:234")
 }
 
+func TestRpcThread_WriteError(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) stream is nil
+	panic1 := testRunWithCatchPanic(func() {
+		thread := &rpcThread{}
+		thread.WriteError(NewReplyError(""))
+	})
+	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
+	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
+	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+
+	// Test(2) ok
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			return ctx.Error(errors.New("error"))
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals(nil, NewReplyError("error"), nil)
+}
+
+func TestRpcThread_WriteOK(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) stream is nil
+	panic1 := testRunWithCatchPanic(func() {
+		thread := &rpcThread{}
+		thread.WriteOK(true, 1)
+	})
+	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
+	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
+	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+
+	// Test(2) value is endless loop
+	source3 := ""
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+			source3 = source
+			return ret
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals(
+		nil,
+		NewReplyError("rpc: reply return is too complicated").
+			AddDebug("$.test:Eval "+source3),
+		NewReplyPanic("rpc: value type (chan bool) is not supported").
+			AddDebug("$.test:Eval "+source3),
+	)
+
+	// Test(2) value is endless loop
+	source2 := ""
+	assert(testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			v := make(Map)
+			v["v"] = v
+			ret, source := ctx.OK(v), GetFileLine(0)
+			source2 = source
+			return ret
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals(
+		nil,
+		NewReplyError("rpc: reply return is too complicated").
+			AddDebug("$.test:Eval "+source2),
+		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] is too complicated").
+			AddDebug("$.test:Eval "+source2),
+	)
+
+	// Test(3) value is endless loop
+
+}
+
 func TestRpcThread_Eval(t *testing.T) {
 	assert := NewAssert(t)
 

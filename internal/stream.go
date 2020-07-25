@@ -27,6 +27,8 @@ const (
 	StreamWriteOK int = iota
 	// StreamWriteUnsupportedType ...
 	StreamWriteUnsupportedType
+	// StreamWriteOverflow ...
+	StreamWriteOverflow
 )
 
 var (
@@ -152,7 +154,7 @@ func checkMap(v Map, path string, depth int) string {
 }
 
 func checkValue(v interface{}, path string, depth int) string {
-	if depth == 0 {
+	if depth <= 0 {
 		return ConcatString(path, " is too complicated")
 	}
 
@@ -1155,6 +1157,10 @@ func (p *Stream) WriteBytes(v Bytes) {
 
 // WriteArray ...
 func (p *Stream) WriteArray(v Array) int {
+	return p.writeArray(v, 64)
+}
+
+func (p *Stream) writeArray(v Array, depth int) int {
 	if v == nil {
 		p.WriteNil()
 		return StreamWriteOK
@@ -1205,7 +1211,7 @@ func (p *Stream) WriteArray(v Array) int {
 	}
 
 	for i := 0; i < length; i++ {
-		errCode := p.Write(v[i])
+		errCode := p.write(v[i], depth-1)
 		if errCode != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
 			return errCode
@@ -1235,6 +1241,10 @@ func (p *Stream) WriteArray(v Array) int {
 
 // WriteMap write Map value to stream
 func (p *Stream) WriteMap(v Map) int {
+	return p.writeMap(v, 64)
+}
+
+func (p *Stream) writeMap(v Map, depth int) int {
 	if v == nil {
 		p.WriteNil()
 		return StreamWriteOK
@@ -1287,7 +1297,7 @@ func (p *Stream) WriteMap(v Map) int {
 
 	for name, value := range v {
 		p.WriteString(name)
-		errCode := p.Write(value)
+		errCode := p.write(value, depth-1)
 		if errCode != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
 			return errCode
@@ -1317,6 +1327,14 @@ func (p *Stream) WriteMap(v Map) int {
 
 // Write write generic value to stream
 func (p *Stream) Write(v interface{}) int {
+	return p.write(v, 64)
+}
+
+func (p *Stream) write(v interface{}, depth int) int {
+	if depth <= 0 {
+		return StreamWriteOverflow
+	}
+
 	switch v.(type) {
 	case nil:
 		p.WriteNil()
@@ -1367,9 +1385,9 @@ func (p *Stream) Write(v interface{}) int {
 		p.WriteBytes(v.(Bytes))
 		return StreamWriteOK
 	case Array:
-		return p.WriteArray(v.(Array))
+		return p.writeArray(v.(Array), depth)
 	case Map:
-		return p.WriteMap(v.(Map))
+		return p.writeMap(v.(Map), depth)
 	}
 
 	return StreamWriteUnsupportedType
