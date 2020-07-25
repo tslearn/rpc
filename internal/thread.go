@@ -134,14 +134,14 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		stream.SetWritePosToBodyStart()
 		stream.SetStreamKind(StreamKindResponseOK)
 
-		if stream.Write(value) == StreamWriteOK {
-			p.execStatus = rpcThreadExecSuccess
-			return nilReturn
-		} else if reason := checkValue(value, "value", 64); reason != "" {
+		if reason := checkValue(value, "value", 64); reason != "" {
 			return p.WriteError(
 				NewReplyError(ConcatString("rpc: ", reason)).
 					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 			)
+		} else if stream.Write(value) == StreamWriteOK {
+			p.execStatus = rpcThreadExecSuccess
+			return nilReturn
 		} else {
 			return p.WriteError(
 				NewReplyError("rpc: value is not supported").
