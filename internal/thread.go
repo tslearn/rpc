@@ -77,7 +77,7 @@ func (p *rpcThread) Stop() bool {
 		} else {
 			close(p.inputCH)
 			select {
-			case <-time.After(10 * time.Second):
+			case <-time.After(20 * time.Second):
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:

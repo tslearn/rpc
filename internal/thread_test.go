@@ -5,31 +5,82 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewThread(t *testing.T) {
-	//assert := NewAssert(t)
-	//
-	//processor := NewProcessor(true, 8192, 16, 16, nil, nil)
-	//threadPool := newThreadPool(processor, 8192)
-	//
-	//rpcThread := newThread(processor, processor,fre)
-	//assert(rpcThread).IsNotNil()
-	//assert(rpcThread.threadPool).Equals(threadPool)
-	//assert(rpcThread.isRunning).Equals(true)
-	//assert(rpcThread.threadPool.processor).Equals(processor)
-	//assert(len(rpcThread.inputCH)).Equals(0)
-	//assert(cap(rpcThread.inputCH)).Equals(0)
-	//assert(rpcThread.inStream).IsNil()
-	//assert(rpcThread.execStream).IsNotNil()
-	//assert(rpcThread.execDepth).Equals(uint64(0))
-	//assert(rpcThread.execReplyNode).IsNil()
-	//assert(len(rpcThread.execArgs)).Equals(0)
-	//assert(cap(rpcThread.execArgs)).Equals(16)
-	//assert(rpcThread.execSuccessful).IsFalse()
-	//assert(rpcThread.execFrom).Equals("")
-	//assert(len(rpcThread.closeCH)).Equals(0)
-	//assert(cap(rpcThread.closeCH)).Equals(0)
+	assert := NewAssert(t)
+
+	// Test(1) processor is nil
+	assert(newThread(nil, getFakeOnEvalFinish())).IsNil()
+
+	// Test(2) onEvalFinish is nil
+	assert(newThread(getFakeProcessor(true), nil)).IsNil()
+
+	// Test(3) debug thread
+	thread3 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	defer thread3.Stop()
+	assert(thread3.goroutineId > 0).IsTrue()
+	assert(thread3.processor).IsNotNil()
+	assert(thread3.inputCH).IsNotNil()
+	assert(thread3.closeCH).IsNotNil()
+	assert(thread3.execStream).IsNotNil()
+	assert(thread3.execDepth).IsNotNil()
+	assert(thread3.execReplyNode).IsNil()
+	assert(thread3.execArgs).IsNotNil()
+	assert(thread3.execStatus).Equals(rpcThreadExecNone)
+	assert(thread3.execFrom).Equals("")
+	assert(thread3.IsDebug()).IsTrue()
+
+	// Test(4) release thread
+	thread4 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	defer thread4.Stop()
+	assert(thread4.goroutineId == 0).IsTrue()
+	assert(thread4.processor).IsNotNil()
+	assert(thread4.inputCH).IsNotNil()
+	assert(thread4.closeCH).IsNotNil()
+	assert(thread4.execStream).IsNotNil()
+	assert(thread4.execDepth).IsNotNil()
+	assert(thread4.execReplyNode).IsNil()
+	assert(thread4.execArgs).IsNotNil()
+	assert(thread4.execStatus).Equals(rpcThreadExecNone)
+	assert(thread4.execFrom).Equals("")
+	assert(thread4.IsDebug()).IsFalse()
+}
+
+func TestRpcThread_Stop(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	assert(thread1.Stop()).IsTrue()
+
+	// Test(2) can not stop after 20 second
+	assert(testRunWithPanicCatch(func() {
+		_, _, _ = testRunWithProcessor(true, nil,
+			func(ctx *ContextObject, name string) *ReturnObject {
+				time.Sleep(22 * time.Second)
+				return ctx.OK("hello " + name)
+			},
+			func(processor *Processor) *Stream {
+				go func() {
+					time.Sleep(time.Second)
+					assert(processor.Stop()).IsNotNil()
+				}()
+				stream := NewStream()
+				stream.WriteString("$.test:Eval")
+				stream.WriteUint64(3)
+				stream.WriteString("#")
+				stream.WriteString("world")
+				return stream
+			},
+		)
+	})).IsNotNil()
+
+	// Test(3) stop twice
+	thread3 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	assert(thread3.Stop()).IsTrue()
+	assert(thread3.Stop()).IsFalse()
 }
 
 func TestRpcThread_Eval(t *testing.T) {

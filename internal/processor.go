@@ -169,7 +169,7 @@ func (p *Processor) PutStream(stream *Stream) bool {
 func (p *Processor) Stop() Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
-			return NewKernelError("Processor: Start: it has already benn stopped")
+			return NewKernelError("Processor: Stop: it has already benn stopped")
 		} else {
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
