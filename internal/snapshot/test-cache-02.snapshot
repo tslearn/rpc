@@ -1,0 +1,549 @@
+package pkgName
+
+import "github.com/rpccloud/rpc"
+
+type rpcCache struct{}
+
+// NewRPCCache ...
+func NewRPCCache() rpc.ReplyCache {
+	return &rpcCache{}
+}
+
+// Get ...
+func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
+	switch fnString {
+	case "":
+		return fnCache0
+	case "A":
+		return fnCache1
+	case "B":
+		return fnCache2
+	case "F":
+		return fnCache3
+	case "I":
+		return fnCache4
+	case "M":
+		return fnCache5
+	case "S":
+		return fnCache6
+	case "U":
+		return fnCache7
+	case "X":
+		return fnCache8
+	case "AU":
+		return fnCache9
+	case "BU":
+		return fnCache10
+	case "BX":
+		return fnCache11
+	case "FI":
+		return fnCache12
+	case "FM":
+		return fnCache13
+	case "MA":
+		return fnCache14
+	case "MI":
+		return fnCache15
+	case "SX":
+		return fnCache16
+	case "AAA":
+		return fnCache17
+	case "ABM":
+		return fnCache18
+	case "BUF":
+		return fnCache19
+	case "MFF":
+		return fnCache20
+	case "MMM":
+		return fnCache21
+	case "MMS":
+		return fnCache22
+	case "UFS":
+		return fnCache23
+	case "XAA":
+		return fnCache24
+	case "BMUF":
+		return fnCache25
+	case "MSXA":
+		return fnCache26
+	case "UUIB":
+		return fnCache27
+	case "FFFFF":
+		return fnCache28
+	case "AAAAAAAA":
+		return fnCache29
+	case "BIUFSXAM":
+		return fnCache30
+	case "MAXSFUIB":
+		return fnCache31
+	default: 
+		return nil
+	}
+}
+
+func fnCache0(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if !stream.IsReadFinish() {
+		return true
+	} else {
+		fn.(func(rpc.Context) rpc.Return)(ctx)
+		return true
+	}
+}
+
+func fnCache1(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Array) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache2(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache3(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Float64) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache4(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Int64) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache5(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache6(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadString(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.String) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache7(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Uint64) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache8(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bytes) rpc.Return)(ctx, arg0)
+		return true
+	}
+}
+
+func fnCache9(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Array, rpc.Uint64) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache10(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool, rpc.Uint64) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache11(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool, rpc.Bytes) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache12(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Float64, rpc.Int64) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache13(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadMap(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Float64, rpc.Map) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache14(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Array) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache15(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Int64) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache16(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadString(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.String, rpc.Bytes) rpc.Return)(ctx, arg0, arg1)
+		return true
+	}
+}
+
+func fnCache17(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Array, rpc.Array, rpc.Array) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache18(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadMap(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Array, rpc.Bool, rpc.Map) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache19(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool, rpc.Uint64, rpc.Float64) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache20(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Float64, rpc.Float64) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache21(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadMap(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Map, rpc.Map) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache22(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadString(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Map, rpc.String) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache23(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadString(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Uint64, rpc.Float64, rpc.String) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache24(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bytes, rpc.Array, rpc.Array) rpc.Return)(ctx, arg0, arg1, arg2)
+		return true
+	}
+}
+
+func fnCache25(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool, rpc.Map, rpc.Uint64, rpc.Float64) rpc.Return)(ctx, arg0, arg1, arg2, arg3)
+		return true
+	}
+}
+
+func fnCache26(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadString(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.String, rpc.Bytes, rpc.Array) rpc.Return)(ctx, arg0, arg1, arg2, arg3)
+		return true
+	}
+}
+
+func fnCache27(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadBool(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Uint64, rpc.Uint64, rpc.Int64, rpc.Bool) rpc.Return)(ctx, arg0, arg1, arg2, arg3)
+		return true
+	}
+}
+
+func fnCache28(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg4, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Float64, rpc.Float64, rpc.Float64, rpc.Float64, rpc.Float64) rpc.Return)(ctx, arg0, arg1, arg2, arg3, arg4)
+		return true
+	}
+}
+
+func fnCache29(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg4, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg5, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg6, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg7, ok := stream.ReadArray(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Array, rpc.Array, rpc.Array, rpc.Array, rpc.Array, rpc.Array, rpc.Array, rpc.Array) rpc.Return)(ctx, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		return true
+	}
+}
+
+func fnCache30(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadBool(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg4, ok := stream.ReadString(); !ok {
+		return false
+	} else if arg5, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if arg6, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg7, ok := stream.ReadMap(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return)(ctx, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		return true
+	}
+}
+
+func fnCache31(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if arg0, ok := stream.ReadMap(); !ok {
+		return false
+	} else if arg1, ok := stream.ReadArray(); !ok {
+		return false
+	} else if arg2, ok := stream.ReadBytes(); !ok {
+		return false
+	} else if arg3, ok := stream.ReadString(); !ok {
+		return false
+	} else if arg4, ok := stream.ReadFloat64(); !ok {
+		return false
+	} else if arg5, ok := stream.ReadUint64(); !ok {
+		return false
+	} else if arg6, ok := stream.ReadInt64(); !ok {
+		return false
+	} else if arg7, ok := stream.ReadBool(); !ok {
+		return false
+	} else if !stream.IsReadFinish() {
+		 return true
+	} else {
+		fn.(func(rpc.Context, rpc.Map, rpc.Array, rpc.Bytes, rpc.String, rpc.Float64, rpc.Uint64, rpc.Int64, rpc.Bool) rpc.Return)(ctx, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		return true
+	}
+}
+
