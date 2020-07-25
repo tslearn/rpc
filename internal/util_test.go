@@ -448,78 +448,6 @@ func testRunWithCatchPanic(fn func()) Error {
 	}
 }
 
-func testRunOnContext(
-	debug bool,
-	fn func(ctx Context) Return,
-) (interface{}, Error, Error) {
-	done := make(chan bool)
-	ret := interface{}(nil)
-	retError := Error(nil)
-	retPanic := Error(nil)
-
-	processor := getFakeProcessor(debug)
-
-	if err := processor.AddService(
-		"test",
-		NewService().
-			Reply("Eval", func(ctx Context) Return {
-				defer func() {
-					done <- true
-				}()
-				return fn(ctx)
-			}),
-		"",
-	); err != nil {
-		panic(err)
-	}
-
-	if err := processor.Start(
-		func(stream *Stream) {
-			stream.SetReadPosToBodyStart()
-			if stream.GetStreamKind() == StreamKindResponseOK {
-				if v, ok := stream.Read(); ok {
-					ret = v
-				} else {
-					panic("internal error")
-				}
-			} else {
-				if errKind, ok := stream.ReadUint64(); !ok {
-					panic("internal error")
-				} else if message, ok := stream.ReadString(); !ok {
-					panic("internal error")
-				} else if debug, ok := stream.ReadString(); !ok {
-					panic("internal error")
-				} else {
-					err := NewError(ErrorKind(errKind), message, debug)
-					if stream.GetStreamKind() == StreamKindResponseError {
-						retError = err
-					} else if stream.GetStreamKind() == StreamKindResponsePanic {
-						retPanic = err
-					}
-				}
-			}
-			stream.Release()
-		},
-	); err != nil {
-		panic(err)
-	}
-
-	// put the stream
-	stream := NewStream()
-	stream.SetStreamKind(StreamKindRequest)
-	stream.WriteString("$.test:Eval")
-	stream.WriteUint64(3)
-	stream.WriteString("#")
-	processor.PutStream(stream)
-
-	// wait for finish
-	<-done
-	if err := processor.Stop(); err != nil {
-		panic(err)
-	}
-	return ret, retError, retPanic
-}
-
 func testRunWithPanicCatch(fn func()) (ret interface{}) {
 	defer func() {
 		ret = recover()
@@ -615,4 +543,22 @@ func testRunWithProcessor(
 	}
 
 	return
+}
+
+func testRunOnContext(
+	isDebug bool,
+	fn func(ctx Context) Return,
+) (interface{}, Error, Error) {
+	return testRunWithProcessor(
+		isDebug,
+		nil,
+		fn, func(processor *Processor) *Stream {
+			stream := NewStream()
+			stream.SetStreamKind(StreamKindRequest)
+			stream.WriteString("$.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			return stream
+		},
+	)
 }

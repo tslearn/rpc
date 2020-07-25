@@ -105,7 +105,6 @@ func TestStringBuilder_Merge(t *testing.T) {
 		sb1.Merge(nil)
 		assert(sb1.String()).Equals(str1)
 		sb1.Release()
-		sb1.Release()
 	}
 }
 

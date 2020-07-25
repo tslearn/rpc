@@ -129,9 +129,9 @@ func (p *ContextObject) Error(value error) Return {
 				AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 	} else {
-		ReportPanic(
-			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+		return thread.WriteError(
+			NewReplyError(ErrStringUnknown).
+				AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
-		return nilReturn
 	}
 }

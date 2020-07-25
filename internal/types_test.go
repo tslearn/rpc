@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
@@ -92,12 +93,15 @@ func TestContextObject_stop(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	source1 := ""
-	assert(testRunWithCatchPanic(func() {
-		ret, source := Context(nil).stop(), GetFileLine(0)
-		source1 = source
+	panic1 := testRunWithCatchPanic(func() {
+		ret := Context(nil).stop()
 		assert(ret).IsFalse()
-	})).Equals(NewKernelError(ErrStringUnexpectedNil).AddDebug(source1))
+	})
+	assert(panic1).IsNotNil()
+	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
+	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
 
 	// Test(2)
 	ctx2 := getFakeContext(true)
@@ -189,7 +193,7 @@ func TestContextObject_Error(t *testing.T) {
 		return ret
 	})).Equals(
 		nil,
+		NewReplyError(ErrStringUnknown).AddDebug("$.test:Eval "+source5),
 		nil,
-		NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source5),
 	)
 }
