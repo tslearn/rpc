@@ -171,10 +171,6 @@ func (p *Processor) Stop() Error {
 		if p.freeThreadsCHGroup == nil {
 			return NewKernelError("Processor: Start: it has already benn stopped")
 		} else {
-			for i := 0; i < freeGroups; i++ {
-				close(p.freeThreadsCHGroup[i])
-			}
-
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
 

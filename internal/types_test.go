@@ -4,6 +4,24 @@ import (
 	"unsafe"
 )
 
+type testFuncCache struct{}
+
+func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
+	switch fnString {
+	case "S":
+		return func(c *ContextObject, s *Stream, f interface{}) bool {
+			h, ok := s.ReadString()
+			if !ok || s.CanRead() {
+				return false
+			}
+			f.(func(*ContextObject, string) *ReturnObject)(c, h)
+			return true
+		}
+	default:
+		return nil
+	}
+}
+
 func getFakeOnEvalFinish() func(*rpcThread, *Stream) {
 	return func(thread *rpcThread, stream *Stream) {}
 }

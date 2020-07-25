@@ -1,5 +1,17 @@
 package internal
 
+// ReplyCache ...
+type ReplyCache interface {
+	Get(fnString string) ReplyCacheFunc
+}
+
+// ReplyCacheFunc ...
+type ReplyCacheFunc = func(
+	ctx Context,
+	stream *Stream,
+	fn interface{},
+) bool
+
 // Bool ...
 type Bool = bool
 
