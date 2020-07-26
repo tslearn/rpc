@@ -475,9 +475,7 @@ func getFakeThread(debug bool) *rpcThread {
 		32,
 		nil,
 		[]*rpcChildMeta{},
-		func(stream *Stream) {
-
-		},
+		func(stream *Stream) {},
 	)
 	processor.Close()
 	return newThread(
