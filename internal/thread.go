@@ -236,7 +236,7 @@ func (p *rpcThread) Eval(
 			inStream.Reset()
 			retStream := p.execStream
 			p.execStream = inStream
-			if hasFuncReturn {
+			if p.execStatus != rpcThreadExecNone {
 				onEvalBack(retStream)
 			}
 			p.execFrom = ""

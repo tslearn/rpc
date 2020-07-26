@@ -607,6 +607,14 @@ func (p *testProcessorReturnHelper) GetReturnFunction() func(stream *Stream) {
 		if atomic.CompareAndSwapInt32(&p.isFirst, 0, 1) {
 			p.firstReceiveCH <- true
 		}
+
+		stream.SetReadPosToBodyStart()
+		if kind, ok := stream.ReadUint64(); ok {
+			if kind == uint64(ErrorKindTransport) {
+				panic("it makes onEvalFinish panic")
+			}
+		}
+
 		select {
 		case p.streamCH <- stream:
 			return

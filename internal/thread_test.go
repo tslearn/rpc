@@ -1149,7 +1149,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	if panic31 != nil {
 		assert(panic31.GetKind()).Equals(ErrorKindKernelPanic)
 		assert(panic31.GetMessage()).
-			Equals("rpc: kernel error: test panic")
+			Equals("rpc: kernel error: it makes onEvalFinish panic")
 		assert(strings.Contains(panic31.GetDebug(), "util_test.go")).IsTrue()
 	}
 
@@ -1167,13 +1167,13 @@ func TestRpcThread_Eval(t *testing.T) {
 			return stream
 		},
 	)
-	assert(ret32, panic32).Equals(nil, nil)
-	assert(error32).IsNotNil()
-	if error32 != nil {
-		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
-		assert(error32.GetMessage()).
+	assert(ret32, error32).Equals(nil, nil)
+	assert(panic32).IsNotNil()
+	if panic32 != nil {
+		assert(panic32.GetKind()).Equals(ErrorKindReplyPanic)
+		assert(panic32.GetMessage()).
 			Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
-		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
+		assert(strings.Contains(panic32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
 	}
@@ -1258,31 +1258,32 @@ func TestRpcThread_Eval(t *testing.T) {
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 }
 
-func TestRpcThread_Eval2(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(33) return without ctx
-	ret32, error32, panic32 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool) *ReturnObject {
-			return Return(nil)
-		},
-		func(_ *Processor) *Stream {
-			stream := NewStream()
-			stream.WriteString("#.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.Write(true)
-			return stream
-		},
-	)
-	assert(ret32, panic32).Equals(nil, nil)
-	assert(error32).IsNotNil()
-	if error32 != nil {
-		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
-		assert(error32.GetMessage()).
-			Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
-		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
-	} else {
-		assert().Fail("nil)")
-	}
-}
+//func TestRpcThread_Eval2(t *testing.T) {
+//	assert := NewAssert(t)
+//
+//  // Test(32) return without ctx
+//  ret32, error32, panic32 := testRunWithProcessor(true, nil,
+//    func(ctx *ContextObject, bVal bool) *ReturnObject {
+//      return Return(nil)
+//    },
+//    func(_ *Processor) *Stream {
+//      stream := NewStream()
+//      stream.WriteString("#.test:Eval")
+//      stream.WriteUint64(3)
+//      stream.WriteString("#")
+//      stream.Write(true)
+//      return stream
+//    },
+//  )
+//  fmt.Println(ret32, error32, panic32)
+//  assert(ret32, panic32).Equals(nil, nil)
+//  assert(error32).IsNotNil()
+//  if error32 != nil {
+//    assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
+//    assert(error32.GetMessage()).
+//      Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
+//    assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
+//  } else {
+//    assert().Fail("nil)")
+//  }
+//}
