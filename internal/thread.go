@@ -129,7 +129,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 		return nilReturn
 	} else {
 		ReportPanic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelFatal(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}
@@ -145,7 +145,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 			return nilReturn
 		} else {
 			ReportPanic(
-				NewReplyPanic(ConcatString("rpc: ", checkValue(value, "value", 64))).
+				NewReplyFatal(ConcatString("rpc: ", checkValue(value, "value", 64))).
 					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 			)
 			return p.WriteError(
@@ -155,7 +155,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		}
 	} else {
 		ReportPanic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelFatal(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}
@@ -194,7 +194,7 @@ func (p *rpcThread) Eval(
 		if v := recover(); v != nil {
 			// report panic
 			ReportPanic(
-				NewReplyPanic(
+				NewReplyFatal(
 					fmt.Sprintf("rpc: %s runtime error: %v", p.GetExecReplyNodePath(), v),
 				).AddDebug(string(debug.Stack())),
 			)
@@ -211,7 +211,7 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelPanic(fmt.Sprintf("rpc: kernel error: %v", v)).
+						NewKernelFatal(fmt.Sprintf("rpc: kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
 					)
 				}
@@ -220,7 +220,7 @@ func (p *rpcThread) Eval(
 			if execReplyNode != nil {
 				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
 					p.WriteError(
-						NewReplyPanic(ConcatString(
+						NewReplyFatal(ConcatString(
 							"rpc: ",
 							execReplyNode.GetPath(),
 							" must return through Context.OK or Context.Error",

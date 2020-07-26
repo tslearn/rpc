@@ -64,19 +64,19 @@ var nilContext = (Context)(nil)
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
+			NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
+			NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
 	} else if thread.GetGoroutineId() != CurrentGoroutineID() {
 		ReportPanic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
+			NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else {
@@ -87,7 +87,7 @@ func (p *ContextObject) getThread() *rpcThread {
 func (p *ContextObject) stop() bool {
 	if p == nil {
 		ReportPanic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelFatal(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return false
 	} else {
@@ -99,7 +99,7 @@ func (p *ContextObject) stop() bool {
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
@@ -113,7 +113,7 @@ func (p *ContextObject) OK(value interface{}) Return {
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
 		ReportPanic(
-			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+			NewReplyFatal(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {

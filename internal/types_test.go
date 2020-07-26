@@ -38,7 +38,7 @@ func TestContextObject_getThread(t *testing.T) {
 	})).Equals(
 		false,
 		nil,
-		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source1),
+		NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(source1),
 	)
 
 	// Test(2)
@@ -56,7 +56,7 @@ func TestContextObject_getThread(t *testing.T) {
 	})).Equals(
 		false,
 		nil,
-		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2),
+		NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(source2),
 	)
 
 	// Test(3)
@@ -79,7 +79,7 @@ func TestContextObject_getThread(t *testing.T) {
 	})).Equals(
 		false,
 		nil,
-		NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source4),
+		NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(source4),
 	)
 
 	// Test(5)
@@ -98,7 +98,7 @@ func TestContextObject_stop(t *testing.T) {
 		assert(ret).IsFalse()
 	})
 	assert(panic1).IsNotNil()
-	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetKind()).Equals(ErrorKindKernelFatal)
 	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
 	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
@@ -119,7 +119,7 @@ func TestContextObject_OK(t *testing.T) {
 		ret, source := Context(nil).OK(true), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
+	})).Equals(NewReplyFatal(ErrStringUnexpectedNil).AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -127,7 +127,7 @@ func TestContextObject_OK(t *testing.T) {
 		ret, source := (&ContextObject{thread: nil}).OK(true), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
+	})).Equals(NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(source2))
 
 	// Test(3)
 	assert(testRunOnContext(true, func(ctx Context) Return {
@@ -147,7 +147,7 @@ func TestContextObject_Error(t *testing.T) {
 		ret, source := Context(nil).Error(err), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
+	})).Equals(NewReplyFatal(ErrStringUnexpectedNil).AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -156,7 +156,7 @@ func TestContextObject_Error(t *testing.T) {
 		ret, source := (&ContextObject{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
+	})).Equals(NewReplyFatal(ErrStringRunOutOfReplyScope).AddDebug(source2))
 
 	// Test(3)
 	source3 := ""

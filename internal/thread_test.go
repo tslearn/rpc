@@ -158,7 +158,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 		thread := &rpcThread{}
 		thread.WriteError(NewReplyError(""))
 	})
-	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetKind()).Equals(ErrorKindKernelFatal)
 	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
 	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
@@ -191,7 +191,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		thread := &rpcThread{}
 		thread.WriteOK(true, 1)
 	})
-	assert(panic1.GetKind()).Equals(ErrorKindKernel)
+	assert(panic1.GetKind()).Equals(ErrorKindKernelFatal)
 	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
 	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
@@ -219,7 +219,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		nil,
 		NewReplyError("rpc: reply return value error").
 			AddDebug("#.test:Eval "+source2),
-		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+		NewReplyFatal("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -249,7 +249,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		nil,
 		NewReplyError("rpc: reply return value error").
 			AddDebug("#.test:Eval "+source3),
-		NewReplyPanic("rpc: value type (chan bool) is not supported").
+		NewReplyFatal("rpc: value type (chan bool) is not supported").
 			AddDebug("#.test:Eval "+source3),
 	)
 
@@ -1092,7 +1092,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(strings.Contains(error29.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic29 != nil {
-		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
+		assert(panic29.GetKind()).Equals(ErrorKindReplyFatal)
 		assert(panic29.GetMessage()).
 			Equals("rpc: #.test:Eval runtime error: this is a error")
 		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
@@ -1124,7 +1124,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(strings.Contains(error30.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic30 != nil {
-		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
+		assert(panic30.GetKind()).Equals(ErrorKindReplyFatal)
 		assert(panic30.GetMessage()).
 			Equals("rpc: #.test:Eval runtime error: this is a error")
 		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
@@ -1147,7 +1147,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret31, error31).Equals(nil, nil)
 	assert(panic31).IsNotNil()
 	if panic31 != nil {
-		assert(panic31.GetKind()).Equals(ErrorKindKernel)
+		assert(panic31.GetKind()).Equals(ErrorKindKernelFatal)
 		assert(panic31.GetMessage()).
 			Equals("rpc: kernel error: test panic")
 		assert(strings.Contains(panic31.GetDebug(), "util_test.go")).IsTrue()
@@ -1170,7 +1170,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret32, panic32).Equals(nil, nil)
 	assert(error32).IsNotNil()
 	if error32 != nil {
-		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
+		assert(error32.GetKind()).Equals(ErrorKindReplyFatal)
 		assert(error32.GetMessage()).
 			Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
 		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
@@ -1278,7 +1278,7 @@ func TestRpcThread_Eval2(t *testing.T) {
 	assert(ret32, panic32).Equals(nil, nil)
 	assert(error32).IsNotNil()
 	if error32 != nil {
-		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
+		assert(error32.GetKind()).Equals(ErrorKindReplyFatal)
 		assert(error32.GetMessage()).
 			Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
 		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
