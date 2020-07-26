@@ -85,7 +85,6 @@ func NewProcessor(
 		stream.WriteString(err.GetMessage())
 		stream.WriteString(err.GetDebug())
 		onReturnStream(stream)
-		stream.Release()
 	}
 
 	if numOfThreads == 0 {

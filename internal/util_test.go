@@ -636,7 +636,7 @@ func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 	for stream := range p.streamCH {
 		stream.SetReadPosToBodyStart()
 		if kind, ok := stream.ReadUint64(); !ok {
-			reportPanic("streamCH is full")
+			reportPanic("stream is bad")
 		} else if ErrorKind(kind) == ErrorKindNone {
 			if v, ok := stream.Read(); ok {
 				retArray = append(retArray, v)
