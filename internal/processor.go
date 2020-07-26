@@ -265,184 +265,164 @@ func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *rpcChildMeta,
 ) Error {
-	// check nodeMeta is not nil
 	if nodeMeta == nil {
+		// check nodeMeta is not nil
 		return NewKernelError(ErrStringUnexpectedNil).
 			AddDebug(string(debug.Stack()))
-	}
-
-	// check nodeMeta.name is valid
-	if !nodeNameRegex.MatchString(nodeMeta.name) {
-		return NewBaseError(
-			fmt.Sprintf("rpc: service name \"%s\" is illegal", nodeMeta.name),
+	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
+		// check nodeMeta.name is valid
+		return NewRuntimeError(
+			fmt.Sprintf("rpc: service name %s is illegal", nodeMeta.name),
 		).AddDebug(nodeMeta.fileLine)
-	}
+	} else if nodeMeta.service == nil {
+		// check nodeMeta.service is not nil
+		return NewRuntimeError("rpc: service is nil").AddDebug(nodeMeta.fileLine)
+	} else if parentNode, ok := p.servicesMap[parentServiceNodePath]; !ok {
+		// check if parent node is exist
+		return NewKernelError(
+			"rpc: can not find parent service",
+		).AddDebug(string(debug.Stack()))
+	} else {
+		servicePath := parentServiceNodePath + "." + nodeMeta.name
+		if uint64(parentNode.depth+1) > p.maxNodeDepth {
+			// check max node depth overflow
+			return NewRuntimeError(fmt.Sprintf(
+				"rpc: service path %s is too long",
+				servicePath,
+			)).AddDebug(nodeMeta.fileLine)
+		} else if item, ok := p.servicesMap[servicePath]; ok {
+			// check the mount path is not occupied
+			return NewRuntimeError(fmt.Sprintf(
+				"rpc: duplicated service name %s",
+				nodeMeta.name,
+			)).AddDebug(fmt.Sprintf(
+				"current:\n%s\nconflict:\n%s",
+				AddPrefixPerLine(nodeMeta.fileLine, "\t"),
+				AddPrefixPerLine(item.addMeta.fileLine, "\t"),
+			))
+		} else {
+			node := &rpcServiceNode{
+				path:    servicePath,
+				addMeta: nodeMeta,
+				depth:   parentNode.depth + 1,
+			}
 
-	// check nodeMeta.service is not nil
-	if nodeMeta.service == nil {
-		return NewBaseError("rpc: service is nil").AddDebug(nodeMeta.fileLine)
-	}
+			// mount the node
+			p.servicesMap[servicePath] = node
 
-	// check max node depth overflow
-	parentNode, ok := p.servicesMap[parentServiceNodePath]
-	if !ok {
-		return NewBaseError(
-			"rpc: mountNode: parentNode is nil",
-		).AddDebug(nodeMeta.fileLine)
-	}
-	servicePath := parentServiceNodePath + "." + nodeMeta.name
-	if uint64(parentNode.depth+1) > p.maxNodeDepth {
-		return NewBaseError(fmt.Sprintf(
-			"Service path depth %s is too long, it must be less or equal than %d",
-			servicePath,
-			p.maxNodeDepth,
-		)).AddDebug(nodeMeta.fileLine)
-	}
+			// mount the replies
+			for _, replyMeta := range nodeMeta.service.replies {
+				err := p.mountReply(node, replyMeta)
+				if err != nil {
+					delete(p.servicesMap, servicePath)
+					return err
+				}
+			}
 
-	// check the mount path is not occupied
-	if item, ok := p.servicesMap[servicePath]; ok {
-		return NewBaseError(fmt.Sprintf(
-			"Service name \"%s\" is duplicated",
-			nodeMeta.name,
-		)).AddDebug(fmt.Sprintf(
-			"Current:\n%s\nConflict:\n%s",
-			AddPrefixPerLine(nodeMeta.fileLine, "\t"),
-			AddPrefixPerLine(item.addMeta.fileLine, "\t"),
-		))
-	}
+			// mount children
+			for _, v := range nodeMeta.service.children {
+				err := p.mountNode(node.path, v)
+				if err != nil {
+					delete(p.servicesMap, servicePath)
+					return err
+				}
+			}
 
-	node := &rpcServiceNode{
-		path:    servicePath,
-		addMeta: nodeMeta,
-		depth:   parentNode.depth + 1,
-	}
-
-	// mount the node
-	p.servicesMap[servicePath] = node
-
-	// mount the replies
-	for _, replyMeta := range nodeMeta.service.replies {
-		err := p.mountReply(node, replyMeta)
-		if err != nil {
-			delete(p.servicesMap, servicePath)
-			return err
+			return nil
 		}
 	}
-
-	// mount children
-	for _, v := range nodeMeta.service.children {
-		err := p.mountNode(node.path, v)
-		if err != nil {
-			delete(p.servicesMap, servicePath)
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
-	replyMeta *rpcReplyMeta,
+	meta *rpcReplyMeta,
 ) Error {
-	// check the node is nil
 	if serviceNode == nil {
-		return NewBaseError("rpc: mountReply: node is nil")
-	}
-
-	// check the rpcReplyMeta is nil
-	if replyMeta == nil {
-		return NewBaseError("rpc: mountReply: rpcReplyMeta is nil")
-	}
-
-	// check the name
-	if !replyNameRegex.MatchString(replyMeta.name) {
-		return NewBaseError(
-			fmt.Sprintf("Reply name %s is illegal", replyMeta.name),
-		).AddDebug(replyMeta.fileLine)
-	}
-
-	// check the reply path is not occupied
-	replyPath := serviceNode.path + ":" + replyMeta.name
-	if item, ok := p.repliesMap[replyPath]; ok {
-		return NewBaseError(fmt.Sprintf(
-			"Reply name %s is duplicated",
-			replyMeta.name,
-		)).AddDebug(fmt.Sprintf(
-			"Current:\n%s\nConflict:\n%s",
-			AddPrefixPerLine(replyMeta.fileLine, "\t"),
-			AddPrefixPerLine(item.replyMeta.fileLine, "\t"),
-		))
-	}
-
-	// check the reply handler is nil
-	if replyMeta.handler == nil {
-		return NewBaseError("Reply handler is nil").AddDebug(replyMeta.fileLine)
-	}
-
-	// Check reply handler is Func
-	fn := reflect.ValueOf(replyMeta.handler)
-	if fn.Kind() != reflect.Func {
-		return NewBaseError(fmt.Sprintf(
-			"Reply handler must be func(ctx %s, ...) %s",
+		// check the node is nil
+		return NewKernelError("rpc: service node is nil").
+			AddDebug(string(debug.Stack()))
+	} else if meta == nil {
+		// check the rpcReplyMeta is nil
+		return NewKernelError("rpc: meta is nil").
+			AddDebug(string(debug.Stack()))
+	} else if !replyNameRegex.MatchString(meta.name) {
+		// check the name
+		return NewRuntimeError(
+			fmt.Sprintf("rpc: reply name %s is illegal", meta.name),
+		).AddDebug(meta.fileLine)
+	} else if meta.handler == nil {
+		// check the reply handler is nil
+		return NewRuntimeError("rpc: reply handler is nil").AddDebug(meta.fileLine)
+	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
+		// Check reply handler is Func
+		return NewRuntimeError(fmt.Sprintf(
+			"rpc: reply handler must be func(ctx %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
-		)).AddDebug(replyMeta.fileLine)
-	}
-
-	// Check reply handler arguments types
-	argumentsErrorPos := getArgumentsErrorPosition(fn)
-	if argumentsErrorPos == 0 {
-		return NewBaseError(fmt.Sprintf(
-			"Reply handler 1st argument type must be %s",
+		)).AddDebug(meta.fileLine)
+	} else if argsErrorPos := getArgumentsErrorPosition(fn); argsErrorPos == 0 {
+		// Check reply handler arguments types
+		return NewRuntimeError(fmt.Sprintf(
+			"rpc: reply handler 1st argument type must be %s",
 			convertTypeToString(contextType),
-		)).AddDebug(replyMeta.fileLine)
-	} else if argumentsErrorPos > 0 {
-		return NewBaseError(fmt.Sprintf(
-			"Reply handler %s argument type <%s> not supported",
-			ConvertOrdinalToString(1+uint(argumentsErrorPos)),
-			fmt.Sprintf("%s", fn.Type().In(argumentsErrorPos)),
-		)).AddDebug(replyMeta.fileLine)
-	}
-
-	// Check return type
-	if fn.Type().NumOut() != 1 ||
+		)).AddDebug(meta.fileLine)
+	} else if argsErrorPos > 0 {
+		// Check reply handler arguments types
+		return NewRuntimeError(fmt.Sprintf(
+			"rpc: reply handler %s argument type %s is not supported",
+			ConvertOrdinalToString(1+uint(argsErrorPos)),
+			fmt.Sprintf("%s", fn.Type().In(argsErrorPos)),
+		)).AddDebug(meta.fileLine)
+	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return NewBaseError(
+		// Check return type
+		return NewRuntimeError(
 			fmt.Sprintf(
-				"Reply handler return type must be %s",
+				"rpc: reply handler return type must be %s",
 				convertTypeToString(returnType),
-			)).AddDebug(replyMeta.fileLine)
-	}
+			)).AddDebug(meta.fileLine)
+	} else {
+		replyPath := serviceNode.path + ":" + meta.name
+		if item, ok := p.repliesMap[replyPath]; ok {
+			// check the reply path is not occupied
+			return NewRuntimeError(fmt.Sprintf(
+				"rpc: reply name %s is duplicated",
+				meta.name,
+			)).AddDebug(fmt.Sprintf(
+				"current:\n%s\nconflict:\n%s",
+				AddPrefixPerLine(meta.fileLine, "\t"),
+				AddPrefixPerLine(item.replyMeta.fileLine, "\t"),
+			))
+		} else {
+			// mount the replyRecord
+			argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
+			argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
+			for i := 0; i < len(argTypes); i++ {
+				argTypes[i] = fn.Type().In(i)
+				argStrings[i] = convertTypeToString(argTypes[i])
+			}
 
-	// mount the replyRecord
-	argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
-	argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
-	for i := 0; i < len(argTypes); i++ {
-		argTypes[i] = fn.Type().In(i)
-		argStrings[i] = convertTypeToString(argTypes[i])
-	}
-	argString := strings.Join(argStrings, ", ")
+			replyNode := &rpcReplyNode{
+				path:      replyPath,
+				replyMeta: meta,
+				cacheFN:   nil,
+				reflectFn: fn,
+				callString: fmt.Sprintf(
+					"%s(%s) %s",
+					replyPath,
+					strings.Join(argStrings, ", "),
+					convertTypeToString(returnType),
+				),
+				argTypes:  argTypes,
+				indicator: newPerformanceIndicator(),
+			}
 
-	cacheFN := ReplyCacheFunc(nil)
-	if fnTypeString, ok := getFuncKind(replyMeta.handler); ok && p.fnCache != nil {
-		cacheFN = p.fnCache.Get(fnTypeString)
-	}
+			if fnTypeString, ok := getFuncKind(meta.handler); ok && p.fnCache != nil {
+				replyNode.cacheFN = p.fnCache.Get(fnTypeString)
+			}
 
-	p.repliesMap[replyPath] = &rpcReplyNode{
-		path:      replyPath,
-		replyMeta: replyMeta,
-		cacheFN:   cacheFN,
-		reflectFn: fn,
-		callString: fmt.Sprintf(
-			"%s(%s) %s",
-			replyPath,
-			argString,
-			convertTypeToString(returnType),
-		),
-		argTypes:  argTypes,
-		indicator: newPerformanceIndicator(),
+			p.repliesMap[replyPath] = replyNode
+			return nil
+		}
 	}
-
-	return nil
 }
