@@ -626,7 +626,7 @@ func (p *testProcessorReturnHelper) WaitForFirstStream() {
 func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 	retArray := make([]Any, 0)
 	errorArray := make([]Error, 0)
-	fatalError := make([]Error, 0)
+	panicArray := make([]Error, 0)
 	reportPanic := func(message string) {
 		go func() {
 			panic("message")
@@ -663,7 +663,7 @@ func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 				case ErrorKindRuntimePanic:
 					fallthrough
 				case ErrorKindKernelPanic:
-					fatalError = append(fatalError, err)
+					panicArray = append(panicArray, err)
 				default:
 					reportPanic("kind error")
 				}
@@ -671,5 +671,5 @@ func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 		}
 		stream.Release()
 	}
-	return retArray, errorArray, fatalError
+	return retArray, errorArray, panicArray
 }
