@@ -81,7 +81,7 @@ func NewProcessor(
 			recover()
 		}()
 		stream := NewStream()
-		stream.SetStreamKind(StreamKindResponsePanic)
+		stream.SetStreamKind(StreamKindResponseFatal)
 		stream.WriteUint64(uint64(err.GetKind()))
 		stream.WriteString(err.GetMessage())
 		stream.WriteString(err.GetDebug())

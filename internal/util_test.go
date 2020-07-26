@@ -552,7 +552,7 @@ func testRunWithProcessor(
 					} else {
 						retError = err
 					}
-				} else if stream.GetStreamKind() == StreamKindResponsePanic {
+				} else if stream.GetStreamKind() == StreamKindResponseFatal {
 					if retPanic != nil {
 						panic("internal error")
 					} else {
@@ -611,4 +611,71 @@ func testRunOnContext(
 			return stream
 		},
 	)
+}
+
+type testProcessorReturnHelper struct {
+	streamCH chan *Stream
+}
+
+func newTestProcessorReturnHelper() *testProcessorReturnHelper {
+	return &testProcessorReturnHelper{
+		streamCH: make(chan *Stream, 8192),
+	}
+}
+
+func (p *testProcessorReturnHelper) getReturnFunction() func(stream *Stream) {
+	return func(stream *Stream) {
+		select {
+		case p.streamCH <- stream:
+			return
+		case <-time.After(time.Second):
+			// prevent capture
+			go func() {
+				panic("streamCH is full")
+			}()
+		}
+	}
+}
+
+func (p *testProcessorReturnHelper) getReturn() ([]Any, []Error, []Error) {
+	for stream := range p.streamCH {
+		if stream.GetStreamKind() == StreamKindResponseOK {
+			if v, ok := stream.Read(); ok {
+				if ret != nil {
+					panic("internal error")
+				} else {
+					ret = v
+				}
+			} else {
+				panic("internal error")
+			}
+		} else {
+			if errKind, ok := stream.ReadUint64(); !ok {
+				panic("internal error")
+			} else if ErrorKind(errKind) == ErrorKindTransport {
+				panic("test panic")
+			} else if message, ok := stream.ReadString(); !ok {
+				panic("internal error")
+			} else if debug, ok := stream.ReadString(); !ok {
+				panic("internal error")
+			} else {
+				err := NewError(ErrorKind(errKind), message, debug)
+				if stream.GetStreamKind() == StreamKindResponseError {
+					if retError != nil {
+						panic("internal error")
+					} else {
+						retError = err
+					}
+				} else if stream.GetStreamKind() == StreamKindResponseFatal {
+					if retPanic != nil {
+						panic("internal error")
+					} else {
+						retPanic = err
+					}
+				} else {
+					panic("internal error")
+				}
+			}
+		}
+	}
 }

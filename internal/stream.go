@@ -17,7 +17,7 @@ const (
 	StreamKindRequest       = StreamKind(1)
 	StreamKindResponseOK    = StreamKind(2)
 	StreamKindResponseError = StreamKind(3)
-	StreamKindResponsePanic = StreamKind(4)
+	StreamKindResponseFatal = StreamKind(4)
 	StreamKindRuntimePanic  = StreamKind(5)
 	StreamKindKernelPanic   = StreamKind(6)
 )

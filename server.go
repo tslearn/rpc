@@ -344,7 +344,7 @@ func (p *Server) Start() bool {
 							}
 						}
 					}
-				} else if kind == internal.StreamKindResponsePanic {
+				} else if kind == internal.StreamKindResponseFatal {
 					// report Panic
 					stream.SetReadPosToBodyStart()
 
