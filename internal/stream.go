@@ -18,8 +18,8 @@ const (
 	StreamKindResponseOK    = StreamKind(2)
 	StreamKindResponseError = StreamKind(3)
 	StreamKindResponsePanic = StreamKind(4)
-	StreamKindBroadcast     = StreamKind(5)
-	StreamKindControl       = StreamKind(6)
+	StreamKindRuntimePanic  = StreamKind(5)
+	StreamKindKernelPanic   = StreamKind(6)
 )
 
 const (

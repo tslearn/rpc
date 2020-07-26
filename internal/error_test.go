@@ -88,7 +88,7 @@ func TestNewRuntimeError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewRuntimeError("message")).
+	assert(NewRuntimePanic("message")).
 		Equals(NewError(ErrorKindRuntime, "message", ""))
 }
 
@@ -112,7 +112,7 @@ func TestNewKernelError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewKernelError("message")).
+	assert(NewKernelPanic("message")).
 		Equals(NewError(ErrorKindKernel, "message", ""))
 }
 

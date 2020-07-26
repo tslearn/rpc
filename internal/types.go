@@ -87,7 +87,7 @@ func (p *ContextObject) getThread() *rpcThread {
 func (p *ContextObject) stop() bool {
 	if p == nil {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return false
 	} else {

@@ -99,21 +99,6 @@ func NewBaseError(message string) Error {
 	return NewError(ErrorKindBase, message, "")
 }
 
-// NewReplyError ...
-func NewReplyError(message string) Error {
-	return NewError(ErrorKindReply, message, "")
-}
-
-// NewReplyPanic ...
-func NewReplyPanic(message string) Error {
-	return NewError(ErrorKindReplyPanic, message, "")
-}
-
-// NewRuntimeError ...
-func NewRuntimeError(message string) Error {
-	return NewError(ErrorKindRuntime, message, "")
-}
-
 // NewProtocolError ...
 func NewProtocolError(message string) Error {
 	return NewError(ErrorKindProtocol, message, "")
@@ -124,8 +109,23 @@ func NewTransportError(message string) Error {
 	return NewError(ErrorKindTransport, message, "")
 }
 
-// NewKernelError ...
-func NewKernelError(message string) Error {
+// NewReplyError ...
+func NewReplyError(message string) Error {
+	return NewError(ErrorKindReply, message, "")
+}
+
+// NewReplyPanic ...
+func NewReplyPanic(message string) Error {
+	return NewError(ErrorKindReplyPanic, message, "")
+}
+
+// NewRuntimePanic ...
+func NewRuntimePanic(message string) Error {
+	return NewError(ErrorKindRuntime, message, "")
+}
+
+// NewKernelPanic ...
+func NewKernelPanic(message string) Error {
 	return NewError(ErrorKindKernel, message, "")
 }
 

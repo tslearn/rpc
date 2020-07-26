@@ -129,7 +129,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 		return nilReturn
 	} else {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}
@@ -155,7 +155,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		}
 	} else {
 		ReportPanic(
-			NewKernelError(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}
@@ -211,7 +211,7 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					ReportPanic(
-						NewKernelError(fmt.Sprintf("rpc: kernel error: %v", v)).
+						NewKernelPanic(fmt.Sprintf("rpc: kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
 					)
 				}

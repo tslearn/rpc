@@ -6,7 +6,38 @@ import (
 	"testing"
 )
 
+func TestRpcReplyNode_GetPath(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	node1 := &rpcReplyNode{path: "path"}
+	assert(node1.GetPath()).Equals("path")
+}
+
+func TestRpcReplyNode_GetDebug(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	node1 := &rpcReplyNode{path: "path"}
+	assert(node1.GetDebug()).Equals("path")
+
+	// Test(2)
+	node2 := &rpcReplyNode{
+		path:      "path",
+		replyMeta: &rpcReplyMeta{fileLine: "fileLine"},
+	}
+	assert(node2.GetDebug()).Equals("path fileLine")
+}
+
 func TestNewProcessor(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) onReturnStream is nil
+	assert(NewProcessor(true, 1, 1, 1, nil, nil, nil)).IsNil()
+
+}
+
+func TestNewProcessor2(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//processor := getNewProcessor()
