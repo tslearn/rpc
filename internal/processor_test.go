@@ -353,15 +353,20 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	total := uint64(0)
 	success := uint64(0)
 	failed := uint64(0)
-	processor, _ := NewProcessor(
+	processor := NewProcessor(
 		false,
 		8192*24,
 		16,
 		16,
 		&testFuncCache{},
-	)
-
-	_ = processor.Start(
+		[]*rpcChildMeta{&rpcChildMeta{
+			name: "user",
+			service: NewService().
+				Reply("sayHello", func(ctx Context, name String) Return {
+					return ctx.OK(name)
+				}),
+			fileLine: "",
+		}},
 		func(stream *Stream) {
 			if stream.GetStreamKind() == StreamKindResponseOK {
 				atomic.AddUint64(&success, 1)
@@ -374,14 +379,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			}
 			stream.Release()
 		},
-	)
-	_ = processor.AddService(
-		"user",
-		NewService().
-			Reply("sayHello", func(ctx Context, name String) Return {
-				return ctx.OK(name)
-			}),
-		"",
 	)
 
 	b.ReportAllocs()
@@ -400,6 +397,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		}
 	})
 
-	fmt.Println(processor.Stop())
+	fmt.Println(processor.Close())
 	fmt.Println(total, success, failed)
 }

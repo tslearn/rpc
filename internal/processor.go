@@ -67,18 +67,48 @@ func NewProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache ReplyCache,
-) (*Processor, Error) {
+	mountServices []*rpcChildMeta,
+	onReturnStream func(stream *Stream),
+) *Processor {
+	if onReturnStream == nil {
+		return nil
+	}
+
+	onReturnError := func(err Error) {
+		defer func() {
+			// ignore this error.
+			// it has tried its best to report panic.
+			recover()
+		}()
+		stream := NewStream()
+		stream.SetStreamKind(StreamKindResponsePanic)
+		stream.WriteUint64(uint64(err.GetKind()))
+		stream.WriteString(err.GetMessage())
+		stream.WriteString(err.GetDebug())
+		onReturnStream(stream)
+		stream.Release()
+	}
+
 	if numOfThreads == 0 {
-		return nil, NewKernelError("rpc: numOfThreads is zero").
-			AddDebug(string(debug.Stack()))
+		onReturnError(
+			NewKernelError("rpc: numOfThreads is zero").
+				AddDebug(string(debug.Stack())),
+		)
+		return nil
 	} else if maxNodeDepth == 0 {
-		return nil, NewKernelError("rpc: maxNodeDepth is zero").
-			AddDebug(string(debug.Stack()))
+		onReturnError(
+			NewKernelError("rpc: maxNodeDepth is zero").
+				AddDebug(string(debug.Stack())),
+		)
+		return nil
 	} else if maxCallDepth == 0 {
-		return nil, NewKernelError("rpc: maxCallDepth is zero").
-			AddDebug(string(debug.Stack()))
+		onReturnError(
+			NewKernelError("rpc: maxCallDepth is zero").
+				AddDebug(string(debug.Stack())),
+		)
+		return nil
 	} else {
-		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
+		size := int(((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups)
 		ret := &Processor{
 			isDebug:            isDebug,
 			fnCache:            fnCache,
@@ -91,13 +121,41 @@ func NewProcessor(
 			readThreadPos:      0,
 			writeThreadPos:     0,
 		}
-		// mount root node
+
+		// mount nodes
 		ret.servicesMap[rootName] = &rpcServiceNode{
 			path:    rootName,
 			addMeta: nil,
 			depth:   0,
 		}
-		return ret, nil
+		for _, meta := range mountServices {
+			if err := ret.mountNode(rootName, meta); err != nil {
+				onReturnError(err)
+				return nil
+			}
+		}
+
+		// subscribe panic
+		ret.panicSubscription = SubscribePanic(onReturnError)
+
+		// start threads
+		freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)
+		for i := 0; i < freeGroups; i++ {
+			freeThreadsCHGroup[i] = make(chan *rpcThread, size/freeGroups)
+		}
+		ret.freeThreadsCHGroup = freeThreadsCHGroup
+
+		for i := 0; i < size; i++ {
+			thread := newThread(ret, onReturnStream, func(thread *rpcThread) {
+				freeThreadsCHGroup[atomic.AddUint64(
+					&ret.writeThreadPos,
+					1,
+				)%freeGroups] <- thread
+			})
+			ret.threads[i] = thread
+			ret.freeThreadsCHGroup[i%freeGroups] <- thread
+		}
+		return ret
 	}
 }
 
@@ -105,58 +163,10 @@ func (p *Processor) IsDebug() bool {
 	return p.isDebug
 }
 
-func (p *Processor) Start(
-	onReturnStream func(stream *Stream),
-) Error {
-	return ConvertToError(p.CallWithLock(func() interface{} {
-		if onReturnStream == nil {
-			return NewKernelError(ErrStringUnexpectedNil).
-				AddDebug(string(debug.Stack()))
-		} else if p.freeThreadsCHGroup != nil {
-			return NewKernelError(ErrStringUnexpectedNil).
-				AddDebug(string(debug.Stack()))
-		} else {
-			p.panicSubscription = SubscribePanic(func(err Error) {
-				defer func() {
-					// ignore this error.
-					// it has tried its best to report panic.
-					recover()
-				}()
-				stream := NewStream()
-				stream.SetStreamKind(StreamKindResponsePanic)
-				stream.WriteUint64(uint64(err.GetKind()))
-				stream.WriteString(err.GetMessage())
-				stream.WriteString(err.GetDebug())
-				onReturnStream(stream)
-				stream.Release()
-			})
-
-			freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)
-			for i := 0; i < freeGroups; i++ {
-				freeThreadsCHGroup[i] = make(chan *rpcThread, len(p.threads)/freeGroups)
-			}
-			p.freeThreadsCHGroup = freeThreadsCHGroup
-
-			for i := 0; i < len(p.threads); i++ {
-				thread := newThread(p, onReturnStream, func(thread *rpcThread) {
-					freeThreadsCHGroup[atomic.AddUint64(
-						&p.writeThreadPos,
-						1,
-					)%freeGroups] <- thread
-				})
-				p.threads[i] = thread
-				p.freeThreadsCHGroup[i%freeGroups] <- thread
-			}
-			return Error(nil)
-		}
-	}))
-}
-
-func (p *Processor) Stop() Error {
-	return ConvertToError(p.CallWithLock(func() interface{} {
-		if p.freeThreadsCHGroup == nil {
-			return NewKernelError(ErrStringUnexpectedNil).
-				AddDebug(string(debug.Stack()))
+func (p *Processor) Close() bool {
+	return p.CallWithLock(func() interface{} {
+		if p.panicSubscription == nil {
+			return false
 		} else {
 			closeCH := make(chan string, len(p.threads))
 
@@ -204,18 +214,9 @@ func (p *Processor) Stop() Error {
 
 			p.panicSubscription.Close()
 			p.panicSubscription = nil
-			p.freeThreadsCHGroup = nil
-
-			if len(errList) > 0 {
-				return NewRuntimeError(ConcatString(
-					"rpc: the following replies can not stop after 20 seconds: \n\t",
-					strings.Join(errList, "\n\t"),
-				))
-			} else {
-				return Error(nil)
-			}
+			return len(errList) == 0
 		}
-	}))
+	}).(bool)
 }
 
 // PutStream ...
@@ -228,7 +229,14 @@ func (p *Processor) PutStream(stream *Stream) bool {
 	)%freeGroups]; thread == nil {
 		return false
 	} else {
-		return thread.PutStream(stream)
+		success := thread.PutStream(stream)
+		if !success {
+			freeThreadsCHGroup[atomic.AddUint64(
+				&p.writeThreadPos,
+				1,
+			)%freeGroups] <- thread
+		}
+		return success
 	}
 }
 
@@ -251,23 +259,6 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 	}
 
 	return nil
-}
-
-// AddChildService ...
-func (p *Processor) AddService(
-	name string,
-	service *Service,
-	debug string,
-) Error {
-	if service == nil {
-		return NewRuntimeError("rpc: service is nil").AddDebug(debug)
-	}
-
-	return p.mountNode(rootName, &rpcChildMeta{
-		name:     name,
-		service:  service,
-		fileLine: debug,
-	})
 }
 
 func (p *Processor) mountNode(

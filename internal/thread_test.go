@@ -24,7 +24,7 @@ func TestNewThread(t *testing.T) {
 	assert(newThread(getFakeProcessor(true), nil, nil)).IsNil()
 
 	// Test(4) debug thread
-	thread4 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	thread4 := getFakeThread(true)
 	defer thread4.Stop()
 	assert(thread4.goroutineId > 0).IsTrue()
 	assert(thread4.processor).IsNotNil()
@@ -39,7 +39,7 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.IsDebug()).IsTrue()
 
 	// Test(5) release thread
-	thread5 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
+	thread5 := getFakeThread(false)
 	defer thread5.Stop()
 	assert(thread5.goroutineId == 0).IsTrue()
 	assert(thread5.processor).IsNotNil()
@@ -56,11 +56,9 @@ func TestNewThread(t *testing.T) {
 
 func TestRpcThread_Stop(t *testing.T) {
 	assert := NewAssert(t)
-	fakeEvalBack := getFakeOnEvalBack()
-	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1)
-	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	thread1 := getFakeThread(true)
 	assert(thread1.Stop()).IsTrue()
 
 	// Test(2) can not stop after 20 second
@@ -73,7 +71,7 @@ func TestRpcThread_Stop(t *testing.T) {
 			func(processor *Processor) *Stream {
 				go func() {
 					time.Sleep(time.Second)
-					assert(processor.Stop()).IsNotNil()
+					assert(processor.Close()).IsFalse()
 				}()
 				stream := NewStream()
 				stream.WriteString("#.test:Eval")
@@ -86,55 +84,49 @@ func TestRpcThread_Stop(t *testing.T) {
 	})).IsNotNil()
 
 	// Test(3) stop twice
-	thread3 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	thread3 := getFakeThread(true)
 	assert(thread3.Stop()).IsTrue()
 	assert(thread3.Stop()).IsFalse()
 }
 
 func TestRpcThread_GetGoroutineId(t *testing.T) {
 	assert := NewAssert(t)
-	fakeEvalBack := getFakeOnEvalBack()
-	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	thread1 := getFakeThread(true)
 	defer thread1.Stop()
 	assert(thread1.GetGoroutineId() > 0).IsTrue()
 
 	// Test(2) release
-	thread2 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
+	thread2 := getFakeThread(false)
 	defer thread2.Stop()
 	assert(thread2.GetGoroutineId()).Equals(int64(0))
 }
 
 func TestRpcThread_IsDebug(t *testing.T) {
 	assert := NewAssert(t)
-	fakeEvalBack := getFakeOnEvalBack()
-	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	thread1 := getFakeThread(true)
 	defer thread1.Stop()
 	assert(thread1.IsDebug()).IsTrue()
 
 	// Test(2) release
-	thread2 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
+	thread2 := getFakeThread(false)
 	defer thread2.Stop()
 	assert(thread2.IsDebug()).IsFalse()
 }
 
 func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	assert := NewAssert(t)
-	fakeEvalBack := getFakeOnEvalBack()
-	fakeEvalFinish := getFakeOnEvalFinish()
 
-	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	// Test(1)
+	thread1 := getFakeThread(true)
 	defer thread1.Stop()
 	assert(thread1.GetExecReplyNodePath()).Equals("")
 
-	// Test(2) debug
-	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	// Test(2)
+	thread2 := getFakeThread(true)
 	defer thread2.Stop()
 	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
@@ -142,16 +134,14 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 
 func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 	assert := NewAssert(t)
-	fakeEvalBack := getFakeOnEvalBack()
-	fakeEvalFinish := getFakeOnEvalFinish()
 
-	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	// Test(1)
+	thread1 := getFakeThread(true)
 	defer thread1.Stop()
 	assert(thread1.GetExecReplyNodeDebug()).Equals("")
 
-	// Test(2) debug
-	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
+	// Test(2)
+	thread2 := getFakeThread(true)
 	defer thread2.Stop()
 	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{
 		path:      "#.test:Eval",
