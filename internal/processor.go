@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"sync/atomic"
 )
@@ -55,7 +56,7 @@ type Processor struct {
 	freeThreadsCHGroup []chan *rpcThread
 	readThreadPos      uint64
 	writeThreadPos     uint64
-	fatalSubscription  *rpcPanicSubscription
+	panicSubscription  *rpcPanicSubscription
 	Lock
 }
 
@@ -106,11 +107,13 @@ func (p *Processor) Start(
 ) Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if onReturnStream == nil {
-			return NewKernelError("Processor: Start: onEvalFinish is nil")
+			return NewKernelError(ErrStringUnexpectedNil).
+				AddDebug(string(debug.Stack()))
 		} else if p.freeThreadsCHGroup != nil {
-			return NewKernelError("Processor: Start: it has already benn started")
+			return NewKernelError(ErrStringUnexpectedNil).
+				AddDebug(string(debug.Stack()))
 		} else {
-			p.fatalSubscription = SubscribePanic(func(err Error) {
+			p.panicSubscription = SubscribePanic(func(err Error) {
 				stream := NewStream()
 				stream.SetStreamKind(StreamKindResponsePanic)
 				stream.WriteUint64(uint64(err.GetKind()))
@@ -169,7 +172,8 @@ func (p *Processor) PutStream(stream *Stream) bool {
 func (p *Processor) Stop() Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
-			return NewKernelError("Processor: Stop: it has already benn stopped")
+			return NewKernelError(ErrStringUnexpectedNil).
+				AddDebug(string(debug.Stack()))
 		} else {
 			numOfThreads := len(p.threads)
 			closeCH := make(chan string, numOfThreads)
@@ -216,13 +220,13 @@ func (p *Processor) Stop() Error {
 			}
 
 			p.freeThreadsCHGroup = nil
-			p.fatalSubscription.Close()
-			p.fatalSubscription = nil
+			p.panicSubscription.Close()
+			p.panicSubscription = nil
 
 			if len(errList) > 0 {
-				// this is because reply is st
-				return NewReplyError(ConcatString(
-					"Processor: Stop: The following routine still running: \n\t",
+				// this is because reply is still running
+				return NewReplyPanic(ConcatString(
+					"rpc: the following routine can not stop after 20 seconds: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
 			} else {
@@ -247,7 +251,7 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 	}
 
 	if err := buildFuncCache(pkgName, path, fnKinds); err != nil {
-		return NewBaseError(err.Error())
+		return NewRuntimeError(err.Error()).AddDebug(string(debug.Stack()))
 	}
 
 	return nil
@@ -260,7 +264,7 @@ func (p *Processor) AddService(
 	debug string,
 ) Error {
 	if service == nil {
-		return NewBaseError("Service is nil").AddDebug(debug)
+		return NewRuntimeError("rpc: service is nil").AddDebug(debug)
 	}
 
 	return p.mountNode(rootName, &rpcChildMeta{
@@ -276,19 +280,20 @@ func (p *Processor) mountNode(
 ) Error {
 	// check nodeMeta is not nil
 	if nodeMeta == nil {
-		return NewBaseError("rpc: mountNode: nodeMeta is nil")
+		return NewKernelError(ErrStringUnexpectedNil).
+			AddDebug(string(debug.Stack()))
 	}
 
 	// check nodeMeta.name is valid
 	if !nodeNameRegex.MatchString(nodeMeta.name) {
 		return NewBaseError(
-			fmt.Sprintf("Service name \"%s\" is illegal", nodeMeta.name),
+			fmt.Sprintf("rpc: service name \"%s\" is illegal", nodeMeta.name),
 		).AddDebug(nodeMeta.fileLine)
 	}
 
 	// check nodeMeta.service is not nil
 	if nodeMeta.service == nil {
-		return NewBaseError("Service is nil").AddDebug(nodeMeta.fileLine)
+		return NewBaseError("rpc: service is nil").AddDebug(nodeMeta.fileLine)
 	}
 
 	// check max node depth overflow
