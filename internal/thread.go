@@ -235,8 +235,8 @@ func (p *rpcThread) Eval(
 			onEvalBack(retStream)
 			p.execFrom = ""
 			p.execDepth = 0
-			p.execReplyNode = nil
 			p.execArgs = p.execArgs[:0]
+			p.execReplyNode = nil
 			onEvalFinish(p)
 		}()
 	}()
