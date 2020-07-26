@@ -162,12 +162,13 @@ func (p *Processor) Stop() Error {
 
 			for i := 0; i < len(p.threads); i++ {
 				go func(idx int) {
-					if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
-						closeCH <- p.threads[idx].execReplyNode.GetDebug()
+					if p.threads[idx].Stop() {
+						closeCH <- ""
+					} else if node := p.threads[idx].GetReplyNode(); node != nil {
+						closeCH <- node.GetDebug()
 					} else {
 						closeCH <- ""
 					}
-					p.threads[idx] = nil
 				}(i)
 			}
 

@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unsafe"
 )
@@ -23,11 +24,15 @@ type rpcThread struct {
 	closeCH       chan bool
 	execStream    *Stream
 	execDepth     uint64
-	execReplyNode *rpcReplyNode
+	execReplyNode unsafe.Pointer
 	execArgs      []reflect.Value
 	execStatus    int
 	execFrom      string
 	Lock
+}
+
+func (p *rpcThread) GetReplyNode() *rpcReplyNode {
+	return (*rpcReplyNode)(atomic.LoadPointer(&p.execReplyNode))
 }
 
 func newThread(
@@ -100,14 +105,14 @@ func (p *rpcThread) IsDebug() bool {
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {
-	if node := p.execReplyNode; node != nil {
+	if node := p.GetReplyNode(); node != nil {
 		return node.GetPath()
 	}
 	return ""
 }
 
 func (p *rpcThread) GetExecReplyNodeDebug() string {
-	if node := p.execReplyNode; node != nil {
+	if node := p.GetReplyNode(); node != nil {
 		return node.GetDebug()
 	}
 	return ""
@@ -183,6 +188,7 @@ func (p *rpcThread) Eval(
 		thread: unsafe.Pointer(p),
 	}
 	hasFuncReturn := false
+	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
 		if v := recover(); v != nil {
@@ -211,18 +217,18 @@ func (p *rpcThread) Eval(
 				}
 			}()
 
-			if p.execReplyNode != nil {
+			if execReplyNode != nil {
 				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
 					p.WriteError(
 						NewReplyPanic(ConcatString(
 							"rpc: ",
-							p.execReplyNode.GetPath(),
+							execReplyNode.GetPath(),
 							" must return through Context.OK or Context.Error",
 						)).AddDebug(p.GetExecReplyNodeDebug()),
 					)
 				}
 
-				p.execReplyNode.indicator.Count(
+				execReplyNode.indicator.Count(
 					TimeNow().Sub(timeStart),
 					p.execStatus == rpcThreadExecSuccess,
 				)
@@ -236,7 +242,7 @@ func (p *rpcThread) Eval(
 			p.execFrom = ""
 			p.execDepth = 0
 			p.execArgs = p.execArgs[:0]
-			p.execReplyNode = nil
+			atomic.StorePointer(&p.execReplyNode, nil)
 			onEvalFinish(p)
 		}()
 	}()
@@ -244,7 +250,7 @@ func (p *rpcThread) Eval(
 	// read reply path
 	if replyPath, ok := inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
-	} else if p.execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
+	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
 			NewReplyError(ConcatString("rpc: target ", replyPath, " does not exist")),
 		)
@@ -258,25 +264,26 @@ func (p *rpcThread) Eval(
 				" level(",
 				strconv.FormatUint(p.execDepth, 10),
 				") overflows",
-			)),
+			)).AddDebug(execReplyNode.GetDebug()),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else {
+		p.execReplyNode = unsafe.Pointer(execReplyNode)
 		argsStreamPos := inStream.GetReadPos()
 
-		if fnCache := p.execReplyNode.cacheFN; fnCache != nil {
-			ok = fnCache(ctx, inStream, p.execReplyNode.replyMeta.handler)
+		if fnCache := execReplyNode.cacheFN; fnCache != nil {
+			ok = fnCache(ctx, inStream, execReplyNode.replyMeta.handler)
 			hasFuncReturn = true
 			if ok && inStream.IsReadFinish() {
 				return nilReturn
 			}
 		} else {
 			p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
-			for i := 1; i < len(p.execReplyNode.argTypes); i++ {
+			for i := 1; i < len(execReplyNode.argTypes); i++ {
 				var rv reflect.Value
 
-				switch p.execReplyNode.argTypes[i] {
+				switch execReplyNode.argTypes[i] {
 				case int64Type:
 					if iVar, success := inStream.ReadInt64(); success {
 						rv = reflect.ValueOf(iVar)
@@ -337,7 +344,7 @@ func (p *rpcThread) Eval(
 			}
 
 			if ok && inStream.IsReadFinish() {
-				p.execReplyNode.reflectFn.Call(p.execArgs)
+				execReplyNode.reflectFn.Call(p.execArgs)
 				hasFuncReturn = true
 				return nilReturn
 			}
@@ -366,8 +373,8 @@ func (p *rpcThread) Eval(
 						convertTypeToString(reflect.ValueOf(val).Type()),
 					)
 				} else {
-					if len(remoteArgsType) < len(p.execReplyNode.argTypes) {
-						argType := p.execReplyNode.argTypes[len(remoteArgsType)]
+					if len(remoteArgsType) < len(execReplyNode.argTypes) {
+						argType := execReplyNode.argTypes[len(remoteArgsType)]
 						if argType == bytesType ||
 							argType == arrayType ||
 							argType == mapType {
@@ -389,12 +396,12 @@ func (p *rpcThread) Eval(
 					"rpc: ",
 					replyPath,
 					" reply arguments does not match\nwant: ",
-					p.execReplyNode.callString,
+					execReplyNode.callString,
 					"\ngot: ",
 					replyPath,
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
-				)).AddDebug(p.execReplyNode.GetDebug()),
+				)).AddDebug(execReplyNode.GetDebug()),
 			)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 func TestNewThread(t *testing.T) {
@@ -135,7 +136,7 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	// Test(2) debug
 	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
-	thread2.execReplyNode = &rpcReplyNode{path: "#.test:Eval"}
+	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
 }
 
@@ -152,10 +153,10 @@ func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 	// Test(2) debug
 	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
-	thread2.execReplyNode = &rpcReplyNode{
+	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{
 		path:      "#.test:Eval",
 		replyMeta: &rpcReplyMeta{fileLine: "/test_file:234"},
-	}
+	})
 	assert(thread2.GetExecReplyNodeDebug()).Equals("#.test:Eval /test_file:234")
 }
 
@@ -359,7 +360,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(4) depth is overflow
-	assert(testRunWithProcessor(true, nil,
+	ret4, error4, panic4 := testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
@@ -372,11 +373,13 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(
-		nil,
-		NewReplyError("rpc: call #.test:Eval level(17) overflows"),
-		nil,
 	)
+	assert(ret4, panic4).IsNil()
+	assert(error4.GetKind()).Equals(ErrorKindReply)
+	assert(error4.GetMessage()).
+		Equals("rpc: call #.test:Eval level(17) overflows")
+	assert(strings.Contains(error4.GetDebug(), "#.test:Eval")).IsTrue()
+	assert(strings.Contains(error4.GetDebug(), "util_test.go")).IsTrue()
 
 	// Test(5) execFrom data format error
 	assert(testRunWithProcessor(true, nil,
