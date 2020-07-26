@@ -193,7 +193,7 @@ func TestContextObject_Error(t *testing.T) {
 		return ret
 	})).Equals(
 		nil,
-		NewReplyError(ErrStringUnknown).AddDebug("$.test:Eval "+source5),
+		NewReplyError(ErrStringUnknown).AddDebug("#.test:Eval "+source5),
 		nil,
 	)
 }

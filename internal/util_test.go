@@ -585,9 +585,9 @@ func testRunOnContext(
 		fn, func(processor *Processor) *Stream {
 			stream := NewStream()
 			stream.SetStreamKind(StreamKindRequest)
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
-			stream.WriteString("#")
+			stream.WriteString("")
 			return stream
 		},
 	)

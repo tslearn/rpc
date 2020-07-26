@@ -36,7 +36,7 @@ func TestServer_Basic(t *testing.T) {
 			go func(idx int) {
 				fmt.Println(client.sendMessage(
 					5*time.Second,
-					"$.user:sayHello",
+					"#.user:sayHello",
 					fmt.Sprintf("ts%d", idx),
 				))
 			}(i)

@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 )
 
-const rootName = "$"
+const rootName = "#"
 const freeGroups = 1024
 
 var (

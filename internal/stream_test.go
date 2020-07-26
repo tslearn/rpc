@@ -2087,7 +2087,7 @@ func TestStream_Read(t *testing.T) {
 
 func BenchmarkRPCStream_ReadString(b *testing.B) {
 	stream := NewStream()
-	stream.WriteString("$.user.login:isUserARight")
+	stream.WriteString("#.user.login:isUserARight")
 
 	b.ReportAllocs()
 	b.N = 10000000

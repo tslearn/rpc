@@ -390,9 +390,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		for pb.Next() {
 			stream := NewStream()
 			stream.SetStreamKind(StreamKindRequest)
-			stream.WriteString("$.user:sayHello")
+			stream.WriteString("#.user:sayHello")
 			stream.WriteUint64(3)
-			stream.WriteString("#")
+			stream.WriteString("")
 			stream.WriteString("")
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)

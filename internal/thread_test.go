@@ -68,7 +68,7 @@ func TestRpcThread_Stop(t *testing.T) {
 					assert(processor.Stop()).IsNotNil()
 				}()
 				stream := NewStream()
-				stream.WriteString("$.test:Eval")
+				stream.WriteString("#.test.Eval")
 				stream.WriteUint64(3)
 				stream.WriteString("#")
 				stream.WriteString("world")
@@ -122,8 +122,8 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	// Test(2) debug
 	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
 	defer thread2.Stop()
-	thread2.execReplyNode = &rpcReplyNode{path: "$.test.Eval"}
-	assert(thread2.GetExecReplyNodePath()).Equals("$.test.Eval")
+	thread2.execReplyNode = &rpcReplyNode{path: "#.test.Eval"}
+	assert(thread2.GetExecReplyNodePath()).Equals("#.test.Eval")
 }
 
 func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
@@ -138,10 +138,10 @@ func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
 	defer thread2.Stop()
 	thread2.execReplyNode = &rpcReplyNode{
-		path:      "$.test.Eval",
+		path:      "#.test.Eval",
 		replyMeta: &rpcReplyMeta{fileLine: "/test_file:234"},
 	}
-	assert(thread2.GetExecReplyNodeDebug()).Equals("$.test.Eval /test_file:234")
+	assert(thread2.GetExecReplyNodeDebug()).Equals("#.test.Eval /test_file:234")
 }
 
 func TestRpcThread_WriteError(t *testing.T) {
@@ -168,13 +168,13 @@ func TestRpcThread_WriteError(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(nil, NewReplyError("error").AddDebug("$.test:Eval "+source2), nil)
+	)).Equals(nil, NewReplyError("error").AddDebug("#.test.Eval "+source2), nil)
 }
 
 func TestRpcThread_WriteOK(t *testing.T) {
@@ -203,7 +203,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
@@ -212,7 +212,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	)).Equals(
 		nil,
 		NewReplyError("rpc: reply return value error").
-			AddDebug("$.test:Eval "+source2),
+			AddDebug("#.test.Eval "+source2),
 		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -220,7 +220,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] is too complicated").
-			AddDebug("$.test:Eval "+source2),
+			AddDebug("#.test.Eval "+source2),
 	)
 
 	// Test(3) value is not support
@@ -233,7 +233,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
@@ -242,9 +242,9 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	)).Equals(
 		nil,
 		NewReplyError("rpc: reply return value error").
-			AddDebug("$.test:Eval "+source3),
+			AddDebug("#.test.Eval "+source3),
 		NewReplyPanic("rpc: value type (chan bool) is not supported").
-			AddDebug("$.test:Eval "+source3),
+			AddDebug("#.test.Eval "+source3),
 	)
 
 	// Test(4) ok
@@ -254,7 +254,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
@@ -287,7 +287,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
@@ -303,7 +303,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(_ *Processor) *Stream {
 			stream := NewStream()
 			// path format error
-			stream.WriteBytes([]byte("$.test:Eval"))
+			stream.WriteBytes([]byte("#.test.Eval"))
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
@@ -319,13 +319,13 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(_ *Processor) *Stream {
 			stream := NewStream()
 			// reply path is not mounted
-			stream.WriteString("$.system:Eval")
+			stream.WriteString("#.system:Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(nil, NewReplyError("rpc: target $.system:Eval does not exist"), nil)
+	)).Equals(nil, NewReplyError("rpc: target #.system:Eval does not exist"), nil)
 
 	// Test(3) depth data format error
 	assert(testRunWithProcessor(true, nil,
@@ -334,7 +334,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			// depth type error
 			stream.WriteInt64(3)
 			stream.WriteString("#")
@@ -350,7 +350,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			//  depth is overflow
 			stream.WriteUint64(17)
 			stream.WriteString("#")
@@ -359,7 +359,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: call $.test:Eval level(17) overflows"),
+		NewReplyError("rpc: call #.test.Eval level(17) overflows"),
 		nil,
 	)
 
@@ -370,7 +370,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			// execFrom data format error
 			stream.WriteBool(true)
@@ -389,7 +389,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -414,7 +414,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			// error rpc.Bool
@@ -430,7 +430,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -444,7 +444,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			// error rpc.Bool
@@ -462,14 +462,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret8, panic8).IsNil()
 	assert(error8.GetKind()).Equals(ErrorKindReply)
 	assert(error8.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 
-	assert(strings.Contains(error8.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error8.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error8.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(9) error with 2nd param
@@ -482,7 +482,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -498,7 +498,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -512,7 +512,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -530,13 +530,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret10, panic10).IsNil()
 	assert(error10.GetKind()).Equals(ErrorKindReply)
 	assert(error10.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error10.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error10.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error10.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(11) error with 3rd param
@@ -549,7 +549,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -565,7 +565,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -579,7 +579,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -597,13 +597,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret12, panic12).IsNil()
 	assert(error12.GetKind()).Equals(ErrorKindReply)
 	assert(error12.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Bool, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Bool, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error12.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error12.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error12.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(13) error with 4th param
@@ -616,7 +616,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -632,7 +632,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -646,7 +646,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -664,13 +664,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret14, panic14).IsNil()
 	assert(error14.GetKind()).Equals(ErrorKindReply)
 	assert(error14.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Bool, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error14.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error14.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error14.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(15) error with 5th param
@@ -683,7 +683,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -699,7 +699,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -713,7 +713,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -731,13 +731,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret16, panic16).IsNil()
 	assert(error16.GetKind()).Equals(ErrorKindReply)
 	assert(error16.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.Bool, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error16.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error16.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error16.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(17) error with 6th param
@@ -750,7 +750,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -766,7 +766,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -780,7 +780,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -798,13 +798,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret18, panic18).IsNil()
 	assert(error18.GetKind()).Equals(ErrorKindReply)
 	assert(error18.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bool, rpc.Array, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error18.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error18.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error18.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(19) error with 7th param
@@ -817,7 +817,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -833,7 +833,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -847,7 +847,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -865,13 +865,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret20, panic20).IsNil()
 	assert(error20.GetKind()).Equals(ErrorKindReply)
 	assert(error20.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Bool, rpc.Map) rpc.Return",
 	)
-	assert(strings.Contains(error20.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error20.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error20.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(21) error with 8th param
@@ -884,7 +884,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -900,7 +900,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -914,7 +914,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -932,13 +932,13 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret22, panic22).IsNil()
 	assert(error22.GetKind()).Equals(ErrorKindReply)
 	assert(error22.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"got: #.test.Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Bool) rpc.Return",
 	)
-	assert(strings.Contains(error22.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error22.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error22.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(23) nil rpcBytes
@@ -951,7 +951,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
@@ -969,7 +969,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
@@ -987,7 +987,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
@@ -1001,10 +1001,10 @@ func TestRpcThread_Eval(t *testing.T) {
 			return ctx.OK(a)
 		},
 		func(processor *Processor) *Stream {
-			replyNode := processor.repliesMap["$.test:Eval"]
+			replyNode := processor.repliesMap["#.test.Eval"]
 			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1012,7 +1012,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: $.test:Eval reply arguments does not match"),
+		NewReplyError("rpc: #.test.Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -1023,7 +1023,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(nil)
@@ -1035,11 +1035,11 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret27, panic27).IsNil()
 	assert(error27.GetKind()).Equals(ErrorKindReply)
 	assert(error27.GetMessage()).Equals(
-		"rpc: $.test:Eval reply arguments does not match\n" +
-			"want: $.test:Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
-			"got: $.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
+		"rpc: #.test.Eval reply arguments does not match\n" +
+			"want: #.test.Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
+			"got: #.test.Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
 	)
-	assert(strings.Contains(error27.GetDebug(), "$.test:Eval")).IsTrue()
+	assert(strings.Contains(error27.GetDebug(), "#.test.Eval")).IsTrue()
 	assert(strings.Contains(error27.GetDebug(), "util_test.go:")).IsTrue()
 
 	// Test(28) badStream
@@ -1049,7 +1049,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write("helloWorld")
@@ -1068,7 +1068,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1079,14 +1079,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error29, panic29).IsNotNil()
 	if error29 != nil {
 		assert(error29.GetKind()).Equals(ErrorKindReply)
-		assert(error29.GetMessage()).Equals("rpc: $.test:Eval runtime error")
-		assert(strings.Contains(error29.GetDebug(), "$.test:Eval")).IsTrue()
+		assert(error29.GetMessage()).Equals("rpc: #.test.Eval runtime error")
+		assert(strings.Contains(error29.GetDebug(), "#.test.Eval")).IsTrue()
 		assert(strings.Contains(error29.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic29 != nil {
 		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic29.GetMessage()).
-			Equals("rpc: $.test:Eval runtime error: this is a error")
+			Equals("rpc: #.test.Eval runtime error: this is a error")
 		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1100,7 +1100,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1111,14 +1111,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error30, panic30).IsNotNil()
 	if error30 != nil {
 		assert(error30.GetKind()).Equals(ErrorKindReply)
-		assert(error30.GetMessage()).Equals("rpc: $.test:Eval runtime error")
-		assert(strings.Contains(error30.GetDebug(), "$.test:Eval")).IsTrue()
+		assert(error30.GetMessage()).Equals("rpc: #.test.Eval runtime error")
+		assert(strings.Contains(error30.GetDebug(), "#.test.Eval")).IsTrue()
 		assert(strings.Contains(error30.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic30 != nil {
 		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic30.GetMessage()).
-			Equals("rpc: $.test:Eval runtime error: this is a error")
+			Equals("rpc: #.test.Eval runtime error: this is a error")
 		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1129,7 +1129,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1152,7 +1152,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1164,7 +1164,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	if error32 != nil {
 		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(error32.GetMessage()).
-			Equals("rpc: $.test:Eval must return through Context.OK or Context.Error")
+			Equals("rpc: #.test.Eval must return through Context.OK or Context.Error")
 		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
@@ -1180,7 +1180,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1205,7 +1205,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1232,7 +1232,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1260,7 +1260,7 @@ func TestRpcThread_Eval2(t *testing.T) {
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
-			stream.WriteString("$.test:Eval")
+			stream.WriteString("#.test.Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
@@ -1272,7 +1272,7 @@ func TestRpcThread_Eval2(t *testing.T) {
 	if error32 != nil {
 		assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(error32.GetMessage()).
-			Equals("rpc: $.test:Eval must return through Context.OK or Context.Error")
+			Equals("rpc: #.test.Eval must return through Context.OK or Context.Error")
 		assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
