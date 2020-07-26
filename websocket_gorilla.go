@@ -77,11 +77,11 @@ func (p *webSocketConn) WriteStream(
 func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
 		return internal.NewBaseError(
-			"webSocketConn: Stop: nil object",
+			"webSocketConn: Close: nil object",
 		)
 	} else if err := conn.Close(); err != nil {
 		return internal.NewBaseError(
-			internal.ConcatString("webSocketConn: Stop: ", err.Error()),
+			internal.ConcatString("webSocketConn: Close: ", err.Error()),
 		)
 	} else {
 		return nil
@@ -192,12 +192,12 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewBaseError(
-				"WebSocketServerAdapter: Stop: has not been opened",
+				"WebSocketServerAdapter: Close: has not been opened",
 			)
 			return nil
 		} else if e := p.httpServer.Close(); e != nil {
 			err = internal.NewBaseError(
-				internal.ConcatString("WebSocketServerAdapter: Stop: ", e.Error()),
+				internal.ConcatString("WebSocketServerAdapter: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -215,7 +215,7 @@ func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
 			return true
 		case <-time.After(10 * time.Second):
 			err = internal.NewBaseError(
-				"WebSocketServerAdapter: Stop: can not close in 10 seconds",
+				"WebSocketServerAdapter: Close: can not close in 10 seconds",
 			)
 			return false
 		}
@@ -315,12 +315,12 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewBaseError(
-				"WebSocketClientEndPoint: Stop: has not been opened",
+				"WebSocketClientEndPoint: Close: has not been opened",
 			)
 			return nil
 		} else if e := p.conn.Close(); e != nil {
 			err = internal.NewBaseError(
-				internal.ConcatString("WebSocketClientEndPoint: Stop: ", e.Error()),
+				internal.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
 			)
 			return nil
 		} else {
@@ -338,7 +338,7 @@ func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
 			return true
 		case <-time.After(10 * time.Second):
 			err = internal.NewBaseError(
-				"WebSocketClientEndPoint: Stop: can not close in 10 seconds",
+				"WebSocketClientEndPoint: Close: can not close in 10 seconds",
 			)
 			return false
 		}

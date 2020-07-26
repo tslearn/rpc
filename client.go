@@ -194,7 +194,7 @@ func (p *Client) Close() Error {
 	closeCH := p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			err = internal.NewBaseError(
-				"Client: Stop: has not been opened",
+				"Client: Close: has not been opened",
 			)
 			return nil
 		} else {
@@ -212,7 +212,7 @@ func (p *Client) Close() Error {
 			return nil
 		case <-time.After(10 * time.Second):
 			return internal.NewBaseError(
-				"Client: Stop: can not close in 10 seconds",
+				"Client: Close: can not close in 10 seconds",
 			)
 		}
 	}

@@ -172,7 +172,7 @@ func (p *Processor) Close() bool {
 
 			for i := 0; i < len(p.threads); i++ {
 				go func(idx int) {
-					if p.threads[idx].Stop() {
+					if p.threads[idx].Close() {
 						closeCH <- ""
 					} else if node := p.threads[idx].GetReplyNode(); node != nil {
 						closeCH <- node.GetDebug()
@@ -182,7 +182,7 @@ func (p *Processor) Close() bool {
 				}(i)
 			}
 
-			// wait all rpcThread stop
+			// wait all rpcThread close
 			errMap := make(map[string]int)
 			for i := 0; i < len(p.threads); i++ {
 				if errString := <-closeCH; errString != "" {
@@ -206,7 +206,7 @@ func (p *Processor) Close() bool {
 			if len(errList) > 0 {
 				ReportPanic(
 					NewReplyPanic(ConcatString(
-						"rpc: the following replies can not stop after 20 seconds: \n\t",
+						"rpc: the following replies can not close after 20 seconds: \n\t",
 						strings.Join(errList, "\n\t"),
 					)),
 				)

@@ -76,7 +76,7 @@ func newThread(
 	return <-retCH
 }
 
-func (p *rpcThread) Stop() bool {
+func (p *rpcThread) Close() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.closeCH == nil {
 			return false

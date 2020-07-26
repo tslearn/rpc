@@ -16,14 +16,14 @@ func TestNewProcessor(t *testing.T) {
 	//assert(processor.isDebug).IsTrue()
 	//assert(processor.maxNodeDepth).Equals(uint64(16))
 	//assert(processor.maxCallDepth).Equals(uint64(32))
-	//assert(processor.Stop()).IsNotNil()
+	//assert(processor.Close()).IsNotNil()
 }
 
 func TestProcessor_Start_Stop(t *testing.T) {
 	//assert := NewAssert(t)
 	//
 	//processor := NewProcessor(true, 8192, 16, 32, nil, nil)
-	//assert(processor.Stop()).IsNotNil()
+	//assert(processor.Close()).IsNotNil()
 	//assert(processor.isRunning).IsFalse()
 	//for i := 0; i < len(processor.threadPools); i++ {
 	//	assert(processor.threadPools[i]).IsNil()
@@ -38,12 +38,12 @@ func TestProcessor_Start_Stop(t *testing.T) {
 	//for i := 0; i < len(processor.threadPools); i++ {
 	//	assert(processor.threadPools[i]).IsNotNil()
 	//}
-	//assert(processor.Stop()).IsNil()
+	//assert(processor.Close()).IsNil()
 	//assert(processor.isRunning).IsFalse()
 	//for i := 0; i < len(processor.threadPools); i++ {
 	//	assert(processor.threadPools[i]).IsNil()
 	//}
-	//assert(processor.Stop()).IsNotNil()
+	//assert(processor.Close()).IsNotNil()
 	//assert(processor.isRunning).IsFalse()
 	//for i := 0; i < len(processor.threadPools); i++ {
 	//	assert(processor.threadPools[i]).IsNil()

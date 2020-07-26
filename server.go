@@ -395,7 +395,7 @@ func (p *Server) Start() bool {
 func (p *Server) Stop() {
 	p.DoWithLock(func() {
 		if !p.isOpen {
-			p.onError(internal.NewBaseError("Server: Stop: it is not opened"))
+			p.onError(internal.NewBaseError("Server: Close: it is not opened"))
 		} else {
 			p.isOpen = false
 

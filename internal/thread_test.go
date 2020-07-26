@@ -25,7 +25,7 @@ func TestNewThread(t *testing.T) {
 
 	// Test(4) debug thread
 	thread4 := getFakeThread(true)
-	defer thread4.Stop()
+	defer thread4.Close()
 	assert(thread4.goroutineId > 0).IsTrue()
 	assert(thread4.processor).IsNotNil()
 	assert(thread4.inputCH).IsNotNil()
@@ -40,7 +40,7 @@ func TestNewThread(t *testing.T) {
 
 	// Test(5) release thread
 	thread5 := getFakeThread(false)
-	defer thread5.Stop()
+	defer thread5.Close()
 	assert(thread5.goroutineId == 0).IsTrue()
 	assert(thread5.processor).IsNotNil()
 	assert(thread5.inputCH).IsNotNil()
@@ -54,14 +54,14 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.IsDebug()).IsFalse()
 }
 
-func TestRpcThread_Stop(t *testing.T) {
+func TestRpcThread_Close(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
-	assert(thread1.Stop()).IsTrue()
+	assert(thread1.Close()).IsTrue()
 
-	// Test(2) can not stop after 20 second
+	// Test(2) can not close after 20 second
 	assert(testRunWithPanicCatch(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
 			func(ctx *ContextObject, name string) *ReturnObject {
@@ -83,10 +83,10 @@ func TestRpcThread_Stop(t *testing.T) {
 		)
 	})).IsNotNil()
 
-	// Test(3) stop twice
+	// Test(3) Close twice
 	thread3 := getFakeThread(true)
-	assert(thread3.Stop()).IsTrue()
-	assert(thread3.Stop()).IsFalse()
+	assert(thread3.Close()).IsTrue()
+	assert(thread3.Close()).IsFalse()
 }
 
 func TestRpcThread_GetGoroutineId(t *testing.T) {
@@ -94,12 +94,12 @@ func TestRpcThread_GetGoroutineId(t *testing.T) {
 
 	// Test(1) debug
 	thread1 := getFakeThread(true)
-	defer thread1.Stop()
+	defer thread1.Close()
 	assert(thread1.GetGoroutineId() > 0).IsTrue()
 
 	// Test(2) release
 	thread2 := getFakeThread(false)
-	defer thread2.Stop()
+	defer thread2.Close()
 	assert(thread2.GetGoroutineId()).Equals(int64(0))
 }
 
@@ -108,12 +108,12 @@ func TestRpcThread_IsDebug(t *testing.T) {
 
 	// Test(1) debug
 	thread1 := getFakeThread(true)
-	defer thread1.Stop()
+	defer thread1.Close()
 	assert(thread1.IsDebug()).IsTrue()
 
 	// Test(2) release
 	thread2 := getFakeThread(false)
-	defer thread2.Stop()
+	defer thread2.Close()
 	assert(thread2.IsDebug()).IsFalse()
 }
 
@@ -122,12 +122,12 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 
 	// Test(1)
 	thread1 := getFakeThread(true)
-	defer thread1.Stop()
+	defer thread1.Close()
 	assert(thread1.GetExecReplyNodePath()).Equals("")
 
 	// Test(2)
 	thread2 := getFakeThread(true)
-	defer thread2.Stop()
+	defer thread2.Close()
 	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
 }
@@ -137,12 +137,12 @@ func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 
 	// Test(1)
 	thread1 := getFakeThread(true)
-	defer thread1.Stop()
+	defer thread1.Close()
 	assert(thread1.GetExecReplyNodeDebug()).Equals("")
 
 	// Test(2)
 	thread2 := getFakeThread(true)
-	defer thread2.Stop()
+	defer thread2.Close()
 	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{
 		path:      "#.test:Eval",
 		replyMeta: &rpcReplyMeta{fileLine: "/test_file:234"},
@@ -274,12 +274,12 @@ func TestRpcThread_PutStream(t *testing.T) {
 
 	// Test(1)
 	thread1 := getFakeThread(true)
-	defer thread1.Stop()
+	defer thread1.Close()
 	assert(thread1.PutStream(NewStream())).IsTrue()
 
 	// Test(2)
 	thread2 := getFakeThread(true)
-	thread2.Stop()
+	thread2.Close()
 	assert(thread2.PutStream(NewStream())).IsFalse()
 }
 
