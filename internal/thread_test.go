@@ -10,32 +10,22 @@ import (
 
 func TestNewThread(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) processor is nil
-	assert(newThread(nil, getFakeOnEvalFinish())).IsNil()
+	assert(newThread(nil, fakeEvalBack, nil)).IsNil()
 
-	// Test(2) onEvalFinish is nil
-	assert(newThread(getFakeProcessor(true), nil)).IsNil()
+	// Test(2) processor is nil
+	assert(newThread(nil, nil, fakeEvalFinish)).IsNil()
 
-	// Test(3) debug thread
-	thread3 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
-	defer thread3.Stop()
-	assert(thread3.goroutineId > 0).IsTrue()
-	assert(thread3.processor).IsNotNil()
-	assert(thread3.inputCH).IsNotNil()
-	assert(thread3.closeCH).IsNotNil()
-	assert(thread3.execStream).IsNotNil()
-	assert(thread3.execDepth).IsNotNil()
-	assert(thread3.execReplyNode).IsNil()
-	assert(thread3.execArgs).IsNotNil()
-	assert(thread3.execStatus).Equals(rpcThreadExecNone)
-	assert(thread3.execFrom).Equals("")
-	assert(thread3.IsDebug()).IsTrue()
+	// Test(3) onEvalBack is nil
+	assert(newThread(getFakeProcessor(true), nil, nil)).IsNil()
 
-	// Test(4) release thread
-	thread4 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	// Test(4) debug thread
+	thread4 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread4.Stop()
-	assert(thread4.goroutineId == 0).IsTrue()
+	assert(thread4.goroutineId > 0).IsTrue()
 	assert(thread4.processor).IsNotNil()
 	assert(thread4.inputCH).IsNotNil()
 	assert(thread4.closeCH).IsNotNil()
@@ -45,14 +35,31 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.execArgs).IsNotNil()
 	assert(thread4.execStatus).Equals(rpcThreadExecNone)
 	assert(thread4.execFrom).Equals("")
-	assert(thread4.IsDebug()).IsFalse()
+	assert(thread4.IsDebug()).IsTrue()
+
+	// Test(5) release thread
+	thread5 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
+	defer thread5.Stop()
+	assert(thread5.goroutineId == 0).IsTrue()
+	assert(thread5.processor).IsNotNil()
+	assert(thread5.inputCH).IsNotNil()
+	assert(thread5.closeCH).IsNotNil()
+	assert(thread5.execStream).IsNotNil()
+	assert(thread5.execDepth).IsNotNil()
+	assert(thread5.execReplyNode).IsNil()
+	assert(thread5.execArgs).IsNotNil()
+	assert(thread5.execStatus).Equals(rpcThreadExecNone)
+	assert(thread5.execFrom).Equals("")
+	assert(thread5.IsDebug()).IsFalse()
 }
 
 func TestRpcThread_Stop(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1)
-	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	assert(thread1.Stop()).IsTrue()
 
 	// Test(2) can not stop after 20 second
@@ -78,49 +85,55 @@ func TestRpcThread_Stop(t *testing.T) {
 	})).IsNotNil()
 
 	// Test(3) stop twice
-	thread3 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread3 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	assert(thread3.Stop()).IsTrue()
 	assert(thread3.Stop()).IsFalse()
 }
 
 func TestRpcThread_GetGoroutineId(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread1.Stop()
 	assert(thread1.GetGoroutineId() > 0).IsTrue()
 
 	// Test(2) release
-	thread2 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	thread2 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
 	assert(thread2.GetGoroutineId()).Equals(int64(0))
 }
 
 func TestRpcThread_IsDebug(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread1.Stop()
 	assert(thread1.IsDebug()).IsTrue()
 
 	// Test(2) release
-	thread2 := newThread(getFakeProcessor(false), getFakeOnEvalFinish())
+	thread2 := newThread(getFakeProcessor(false), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
 	assert(thread2.IsDebug()).IsFalse()
 }
 
 func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread1.Stop()
 	assert(thread1.GetExecReplyNodePath()).Equals("")
 
 	// Test(2) debug
-	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
 	thread2.execReplyNode = &rpcReplyNode{path: "#.test:Eval"}
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
@@ -128,14 +141,16 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 
 func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
 	assert := NewAssert(t)
+	fakeEvalBack := getFakeOnEvalBack()
+	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) debug
-	thread1 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread1 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread1.Stop()
 	assert(thread1.GetExecReplyNodeDebug()).Equals("")
 
 	// Test(2) debug
-	thread2 := newThread(getFakeProcessor(true), getFakeOnEvalFinish())
+	thread2 := newThread(getFakeProcessor(true), fakeEvalBack, fakeEvalFinish)
 	defer thread2.Stop()
 	thread2.execReplyNode = &rpcReplyNode{
 		path:      "#.test:Eval",

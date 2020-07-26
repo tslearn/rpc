@@ -445,16 +445,25 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	}
 }
 
-func getFakeOnEvalFinish() func(*rpcThread, *Stream) {
-	return func(thread *rpcThread, stream *Stream) {}
+func getFakeOnEvalBack() func(*Stream) {
+	return func(stream *Stream) {}
+}
+
+func getFakeOnEvalFinish() func(*rpcThread) {
+	return func(thread *rpcThread) {}
 }
 
 func getFakeProcessor(debug bool) *Processor {
-	return NewProcessor(debug, 1024, 32, 32, nil)
+	processor, _ := NewProcessor(debug, 1024, 32, 32, nil)
+	return processor
 }
 
 func getFakeThread(debug bool) *rpcThread {
-	return newThread(getFakeProcessor(debug), getFakeOnEvalFinish())
+	return newThread(
+		getFakeProcessor(debug),
+		getFakeOnEvalBack(),
+		getFakeOnEvalFinish(),
+	)
 }
 
 func getFakeContext(debug bool) Context {
@@ -538,41 +547,25 @@ func testRunWithProcessor(
 		stream.Release()
 	}
 
-	processor := NewProcessor(
-		isDebug,
-		1024,
-		16,
-		16,
-		fnCache,
-	)
-	if err := processor.AddService(
-		"test",
-		NewService().Reply("Eval", handler),
-		"",
-	); err != nil {
-		panic(err)
-	}
+	service := NewService().Reply("Eval", handler)
 
-	if err := processor.Start(func(stream *Stream) {
-		fnDealStream(stream)
-	}); err != nil {
+	if processor, err := NewProcessor(isDebug, 1, 16, 16, fnCache); err != nil {
 		panic(err)
-	}
-
-	inStream := getStream(processor)
-	if inStream == nil {
+	} else if err := processor.AddService("test", service, ""); err != nil {
+		panic(err)
+	} else if err := processor.Start(fnDealStream); err != nil {
+		panic(err)
+	} else if inStream := getStream(processor); inStream == nil {
 		panic("internal error")
+	} else {
+		processor.PutStream(inStream)
+		// wait for finish
+		<-done
+		if err := processor.Stop(); err != nil {
+			panic(err)
+		}
+		return
 	}
-	processor.PutStream(inStream)
-
-	// wait for finish
-	<-done
-
-	if err := processor.Stop(); err != nil {
-		panic(err)
-	}
-
-	return
 }
 
 func testRunOnContext(

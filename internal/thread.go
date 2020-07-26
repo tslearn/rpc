@@ -32,9 +32,10 @@ type rpcThread struct {
 
 func newThread(
 	processor *Processor,
-	onEvalFinish func(*rpcThread, *Stream),
+	onEvalBack func(*Stream),
+	onEvalFinish func(*rpcThread),
 ) *rpcThread {
-	if processor == nil || onEvalFinish == nil {
+	if processor == nil || onEvalBack == nil || onEvalFinish == nil {
 		return nil
 	}
 
@@ -61,7 +62,7 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
-			thread.Eval(stream, onEvalFinish)
+			thread.Eval(stream, onEvalBack, onEvalFinish)
 		}
 
 		thread.closeCH <- true
@@ -169,7 +170,8 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 
 func (p *rpcThread) Eval(
 	inStream *Stream,
-	onEvalFinish func(*rpcThread, *Stream),
+	onEvalBack func(*Stream),
+	onEvalFinish func(*rpcThread),
 ) Return {
 	timeStart := TimeNow()
 	inStream.SetReadPosToBodyStart()
@@ -230,11 +232,12 @@ func (p *rpcThread) Eval(
 			inStream.Reset()
 			retStream := p.execStream
 			p.execStream = inStream
+			onEvalBack(retStream)
 			p.execFrom = ""
 			p.execDepth = 0
 			p.execReplyNode = nil
 			p.execArgs = p.execArgs[:0]
-			onEvalFinish(p, retStream)
+			onEvalFinish(p)
 		}()
 	}()
 

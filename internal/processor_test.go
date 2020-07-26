@@ -353,13 +353,14 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	total := uint64(0)
 	success := uint64(0)
 	failed := uint64(0)
-	processor := NewProcessor(
+	processor, _ := NewProcessor(
 		false,
 		8192*24,
 		16,
 		16,
 		&testFuncCache{},
 	)
+
 	_ = processor.Start(
 		func(stream *Stream) {
 			if stream.GetStreamKind() == StreamKindResponseOK {

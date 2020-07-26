@@ -67,13 +67,16 @@ func NewProcessor(
 	maxNodeDepth uint,
 	maxCallDepth uint,
 	fnCache ReplyCache,
-) *Processor {
+) (*Processor, Error) {
 	if numOfThreads == 0 {
-		return nil
+		return nil, NewKernelError("rpc: numOfThreads is zero").
+			AddDebug(string(debug.Stack()))
 	} else if maxNodeDepth == 0 {
-		return nil
+		return nil, NewKernelError("rpc: maxNodeDepth is zero").
+			AddDebug(string(debug.Stack()))
 	} else if maxCallDepth == 0 {
-		return nil
+		return nil, NewKernelError("rpc: maxCallDepth is zero").
+			AddDebug(string(debug.Stack()))
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
@@ -94,7 +97,7 @@ func NewProcessor(
 			addMeta: nil,
 			depth:   0,
 		}
-		return ret
+		return ret, nil
 	}
 }
 
@@ -114,6 +117,11 @@ func (p *Processor) Start(
 				AddDebug(string(debug.Stack()))
 		} else {
 			p.panicSubscription = SubscribePanic(func(err Error) {
+				defer func() {
+					// ignore this error.
+					// it has tried its best to report panic.
+					recover()
+				}()
 				stream := NewStream()
 				stream.SetStreamKind(StreamKindResponsePanic)
 				stream.WriteUint64(uint64(err.GetKind()))
@@ -123,31 +131,19 @@ func (p *Processor) Start(
 				stream.Release()
 			})
 
-			size := len(p.threads)
-			freeThreadsCHGroup := make(
-				[]chan *rpcThread,
-				freeGroups,
-				freeGroups,
-			)
+			freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)
 			for i := 0; i < freeGroups; i++ {
-				freeThreadsCHGroup[i] = make(
-					chan *rpcThread,
-					size/freeGroups,
-				)
+				freeThreadsCHGroup[i] = make(chan *rpcThread, len(p.threads)/freeGroups)
 			}
 			p.freeThreadsCHGroup = freeThreadsCHGroup
 
-			for i := 0; i < size; i++ {
-				thread := newThread(
-					p,
-					func(thread *rpcThread, stream *Stream) {
-						onReturnStream(stream)
-						freeThreadsCHGroup[atomic.AddUint64(
-							&p.writeThreadPos,
-							1,
-						)%freeGroups] <- thread
-					},
-				)
+			for i := 0; i < len(p.threads); i++ {
+				thread := newThread(p, onReturnStream, func(thread *rpcThread) {
+					freeThreadsCHGroup[atomic.AddUint64(
+						&p.writeThreadPos,
+						1,
+					)%freeGroups] <- thread
+				})
 				p.threads[i] = thread
 				p.freeThreadsCHGroup[i%freeGroups] <- thread
 			}
@@ -156,29 +152,15 @@ func (p *Processor) Start(
 	}))
 }
 
-func (p *Processor) PutStream(stream *Stream) bool {
-	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
-		return false
-	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
-		&p.readThreadPos,
-		1,
-	)%freeGroups]; thread == nil {
-		return false
-	} else {
-		return thread.PutStream(stream)
-	}
-}
-
 func (p *Processor) Stop() Error {
 	return ConvertToError(p.CallWithLock(func() interface{} {
 		if p.freeThreadsCHGroup == nil {
 			return NewKernelError(ErrStringUnexpectedNil).
 				AddDebug(string(debug.Stack()))
 		} else {
-			numOfThreads := len(p.threads)
-			closeCH := make(chan string, numOfThreads)
+			closeCH := make(chan string, len(p.threads))
 
-			for i := 0; i < numOfThreads; i++ {
+			for i := 0; i < len(p.threads); i++ {
 				go func(idx int) {
 					if !p.threads[idx].Stop() && p.threads[idx].execReplyNode != nil {
 						closeCH <- p.threads[idx].execReplyNode.GetDebug()
@@ -191,7 +173,7 @@ func (p *Processor) Stop() Error {
 
 			// wait all rpcThread stop
 			errMap := make(map[string]int)
-			for i := 0; i < numOfThreads; i++ {
+			for i := 0; i < len(p.threads); i++ {
 				if errString := <-closeCH; errString != "" {
 					if v, ok := errMap[errString]; ok {
 						errMap[errString] = v + 1
@@ -234,6 +216,19 @@ func (p *Processor) Stop() Error {
 			}
 		}
 	}))
+}
+
+func (p *Processor) PutStream(stream *Stream) bool {
+	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
+		return false
+	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
+		&p.readThreadPos,
+		1,
+	)%freeGroups]; thread == nil {
+		return false
+	} else {
+		return thread.PutStream(stream)
+	}
 }
 
 // BuildCache ...

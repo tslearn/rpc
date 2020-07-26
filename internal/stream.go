@@ -266,6 +266,7 @@ func NewStream() *Stream {
 func (p *Stream) Reset() {
 	// reset header
 	copy(p.header, zeroHeader)
+
 	// reset frames
 	for i := 1; i < len(p.frames); i++ {
 		frameCache.Put(p.frames[i])
@@ -279,13 +280,17 @@ func (p *Stream) Reset() {
 		p.frames = p.frames[:1]
 	}
 
-	p.readSeg = 0
+	if p.readSeg != 0 {
+		p.readSeg = 0
+		p.readFrame = *p.frames[0]
+	}
 	p.readIndex = streamBodyPos
-	p.readFrame = *p.frames[0]
 
-	p.writeSeg = 0
+	if p.writeSeg != 0 {
+		p.writeSeg = 0
+		p.writeFrame = *p.frames[0]
+	}
 	p.writeIndex = streamBodyPos
-	p.writeFrame = *p.frames[0]
 }
 
 // Release clean the Stream
