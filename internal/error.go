@@ -9,13 +9,15 @@ const ErrStringTimeout = "rpc: timeout"
 const ErrStringUnknown = "rpc: unknown error"
 
 const (
-	ErrorKindBase         ErrorKind = 0
+	ErrorKindNone         ErrorKind = 0
 	ErrorKindProtocol     ErrorKind = 1
 	ErrorKindTransport    ErrorKind = 2
 	ErrorKindReply        ErrorKind = 3
-	ErrorKindReplyFatal   ErrorKind = 4
-	ErrorKindRuntimeFatal ErrorKind = 5
-	ErrorKindKernelFatal  ErrorKind = 6
+	ErrorKindReplyPanic   ErrorKind = 4
+	ErrorKindRuntimePanic ErrorKind = 5
+	ErrorKindKernelPanic  ErrorKind = 6
+
+	ErrorKindBase ErrorKind = 7
 )
 
 var (
@@ -114,19 +116,19 @@ func NewReplyError(message string) Error {
 	return NewError(ErrorKindReply, message, "")
 }
 
-// NewReplyFatal ...
-func NewReplyFatal(message string) Error {
-	return NewError(ErrorKindReplyFatal, message, "")
+// NewReplyPanic ...
+func NewReplyPanic(message string) Error {
+	return NewError(ErrorKindReplyPanic, message, "")
 }
 
-// NewRuntimeFatal ...
-func NewRuntimeFatal(message string) Error {
-	return NewError(ErrorKindRuntimeFatal, message, "")
+// NewRuntimePanic ...
+func NewRuntimePanic(message string) Error {
+	return NewError(ErrorKindRuntimePanic, message, "")
 }
 
-// NewKernelFatal ...
-func NewKernelFatal(message string) Error {
-	return NewError(ErrorKindKernelFatal, message, "")
+// NewKernelPanic ...
+func NewKernelPanic(message string) Error {
+	return NewError(ErrorKindKernelPanic, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches

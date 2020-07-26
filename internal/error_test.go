@@ -10,9 +10,9 @@ func TestReportPanic(t *testing.T) {
 	// Test(1)
 	assert(testRunWithCatchPanic(
 		func() {
-			ReportPanic(NewReplyFatal("reply panic error"))
+			ReportPanic(NewReplyPanic("reply panic error"))
 		},
-	)).Equals(NewReplyFatal("reply panic error"))
+	)).Equals(NewReplyPanic("reply panic error"))
 
 }
 
@@ -54,8 +54,8 @@ func TestNewError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindRuntimeFatal, "message", "fileLine")
-	assert(o1.GetKind()).Equals(ErrorKindRuntimeFatal)
+	o1 := NewError(ErrorKindRuntimePanic, "message", "fileLine")
+	assert(o1.GetKind()).Equals(ErrorKindRuntimePanic)
 	assert(o1.GetMessage()).Equals("message")
 	assert(o1.GetDebug()).Equals("fileLine")
 }
@@ -80,16 +80,16 @@ func TestNewReplyPanic(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewReplyFatal("message")).
-		Equals(NewError(ErrorKindReplyFatal, "message", ""))
+	assert(NewReplyPanic("message")).
+		Equals(NewError(ErrorKindReplyPanic, "message", ""))
 }
 
 func TestNewRuntimeError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewRuntimeFatal("message")).
-		Equals(NewError(ErrorKindRuntimeFatal, "message", ""))
+	assert(NewRuntimePanic("message")).
+		Equals(NewError(ErrorKindRuntimePanic, "message", ""))
 }
 
 func TestNewProtocolError(t *testing.T) {
@@ -112,8 +112,8 @@ func TestNewKernelError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewKernelFatal("message")).
-		Equals(NewError(ErrorKindKernelFatal, "message", ""))
+	assert(NewKernelPanic("message")).
+		Equals(NewError(ErrorKindKernelPanic, "message", ""))
 }
 
 func TestConvertToError(t *testing.T) {
@@ -136,15 +136,15 @@ func TestRpcError_GetKind(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernelFatal, "message", "fileLine")
-	assert(o1.GetKind()).Equals(ErrorKindKernelFatal)
+	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
+	assert(o1.GetKind()).Equals(ErrorKindKernelPanic)
 }
 
 func TestRpcError_GetMessage(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernelFatal, "message", "fileLine")
+	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
 	assert(o1.GetMessage()).Equals("message")
 }
 
@@ -152,7 +152,7 @@ func TestRpcError_GetDebug(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernelFatal, "message", "fileLine")
+	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
 	assert(o1.GetDebug()).Equals("fileLine")
 }
 
@@ -160,11 +160,11 @@ func TestRpcError_AddDebug(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := NewError(ErrorKindKernelFatal, "message", "")
+	o1 := NewError(ErrorKindKernelPanic, "message", "")
 	assert(o1.AddDebug("fileLine").GetDebug()).Equals("fileLine")
 
 	// Test(2)
-	o2 := NewError(ErrorKindKernelFatal, "message", "fileLine")
+	o2 := NewError(ErrorKindKernelPanic, "message", "fileLine")
 	assert(o2.AddDebug("fileLine").GetDebug()).Equals("fileLine\nfileLine")
 }
 
@@ -172,15 +172,15 @@ func TestRpcError_Error(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(NewError(ErrorKindKernelFatal, "", "").Error()).Equals("")
+	assert(NewError(ErrorKindKernelPanic, "", "").Error()).Equals("")
 
 	// Test(2)
-	assert(NewError(ErrorKindKernelFatal, "message", "").Error()).Equals("message")
+	assert(NewError(ErrorKindKernelPanic, "message", "").Error()).Equals("message")
 
 	// Test(3)
-	assert(NewError(ErrorKindKernelFatal, "", "fileLine").Error()).Equals("fileLine")
+	assert(NewError(ErrorKindKernelPanic, "", "fileLine").Error()).Equals("fileLine")
 
 	// Test(4)
-	assert(NewError(ErrorKindKernelFatal, "message", "fileLine").Error()).
+	assert(NewError(ErrorKindKernelPanic, "message", "fileLine").Error()).
 		Equals("message\nfileLine")
 }

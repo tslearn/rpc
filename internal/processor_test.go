@@ -399,15 +399,14 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			if stream.GetStreamKind() == StreamKindResponseOK {
+			stream.SetReadPosToBodyStart()
+
+			if kind, ok := stream.ReadUint64(); ok && kind == uint64(ErrorKindNone) {
 				atomic.AddUint64(&success, 1)
 			} else {
-				stream.SetReadPosToBodyStart()
-				fmt.Println(stream.ReadUint64())
-				fmt.Println(stream.ReadString())
-				fmt.Println(stream.ReadString())
 				atomic.AddUint64(&failed, 1)
 			}
+
 			stream.Release()
 		},
 	)
@@ -418,7 +417,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
-			stream.SetStreamKind(StreamKindRequest)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("")

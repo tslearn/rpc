@@ -8,19 +8,7 @@ import (
 	"unsafe"
 )
 
-const streamBodyPos = 34
-
-type StreamKind uint8
-
-const (
-	StreamKindNone          = StreamKind(0)
-	StreamKindRequest       = StreamKind(1)
-	StreamKindResponseOK    = StreamKind(2)
-	StreamKindResponseError = StreamKind(3)
-	StreamKindResponseFatal = StreamKind(4)
-	StreamKindRuntimePanic  = StreamKind(5)
-	StreamKindKernelPanic   = StreamKind(6)
-)
+const streamBodyPos = 33
 
 const (
 	// StreamWriteOK ...
@@ -401,16 +389,6 @@ func (p *Stream) SetMachineID(v uint64) {
 	b[5] = byte(v >> 40)
 	b[6] = byte(v >> 48)
 	b[7] = byte(v >> 56)
-}
-
-// GetStreamType ...
-func (p *Stream) GetStreamKind() StreamKind {
-	return StreamKind(p.header[streamBodyPos-2])
-}
-
-// SetStreamKind ...
-func (p *Stream) SetStreamKind(kind StreamKind) {
-	p.header[streamBodyPos-2] = uint8(kind)
 }
 
 // GetHeader ...

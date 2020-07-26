@@ -521,51 +521,7 @@ func testRunWithProcessor(
 	handler interface{},
 	getStream func(processor *Processor) *Stream,
 ) (ret interface{}, retError Error, retPanic Error) {
-	done := make(chan bool, 1024)
-	fnDealStream := func(stream *Stream) {
-		done <- true
-		stream.SetReadPosToBodyStart()
-		if stream.GetStreamKind() == StreamKindResponseOK {
-			if v, ok := stream.Read(); ok {
-				if ret != nil {
-					panic("internal error")
-				} else {
-					ret = v
-				}
-			} else {
-				panic("internal error")
-			}
-		} else {
-			if errKind, ok := stream.ReadUint64(); !ok {
-				panic("internal error")
-			} else if ErrorKind(errKind) == ErrorKindTransport {
-				panic("test panic")
-			} else if message, ok := stream.ReadString(); !ok {
-				panic("internal error")
-			} else if debug, ok := stream.ReadString(); !ok {
-				panic("internal error")
-			} else {
-				err := NewError(ErrorKind(errKind), message, debug)
-				if stream.GetStreamKind() == StreamKindResponseError {
-					if retError != nil {
-						panic("internal error")
-					} else {
-						retError = err
-					}
-				} else if stream.GetStreamKind() == StreamKindResponseFatal {
-					if retPanic != nil {
-						panic("internal error")
-					} else {
-						retPanic = err
-					}
-				} else {
-					panic("internal error")
-				}
-			}
-		}
-		stream.Release()
-	}
-
+	helper := newTestProcessorReturnHelper()
 	service := NewService().Reply("Eval", handler)
 
 	if processor := NewProcessor(
@@ -579,18 +535,38 @@ func testRunWithProcessor(
 			service:  service,
 			fileLine: "",
 		}},
-		fnDealStream,
+		helper.GetReturnFunction(),
 	); processor == nil {
 		panic("internal error")
 	} else if inStream := getStream(processor); inStream == nil {
 		panic("internal error")
 	} else {
 		processor.PutStream(inStream)
-		// wait for finish
-		<-done
+
+		helper.WaitForFirstStream()
+
 		if !processor.Close() {
 			panic("internal error")
 		}
+
+		retArray, errorArray, panicArray := helper.GetReturn()
+
+		if len(retArray) > 1 || len(errorArray) > 1 || len(panicArray) > 1 {
+			panic("internal error")
+		}
+
+		if len(retArray) == 1 {
+			ret = retArray[0]
+		}
+
+		if len(errorArray) == 1 {
+			retError = errorArray[0]
+		}
+
+		if len(panicArray) == 1 {
+			retPanic = panicArray[0]
+		}
+
 		return
 	}
 }
@@ -604,7 +580,6 @@ func testRunOnContext(
 		nil,
 		fn, func(processor *Processor) *Stream {
 			stream := NewStream()
-			stream.SetStreamKind(StreamKindRequest)
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("")
@@ -614,17 +589,24 @@ func testRunOnContext(
 }
 
 type testProcessorReturnHelper struct {
-	streamCH chan *Stream
+	streamCH       chan *Stream
+	firstReceiveCH chan bool
+	isFirst        int32
 }
 
 func newTestProcessorReturnHelper() *testProcessorReturnHelper {
 	return &testProcessorReturnHelper{
-		streamCH: make(chan *Stream, 8192),
+		streamCH:       make(chan *Stream, 8192),
+		firstReceiveCH: make(chan bool, 1),
+		isFirst:        0,
 	}
 }
 
-func (p *testProcessorReturnHelper) getReturnFunction() func(stream *Stream) {
+func (p *testProcessorReturnHelper) GetReturnFunction() func(stream *Stream) {
 	return func(stream *Stream) {
+		if atomic.CompareAndSwapInt32(&p.isFirst, 0, 1) {
+			p.firstReceiveCH <- true
+		}
 		select {
 		case p.streamCH <- stream:
 			return
@@ -637,45 +619,57 @@ func (p *testProcessorReturnHelper) getReturnFunction() func(stream *Stream) {
 	}
 }
 
-func (p *testProcessorReturnHelper) getReturn() ([]Any, []Error, []Error) {
+func (p *testProcessorReturnHelper) WaitForFirstStream() {
+	<-p.firstReceiveCH
+}
+
+func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
+	retArray := make([]Any, 0)
+	errorArray := make([]Error, 0)
+	fatalError := make([]Error, 0)
+	reportPanic := func(message string) {
+		go func() {
+			panic("message")
+		}()
+	}
+	close(p.streamCH)
 	for stream := range p.streamCH {
-		if stream.GetStreamKind() == StreamKindResponseOK {
+		stream.SetReadPosToBodyStart()
+		if kind, ok := stream.ReadUint64(); !ok {
+			reportPanic("streamCH is full")
+		} else if ErrorKind(kind) == ErrorKindNone {
 			if v, ok := stream.Read(); ok {
-				if ret != nil {
-					panic("internal error")
-				} else {
-					ret = v
-				}
+				retArray = append(retArray, v)
 			} else {
-				panic("internal error")
+				reportPanic("read value error")
 			}
 		} else {
-			if errKind, ok := stream.ReadUint64(); !ok {
-				panic("internal error")
-			} else if ErrorKind(errKind) == ErrorKindTransport {
-				panic("test panic")
-			} else if message, ok := stream.ReadString(); !ok {
-				panic("internal error")
+			if message, ok := stream.ReadString(); !ok {
+				reportPanic("read message error")
 			} else if debug, ok := stream.ReadString(); !ok {
-				panic("internal error")
+				reportPanic("read debug error")
 			} else {
-				err := NewError(ErrorKind(errKind), message, debug)
-				if stream.GetStreamKind() == StreamKindResponseError {
-					if retError != nil {
-						panic("internal error")
-					} else {
-						retError = err
-					}
-				} else if stream.GetStreamKind() == StreamKindResponseFatal {
-					if retPanic != nil {
-						panic("internal error")
-					} else {
-						retPanic = err
-					}
-				} else {
-					panic("internal error")
+				err := NewError(ErrorKind(kind), message, debug)
+
+				switch ErrorKind(kind) {
+				case ErrorKindProtocol:
+					fallthrough
+				case ErrorKindTransport:
+					fallthrough
+				case ErrorKindReply:
+					errorArray = append(errorArray, err)
+				case ErrorKindReplyPanic:
+					fallthrough
+				case ErrorKindRuntimePanic:
+					fallthrough
+				case ErrorKindKernelPanic:
+					fatalError = append(fatalError, err)
+				default:
+					reportPanic("kind error")
 				}
 			}
 		}
+		stream.Release()
 	}
+	return retArray, errorArray, fatalError
 }

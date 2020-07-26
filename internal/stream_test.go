@@ -494,19 +494,6 @@ func TestStream_getMachineID_setMachineID(t *testing.T) {
 	}
 }
 
-func TestStream_GetStreamKind_SetStreamKind(t *testing.T) {
-	assert := NewAssert(t)
-
-	stream := NewStream()
-
-	for i := uint8(0); i < 255; i++ {
-		stream.SetStreamKind(StreamKind(i))
-		assert(stream.GetStreamKind()).Equals(StreamKind(i))
-		assert(stream.header[32]).Equals(i)
-		assert(stream.GetBufferUnsafe()[33]).Equals(i)
-	}
-}
-
 func TestStream_GetHeader(t *testing.T) {
 	assert := NewAssert(t)
 
