@@ -500,7 +500,6 @@ func (p *Client) sendMessage(
 	item.startTime = internal.TimeNow()
 	item.timeout = timeout
 
-	item.stream.SetStreamKind(internal.StreamKindRequest)
 	// write target
 	item.stream.WriteString(target)
 	// write depth
@@ -530,24 +529,22 @@ func (p *Client) sendMessage(
 	// wait for response
 	if ok := <-item.finishCH; !ok {
 		return nil, internal.NewBaseError(internal.ErrStringTimeout)
-	} else if item.stream.GetStreamKind() == internal.StreamKindResponseOK {
+	} else if errKind, ok := item.stream.ReadUint64(); !ok {
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if errKind == uint64(internal.ErrorKindNone) {
 		if ret, ok := item.stream.Read(); !ok {
 			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
 			return ret, nil
 		}
-	} else if item.stream.GetStreamKind() == internal.StreamKindResponseError {
-		if errKind, ok := item.stream.ReadUint64(); !ok {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if message, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if debug, ok := item.stream.ReadString(); !ok {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else {
-			return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
-		}
-	} else {
+	} else if message, ok := item.stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if debug, ok := item.stream.ReadString(); !ok {
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if !item.stream.IsReadFinish() {
+		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+	} else {
+		return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
 	}
 }
 
