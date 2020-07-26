@@ -66,7 +66,7 @@ func newThread(
 
 		retCH <- thread
 
-		for stream := range thread.inputCH {
+		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
 			thread.Eval(stream, onEvalBack, onEvalFinish)
 		}
 
