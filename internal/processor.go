@@ -185,31 +185,30 @@ func (p *Processor) Stop() Error {
 			}
 
 			errList := make([]string, 0)
-
 			for k, v := range errMap {
 				if v > 1 {
-					errList = append(errList, fmt.Sprintf(
-						"%s (%d routines)",
-						k,
-						v,
-					))
+					errList = append(errList, fmt.Sprintf("%s (%d routines)", k, v))
 				} else {
-					errList = append(errList, fmt.Sprintf(
-						"%s (%d routine)",
-						k,
-						v,
-					))
+					errList = append(errList, fmt.Sprintf("%s (%d routine)", k, v))
 				}
 			}
 
-			p.freeThreadsCHGroup = nil
+			if len(errList) > 0 {
+				ReportPanic(
+					NewReplyPanic(ConcatString(
+						"rpc: the following replies can not stop after 20 seconds: \n\t",
+						strings.Join(errList, "\n\t"),
+					)),
+				)
+			}
+
 			p.panicSubscription.Close()
 			p.panicSubscription = nil
+			p.freeThreadsCHGroup = nil
 
 			if len(errList) > 0 {
-				// this is because reply is still running
-				return NewReplyPanic(ConcatString(
-					"rpc: the following routine can not stop after 20 seconds: \n\t",
+				return NewRuntimeError(ConcatString(
+					"rpc: the following replies can not stop after 20 seconds: \n\t",
 					strings.Join(errList, "\n\t"),
 				))
 			} else {
@@ -219,6 +218,7 @@ func (p *Processor) Stop() Error {
 	}))
 }
 
+// PutStream ...
 func (p *Processor) PutStream(stream *Stream) bool {
 	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
 		return false

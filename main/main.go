@@ -2,59 +2,31 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"runtime/debug"
+	"sync/atomic"
 	"time"
 )
 
-func GoSafe(fn func()) {
-	go func() {
-		defer func() {
-			if v := recover(); v != nil {
-				fmt.Println(v)
-				fmt.Println(string(debug.Stack()))
-			}
-		}()
-
-		fn()
-	}()
-}
-
-func StartServer() {
-	http.HandleFunc("/", HelloServer)
-	http.ListenAndServe(":8080", nil)
-}
-
-func Bad() {
-	time.Sleep(3 * time.Second)
-	panic("NONO")
-}
-
-func RunWithPanicCatch(fn func()) (ret interface{}) {
-	defer func() {
-		ret = recover()
-	}()
-
-	fn()
-	return
-}
-
 func main() {
-	go StartServer()
+	sum := int64(0)
 
 	go func() {
-		RunWithPanicCatch(func() {
-			time.Sleep(3 * time.Second)
-			panic("NONO")
-		})
+		for i := 0; i < 10000; i++ {
+			atomic.AddInt64(&sum, 1)
+			//sum = sum + 1
+			time.Sleep(time.Microsecond)
+		}
 	}()
-	GoSafe(Bad)
 
-	for {
-		time.Sleep(time.Second)
-	}
-}
+	go func() {
+		for {
+			if atomic.LoadInt64(&sum) == 10000 {
+				fmt.Println("finish)")
+				break
+			}
+		}
+	}()
 
-func HelloServer(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
+	time.Sleep(100 * time.Second)
+
+	fmt.Println(sum)
 }
