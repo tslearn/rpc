@@ -72,7 +72,7 @@ func (p *ContextObject) getThread() *rpcThread {
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
-	} else if !thread.IsDebug() {
+	} else if !thread.processor.isDebug {
 		return thread
 	} else if thread.GetGoroutineId() != CurrentGoroutineID() {
 		thread.processor.Panic(

@@ -60,7 +60,7 @@ func newThread(
 			execFrom:      "",
 		}
 
-		if processor.IsDebug() {
+		if processor.isDebug {
 			thread.goroutineId = CurrentGoroutineID()
 		}
 
@@ -98,10 +98,6 @@ func (p *rpcThread) Close() bool {
 
 func (p *rpcThread) GetGoroutineId() int64 {
 	return p.goroutineId
-}
-
-func (p *rpcThread) IsDebug() bool {
-	return p.processor.IsDebug()
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {
@@ -354,7 +350,7 @@ func (p *rpcThread) Eval(
 
 		if ok && !inStream.IsReadFinish() {
 			return p.WriteError(NewProtocolError(ErrStringBadStream))
-		} else if !p.IsDebug() {
+		} else if !p.processor.isDebug {
 			return p.WriteError(
 				NewReplyError(ConcatString(
 					"rpc: ",

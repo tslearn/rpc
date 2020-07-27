@@ -36,7 +36,6 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.execArgs).IsNotNil()
 	assert(thread4.execStatus).Equals(rpcThreadExecNone)
 	assert(thread4.execFrom).Equals("")
-	assert(thread4.IsDebug()).IsTrue()
 
 	// Test(5) release thread
 	thread5 := getFakeThread(false)
@@ -51,7 +50,7 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.execArgs).IsNotNil()
 	assert(thread5.execStatus).Equals(rpcThreadExecNone)
 	assert(thread5.execFrom).Equals("")
-	assert(thread5.IsDebug()).IsFalse()
+
 }
 
 func TestRpcThread_Close(t *testing.T) {
@@ -101,20 +100,6 @@ func TestRpcThread_GetGoroutineId(t *testing.T) {
 	thread2 := getFakeThread(false)
 	defer thread2.Close()
 	assert(thread2.GetGoroutineId()).Equals(int64(0))
-}
-
-func TestRpcThread_IsDebug(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1) debug
-	thread1 := getFakeThread(true)
-	defer thread1.Close()
-	assert(thread1.IsDebug()).IsTrue()
-
-	// Test(2) release
-	thread2 := getFakeThread(false)
-	defer thread2.Close()
-	assert(thread2.IsDebug()).IsFalse()
 }
 
 func TestRpcThread_GetExecReplyNodePath(t *testing.T) {

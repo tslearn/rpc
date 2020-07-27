@@ -12,6 +12,7 @@ type rpcChildMeta struct {
 	fileLine string   // where the service add in source file
 }
 
+// Service ...
 type Service struct {
 	children []*rpcChildMeta // all the children node meta pointer
 	replies  []*rpcReplyMeta // all the replies meta pointer

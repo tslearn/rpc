@@ -148,68 +148,65 @@ func NewProcessor(
 	}
 }
 
-func (p *Processor) IsDebug() bool {
-	return p.isDebug
-}
-
+// Close ...
 func (p *Processor) Close() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.panicSubscription == nil {
 			return false
-		} else {
-			closeCH := make(chan string, len(p.threads))
-
-			for i := 0; i < len(p.threads); i++ {
-				go func(idx int) {
-
-					if p.threads[idx].Close() {
-						closeCH <- ""
-					} else if node := p.threads[idx].GetReplyNode(); node != nil {
-						closeCH <- p.threads[idx].GetExecReplyFileLine()
-					} else {
-						closeCH <- ""
-					}
-				}(i)
-			}
-
-			// wait all rpcThread close
-			errMap := make(map[string]int)
-			for i := 0; i < len(p.threads); i++ {
-				if errString := <-closeCH; errString != "" {
-					if v, ok := errMap[errString]; ok {
-						errMap[errString] = v + 1
-					} else {
-						errMap[errString] = 1
-					}
-				}
-			}
-
-			errList := make([]string, 0)
-			for k, v := range errMap {
-				if v > 1 {
-					errList = append(errList, fmt.Sprintf("%s (%d routines)", k, v))
-				} else {
-					errList = append(errList, fmt.Sprintf("%s (%d routine)", k, v))
-				}
-			}
-
-			if len(errList) > 0 {
-				p.fnError(
-					NewReplyPanic(ConcatString(
-						"rpc: the following replies can not close after 20 seconds: \n\t",
-						strings.Join(errList, "\n\t"),
-					)),
-				)
-			}
-
-			for _, freeCH := range p.freeThreadsCHGroup {
-				close(freeCH)
-			}
-
-			p.panicSubscription.Close()
-			p.panicSubscription = nil
-			return len(errList) == 0
 		}
+
+		closeCH := make(chan string, len(p.threads))
+
+		for i := 0; i < len(p.threads); i++ {
+			go func(idx int) {
+
+				if p.threads[idx].Close() {
+					closeCH <- ""
+				} else if node := p.threads[idx].GetReplyNode(); node != nil {
+					closeCH <- p.threads[idx].GetExecReplyFileLine()
+				} else {
+					closeCH <- ""
+				}
+			}(i)
+		}
+
+		// wait all rpcThread close
+		errMap := make(map[string]int)
+		for i := 0; i < len(p.threads); i++ {
+			if errString := <-closeCH; errString != "" {
+				if v, ok := errMap[errString]; ok {
+					errMap[errString] = v + 1
+				} else {
+					errMap[errString] = 1
+				}
+			}
+		}
+
+		errList := make([]string, 0)
+		for k, v := range errMap {
+			if v > 1 {
+				errList = append(errList, fmt.Sprintf("%s (%d routines)", k, v))
+			} else {
+				errList = append(errList, fmt.Sprintf("%s (%d routine)", k, v))
+			}
+		}
+
+		if len(errList) > 0 {
+			p.fnError(
+				NewReplyPanic(ConcatString(
+					"rpc: the following replies can not close after 20 seconds: \n\t",
+					strings.Join(errList, "\n\t"),
+				)),
+			)
+		}
+
+		for _, freeCH := range p.freeThreadsCHGroup {
+			close(freeCH)
+		}
+
+		p.panicSubscription.Close()
+		p.panicSubscription = nil
+		return len(errList) == 0
 	}).(bool)
 }
 
@@ -224,9 +221,7 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 	if thread := <-p.freeThreadsCHGroup[atomic.AddUint64(
 		&p.readThreadPos,
 		1,
-	)%freeGroups]; thread == nil {
-		return false
-	} else {
+	)%freeGroups]; thread != nil {
 		success := thread.PutStream(stream)
 		if !success {
 			p.freeThreadsCHGroup[atomic.AddUint64(
@@ -236,9 +231,11 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 		}
 		return success
 	}
+
+	return false
 }
 
-// Panic
+// Panic ...
 func (p *Processor) Panic(err Error) {
 	p.fnError(err)
 }
@@ -396,36 +393,36 @@ func (p *Processor) mountReply(
 				AddPrefixPerLine(meta.fileLine, "\t"),
 				AddPrefixPerLine(item.meta.fileLine, "\t"),
 			))
-		} else {
-			// mount the replyRecord
-			argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
-			argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
-			for i := 0; i < len(argTypes); i++ {
-				argTypes[i] = fn.Type().In(i)
-				argStrings[i] = convertTypeToString(argTypes[i])
-			}
-
-			replyNode := &rpcReplyNode{
-				path:      replyPath,
-				meta:      meta,
-				cacheFN:   nil,
-				reflectFn: fn,
-				callString: fmt.Sprintf(
-					"%s(%s) %s",
-					replyPath,
-					strings.Join(argStrings, ", "),
-					convertTypeToString(returnType),
-				),
-				argTypes:  argTypes,
-				indicator: newPerformanceIndicator(),
-			}
-
-			if fnTypeString, ok := getFuncKind(meta.handler); ok && p.fnCache != nil {
-				replyNode.cacheFN = p.fnCache.Get(fnTypeString)
-			}
-
-			p.repliesMap[replyPath] = replyNode
-			return nil
 		}
+
+		// mount the replyRecord
+		argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
+		argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
+		for i := 0; i < len(argTypes); i++ {
+			argTypes[i] = fn.Type().In(i)
+			argStrings[i] = convertTypeToString(argTypes[i])
+		}
+
+		replyNode := &rpcReplyNode{
+			path:      replyPath,
+			meta:      meta,
+			cacheFN:   nil,
+			reflectFn: fn,
+			callString: fmt.Sprintf(
+				"%s(%s) %s",
+				replyPath,
+				strings.Join(argStrings, ", "),
+				convertTypeToString(returnType),
+			),
+			argTypes:  argTypes,
+			indicator: newPerformanceIndicator(),
+		}
+
+		if fnTypeString, ok := getFuncKind(meta.handler); ok && p.fnCache != nil {
+			replyNode.cacheFN = p.fnCache.Get(fnTypeString)
+		}
+
+		p.repliesMap[replyPath] = replyNode
+		return nil
 	}
 }
