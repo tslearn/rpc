@@ -130,7 +130,7 @@ func (p *ContextObject) Error(value error) Return {
 		)
 	} else {
 		return thread.WriteError(
-			NewReplyError(ErrStringUnknown).
+			NewReplyError("rpc: Context.Error() argument should not nil").
 				AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 	}
