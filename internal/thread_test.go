@@ -132,22 +132,22 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
 }
 
-func TestRpcThread_GetExecReplyNodeDebug(t *testing.T) {
+func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
 	defer thread1.Close()
-	assert(thread1.GetExecReplyNodeDebug()).Equals("")
+	assert(thread1.GetExecReplyFileLine()).Equals("")
 
 	// Test(2)
 	thread2 := getFakeThread(true)
 	defer thread2.Close()
 	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{
-		path:      "#.test:Eval",
-		replyMeta: &rpcReplyMeta{fileLine: "/test_file:234"},
+		path: "#.test:Eval",
+		meta: &rpcReplyMeta{fileLine: "/test_file:234"},
 	})
-	assert(thread2.GetExecReplyNodeDebug()).Equals("#.test:Eval /test_file:234")
+	assert(thread2.GetExecReplyFileLine()).Equals("#.test:Eval /test_file:234")
 }
 
 func TestRpcThread_WriteError(t *testing.T) {

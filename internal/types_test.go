@@ -162,7 +162,7 @@ func TestContextObject_Error(t *testing.T) {
 	source3 := ""
 	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(NewReplyError("error")), GetFileLine(0)
-		source3 = ctx.getThread().GetReplyNode().GetPath() + " " + source
+		source3 = ctx.getThread().GetReplyNode().path + " " + source
 		assert(ret).Equals(nilReturn)
 		return ret
 	})).Equals(
@@ -175,7 +175,7 @@ func TestContextObject_Error(t *testing.T) {
 	source4 := ""
 	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
-		source4 = ctx.getThread().GetReplyNode().GetPath() + " " + source
+		source4 = ctx.getThread().GetReplyNode().path + " " + source
 		assert(ret).Equals(nilReturn)
 		return ret
 	})).Equals(

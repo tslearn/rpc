@@ -6,29 +6,6 @@ import (
 	"testing"
 )
 
-func TestRpcReplyNode_GetPath(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	node1 := &rpcReplyNode{path: "path"}
-	assert(node1.GetPath()).Equals("path")
-}
-
-func TestRpcReplyNode_GetDebug(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	node1 := &rpcReplyNode{path: "path"}
-	assert(node1.GetDebug()).Equals("path")
-
-	// Test(2)
-	node2 := &rpcReplyNode{
-		path:      "path",
-		replyMeta: &rpcReplyMeta{fileLine: "fileLine"},
-	}
-	assert(node2.GetDebug()).Equals("path fileLine")
-}
-
 func TestNewProcessor(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -330,7 +307,7 @@ func TestProcessor_PutStream(t *testing.T) {
 //		fileLine: AddFileLine("", 0),
 //	})).IsNil()
 //
-//	assert(processor.repliesMap["$:testOK"].replyMeta.name).Equals("testOK")
+//	assert(processor.repliesMap["$:testOK"].meta.name).Equals("testOK")
 //	assert(processor.repliesMap["$:testOK"].reflectFn).IsNotNil()
 //	assert(processor.repliesMap["$:testOK"].callString).
 //		Equals("$:testOK(rpc.ContextObject, rpc.Bool, rpc.Map) rpc.ReturnObject")

@@ -106,14 +106,14 @@ func (p *rpcThread) IsDebug() bool {
 
 func (p *rpcThread) GetExecReplyNodePath() string {
 	if node := p.GetReplyNode(); node != nil {
-		return node.GetPath()
+		return node.path
 	}
 	return ""
 }
 
-func (p *rpcThread) GetExecReplyNodeDebug() string {
-	if node := p.GetReplyNode(); node != nil {
-		return node.GetDebug()
+func (p *rpcThread) GetExecReplyFileLine() string {
+	if node := p.GetReplyNode(); node != nil && node.meta != nil {
+		return ConcatString(node.path, " ", node.meta.fileLine)
 	}
 	return ""
 }
@@ -193,15 +193,15 @@ func (p *rpcThread) Eval(
 			// report panic
 			p.processor.Panic(
 				NewReplyPanic(
-					fmt.Sprintf("rpc: %s runtime error: %v", p.GetExecReplyNodePath(), v),
-				).AddDebug(string(debug.Stack())),
+					fmt.Sprintf("rpc:runtime error: %v", v),
+				).AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
 			)
 
 			// write runtime error
 			p.WriteError(
 				NewReplyError(
-					ConcatString("rpc: ", p.GetExecReplyNodePath(), " runtime error"),
-				).AddDebug(p.GetExecReplyNodeDebug()),
+					ConcatString("rpc: runtime error"),
+				).AddDebug(p.GetExecReplyFileLine()),
 			)
 		}
 
@@ -218,11 +218,9 @@ func (p *rpcThread) Eval(
 			if execReplyNode != nil {
 				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
 					p.WriteError(
-						NewReplyPanic(ConcatString(
-							"rpc: ",
-							execReplyNode.GetPath(),
-							" must return through Context.OK or Context.Error",
-						)).AddDebug(p.GetExecReplyNodeDebug()),
+						NewReplyPanic(
+							"rpc: reply must return through Context.OK or Context.Error",
+						).AddDebug(p.GetExecReplyFileLine()),
 					)
 				}
 
@@ -247,14 +245,19 @@ func (p *rpcThread) Eval(
 		}()
 	}()
 
-	// read reply path
-	if replyPath, ok := inStream.ReadUnsafeString(); !ok {
+	// set exec reply node
+	replyPath, ok := inStream.ReadUnsafeString()
+	if !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
 			NewReplyError(ConcatString("rpc: target ", replyPath, " does not exist")),
 		)
-	} else if p.execDepth, ok = inStream.ReadUint64(); !ok {
+	} else {
+		p.execReplyNode = unsafe.Pointer(execReplyNode)
+	}
+
+	if p.execDepth, ok = inStream.ReadUint64(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else if p.execDepth > p.processor.maxCallDepth {
 		return p.WriteError(
@@ -264,16 +267,15 @@ func (p *rpcThread) Eval(
 				" level(",
 				strconv.FormatUint(p.execDepth, 10),
 				") overflows",
-			)).AddDebug(execReplyNode.GetDebug()),
+			)).AddDebug(p.GetExecReplyFileLine()),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else {
-		p.execReplyNode = unsafe.Pointer(execReplyNode)
 		argsStreamPos := inStream.GetReadPos()
 
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
-			ok = fnCache(ctx, inStream, execReplyNode.replyMeta.handler)
+			ok = fnCache(ctx, inStream, execReplyNode.meta.handler)
 			hasFuncReturn = true
 			if ok && inStream.IsReadFinish() {
 				return nilReturn
@@ -401,7 +403,7 @@ func (p *rpcThread) Eval(
 					replyPath,
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
-				)).AddDebug(execReplyNode.GetDebug()),
+				)).AddDebug(p.GetExecReplyFileLine()),
 			)
 		}
 	}

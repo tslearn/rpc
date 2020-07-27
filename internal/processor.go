@@ -19,23 +19,12 @@ var (
 
 type rpcReplyNode struct {
 	path       string
-	replyMeta  *rpcReplyMeta
+	meta       *rpcReplyMeta
 	cacheFN    ReplyCacheFunc
 	reflectFn  reflect.Value
 	callString string
 	argTypes   []reflect.Type
 	indicator  *rpcPerformanceIndicator
-}
-
-func (p *rpcReplyNode) GetPath() string {
-	return p.path
-}
-
-func (p *rpcReplyNode) GetDebug() string {
-	if p.replyMeta != nil {
-		return ConcatString(p.path, " ", p.replyMeta.fileLine)
-	}
-	return p.path
 }
 
 type rpcServiceNode struct {
@@ -176,10 +165,11 @@ func (p *Processor) Close() bool {
 
 			for i := 0; i < len(p.threads); i++ {
 				go func(idx int) {
+
 					if p.threads[idx].Close() {
 						closeCH <- ""
 					} else if node := p.threads[idx].GetReplyNode(); node != nil {
-						closeCH <- node.GetDebug()
+						closeCH <- p.threads[idx].GetExecReplyFileLine()
 					} else {
 						closeCH <- ""
 					}
@@ -256,7 +246,7 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 func (p *Processor) BuildCache(pkgName string, path string) Error {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
-		if fnTypeString, ok := getFuncKind(reply.replyMeta.handler); ok {
+		if fnTypeString, ok := getFuncKind(reply.meta.handler); ok {
 			retMap[fnTypeString] = true
 		}
 	}
@@ -403,7 +393,7 @@ func (p *Processor) mountReply(
 			)).AddDebug(fmt.Sprintf(
 				"current:\n%s\nconflict:\n%s",
 				AddPrefixPerLine(meta.fileLine, "\t"),
-				AddPrefixPerLine(item.replyMeta.fileLine, "\t"),
+				AddPrefixPerLine(item.meta.fileLine, "\t"),
 			))
 		} else {
 			// mount the replyRecord
@@ -416,7 +406,7 @@ func (p *Processor) mountReply(
 
 			replyNode := &rpcReplyNode{
 				path:      replyPath,
-				replyMeta: meta,
+				meta:      meta,
 				cacheFN:   nil,
 				reflectFn: fn,
 				callString: fmt.Sprintf(
