@@ -61,7 +61,7 @@ type Processor struct {
 	Lock
 }
 
-func (p *Processor) Error(err Error) {
+func (p *Processor) Panic(err Error) {
 	p.fnError(err)
 }
 
@@ -134,7 +134,7 @@ func NewProcessor(
 		}
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta); err != nil {
-				ret.Error(err)
+				ret.Panic(err)
 				return nil
 			}
 		}
@@ -208,12 +208,16 @@ func (p *Processor) Close() bool {
 			}
 
 			if len(errList) > 0 {
-				ReportPanic(
+				p.fnError(
 					NewReplyPanic(ConcatString(
 						"rpc: the following replies can not close after 20 seconds: \n\t",
 						strings.Join(errList, "\n\t"),
 					)),
 				)
+			}
+
+			for _, freeCH := range p.freeThreadsCHGroup {
+				close(freeCH)
 			}
 
 			p.panicSubscription.Close()
@@ -224,10 +228,14 @@ func (p *Processor) Close() bool {
 }
 
 // PutStream ...
-func (p *Processor) PutStream(stream *Stream) bool {
-	if freeThreadsCHGroup := p.freeThreadsCHGroup; freeThreadsCHGroup == nil {
-		return false
-	} else if thread := <-freeThreadsCHGroup[atomic.AddUint64(
+func (p *Processor) PutStream(stream *Stream) (ret bool) {
+	defer func() {
+		if v := recover(); v != nil {
+			ret = false
+		}
+	}()
+
+	if thread := <-p.freeThreadsCHGroup[atomic.AddUint64(
 		&p.readThreadPos,
 		1,
 	)%freeGroups]; thread == nil {
@@ -235,7 +243,7 @@ func (p *Processor) PutStream(stream *Stream) bool {
 	} else {
 		success := thread.PutStream(stream)
 		if !success {
-			freeThreadsCHGroup[atomic.AddUint64(
+			p.freeThreadsCHGroup[atomic.AddUint64(
 				&p.writeThreadPos,
 				1,
 			)%freeGroups] <- thread

@@ -573,12 +573,17 @@ func testRunWithProcessor(
 
 func testRunOnContext(
 	isDebug bool,
-	fn func(ctx Context) Return,
+	fn func(processor *Processor, ctx Context) Return,
 ) (interface{}, Error, Error) {
+	callProcessor := (*Processor)(nil)
 	return testRunWithProcessor(
 		isDebug,
 		nil,
-		fn, func(processor *Processor) *Stream {
+		func(ctx Context) Return {
+			return fn(callProcessor, ctx)
+		},
+		func(processor *Processor) *Stream {
+			callProcessor = processor
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)

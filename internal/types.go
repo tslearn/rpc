@@ -68,14 +68,14 @@ func (p *ContextObject) getThread() *rpcThread {
 		)
 		return nil
 	} else if node := thread.execReplyNode; node == nil {
-		ReportPanic(
+		thread.processor.Panic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
 	} else if !thread.IsDebug() {
 		return thread
 	} else if thread.GetGoroutineId() != CurrentGoroutineID() {
-		ReportPanic(
+		thread.processor.Panic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil

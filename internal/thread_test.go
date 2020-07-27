@@ -154,15 +154,30 @@ func TestRpcThread_WriteError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1) stream is nil
-	panic1 := testRunWithCatchPanic(func() {
-		thread := &rpcThread{}
-		thread.WriteError(NewReplyError(""))
-	})
-	assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
-	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
-	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
-	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+	ret1, error1, panic1 := testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			return ctx.OK(true)
+		},
+		func(processor *Processor) *Stream {
+			thread := &rpcThread{processor: processor}
+			thread.WriteError(NewReplyError(""))
+
+			stream := NewStream()
+			stream.WriteString("#.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)
+	assert(ret1, error1).Equals(true, nil)
+	if panic1 != nil {
+		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
+		assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
+		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
+		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+	}
 
 	// Test(2) ok
 	source2 := ""
@@ -187,15 +202,30 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1) stream is nil
-	panic1 := testRunWithCatchPanic(func() {
-		thread := &rpcThread{}
-		thread.WriteOK(true, 1)
-	})
-	assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
-	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
-	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
-	assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+	ret1, error1, panic1 := testRunWithProcessor(true, nil,
+		func(ctx *ContextObject, name string) *ReturnObject {
+			return ctx.OK(true)
+		},
+		func(processor *Processor) *Stream {
+			thread := &rpcThread{processor: processor}
+			thread.WriteOK(true, 1)
+
+			stream := NewStream()
+			stream.WriteString("#.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)
+	assert(ret1, error1).Equals(true, nil)
+	if panic1 != nil {
+		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
+		assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
+		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
+		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
+	}
 
 	// Test(2) value is endless loop
 	source2 := ""

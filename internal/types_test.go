@@ -27,7 +27,7 @@ func TestContextObject_getThread(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		fnInner := func(source string) {
 			source1 = source
 			o1 := ContextObject{thread: nil}
@@ -43,10 +43,11 @@ func TestContextObject_getThread(t *testing.T) {
 
 	// Test(2)
 	source2 := ""
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(true, func(processor *Processor, ctx Context) Return {
 		fnInner := func(source string) {
 			source2 = source
 			thread := getFakeThread(false)
+			thread.processor = processor
 			thread.execReplyNode = nil
 			o1 := ContextObject{thread: unsafe.Pointer(thread)}
 			assert(o1.getThread()).IsNil()
@@ -60,14 +61,14 @@ func TestContextObject_getThread(t *testing.T) {
 	)
 
 	// Test(3)
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		assert(ctx.getThread()).IsNotNil()
 		return ctx.OK(true)
 	})).Equals(true, nil, nil)
 
 	// Test(4)
 	source4 := ""
-	assert(testRunOnContext(true, func(ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
 		go func() {
 			func(source string) {
 				source4 = source
@@ -83,7 +84,7 @@ func TestContextObject_getThread(t *testing.T) {
 	)
 
 	// Test(5)
-	assert(testRunOnContext(true, func(ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
 		assert(ctx.getThread()).IsNotNil()
 		return ctx.OK(true)
 	})).Equals(true, nil, nil)
@@ -130,7 +131,7 @@ func TestContextObject_OK(t *testing.T) {
 	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
 
 	// Test(3)
-	assert(testRunOnContext(true, func(ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
 		ret := ctx.OK(true)
 		assert(ret).Equals(nilReturn)
 		return ret
@@ -159,7 +160,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(3)
 	source3 := ""
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(NewReplyError("error")), GetFileLine(0)
 		source3 = ctx.getThread().GetReplyNode().GetPath() + " " + source
 		assert(ret).Equals(nilReturn)
@@ -172,7 +173,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(4)
 	source4 := ""
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
 		source4 = ctx.getThread().GetReplyNode().GetPath() + " " + source
 		assert(ret).Equals(nilReturn)
@@ -185,7 +186,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(5)
 	source5 := ""
-	assert(testRunOnContext(false, func(ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(nil), GetFileLine(0)
 		source5 = source
 		assert(ret).Equals(nilReturn)
