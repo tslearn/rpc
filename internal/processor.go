@@ -52,9 +52,9 @@ type Processor struct {
 // NewProcessor ...
 func NewProcessor(
 	isDebug bool,
-	numOfThreads uint,
-	maxNodeDepth uint,
-	maxCallDepth uint,
+	numOfThreads int,
+	maxNodeDepth int,
+	maxCallDepth int,
 	fnCache ReplyCache,
 	mountServices []*rpcChildMeta,
 	onReturnStream func(stream *Stream),
@@ -65,8 +65,6 @@ func NewProcessor(
 
 	fnError := func(err Error) {
 		defer func() {
-			// ignore this error.
-			// it has tried its best to report panic.
 			recover()
 		}()
 		stream := NewStream()
@@ -76,26 +74,26 @@ func NewProcessor(
 		onReturnStream(stream)
 	}
 
-	if numOfThreads == 0 {
+	if numOfThreads <= 0 {
 		fnError(
-			NewKernelPanic("rpc: numOfThreads is zero").
+			NewKernelPanic("rpc: numOfThreads is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
-	} else if maxNodeDepth == 0 {
+	} else if maxNodeDepth <= 0 {
 		fnError(
-			NewKernelPanic("rpc: maxNodeDepth is zero").
+			NewKernelPanic("rpc: maxNodeDepth is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
-	} else if maxCallDepth == 0 {
+	} else if maxCallDepth <= 0 {
 		fnError(
-			NewKernelPanic("rpc: maxCallDepth is zero").
+			NewKernelPanic("rpc: maxCallDepth is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
 	} else {
-		size := int(((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups)
+		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
 			isDebug:        isDebug,
 			repliesMap:     make(map[string]*rpcReplyNode),
@@ -115,6 +113,7 @@ func NewProcessor(
 			addMeta: nil,
 			depth:   0,
 		}
+
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
 				ret.Panic(err)
@@ -126,15 +125,15 @@ func NewProcessor(
 		ret.panicSubscription = subscribePanic(fnError)
 
 		// start threads
-		freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)
+		freeCHArray := make([]chan *rpcThread, freeGroups, freeGroups)
 		for i := 0; i < freeGroups; i++ {
-			freeThreadsCHGroup[i] = make(chan *rpcThread, size/freeGroups)
+			freeCHArray[i] = make(chan *rpcThread, size/freeGroups)
 		}
-		ret.freeCHArray = freeThreadsCHGroup
+		ret.freeCHArray = freeCHArray
 
 		for i := 0; i < size; i++ {
 			thread := newThread(ret, onReturnStream, func(thread *rpcThread) {
-				freeThreadsCHGroup[atomic.AddUint64(
+				freeCHArray[atomic.AddUint64(
 					&ret.writeThreadPos,
 					1,
 				)%freeGroups] <- thread
@@ -153,11 +152,10 @@ func (p *Processor) Close() bool {
 			return false
 		}
 
-		closeCH := make(chan string, len(p.threads))
+		closeCH := make(chan string)
 
 		for i := 0; i < len(p.threads); i++ {
 			go func(idx int) {
-
 				if p.threads[idx].Close() {
 					closeCH <- ""
 				} else if node := p.threads[idx].GetReplyNode(); node != nil {
