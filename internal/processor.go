@@ -35,18 +35,17 @@ type rpcServiceNode struct {
 
 // Processor ...
 type Processor struct {
-	isDebug            bool
-	fnCache            ReplyCache
-	repliesMap         map[string]*rpcReplyNode
-	servicesMap        map[string]*rpcServiceNode
-	maxNodeDepth       uint64
-	maxCallDepth       uint64
-	threads            []*rpcThread
-	freeThreadsCHGroup []chan *rpcThread
-	readThreadPos      uint64
-	writeThreadPos     uint64
-	panicSubscription  *rpcPanicSubscription
-	fnError            func(err Error)
+	isDebug           bool
+	repliesMap        map[string]*rpcReplyNode
+	servicesMap       map[string]*rpcServiceNode
+	maxNodeDepth      uint64
+	maxCallDepth      uint64
+	threads           []*rpcThread
+	freeCHArray       []chan *rpcThread
+	readThreadPos     uint64
+	writeThreadPos    uint64
+	panicSubscription *rpcPanicSubscription
+	fnError           func(err Error)
 	Lock
 }
 
@@ -98,17 +97,16 @@ func NewProcessor(
 	} else {
 		size := int(((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups)
 		ret := &Processor{
-			isDebug:            isDebug,
-			fnCache:            fnCache,
-			repliesMap:         make(map[string]*rpcReplyNode),
-			servicesMap:        make(map[string]*rpcServiceNode),
-			maxNodeDepth:       uint64(maxNodeDepth),
-			maxCallDepth:       uint64(maxCallDepth),
-			threads:            make([]*rpcThread, size, size),
-			freeThreadsCHGroup: nil,
-			readThreadPos:      0,
-			writeThreadPos:     0,
-			fnError:            fnError,
+			isDebug:        isDebug,
+			repliesMap:     make(map[string]*rpcReplyNode),
+			servicesMap:    make(map[string]*rpcServiceNode),
+			maxNodeDepth:   uint64(maxNodeDepth),
+			maxCallDepth:   uint64(maxCallDepth),
+			threads:        make([]*rpcThread, size, size),
+			freeCHArray:    nil,
+			readThreadPos:  0,
+			writeThreadPos: 0,
+			fnError:        fnError,
 		}
 
 		// mount nodes
@@ -118,7 +116,7 @@ func NewProcessor(
 			depth:   0,
 		}
 		for _, meta := range mountServices {
-			if err := ret.mountNode(rootName, meta); err != nil {
+			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
 				ret.Panic(err)
 				return nil
 			}
@@ -132,7 +130,7 @@ func NewProcessor(
 		for i := 0; i < freeGroups; i++ {
 			freeThreadsCHGroup[i] = make(chan *rpcThread, size/freeGroups)
 		}
-		ret.freeThreadsCHGroup = freeThreadsCHGroup
+		ret.freeCHArray = freeThreadsCHGroup
 
 		for i := 0; i < size; i++ {
 			thread := newThread(ret, onReturnStream, func(thread *rpcThread) {
@@ -142,7 +140,7 @@ func NewProcessor(
 				)%freeGroups] <- thread
 			})
 			ret.threads[i] = thread
-			ret.freeThreadsCHGroup[i%freeGroups] <- thread
+			ret.freeCHArray[i%freeGroups] <- thread
 		}
 		return ret
 	}
@@ -200,7 +198,7 @@ func (p *Processor) Close() bool {
 			)
 		}
 
-		for _, freeCH := range p.freeThreadsCHGroup {
+		for _, freeCH := range p.freeCHArray {
 			close(freeCH)
 		}
 
@@ -218,13 +216,13 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 		}
 	}()
 
-	if thread := <-p.freeThreadsCHGroup[atomic.AddUint64(
+	if thread := <-p.freeCHArray[atomic.AddUint64(
 		&p.readThreadPos,
 		1,
 	)%freeGroups]; thread != nil {
 		success := thread.PutStream(stream)
 		if !success {
-			p.freeThreadsCHGroup[atomic.AddUint64(
+			p.freeCHArray[atomic.AddUint64(
 				&p.writeThreadPos,
 				1,
 			)%freeGroups] <- thread
@@ -264,6 +262,7 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *rpcChildMeta,
+	fnCache ReplyCache,
 ) Error {
 	if nodeMeta == nil {
 		// check nodeMeta is not nil
@@ -312,7 +311,7 @@ func (p *Processor) mountNode(
 
 			// mount the replies
 			for _, replyMeta := range nodeMeta.service.replies {
-				err := p.mountReply(node, replyMeta)
+				err := p.mountReply(node, replyMeta, fnCache)
 				if err != nil {
 					delete(p.servicesMap, servicePath)
 					return err
@@ -321,7 +320,7 @@ func (p *Processor) mountNode(
 
 			// mount children
 			for _, v := range nodeMeta.service.children {
-				err := p.mountNode(node.path, v)
+				err := p.mountNode(node.path, v, fnCache)
 				if err != nil {
 					delete(p.servicesMap, servicePath)
 					return err
@@ -336,6 +335,7 @@ func (p *Processor) mountNode(
 func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
 	meta *rpcReplyMeta,
+	fnCache ReplyCache,
 ) Error {
 	if serviceNode == nil {
 		// check the node is nil
@@ -418,8 +418,8 @@ func (p *Processor) mountReply(
 			indicator: newPerformanceIndicator(),
 		}
 
-		if fnTypeString, ok := getFuncKind(meta.handler); ok && p.fnCache != nil {
-			replyNode.cacheFN = p.fnCache.Get(fnTypeString)
+		if fnTypeString, ok := getFuncKind(meta.handler); ok && fnCache != nil {
+			replyNode.cacheFN = fnCache.Get(fnTypeString)
 		}
 
 		p.repliesMap[replyPath] = replyNode
