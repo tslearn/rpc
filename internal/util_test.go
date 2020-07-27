@@ -491,7 +491,7 @@ func getFakeContext(debug bool) Context {
 
 func testRunWithCatchPanic(fn func()) Error {
 	ch := make(chan Error, 1)
-	sub := SubscribePanic(func(err Error) {
+	sub := subscribePanic(func(err Error) {
 		ch <- err
 	})
 	defer sub.Close()

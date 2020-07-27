@@ -1,20 +1,32 @@
 package internal
 
+// ErrorKind ...
 type ErrorKind uint64
 
-const ErrStringUnexpectedNil = "rpc: unexpected nil"
+// ErrStringRunOutOfReplyScope ...
 const ErrStringRunOutOfReplyScope = "rpc: run out of reply goroutine"
+
+// ErrStringBadStream ...
 const ErrStringBadStream = "rpc: bad stream"
+
+// ErrStringTimeout ...
 const ErrStringTimeout = "rpc: timeout"
 
 const (
-	ErrorKindNone         ErrorKind = 0
-	ErrorKindProtocol     ErrorKind = 1
-	ErrorKindTransport    ErrorKind = 2
-	ErrorKindReply        ErrorKind = 3
-	ErrorKindReplyPanic   ErrorKind = 4
+	// ErrorKindNone ...
+	ErrorKindNone ErrorKind = 0
+	// ErrorKindProtocol ...
+	ErrorKindProtocol ErrorKind = 1
+	// ErrorKindTransport ...
+	ErrorKindTransport ErrorKind = 2
+	// ErrorKindReply ...
+	ErrorKindReply ErrorKind = 3
+	// ErrorKindReplyPanic ...
+	ErrorKindReplyPanic ErrorKind = 4
+	// ErrorKindRuntimePanic ...
 	ErrorKindRuntimePanic ErrorKind = 5
-	ErrorKindKernelPanic  ErrorKind = 6
+	// ErrorKindKernelPanic ...
+	ErrorKindKernelPanic ErrorKind = 6
 )
 
 var (
@@ -22,7 +34,8 @@ var (
 	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
 )
 
-func ReportPanic(err Error) {
+// reportPanic ...
+func reportPanic(err Error) {
 	defer func() {
 		recover()
 	}()
@@ -36,7 +49,8 @@ func ReportPanic(err Error) {
 	})
 }
 
-func SubscribePanic(onPanic func(Error)) *rpcPanicSubscription {
+// subscribePanic ...
+func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
 	if onPanic == nil {
 		return nil
 	}
@@ -59,20 +73,20 @@ type rpcPanicSubscription struct {
 func (p *rpcPanicSubscription) Close() bool {
 	if p == nil {
 		return false
-	} else {
-		return gPanicLocker.CallWithLock(func() interface{} {
-			for i := 0; i < len(gPanicSubscriptions); i++ {
-				if gPanicSubscriptions[i].id == p.id {
-					gPanicSubscriptions = append(
-						gPanicSubscriptions[:i],
-						gPanicSubscriptions[i+1:]...,
-					)
-					return true
-				}
-			}
-			return false
-		}).(bool)
 	}
+
+	return gPanicLocker.CallWithLock(func() interface{} {
+		for i := 0; i < len(gPanicSubscriptions); i++ {
+			if gPanicSubscriptions[i].id == p.id {
+				gPanicSubscriptions = append(
+					gPanicSubscriptions[:i],
+					gPanicSubscriptions[i+1:]...,
+				)
+				return true
+			}
+		}
+		return false
+	}).(bool)
 }
 
 // Error ...

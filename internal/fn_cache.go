@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -57,7 +56,7 @@ func getFuncBodyByKind(name string, kind string) (string, error) {
 				callString = "ReadMap"
 				typeArray = append(typeArray, "rpc.Map")
 			default:
-				return "nil", errors.New(fmt.Sprintf("error kind %s", kind))
+				return "nil", fmt.Errorf("error kind %s", kind)
 			}
 
 			condString := " else if"
@@ -104,7 +103,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, errors.New(fmt.Sprintf("duplicate kind %s", kind))
+			return nil, fmt.Errorf("duplicate kind %s", kind)
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
@@ -123,9 +122,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
 func buildFuncCache(pkgName string, output string, kinds []string) error {
 	sb := NewStringBuilder()
 	defer sb.Release()
-	if metas, err := getFuncMetas(kinds); err != nil {
-		return err
-	} else {
+	if metas, err := getFuncMetas(kinds); err == nil {
 		sb.AppendString(fmt.Sprintf("package %s\n\n", pkgName))
 		sb.AppendString("import \"github.com/rpccloud/rpc\"\n\n")
 
@@ -160,6 +157,8 @@ func buildFuncCache(pkgName string, output string, kinds []string) error {
 				fmt.Sprintf("%s\n\n", meta.body),
 			)
 		}
+	} else {
+		return err
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {

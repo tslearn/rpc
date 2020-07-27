@@ -10,7 +10,7 @@ func TestReportPanic(t *testing.T) {
 	// Test(1)
 	assert(testRunWithCatchPanic(
 		func() {
-			ReportPanic(NewReplyPanic("reply panic error"))
+			reportPanic(NewReplyPanic("reply panic error"))
 		},
 	)).Equals(NewReplyPanic("reply panic error"))
 
@@ -20,11 +20,11 @@ func TestSubscribePanic(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	o1 := SubscribePanic(nil)
+	o1 := subscribePanic(nil)
 	assert(o1).IsNil()
 
 	// Test(2)
-	o2 := SubscribePanic(func(e Error) {})
+	o2 := subscribePanic(func(e Error) {})
 	defer o2.Close()
 	assert(o2).IsNotNil()
 	assert(o2.id > 0).IsTrue()
@@ -41,11 +41,11 @@ func TestRpcPanicSubscription_Close(t *testing.T) {
 	assert(o1.Close()).IsFalse()
 
 	// Test(2)
-	o2 := SubscribePanic(func(e Error) {})
+	o2 := subscribePanic(func(e Error) {})
 	assert(o2.Close()).IsTrue()
 
 	// Test(3)
-	o3 := SubscribePanic(func(e Error) {})
+	o3 := subscribePanic(func(e Error) {})
 	o3.Close()
 	assert(o3.Close()).IsFalse()
 }

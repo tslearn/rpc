@@ -100,7 +100,7 @@ func TestContextObject_stop(t *testing.T) {
 	})
 	assert(panic1).IsNotNil()
 	assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-	assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+	assert(panic1.GetMessage()).Equals("rpc: object is nil")
 	assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 	assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
 
@@ -120,7 +120,7 @@ func TestContextObject_OK(t *testing.T) {
 		ret, source := Context(nil).OK(true), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
+	})).Equals(NewReplyPanic("rpc: context is nil").AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -147,7 +147,7 @@ func TestContextObject_Error(t *testing.T) {
 		ret, source := Context(nil).Error(errors.New("error")), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
+	})).Equals(NewReplyPanic("rpc: context is nil").AddDebug(source1))
 
 	// Test(2)
 	source2 := ""

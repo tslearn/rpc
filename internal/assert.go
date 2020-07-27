@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// Assert ...
 type Assert interface {
 	Fail(reason string)
 	Equals(args ...interface{})

@@ -63,7 +63,7 @@ var nilContext = (Context)(nil)
 
 func (p *ContextObject) getThread() *rpcThread {
 	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
-		ReportPanic(
+		reportPanic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
 		return nil
@@ -86,8 +86,8 @@ func (p *ContextObject) getThread() *rpcThread {
 
 func (p *ContextObject) stop() bool {
 	if p == nil {
-		ReportPanic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+		reportPanic(
+			NewKernelPanic("rpc: object is nil").AddDebug(string(debug.Stack())),
 		)
 		return false
 	} else {
@@ -98,12 +98,12 @@ func (p *ContextObject) stop() bool {
 
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
-		ReportPanic(
-			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+		reportPanic(
+			NewReplyPanic("rpc: context is nil").AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
-		// ReportPanic has already run
+		// reportPanic has already run
 		return nilReturn
 	} else {
 		return thread.WriteOK(value, 2)
@@ -112,12 +112,12 @@ func (p *ContextObject) OK(value interface{}) Return {
 
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
-		ReportPanic(
-			NewReplyPanic(ErrStringUnexpectedNil).AddDebug(GetFileLine(1)),
+		reportPanic(
+			NewReplyPanic("rpc: context is nil").AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
 	} else if thread := p.getThread(); thread == nil {
-		// ReportPanic has already run
+		// reportPanic has already run
 		return nilReturn
 	} else if err, ok := value.(Error); ok && err != nil {
 		return thread.WriteError(

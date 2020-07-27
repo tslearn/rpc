@@ -128,7 +128,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 		return nilReturn
 	} else {
 		p.processor.Panic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelPanic("rpc: stream is nil").AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}
@@ -153,7 +153,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		}
 	} else {
 		p.processor.Panic(
-			NewKernelPanic(ErrStringUnexpectedNil).AddDebug(string(debug.Stack())),
+			NewKernelPanic("rpc: stream is nil").AddDebug(string(debug.Stack())),
 		)
 		return nilReturn
 	}

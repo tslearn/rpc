@@ -173,7 +173,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 	assert(ret1, error1).Equals(true, nil)
 	if panic1 != nil {
 		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-		assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+		assert(panic1.GetMessage()).Equals("rpc: stream is nil")
 		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
 		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
@@ -221,7 +221,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	assert(ret1, error1).Equals(true, nil)
 	if panic1 != nil {
 		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-		assert(panic1.GetMessage()).Equals(ErrStringUnexpectedNil)
+		assert(panic1.GetMessage()).Equals("rpc: stream is nil")
 		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
 		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
 		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()

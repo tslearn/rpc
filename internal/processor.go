@@ -125,7 +125,7 @@ func NewProcessor(
 		}
 
 		// subscribe panic
-		ret.panicSubscription = SubscribePanic(fnError)
+		ret.panicSubscription = subscribePanic(fnError)
 
 		// start threads
 		freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)
@@ -270,7 +270,7 @@ func (p *Processor) mountNode(
 ) Error {
 	if nodeMeta == nil {
 		// check nodeMeta is not nil
-		return NewKernelPanic(ErrStringUnexpectedNil).
+		return NewKernelPanic("rpc: nodeMeta is nil").
 			AddDebug(string(debug.Stack()))
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
 		// check nodeMeta.name is valid
