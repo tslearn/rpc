@@ -530,12 +530,12 @@ func testRunWithProcessor(
 		16,
 		16,
 		fnCache,
-		[]*rpcChildMeta{&rpcChildMeta{
+		[]*rpcChildMeta{{
 			name:     "test",
 			service:  service,
 			fileLine: "",
 		}},
-		helper.GetReturnFunction(),
+		helper.GetFunction(),
 	); processor == nil {
 		panic("internal error")
 	} else if inStream := getStream(processor); inStream == nil {
@@ -601,13 +601,13 @@ type testProcessorReturnHelper struct {
 
 func newTestProcessorReturnHelper() *testProcessorReturnHelper {
 	return &testProcessorReturnHelper{
-		streamCH:       make(chan *Stream, 8192),
+		streamCH:       make(chan *Stream, 102400),
 		firstReceiveCH: make(chan bool, 1),
 		isFirst:        0,
 	}
 }
 
-func (p *testProcessorReturnHelper) GetReturnFunction() func(stream *Stream) {
+func (p *testProcessorReturnHelper) GetFunction() func(stream *Stream) {
 	return func(stream *Stream) {
 		if atomic.CompareAndSwapInt32(&p.isFirst, 0, 1) {
 			p.firstReceiveCH <- true

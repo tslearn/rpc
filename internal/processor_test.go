@@ -2,8 +2,10 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -12,6 +14,98 @@ func TestNewProcessor(t *testing.T) {
 	// Test(1) onReturnStream is nil
 	assert(NewProcessor(true, 1, 1, 1, nil, nil, nil)).IsNil()
 
+	// Test(2) numOfThreads <= 0
+	helper2 := newTestProcessorReturnHelper()
+	assert(
+		NewProcessor(true, 0, 1, 1, nil, nil, helper2.GetFunction()),
+	).IsNil()
+	_, _, panicArray2 := helper2.GetReturn()
+	assert(len(panicArray2)).Equals(1)
+	assert(panicArray2[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray2[0].GetMessage()).Equals("rpc: numOfThreads is wrong")
+	assert(strings.Contains(panicArray2[0].GetDebug(), "NewProcessor")).IsTrue()
+
+	// Test(3) maxNodeDepth <= 0
+	helper3 := newTestProcessorReturnHelper()
+	assert(
+		NewProcessor(true, 1, 0, 1, nil, nil, helper3.GetFunction()),
+	).IsNil()
+	_, _, panicArray3 := helper3.GetReturn()
+	assert(len(panicArray3)).Equals(1)
+	assert(panicArray3[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray3[0].GetMessage()).Equals("rpc: maxNodeDepth is wrong")
+	assert(strings.Contains(panicArray3[0].GetDebug(), "NewProcessor")).IsTrue()
+
+	// Test(4) maxCallDepth <= 0
+	helper4 := newTestProcessorReturnHelper()
+	assert(
+		NewProcessor(true, 1, 1, 0, nil, nil, helper4.GetFunction()),
+	).IsNil()
+	_, _, panicArray4 := helper4.GetReturn()
+	assert(len(panicArray4)).Equals(1)
+	assert(panicArray4[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray4[0].GetMessage()).Equals("rpc: maxCallDepth is wrong")
+	assert(strings.Contains(panicArray4[0].GetDebug(), "NewProcessor")).IsTrue()
+
+	// Test(5) mount service error
+	helper5 := newTestProcessorReturnHelper()
+	assert(NewProcessor(
+		true,
+		1,
+		1,
+		1,
+		nil,
+		[]*rpcChildMeta{nil},
+		helper5.GetFunction(),
+	)).IsNil()
+	_, _, panicArray5 := helper5.GetReturn()
+	assert(len(panicArray5)).Equals(1)
+	assert(panicArray5[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray5[0].GetMessage()).Equals("rpc: nodeMeta is nil")
+	assert(strings.Contains(panicArray5[0].GetDebug(), "NewProcessor")).IsTrue()
+
+	// Test(6) OK
+	helper6 := newTestProcessorReturnHelper()
+	processor6 := NewProcessor(
+		true,
+		65535,
+		2,
+		3,
+		nil,
+		[]*rpcChildMeta{{
+			name: "test",
+			service: NewService().Reply("Eval", func(ctx Context) Return {
+				time.Sleep(time.Second)
+				return ctx.OK(true)
+			}),
+			fileLine: "",
+		}},
+		helper6.GetFunction(),
+	)
+	for i := 0; i < 65536; i++ {
+		stream := NewStream()
+		stream.WriteString("#.test:Eval")
+		stream.WriteUint64(3)
+		stream.WriteString("")
+		processor6.PutStream(stream)
+	}
+	assert(processor6).IsNotNil()
+	assert(processor6.isDebug).IsTrue()
+	assert(len(processor6.repliesMap)).Equals(1)
+	assert(len(processor6.servicesMap)).Equals(2)
+	assert(processor6.maxNodeDepth).Equals(uint64(2))
+	assert(processor6.maxCallDepth).Equals(uint64(3))
+	assert(len(processor6.threads)).Equals(65536)
+	assert(len(processor6.freeCHArray)).Equals(freeGroups)
+	assert(processor6.readThreadPos).Equals(uint64(65536))
+	assert(processor6.fnError).IsNotNil()
+	processor6.Close()
+	assert(processor6.writeThreadPos).Equals(uint64(65536))
+	sumFrees := 0
+	for _, freeCH := range processor6.freeCHArray {
+		sumFrees += len(freeCH)
+	}
+	assert(sumFrees).Equals(65536)
 }
 
 func TestNewProcessor2(t *testing.T) {
