@@ -60,14 +60,6 @@ func TestNewError(t *testing.T) {
 	assert(o1.GetDebug()).Equals("fileLine")
 }
 
-func TestNewBaseError(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	assert(NewBaseError("message")).
-		Equals(NewError(ErrorKindBase, "message", ""))
-}
-
 func TestNewReplyError(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -129,7 +121,7 @@ func TestConvertToError(t *testing.T) {
 	assert(ConvertToError(nil)).IsNil()
 
 	// Test(4)
-	assert(ConvertToError(NewBaseError("test"))).IsNotNil()
+	assert(ConvertToError(NewKernelPanic("test"))).IsNotNil()
 }
 
 func TestRpcError_GetKind(t *testing.T) {

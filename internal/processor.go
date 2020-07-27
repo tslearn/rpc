@@ -57,7 +57,12 @@ type Processor struct {
 	readThreadPos      uint64
 	writeThreadPos     uint64
 	panicSubscription  *rpcPanicSubscription
+	fnError            func(err Error)
 	Lock
+}
+
+func (p *Processor) Error(err Error) {
+	p.fnError(err)
 }
 
 // NewProcessor ...
@@ -74,7 +79,7 @@ func NewProcessor(
 		return nil
 	}
 
-	onReturnError := func(err Error) {
+	fnError := func(err Error) {
 		defer func() {
 			// ignore this error.
 			// it has tried its best to report panic.
@@ -88,19 +93,19 @@ func NewProcessor(
 	}
 
 	if numOfThreads == 0 {
-		onReturnError(
+		fnError(
 			NewKernelPanic("rpc: numOfThreads is zero").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
 	} else if maxNodeDepth == 0 {
-		onReturnError(
+		fnError(
 			NewKernelPanic("rpc: maxNodeDepth is zero").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
 	} else if maxCallDepth == 0 {
-		onReturnError(
+		fnError(
 			NewKernelPanic("rpc: maxCallDepth is zero").
 				AddDebug(string(debug.Stack())),
 		)
@@ -118,6 +123,7 @@ func NewProcessor(
 			freeThreadsCHGroup: nil,
 			readThreadPos:      0,
 			writeThreadPos:     0,
+			fnError:            fnError,
 		}
 
 		// mount nodes
@@ -128,13 +134,13 @@ func NewProcessor(
 		}
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta); err != nil {
-				onReturnError(err)
+				ret.Error(err)
 				return nil
 			}
 		}
 
 		// subscribe panic
-		ret.panicSubscription = SubscribePanic(onReturnError)
+		ret.panicSubscription = SubscribePanic(fnError)
 
 		// start threads
 		freeThreadsCHGroup := make([]chan *rpcThread, freeGroups, freeGroups)

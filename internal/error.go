@@ -15,8 +15,6 @@ const (
 	ErrorKindReplyPanic   ErrorKind = 4
 	ErrorKindRuntimePanic ErrorKind = 5
 	ErrorKindKernelPanic  ErrorKind = 6
-
-	ErrorKindBase ErrorKind = 7
 )
 
 var (
@@ -95,10 +93,10 @@ func NewError(kind ErrorKind, message string, debug string) Error {
 	}
 }
 
-// NewBaseError ...
-func NewBaseError(message string) Error {
-	return NewError(ErrorKindBase, message, "")
-}
+//// NewBaseError ...
+//func NewBaseError(message string) Error {
+//	return NewError(ErrorKindBase, message, "")
+//}
 
 // NewProtocolError ...
 func NewProtocolError(message string) Error {

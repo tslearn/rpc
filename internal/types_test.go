@@ -143,8 +143,7 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(1)
 	source1 := ""
 	assert(testRunWithCatchPanic(func() {
-		err := NewBaseError("error")
-		ret, source := Context(nil).Error(err), GetFileLine(0)
+		ret, source := Context(nil).Error(errors.New("error")), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
 	})).Equals(NewReplyPanic(ErrStringUnexpectedNil).AddDebug(source1))
