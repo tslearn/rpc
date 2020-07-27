@@ -1117,14 +1117,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error29, panic29).IsNotNil()
 	if error29 != nil {
 		assert(error29.GetKind()).Equals(ErrorKindReply)
-		assert(error29.GetMessage()).Equals("rpc: #.test:Eval runtime error")
+		assert(error29.GetMessage()).Equals("rpc: runtime error")
 		assert(strings.Contains(error29.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(error29.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic29 != nil {
 		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic29.GetMessage()).
-			Equals("rpc: #.test:Eval runtime error: this is a error")
+			Equals("rpc: runtime error: this is a error")
 		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1149,14 +1149,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error30, panic30).IsNotNil()
 	if error30 != nil {
 		assert(error30.GetKind()).Equals(ErrorKindReply)
-		assert(error30.GetMessage()).Equals("rpc: #.test:Eval runtime error")
+		assert(error30.GetMessage()).Equals("rpc: runtime error")
 		assert(strings.Contains(error30.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(error30.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic30 != nil {
 		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic30.GetMessage()).
-			Equals("rpc: #.test:Eval runtime error: this is a error")
+			Equals("rpc: runtime error: this is a error")
 		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1202,7 +1202,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	if panic32 != nil {
 		assert(panic32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic32.GetMessage()).
-			Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
+			Equals("rpc: reply must return through Context.OK or Context.Error")
 		assert(strings.Contains(panic32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")

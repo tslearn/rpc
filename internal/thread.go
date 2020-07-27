@@ -193,7 +193,7 @@ func (p *rpcThread) Eval(
 			// report panic
 			p.processor.Panic(
 				NewReplyPanic(
-					fmt.Sprintf("rpc:runtime error: %v", v),
+					fmt.Sprintf("rpc: runtime error: %v", v),
 				).AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
 			)
 
