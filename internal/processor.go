@@ -50,10 +50,6 @@ type Processor struct {
 	Lock
 }
 
-func (p *Processor) Panic(err Error) {
-	p.fnError(err)
-}
-
 // NewProcessor ...
 func NewProcessor(
 	isDebug bool,
@@ -240,6 +236,11 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 		}
 		return success
 	}
+}
+
+// Panic
+func (p *Processor) Panic(err Error) {
+	p.fnError(err)
 }
 
 // BuildCache ...
