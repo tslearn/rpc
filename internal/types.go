@@ -113,6 +113,7 @@ func (p *ContextObject) OK(value interface{}) Return {
 	}
 }
 
+// Error ...
 func (p *ContextObject) Error(value error) Return {
 	if p == nil {
 		reportPanic(

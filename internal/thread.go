@@ -87,8 +87,11 @@ func newThread(
 func (p *rpcThread) Close() bool {
 	return p.CallWithLock(func() interface{} {
 		if p.closeCH != nil {
+			defer func() {
+				p.closeCH = nil
+			}()
+
 			close(p.inputCH)
-			p.closeCH = nil
 			select {
 			case <-p.closeCH:
 				p.execStream.Release()
