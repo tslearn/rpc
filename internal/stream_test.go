@@ -455,10 +455,10 @@ func TestStream_GetSessionId_SetSessionId(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
 		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetSessionId(v)
+		stream.SetSessionID(v)
 		assert(stream.header[8:16]).Equals(bytes8)
 		assert(stream.GetBufferUnsafe()[9:17]).Equals(bytes8)
-		assert(stream.GetSessionId()).Equals(v)
+		assert(stream.GetSessionID()).Equals(v)
 	}
 }
 

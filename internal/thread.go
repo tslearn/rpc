@@ -18,7 +18,7 @@ const (
 )
 
 type rpcThread struct {
-	goroutineId   int64
+	goroutineID   int64
 	processor     *Processor
 	inputCH       chan *Stream
 	closeCH       chan bool
@@ -55,7 +55,7 @@ func newThread(
 
 	go func() {
 		thread := &rpcThread{
-			goroutineId:   0,
+			goroutineID:   0,
 			processor:     processor,
 			inputCH:       make(chan *Stream),
 			closeCH:       make(chan bool, 1),
@@ -69,7 +69,7 @@ func newThread(
 		}
 
 		if processor.isDebug {
-			thread.goroutineId = CurrentGoroutineID()
+			thread.goroutineID = CurrentGoroutineID()
 		}
 
 		retCH <- thread
@@ -86,26 +86,25 @@ func newThread(
 
 func (p *rpcThread) Close() bool {
 	return p.CallWithLock(func() interface{} {
-		if p.closeCH == nil {
-			return false
-		} else {
+		if p.closeCH != nil {
 			close(p.inputCH)
+			p.closeCH = nil
 			select {
-			case <-time.After(p.closeTimeout):
-				p.closeCH = nil
-				return false
 			case <-p.closeCH:
 				p.execStream.Release()
 				p.execStream = nil
-				p.closeCH = nil
 				return true
+			case <-time.After(p.closeTimeout):
+				return false
 			}
 		}
+
+		return false
 	}).(bool)
 }
 
-func (p *rpcThread) GetGoroutineId() int64 {
-	return p.goroutineId
+func (p *rpcThread) GetGoroutineID() int64 {
+	return p.goroutineID
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {
@@ -123,44 +122,31 @@ func (p *rpcThread) GetExecReplyFileLine() string {
 }
 
 func (p *rpcThread) WriteError(err Error) Return {
-	if stream := p.execStream; stream != nil {
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(uint64(err.GetKind()))
-		stream.WriteString(err.GetMessage())
-		stream.WriteString(err.GetDebug())
-		p.execStatus = rpcThreadExecFailed
-		return nilReturn
-	} else {
-		p.processor.Panic(
-			NewKernelPanic("rpc: stream is nil").AddDebug(string(debug.Stack())),
-		)
-		return nilReturn
-	}
+	stream := p.execStream
+	stream.SetWritePosToBodyStart()
+	stream.WriteUint64(uint64(err.GetKind()))
+	stream.WriteString(err.GetMessage())
+	stream.WriteString(err.GetDebug())
+	p.execStatus = rpcThreadExecFailed
+	return nilReturn
 }
 
 func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
-	if stream := p.execStream; stream != nil {
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(uint64(ErrorKindNone))
-		if stream.Write(value) == StreamWriteOK {
-			p.execStatus = rpcThreadExecSuccess
-			return nilReturn
-		} else {
-			p.processor.Panic(
-				NewReplyPanic(ConcatString("rpc: ", checkValue(value, "value", 64))).
-					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
-			)
-			return p.WriteError(
-				NewReplyError("rpc: reply return value error").
-					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
-			)
-		}
-	} else {
+	stream := p.execStream
+	stream.SetWritePosToBodyStart()
+	stream.WriteUint64(uint64(ErrorKindNone))
+	if stream.Write(value) != StreamWriteOK {
 		p.processor.Panic(
-			NewKernelPanic("rpc: stream is nil").AddDebug(string(debug.Stack())),
+			NewReplyPanic(ConcatString("rpc: ", checkValue(value, "value", 64))).
+				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
-		return nilReturn
+		return p.WriteError(
+			NewReplyError("rpc: reply return value error").
+				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
+		)
 	}
+	p.execStatus = rpcThreadExecSuccess
+	return nilReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {

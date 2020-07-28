@@ -53,8 +53,10 @@ type ReturnObject struct{}
 
 var nilReturn = (Return)(nil)
 
+// Context ...
 type Context = *ContextObject
 
+// ContextObject ...
 type ContextObject struct {
 	thread unsafe.Pointer
 }
@@ -74,7 +76,7 @@ func (p *ContextObject) getThread() *rpcThread {
 		return nil
 	} else if !thread.processor.isDebug {
 		return thread
-	} else if thread.GetGoroutineId() != CurrentGoroutineID() {
+	} else if thread.GetGoroutineID() != CurrentGoroutineID() {
 		thread.processor.Panic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
 		)
@@ -90,12 +92,13 @@ func (p *ContextObject) stop() bool {
 			NewKernelPanic("rpc: object is nil").AddDebug(string(debug.Stack())),
 		)
 		return false
-	} else {
-		atomic.StorePointer(&p.thread, nil)
-		return true
 	}
+
+	atomic.StorePointer(&p.thread, nil)
+	return true
 }
 
+// OK ...
 func (p *ContextObject) OK(value interface{}) Return {
 	if p == nil {
 		reportPanic(

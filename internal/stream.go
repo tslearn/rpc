@@ -108,9 +108,7 @@ func init() {
 }
 
 func checkArray(v Array, path string, depth int) string {
-	if v == nil {
-		return ""
-	} else {
+	if v != nil {
 		for idx, item := range v {
 			if reason := checkValue(
 				item,
@@ -120,14 +118,13 @@ func checkArray(v Array, path string, depth int) string {
 				return reason
 			}
 		}
-		return ""
 	}
+
+	return ""
 }
 
 func checkMap(v Map, path string, depth int) string {
-	if v == nil {
-		return ""
-	} else {
+	if v != nil {
 		for key, item := range v {
 			if reason := checkValue(
 				item,
@@ -137,8 +134,9 @@ func checkMap(v Map, path string, depth int) string {
 				return reason
 			}
 		}
-		return ""
 	}
+
+	return ""
 }
 
 func checkValue(v interface{}, path string, depth int) string {
@@ -313,8 +311,8 @@ func (p *Stream) SetCallbackID(v uint64) {
 	b[7] = byte(v >> 56)
 }
 
-// GetSessionId ...
-func (p *Stream) GetSessionId() uint64 {
+// GetSessionID ...
+func (p *Stream) GetSessionID() uint64 {
 	b := p.header[8:16]
 	return uint64(b[0]) |
 		uint64(b[1])<<8 |
@@ -326,8 +324,8 @@ func (p *Stream) GetSessionId() uint64 {
 		uint64(b[7])<<56
 }
 
-// SetSessionId ...
-func (p *Stream) SetSessionId(v uint64) {
+// SetSessionID ...
+func (p *Stream) SetSessionID(v uint64) {
 	b := p.header[8:16]
 	b[0] = byte(v)
 	b[1] = byte(v >> 8)
@@ -435,6 +433,7 @@ func (p *Stream) SetReadPos(pos int) bool {
 	return false
 }
 
+// SetReadPosToBodyStart ...
 func (p *Stream) SetReadPosToBodyStart() bool {
 	return p.SetReadPos(streamBodyPos)
 }
@@ -464,6 +463,7 @@ func (p *Stream) SetWritePos(length int) {
 	p.setWritePosUnsafe(length)
 }
 
+// SetWritePosToBodyStart ...
 func (p *Stream) SetWritePosToBodyStart() {
 	p.SetWritePos(streamBodyPos)
 }

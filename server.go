@@ -159,7 +159,7 @@ func (p *serverSession) OnDataStream(
 	}
 
 	stream.GetCallbackID()
-	stream.SetSessionId(p.id)
+	stream.SetSessionID(p.id)
 
 	if !processor.PutStream(stream) {
 		return internal.NewBaseError(
@@ -337,10 +337,10 @@ func (p *Server) Start() bool {
 				kind := stream.GetStreamKind()
 				if kind == internal.StreamKindResponseOK ||
 					kind == internal.StreamKindResponseError {
-					if v, ok := p.sessionMap.Load(stream.GetSessionId()); ok {
+					if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
 						if session, ok := v.(*serverSession); ok && session != nil {
 							if err := session.WriteStream(stream); err != nil {
-								p.logWriter.Write(stream.GetSessionId(), err)
+								p.logWriter.Write(stream.GetSessionID(), err)
 							}
 						}
 					}
@@ -356,7 +356,7 @@ func (p *Server) Start() bool {
 						stream.SetReadPosToBodyStart()
 					} else {
 						p.logWriter.Write(
-							stream.GetSessionId(),
+							stream.GetSessionID(),
 							internal.NewError(internal.ErrorKind(errKind), message, debug),
 						)
 					}
