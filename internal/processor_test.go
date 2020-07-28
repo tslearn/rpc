@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -242,14 +241,40 @@ func TestProcessor_BuildCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 	defer func() {
-		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+		//_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
 	}()
 
+	// Test(1)
 	processor1 := getFakeProcessor(false)
 	assert(processor1.BuildCache(
 		"pkgName",
 		path.Join(path.Dir(file), "_tmp_/test-processor-01.go"),
-	)).IsNil()
+	)).IsTrue()
+
+	// Test(2)
+	helper2 := newTestProcessorReturnHelper()
+	processor2 := NewProcessor(
+		true,
+		1024,
+		2,
+		3,
+		nil,
+		time.Second,
+		[]*rpcChildMeta{{
+			name: "test",
+			service: NewService().Reply("Eval", func(ctx Context) Return {
+				return ctx.OK(true)
+			}),
+			fileLine: "",
+		}},
+		helper2.GetFunction(),
+	)
+	assert(processor2.BuildCache(
+		"pkgName",
+		path.Join(path.Dir(file), "_tmp_/test-processor-02.go"),
+	)).IsTrue()
+	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{})
+
 	//assert(readStringFromFile(
 	//	path.Join(path.Dir(file), "_snapshot_/processor-build-cache-0.snapshot"),
 	//)).Equals(readStringFromFile(

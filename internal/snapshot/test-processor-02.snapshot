@@ -1,0 +1,30 @@
+package pkgName
+
+import "github.com/rpccloud/rpc"
+
+type rpcCache struct{}
+
+// NewRPCCache ...
+func NewRPCCache() rpc.ReplyCache {
+	return &rpcCache{}
+}
+
+// Get ...
+func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
+	switch fnString {
+	case "":
+		return fnCache0
+	default: 
+		return nil
+	}
+}
+
+func fnCache0(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {
+	if !stream.IsReadFinish() {
+		return true
+	} else {
+		fn.(func(rpc.Context) rpc.Return)(ctx)
+		return true
+	}
+}
+

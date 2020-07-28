@@ -1,0 +1,19 @@
+package pkgName
+
+import "github.com/rpccloud/rpc"
+
+type rpcCache struct{}
+
+// NewRPCCache ...
+func NewRPCCache() rpc.ReplyCache {
+	return &rpcCache{}
+}
+
+// Get ...
+func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
+	switch fnString {
+	default: 
+		return nil
+	}
+}
+
