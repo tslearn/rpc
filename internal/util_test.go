@@ -565,7 +565,7 @@ func testRunWithProcessor(
 		16,
 		fnCache,
 		5*time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name:     "test",
 			service:  service,
 			fileLine: "",

@@ -60,7 +60,7 @@ func TestNewProcessor(t *testing.T) {
 		1,
 		nil,
 		5*time.Second,
-		[]*rpcChildMeta{nil},
+		[]*ServiceMeta{nil},
 		helper5.GetFunction(),
 	)).IsNil()
 	_, _, panicArray5 := helper5.GetReturn()
@@ -78,7 +78,7 @@ func TestNewProcessor(t *testing.T) {
 		3,
 		nil,
 		5*time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
 				time.Sleep(time.Second)
@@ -131,7 +131,7 @@ func TestProcessor_Close(t *testing.T) {
 		3,
 		nil,
 		time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
 				replyFileLine2 = ctx.getThread().GetExecReplyFileLine()
@@ -167,7 +167,7 @@ func TestProcessor_Close(t *testing.T) {
 		3,
 		nil,
 		time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
 				replyFileLine3 = ctx.getThread().GetExecReplyFileLine()
@@ -281,7 +281,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		3,
 		nil,
 		5*time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
 				return ctx.OK(true)
@@ -300,7 +300,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	assert := NewAssert(t)
 
 	fnTestMount := func(
-		services []*rpcChildMeta,
+		services []*ServiceMeta,
 		wantPanicKind ErrorKind,
 		wantPanicMessage string,
 		wantPanicDebug string,
@@ -335,19 +335,19 @@ func TestProcessor_mountNode(t *testing.T) {
 	}
 
 	// Test(1)
-	fnTestMount([]*rpcChildMeta{
+	fnTestMount([]*ServiceMeta{
 		nil,
 	}, ErrorKindKernelPanic, "rpc: nodeMeta is nil", "")
 
 	// Test(2)
-	fnTestMount([]*rpcChildMeta{{
+	fnTestMount([]*ServiceMeta{{
 		name:     "+",
 		service:  NewService(),
 		fileLine: "DebugMessage",
 	}}, ErrorKindRuntimePanic, "rpc: service name + is illegal", "DebugMessage")
 
 	// Test(3)
-	fnTestMount([]*rpcChildMeta{{
+	fnTestMount([]*ServiceMeta{{
 		name:     "abc",
 		service:  nil,
 		fileLine: "DebugMessage",
@@ -356,7 +356,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	// Test(4)
 	s4, source1 := NewService().AddChildService("s", NewService()), GetFileLine(0)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name:     "s",
 			service:  NewService().AddChildService("s", s4),
 			fileLine: "DebugMessage",
@@ -368,7 +368,7 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(5)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name:     "user",
 			service:  NewService(),
 			fileLine: "Debug1",
@@ -384,10 +384,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(6)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "user",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies:  []*rpcReplyMeta{nil},
 				fileLine: "DebugReply",
 			},
@@ -400,10 +400,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(7)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "-",
 					handler:  nil,
@@ -420,10 +420,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(8)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
 					handler:  nil,
@@ -440,10 +440,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(9)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
 					handler:  3,
@@ -460,10 +460,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(10)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
 					handler:  func() {},
@@ -480,10 +480,10 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(11)
 	fnTestMount(
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "test",
 			service: &Service{
-				children: []*rpcChildMeta{},
+				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
 					handler:  func(ctx Context) Return { return ctx.OK(true) },
@@ -520,10 +520,10 @@ func TestProcessor_mountNode(t *testing.T) {
 		},
 		fileLine: "DebugEval2",
 	}
-	addMeta12 := &rpcChildMeta{
+	addMeta12 := &ServiceMeta{
 		name: "test",
 		service: &Service{
-			children: []*rpcChildMeta{},
+			children: []*ServiceMeta{},
 			replies:  []*rpcReplyMeta{replyMeta12Eval1, replyMeta12Eval2},
 			fileLine: GetFileLine(1),
 		},
@@ -536,7 +536,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		3,
 		&testFuncCache{},
 		5*time.Second,
-		[]*rpcChildMeta{addMeta12},
+		[]*ServiceMeta{addMeta12},
 		getFakeOnEvalBack(),
 	)
 	assert(processor12).IsNotNil()
@@ -590,7 +590,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		16,
 		&testFuncCache{},
 		5*time.Second,
-		[]*rpcChildMeta{{
+		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
 				Reply("sayHello", func(ctx Context, name String) Return {

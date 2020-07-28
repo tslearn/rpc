@@ -6,15 +6,28 @@ type rpcReplyMeta struct {
 	fileLine string      // where the reply add in source file
 }
 
-type rpcChildMeta struct {
+type ServiceMeta struct {
 	name     string   // the name of child service
 	service  *Service // the real service
 	fileLine string   // where the service add in source file
 }
 
+// NewServiceMeta ...
+func NewServiceMeta(
+	name string,
+	service *Service,
+	fileLine string,
+) *ServiceMeta {
+	return &ServiceMeta{
+		name:     name,
+		service:  service,
+		fileLine: fileLine,
+	}
+}
+
 // Service ...
 type Service struct {
-	children []*rpcChildMeta // all the children node meta pointer
+	children []*ServiceMeta  // all the children node meta pointer
 	replies  []*rpcReplyMeta // all the replies meta pointer
 	fileLine string          // where the service define in source file
 	Lock
@@ -23,7 +36,7 @@ type Service struct {
 // NewService define a new service
 func NewService() *Service {
 	return &Service{
-		children: make([]*rpcChildMeta, 0, 0),
+		children: make([]*ServiceMeta, 0, 0),
 		replies:  make([]*rpcReplyMeta, 0, 0),
 		fileLine: GetFileLine(1),
 	}
@@ -33,7 +46,7 @@ func NewService() *Service {
 func (p *Service) AddChildService(name string, service *Service) *Service {
 	// add child meta
 	p.DoWithLock(func() {
-		p.children = append(p.children, &rpcChildMeta{
+		p.children = append(p.children, &ServiceMeta{
 			name:     name,
 			service:  service,
 			fileLine: GetFileLine(3),

@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"path"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -133,10 +134,6 @@ func (p *serverSession) OnDataStream(
 ) Error {
 	if stream == nil {
 		return internal.NewBaseError("stream is nil")
-	}
-
-	if stream.GetStreamKind() != internal.StreamKindRequest {
-		return internal.NewBaseError("stream kind error")
 	}
 
 	if processor == nil {
@@ -295,117 +292,133 @@ func (p *serverSession) Release() {
 
 // Begin ***** Server ***** //
 type Server struct {
-	isOpen      bool
-	logWriter   LogWriter
-	endPoints   []IAdapter
-	processor   *internal.Processor
-	sessionMap  sync.Map
-	sessionSize int64
-	sessionSeed uint64
+	isDebug      bool
+	endPoints    []IAdapter
+	processor    *internal.Processor
+	numOfThreads int
+	sessionMap   sync.Map
+	sessionSize  int64
+	sessionSeed  uint64
+	fnCache      internal.ReplyCache
+	services     []*internal.ServiceMeta
 	internal.Lock
 }
 
-func NewServer(isDebug bool, numOfThreads uint, sessionSize int64, fnCache internal.ReplyCache) *Server {
-	server := &Server{
-		isOpen:      false,
-		logWriter:   NewStdoutLogWriter(),
-		endPoints:   make([]IAdapter, 0),
-		processor:   nil,
-		sessionMap:  sync.Map{},
-		sessionSize: sessionSize,
-		sessionSeed: 0,
+func NewServer() *Server {
+	return &Server{
+		isDebug:      false,
+		endPoints:    make([]IAdapter, 0),
+		processor:    nil,
+		numOfThreads: runtime.NumCPU() * 16384,
+		sessionMap:   sync.Map{},
+		sessionSize:  64,
+		sessionSeed:  0,
+		fnCache:      nil,
 	}
-
-	server.processor = internal.NewProcessor(
-		isDebug,
-		numOfThreads,
-		32,
-		32,
-		fnCache,
-	)
-
-	return server
 }
 
 func (p *Server) Start() bool {
 	return p.CallWithLock(func() interface{} {
-		if p.isOpen {
-			p.onError(internal.NewBaseError("Server: Start: it is already opened"))
+		if p.processor != nil {
+			p.onError(
+				0,
+				internal.NewRuntimePanic("rpc: it is already opened").
+					AddDebug(string(debug.Stack())),
+			)
 			return false
-		} else if err := p.processor.Start(
+		}
+
+		p.processor = internal.NewProcessor(
+			p.isDebug,
+			p.numOfThreads,
+			32,
+			32,
+			p.fnCache,
+			20*time.Second,
+			p.services,
 			func(stream Stream) {
-				kind := stream.GetStreamKind()
-				if kind == internal.StreamKindResponseOK ||
-					kind == internal.StreamKindResponseError {
-					if v, ok := p.sessionMap.Load(stream.GetSessionID()); ok {
-						if session, ok := v.(*serverSession); ok && session != nil {
-							if err := session.WriteStream(stream); err != nil {
-								p.logWriter.Write(stream.GetSessionID(), err)
+				if stream != nil {
+					sessionID := stream.GetSessionID()
+					stream.SetReadPosToBodyStart()
+
+					if errKind, ok := stream.ReadUint64(); ok {
+						switch internal.ErrorKind(errKind) {
+						case internal.ErrorKindNone:
+							fallthrough
+						case internal.ErrorKindProtocol:
+							fallthrough
+						case internal.ErrorKindTransport:
+							fallthrough
+						case internal.ErrorKindReply:
+							if v, ok := p.sessionMap.Load(sessionID); ok {
+								if session, ok := v.(*serverSession); ok && session != nil {
+									if err := session.WriteStream(stream); err != nil {
+										p.onError(stream.GetSessionID(), err)
+									}
+								}
+							}
+						case internal.ErrorKindReplyPanic:
+							fallthrough
+						case internal.ErrorKindRuntimePanic:
+							fallthrough
+						case internal.ErrorKindKernelPanic:
+							if message, ok := stream.ReadString(); !ok {
+								// stream.SetReadPosToBodyStart()
+							} else if debug, ok := stream.ReadString(); !ok {
+								// stream.SetReadPosToBodyStart()
+							} else {
+								p.onError(
+									stream.GetSessionID(),
+									internal.NewError(internal.ErrorKind(errKind), message, debug),
+								)
 							}
 						}
 					}
-				} else if kind == internal.StreamKindResponseFatal {
-					// report Panic
-					stream.SetReadPosToBodyStart()
-
-					if errKind, ok := stream.ReadUint64(); !ok {
-						stream.SetReadPosToBodyStart()
-					} else if message, ok := stream.ReadString(); !ok {
-						stream.SetReadPosToBodyStart()
-					} else if debug, ok := stream.ReadString(); !ok {
-						stream.SetReadPosToBodyStart()
-					} else {
-						p.logWriter.Write(
-							stream.GetSessionID(),
-							internal.NewError(internal.ErrorKind(errKind), message, debug),
-						)
-					}
-
-				} else {
-					// ignore stream
+					stream.Release()
 				}
-
 			},
-		); err != nil {
-			p.onError(err)
+		)
+
+		if p.processor == nil {
 			return false
-		} else {
-			openList := make([]IAdapter, 0)
-			defer func() {
-				if openList != nil {
-					for _, v := range openList {
-						v.Close(p.onError)
-					}
-				}
-			}()
-			for _, endPoint := range p.endPoints {
-				if endPoint.Open(p.onConnRun, p.onError) {
-					openList = append(openList, endPoint)
-				} else {
-					return false
+		}
+
+		openList := make([]IAdapter, 0)
+		defer func() {
+			if openList != nil {
+				for _, v := range openList {
+					v.Close(func(err Error) {
+						p.onError(0, err)
+					})
 				}
 			}
-			openList = nil
-			p.isOpen = true
-			return true
+		}()
+		for _, endPoint := range p.endPoints {
+			if endPoint.Open(p.onConnRun, func(err Error) {
+				p.onError(0, err)
+			}) {
+				openList = append(openList, endPoint)
+			} else {
+				return false
+			}
 		}
+		openList = nil
+		return true
 	}).(bool)
 }
 
 func (p *Server) Stop() {
 	p.DoWithLock(func() {
-		if !p.isOpen {
-			p.onError(internal.NewBaseError("Server: Close: it is not opened"))
+		if p.processor == nil {
+			p.onError(0, internal.NewBaseError("Server: Close: it is not opened"))
 		} else {
-			p.isOpen = false
-
 			for _, endPoint := range p.endPoints {
-				endPoint.Close(p.onError)
+				endPoint.Close(func(err Error) {
+					p.onError(0, err)
+				})
 			}
-
-			if err := p.processor.Stop(); err != nil {
-				p.onError(err)
-			}
+			p.processor.Close()
+			p.processor = nil
 		}
 	})
 }
@@ -413,7 +426,7 @@ func (p *Server) Stop() {
 func (p *Server) BuildFuncCache(
 	pkgName string,
 	relativePath string,
-) Error {
+) bool {
 	_, file, _, _ := runtime.Caller(1)
 	return p.processor.BuildCache(
 		pkgName,
@@ -426,29 +439,32 @@ func (p *Server) AddService(
 	name string,
 	service *Service,
 ) *Server {
-	if err := p.processor.AddService(
-		name,
-		service,
-		internal.AddFileLine("", 1),
-	); err != nil {
-		p.onError(err)
-	}
+	p.DoWithLock(func() {
+		p.services = append(p.services, internal.NewServiceMeta(
+			name,
+			service,
+			internal.GetFileLine(1),
+		))
+	})
+
 	return p
 }
 
 func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	if endPoint == nil {
-		p.onError(internal.NewBaseError("Server: AddAdapter: endpoint is nil"))
+		p.onError(0, internal.NewBaseError("Server: AddAdapter: endpoint is nil"))
 	} else if endPoint.IsRunning() {
-		p.onError(internal.NewBaseError(fmt.Sprintf(
+		p.onError(0, internal.NewBaseError(fmt.Sprintf(
 			"Server: AddAdapter: endpoint %s has already served",
 			endPoint.ConnectString(),
 		)))
 	} else {
 		p.DoWithLock(func() {
 			p.endPoints = append(p.endPoints, endPoint)
-			if p.isOpen {
-				endPoint.Open(p.onConnRun, p.onError)
+			if p.processor != nil {
+				endPoint.Open(p.onConnRun, func(err Error) {
+					p.onError(0, err)
+				})
 			}
 		})
 	}
@@ -521,14 +537,14 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn IStreamConnection) {
 	if conn == nil {
-		p.onError(internal.NewBaseError("Server: onConnRun: conn is nil"))
+		p.onError(0, internal.NewBaseError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
-		p.onError(err)
+		p.onError(0, err)
 	} else {
 		defer func() {
 			session.conn = nil
 			if err := conn.Close(); err != nil {
-				p.onError(err)
+				p.onError(0, err)
 			}
 		}()
 
@@ -537,7 +553,7 @@ func (p *Server) onConnRun(conn IStreamConnection) {
 				configReadTimeout,
 				configServerReadLimit,
 			); err != nil {
-				p.onError(err)
+				p.onError(0, err)
 				return
 			} else {
 				cbID := stream.GetCallbackID()
@@ -547,12 +563,12 @@ func (p *Server) onConnRun(conn IStreamConnection) {
 					return
 				} else if cbID == 0 {
 					if err := session.OnControlStream(stream); err != nil {
-						p.onError(err)
+						p.onError(0, err)
 						return
 					}
 				} else {
 					if err := session.OnDataStream(stream, p.processor); err != nil {
-						p.onError(err)
+						p.onError(0, err)
 						return
 					}
 				}
@@ -561,8 +577,8 @@ func (p *Server) onConnRun(conn IStreamConnection) {
 	}
 }
 
-func (p *Server) onError(err Error) {
-	p.logWriter.Write(0, err)
+func (p *Server) onError(sessionID uint64, err Error) {
+	fmt.Println(sessionID, err)
 }
 
 // End ***** Server ***** //

@@ -13,7 +13,7 @@ func TestServer_Debug(t *testing.T) {
 
 func TestServer_Basic(t *testing.T) {
 	// assert := common.NewAssert(t)
-	server := NewServer(true, 1024, 32, nil).AddAdapter(
+	server := NewServer().AddAdapter(
 		NewWebSocketServerAdapter("127.0.0.1:8080", "test"),
 	)
 	server.AddService("user", NewService().

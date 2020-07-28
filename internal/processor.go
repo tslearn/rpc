@@ -30,7 +30,7 @@ type rpcReplyNode struct {
 
 type rpcServiceNode struct {
 	path    string
-	addMeta *rpcChildMeta
+	addMeta *ServiceMeta
 	depth   uint
 }
 
@@ -58,7 +58,7 @@ func NewProcessor(
 	maxCallDepth int,
 	fnCache ReplyCache,
 	closeTimeout time.Duration,
-	mountServices []*rpcChildMeta,
+	mountServices []*ServiceMeta,
 	onReturnStream func(stream *Stream),
 ) *Processor {
 	if onReturnStream == nil {
@@ -265,7 +265,7 @@ func (p *Processor) BuildCache(pkgName string, path string) bool {
 
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
-	nodeMeta *rpcChildMeta,
+	nodeMeta *ServiceMeta,
 	fnCache ReplyCache,
 ) Error {
 	if nodeMeta == nil {
