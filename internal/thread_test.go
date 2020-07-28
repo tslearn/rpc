@@ -146,38 +146,12 @@ func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 func TestRpcThread_WriteError(t *testing.T) {
 	assert := NewAssert(t)
 
-	// Test(1) stream is nil
-	ret1, error1, panic1 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK(true)
-		},
-		func(processor *Processor) *Stream {
-			thread := &rpcThread{processor: processor}
-			thread.WriteError(NewReplyError(""))
-
-			stream := NewStream()
-			stream.WriteString("#.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.WriteString("world")
-			return stream
-		},
-	)
-	assert(ret1, error1).Equals(true, nil)
-	if panic1 != nil {
-		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-		assert(panic1.GetMessage()).Equals("rpc: stream is nil")
-		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
-		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
-		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
-	}
-
-	// Test(2) ok
-	source2 := ""
+	// Test(1) ok
+	source1 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
-			source2 = source
+			source1 = source
 			return ret
 		},
 		func(_ *Processor) *Stream {
@@ -188,46 +162,20 @@ func TestRpcThread_WriteError(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(nil, NewReplyError("error").AddDebug("#.test:Eval "+source2), nil)
+	)).Equals(nil, NewReplyError("error").AddDebug("#.test:Eval "+source1), nil)
 }
 
 func TestRpcThread_WriteOK(t *testing.T) {
 	assert := NewAssert(t)
 
-	// Test(1) stream is nil
-	ret1, error1, panic1 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
-			return ctx.OK(true)
-		},
-		func(processor *Processor) *Stream {
-			thread := &rpcThread{processor: processor}
-			thread.WriteOK(true, 1)
-
-			stream := NewStream()
-			stream.WriteString("#.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			stream.WriteString("world")
-			return stream
-		},
-	)
-	assert(ret1, error1).Equals(true, nil)
-	if panic1 != nil {
-		assert(panic1.GetKind()).Equals(ErrorKindKernelPanic)
-		assert(panic1.GetMessage()).Equals("rpc: stream is nil")
-		assert(strings.Contains(panic1.GetDebug(), "goroutine")).IsTrue()
-		assert(strings.Contains(panic1.GetDebug(), "[running]")).IsTrue()
-		assert(strings.Contains(panic1.GetDebug(), "thread_test.go")).IsTrue()
-	}
-
-	// Test(2) value is endless loop
-	source2 := ""
+	// Test(1) value is endless loop
+	source1 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			v := make(Map)
 			v["v"] = v
 			ret, source := ctx.OK(v), GetFileLine(0)
-			source2 = source
+			source1 = source
 			return ret
 		},
 		func(_ *Processor) *Stream {
@@ -241,7 +189,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	)).Equals(
 		nil,
 		NewReplyError("rpc: reply return value error").
-			AddDebug("#.test:Eval "+source2),
+			AddDebug("#.test:Eval "+source1),
 		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -249,15 +197,15 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] is too complicated").
-			AddDebug("#.test:Eval "+source2),
+			AddDebug("#.test:Eval "+source1),
 	)
 
-	// Test(3) value is not support
-	source3 := ""
+	// Test(2) value is not support
+	source2 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
-			source3 = source
+			source2 = source
 			return ret
 		},
 		func(_ *Processor) *Stream {
@@ -271,12 +219,12 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	)).Equals(
 		nil,
 		NewReplyError("rpc: reply return value error").
-			AddDebug("#.test:Eval "+source3),
+			AddDebug("#.test:Eval "+source2),
 		NewReplyPanic("rpc: value type (chan bool) is not supported").
-			AddDebug("#.test:Eval "+source3),
+			AddDebug("#.test:Eval "+source2),
 	)
 
-	// Test(4) ok
+	// Test(3) ok
 	assert(testRunWithProcessor(true, nil,
 		func(ctx *ContextObject, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
