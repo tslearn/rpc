@@ -310,7 +310,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			1024,
 			2,
 			3,
-			nil,
+			&testFuncCache{},
 			5*time.Second,
 			services,
 			helper.GetFunction(),
@@ -433,6 +433,67 @@ func TestProcessor_mountNode(t *testing.T) {
 		ErrorKindRuntimePanic,
 		"rpc: handler is nil",
 		"DebugReply",
+	)
+
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "test",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies: []*rpcReplyMeta{{
+					name:     "Eval",
+					handler:  3,
+					fileLine: "DebugReply",
+				}},
+				fileLine: "DebugService",
+			},
+			fileLine: "Debug1",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: handler must be func(ctx rpc.Context, ...) rpc.Return",
+		"DebugReply",
+	)
+
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "test",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies: []*rpcReplyMeta{{
+					name:     "Eval",
+					handler:  func() {},
+					fileLine: "DebugReply",
+				}},
+				fileLine: "DebugService",
+			},
+			fileLine: "Debug1",
+		}},
+		ErrorKindRuntimePanic,
+		"handler 1st argument type must be rpc.Context",
+		"DebugReply",
+	)
+
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "test",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies: []*rpcReplyMeta{{
+					name:     "Eval",
+					handler:  func(ctx Context) Return { return ctx.OK(true) },
+					fileLine: "DebugReply1",
+				}, {
+					name:     "Eval",
+					handler:  func(ctx Context) Return { return ctx.OK(true) },
+					fileLine: "DebugReply2",
+				}},
+				fileLine: "DebugService",
+			},
+			fileLine: "Debug1",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: reply name Eval is duplicated",
+		"current:\n\tDebugReply2\nconflict:\n\tDebugReply1",
 	)
 
 	//// Test(5)
