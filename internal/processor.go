@@ -242,7 +242,7 @@ func (p *Processor) Panic(err Error) {
 }
 
 // BuildCache ...
-func (p *Processor) BuildCache(pkgName string, path string) Error {
+func (p *Processor) BuildCache(pkgName string, path string) bool {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
 		if fnTypeString, ok := getFuncKind(reply.meta.handler); ok {
@@ -257,9 +257,10 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 
 	if err := buildFuncCache(pkgName, path, fnKinds); err != nil {
 		p.fnError(err)
+		return false
 	}
 
-	return nil
+	return true
 }
 
 func (p *Processor) mountNode(
