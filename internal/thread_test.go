@@ -51,6 +51,14 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.execStatus).Equals(rpcThreadExecNone)
 	assert(thread5.execFrom).Equals("")
 
+	// Test(6) closeTimeout is less than 1 * time.Second
+	thread6 := newThread(
+		getFakeProcessor(true),
+		-500*time.Millisecond,
+		getFakeOnEvalBack(),
+		getFakeOnEvalFinish(),
+	)
+	assert(thread6.closeTimeout).Equals(time.Second)
 }
 
 func TestRpcThread_Close(t *testing.T) {

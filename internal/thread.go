@@ -48,13 +48,18 @@ func newThread(
 
 	retCH := make(chan *rpcThread)
 
+	timeout := closeTimeout
+	if timeout < time.Second {
+		timeout = time.Second
+	}
+
 	go func() {
 		thread := &rpcThread{
 			goroutineId:   0,
 			processor:     processor,
 			inputCH:       make(chan *Stream),
 			closeCH:       make(chan bool, 1),
-			closeTimeout:  closeTimeout,
+			closeTimeout:  timeout,
 			execStream:    NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
@@ -84,13 +89,9 @@ func (p *rpcThread) Close() bool {
 		if p.closeCH == nil {
 			return false
 		} else {
-			timeout := p.closeTimeout
-			if timeout < time.Second {
-				timeout = time.Second
-			}
 			close(p.inputCH)
 			select {
-			case <-time.After(timeout):
+			case <-time.After(p.closeTimeout):
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:

@@ -186,9 +186,9 @@ func (p *Processor) Close() bool {
 		errList := make([]string, 0)
 		for k, v := range errMap {
 			if v > 1 {
-				errList = append(errList, fmt.Sprintf("%s (%d routines)", k, v))
+				errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
 			} else {
-				errList = append(errList, fmt.Sprintf("%s (%d routine)", k, v))
+				errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
 			}
 		}
 

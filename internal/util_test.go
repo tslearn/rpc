@@ -469,19 +469,8 @@ func getFakeProcessor(debug bool) *Processor {
 }
 
 func getFakeThread(debug bool) *rpcThread {
-	processor := NewProcessor(
-		debug,
-		1024,
-		32,
-		32,
-		nil,
-		5*time.Second,
-		[]*rpcChildMeta{},
-		func(stream *Stream) {},
-	)
-	processor.Close()
 	return newThread(
-		processor,
+		getFakeProcessor(debug),
 		5*time.Second,
 		getFakeOnEvalBack(),
 		getFakeOnEvalFinish(),

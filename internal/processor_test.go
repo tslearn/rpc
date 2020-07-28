@@ -118,6 +118,7 @@ func TestProcessor_Close(t *testing.T) {
 	assert(processor1.Close()).IsFalse()
 
 	// Test(2)
+	replyFileLine2 := ""
 	helper2 := newTestProcessorReturnHelper()
 	processor2 := NewProcessor(
 		true,
@@ -125,11 +126,12 @@ func TestProcessor_Close(t *testing.T) {
 		2,
 		3,
 		nil,
-		5*time.Second,
+		time.Second,
 		[]*rpcChildMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
-				time.Sleep(22 * time.Second)
+				replyFileLine2 = ctx.getThread().GetExecReplyFileLine()
+				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
 			fileLine: "",
@@ -143,8 +145,49 @@ func TestProcessor_Close(t *testing.T) {
 		stream.WriteString("")
 		processor2.PutStream(stream)
 	}
-	assert(processor2.Close()).IsTrue()
+	assert(processor2.Close()).IsFalse()
+	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{
+		NewReplyPanic(
+			"rpc: the following replies can not close: \n\t" +
+				replyFileLine2 + " (1 goroutine)",
+		),
+	})
 
+	// Test(3)
+	replyFileLine3 := ""
+	helper3 := newTestProcessorReturnHelper()
+	processor3 := NewProcessor(
+		true,
+		1024,
+		2,
+		3,
+		nil,
+		time.Second,
+		[]*rpcChildMeta{{
+			name: "test",
+			service: NewService().Reply("Eval", func(ctx Context) Return {
+				replyFileLine3 = ctx.getThread().GetExecReplyFileLine()
+				time.Sleep(2 * time.Second)
+				return ctx.OK(true)
+			}),
+			fileLine: "",
+		}},
+		helper3.GetFunction(),
+	)
+	for i := 0; i < 2; i++ {
+		stream := NewStream()
+		stream.WriteString("#.test:Eval")
+		stream.WriteUint64(3)
+		stream.WriteString("")
+		processor3.PutStream(stream)
+	}
+	assert(processor3.Close()).IsFalse()
+	assert(helper3.GetReturn()).Equals([]Any{}, []Error{}, []Error{
+		NewReplyPanic(
+			"rpc: the following replies can not close: \n\t" +
+				replyFileLine3 + " (2 goroutines)",
+		),
+	})
 }
 
 func TestProcessor_Start_Stop(t *testing.T) {
