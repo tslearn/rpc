@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -25,48 +26,109 @@ func TestIsNil(t *testing.T) {
 func TestGetFuncKind(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(getFuncKind(nil)).Equals("", false)
-	assert(getFuncKind(3)).Equals("", false)
-	fn1 := func() {}
-	assert(getFuncKind(fn1)).Equals("", false)
-	fn2 := func(_ chan bool) {}
-	assert(getFuncKind(fn2)).Equals("", false)
-	fn3 := func(ctx Context, _ bool) Return { return nilReturn }
-	assert(getFuncKind(fn3)).Equals("B", true)
-	fn4 := func(ctx Context, _ int64) Return { return nilReturn }
-	assert(getFuncKind(fn4)).Equals("I", true)
-	fn5 := func(ctx Context, _ uint64) Return { return nilReturn }
-	assert(getFuncKind(fn5)).Equals("U", true)
-	fn6 := func(ctx Context, _ float64) Return { return nilReturn }
-	assert(getFuncKind(fn6)).Equals("F", true)
-	fn7 := func(ctx Context, _ string) Return { return nilReturn }
-	assert(getFuncKind(fn7)).Equals("S", true)
-	fn8 := func(ctx Context, _ Bytes) Return { return nilReturn }
-	assert(getFuncKind(fn8)).Equals("X", true)
-	fn9 := func(ctx Context, _ Array) Return { return nilReturn }
-	assert(getFuncKind(fn9)).Equals("A", true)
-	fn10 := func(ctx Context, _ Map) Return { return nilReturn }
-	assert(getFuncKind(fn10)).Equals("M", true)
+	fn1 := 3
+	assert(getFuncKind(reflect.ValueOf(fn1))).
+		Equals("", errors.New("handler must be a function"))
 
-	fn11 := func(ctx Context) Return { return nilReturn }
-	assert(getFuncKind(fn11)).Equals("", true)
+	fn2 := func() {}
+	assert(getFuncKind(reflect.ValueOf(fn2))).
+		Equals("", errors.New("handler 1st argument type must be rpc.Context"))
 
-	// no return
-	fn12 := func(ctx Context, _ bool) {}
-	assert(getFuncKind(fn12)).Equals("", false)
+	fn3 := func(_ chan bool) {}
+	assert(getFuncKind(reflect.ValueOf(fn3))).
+		Equals("", errors.New("handler 1st argument type must be rpc.Context"))
 
-	// value type not supported
-	fn13 := func(ctx Context, _ chan bool) Return { return nilReturn }
-	assert(getFuncKind(fn13)).Equals("", false)
+	fn4 := func(ctx Context, _ bool) {}
+	assert(getFuncKind(reflect.ValueOf(fn4))).
+		Equals("", errors.New("handler return type must be rpc.Return"))
 
-	fn14 := func(
-		ctx Context,
-		_ bool, _ int64, _ uint64, _ float64, _ string,
-		_ Bytes, _ Array, _ Map,
+	fn5 := func(ctx Context, _ bool) (Return, bool) { return nilReturn, true }
+	assert(getFuncKind(reflect.ValueOf(fn5))).
+		Equals("", errors.New("handler return type must be rpc.Return"))
+
+	fn6 := func(ctx Context, _ bool) bool { return true }
+	assert(getFuncKind(reflect.ValueOf(fn6))).
+		Equals("", errors.New("handler return type must be rpc.Return"))
+
+	fn7 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ float64,
+		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return nilReturn
+		return ctx.OK(true)
 	}
-	assert(getFuncKind(fn14)).Equals("BIUFSXAM", true)
+	assert(getFuncKind(reflect.ValueOf(fn7))).Equals("BIUFSXAM", nil)
+
+	fn8 := func(ctx Context,
+		_ int32, _ int64, _ uint64, _ float64,
+		_ string, _ Bytes, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn8))).
+		Equals("", errors.New("handler 2nd argument type int32 is not supported"))
+
+	fn9 := func(ctx Context,
+		_ bool, _ int32, _ uint64, _ float64,
+		_ string, _ Bytes, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn9))).
+		Equals("", errors.New("handler 3rd argument type int32 is not supported"))
+
+	fn10 := func(ctx Context,
+		_ bool, _ int64, _ int32, _ float64,
+		_ string, _ Bytes, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn10))).
+		Equals("", errors.New("handler 4th argument type int32 is not supported"))
+
+	fn11 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ int32,
+		_ string, _ Bytes, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn11))).
+		Equals("", errors.New("handler 5th argument type int32 is not supported"))
+
+	fn12 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ float64,
+		_ int32, _ Bytes, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn12))).
+		Equals("", errors.New("handler 6th argument type int32 is not supported"))
+
+	fn13 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ float64,
+		_ string, _ int32, _ Array, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn13))).
+		Equals("", errors.New("handler 7th argument type int32 is not supported"))
+
+	fn14 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ float64,
+		_ string, _ Bytes, _ int32, _ Map,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn14))).
+		Equals("", errors.New("handler 8th argument type int32 is not supported"))
+
+	fn15 := func(ctx Context,
+		_ bool, _ int64, _ uint64, _ float64,
+		_ string, _ Bytes, _ Array, _ int32,
+	) Return {
+		return ctx.OK(true)
+	}
+	assert(getFuncKind(reflect.ValueOf(fn15))).
+		Equals("", errors.New("handler 9th argument type int32 is not supported"))
 }
 
 func TestConvertTypeToString(t *testing.T) {
@@ -84,35 +146,6 @@ func TestConvertTypeToString(t *testing.T) {
 	assert(convertTypeToString(returnType)).Equals("rpc.Return")
 	assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
 		Equals("chan bool")
-}
-
-func TestGetArgumentsErrorPosition(t *testing.T) {
-	assert := NewAssert(t)
-
-	fn1 := func() {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn1))).Equals(0)
-	fn2 := func(_ chan bool) {}
-
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn2))).Equals(0)
-	fn3 := func(ctx Context, _ bool, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn3))).Equals(2)
-	fn4 := func(ctx Context, _ int64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn4))).Equals(2)
-	fn5 := func(ctx Context, _ uint64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn5))).Equals(2)
-	fn6 := func(ctx Context, _ float64, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn6))).Equals(2)
-	fn7 := func(ctx Context, _ string, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn7))).Equals(2)
-	fn8 := func(ctx Context, _ Bytes, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn8))).Equals(2)
-	fn9 := func(ctx Context, _ Array, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn9))).Equals(2)
-	fn10 := func(ctx Context, _ Map, _ chan bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn10))).Equals(2)
-
-	fn11 := func(ctx Context, _ bool) {}
-	assert(getArgumentsErrorPosition(reflect.ValueOf(fn11))).Equals(-1)
 }
 
 func TestConvertToIsoDateString(t *testing.T) {

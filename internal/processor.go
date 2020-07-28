@@ -245,7 +245,7 @@ func (p *Processor) Panic(err Error) {
 func (p *Processor) BuildCache(pkgName string, path string) bool {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
-		if fnTypeString, ok := getFuncKind(reply.meta.handler); ok {
+		if fnTypeString, err := getFuncKind(reply.reflectFn); err == nil {
 			retMap[fnTypeString] = true
 		}
 	}
@@ -348,35 +348,17 @@ func (p *Processor) mountReply(
 		).AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		// check the reply handler is nil
-		return NewRuntimePanic("rpc: reply handler is nil").AddDebug(meta.fileLine)
+		return NewRuntimePanic("rpc: handler is nil").AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
 		return NewRuntimePanic(fmt.Sprintf(
-			"rpc: reply handler must be func(ctx %s, ...) %s",
+			"rpc: handler must be func(ctx %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)
-	} else if argsErrorPos := getArgumentsErrorPosition(fn); argsErrorPos == 0 {
-		// Check reply handler arguments types
-		return NewRuntimePanic(fmt.Sprintf(
-			"rpc: reply handler 1st argument type must be %s",
-			convertTypeToString(contextType),
-		)).AddDebug(meta.fileLine)
-	} else if argsErrorPos > 0 {
-		// Check reply handler arguments types
-		return NewRuntimePanic(fmt.Sprintf(
-			"rpc: reply handler %s argument type %s is not supported",
-			ConvertOrdinalToString(1+uint(argsErrorPos)),
-			fmt.Sprintf("%s", fn.Type().In(argsErrorPos)),
-		)).AddDebug(meta.fileLine)
-	} else if fn.Type().NumOut() != 1 ||
-		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		// Check return type
-		return NewRuntimePanic(
-			fmt.Sprintf(
-				"rpc: reply handler return type must be %s",
-				convertTypeToString(returnType),
-			)).AddDebug(meta.fileLine)
+	} else if fnTypeString, err := getFuncKind(fn); err != nil {
+		// Check reply handler is right
+		return NewRuntimePanic(err.Error()).AddDebug(meta.fileLine)
 	} else {
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
@@ -392,9 +374,10 @@ func (p *Processor) mountReply(
 		}
 
 		// mount the replyRecord
-		argTypes := make([]reflect.Type, fn.Type().NumIn(), fn.Type().NumIn())
-		argStrings := make([]string, fn.Type().NumIn(), fn.Type().NumIn())
-		for i := 0; i < len(argTypes); i++ {
+		numOfArgs := fn.Type().NumIn()
+		argTypes := make([]reflect.Type, numOfArgs, numOfArgs)
+		argStrings := make([]string, numOfArgs, numOfArgs)
+		for i := 0; i < numOfArgs; i++ {
 			argTypes[i] = fn.Type().In(i)
 			argStrings[i] = convertTypeToString(argTypes[i])
 		}
@@ -414,7 +397,7 @@ func (p *Processor) mountReply(
 			indicator: newPerformanceIndicator(),
 		}
 
-		if fnTypeString, ok := getFuncKind(meta.handler); ok && fnCache != nil {
+		if fnCache != nil {
 			replyNode.cacheFN = fnCache.Get(fnTypeString)
 		}
 

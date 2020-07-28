@@ -431,7 +431,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			fileLine: "Debug1",
 		}},
 		ErrorKindRuntimePanic,
-		"rpc: reply handler is nil",
+		"rpc: handler is nil",
 		"DebugReply",
 	)
 

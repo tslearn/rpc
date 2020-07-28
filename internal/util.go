@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -96,23 +98,27 @@ func isNil(val interface{}) (ret bool) {
 	return reflect.ValueOf(val).IsNil()
 }
 
-func getFuncKind(fn interface{}) (string, bool) {
-	if fn == nil {
-		return "", false
-	} else if reflectFn := reflect.ValueOf(fn); reflectFn.Kind() != reflect.Func {
-		return "", false
-	} else if reflectFn.Type().NumIn() < 1 ||
-		reflectFn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
-		return "", false
-	} else if reflectFn.Type().NumOut() != 1 ||
-		reflectFn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
-		return "", false
+func getFuncKind(fn reflect.Value) (string, error) {
+	if fn.Kind() != reflect.Func {
+		return "", errors.New("handler must be a function")
+	} else if fn.Type().NumIn() < 1 ||
+		fn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
+		return "", fmt.Errorf(
+			"handler 1st argument type must be %s",
+			convertTypeToString(contextType),
+		)
+	} else if fn.Type().NumOut() != 1 ||
+		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
+		return "", fmt.Errorf(
+			"handler return type must be %s",
+			convertTypeToString(returnType),
+		)
 	} else {
 		sb := NewStringBuilder()
 		defer sb.Release()
 
-		for i := 1; i < reflectFn.Type().NumIn(); i++ {
-			switch reflectFn.Type().In(i) {
+		for i := 1; i < fn.Type().NumIn(); i++ {
+			switch fn.Type().In(i) {
 			case bytesType:
 				sb.AppendByte('X')
 			case arrayType:
@@ -130,11 +136,15 @@ func getFuncKind(fn interface{}) (string, bool) {
 			case stringType:
 				sb.AppendByte('S')
 			default:
-				return "", false
+				return "", fmt.Errorf(
+					"handler %s argument type %s is not supported",
+					ConvertOrdinalToString(1+uint(i)),
+					fn.Type().In(i),
+				)
 			}
 		}
 
-		return sb.String(), true
+		return sb.String(), nil
 	}
 }
 
@@ -164,38 +174,6 @@ func convertTypeToString(reflectType reflect.Type) string {
 		return "rpc.String"
 	default:
 		return reflectType.String()
-	}
-}
-
-func getArgumentsErrorPosition(fn reflect.Value) int {
-	if fn.Type().NumIn() < 1 {
-		return 0
-	} else if fn.Type().In(0) != reflect.ValueOf(nilContext).Type() {
-		return 0
-	} else {
-		for i := 1; i < fn.Type().NumIn(); i++ {
-			switch fn.Type().In(i) {
-			case bytesType:
-				continue
-			case arrayType:
-				continue
-			case mapType:
-				continue
-			case int64Type:
-				continue
-			case uint64Type:
-				continue
-			case boolType:
-				continue
-			case float64Type:
-				continue
-			case stringType:
-				continue
-			default:
-				return i
-			}
-		}
-		return -1
 	}
 }
 
