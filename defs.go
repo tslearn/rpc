@@ -28,9 +28,6 @@ type IAdapter interface {
 	Close(onError func(Error)) bool
 }
 
-// Stream ...
-type Stream = internal.Stream
-
 // Bool ...
 type Bool = internal.Bool
 
@@ -58,9 +55,6 @@ type Array = internal.Array
 // Map common Map type
 type Map = internal.Map
 
-// Error ...
-type Error = internal.Error
-
 // ReturnObject ...
 type Return = internal.Return
 
@@ -69,6 +63,12 @@ type Context = internal.Context
 
 // NewService ...
 var NewService = internal.NewService
+
+// Error ...
+type Error = internal.Error
+
+// Stream ...
+type Stream = internal.Stream
 
 // ReplyCache ...
 type ReplyCache = internal.ReplyCache
