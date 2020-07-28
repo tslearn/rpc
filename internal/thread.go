@@ -22,6 +22,7 @@ type rpcThread struct {
 	processor     *Processor
 	inputCH       chan *Stream
 	closeCH       chan bool
+	closeTimeout  time.Duration
 	execStream    *Stream
 	execDepth     uint64
 	execReplyNode unsafe.Pointer
@@ -37,6 +38,7 @@ func (p *rpcThread) GetReplyNode() *rpcReplyNode {
 
 func newThread(
 	processor *Processor,
+	closeTimeout time.Duration,
 	onEvalBack func(*Stream),
 	onEvalFinish func(*rpcThread),
 ) *rpcThread {
@@ -52,6 +54,7 @@ func newThread(
 			processor:     processor,
 			inputCH:       make(chan *Stream),
 			closeCH:       make(chan bool, 1),
+			closeTimeout:  closeTimeout,
 			execStream:    NewStream(),
 			execDepth:     0,
 			execReplyNode: nil,
@@ -81,9 +84,13 @@ func (p *rpcThread) Close() bool {
 		if p.closeCH == nil {
 			return false
 		} else {
+			timeout := p.closeTimeout
+			if timeout < time.Second {
+				timeout = time.Second
+			}
 			close(p.inputCH)
 			select {
-			case <-time.After(20 * time.Second):
+			case <-time.After(timeout):
 				p.closeCH = nil
 				return false
 			case <-p.closeCH:

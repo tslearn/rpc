@@ -460,6 +460,7 @@ func getFakeProcessor(debug bool) *Processor {
 		32,
 		32,
 		nil,
+		5*time.Second,
 		[]*rpcChildMeta{},
 		func(stream *Stream) {},
 	)
@@ -474,12 +475,14 @@ func getFakeThread(debug bool) *rpcThread {
 		32,
 		32,
 		nil,
+		5*time.Second,
 		[]*rpcChildMeta{},
 		func(stream *Stream) {},
 	)
 	processor.Close()
 	return newThread(
 		processor,
+		5*time.Second,
 		getFakeOnEvalBack(),
 		getFakeOnEvalFinish(),
 	)
@@ -530,6 +533,7 @@ func testRunWithProcessor(
 		16,
 		16,
 		fnCache,
+		5*time.Second,
 		[]*rpcChildMeta{{
 			name:     "test",
 			service:  service,

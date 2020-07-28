@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 const rootName = "#"
@@ -56,6 +57,7 @@ func NewProcessor(
 	maxNodeDepth int,
 	maxCallDepth int,
 	fnCache ReplyCache,
+	closeTimeout time.Duration,
 	mountServices []*rpcChildMeta,
 	onReturnStream func(stream *Stream),
 ) *Processor {
@@ -132,12 +134,17 @@ func NewProcessor(
 		ret.freeCHArray = freeCHArray
 
 		for i := 0; i < size; i++ {
-			thread := newThread(ret, onReturnStream, func(thread *rpcThread) {
-				freeCHArray[atomic.AddUint64(
-					&ret.writeThreadPos,
-					1,
-				)%freeGroups] <- thread
-			})
+			thread := newThread(
+				ret,
+				closeTimeout,
+				onReturnStream,
+				func(thread *rpcThread) {
+					freeCHArray[atomic.AddUint64(
+						&ret.writeThreadPos,
+						1,
+					)%freeGroups] <- thread
+				},
+			)
 			ret.threads[i] = thread
 			ret.freeCHArray[i%freeGroups] <- thread
 		}
@@ -158,10 +165,8 @@ func (p *Processor) Close() bool {
 			go func(idx int) {
 				if p.threads[idx].Close() {
 					closeCH <- ""
-				} else if node := p.threads[idx].GetReplyNode(); node != nil {
-					closeCH <- p.threads[idx].GetExecReplyFileLine()
 				} else {
-					closeCH <- ""
+					closeCH <- p.threads[idx].GetExecReplyFileLine()
 				}
 			}(i)
 		}

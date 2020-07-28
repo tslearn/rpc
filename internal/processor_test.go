@@ -12,12 +12,12 @@ func TestNewProcessor(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1) onReturnStream is nil
-	assert(NewProcessor(true, 1, 1, 1, nil, nil, nil)).IsNil()
+	assert(NewProcessor(true, 1, 1, 1, nil, 5*time.Second, nil, nil)).IsNil()
 
 	// Test(2) numOfThreads <= 0
 	helper2 := newTestProcessorReturnHelper()
 	assert(
-		NewProcessor(true, 0, 1, 1, nil, nil, helper2.GetFunction()),
+		NewProcessor(true, 0, 1, 1, nil, 5*time.Second, nil, helper2.GetFunction()),
 	).IsNil()
 	_, _, panicArray2 := helper2.GetReturn()
 	assert(len(panicArray2)).Equals(1)
@@ -28,7 +28,7 @@ func TestNewProcessor(t *testing.T) {
 	// Test(3) maxNodeDepth <= 0
 	helper3 := newTestProcessorReturnHelper()
 	assert(
-		NewProcessor(true, 1, 0, 1, nil, nil, helper3.GetFunction()),
+		NewProcessor(true, 1, 0, 1, nil, 5*time.Second, nil, helper3.GetFunction()),
 	).IsNil()
 	_, _, panicArray3 := helper3.GetReturn()
 	assert(len(panicArray3)).Equals(1)
@@ -39,7 +39,7 @@ func TestNewProcessor(t *testing.T) {
 	// Test(4) maxCallDepth <= 0
 	helper4 := newTestProcessorReturnHelper()
 	assert(
-		NewProcessor(true, 1, 1, 0, nil, nil, helper4.GetFunction()),
+		NewProcessor(true, 1, 1, 0, nil, 5*time.Second, nil, helper4.GetFunction()),
 	).IsNil()
 	_, _, panicArray4 := helper4.GetReturn()
 	assert(len(panicArray4)).Equals(1)
@@ -55,6 +55,7 @@ func TestNewProcessor(t *testing.T) {
 		1,
 		1,
 		nil,
+		5*time.Second,
 		[]*rpcChildMeta{nil},
 		helper5.GetFunction(),
 	)).IsNil()
@@ -72,6 +73,7 @@ func TestNewProcessor(t *testing.T) {
 		2,
 		3,
 		nil,
+		5*time.Second,
 		[]*rpcChildMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
@@ -108,17 +110,41 @@ func TestNewProcessor(t *testing.T) {
 	assert(sumFrees).Equals(65536)
 }
 
-func TestNewProcessor2(t *testing.T) {
-	//assert := NewAssert(t)
-	//
-	//processor := getNewProcessor()
-	//assert(processor).IsNotNil()
-	//assert(len(processor.repliesMap)).Equals(0)
-	//assert(len(processor.servicesMap)).Equals(1)
-	//assert(processor.isDebug).IsTrue()
-	//assert(processor.maxNodeDepth).Equals(uint64(16))
-	//assert(processor.maxCallDepth).Equals(uint64(32))
-	//assert(processor.Close()).IsNotNil()
+func TestProcessor_Close(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) p.panicSubscription == nil
+	processor1 := getFakeProcessor(true)
+	assert(processor1.Close()).IsFalse()
+
+	// Test(2)
+	helper2 := newTestProcessorReturnHelper()
+	processor2 := NewProcessor(
+		true,
+		1024,
+		2,
+		3,
+		nil,
+		5*time.Second,
+		[]*rpcChildMeta{{
+			name: "test",
+			service: NewService().Reply("Eval", func(ctx Context) Return {
+				time.Sleep(22 * time.Second)
+				return ctx.OK(true)
+			}),
+			fileLine: "",
+		}},
+		helper2.GetFunction(),
+	)
+	for i := 0; i < 1; i++ {
+		stream := NewStream()
+		stream.WriteString("#.test:Eval")
+		stream.WriteUint64(3)
+		stream.WriteString("")
+		processor2.PutStream(stream)
+	}
+	assert(processor2.Close()).IsTrue()
+
 }
 
 func TestProcessor_Start_Stop(t *testing.T) {
@@ -461,6 +487,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		16,
 		16,
 		&testFuncCache{},
+		5*time.Second,
 		[]*rpcChildMeta{&rpcChildMeta{
 			name: "user",
 			service: NewService().

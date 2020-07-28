@@ -15,13 +15,13 @@ func TestNewThread(t *testing.T) {
 	fakeEvalFinish := getFakeOnEvalFinish()
 
 	// Test(1) processor is nil
-	assert(newThread(nil, fakeEvalBack, nil)).IsNil()
+	assert(newThread(nil, 5*time.Second, fakeEvalBack, nil)).IsNil()
 
 	// Test(2) processor is nil
-	assert(newThread(nil, nil, fakeEvalFinish)).IsNil()
+	assert(newThread(nil, 5*time.Second, nil, fakeEvalFinish)).IsNil()
 
 	// Test(3) onEvalBack is nil
-	assert(newThread(getFakeProcessor(true), nil, nil)).IsNil()
+	assert(newThread(getFakeProcessor(true), 5*time.Second, nil, nil)).IsNil()
 
 	// Test(4) debug thread
 	thread4 := getFakeThread(true)
@@ -64,7 +64,7 @@ func TestRpcThread_Close(t *testing.T) {
 	assert(testRunWithPanicCatch(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
 			func(ctx *ContextObject, name string) *ReturnObject {
-				time.Sleep(22 * time.Second)
+				time.Sleep(6 * time.Second)
 				return ctx.OK("hello " + name)
 			},
 			func(processor *Processor) *Stream {
