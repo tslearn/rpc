@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync/atomic"
@@ -397,6 +398,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"DebugReply",
 	)
 
+	// Test(7)
 	fnTestMount(
 		[]*rpcChildMeta{{
 			name: "test",
@@ -416,6 +418,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"DebugReply",
 	)
 
+	// Test(8)
 	fnTestMount(
 		[]*rpcChildMeta{{
 			name: "test",
@@ -435,6 +438,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"DebugReply",
 	)
 
+	// Test(9)
 	fnTestMount(
 		[]*rpcChildMeta{{
 			name: "test",
@@ -454,6 +458,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"DebugReply",
 	)
 
+	// Test(10)
 	fnTestMount(
 		[]*rpcChildMeta{{
 			name: "test",
@@ -473,6 +478,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		"DebugReply",
 	)
 
+	// Test(11)
 	fnTestMount(
 		[]*rpcChildMeta{{
 			name: "test",
@@ -496,244 +502,82 @@ func TestProcessor_mountNode(t *testing.T) {
 		"current:\n\tDebugReply2\nconflict:\n\tDebugReply1",
 	)
 
-	//// Test(5)
-	//fnTestMount([]*rpcChildMeta{{
-	// name:     "abc",
-	// service:  NewService(),
-	// fileLine: "DebugMessage",
-	//}}, ErrorKindRuntimePanic, "rpc: parentNode is nil", "DebugMessage")
+	// Test(12)
+	replyMeta12Eval1 := &rpcReplyMeta{
+		name: "Eval1",
+		handler: func(ctx Context, _a Array) Return {
+			return ctx.OK(true)
+		},
+		fileLine: "DebugEval1",
+	}
+	replyMeta12Eval2 := &rpcReplyMeta{
+		name: "Eval2",
+		handler: func(ctx Context,
+			_ bool, _ int64, _ uint64, _ float64,
+			_ string, _ Bytes, _ Array, _ Map,
+		) Return {
+			return ctx.OK(true)
+		},
+		fileLine: "DebugEval2",
+	}
+	addMeta12 := &rpcChildMeta{
+		name: "test",
+		service: &Service{
+			children: []*rpcChildMeta{},
+			replies:  []*rpcReplyMeta{replyMeta12Eval1, replyMeta12Eval2},
+			fileLine: GetFileLine(1),
+		},
+		fileLine: "serviceDebug",
+	}
+	processor12 := NewProcessor(
+		true,
+		1024,
+		2,
+		3,
+		&testFuncCache{},
+		5*time.Second,
+		[]*rpcChildMeta{addMeta12},
+		getFakeOnEvalBack(),
+	)
+	assert(processor12).IsNotNil()
+	defer processor12.Close()
+	assert(*processor12.servicesMap["#"]).Equals(rpcServiceNode{
+		path:    rootName,
+		addMeta: nil,
+		depth:   0,
+	})
+	assert(*processor12.servicesMap["#.test"]).Equals(rpcServiceNode{
+		path:    "#.test",
+		addMeta: addMeta12,
+		depth:   1,
+	})
+	assert(processor12.repliesMap["#.test:Eval1"].path).Equals("#.test:Eval1")
+	assert(processor12.repliesMap["#.test:Eval1"].meta).Equals(replyMeta12Eval1)
+	assert(processor12.repliesMap["#.test:Eval1"].cacheFN).IsNil()
+	assert(getFuncKind(processor12.repliesMap["#.test:Eval1"].reflectFn)).
+		Equals("A", nil)
+	assert(processor12.repliesMap["#.test:Eval1"].callString).
+		Equals("#.test:Eval1(rpc.Context, rpc.Array) rpc.Return")
+	assert(processor12.repliesMap["#.test:Eval1"].argTypes).
+		Equals([]reflect.Type{contextType, arrayType})
+	assert(processor12.repliesMap["#.test:Eval1"].indicator).IsNotNil()
 
-	//	_ = processor.mountNode(rootName, &rpcChildMeta{
-	//		name:     "abc",
-	//		service:  NewService(),
-	//		fileLine: "DebugMessage",
-	//	})
-	//	assert(processor.mountNode(rootName, &rpcChildMeta{
-	//		name:     "abc",
-	//		service:  NewService(),
-	//		fileLine: "DebugMessage",
-	//	})).Equals(NewBaseError(
-	//		"Service name \"abc\" is duplicated",
-	//	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
-
-	//
-	//	processor.maxNodeDepth = 0
-	//	assert(processor.mountNode(rootName, &rpcChildMeta{
-	//		name:     "abc",
-	//		service:  NewService(),
-	//		fileLine: "DebugMessage",
-	//	})).Equals(NewBaseError(
-	//		"Service path depth $.abc is too long, it must be less or equal than 0",
-	//	).AddDebug("DebugMessage"))
-	//	processor.maxNodeDepth = 16
-
+	assert(processor12.repliesMap["#.test:Eval2"].path).Equals("#.test:Eval2")
+	assert(processor12.repliesMap["#.test:Eval2"].meta).Equals(replyMeta12Eval2)
+	assert(processor12.repliesMap["#.test:Eval2"].cacheFN).IsNotNil()
+	assert(getFuncKind(processor12.repliesMap["#.test:Eval2"].reflectFn)).
+		Equals("BIUFSXAM", nil)
+	assert(processor12.repliesMap["#.test:Eval2"].callString).Equals(
+		"#.test:Eval2(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
+	)
+	assert(processor12.repliesMap["#.test:Eval2"].argTypes).
+		Equals([]reflect.Type{
+			contextType, boolType, int64Type, uint64Type,
+			float64Type, stringType, bytesType, arrayType, mapType,
+		})
+	assert(processor12.repliesMap["#.test:Eval2"].indicator).IsNotNil()
 }
-
-//func TestProcessor_mountNode(t *testing.T) {
-//	assert := NewAssert(t)
-
-//
-
-//
-//	_ = processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "abc",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	})
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "abc",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Service name \"abc\" is duplicated",
-//	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
-//
-//	// mount reply error
-//	service := NewService()
-//	service.Reply("abc", nil)
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "test",
-//		service:  service,
-//		fileLine: "DebugMessage",
-//	}).GetMessage()).Equals("Reply handler is nil")
-//
-//	// mount children error
-//	service1 := NewService()
-//	service1.AddChildService("abc", NewService())
-//	assert(len(service1.children)).Equals(1)
-//	service1.children[0] = nil
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "003",
-//		service:  service1,
-//		fileLine: "DebugMessage",
-//	}).GetMessage()).Equals("rpc: mountNode: nodeMeta is nil")
-//
-//	// OK
-//	service2 := NewService()
-//	service2.AddChildService("user", NewService().
-//		Reply("sayHello", func(ctx *ContextObject) *ReturnObject {
-//			return ctx.OK(true)
-//		}))
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "system",
-//		service:  service2,
-//		fileLine: "DebugMessage",
-//	})).IsNil()
-//}
-//
-//func TestProcessor_mountReply(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	processor := NewProcessor(
-//		true,
-//		8192,
-//		16,
-//		16,
-//		&testFuncCache{},
-//	)
-//	rootNode := processor.servicesMap[rootName]
-//
-//	// check the node is nil
-//	assert(processor.mountReply(nil, nil)).Equals(NewBaseError(
-//		"rpc: mountReply: node is nil",
-//	))
-//
-//	// check the rpcReplyMeta is nil
-//	assert(processor.mountReply(rootNode, nil)).Equals(NewBaseError(
-//		"rpc: mountReply: rpcReplyMeta is nil",
-//	))
-//
-//	// check the name
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "###",
-//		handler:  nil,
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply name ### is illegal",
-//	).AddDebug("DebugMessage"))
-//
-//	// check the reply path is not occupied
-//	_ = processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testOccupied",
-//		handler:  func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
-//		fileLine: "DebugMessage",
-//	})
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testOccupied",
-//		handler:  func(ctx *ContextObject) *ReturnObject { return ctx.OK(true) },
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply name testOccupied is duplicated",
-//	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
-//
-//	// check the reply handler is nil
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerIsNil",
-//		handler:  nil,
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler is nil",
-//	).AddDebug("DebugMessage"))
-//
-//	// Check reply handler is Func
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerIsFunction",
-//		handler:  make(chan bool),
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler must be func(ctx rpc.ContextObject, ...) rpc.ReturnObject",
-//	).AddDebug("DebugMessage"))
-//
-//	// Check reply handler arguments types
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerArguments",
-//		handler:  func(ctx bool) *ReturnObject { return nilReturn },
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler 1st argument type must be rpc.ContextObject",
-//	).AddDebug("DebugMessage"))
-//
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerArguments",
-//		handler:  func(ctx *ContextObject, ch chan bool) *ReturnObject { return nilReturn },
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler 2nd argument type <chan bool> not supported",
-//	).AddDebug("DebugMessage"))
-//
-//	// Check return type
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerReturn",
-//		handler:  func(ctx *ContextObject) (*ReturnObject, bool) { return nilReturn, true },
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler return type must be rpc.ReturnObject",
-//	).AddDebug("DebugMessage"))
-//
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testReplyHandlerReturn",
-//		handler:  func(ctx ContextObject) bool { return true },
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Reply handler return type must be rpc.ReturnObject",
-//	).AddDebug("DebugMessage"))
-//
-//	// ok
-//	assert(processor.mountReply(rootNode, &rpcReplyMeta{
-//		name:     "testOK",
-//		handler:  func(ctx *ContextObject, _ bool, _ Map) *ReturnObject { return nilReturn },
-//		fileLine: AddFileLine("", 0),
-//	})).IsNil()
-//
-//	assert(processor.repliesMap["$:testOK"].meta.name).Equals("testOK")
-//	assert(processor.repliesMap["$:testOK"].reflectFn).IsNotNil()
-//	assert(processor.repliesMap["$:testOK"].callString).
-//		Equals("$:testOK(rpc.ContextObject, rpc.Bool, rpc.Map) rpc.ReturnObject")
-//	assert(
-//		strings.Contains(processor.repliesMap["$:testOK"].GetDebug(), "$:testOK"),
-//	).IsTrue()
-//	assert(processor.repliesMap["$:testOK"].argTypes[0]).
-//		Equals(reflect.ValueOf(nilContext).Type())
-//	assert(processor.repliesMap["$:testOK"].argTypes[1]).Equals(boolType)
-//	assert(processor.repliesMap["$:testOK"].argTypes[2]).Equals(mapType)
-//	assert(processor.repliesMap["$:testOK"].indicator).IsNotNil()
-//}
-//
-//func TestProcessor_OutPutErrors(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	processor := getNewProcessor()
-//
-//	// Service is nil
-//	assert(processor.AddService("", nil, "DebugMessage")).
-//		Equals(NewBaseError(
-//			"Service is nil",
-//		).AddDebug("DebugMessage"))
-//
-//	assert(processor.AddService("abc", (*Service)(nil), "DebugMessage")).
-//		Equals(NewBaseError(
-//			"Service is nil",
-//		).AddDebug("DebugMessage"))
-//
-//	// Service name %s is illegal
-//	assert(processor.AddService("\"\"", NewService(), "DebugMessage")).
-//		Equals(NewBaseError(
-//			"Service name \"\"\"\" is illegal",
-//		).AddDebug("DebugMessage"))
-//
-//	processor.maxNodeDepth = 0
-//	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-//		Equals(NewBaseError(
-//			"Service path depth $.abc is too long, it must be less or equal than 0",
-//		).AddDebug("DebugMessage"))
-//	processor.maxNodeDepth = 16
-//
-//	_ = processor.AddService("abc", NewService(), "DebugMessage")
-//	assert(processor.AddService("abc", NewService(), "DebugMessage")).
-//		Equals(NewBaseError(
-//			"Service name \"abc\" is duplicated",
-//		).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
-//}
 
 func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	total := uint64(0)
