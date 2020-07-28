@@ -256,7 +256,7 @@ func (p *Processor) BuildCache(pkgName string, path string) Error {
 	}
 
 	if err := buildFuncCache(pkgName, path, fnKinds); err != nil {
-		return NewRuntimePanic(err.Error()).AddDebug(string(debug.Stack()))
+		p.fnError(err)
 	}
 
 	return nil

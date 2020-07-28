@@ -461,7 +461,7 @@ func getFakeProcessor(debug bool) *Processor {
 		32,
 		nil,
 		5*time.Second,
-		[]*rpcChildMeta{},
+		nil,
 		func(stream *Stream) {},
 	)
 	processor.Close()

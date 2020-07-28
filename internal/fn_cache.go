@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func getFuncBodyByKind(name string, kind string) (string, error) {
+func getFuncBodyByKind(name string, kind string) (string, Error) {
 	sb := NewStringBuilder()
 	defer sb.Release()
 
@@ -56,7 +56,7 @@ func getFuncBodyByKind(name string, kind string) (string, error) {
 				callString = "ReadMap"
 				typeArray = append(typeArray, "rpc.Map")
 			default:
-				return "nil", fmt.Errorf("error kind %s", kind)
+				return "nil", NewKernelPanic(fmt.Sprintf("error kind %s", kind))
 			}
 
 			condString := " else if"
@@ -84,7 +84,7 @@ func getFuncBodyByKind(name string, kind string) (string, error) {
 	return sb.String(), nil
 }
 
-func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
+func getFuncMetas(kinds []string) ([]*rpcFuncMeta, Error) {
 	sortKinds := make([]string, len(kinds))
 	copy(sortKinds, kinds)
 	sort.SliceStable(sortKinds, func(i, j int) bool {
@@ -103,7 +103,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, fmt.Errorf("duplicate kind %s", kind)
+			return nil, NewKernelPanic(fmt.Sprintf("duplicate kind %s", kind))
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
@@ -119,7 +119,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, error) {
 	return ret, nil
 }
 
-func buildFuncCache(pkgName string, output string, kinds []string) error {
+func buildFuncCache(pkgName string, output string, kinds []string) Error {
 	sb := NewStringBuilder()
 	defer sb.Release()
 	if metas, err := getFuncMetas(kinds); err == nil {
@@ -162,13 +162,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) error {
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return err
+		return NewRuntimePanic(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return err
+		return NewRuntimePanic(err.Error())
 	} else {
 		return nil
 	}

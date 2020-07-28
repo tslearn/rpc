@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -45,12 +44,12 @@ func TestBuildFuncCache(t *testing.T) {
 	// Test(3)
 	tmpFile3 := path.Join(path.Dir(file), "_tmp_/test-cache-03.go")
 	assert(buildFuncCache("pkgName", tmpFile3, []string{"A", "A"})).
-		Equals(errors.New("duplicate kind A"))
+		Equals(NewKernelPanic("duplicate kind A"))
 
 	// Test(4)
 	tmpFile4 := path.Join(path.Dir(file), "_tmp_/test-cache-04.go")
 	assert(buildFuncCache("pkgName", tmpFile4, []string{"Y", "A"})).
-		Equals(errors.New("error kind Y"))
+		Equals(NewKernelPanic("error kind Y"))
 
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "/fn_cache_test.go/test-cache-05.go")

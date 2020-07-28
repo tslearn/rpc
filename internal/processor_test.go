@@ -2,6 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -190,92 +193,84 @@ func TestProcessor_Close(t *testing.T) {
 	})
 }
 
-func TestProcessor_Start_Stop(t *testing.T) {
-	//assert := NewAssert(t)
-	//
-	//processor := NewProcessor(true, 8192, 16, 32, nil, nil)
-	//assert(processor.Close()).IsNotNil()
-	//assert(processor.isRunning).IsFalse()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	assert(processor.threadPools[i]).IsNil()
-	//}
-	//assert(processor.Start()).IsTrue()
-	//assert(processor.isRunning).IsTrue()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	assert(processor.threadPools[i]).IsNotNil()
-	//}
-	//assert(processor.Start()).IsFalse()
-	//assert(processor.isRunning).IsTrue()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	assert(processor.threadPools[i]).IsNotNil()
-	//}
-	//assert(processor.Close()).IsNil()
-	//assert(processor.isRunning).IsFalse()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	assert(processor.threadPools[i]).IsNil()
-	//}
-	//assert(processor.Close()).IsNotNil()
-	//assert(processor.isRunning).IsFalse()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	assert(processor.threadPools[i]).IsNil()
-	//}
-}
-
 func TestProcessor_PutStream(t *testing.T) {
-	//assert := NewAssert(t)
-	//processor := NewProcessor(16, 32, nil, nil)
-	//assert(processor.PutStream(NewStream())).IsFalse()
-	//processor.Start()
-	//assert(processor.PutStream(NewStream())).IsTrue()
-	//for i := 0; i < len(processor.threadPools); i++ {
-	//	processor.threadPools[i].stop()
-	//}
-	//assert(processor.PutStream(NewStream())).IsFalse()
+	assert := NewAssert(t)
+
+	// Test(1)
+	processor1 := NewProcessor(
+		true,
+		1024,
+		32,
+		32,
+		nil,
+		5*time.Second,
+		nil,
+		func(stream *Stream) {},
+	)
+	defer processor1.Close()
+	assert(processor1.PutStream(NewStream())).IsTrue()
+
+	// Test(2)
+	processor2 := getFakeProcessor(true)
+	for i := 0; i < 2048; i++ {
+		assert(processor2.PutStream(NewStream())).IsFalse()
+	}
 }
 
-//
-//func TestProcessor_AddService(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	processor := getNewProcessor()
-//	assert(processor.AddService("test", nil, "DebugMessage")).
-//		Equals(NewProtocolError("Service is nil").AddDebug("DebugMessage"))
-//
-//	service := NewService()
-//	assert(processor.AddService("test", service, "")).IsNil()
-//}
-//
-//func TestProcessor_BuildCache(t *testing.T) {
-//	assert := NewAssert(t)
-//	_, file, _, _ := runtime.Caller(0)
-//
-//	processor0 := getNewProcessor()
-//	assert(processor0.BuildCache(
-//		"pkgName",
-//		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go"),
-//	)).IsNil()
-//	assert(readStringFromFile(
-//		path.Join(path.Dir(file), "_snapshot_/processor-build-cache-0.snapshot"),
-//	)).Equals(readStringFromFile(
-//		path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go")))
-//
-//	processor1 := getNewProcessor()
-//	_ = processor1.AddService("abc", NewService().
-//		Reply("sayHello", func(ctx *ContextObject, name string) *ReturnObject {
-//			return ctx.OK("hello " + name)
-//		}), "")
-//	assert(processor1.BuildCache(
-//		"pkgName",
-//		path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go"),
-//	)).IsNil()
-//	assert(readStringFromFile(
-//		path.Join(path.Dir(file), "_snapshot_/processor-build-cache-1.snapshot"),
-//	)).Equals(readStringFromFile(
-//		path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go")))
-//
-//	_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
-//}
-//
+func TestProcessor_Panic(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	err1 := NewRuntimePanic("message").AddDebug("debug")
+	helper1 := newTestProcessorReturnHelper()
+	processor1 := NewProcessor(
+		true,
+		1,
+		1,
+		1,
+		nil,
+		5*time.Second,
+		nil,
+		helper1.GetFunction(),
+	)
+	defer processor1.Close()
+	processor1.Panic(err1)
+	assert(helper1.GetReturn()).Equals([]Any{}, []Error{}, []Error{err1})
+}
+
+func TestProcessor_BuildCache(t *testing.T) {
+	assert := NewAssert(t)
+	_, file, _, _ := runtime.Caller(0)
+	defer func() {
+		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+	}()
+
+	processor1 := getFakeProcessor(false)
+	assert(processor1.BuildCache(
+		"pkgName",
+		path.Join(path.Dir(file), "_tmp_/test-processor-01.go"),
+	)).IsNil()
+	//assert(readStringFromFile(
+	//	path.Join(path.Dir(file), "_snapshot_/processor-build-cache-0.snapshot"),
+	//)).Equals(readStringFromFile(
+	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go")))
+
+	//processor1 := getNewProcessor()
+	//_ = processor1.AddService("abc", NewService().
+	//	Reply("sayHello", func(ctx *ContextObject, name string) *ReturnObject {
+	//		return ctx.OK("hello " + name)
+	//	}), "")
+	//assert(processor1.BuildCache(
+	//	"pkgName",
+	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go"),
+	//)).IsNil()
+	//assert(readStringFromFile(
+	//	path.Join(path.Dir(file), "_snapshot_/processor-build-cache-1.snapshot"),
+	//)).Equals(readStringFromFile(
+	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go")))
+
+}
+
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := NewAssert(t)
 //
