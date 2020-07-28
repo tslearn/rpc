@@ -68,11 +68,11 @@ func TestRpcThread_Close(t *testing.T) {
 	thread1 := getFakeThread(true)
 	assert(thread1.Close()).IsTrue()
 
-	// Test(2) can not close after 20 second
+	// Test(2) can not close
 	assert(testRunWithPanicCatch(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
 			func(ctx *ContextObject, name string) *ReturnObject {
-				time.Sleep(6 * time.Second)
+				time.Sleep(8 * time.Second)
 				return ctx.OK("hello " + name)
 			},
 			func(processor *Processor) *Stream {
