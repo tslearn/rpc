@@ -29,7 +29,7 @@ type IAdapter interface {
 }
 
 // Stream ...
-type Stream = *internal.Stream
+type Stream = internal.Stream
 
 // Bool ...
 type Bool = internal.Bool
@@ -62,13 +62,10 @@ type Map = internal.Map
 type Error = internal.Error
 
 // ReturnObject ...
-type Return = *internal.ReturnObject
+type Return = internal.Return
 
 // ContextObject ...
-type Context = *internal.ContextObject
-
-// Service ...
-type Service = internal.Service
+type Context = internal.Context
 
 // NewService ...
 var NewService = internal.NewService

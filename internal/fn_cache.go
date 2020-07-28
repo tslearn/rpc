@@ -15,7 +15,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	defer sb.Release()
 
 	sb.AppendString(fmt.Sprintf(
-		"func %s(ctx rpc.Context, stream rpc.Stream, fn interface{}) bool {\n",
+		"func %s(ctx rpc.Context, stream *rpc.Stream, fn interface{}) bool {\n",
 		name,
 	))
 
