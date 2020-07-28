@@ -13,7 +13,7 @@ type webSocketConn websocket.Conn
 func (p *webSocketConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
-) (Stream, Error) {
+) (*Stream, Error) {
 	if conn := (*websocket.Conn)(p); conn == nil {
 		return nil, internal.NewTransportError(
 			"webSocketConn: ReadStream: nil object",
@@ -42,7 +42,7 @@ func (p *webSocketConn) ReadStream(
 }
 
 func (p *webSocketConn) WriteStream(
-	stream Stream,
+	stream *Stream,
 	timeout time.Duration,
 	writeLimit int64,
 ) Error {

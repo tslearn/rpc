@@ -16,8 +16,8 @@ const SystemStreamKindRequestIds = int64(3)
 const SystemStreamKindRequestIdsBack = int64(4)
 
 type IStreamConnection interface {
-	ReadStream(timeout time.Duration, readLimit int64) (Stream, Error)
-	WriteStream(stream Stream, timeout time.Duration, writeLimit int64) Error
+	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
+	WriteStream(stream *Stream, timeout time.Duration, writeLimit int64) Error
 	Close() Error
 }
 
@@ -60,6 +60,9 @@ type Return = internal.Return
 
 // ContextObject ...
 type Context = internal.Context
+
+// Service ...
+type Service = internal.Service
 
 // NewService ...
 var NewService = internal.NewService

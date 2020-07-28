@@ -23,7 +23,7 @@ type serverSessionRecord struct {
 	id     uint64
 	status int32
 	mark   bool
-	stream Stream
+	stream *Stream
 }
 
 var serverSessionRecordCache = &sync.Pool{
@@ -53,7 +53,7 @@ func (p *serverSessionRecord) SetRunning() bool {
 	)
 }
 
-func (p *serverSessionRecord) BackStream(stream Stream) {
+func (p *serverSessionRecord) BackStream(stream *Stream) {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		serverSessionRecordStatusRunning,
@@ -112,7 +112,7 @@ func newServerSession(id uint64, size int64) *serverSession {
 	return ret
 }
 
-func (p *serverSession) WriteStream(stream Stream) Error {
+func (p *serverSession) WriteStream(stream *Stream) Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if p.conn != nil {
 			return p.conn.WriteStream(
@@ -129,7 +129,7 @@ func (p *serverSession) WriteStream(stream Stream) Error {
 }
 
 func (p *serverSession) OnDataStream(
-	stream Stream,
+	stream *Stream,
 	processor *internal.Processor,
 ) Error {
 	if stream == nil {
@@ -168,7 +168,7 @@ func (p *serverSession) OnDataStream(
 }
 
 func (p *serverSession) OnControlStream(
-	stream Stream,
+	stream *Stream,
 ) Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
@@ -336,7 +336,7 @@ func (p *Server) Start() bool {
 			p.fnCache,
 			20*time.Second,
 			p.services,
-			func(stream Stream) {
+			func(stream *Stream) {
 				if stream != nil {
 					sessionID := stream.GetSessionID()
 					stream.SetReadPosToBodyStart()

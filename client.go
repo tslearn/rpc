@@ -18,7 +18,7 @@ type sendItem struct {
 	sendTime  time.Time
 	timeout   time.Duration
 	finishCH  chan bool
-	stream    Stream
+	stream    *Stream
 	next      *sendItem
 }
 
@@ -49,7 +49,7 @@ func newSendItem() *sendItem {
 	return ret
 }
 
-func (p *sendItem) Return(stream Stream) bool {
+func (p *sendItem) Return(stream *Stream) bool {
 	if stream == nil {
 		return false
 	} else if !atomic.CompareAndSwapInt32(
