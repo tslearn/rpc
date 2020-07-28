@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -12,13 +11,6 @@ import (
 func TestBuildFuncCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
-	fnReadFromFile := func(filePath string) (string, error) {
-		ret, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			return "", err
-		}
-		return string(ret), nil
-	}
 	defer func() {
 		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
 	}()
@@ -26,7 +18,7 @@ func TestBuildFuncCache(t *testing.T) {
 	tmpFile1 := path.Join(path.Dir(file), "_tmp_/test-cache-01.go")
 	snapshotFile1 := path.Join(path.Dir(file), "snapshot/test-cache-01.snapshot")
 	assert(buildFuncCache("pkgName", tmpFile1, []string{})).IsNil()
-	assert(fnReadFromFile(tmpFile1)).Equals(fnReadFromFile(snapshotFile1))
+	assert(testReadFromFile(tmpFile1)).Equals(testReadFromFile(snapshotFile1))
 
 	// Test(2)
 	tmpFile2 := path.Join(path.Dir(file), "_tmp_/test-cache-02.go")
@@ -39,7 +31,7 @@ func TestBuildFuncCache(t *testing.T) {
 		"BUF", "ABM", "UFS", "XAA", "MMS", "MMM", "AAA", "MFF",
 		"BIUFSXAM", "AAAAAAAA", "MAXSFUIB",
 	})).IsNil()
-	assert(fnReadFromFile(tmpFile2)).Equals(fnReadFromFile(snapshotFile2))
+	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
 
 	// Test(3)
 	tmpFile3 := path.Join(path.Dir(file), "_tmp_/test-cache-03.go")

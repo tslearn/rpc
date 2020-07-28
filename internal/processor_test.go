@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -240,18 +241,37 @@ func TestProcessor_Panic(t *testing.T) {
 func TestProcessor_BuildCache(t *testing.T) {
 	assert := NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
+	currDir := path.Dir(file)
 	defer func() {
-		//_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
 	}()
 
 	// Test(1)
-	processor1 := getFakeProcessor(false)
-	assert(processor1.BuildCache(
+	helper3 := newTestProcessorReturnHelper()
+	processor3 := NewProcessor(
+		true,
+		1024,
+		2,
+		3,
+		nil,
+		time.Second,
+		nil,
+		helper3.GetFunction(),
+	)
+	defer processor3.Close()
+	assert(processor3.BuildCache(
 		"pkgName",
-		path.Join(path.Dir(file), "_tmp_/test-processor-01.go"),
-	)).IsTrue()
+		path.Join(currDir, "processor_test.go/err_dir.go"),
+	)).IsFalse()
+	_, _, panicArray3 := helper3.GetReturn()
+	assert(len(panicArray3)).Equals(1)
+	assert(panicArray3[0].GetKind()).Equals(ErrorKindRuntimePanic)
+	assert(strings.Contains(panicArray3[0].GetMessage(), "processor_test.go")).
+		IsTrue()
 
 	// Test(2)
+	tmpFile2 := path.Join(currDir, "_tmp_/test-processor-02.go")
+	snapshotFile2 := path.Join(currDir, "snapshot/test-processor-02.snapshot")
 	helper2 := newTestProcessorReturnHelper()
 	processor2 := NewProcessor(
 		true,
@@ -269,31 +289,10 @@ func TestProcessor_BuildCache(t *testing.T) {
 		}},
 		helper2.GetFunction(),
 	)
-	assert(processor2.BuildCache(
-		"pkgName",
-		path.Join(path.Dir(file), "_tmp_/test-processor-02.go"),
-	)).IsTrue()
+	defer processor2.Close()
+	assert(processor2.BuildCache("pkgName", tmpFile2)).IsTrue()
 	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{})
-
-	//assert(readStringFromFile(
-	//	path.Join(path.Dir(file), "_snapshot_/processor-build-cache-0.snapshot"),
-	//)).Equals(readStringFromFile(
-	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-0.go")))
-
-	//processor1 := getNewProcessor()
-	//_ = processor1.AddService("abc", NewService().
-	//	Reply("sayHello", func(ctx *ContextObject, name string) *ReturnObject {
-	//		return ctx.OK("hello " + name)
-	//	}), "")
-	//assert(processor1.BuildCache(
-	//	"pkgName",
-	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go"),
-	//)).IsNil()
-	//assert(readStringFromFile(
-	//	path.Join(path.Dir(file), "_snapshot_/processor-build-cache-1.snapshot"),
-	//)).Equals(readStringFromFile(
-	//	path.Join(path.Dir(file), "_tmp_/processor-build-cache-1.go")))
-
+	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
 }
 
 //func TestProcessor_mountNode(t *testing.T) {
@@ -551,7 +550,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		16,
 		&testFuncCache{},
 		5*time.Second,
-		[]*rpcChildMeta{&rpcChildMeta{
+		[]*rpcChildMeta{{
 			name: "user",
 			service: NewService().
 				Reply("sayHello", func(ctx Context, name String) Return {

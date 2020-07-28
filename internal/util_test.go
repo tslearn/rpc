@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"io/ioutil"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -443,6 +444,14 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	default:
 		return nil
 	}
+}
+
+func testReadFromFile(filePath string) (string, Error) {
+	ret, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", NewKernelPanic(err.Error())
+	}
+	return string(ret), nil
 }
 
 func getFakeOnEvalBack() func(*Stream) {
