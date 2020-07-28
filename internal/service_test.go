@@ -4,6 +4,17 @@ import (
 	"testing"
 )
 
+func TestNewServiceMeta(t *testing.T) {
+	assert := NewAssert(t)
+	service := NewService()
+
+	assert(NewServiceMeta("test", service, "debug")).Equals(&ServiceMeta{
+		name:     "test",
+		service:  service,
+		fileLine: "debug",
+	})
+}
+
 func TestNewService(t *testing.T) {
 	assert := NewAssert(t)
 
