@@ -195,7 +195,7 @@ func (p *Processor) Close() bool {
 		if len(errList) > 0 {
 			p.fnError(
 				NewReplyPanic(ConcatString(
-					"rpc: the following replies can not close after 20 seconds: \n\t",
+					"rpc: the following replies can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
 			)
