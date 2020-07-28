@@ -254,7 +254,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		2,
 		3,
 		nil,
-		time.Second,
+		5*time.Second,
 		nil,
 		helper3.GetFunction(),
 	)
@@ -279,7 +279,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		2,
 		3,
 		nil,
-		time.Second,
+		5*time.Second,
 		[]*rpcChildMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
@@ -295,49 +295,184 @@ func TestProcessor_BuildCache(t *testing.T) {
 	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
 }
 
+func TestProcessor_mountNode(t *testing.T) {
+	assert := NewAssert(t)
+
+	fnTestMount := func(
+		services []*rpcChildMeta,
+		wantPanicKind ErrorKind,
+		wantPanicMessage string,
+		wantPanicDebug string,
+	) {
+		helper := newTestProcessorReturnHelper()
+		assert(NewProcessor(
+			true,
+			1024,
+			2,
+			3,
+			nil,
+			5*time.Second,
+			services,
+			helper.GetFunction(),
+		)).IsNil()
+		retArray, errArray, panicArray := helper.GetReturn()
+		assert(retArray, errArray).Equals([]Any{}, []Error{})
+		assert(len(panicArray)).Equals(1)
+
+		assert(panicArray[0].GetKind()).Equals(wantPanicKind)
+		assert(panicArray[0].GetMessage()).Equals(wantPanicMessage)
+
+		if wantPanicKind == ErrorKindKernelPanic {
+			assert(strings.Contains(panicArray[0].GetDebug(), "goroutine")).IsTrue()
+			assert(strings.Contains(panicArray[0].GetDebug(), "[running]")).IsTrue()
+			assert(strings.Contains(panicArray[0].GetDebug(), "mountNode")).IsTrue()
+			assert(strings.Contains(panicArray[0].GetDebug(), "NewProcessor")).
+				IsTrue()
+		} else {
+			assert(panicArray[0].GetDebug()).Equals(wantPanicDebug)
+		}
+	}
+
+	// Test(1)
+	fnTestMount([]*rpcChildMeta{
+		nil,
+	}, ErrorKindKernelPanic, "rpc: nodeMeta is nil", "")
+
+	// Test(2)
+	fnTestMount([]*rpcChildMeta{{
+		name:     "+",
+		service:  NewService(),
+		fileLine: "DebugMessage",
+	}}, ErrorKindRuntimePanic, "rpc: service name + is illegal", "DebugMessage")
+
+	// Test(3)
+	fnTestMount([]*rpcChildMeta{{
+		name:     "abc",
+		service:  nil,
+		fileLine: "DebugMessage",
+	}}, ErrorKindRuntimePanic, "rpc: service is nil", "DebugMessage")
+
+	// Test(4)
+	s4, source1 := NewService().AddChildService("s", NewService()), GetFileLine(0)
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name:     "s",
+			service:  NewService().AddChildService("s", s4),
+			fileLine: "DebugMessage",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: service path #.s.s.s is too long",
+		source1,
+	)
+
+	// Test(5)
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name:     "user",
+			service:  NewService(),
+			fileLine: "Debug1",
+		}, {
+			name:     "user",
+			service:  NewService(),
+			fileLine: "Debug2",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: duplicated service name user",
+		"current:\n\tDebug2\nconflict:\n\tDebug1",
+	)
+
+	// Test(6)
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "user",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies:  []*rpcReplyMeta{nil},
+				fileLine: "DebugReply",
+			},
+			fileLine: "DebugService",
+		}},
+		ErrorKindKernelPanic,
+		"rpc: meta is nil",
+		"DebugReply",
+	)
+
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "test",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies: []*rpcReplyMeta{{
+					name:     "-",
+					handler:  nil,
+					fileLine: "DebugReply",
+				}},
+				fileLine: "DebugService",
+			},
+			fileLine: "Debug1",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: reply name - is illegal",
+		"DebugReply",
+	)
+
+	fnTestMount(
+		[]*rpcChildMeta{{
+			name: "test",
+			service: &Service{
+				children: []*rpcChildMeta{},
+				replies: []*rpcReplyMeta{{
+					name:     "Eval",
+					handler:  nil,
+					fileLine: "DebugReply",
+				}},
+				fileLine: "DebugService",
+			},
+			fileLine: "Debug1",
+		}},
+		ErrorKindRuntimePanic,
+		"rpc: reply handler is nil",
+		"DebugReply",
+	)
+
+	//// Test(5)
+	//fnTestMount([]*rpcChildMeta{{
+	// name:     "abc",
+	// service:  NewService(),
+	// fileLine: "DebugMessage",
+	//}}, ErrorKindRuntimePanic, "rpc: parentNode is nil", "DebugMessage")
+
+	//	_ = processor.mountNode(rootName, &rpcChildMeta{
+	//		name:     "abc",
+	//		service:  NewService(),
+	//		fileLine: "DebugMessage",
+	//	})
+	//	assert(processor.mountNode(rootName, &rpcChildMeta{
+	//		name:     "abc",
+	//		service:  NewService(),
+	//		fileLine: "DebugMessage",
+	//	})).Equals(NewBaseError(
+	//		"Service name \"abc\" is duplicated",
+	//	).AddDebug("Current:\n\tDebugMessage\nConflict:\n\tDebugMessage"))
+
+	//
+	//	processor.maxNodeDepth = 0
+	//	assert(processor.mountNode(rootName, &rpcChildMeta{
+	//		name:     "abc",
+	//		service:  NewService(),
+	//		fileLine: "DebugMessage",
+	//	})).Equals(NewBaseError(
+	//		"Service path depth $.abc is too long, it must be less or equal than 0",
+	//	).AddDebug("DebugMessage"))
+	//	processor.maxNodeDepth = 16
+
+}
+
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := NewAssert(t)
+
 //
-//	processor := getNewProcessor()
-//
-//	assert(processor.mountNode(rootName, nil).GetMessage()).
-//		Equals("rpc: mountNode: nodeMeta is nil")
-//	assert(processor.mountNode(rootName, nil).GetDebug()).
-//		Equals("")
-//
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "+",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Service name \"+\" is illegal",
-//	).AddDebug("DebugMessage"))
-//
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "abc",
-//		service:  nil,
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Service is nil",
-//	).AddDebug("DebugMessage"))
-//
-//	assert(processor.mountNode("123", &rpcChildMeta{
-//		name:     "abc",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"rpc: mountNode: parentNode is nil",
-//	).AddDebug("DebugMessage"))
-//
-//	processor.maxNodeDepth = 0
-//	assert(processor.mountNode(rootName, &rpcChildMeta{
-//		name:     "abc",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	})).Equals(NewBaseError(
-//		"Service path depth $.abc is too long, it must be less or equal than 0",
-//	).AddDebug("DebugMessage"))
-//	processor.maxNodeDepth = 16
+
 //
 //	_ = processor.mountNode(rootName, &rpcChildMeta{
 //		name:     "abc",

@@ -280,12 +280,8 @@ func (p *Processor) mountNode(
 	} else if nodeMeta.service == nil {
 		// check nodeMeta.service is not nil
 		return NewRuntimePanic("rpc: service is nil").AddDebug(nodeMeta.fileLine)
-	} else if parentNode, ok := p.servicesMap[parentServiceNodePath]; !ok {
-		// check if parent node is exist
-		return NewKernelPanic(
-			"rpc: can not find parent service",
-		).AddDebug(string(debug.Stack()))
 	} else {
+		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if uint64(parentNode.depth+1) > p.maxNodeDepth {
 			// check max node depth overflow
@@ -341,11 +337,7 @@ func (p *Processor) mountReply(
 	meta *rpcReplyMeta,
 	fnCache ReplyCache,
 ) Error {
-	if serviceNode == nil {
-		// check the node is nil
-		return NewKernelPanic("rpc: service node is nil").
-			AddDebug(string(debug.Stack()))
-	} else if meta == nil {
+	if meta == nil {
 		// check the rpcReplyMeta is nil
 		return NewKernelPanic("rpc: meta is nil").
 			AddDebug(string(debug.Stack()))
