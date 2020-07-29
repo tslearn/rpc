@@ -9,9 +9,6 @@ const ErrStringRunOutOfReplyScope = "rpc: run out of reply goroutine"
 // ErrStringBadStream ...
 const ErrStringBadStream = "rpc: bad stream"
 
-// ErrStringTimeout ...
-const ErrStringTimeout = "rpc: timeout"
-
 const (
 	// ErrorKindNone ...
 	ErrorKindNone ErrorKind = 0

@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal"
 	"net/http"
+	"runtime/debug"
 	"time"
 )
 
@@ -15,22 +16,22 @@ func (p *webSocketConn) ReadStream(
 	readLimit int64,
 ) (*Stream, Error) {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return nil, internal.NewTransportError(
-			"webSocketConn: ReadStream: nil object",
-		)
+		return nil, internal.NewKernelPanic(
+			"rpc: object nil object",
+		).AddDebug(string(debug.Stack()))
 	} else {
 		conn.SetReadLimit(readLimit)
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
 			return nil, internal.NewTransportError(
-				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+				internal.ConcatString("rpc: ", err.Error()),
 			)
 		} else if mt, message, err := conn.ReadMessage(); err != nil {
 			return nil, internal.NewTransportError(
-				internal.ConcatString("webSocketConn: ReadStream: ", err.Error()),
+				internal.ConcatString("rpc: ", err.Error()),
 			)
 		} else if mt != websocket.BinaryMessage {
 			return nil, internal.NewTransportError(
-				"webSocketConn: ReadStream: unsupported protocol",
+				"rpc: unsupported protocol",
 			)
 		} else {
 			stream := internal.NewStream()
