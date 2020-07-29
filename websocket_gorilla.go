@@ -5,10 +5,11 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"net/http"
 	"runtime/debug"
+	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
-// Begin ***** webSocketConn ***** //
 type webSocketConn websocket.Conn
 
 func (p *webSocketConn) ReadStream(
@@ -46,16 +47,12 @@ func (p *webSocketConn) WriteStream(
 		return internal.NewKernelPanic("stream is nil").
 			AddDebug(string(debug.Stack()))
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
-		return internal.NewTransportError(
-			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
-		)
+		return internal.NewTransportError(err.Error())
 	} else if err := conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); err != nil {
-		return internal.NewTransportError(
-			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
-		)
+		return internal.NewTransportError(err.Error())
 	} else {
 		return nil
 	}
@@ -63,35 +60,27 @@ func (p *webSocketConn) WriteStream(
 
 func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return internal.NewTransportError(
-			"webSocketConn: Close: nil object",
-		)
+		return internal.NewKernelPanic("object is nil").
+			AddDebug(string(debug.Stack()))
 	} else if err := conn.Close(); err != nil {
-		return internal.NewTransportError(
-			internal.ConcatString("webSocketConn: Close: ", err.Error()),
-		)
+		return internal.NewTransportError(err.Error())
 	} else {
 		return nil
 	}
 }
 
-// End ***** webSocketConn ***** //
-
-// Begin ***** WebSocketServerAdapter ***** //
 var (
 	wsUpgradeManager = websocket.Upgrader{
-		ReadBufferSize:    2048,
-		WriteBufferSize:   2048,
+		ReadBufferSize:    1024,
+		WriteBufferSize:   1024,
 		EnableCompression: true,
 	}
 )
 
 type WebSocketServerAdapter struct {
-	addr       string
-	path       string
-	closeCH    chan bool
-	httpServer *http.Server
-	internal.Lock
+	addr     string
+	path     string
+	wsServer unsafe.Pointer
 }
 
 func NewWebSocketServerAdapter(addr string, path string) IAdapter {
@@ -100,246 +89,131 @@ func NewWebSocketServerAdapter(addr string, path string) IAdapter {
 	}
 
 	return &WebSocketServerAdapter{
-		addr:       addr,
-		path:       path,
-		closeCH:    nil,
-		httpServer: nil,
+		addr:     addr,
+		path:     path,
+		wsServer: nil,
 	}
 }
 
-// Start it must be none block
+// Open ...
 func (p *WebSocketServerAdapter) Open(
 	onConnRun func(IStreamConn),
-	onError func(Error),
-) bool {
-	err := Error(nil)
-	defer func() {
-		if onError != nil && err != nil {
-			onError(err)
-		}
-	}()
-
-	return p.CallWithLock(func() interface{} {
-		if onConnRun == nil {
-			err = internal.NewTransportError(
-				"WebSocketServerAdapter: Start: onConnRun is nil",
-			)
-			return false
-		} else if p.httpServer != nil {
-			err = internal.NewTransportError(
-				"WebSocketServerAdapter: Start: it has already been opened",
-			)
-			return false
-		} else {
-			mux := http.NewServeMux()
-			mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
-				if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-					onError(internal.NewTransportError(
-						internal.ConcatString("WebSocketServerAdapter: Start: ", err.Error()),
-					))
-				} else {
-					onConnRun((*webSocketConn)(conn))
-				}
-			})
-
-			closeCH := make(chan bool, 1)
-			p.closeCH = closeCH
-			p.httpServer = &http.Server{
-				Addr:    p.addr,
-				Handler: mux,
+	onConnError func(Error),
+) Error {
+	if onConnRun == nil {
+		return internal.NewKernelPanic("onConnRun is nil").
+			AddDebug(string(debug.Stack()))
+	} else if onConnError == nil {
+		return internal.NewKernelPanic("onConnError is nil").
+			AddDebug(string(debug.Stack()))
+	} else {
+		mux := http.NewServeMux()
+		mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
+			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
+				onConnError(internal.NewTransportError(err.Error()))
+			} else {
+				onConnRun((*webSocketConn)(conn))
 			}
-			// start sub routine
-			go func() {
-				defer func() {
-					p.DoWithLock(func() {
-						p.closeCH = nil
-						p.httpServer = nil
-						closeCH <- true
-					})
-				}()
-				if e := p.httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-					onError(internal.NewTransportError(
-						internal.ConcatString("WebSocketServerAdapter: Start: ", e.Error()),
-					))
-				}
-			}()
-			return true
+		})
+		httpServer := &http.Server{
+			Addr:    p.addr,
+			Handler: mux,
 		}
-	}).(bool)
+
+		if !atomic.CompareAndSwapPointer(
+			&p.wsServer,
+			nil,
+			unsafe.Pointer(httpServer),
+		) {
+			return internal.NewKernelPanic("it has already been opened").
+				AddDebug(string(debug.Stack()))
+		}
+
+		defer func() {
+			atomic.StorePointer(&p.wsServer, nil)
+		}()
+
+		if e := httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
+			return internal.NewRuntimePanic(e.Error())
+		}
+
+		return nil
+	}
 }
 
-func (p *WebSocketServerAdapter) Close(onError func(Error)) bool {
-	err := Error(nil)
-	defer func() {
-		if onError != nil && err != nil {
-			onError(err)
-		}
-	}()
-
-	closeCH := p.CallWithLock(func() interface{} {
-		if p.closeCH == nil {
-			err = internal.NewTransportError(
-				"WebSocketServerAdapter: Close: has not been opened",
-			)
-			return nil
-		} else if e := p.httpServer.Close(); e != nil {
-			err = internal.NewTransportError(
-				internal.ConcatString("WebSocketServerAdapter: Close: ", e.Error()),
-			)
-			return nil
-		} else {
-			ret := p.closeCH
-			p.closeCH = nil
-			return ret
-		}
-	})
-
-	if closeCH == nil {
-		return false
+// Close ...
+func (p *WebSocketServerAdapter) Close() Error {
+	if server := (*http.Server)(atomic.LoadPointer(&p.wsServer)); server == nil {
+		return internal.NewKernelPanic("it has not been opened").
+			AddDebug(string(debug.Stack()))
+	} else if e := server.Close(); e != nil {
+		return internal.NewRuntimePanic(e.Error())
 	} else {
-		select {
-		case <-closeCH.(chan bool):
-			return true
-		case <-time.After(10 * time.Second):
-			err = internal.NewTransportError(
-				"WebSocketServerAdapter: Close: can not close in 10 seconds",
-			)
-			return false
-		}
+		return nil
 	}
 }
 
 func (p *WebSocketServerAdapter) IsRunning() bool {
-	return p.CallWithLock(func() interface{} {
-		return p.closeCH != nil
-	}).(bool)
+	return atomic.LoadPointer(&p.wsServer) != nil
 }
 
 func (p *WebSocketServerAdapter) ConnectString() string {
 	return "ws://" + p.addr + p.path
 }
 
-// End ***** WebSocketServerAdapter ***** //
-
-// Begin ***** WebSocketClientEndPoint ***** //
 type WebSocketClientEndPoint struct {
-	conn          *webSocketConn
-	closeCH       chan bool
+	conn          unsafe.Pointer // *webSocketConn
 	connectString string
-	internal.Lock
 }
 
 func NewWebSocketClientEndPoint(connectString string) IAdapter {
 	return &WebSocketClientEndPoint{
 		conn:          nil,
-		closeCH:       nil,
 		connectString: connectString,
 	}
 }
 
 func (p *WebSocketClientEndPoint) Open(
 	onConnRun func(IStreamConn),
-	onError func(Error),
-) bool {
-	err := Error(nil)
-	defer func() {
-		if onError != nil && err != nil {
-			onError(err)
-		}
-	}()
-
-	return p.CallWithLock(func() interface{} {
-		if onConnRun == nil {
-			err = internal.NewTransportError(
-				"WebSocketClientEndPoint: Start: onConnRun is nil",
-			)
-			return false
-		} else if p.conn != nil {
-			err = internal.NewTransportError(
-				"WebSocketClientEndPoint: Start: it has already been opened",
-			)
-			return false
-		} else if wsConn, _, err := websocket.DefaultDialer.Dial(
-			p.connectString,
-			nil,
-		); err != nil {
-			err = internal.NewTransportError(
-				internal.ConcatString("WebSocketClientEndPoint: Start: ", err.Error()),
-			)
-			return false
-		} else if wsConn == nil {
-			err = internal.NewTransportError(
-				"WebSocketClientEndPoint: Start: wsConn is nil",
-			)
-			return false
-		} else {
-			closeCH := make(chan bool, 1)
-			p.closeCH = closeCH
-			p.conn = (*webSocketConn)(wsConn)
-			go func() {
-				defer func() {
-					p.DoWithLock(func() {
-						p.closeCH = nil
-						p.conn = nil
-						closeCH <- true
-					})
-				}()
-				onConnRun(p.conn)
-			}()
-			return true
-		}
-	}).(bool)
+	onConnError func(Error),
+) Error {
+	if onConnRun == nil {
+		return internal.NewKernelPanic("onConnRun is nil").
+			AddDebug(string(debug.Stack()))
+	} else if onConnError != nil {
+		return internal.NewKernelPanic("onConnError is not nil").
+			AddDebug(string(debug.Stack()))
+	} else if conn, _, err := websocket.DefaultDialer.Dial(
+		p.connectString,
+		nil,
+	); err != nil {
+		return internal.NewRuntimePanic(err.Error())
+	} else if !atomic.CompareAndSwapPointer(&p.conn, nil, unsafe.Pointer(conn)) {
+		return internal.NewKernelPanic("it has already been opened")
+	} else {
+		defer func() {
+			atomic.StorePointer(&p.conn, nil)
+		}()
+		onConnRun((*webSocketConn)(conn))
+		return nil
+	}
 }
 
-func (p *WebSocketClientEndPoint) Close(onError func(Error)) bool {
-	err := Error(nil)
-	defer func() {
-		if onError != nil && err != nil {
-			onError(err)
-		}
-	}()
-
-	closeCH := p.CallWithLock(func() interface{} {
-		if p.closeCH == nil {
-			err = internal.NewTransportError(
-				"WebSocketClientEndPoint: Close: has not been opened",
-			)
-			return nil
-		} else if e := p.conn.Close(); e != nil {
-			err = internal.NewTransportError(
-				internal.ConcatString("WebSocketClientEndPoint: Close: ", e.Error()),
-			)
-			return nil
-		} else {
-			ret := p.closeCH
-			p.closeCH = nil
-			return ret
-		}
-	})
-
-	if closeCH == nil {
-		return false
+func (p *WebSocketClientEndPoint) Close() Error {
+	if conn := (*websocket.Conn)(atomic.LoadPointer(&p.conn)); conn == nil {
+		return internal.NewKernelPanic("it has not been opened").
+			AddDebug(string(debug.Stack()))
+	} else if e := conn.Close(); e != nil {
+		return internal.NewRuntimePanic(e.Error())
 	} else {
-		select {
-		case <-closeCH.(chan bool):
-			return true
-		case <-time.After(10 * time.Second):
-			err = internal.NewTransportError(
-				"WebSocketClientEndPoint: Close: can not close in 10 seconds",
-			)
-			return false
-		}
+		return nil
 	}
 }
 
 func (p *WebSocketClientEndPoint) IsRunning() bool {
-	return p.CallWithLock(func() interface{} {
-		return p.closeCH != nil
-	}).(bool)
+	return atomic.LoadPointer(&p.conn) != nil
 }
 
 func (p *WebSocketClientEndPoint) ConnectString() string {
 	return p.connectString
 }
-
-// End ***** WebSocketClientEndPoint ***** //

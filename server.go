@@ -77,38 +77,45 @@ func (p *serverSessionRecord) Release() {
 
 // Begin ***** serverSession ***** //
 type serverSession struct {
-	id          uint64
-	security    string
-	conn        IStreamConn
-	dataSeed    uint64
-	controlSeed uint64
-	callMap     map[uint64]*serverSessionRecord
-	size        int64
+	id           uint64
+	security     string
+	conn         IStreamConn
+	dataSeed     uint64
+	controlSeed  uint64
+	callMap      map[uint64]*serverSessionRecord
+	readLimit    int64
+	writeLimit   int64
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+	maxStreams   int64
 	internal.Lock
 }
 
 var serverSessionCache = &sync.Pool{
 	New: func() interface{} {
-		return &serverSession{
-			id:          0,
-			security:    "",
-			conn:        nil,
-			dataSeed:    0,
-			controlSeed: 0,
-			callMap:     nil,
-			size:        0,
-		}
+		return &serverSession{}
 	},
 }
 
-func newServerSession(id uint64, size int64) *serverSession {
+func newServerSession(
+	id uint64,
+	maxStreams int64,
+	readLimit int64,
+	writeLimit int64,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
+) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
 	ret.security = internal.GetRandString(32)
 	ret.dataSeed = 0
 	ret.controlSeed = 0
 	ret.callMap = make(map[uint64]*serverSessionRecord)
-	ret.size = size
+	ret.readLimit = readLimit
+	ret.writeLimit = writeLimit
+	ret.readTimeout = readTimeout
+	ret.writeTimeout = writeTimeout
+	ret.maxStreams = maxStreams
 	return ret
 }
 
@@ -117,7 +124,7 @@ func (p *serverSession) WriteStream(stream *Stream) Error {
 		if p.conn != nil {
 			return p.conn.WriteStream(
 				stream,
-				configWriteTimeout,
+				p.writeTimeout,
 			)
 		} else {
 			return internal.NewBaseError(
@@ -203,15 +210,12 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			stream.SetSequence(controlSequence)
 			stream.WriteInt64(SystemStreamKindInitBack)
 			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-			stream.WriteInt64(int64(configReadTimeout / time.Millisecond))
-			stream.WriteInt64(int64(configWriteTimeout / time.Millisecond))
-			stream.WriteInt64(configServerWriteLimit)
-			stream.WriteInt64(configServerReadLimit)
-			stream.WriteInt64(p.size)
-			return p.conn.WriteStream(
-				stream,
-				configWriteTimeout,
-			)
+			stream.WriteInt64(int64(p.readTimeout / time.Millisecond))
+			stream.WriteInt64(int64(p.writeTimeout / time.Millisecond))
+			stream.WriteInt64(p.writeLimit)
+			stream.WriteInt64(p.readLimit)
+			stream.WriteInt64(p.maxStreams)
+			return p.conn.WriteStream(stream, p.writeTimeout)
 		case SystemStreamKindRequestIds:
 			currCallbackId, ok := stream.ReadUint64()
 			if !ok {
@@ -243,7 +247,7 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 				}
 			}
 			// alloc
-			for count < p.size {
+			for count < p.maxStreams {
 				p.dataSeed++
 				p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
 				count++
@@ -254,10 +258,7 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			stream.SetSequence(controlSequence)
 			stream.WriteInt64(SystemStreamKindRequestIdsBack)
 			stream.WriteUint64(p.dataSeed)
-			return p.conn.WriteStream(
-				stream,
-				configWriteTimeout,
-			)
+			return p.conn.WriteStream(stream, time.Second)
 		default:
 			return internal.NewProtocolError(internal.ErrStringBadStream)
 		}
@@ -279,7 +280,7 @@ func (p *serverSession) Release() {
 	p.security = ""
 	p.dataSeed = 0
 	p.controlSeed = 0
-	p.size = 0
+	p.maxStreams = 0
 	serverSessionCache.Put(p)
 }
 
@@ -296,6 +297,10 @@ type Server struct {
 	sessionSeed  uint64
 	fnCache      internal.ReplyCache
 	services     []*internal.ServiceMeta
+	readLimit    int64
+	writeLimit   int64
+	readTimeout  time.Duration
+	writeTimeout time.Duration
 	internal.Lock
 }
 
@@ -308,6 +313,10 @@ func NewServer() *Server {
 		sessionMap:   sync.Map{},
 		sessionSize:  64,
 		sessionSeed:  0,
+		readLimit:    int64(1024 * 1024),
+		writeLimit:   int64(1024 * 1024),
+		readTimeout:  10 * time.Second,
+		writeTimeout: 1 * time.Second,
 		fnCache:      nil,
 	}
 }
@@ -475,8 +484,8 @@ func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 			"Server: getSession: conn is nil",
 		)
 	} else if stream, err := conn.ReadStream(
-		configReadTimeout,
-		configServerReadLimit,
+		p.readTimeout,
+		p.readLimit,
 	); err != nil {
 		return nil, err
 	} else if stream.GetCallbackID() != 0 {
@@ -515,6 +524,10 @@ func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 			session = newServerSession(
 				atomic.AddUint64(&p.sessionSeed, 1),
 				p.sessionSize,
+				p.readLimit,
+				p.writeLimit,
+				p.readTimeout,
+				p.writeTimeout,
 			)
 			p.sessionMap.Store(session.id, session)
 		}
@@ -547,8 +560,8 @@ func (p *Server) onConnRun(conn IStreamConn) {
 
 		for {
 			if stream, err := conn.ReadStream(
-				configReadTimeout,
-				configServerReadLimit,
+				p.readTimeout,
+				p.readLimit,
 			); err != nil {
 				p.onError(0, err)
 				return

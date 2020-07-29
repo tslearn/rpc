@@ -159,7 +159,9 @@ func (p *Client) Open() Error {
 
 				// make sure the endPoint is not running
 				if p.endPoint.IsRunning() {
-					p.endPoint.Close(p.onError)
+					if err := p.endPoint.Close(); err != nil {
+						p.onError(err)
+					}
 				}
 
 				for p.IsRunning() {

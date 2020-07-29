@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-const configServerReadLimit = int64(1024 * 1024)
-const configServerWriteLimit = int64(1024 * 1024)
-const configReadTimeout = 10 * time.Second
-const configWriteTimeout = 1 * time.Second
-
 const SystemStreamKindInit = int64(1)
 const SystemStreamKindInitBack = int64(2)
 const SystemStreamKindRequestIds = int64(3)
@@ -24,8 +19,8 @@ type IStreamConn interface {
 type IAdapter interface {
 	ConnectString() string
 	IsRunning() bool
-	Open(onConnRun func(IStreamConn), onError func(Error)) bool
-	Close(onError func(Error)) bool
+	Open(onConnRun func(IStreamConn), onConnError func(Error)) Error
+	Close() Error
 }
 
 // Bool ...
