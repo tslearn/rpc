@@ -4,10 +4,10 @@ package internal
 type ErrorKind uint64
 
 // ErrStringRunOutOfReplyScope ...
-const ErrStringRunOutOfReplyScope = "rpc: run out of reply goroutine"
+const ErrStringRunOutOfReplyScope = "run out of reply goroutine"
 
 // ErrStringBadStream ...
-const ErrStringBadStream = "rpc: bad stream"
+const ErrStringBadStream = "bad stream"
 
 const (
 	// ErrorKindNone ...

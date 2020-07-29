@@ -140,11 +140,11 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	stream.WriteUint64(uint64(ErrorKindNone))
 	if stream.Write(value) != StreamWriteOK {
 		p.processor.Panic(
-			NewReplyPanic(ConcatString("rpc: ", checkValue(value, "value", 64))).
+			NewReplyPanic(checkValue(value, "value", 64)).
 				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
 		return p.WriteError(
-			NewReplyError("rpc: reply return value error").
+			NewReplyError("reply return value error").
 				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
 	}
@@ -186,15 +186,13 @@ func (p *rpcThread) Eval(
 			// report panic
 			p.processor.Panic(
 				NewReplyPanic(
-					fmt.Sprintf("rpc: runtime error: %v", v),
+					fmt.Sprintf("runtime error: %v", v),
 				).AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
 			)
 
 			// write runtime error
 			p.WriteError(
-				NewReplyError(
-					ConcatString("rpc: runtime error"),
-				).AddDebug(p.GetExecReplyFileLine()),
+				NewReplyError("runtime error").AddDebug(p.GetExecReplyFileLine()),
 			)
 		}
 
@@ -202,7 +200,7 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					p.processor.Panic(
-						NewKernelPanic(fmt.Sprintf("rpc: kernel error: %v", v)).
+						NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
 					)
 				}
@@ -212,7 +210,7 @@ func (p *rpcThread) Eval(
 				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
 					p.WriteError(
 						NewReplyPanic(
-							"rpc: reply must return through Context.OK or Context.Error",
+							"reply must return through Context.OK or Context.Error",
 						).AddDebug(p.GetExecReplyFileLine()),
 					)
 				}
@@ -244,7 +242,7 @@ func (p *rpcThread) Eval(
 		return p.WriteError(NewProtocolError(ErrStringBadStream))
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
-			NewReplyError(ConcatString("rpc: target ", replyPath, " does not exist")),
+			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
 		)
 	} else {
 		p.execReplyNode = unsafe.Pointer(execReplyNode)
@@ -255,7 +253,7 @@ func (p *rpcThread) Eval(
 	} else if p.execDepth > p.processor.maxCallDepth {
 		return p.WriteError(
 			NewReplyError(ConcatString(
-				"rpc: call ",
+				"call ",
 				replyPath,
 				" level(",
 				strconv.FormatUint(p.execDepth, 10),
@@ -350,7 +348,6 @@ func (p *rpcThread) Eval(
 		} else if !p.processor.isDebug {
 			return p.WriteError(
 				NewReplyError(ConcatString(
-					"rpc: ",
 					replyPath,
 					" reply arguments does not match",
 				)),
@@ -388,7 +385,6 @@ func (p *rpcThread) Eval(
 
 			return p.WriteError(
 				NewReplyError(ConcatString(
-					"rpc: ",
 					replyPath,
 					" reply arguments does not match\nwant: ",
 					execReplyNode.callString,

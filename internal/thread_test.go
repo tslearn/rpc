@@ -68,7 +68,7 @@ func TestRpcThread_Close(t *testing.T) {
 	thread1 := getFakeThread(true)
 	assert(thread1.Close()).IsTrue()
 
-	// Test(2) can not close
+	// Test(2) cant close
 	assert(testRunWithPanicCatch(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
 			func(ctx *ContextObject, name string) *ReturnObject {
@@ -188,9 +188,9 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: reply return value error").
+		NewReplyError("reply return value error").
 			AddDebug("#.test:Eval "+source1),
-		NewReplyPanic("rpc: value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+		NewReplyPanic("value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -218,9 +218,9 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: reply return value error").
+		NewReplyError("reply return value error").
 			AddDebug("#.test:Eval "+source2),
-		NewReplyPanic("rpc: value type (chan bool) is not supported").
+		NewReplyPanic("value type (chan bool) is not supported").
 			AddDebug("#.test:Eval "+source2),
 	)
 
@@ -302,7 +302,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
-	)).Equals(nil, NewReplyError("rpc: target #.system:Eval does not exist"), nil)
+	)).Equals(nil, NewReplyError("target #.system:Eval does not exist"), nil)
 
 	// Test(3) depth data format error
 	assert(testRunWithProcessor(true, nil,
@@ -338,7 +338,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret4, panic4).IsNil()
 	assert(error4.GetKind()).Equals(ErrorKindReply)
 	assert(error4.GetMessage()).
-		Equals("rpc: call #.test:Eval level(17) overflows")
+		Equals("call #.test:Eval level(17) overflows")
 	assert(strings.Contains(error4.GetDebug(), "#.test:Eval")).IsTrue()
 	assert(strings.Contains(error4.GetDebug(), "util_test.go")).IsTrue()
 
@@ -409,7 +409,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -441,7 +441,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret8, panic8).IsNil()
 	assert(error8.GetKind()).Equals(ErrorKindReply)
 	assert(error8.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Int64, rpc.Int64, rpc.Uint64, " +
@@ -477,7 +477,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -509,7 +509,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret10, panic10).IsNil()
 	assert(error10.GetKind()).Equals(ErrorKindReply)
 	assert(error10.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Bool, rpc.Uint64, " +
@@ -544,7 +544,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -576,7 +576,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret12, panic12).IsNil()
 	assert(error12.GetKind()).Equals(ErrorKindReply)
 	assert(error12.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Bool, " +
@@ -611,7 +611,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -643,7 +643,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret14, panic14).IsNil()
 	assert(error14.GetKind()).Equals(ErrorKindReply)
 	assert(error14.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -678,7 +678,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -710,7 +710,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret16, panic16).IsNil()
 	assert(error16.GetKind()).Equals(ErrorKindReply)
 	assert(error16.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -745,7 +745,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -777,7 +777,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret18, panic18).IsNil()
 	assert(error18.GetKind()).Equals(ErrorKindReply)
 	assert(error18.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -812,7 +812,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -844,7 +844,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret20, panic20).IsNil()
 	assert(error20.GetKind()).Equals(ErrorKindReply)
 	assert(error20.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -879,7 +879,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -911,7 +911,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret22, panic22).IsNil()
 	assert(error22.GetKind()).Equals(ErrorKindReply)
 	assert(error22.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -991,7 +991,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("rpc: #.test:Eval reply arguments does not match"),
+		NewReplyError("#.test:Eval reply arguments does not match"),
 		nil,
 	)
 
@@ -1014,7 +1014,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(ret27, panic27).IsNil()
 	assert(error27.GetKind()).Equals(ErrorKindReply)
 	assert(error27.GetMessage()).Equals(
-		"rpc: #.test:Eval reply arguments does not match\n" +
+		"#.test:Eval reply arguments does not match\n" +
 			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Map) rpc.Return\n" +
 			"got: #.test:Eval(rpc.Context, <nil>, rpc.Map, <nil>) rpc.Return",
 	)
@@ -1058,14 +1058,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error29, panic29).IsNotNil()
 	if error29 != nil {
 		assert(error29.GetKind()).Equals(ErrorKindReply)
-		assert(error29.GetMessage()).Equals("rpc: runtime error")
+		assert(error29.GetMessage()).Equals("runtime error")
 		assert(strings.Contains(error29.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(error29.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic29 != nil {
 		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic29.GetMessage()).
-			Equals("rpc: runtime error: this is a error")
+			Equals("runtime error: this is a error")
 		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1090,14 +1090,14 @@ func TestRpcThread_Eval(t *testing.T) {
 	assert(error30, panic30).IsNotNil()
 	if error30 != nil {
 		assert(error30.GetKind()).Equals(ErrorKindReply)
-		assert(error30.GetMessage()).Equals("rpc: runtime error")
+		assert(error30.GetMessage()).Equals("runtime error")
 		assert(strings.Contains(error30.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(error30.GetDebug(), "util_test.go")).IsTrue()
 	}
 	if panic30 != nil {
 		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic30.GetMessage()).
-			Equals("rpc: runtime error: this is a error")
+			Equals("runtime error: this is a error")
 		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1120,7 +1120,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	if panic31 != nil {
 		assert(panic31.GetKind()).Equals(ErrorKindKernelPanic)
 		assert(panic31.GetMessage()).
-			Equals("rpc: kernel error: it makes onEvalFinish panic")
+			Equals("kernel error: it makes onEvalFinish panic")
 		assert(strings.Contains(panic31.GetDebug(), "util_test.go")).IsTrue()
 	}
 
@@ -1143,7 +1143,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	if panic32 != nil {
 		assert(panic32.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic32.GetMessage()).
-			Equals("rpc: reply must return through Context.OK or Context.Error")
+			Equals("reply must return through Context.OK or Context.Error")
 		assert(strings.Contains(panic32.GetDebug(), "util_test.go")).IsTrue()
 	} else {
 		assert().Fail("nil)")
@@ -1252,7 +1252,7 @@ func TestRpcThread_Eval(t *testing.T) {
 //  if error32 != nil {
 //    assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
 //    assert(error32.GetMessage()).
-//      Equals("rpc: #.test:Eval must return through Context.OK or Context.Error")
+//      Equals("#.test:Eval must return through Context.OK or Context.Error")
 //    assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
 //  } else {
 //    assert().Fail("nil)")
