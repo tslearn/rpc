@@ -79,7 +79,7 @@ func (p *serverSessionRecord) Release() {
 type serverSession struct {
 	id          uint64
 	security    string
-	conn        IStreamConnection
+	conn        IStreamConn
 	dataSeed    uint64
 	controlSeed uint64
 	callMap     map[uint64]*serverSessionRecord
@@ -474,7 +474,7 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	return p
 }
 
-func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
+func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 	if conn == nil {
 		return nil, internal.NewBaseError(
 			"Server: getSession: conn is nil",
@@ -537,7 +537,7 @@ func (p *Server) getSession(conn IStreamConnection) (*serverSession, Error) {
 	}
 }
 
-func (p *Server) onConnRun(conn IStreamConnection) {
+func (p *Server) onConnRun(conn IStreamConn) {
 	if conn == nil {
 		p.onError(0, internal.NewBaseError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {

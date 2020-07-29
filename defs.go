@@ -15,7 +15,7 @@ const SystemStreamKindInitBack = int64(2)
 const SystemStreamKindRequestIds = int64(3)
 const SystemStreamKindRequestIdsBack = int64(4)
 
-type IStreamConnection interface {
+type IStreamConn interface {
 	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
 	WriteStream(stream *Stream, timeout time.Duration, writeLimit int64) Error
 	Close() Error
@@ -24,7 +24,7 @@ type IStreamConnection interface {
 type IAdapter interface {
 	ConnectString() string
 	IsRunning() bool
-	Open(onConnRun func(IStreamConnection), onError func(Error)) bool
+	Open(onConnRun func(IStreamConn), onError func(Error)) bool
 	Close(onError func(Error)) bool
 }
 

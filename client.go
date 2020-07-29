@@ -94,7 +94,7 @@ type Client struct {
 	isOpen               bool
 	closeCH              chan bool
 	sessionString        string
-	conn                 IStreamConnection
+	conn                 IStreamConn
 	logWriter            LogWriter
 	endPoint             IAdapter
 	preSendHead          *sendItem
@@ -224,7 +224,7 @@ func (p *Client) IsRunning() bool {
 	}).(bool)
 }
 
-func (p *Client) initConn(conn IStreamConnection) Error {
+func (p *Client) initConn(conn IStreamConn) Error {
 	// get the sequence
 	sequence := p.CallWithLock(func() interface{} {
 		p.systemSeed++
@@ -300,7 +300,7 @@ func (p *Client) initConn(conn IStreamConnection) Error {
 	}
 }
 
-func (p *Client) onConnRun(conn IStreamConnection) {
+func (p *Client) onConnRun(conn IStreamConn) {
 	// init conn
 	if err := p.initConn(conn); err != nil {
 		p.onError(err)

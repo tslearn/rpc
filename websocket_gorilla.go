@@ -122,7 +122,7 @@ func NewWebSocketServerAdapter(addr string, path string) IAdapter {
 
 // Start it must be none block
 func (p *WebSocketServerAdapter) Open(
-	onConnRun func(IStreamConnection),
+	onConnRun func(IStreamConn),
 	onError func(Error),
 ) bool {
 	err := Error(nil)
@@ -251,7 +251,7 @@ func NewWebSocketClientEndPoint(connectString string) IAdapter {
 }
 
 func (p *WebSocketClientEndPoint) Open(
-	onConnRun func(IStreamConnection),
+	onConnRun func(IStreamConn),
 	onError func(Error),
 ) bool {
 	err := Error(nil)
