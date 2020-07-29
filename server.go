@@ -118,7 +118,6 @@ func (p *serverSession) WriteStream(stream *Stream) Error {
 			return p.conn.WriteStream(
 				stream,
 				configWriteTimeout,
-				configServerWriteLimit,
 			)
 		} else {
 			return internal.NewBaseError(
@@ -167,9 +166,7 @@ func (p *serverSession) OnDataStream(
 	return nil
 }
 
-func (p *serverSession) OnControlStream(
-	stream *Stream,
-) Error {
+func (p *serverSession) OnControlStream(stream *Stream) Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
 			return internal.NewBaseError(
@@ -214,7 +211,6 @@ func (p *serverSession) OnControlStream(
 			return p.conn.WriteStream(
 				stream,
 				configWriteTimeout,
-				configServerWriteLimit,
 			)
 		case SystemStreamKindRequestIds:
 			currCallbackId, ok := stream.ReadUint64()
@@ -261,7 +257,6 @@ func (p *serverSession) OnControlStream(
 			return p.conn.WriteStream(
 				stream,
 				configWriteTimeout,
-				configServerWriteLimit,
 			)
 		default:
 			return internal.NewProtocolError(internal.ErrStringBadStream)

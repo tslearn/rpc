@@ -17,7 +17,7 @@ const SystemStreamKindRequestIdsBack = int64(4)
 
 type IStreamConn interface {
 	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
-	WriteStream(stream *Stream, timeout time.Duration, writeLimit int64) Error
+	WriteStream(stream *Stream, timeout time.Duration) Error
 	Close() Error
 }
 

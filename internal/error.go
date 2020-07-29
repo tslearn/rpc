@@ -9,6 +9,9 @@ const ErrStringRunOutOfReplyScope = "run out of reply goroutine"
 // ErrStringBadStream ...
 const ErrStringBadStream = "bad stream"
 
+// ErrStringTimeout ...
+const ErrStringTimeout = "timeout"
+
 const (
 	// ErrorKindNone ...
 	ErrorKindNone ErrorKind = 0

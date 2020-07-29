@@ -254,7 +254,6 @@ func (p *Client) initConn(conn IStreamConn) Error {
 	} else if err := conn.WriteStream(
 		sendStream,
 		configWriteTimeout,
-		configServerReadLimit,
 	); err != nil {
 		return err
 	} else if backStream, err = conn.ReadStream(
@@ -391,7 +390,6 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 			if err := p.conn.WriteStream(
 				sendStream,
 				p.writeTimeout,
-				p.writeLimit,
 			); err != nil {
 				p.onError(err)
 			}
@@ -476,7 +474,6 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			if err := p.conn.WriteStream(
 				item.stream,
 				p.writeTimeout,
-				p.writeLimit,
 			); err != nil {
 				p.onError(err)
 				return false

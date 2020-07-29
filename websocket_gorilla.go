@@ -16,23 +16,16 @@ func (p *webSocketConn) ReadStream(
 	readLimit int64,
 ) (*Stream, Error) {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return nil, internal.NewKernelPanic(
-			"rpc: object nil object",
-		).AddDebug(string(debug.Stack()))
+		return nil,
+			internal.NewKernelPanic("object is nil").AddDebug(string(debug.Stack()))
 	} else {
 		conn.SetReadLimit(readLimit)
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-			return nil, internal.NewTransportError(
-				internal.ConcatString("rpc: ", err.Error()),
-			)
+			return nil, internal.NewTransportError(err.Error())
 		} else if mt, message, err := conn.ReadMessage(); err != nil {
-			return nil, internal.NewTransportError(
-				internal.ConcatString("rpc: ", err.Error()),
-			)
+			return nil, internal.NewTransportError(err.Error())
 		} else if mt != websocket.BinaryMessage {
-			return nil, internal.NewTransportError(
-				"rpc: unsupported protocol",
-			)
+			return nil, internal.NewTransportError("unsupported websocket protocol")
 		} else {
 			stream := internal.NewStream()
 			stream.SetWritePos(0)
@@ -45,20 +38,13 @@ func (p *webSocketConn) ReadStream(
 func (p *webSocketConn) WriteStream(
 	stream *Stream,
 	timeout time.Duration,
-	writeLimit int64,
 ) Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return internal.NewTransportError(
-			"webSocketConn: WriteStream: nil object",
-		)
+		return internal.NewKernelPanic("object is nil").
+			AddDebug(string(debug.Stack()))
 	} else if stream == nil {
-		return internal.NewTransportError(
-			"webSocketConn: WriteStream: stream is nil",
-		)
-	} else if writeLimit > 0 && writeLimit < int64(stream.GetWritePos()) {
-		return internal.NewTransportError(
-			"webSocketConn: WriteStream: stream data overflow",
-		)
+		return internal.NewKernelPanic("stream is nil").
+			AddDebug(string(debug.Stack()))
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
 		return internal.NewTransportError(
 			internal.ConcatString("webSocketConn: WriteStream: ", err.Error()),
