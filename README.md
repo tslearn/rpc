@@ -1,20 +1,25 @@
 # rpc
 
 ### 性能测试
-```
+```bash
 $ go get -u github.com/google/pprof
 $ pprof -web cpu.prof
 ```
 
 ### golint
-```
+```bash
 $ go get -u golang.org/x/lint/golint
 $ golint ./...
 ```
 
 ### go fmt
-```
+```bash
 $ go fmt ./...
+```
+
+### calculate lines of code
+```bash
+$ git ls-files | xargs wc -l
 ```
 
 ### 参考
