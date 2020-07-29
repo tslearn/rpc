@@ -76,7 +76,7 @@ func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
 		return fnCache30
 	case "MAXSFUIB":
 		return fnCache31
-	default: 
+	default:
 		return nil
 	}
 }

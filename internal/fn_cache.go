@@ -149,7 +149,7 @@ func buildFuncCache(pkgName string, output string, kinds []string) Error {
 			)
 		}
 		sb.AppendString(
-			"\tdefault: \n\t\treturn nil\n\t}\n}\n\n",
+			"\tdefault:\n\t\treturn nil\n\t}\n}\n\n",
 		)
 
 		for _, meta := range metas {

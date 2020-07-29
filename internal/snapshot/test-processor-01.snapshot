@@ -12,7 +12,7 @@ func NewRPCCache() rpc.ReplyCache {
 // Get ...
 func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
 	switch fnString {
-	default: 
+	default:
 		return nil
 	}
 }
