@@ -423,7 +423,8 @@ func (p *Server) Stop() {
 	})
 }
 
-func (p *Server) BuildFuncCache(
+// BuildReplyCache ...
+func (p *Server) BuildReplyCache(
 	pkgName string,
 	relativePath string,
 ) bool {
@@ -450,6 +451,7 @@ func (p *Server) AddService(
 	return p
 }
 
+// AddAdapter ...
 func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	if endPoint == nil {
 		p.onError(0, internal.NewBaseError("Server: AddAdapter: endpoint is nil"))
