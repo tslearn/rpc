@@ -4,9 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"runtime/debug"
-	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 type webSocketConn websocket.Conn
@@ -40,11 +38,9 @@ func (p *webSocketConn) WriteStream(
 	timeout time.Duration,
 ) Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return NewKernelPanic("object is nil").
-			AddDebug(string(debug.Stack()))
+		return NewKernelPanic("object is nil").AddDebug(string(debug.Stack()))
 	} else if stream == nil {
-		return NewKernelPanic("stream is nil").
-			AddDebug(string(debug.Stack()))
+		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
 	} else if err := conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
 		return NewTransportError(err.Error())
 	} else if err := conn.WriteMessage(
@@ -59,8 +55,7 @@ func (p *webSocketConn) WriteStream(
 
 func (p *webSocketConn) Close() Error {
 	if conn := (*websocket.Conn)(p); conn == nil {
-		return NewKernelPanic("object is nil").
-			AddDebug(string(debug.Stack()))
+		return NewKernelPanic("object is nil").AddDebug(string(debug.Stack()))
 	} else if err := conn.Close(); err != nil {
 		return NewTransportError(err.Error())
 	} else {
@@ -76,30 +71,29 @@ var (
 	}
 )
 
-type WebSocketServerAdapter struct {
+type wsServerAdapter struct {
 	addr     string
-	wsServer unsafe.Pointer
+	wsServer *http.Server
+	StatusManager
 }
 
 func NewWebSocketServerAdapter(addr string) IAdapter {
-	return &WebSocketServerAdapter{
+	return &wsServerAdapter{
 		addr:     addr,
 		wsServer: nil,
 	}
 }
 
 // Open ...
-func (p *WebSocketServerAdapter) Open(
+func (p *wsServerAdapter) Open(
 	onConnRun func(IStreamConn),
 	onError func(Error),
 ) {
 	if onError == nil {
 		panic("onError is nil")
 	} else if onConnRun == nil {
-		onError(NewKernelPanic(
-			"onConnRun is nil",
-		).AddDebug(string(debug.Stack())))
-	} else {
+		panic("onConnRun is nil")
+	} else if !p.SetRunning(func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
@@ -108,110 +102,110 @@ func (p *WebSocketServerAdapter) Open(
 				onConnRun((*webSocketConn)(conn))
 			}
 		})
-		wsServer := &http.Server{
+		p.wsServer = &http.Server{
 			Addr:    p.addr,
 			Handler: mux,
 		}
-		if !atomic.CompareAndSwapPointer(
-			&p.wsServer,
-			nil,
-			unsafe.Pointer(wsServer),
-		) {
-			onError(NewKernelPanic(
-				"it is already running",
-			).AddDebug(string(debug.Stack())))
-		} else {
-			defer func() {
-				atomic.StorePointer(&p.wsServer, nil)
-			}()
-
-			if e := wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-				onError(NewRuntimePanic(e.Error()))
-			}
+	}) {
+		onError(NewKernelPanic(
+			"it is already running",
+		).AddDebug(string(debug.Stack())))
+	} else {
+		if e := p.wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
+			onError(NewRuntimePanic(e.Error()))
 		}
+		p.SetClosing(nil)
+		p.SetClosed(func() {
+			p.wsServer = nil
+		})
 	}
 }
 
 // Close ...
-func (p *WebSocketServerAdapter) Close(onError func(Error)) {
+func (p *wsServerAdapter) Close(onError func(Error)) {
+	waitCH := chan struct{}(nil)
 	if onError == nil {
 		panic("onError is nil")
-	} else if server := atomic.LoadPointer(&p.wsServer); server == nil {
-		onError(NewRuntimePanic("it is not running"))
-	} else if e := (*http.Server)(server).Close(); e != nil {
-		onError(NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack())))
-	} else {
-		count := 200
-		for count > 0 {
-			if atomic.CompareAndSwapPointer(&p.wsServer, server, server) {
-				time.Sleep(100 * time.Millisecond)
-				count -= 1
-			} else {
-				return
-			}
+	} else if !p.SetClosing(func(ch chan struct{}) {
+		waitCH = ch
+		if e := p.wsServer.Close(); e != nil {
+			onError(NewRuntimePanic(e.Error()))
 		}
-		onError(NewRuntimePanic(
-			"can not close within 20 seconds",
+	}) {
+		onError(NewKernelPanic(
+			"it is not running",
 		).AddDebug(string(debug.Stack())))
+	} else {
+		select {
+		case <-waitCH:
+		case <-time.After(20 * time.Second):
+			onError(NewRuntimePanic(
+				"can not close within 20 seconds",
+			).AddDebug(string(debug.Stack())))
+		}
 	}
 }
 
-type WebSocketClientEndPoint struct {
-	conn          unsafe.Pointer
+type wsClientAdapter struct {
+	conn          *websocket.Conn
 	connectString string
+	StatusManager
 }
 
 func NewWebSocketClientEndPoint(connectString string) IAdapter {
-	return &WebSocketClientEndPoint{
+	return &wsClientAdapter{
 		conn:          nil,
 		connectString: connectString,
 	}
 }
 
-func (p *WebSocketClientEndPoint) Open(
+func (p *wsClientAdapter) Open(
 	onConnRun func(IStreamConn),
 	onError func(Error),
 ) {
 	if onError == nil {
 		panic("onError is nil")
 	} else if onConnRun == nil {
-		onError(NewKernelPanic(
-			"onConnRun is nil",
-		).AddDebug(string(debug.Stack())))
+		panic("onConnRun is nil")
 	} else if conn, _, err := websocket.DefaultDialer.Dial(
 		p.connectString,
 		nil,
 	); err != nil {
 		onError(NewRuntimePanic(err.Error()))
-	} else if !atomic.CompareAndSwapPointer(&p.conn, nil, unsafe.Pointer(conn)) {
+	} else if !p.SetRunning(func() {
+		p.conn = conn
+	}) {
+		_ = conn.Close()
 		onError(NewKernelPanic("it is already running"))
 	} else {
-		defer func() {
-			atomic.StorePointer(&p.conn, nil)
-		}()
 		onConnRun((*webSocketConn)(conn))
+		p.SetClosing(nil)
+		p.SetClosed(func() {
+			p.conn = nil
+		})
 	}
 }
 
-func (p *WebSocketClientEndPoint) Close(onError func(Error)) {
+func (p *wsClientAdapter) Close(onError func(Error)) {
+	waitCH := chan struct{}(nil)
 	if onError == nil {
 		panic("onError is nil")
-	} else if conn := atomic.LoadPointer(&p.conn); conn == nil {
-		onError(NewRuntimePanic("it is not running"))
-	} else if e := (*websocket.Conn)(conn).Close(); e != nil {
-		onError(NewRuntimePanic(e.Error()))
-	} else {
-		count := 200
-		for count > 0 {
-			if atomic.CompareAndSwapPointer(&p.conn, conn, conn) {
-				time.Sleep(100 * time.Millisecond)
-				count -= 1
-			} else {
-				return
-			}
+	} else if !p.SetClosing(func(ch chan struct{}) {
+		waitCH = ch
+		if e := p.conn.Close(); e != nil {
+			onError(NewRuntimePanic(e.Error()))
 		}
-		onError(NewRuntimePanic(
-			"can not close within 20 seconds",
+	}) {
+		onError(NewKernelPanic(
+			"it is not running",
 		).AddDebug(string(debug.Stack())))
+	} else {
+		select {
+		case <-waitCH:
+		case <-time.After(20 * time.Second):
+			onError(NewRuntimePanic(
+				"can not close within 20 seconds",
+			).AddDebug(string(debug.Stack())))
+		}
 	}
 }
