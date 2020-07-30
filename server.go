@@ -398,29 +398,6 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 	return p
 }
 
-// AddAdapter ...
-func (p *Server) AddAdapter(endPoint IAdapter) *Server {
-	if endPoint == nil {
-		p.onError(0, internal.NewBaseError("Server: AddAdapter: endpoint is nil"))
-	} else if endPoint.IsRunning() {
-		p.onError(0, internal.NewBaseError(fmt.Sprintf(
-			"Server: AddAdapter: endpoint %s has already served",
-			endPoint.ConnectString(),
-		)))
-	} else {
-		p.DoWithLock(func() {
-			p.adapters = append(p.adapters, endPoint)
-			if p.processor != nil {
-				endPoint.Open(p.onConnRun, func(err Error) {
-					p.onError(0, err)
-				})
-			}
-		})
-	}
-
-	return p
-}
-
 func (p *Server) OnReturnStream(stream *Stream) {
 	if stream != nil {
 		sessionID := stream.GetSessionID()

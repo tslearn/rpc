@@ -17,8 +17,6 @@ type IStreamConn interface {
 }
 
 type IAdapter interface {
-	ConnectString() string
-	IsRunning() bool
 	Open(onConnRun func(IStreamConn), onConnError func(Error)) Error
 	Close() Error
 }

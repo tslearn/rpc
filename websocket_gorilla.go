@@ -160,14 +160,6 @@ func (p *WebSocketServerAdapter) Close() Error {
 	}
 }
 
-func (p *WebSocketServerAdapter) IsRunning() bool {
-	return atomic.LoadPointer(&p.wsServer) != nil
-}
-
-func (p *WebSocketServerAdapter) ConnectString() string {
-	return "ws://" + p.addr + "/"
-}
-
 type WebSocketClientEndPoint struct {
 	conn          unsafe.Pointer
 	connectString string
@@ -228,12 +220,4 @@ func (p *WebSocketClientEndPoint) Close() Error {
 		return internal.NewRuntimePanic("can not close within 20 seconds").
 			AddDebug(string(debug.Stack()))
 	}
-}
-
-func (p *WebSocketClientEndPoint) IsRunning() bool {
-	return atomic.LoadPointer(&p.conn) != nil
-}
-
-func (p *WebSocketClientEndPoint) ConnectString() string {
-	return p.connectString
 }
