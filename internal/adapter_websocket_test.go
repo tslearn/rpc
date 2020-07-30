@@ -1,4 +1,4 @@
-package rpc
+package internal
 
 //
 //func TestNewWebSocketServerEndPoint(t *testing.T) {

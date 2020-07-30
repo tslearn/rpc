@@ -3,6 +3,7 @@ package internal
 import (
 	"runtime/debug"
 	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -32,6 +33,17 @@ type Map = map[string]interface{}
 
 // Any ...
 type Any = interface{}
+
+type IStreamConn interface {
+	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
+	WriteStream(stream *Stream, timeout time.Duration) Error
+	Close() Error
+}
+
+type IAdapter interface {
+	Open(onConnRun func(IStreamConn), onError func(Error))
+	Close(onError func(Error))
+}
 
 // ReplyCache ...
 type ReplyCache interface {

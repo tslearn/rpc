@@ -98,7 +98,7 @@ const clientStatusClosed = 2
 type Client struct {
 	status               int32
 	sessionString        string
-	conn                 IStreamConn
+	conn                 internal.IStreamConn
 	logWriter            LogWriter
 	preSendHead          *sendItem
 	preSendTail          *sendItem
@@ -123,7 +123,7 @@ func Dial(connectString string) (*Client, Error) {
 	} else {
 		switch u.Scheme {
 		case "ws":
-			return newClient(NewWebSocketClientEndPoint(connectString)), nil
+			return newClient(internal.NewWebSocketClientEndPoint(connectString)), nil
 		default:
 			return nil,
 				internal.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", u.Scheme))
@@ -131,7 +131,7 @@ func Dial(connectString string) (*Client, Error) {
 	}
 }
 
-func newClient(endPoint IAdapter) *Client {
+func newClient(endPoint internal.IAdapter) *Client {
 	ret := &Client{
 		status:               clientStatusRunning,
 		sessionString:        "",
@@ -183,7 +183,7 @@ func (p *Client) Close() bool {
 	)
 }
 
-func (p *Client) initConn(conn IStreamConn) Error {
+func (p *Client) initConn(conn internal.IStreamConn) Error {
 	// get the sequence
 	sequence := p.CallWithLock(func() interface{} {
 		p.systemSeed++
@@ -252,7 +252,7 @@ func (p *Client) initConn(conn IStreamConn) Error {
 	}
 }
 
-func (p *Client) onConnRun(conn IStreamConn) {
+func (p *Client) onConnRun(conn internal.IStreamConn) {
 	// init conn
 	if err := p.initConn(conn); err != nil {
 		p.onError(err)

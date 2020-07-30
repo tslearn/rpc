@@ -2,24 +2,12 @@ package rpc
 
 import (
 	"github.com/rpccloud/rpc/internal"
-	"time"
 )
 
 const SystemStreamKindInit = int64(1)
 const SystemStreamKindInitBack = int64(2)
 const SystemStreamKindRequestIds = int64(3)
 const SystemStreamKindRequestIdsBack = int64(4)
-
-type IStreamConn interface {
-	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
-	WriteStream(stream *Stream, timeout time.Duration) Error
-	Close() Error
-}
-
-type IAdapter interface {
-	Open(onConnRun func(IStreamConn), onError func(Error))
-	Close(onError func(Error))
-}
 
 // Bool ...
 type Bool = internal.Bool

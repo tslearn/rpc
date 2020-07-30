@@ -79,7 +79,7 @@ func (p *serverSessionRecord) Release() {
 type serverSession struct {
 	id           uint64
 	security     string
-	conn         IStreamConn
+	conn         internal.IStreamConn
 	dataSeed     uint64
 	controlSeed  uint64
 	callMap      map[uint64]*serverSessionRecord
@@ -304,7 +304,7 @@ type Server struct {
 	isDebug      bool
 	runSeed      uint64
 	listens      []*listenItem
-	adapters     []IAdapter
+	adapters     []internal.IAdapter
 	cacheDir     string
 	processor    unsafe.Pointer
 	numOfThreads int
@@ -446,13 +446,13 @@ func (p *Server) Serve() {
 	waitCH := make(chan struct{})
 
 	p.DoWithLock(func() {
-		p.adapters = make([]IAdapter, 0)
+		p.adapters = make([]internal.IAdapter, 0)
 		for _, listener := range p.listens {
 			switch listener.scheme {
 			case listenItemSchemeWS:
 				p.adapters = append(
 					p.adapters,
-					NewWebSocketServerAdapter(listener.addr),
+					internal.NewWebSocketServerAdapter(listener.addr),
 				)
 			default:
 			}
@@ -483,7 +483,7 @@ func (p *Server) Serve() {
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
-				go func(serverAdapter IAdapter) {
+				go func(serverAdapter internal.IAdapter) {
 					for atomic.CompareAndSwapPointer(
 						&p.processor,
 						unsafe.Pointer(processor),
@@ -515,7 +515,7 @@ func (p *Server) Close() {
 			p.onError(internal.NewBaseError("it is not running"))
 		} else {
 			for _, item := range p.adapters {
-				go func(adapter IAdapter) {
+				go func(adapter internal.IAdapter) {
 					adapter.Close(p.onError)
 				}(item)
 			}
@@ -523,7 +523,7 @@ func (p *Server) Close() {
 	})
 }
 
-func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
+func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	if conn == nil {
 		return nil, internal.NewBaseError(
 			"Server: getSession: conn is nil",
@@ -590,7 +590,7 @@ func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 	}
 }
 
-func (p *Server) onConnRun(conn IStreamConn) {
+func (p *Server) onConnRun(conn internal.IStreamConn) {
 	if conn == nil {
 		p.onError(internal.NewBaseError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
