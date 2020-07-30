@@ -135,18 +135,16 @@ func (p *WebSocketServerAdapter) Open(
 
 // Close ...
 func (p *WebSocketServerAdapter) Close(onError func(Error)) {
-	if server := (*http.Server)(atomic.LoadPointer(&p.wsServer)); server == nil {
+	if onError == nil {
+		panic("onError is nil")
+	} else if server := atomic.LoadPointer(&p.wsServer); server == nil {
 		onError(internal.NewRuntimePanic("it is not running"))
-	} else if e := server.Close(); e != nil {
+	} else if e := (*http.Server)(server).Close(); e != nil {
 		onError(internal.NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack())))
 	} else {
 		count := 200
 		for count > 0 {
-			if atomic.CompareAndSwapPointer(
-				&p.wsServer,
-				unsafe.Pointer(server),
-				unsafe.Pointer(server),
-			) {
+			if atomic.CompareAndSwapPointer(&p.wsServer, server, server) {
 				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
@@ -197,18 +195,16 @@ func (p *WebSocketClientEndPoint) Open(
 }
 
 func (p *WebSocketClientEndPoint) Close(onError func(Error)) {
-	if conn := (*websocket.Conn)(atomic.LoadPointer(&p.conn)); conn == nil {
+	if onError == nil {
+		panic("onError is nil")
+	} else if conn := atomic.LoadPointer(&p.conn); conn == nil {
 		onError(internal.NewRuntimePanic("it is not running"))
-	} else if e := conn.Close(); e != nil {
+	} else if e := (*websocket.Conn)(conn).Close(); e != nil {
 		onError(internal.NewRuntimePanic(e.Error()))
 	} else {
 		count := 200
 		for count > 0 {
-			if atomic.CompareAndSwapPointer(
-				&p.conn,
-				unsafe.Pointer(conn),
-				unsafe.Pointer(conn),
-			) {
+			if atomic.CompareAndSwapPointer(&p.conn, conn, conn) {
 				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
