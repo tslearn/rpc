@@ -107,7 +107,6 @@ func (p *wsServerAdapter) Open(
 			Handler: mux,
 		}
 	}) {
-		p.wsServer = nil
 		onError(NewKernelPanic(
 			"it is already running",
 		).AddDebug(string(debug.Stack())))
@@ -177,7 +176,9 @@ func (p *wsClientAdapter) Open(
 		p.conn = conn
 	}) {
 		_ = conn.Close()
-		onError(NewKernelPanic("it is already running"))
+		onError(NewKernelPanic(
+			"it is already running",
+		).AddDebug(string(debug.Stack())))
 	} else {
 		onConnRun((*webSocketConn)(conn))
 		p.SetClosing(nil)
