@@ -92,19 +92,19 @@ func NewWebSocketServerAdapter(addr string) IAdapter {
 // Open ...
 func (p *WebSocketServerAdapter) Open(
 	onConnRun func(IStreamConn),
-	onConnError func(Error),
-) Error {
-	if onConnRun == nil {
-		return internal.NewKernelPanic("onConnRun is nil").
-			AddDebug(string(debug.Stack()))
-	} else if onConnError == nil {
-		return internal.NewKernelPanic("onConnError is nil").
-			AddDebug(string(debug.Stack()))
+	onError func(Error),
+) {
+	if onError == nil {
+		panic("onError is nil")
+	} else if onConnRun == nil {
+		onError(internal.NewKernelPanic(
+			"onConnRun is nil",
+		).AddDebug(string(debug.Stack())))
 	} else {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-				onConnError(internal.NewTransportError(err.Error()))
+				onError(internal.NewTransportError(err.Error()))
 			} else {
 				onConnRun((*webSocketConn)(conn))
 			}
@@ -113,34 +113,32 @@ func (p *WebSocketServerAdapter) Open(
 			Addr:    p.addr,
 			Handler: mux,
 		}
-
 		if !atomic.CompareAndSwapPointer(
 			&p.wsServer,
 			nil,
 			unsafe.Pointer(wsServer),
 		) {
-			return internal.NewKernelPanic("it has already been opened").
-				AddDebug(string(debug.Stack()))
+			onError(internal.NewKernelPanic(
+				"it is already running",
+			).AddDebug(string(debug.Stack())))
+		} else {
+			defer func() {
+				atomic.StorePointer(&p.wsServer, nil)
+			}()
+
+			if e := wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
+				onError(internal.NewRuntimePanic(e.Error()))
+			}
 		}
-
-		defer func() {
-			atomic.StorePointer(&p.wsServer, nil)
-		}()
-
-		if e := wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-			return internal.NewRuntimePanic(e.Error())
-		}
-
-		return nil
 	}
 }
 
 // Close ...
-func (p *WebSocketServerAdapter) Close() Error {
+func (p *WebSocketServerAdapter) Close(onError func(Error)) {
 	if server := (*http.Server)(atomic.LoadPointer(&p.wsServer)); server == nil {
-		return nil
+		onError(internal.NewRuntimePanic("it is not running"))
 	} else if e := server.Close(); e != nil {
-		return internal.NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack()))
+		onError(internal.NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack())))
 	} else {
 		count := 200
 		for count > 0 {
@@ -152,11 +150,12 @@ func (p *WebSocketServerAdapter) Close() Error {
 				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
-				return nil
+				return
 			}
 		}
-		return internal.NewRuntimePanic("can not close within 20 seconds").
-			AddDebug(string(debug.Stack()))
+		onError(internal.NewRuntimePanic(
+			"can not close within 20 seconds",
+		).AddDebug(string(debug.Stack())))
 	}
 }
 
@@ -174,35 +173,34 @@ func NewWebSocketClientEndPoint(connectString string) IAdapter {
 
 func (p *WebSocketClientEndPoint) Open(
 	onConnRun func(IStreamConn),
-	onConnError func(Error),
-) Error {
-	if onConnRun == nil {
-		return internal.NewKernelPanic("onConnRun is nil").
-			AddDebug(string(debug.Stack()))
-	} else if onConnError != nil {
-		return internal.NewKernelPanic("onConnError is not nil").
-			AddDebug(string(debug.Stack()))
+	onError func(Error),
+) {
+	if onError == nil {
+		panic("onError is nil")
+	} else if onConnRun == nil {
+		onError(internal.NewKernelPanic(
+			"onConnRun is nil",
+		).AddDebug(string(debug.Stack())))
 	} else if conn, _, err := websocket.DefaultDialer.Dial(
 		p.connectString,
 		nil,
 	); err != nil {
-		return internal.NewRuntimePanic(err.Error())
+		onError(internal.NewRuntimePanic(err.Error()))
 	} else if !atomic.CompareAndSwapPointer(&p.conn, nil, unsafe.Pointer(conn)) {
-		return internal.NewKernelPanic("it has already been opened")
+		onError(internal.NewKernelPanic("it is already running"))
 	} else {
 		defer func() {
 			atomic.StorePointer(&p.conn, nil)
 		}()
 		onConnRun((*webSocketConn)(conn))
-		return nil
 	}
 }
 
-func (p *WebSocketClientEndPoint) Close() Error {
+func (p *WebSocketClientEndPoint) Close(onError func(Error)) {
 	if conn := (*websocket.Conn)(atomic.LoadPointer(&p.conn)); conn == nil {
-		return nil
+		onError(internal.NewRuntimePanic("it is not running"))
 	} else if e := conn.Close(); e != nil {
-		return internal.NewRuntimePanic(e.Error())
+		onError(internal.NewRuntimePanic(e.Error()))
 	} else {
 		count := 200
 		for count > 0 {
@@ -214,10 +212,11 @@ func (p *WebSocketClientEndPoint) Close() Error {
 				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
-				return nil
+				return
 			}
 		}
-		return internal.NewRuntimePanic("can not close within 20 seconds").
-			AddDebug(string(debug.Stack()))
+		onError(internal.NewRuntimePanic(
+			"can not close within 20 seconds",
+		).AddDebug(string(debug.Stack())))
 	}
 }

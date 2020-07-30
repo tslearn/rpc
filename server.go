@@ -491,11 +491,9 @@ func (p *Server) Serve() {
 						unsafe.Pointer(processor),
 						unsafe.Pointer(processor),
 					) {
-						if err := serverAdapter.Open(p.onConnRun, func(err Error) {
+						serverAdapter.Open(p.onConnRun, func(err Error) {
 							p.onError(0, err)
-						}); err != nil {
-							p.onError(0, err)
-						}
+						})
 					}
 					waitCH <- struct{}{}
 				}(item)
@@ -522,9 +520,9 @@ func (p *Server) Close() {
 		} else {
 			for _, item := range p.adapters {
 				go func(adapter IAdapter) {
-					if err := adapter.Close(); err != nil {
+					adapter.Close(func(err Error) {
 						p.onError(0, err)
-					}
+					})
 				}(item)
 			}
 		}

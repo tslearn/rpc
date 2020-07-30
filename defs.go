@@ -17,8 +17,8 @@ type IStreamConn interface {
 }
 
 type IAdapter interface {
-	Open(onConnRun func(IStreamConn), onConnError func(Error)) Error
-	Close() Error
+	Open(onConnRun func(IStreamConn), onError func(Error))
+	Close(onError func(Error))
 }
 
 // Bool ...

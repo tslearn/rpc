@@ -154,10 +154,7 @@ func newClient(endPoint IAdapter) *Client {
 
 	go func() {
 		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
-			if err := endPoint.Open(ret.onConnRun, nil); err != nil {
-				ret.onError(err)
-				time.Sleep(time.Second)
-			}
+			endPoint.Open(ret.onConnRun, ret.onError)
 		}
 	}()
 
@@ -172,22 +169,18 @@ func newClient(endPoint IAdapter) *Client {
 			time.Sleep(100 * time.Millisecond)
 		}
 
-		if err := endPoint.Close(); err != nil {
-			ret.onError(err)
-		}
+		endPoint.Close(ret.onError)
 	}()
 
 	return ret
 }
 
 func (p *Client) Close() bool {
-	return p.CallWithLock(func() interface{} {
-		return atomic.CompareAndSwapInt32(
-			&p.status,
-			clientStatusRunning,
-			clientStatusClosed,
-		)
-	}).(bool)
+	return atomic.CompareAndSwapInt32(
+		&p.status,
+		clientStatusRunning,
+		clientStatusClosed,
+	)
 }
 
 func (p *Client) initConn(conn IStreamConn) Error {
