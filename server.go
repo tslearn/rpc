@@ -353,7 +353,7 @@ func (p *Server) AddService(
 				fileLine,
 			))
 		} else {
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(internal.NewRuntimePanic(
 				"AddService must be before Serve",
 			).AddDebug(fileLine))
 		}
@@ -369,7 +369,7 @@ func (p *Server) BuildReplyCache() *Server {
 		if atomic.LoadPointer(&p.processor) == nil {
 			p.cacheDir = path.Join(path.Dir(file))
 		} else {
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(internal.NewRuntimePanic(
 				"ListenWebSocket must be before Serve",
 			).AddDebug(fileLine))
 		}
@@ -390,7 +390,7 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 				fileLine: fileLine,
 			})
 		} else {
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(internal.NewRuntimePanic(
 				"ListenWebSocket must be before Serve",
 			).AddDebug(fileLine))
 		}
@@ -415,7 +415,7 @@ func (p *Server) OnReturnStream(stream *Stream) {
 				if v, ok := p.sessionMap.Load(sessionID); ok {
 					if session, ok := v.(*serverSession); ok && session != nil {
 						if err := session.WriteStream(stream); err != nil {
-							p.onError(stream.GetSessionID(), err)
+							p.onSessionError(stream.GetSessionID(), err)
 						}
 					}
 				}
@@ -429,7 +429,7 @@ func (p *Server) OnReturnStream(stream *Stream) {
 				} else if debug, ok := stream.ReadString(); !ok {
 					// stream.SetReadPosToBodyStart()
 				} else {
-					p.onError(stream.GetSessionID(), internal.NewError(
+					p.onSessionError(stream.GetSessionID(), internal.NewError(
 						internal.ErrorKind(errKind),
 						message,
 						debug,
@@ -459,7 +459,7 @@ func (p *Server) Serve() {
 		}
 
 		if len(p.adapters) <= 0 {
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(internal.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
 		} else if processor := internal.NewProcessor(
@@ -479,9 +479,7 @@ func (p *Server) Serve() {
 			unsafe.Pointer(processor),
 		) {
 			processor.Close()
-			p.onError(0, internal.NewRuntimePanic(
-				"it is already running",
-			))
+			p.onError(internal.NewRuntimePanic("it is already running"))
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
@@ -491,9 +489,7 @@ func (p *Server) Serve() {
 						unsafe.Pointer(processor),
 						unsafe.Pointer(processor),
 					) {
-						serverAdapter.Open(p.onConnRun, func(err Error) {
-							p.onError(0, err)
-						})
+						serverAdapter.Open(p.onConnRun, p.onError)
 					}
 					waitCH <- struct{}{}
 				}(item)
@@ -510,19 +506,17 @@ func (p *Server) Close() {
 	p.DoWithLock(func() {
 		processor := atomic.LoadPointer(&p.processor)
 		if processor == nil {
-			p.onError(0, internal.NewBaseError("it is not running"))
+			p.onError(internal.NewBaseError("it is not running"))
 		} else if !atomic.CompareAndSwapPointer(
 			&p.processor,
 			unsafe.Pointer(processor),
 			nil,
 		) {
-			p.onError(0, internal.NewBaseError("it is not running"))
+			p.onError(internal.NewBaseError("it is not running"))
 		} else {
 			for _, item := range p.adapters {
 				go func(adapter IAdapter) {
-					adapter.Close(func(err Error) {
-						p.onError(0, err)
-					})
+					adapter.Close(p.onError)
 				}(item)
 			}
 		}
@@ -598,14 +592,14 @@ func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn IStreamConn) {
 	if conn == nil {
-		p.onError(0, internal.NewBaseError("Server: onConnRun: conn is nil"))
+		p.onError(internal.NewBaseError("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
-		p.onError(0, err)
+		p.onError(err)
 	} else {
 		defer func() {
 			session.conn = nil
 			if err := conn.Close(); err != nil {
-				p.onError(0, err)
+				p.onError(err)
 			}
 		}()
 
@@ -616,7 +610,7 @@ func (p *Server) onConnRun(conn IStreamConn) {
 				p.readTimeout,
 				p.readLimit,
 			); err != nil {
-				p.onError(0, err)
+				p.onError(err)
 				return
 			} else {
 				cbID := stream.GetCallbackID()
@@ -626,12 +620,12 @@ func (p *Server) onConnRun(conn IStreamConn) {
 					return
 				} else if cbID == 0 {
 					if err := session.OnControlStream(stream); err != nil {
-						p.onError(0, err)
+						p.onError(err)
 						return
 					}
 				} else {
 					if err := session.OnDataStream(stream, processor); err != nil {
-						p.onError(0, err)
+						p.onError(err)
 						return
 					}
 				}
@@ -640,7 +634,11 @@ func (p *Server) onConnRun(conn IStreamConn) {
 	}
 }
 
-func (p *Server) onError(sessionID uint64, err Error) {
+func (p *Server) onError(err Error) {
+	p.onSessionError(0, err)
+}
+
+func (p *Server) onSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
 
