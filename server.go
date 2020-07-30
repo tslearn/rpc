@@ -5,12 +5,12 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"path"
 	"runtime"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 // Begin ***** serverSessionRecord ***** //
@@ -284,10 +284,29 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
+const listenItemSchemeNone = uint32(0)
+const listenItemSchemeTCP = uint32(1)
+const listenItemSchemeUDP = uint32(2)
+const listenItemSchemeHTTP = uint32(3)
+const listenItemSchemeHTTPS = uint32(4)
+const listenItemSchemeWS = uint32(5)
+const listenItemSchemeWSS = uint32(6)
+
+type listenItem struct {
+	scheme   uint32
+	addr     string
+	certFile string
+	keyFile  string
+	fileLine string
+}
+
 type Server struct {
 	isDebug      bool
-	endPoints    []IAdapter
-	processor    *internal.Processor
+	runSeed      uint64
+	listens      []*listenItem
+	adapters     []IAdapter
+	cacheDir     string
+	processor    unsafe.Pointer
 	numOfThreads int
 	sessionMap   sync.Map
 	sessionSize  int64
@@ -304,7 +323,9 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		isDebug:      false,
-		endPoints:    make([]IAdapter, 0),
+		listens:      make([]*listenItem, 0),
+		adapters:     nil,
+		cacheDir:     "",
 		processor:    nil,
 		numOfThreads: runtime.NumCPU() * 16384,
 		sessionMap:   sync.Map{},
@@ -318,138 +339,62 @@ func NewServer() *Server {
 	}
 }
 
-func (p *Server) Start() bool {
-	return p.CallWithLock(func() interface{} {
-		if p.processor != nil {
-			p.onError(
-				0,
-				internal.NewRuntimePanic("rpc: it is already opened").
-					AddDebug(string(debug.Stack())),
-			)
-			return false
-		}
-
-		p.processor = internal.NewProcessor(
-			p.isDebug,
-			p.numOfThreads,
-			32,
-			32,
-			p.fnCache,
-			20*time.Second,
-			p.services,
-			func(stream *Stream) {
-				if stream != nil {
-					sessionID := stream.GetSessionID()
-					stream.SetReadPosToBodyStart()
-
-					if errKind, ok := stream.ReadUint64(); ok {
-						switch internal.ErrorKind(errKind) {
-						case internal.ErrorKindNone:
-							fallthrough
-						case internal.ErrorKindProtocol:
-							fallthrough
-						case internal.ErrorKindTransport:
-							fallthrough
-						case internal.ErrorKindReply:
-							if v, ok := p.sessionMap.Load(sessionID); ok {
-								if session, ok := v.(*serverSession); ok && session != nil {
-									if err := session.WriteStream(stream); err != nil {
-										p.onError(stream.GetSessionID(), err)
-									}
-								}
-							}
-						case internal.ErrorKindReplyPanic:
-							fallthrough
-						case internal.ErrorKindRuntimePanic:
-							fallthrough
-						case internal.ErrorKindKernelPanic:
-							if message, ok := stream.ReadString(); !ok {
-								// stream.SetReadPosToBodyStart()
-							} else if debug, ok := stream.ReadString(); !ok {
-								// stream.SetReadPosToBodyStart()
-							} else {
-								p.onError(
-									stream.GetSessionID(),
-									internal.NewError(internal.ErrorKind(errKind), message, debug),
-								)
-							}
-						}
-					}
-					stream.Release()
-				}
-			},
-		)
-
-		if p.processor == nil {
-			return false
-		}
-
-		openList := make([]IAdapter, 0)
-		defer func() {
-			if openList != nil {
-				for _, v := range openList {
-					if err := v.Close(); err != nil {
-						p.onError(0, err)
-					}
-				}
-			}
-		}()
-		for _, endPoint := range p.endPoints {
-			if err := endPoint.Open(p.onConnRun, func(err Error) {
-				p.onError(0, err)
-			}); err == nil {
-				openList = append(openList, endPoint)
-			} else {
-				p.onError(0, err)
-				return false
-			}
-		}
-		openList = nil
-		return true
-	}).(bool)
-}
-
-func (p *Server) Stop() {
-	p.DoWithLock(func() {
-		if p.processor == nil {
-			p.onError(0, internal.NewBaseError("Server: Close: it is not opened"))
-		} else {
-			for _, endPoint := range p.endPoints {
-				if err := endPoint.Close(); err != nil {
-					p.onError(0, err)
-				}
-			}
-			p.processor.Close()
-			p.processor = nil
-		}
-	})
-}
-
-// BuildReplyCache ...
-func (p *Server) BuildReplyCache(
-	pkgName string,
-	relativePath string,
-) bool {
-	_, file, _, _ := runtime.Caller(1)
-	return p.processor.BuildCache(
-		pkgName,
-		path.Join(path.Dir(file), relativePath),
-	)
-}
-
 // AddChildService ...
 func (p *Server) AddService(
 	name string,
 	service *Service,
 ) *Server {
+	fileLine := internal.GetFileLine(1)
 	p.DoWithLock(func() {
-		p.services = append(p.services, internal.NewServiceMeta(
-			name,
-			service,
-			internal.GetFileLine(1),
-		))
+		if atomic.LoadPointer(&p.processor) == nil {
+			p.services = append(p.services, internal.NewServiceMeta(
+				name,
+				service,
+				fileLine,
+			))
+		} else {
+			p.onError(0, internal.NewRuntimePanic(
+				"AddService must be before Serve",
+			).AddDebug(fileLine))
+		}
 	})
+	return p
+}
 
+// BuildReplyCache ...
+func (p *Server) BuildReplyCache() *Server {
+	_, file, _, _ := runtime.Caller(1)
+	fileLine := internal.GetFileLine(1)
+	p.DoWithLock(func() {
+		if atomic.LoadPointer(&p.processor) == nil {
+			p.cacheDir = path.Join(path.Dir(file))
+		} else {
+			p.onError(0, internal.NewRuntimePanic(
+				"ListenWebSocket must be before Serve",
+			).AddDebug(fileLine))
+		}
+	})
+	return p
+}
+
+// ListenWebSocket ...
+func (p *Server) ListenWebSocket(addr string) *Server {
+	fileLine := internal.GetFileLine(1)
+	p.DoWithLock(func() {
+		if atomic.LoadPointer(&p.processor) == nil {
+			p.listens = append(p.listens, &listenItem{
+				scheme:   listenItemSchemeWS,
+				addr:     addr,
+				certFile: "",
+				keyFile:  "",
+				fileLine: fileLine,
+			})
+		} else {
+			p.onError(0, internal.NewRuntimePanic(
+				"ListenWebSocket must be before Serve",
+			).AddDebug(fileLine))
+		}
+	})
 	return p
 }
 
@@ -464,7 +409,7 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 		)))
 	} else {
 		p.DoWithLock(func() {
-			p.endPoints = append(p.endPoints, endPoint)
+			p.adapters = append(p.adapters, endPoint)
 			if p.processor != nil {
 				endPoint.Open(p.onConnRun, func(err Error) {
 					p.onError(0, err)
@@ -474,6 +419,139 @@ func (p *Server) AddAdapter(endPoint IAdapter) *Server {
 	}
 
 	return p
+}
+
+func (p *Server) OnReturnStream(stream *Stream) {
+	if stream != nil {
+		sessionID := stream.GetSessionID()
+		stream.SetReadPosToBodyStart()
+
+		if errKind, ok := stream.ReadUint64(); ok {
+			switch internal.ErrorKind(errKind) {
+			case internal.ErrorKindNone:
+				fallthrough
+			case internal.ErrorKindProtocol:
+				fallthrough
+			case internal.ErrorKindTransport:
+				fallthrough
+			case internal.ErrorKindReply:
+				if v, ok := p.sessionMap.Load(sessionID); ok {
+					if session, ok := v.(*serverSession); ok && session != nil {
+						if err := session.WriteStream(stream); err != nil {
+							p.onError(stream.GetSessionID(), err)
+						}
+					}
+				}
+			case internal.ErrorKindReplyPanic:
+				fallthrough
+			case internal.ErrorKindRuntimePanic:
+				fallthrough
+			case internal.ErrorKindKernelPanic:
+				if message, ok := stream.ReadString(); !ok {
+					// stream.SetReadPosToBodyStart()
+				} else if debug, ok := stream.ReadString(); !ok {
+					// stream.SetReadPosToBodyStart()
+				} else {
+					p.onError(stream.GetSessionID(), internal.NewError(
+						internal.ErrorKind(errKind),
+						message,
+						debug,
+					))
+				}
+			}
+		}
+		stream.Release()
+	}
+}
+
+func (p *Server) Serve() {
+	waitCount := 0
+	waitCH := make(chan struct{})
+
+	p.DoWithLock(func() {
+		p.adapters = make([]IAdapter, 0)
+		for _, listener := range p.listens {
+			switch listener.scheme {
+			case listenItemSchemeWS:
+				p.adapters = append(
+					p.adapters,
+					NewWebSocketServerAdapter(listener.addr),
+				)
+			default:
+			}
+		}
+
+		if len(p.adapters) <= 0 {
+			p.onError(0, internal.NewRuntimePanic(
+				"no valid listener was found on the server",
+			))
+		} else if processor := internal.NewProcessor(
+			p.isDebug,
+			p.numOfThreads,
+			32,
+			32,
+			p.fnCache,
+			20*time.Second,
+			p.services,
+			p.OnReturnStream,
+		); processor == nil {
+			// ignore
+		} else if !atomic.CompareAndSwapPointer(
+			&p.processor,
+			nil,
+			unsafe.Pointer(processor),
+		) {
+			processor.Close()
+			p.onError(0, internal.NewRuntimePanic(
+				"it is already running",
+			))
+		} else {
+			for _, item := range p.adapters {
+				waitCount++
+				go func(serverAdapter IAdapter) {
+					for atomic.CompareAndSwapPointer(
+						&p.processor,
+						unsafe.Pointer(processor),
+						unsafe.Pointer(processor),
+					) {
+						if err := serverAdapter.Open(p.onConnRun, func(err Error) {
+							p.onError(0, err)
+						}); err != nil {
+							p.onError(0, err)
+						}
+					}
+					waitCH <- struct{}{}
+				}(item)
+			}
+		}
+	})
+
+	for i := 0; i < waitCount; i++ {
+		<-waitCH
+	}
+}
+
+func (p *Server) Close() {
+	p.DoWithLock(func() {
+		processor := atomic.LoadPointer(&p.processor)
+		if processor == nil {
+			p.onError(0, internal.NewBaseError("it is not running"))
+		} else if !atomic.CompareAndSwapPointer(
+			&p.processor,
+			unsafe.Pointer(processor),
+			nil,
+		) {
+			p.onError(0, internal.NewBaseError("it is not running"))
+		} else {
+			for _, item := range p.adapters {
+				go func(adapter IAdapter) {
+					if err := adapter.Close(); err != nil {
+						p.onError(0, err)
+					}
+				}(item)
+			}
+		}
+	})
 }
 
 func (p *Server) getSession(conn IStreamConn) (*serverSession, Error) {
@@ -556,6 +634,8 @@ func (p *Server) onConnRun(conn IStreamConn) {
 			}
 		}()
 
+		processor := (*internal.Processor)(p.processor)
+
 		for {
 			if stream, err := conn.ReadStream(
 				p.readTimeout,
@@ -575,7 +655,7 @@ func (p *Server) onConnRun(conn IStreamConn) {
 						return
 					}
 				} else {
-					if err := session.OnDataStream(stream, p.processor); err != nil {
+					if err := session.OnDataStream(stream, processor); err != nil {
 						p.onError(0, err)
 						return
 					}

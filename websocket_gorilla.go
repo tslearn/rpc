@@ -79,18 +79,12 @@ var (
 
 type WebSocketServerAdapter struct {
 	addr     string
-	path     string
 	wsServer unsafe.Pointer
 }
 
-func NewWebSocketServerAdapter(addr string, path string) IAdapter {
-	if path == "" || path[0] != '/' {
-		path = "/" + path
-	}
-
+func NewWebSocketServerAdapter(addr string) IAdapter {
 	return &WebSocketServerAdapter{
 		addr:     addr,
-		path:     path,
 		wsServer: nil,
 	}
 }
@@ -108,7 +102,7 @@ func (p *WebSocketServerAdapter) Open(
 			AddDebug(string(debug.Stack()))
 	} else {
 		mux := http.NewServeMux()
-		mux.HandleFunc(p.path, func(w http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 				onConnError(internal.NewTransportError(err.Error()))
 			} else {
@@ -146,9 +140,19 @@ func (p *WebSocketServerAdapter) Close() Error {
 	if server := (*http.Server)(atomic.LoadPointer(&p.wsServer)); server == nil {
 		return nil
 	} else if e := server.Close(); e != nil {
-		return internal.NewRuntimePanic(e.Error())
+		return internal.NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack()))
 	} else {
-		return nil
+		count := 1000
+		for count > 0 {
+			if !atomic.CompareAndSwapPointer(&p.wsServer, nil, nil) {
+				time.Sleep(20 * time.Millisecond)
+				count -= 1
+			} else {
+				return nil
+			}
+		}
+		return internal.NewRuntimePanic("can not close within 20 seconds").
+			AddDebug(string(debug.Stack()))
 	}
 }
 
@@ -157,7 +161,7 @@ func (p *WebSocketServerAdapter) IsRunning() bool {
 }
 
 func (p *WebSocketServerAdapter) ConnectString() string {
-	return "ws://" + p.addr + p.path
+	return "ws://" + p.addr + "/"
 }
 
 type WebSocketClientEndPoint struct {
@@ -204,7 +208,17 @@ func (p *WebSocketClientEndPoint) Close() Error {
 	} else if e := conn.Close(); e != nil {
 		return internal.NewRuntimePanic(e.Error())
 	} else {
-		return nil
+		count := 1000
+		for count > 0 {
+			if !atomic.CompareAndSwapPointer(&p.conn, nil, nil) {
+				time.Sleep(20 * time.Millisecond)
+				count -= 1
+			} else {
+				return nil
+			}
+		}
+		return internal.NewRuntimePanic("can not close within 20 seconds").
+			AddDebug(string(debug.Stack()))
 	}
 }
 

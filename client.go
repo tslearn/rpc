@@ -154,7 +154,7 @@ func newClient(endPoint IAdapter) *Client {
 
 	go func() {
 		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
-			if err := endPoint.Open(ret.onConnRun, ret.onError); err != nil {
+			if err := endPoint.Open(ret.onConnRun, nil); err != nil {
 				ret.onError(err)
 				time.Sleep(time.Second)
 			}

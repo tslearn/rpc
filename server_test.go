@@ -12,44 +12,39 @@ func TestServer_Debug(t *testing.T) {
 }
 
 func TestServer_Basic(t *testing.T) {
-	// assert := common.NewAssert(t)
-	server := NewServer().AddAdapter(
-		NewWebSocketServerAdapter("127.0.0.1:8080", "test"),
-	)
-	server.AddService("user", NewService().
-		Reply("sayHello", func(ctx Context, name string) Return {
-			return ctx.OK("hello " + name)
-		}),
-	)
+	userService := NewService().
+		Reply("SayHello", func(ctx Context, userName string) Return {
+			return ctx.OK("hello " + userName)
+		})
 
-	server.Start()
+	server := NewServer().
+		AddService("user", userService).
+		ListenWebSocket("127.0.0.1:8080")
 
-	// client
 	go func() {
-		client := NewClient(
-			NewWebSocketClientEndPoint("ws://127.0.0.1:8080/test"),
-		)
-
-		_ = client.Open()
-
-		for i := 0; i < 50; i++ {
-			go func(idx int) {
-				fmt.Println(client.sendMessage(
-					5*time.Second,
-					"#.user:sayHello",
-					fmt.Sprintf("ts%d", idx),
-				))
-			}(i)
-
-			time.Sleep(30 * time.Millisecond)
-		}
-
-		time.Sleep(3 * time.Second)
-		_ = client.Close()
-		fmt.Println("Finish")
-
-		server.Stop()
+		server.Serve()
 	}()
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(time.Second)
+	client, err := Dial("ws://127.0.0.1:8080/")
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 50; i++ {
+		go func(idx int) {
+			fmt.Println(client.sendMessage(
+				5*time.Second,
+				"#.user:SayHello",
+				fmt.Sprintf("ts%d", idx),
+			))
+		}(i)
+
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	time.Sleep(3 * time.Second)
+	_ = client.Close()
+
+	server.Close()
 }
