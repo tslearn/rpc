@@ -506,7 +506,7 @@ func (p *Client) sendMessage(
 }
 
 func (p *Client) onError(err Error) {
-	p.logWriter.Write(0, err)
+	fmt.Println(0, err)
 }
 
 // End ***** Client ***** //
