@@ -12,58 +12,76 @@ type StatusManager struct {
 	lock    Lock
 }
 
-func (p *StatusManager) SetRunning(onSet func()) bool {
+func (p *StatusManager) SetRunning(onSuccess func(), onFail func()) bool {
 	return p.lock.CallWithLock(func() interface{} {
-		if atomic.CompareAndSwapInt32(
+		ret := atomic.CompareAndSwapInt32(
 			&p.status,
 			statusManagerClosed,
 			statusManagerRunning,
-		) {
-			if onSet != nil {
-				onSet()
+		)
+
+		if ret {
+			if onSuccess != nil {
+				onSuccess()
 			}
-			return true
+		} else {
+			if onFail != nil {
+				onFail()
+			}
 		}
 
-		return false
+		return ret
 	}).(bool)
 }
 
-func (p *StatusManager) SetClosing(onSet func(ch chan struct{})) bool {
+func (p *StatusManager) SetClosing(
+	onSuccess func(ch chan struct{}),
+	onFail func(),
+) bool {
 	return p.lock.CallWithLock(func() interface{} {
-		if atomic.CompareAndSwapInt32(
+		ret := atomic.CompareAndSwapInt32(
 			&p.status,
 			statusManagerRunning,
 			statusManagerClosing,
-		) {
+		)
+
+		if ret {
 			p.closeCH = make(chan struct{}, 1)
-			if onSet != nil {
-				onSet(p.closeCH)
+			if onSuccess != nil {
+				onSuccess(p.closeCH)
 			}
-			return true
+		} else {
+			if onFail != nil {
+				onFail()
+			}
 		}
 
-		return false
+		return ret
 	}).(bool)
 }
 
-func (p *StatusManager) SetClosed(onSet func()) bool {
+func (p *StatusManager) SetClosed(onSuccess func(), onFail func()) bool {
 	return p.lock.CallWithLock(func() interface{} {
-		if atomic.CompareAndSwapInt32(
+		ret := atomic.CompareAndSwapInt32(
 			&p.status,
 			statusManagerClosing,
 			statusManagerClosed,
-		) {
-			if onSet != nil {
-				onSet()
+		)
+
+		if ret {
+			if onSuccess != nil {
+				onSuccess()
 			}
 			p.closeCH <- struct{}{}
 			close(p.closeCH)
 			p.closeCH = nil
-			return true
+		} else {
+			if onFail != nil {
+				onFail()
+			}
 		}
 
-		return false
+		return ret
 	}).(bool)
 }
 
