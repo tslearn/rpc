@@ -107,6 +107,7 @@ func (p *wsServerAdapter) Open(
 			Handler: mux,
 		}
 	}) {
+		p.wsServer = nil
 		onError(NewKernelPanic(
 			"it is already running",
 		).AddDebug(string(debug.Stack())))
@@ -188,6 +189,7 @@ func (p *wsClientAdapter) Open(
 
 func (p *wsClientAdapter) Close(onError func(Error)) {
 	waitCH := chan struct{}(nil)
+
 	if onError == nil {
 		panic("onError is nil")
 	} else if !p.SetClosing(func(ch chan struct{}) {
