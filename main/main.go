@@ -1,17 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"sync/atomic"
 	"time"
 )
 
 func main() {
-	mp := make(map[int]int)
-
-	mp[0] = 0
+	value := uint64(1)
 
 	go func() {
-		for i := 1; i < 100000; i++ {
-			mp[i] = 0
+		for i := 0; i < 100000; i++ {
+			value++
 			//sum = sum + 1
 			time.Sleep(time.Microsecond)
 		}
@@ -19,13 +19,12 @@ func main() {
 
 	go func() {
 		for {
-			mp[0] = mp[0] + 1
-			//sum = sum + 1
-			time.Sleep(time.Microsecond)
-
-			if mp[0] > 100000 {
+			if atomic.LoadUint64(&value) >= 100000 {
+				fmt.Println("finish")
 				break
 			}
+
+			time.Sleep(time.Microsecond)
 		}
 	}()
 

@@ -1,7 +1,9 @@
 package rpc
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -90,13 +92,14 @@ func (p *sendItem) Release() {
 // End ***** sendItem ***** //
 
 // Begin ***** Client ***** //
+const clientStatusRunning = 1
+const clientStatusClosed = 2
+
 type Client struct {
-	isOpen               bool
-	closeCH              chan bool
+	status               int32
 	sessionString        string
 	conn                 IStreamConn
 	logWriter            LogWriter
-	endPoint             IAdapter
 	preSendHead          *sendItem
 	preSendTail          *sendItem
 	sendMap              map[uint64]*sendItem
@@ -113,14 +116,27 @@ type Client struct {
 	internal.Lock
 }
 
-func NewClient(endPoint IAdapter) *Client {
-	return &Client{
-		isOpen:               false,
-		closeCH:              nil,
+// Dial ...
+func Dial(connectString string) (*Client, Error) {
+	if u, e := url.Parse(connectString); e != nil {
+		return nil, internal.NewRuntimePanic(e.Error())
+	} else {
+		switch u.Scheme {
+		case "ws":
+			return newClient(NewWebSocketClientEndPoint(connectString)), nil
+		default:
+			return nil,
+				internal.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", u.Scheme))
+		}
+	}
+}
+
+func newClient(endPoint IAdapter) *Client {
+	ret := &Client{
+		status:               clientStatusRunning,
 		sessionString:        "",
 		conn:                 nil,
 		logWriter:            NewStdoutLogWriter(),
-		endPoint:             endPoint,
 		preSendHead:          nil,
 		preSendTail:          nil,
 		sendMap:              make(map[uint64]*sendItem),
@@ -135,96 +151,42 @@ func NewClient(endPoint IAdapter) *Client {
 		lastControlSendTime:  time.Now().Add(-10 * time.Second),
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
 	}
+
+	go func() {
+		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
+			if err := endPoint.Open(ret.onConnRun, ret.onError); err != nil {
+				ret.onError(err)
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+
+	go func() {
+		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
+			now := internal.TimeNow()
+			ret.tryToTimeout(now)
+			ret.tryToDeliverControlMessage(now)
+			for ret.tryToDeliverPreSendMessage() {
+				// loop until failed
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		if err := endPoint.Close(); err != nil {
+			ret.onError(err)
+		}
+	}()
+
+	return ret
 }
 
-func (p *Client) Open() Error {
-	return internal.ConvertToError(p.CallWithLock(func() interface{} {
-		if p.isOpen {
-			return internal.NewBaseError(
-				"Client: Start: it has already been opened",
-			)
-		} else {
-			closeCH := make(chan bool, 1)
-			p.closeCH = closeCH
-			p.isOpen = true
-
-			go func() {
-				defer func() {
-					p.DoWithLock(func() {
-						p.closeCH = nil
-						p.isOpen = false
-						closeCH <- true
-					})
-				}()
-
-				// make sure the endPoint is not running
-				if p.endPoint.IsRunning() {
-					if err := p.endPoint.Close(); err != nil {
-						p.onError(err)
-					}
-				}
-
-				for p.IsRunning() {
-					if !p.endPoint.IsRunning() {
-						p.endPoint.Open(p.onConnRun, p.onError)
-					}
-
-					now := internal.TimeNow()
-					p.tryToTimeout(now)
-					p.tryToDeliverControlMessage(now)
-					for p.tryToDeliverPreSendMessage() {
-						// loop until failed
-					}
-
-					time.Sleep(100 * time.Millisecond)
-				}
-
-				// close the endPoint if it is running
-				if p.endPoint.IsRunning() {
-					if err := p.endPoint.Close(); err != nil {
-						p.onError(err)
-					}
-				}
-			}()
-
-			return nil
-		}
-	}))
-}
-
-func (p *Client) Close() Error {
-	err := Error(nil)
-
-	closeCH := p.CallWithLock(func() interface{} {
-		if p.closeCH == nil {
-			err = internal.NewBaseError(
-				"Client: Close: has not been opened",
-			)
-			return nil
-		} else {
-			ret := p.closeCH
-			p.closeCH = nil
-			return ret
-		}
-	})
-
-	if closeCH == nil {
-		return err
-	} else {
-		select {
-		case <-closeCH.(chan bool):
-			return nil
-		case <-time.After(10 * time.Second):
-			return internal.NewBaseError(
-				"Client: Close: can not close in 10 seconds",
-			)
-		}
-	}
-}
-
-func (p *Client) IsRunning() bool {
+func (p *Client) Close() bool {
 	return p.CallWithLock(func() interface{} {
-		return p.closeCH != nil
+		return atomic.CompareAndSwapInt32(
+			&p.status,
+			clientStatusRunning,
+			clientStatusClosed,
+		)
 	}).(bool)
 }
 
@@ -322,7 +284,7 @@ func (p *Client) onConnRun(conn IStreamConn) {
 	}()
 
 	// receive messages
-	for p.IsRunning() {
+	for atomic.LoadInt32(&p.status) == clientStatusRunning {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
 			err = e
 			return
@@ -442,7 +404,7 @@ func (p *Client) tryToTimeout(now time.Time) {
 
 func (p *Client) tryToDeliverPreSendMessage() bool {
 	return p.CallWithLock(func() interface{} {
-		if p.closeCH == nil { // close
+		if atomic.LoadInt32(&p.status) == clientStatusClosed { // close
 			return false
 		} else if p.conn == nil { // not connected
 			return false
