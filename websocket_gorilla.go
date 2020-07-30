@@ -115,7 +115,7 @@ func (p *WebSocketServerAdapter) Open(
 				onConnRun((*webSocketConn)(conn))
 			}
 		})
-		httpServer := &http.Server{
+		wsServer := &http.Server{
 			Addr:    p.addr,
 			Handler: mux,
 		}
@@ -123,7 +123,7 @@ func (p *WebSocketServerAdapter) Open(
 		if !atomic.CompareAndSwapPointer(
 			&p.wsServer,
 			nil,
-			unsafe.Pointer(httpServer),
+			unsafe.Pointer(wsServer),
 		) {
 			return internal.NewKernelPanic("it has already been opened").
 				AddDebug(string(debug.Stack()))
@@ -133,7 +133,7 @@ func (p *WebSocketServerAdapter) Open(
 			atomic.StorePointer(&p.wsServer, nil)
 		}()
 
-		if e := httpServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
+		if e := wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 			return internal.NewRuntimePanic(e.Error())
 		}
 
@@ -144,8 +144,7 @@ func (p *WebSocketServerAdapter) Open(
 // Close ...
 func (p *WebSocketServerAdapter) Close() Error {
 	if server := (*http.Server)(atomic.LoadPointer(&p.wsServer)); server == nil {
-		return internal.NewKernelPanic("it has not been opened").
-			AddDebug(string(debug.Stack()))
+		return nil
 	} else if e := server.Close(); e != nil {
 		return internal.NewRuntimePanic(e.Error())
 	} else {
@@ -162,7 +161,7 @@ func (p *WebSocketServerAdapter) ConnectString() string {
 }
 
 type WebSocketClientEndPoint struct {
-	conn          unsafe.Pointer // *webSocketConn
+	conn          unsafe.Pointer
 	connectString string
 }
 
@@ -201,8 +200,7 @@ func (p *WebSocketClientEndPoint) Open(
 
 func (p *WebSocketClientEndPoint) Close() Error {
 	if conn := (*websocket.Conn)(atomic.LoadPointer(&p.conn)); conn == nil {
-		return internal.NewKernelPanic("it has not been opened").
-			AddDebug(string(debug.Stack()))
+		return nil
 	} else if e := conn.Close(); e != nil {
 		return internal.NewRuntimePanic(e.Error())
 	} else {

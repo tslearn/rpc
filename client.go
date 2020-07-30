@@ -181,7 +181,9 @@ func (p *Client) Open() Error {
 
 				// close the endPoint if it is running
 				if p.endPoint.IsRunning() {
-					p.endPoint.Close(p.onError)
+					if err := p.endPoint.Close(); err != nil {
+						p.onError(err)
+					}
 				}
 			}()
 
@@ -253,15 +255,9 @@ func (p *Client) initConn(conn IStreamConn) Error {
 		return internal.NewBaseError(
 			"Client: initConn: conn is nil",
 		)
-	} else if err := conn.WriteStream(
-		sendStream,
-		configWriteTimeout,
-	); err != nil {
+	} else if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
 		return err
-	} else if backStream, err = conn.ReadStream(
-		configReadTimeout,
-		configServerWriteLimit,
-	); err != nil {
+	} else if backStream, err = conn.ReadStream(3*time.Second, 0); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
 		return internal.NewProtocolError(internal.ErrStringBadStream)

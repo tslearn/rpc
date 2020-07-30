@@ -284,9 +284,6 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
-// End ***** serverSession ***** //
-
-// Begin ***** Server ***** //
 type Server struct {
 	isDebug      bool
 	endPoints    []IAdapter
@@ -391,18 +388,19 @@ func (p *Server) Start() bool {
 		defer func() {
 			if openList != nil {
 				for _, v := range openList {
-					v.Close(func(err Error) {
+					if err := v.Close(); err != nil {
 						p.onError(0, err)
-					})
+					}
 				}
 			}
 		}()
 		for _, endPoint := range p.endPoints {
-			if endPoint.Open(p.onConnRun, func(err Error) {
+			if err := endPoint.Open(p.onConnRun, func(err Error) {
 				p.onError(0, err)
-			}) {
+			}); err == nil {
 				openList = append(openList, endPoint)
 			} else {
+				p.onError(0, err)
 				return false
 			}
 		}
@@ -417,9 +415,9 @@ func (p *Server) Stop() {
 			p.onError(0, internal.NewBaseError("Server: Close: it is not opened"))
 		} else {
 			for _, endPoint := range p.endPoints {
-				endPoint.Close(func(err Error) {
+				if err := endPoint.Close(); err != nil {
 					p.onError(0, err)
-				})
+				}
 			}
 			p.processor.Close()
 			p.processor = nil
