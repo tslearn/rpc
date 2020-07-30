@@ -142,10 +142,14 @@ func (p *WebSocketServerAdapter) Close() Error {
 	} else if e := server.Close(); e != nil {
 		return internal.NewRuntimePanic(e.Error()).AddDebug(string(debug.Stack()))
 	} else {
-		count := 1000
+		count := 200
 		for count > 0 {
-			if !atomic.CompareAndSwapPointer(&p.wsServer, nil, nil) {
-				time.Sleep(20 * time.Millisecond)
+			if atomic.CompareAndSwapPointer(
+				&p.wsServer,
+				unsafe.Pointer(server),
+				unsafe.Pointer(server),
+			) {
+				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
 				return nil
@@ -208,10 +212,14 @@ func (p *WebSocketClientEndPoint) Close() Error {
 	} else if e := conn.Close(); e != nil {
 		return internal.NewRuntimePanic(e.Error())
 	} else {
-		count := 1000
+		count := 200
 		for count > 0 {
-			if !atomic.CompareAndSwapPointer(&p.conn, nil, nil) {
-				time.Sleep(20 * time.Millisecond)
+			if atomic.CompareAndSwapPointer(
+				&p.conn,
+				unsafe.Pointer(conn),
+				unsafe.Pointer(conn),
+			) {
+				time.Sleep(100 * time.Millisecond)
 				count -= 1
 			} else {
 				return nil
