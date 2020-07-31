@@ -12,6 +12,9 @@ const ErrStringBadStream = "bad stream"
 // ErrStringTimeout ...
 const ErrStringTimeout = "timeout"
 
+// ErrTransportStreamConnIsClosed ...
+var ErrTransportStreamConnIsClosed = NewTransportError("stream conn is closed")
+
 const (
 	// ErrorKindNone ...
 	ErrorKindNone ErrorKind = 0

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
 	"net/url"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -92,11 +93,7 @@ func (p *sendItem) Release() {
 // End ***** sendItem ***** //
 
 // Begin ***** Client ***** //
-const clientStatusRunning = 1
-const clientStatusClosed = 2
-
 type Client struct {
-	status               int32
 	sessionString        string
 	conn                 internal.IStreamConn
 	logWriter            LogWriter
@@ -114,6 +111,7 @@ type Client struct {
 	lastControlSendTime  time.Time
 	lastTimeoutCheckTime time.Time
 	internal.Lock
+	internal.StatusManager
 }
 
 // Dial ...
@@ -133,7 +131,6 @@ func Dial(connectString string) (*Client, Error) {
 
 func newClient(endPoint internal.IAdapter) *Client {
 	ret := &Client{
-		status:               clientStatusRunning,
 		sessionString:        "",
 		conn:                 nil,
 		logWriter:            NewStdoutLogWriter(),
@@ -152,14 +149,17 @@ func newClient(endPoint internal.IAdapter) *Client {
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
 	}
 
+	ret.SetRunning(nil)
+
 	go func() {
-		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
+		for ret.IsRunning() {
 			endPoint.Open(ret.onConnRun, ret.onError)
 		}
+		ret.SetClosed(nil)
 	}()
 
 	go func() {
-		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
+		for ret.IsRunning() {
 			now := internal.TimeNow()
 			ret.tryToTimeout(now)
 			ret.tryToDeliverControlMessage(now)
@@ -169,18 +169,35 @@ func newClient(endPoint internal.IAdapter) *Client {
 			time.Sleep(100 * time.Millisecond)
 		}
 
-		endPoint.Close(ret.onError)
+		ret.SetClosed(func() {
+			endPoint.Close(ret.onError)
+		})
 	}()
 
 	return ret
 }
 
 func (p *Client) Close() bool {
-	return atomic.CompareAndSwapInt32(
-		&p.status,
-		clientStatusRunning,
-		clientStatusClosed,
-	)
+	waitCH := chan bool(nil)
+
+	if !p.SetClosing(func(ch chan bool) {
+		waitCH = ch
+	}) {
+		p.onError(internal.NewRuntimePanic(
+			"it is not running",
+		).AddDebug(string(debug.Stack())))
+		return false
+	} else {
+		select {
+		case <-waitCH:
+			return true
+		case <-time.After(20 * time.Second):
+			p.onError(internal.NewRuntimePanic(
+				"can not close within 20 seconds",
+			).AddDebug(string(debug.Stack())))
+			return false
+		}
+	}
 }
 
 func (p *Client) initConn(conn internal.IStreamConn) Error {
@@ -277,7 +294,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	}()
 
 	// receive messages
-	for atomic.LoadInt32(&p.status) == clientStatusRunning {
+	for p.IsRunning() {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
 			err = e
 			return
@@ -397,7 +414,7 @@ func (p *Client) tryToTimeout(now time.Time) {
 
 func (p *Client) tryToDeliverPreSendMessage() bool {
 	return p.CallWithLock(func() interface{} {
-		if atomic.LoadInt32(&p.status) == clientStatusClosed { // close
+		if !p.IsRunning() { // not running
 			return false
 		} else if p.conn == nil { // not connected
 			return false
@@ -499,7 +516,7 @@ func (p *Client) sendMessage(
 }
 
 func (p *Client) onError(err Error) {
-	fmt.Println(0, err)
+	fmt.Println("client", err)
 }
 
 // End ***** Client ***** //

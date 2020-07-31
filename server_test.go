@@ -25,7 +25,7 @@ func TestServer_Basic(t *testing.T) {
 		server.Serve()
 	}()
 
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 	client, err := Dial("ws://127.0.0.1:8080/")
 	if err != nil {
 		panic(err)
@@ -43,8 +43,8 @@ func TestServer_Basic(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 	}
 
-	time.Sleep(3 * time.Second)
 	_ = client.Close()
 
-	server.Close()
+	time.Sleep(3 * time.Second)
+	//server.Close()
 }
