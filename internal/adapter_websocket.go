@@ -10,22 +10,53 @@ import (
 
 const webSocketStreamConnClosed = int32(0)
 const webSocketStreamConnRunning = int32(1)
+const webSocketStreamConnClosing = int32(2)
+const webSocketStreamConnCanClose = int32(2)
 
 type webSocketStreamConn struct {
-	running int32
-	conn    *websocket.Conn
+	status   int32
+	canClose chan bool
+	conn     *websocket.Conn
 }
 
-func (p *webSocketStreamConn) toTransportError(err error) Error {
+func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
+	ret := &webSocketStreamConn{
+		conn:     conn,
+		canClose: make(chan bool, 1),
+		status:   webSocketStreamConnRunning,
+	}
+	conn.SetCloseHandler(ret.onCloseMessage)
+	return ret
+}
+
+func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 	if atomic.CompareAndSwapInt32(
-		&p.running,
-		webSocketStreamConnClosed,
-		webSocketStreamConnClosed,
+		&p.status,
+		webSocketStreamConnRunning,
+		webSocketStreamConnCanClose,
 	) {
-		return ErrTransportStreamConnIsClosed
-	} else if err == nil {
+		_ = p.conn.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(code, ""),
+			TimeNow().Add(time.Second),
+		)
 		return nil
-	} else if websocket.IsCloseError(err, websocket.CloseAbnormalClosure) {
+	} else if atomic.CompareAndSwapInt32(
+		&p.status,
+		webSocketStreamConnClosing,
+		webSocketStreamConnCanClose,
+	) {
+		p.canClose <- true
+		return nil
+	} else {
+		return nil
+	}
+}
+
+func toTransportError(err error) Error {
+	if err == nil {
+		return nil
+	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 		return ErrTransportStreamConnIsClosed
 	} else {
 		return NewTransportError(err.Error())
@@ -38,9 +69,9 @@ func (p *webSocketStreamConn) ReadStream(
 ) (stream *Stream, err Error) {
 	p.conn.SetReadLimit(readLimit)
 	if e := p.conn.SetReadDeadline(time.Now().Add(timeout)); e != nil {
-		return nil, p.toTransportError(e)
+		return nil, toTransportError(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
-		return nil, p.toTransportError(e)
+		return nil, toTransportError(e)
 	} else if mt != websocket.BinaryMessage {
 		return nil, NewTransportError("unsupported websocket protocol")
 	} else {
@@ -58,27 +89,47 @@ func (p *webSocketStreamConn) WriteStream(
 	if stream == nil {
 		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
 	} else if e := p.conn.SetWriteDeadline(time.Now().Add(timeout)); e != nil {
-		return p.toTransportError(e)
+		return toTransportError(e)
 	} else if e := p.conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); e != nil {
-		return p.toTransportError(e)
+		return toTransportError(e)
 	} else {
 		return nil
 	}
 }
 
 func (p *webSocketStreamConn) Close() Error {
-	if !atomic.CompareAndSwapInt32(
-		&p.running,
+	if atomic.CompareAndSwapInt32(
+		&p.status,
 		webSocketStreamConnRunning,
+		webSocketStreamConnClosing,
+	) {
+		_ = p.conn.WriteMessage(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+		)
+
+		select {
+		case <-p.canClose:
+		case <-time.After(2 * time.Second):
+		}
+
+		atomic.StoreInt32(&p.status, webSocketStreamConnClosed)
+		if e := p.conn.Close(); e != nil {
+			return NewTransportError(e.Error())
+		}
+		return nil
+	} else if atomic.CompareAndSwapInt32(
+		&p.status,
+		webSocketStreamConnCanClose,
 		webSocketStreamConnClosed,
 	) {
-		// yes it allows to close multiple times
+		if e := p.conn.Close(); e != nil {
+			return NewTransportError(e.Error())
+		}
 		return nil
-	} else if e := p.conn.Close(); e != nil {
-		return NewTransportError(e.Error())
 	} else {
 		return nil
 	}
@@ -120,10 +171,7 @@ func (p *wsServerAdapter) Open(
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 				onError(NewTransportError(err.Error()))
 			} else {
-				streamConn := &webSocketStreamConn{
-					running: webSocketStreamConnRunning,
-					conn:    conn,
-				}
+				streamConn := newWebSocketStreamConn(conn)
 				onConnRun(streamConn)
 				if err := streamConn.Close(); err != nil {
 					onError(err)
@@ -201,10 +249,7 @@ func (p *wsClientAdapter) Open(
 	); err != nil {
 		onError(NewRuntimePanic(err.Error()))
 	} else {
-		streamConn := &webSocketStreamConn{
-			running: webSocketStreamConnRunning,
-			conn:    conn,
-		}
+		streamConn := newWebSocketStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn
 		}) {
