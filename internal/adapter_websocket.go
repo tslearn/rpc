@@ -123,10 +123,10 @@ func (p *wsServerAdapter) Open(
 
 // Close ...
 func (p *wsServerAdapter) Close(onError func(Error)) {
-	waitCH := chan struct{}(nil)
+	waitCH := chan bool(nil)
 	if onError == nil {
 		panic("onError is nil")
-	} else if !p.SetClosing(func(ch chan struct{}) {
+	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.wsServer.Close(); e != nil {
 			onError(NewRuntimePanic(e.Error()))
@@ -189,11 +189,11 @@ func (p *wsClientAdapter) Open(
 }
 
 func (p *wsClientAdapter) Close(onError func(Error)) {
-	waitCH := chan struct{}(nil)
+	waitCH := chan bool(nil)
 
 	if onError == nil {
 		panic("onError is nil")
-	} else if !p.SetClosing(func(ch chan struct{}) {
+	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.conn.Close(); e != nil {
 			onError(NewRuntimePanic(e.Error()))

@@ -8,7 +8,7 @@ const statusManagerClosing = int32(2)
 
 type StatusManager struct {
 	status  int32
-	closeCH chan struct{}
+	closeCH chan bool
 	lock    Lock
 }
 
@@ -29,14 +29,14 @@ func (p *StatusManager) SetRunning(onSuccess func()) bool {
 	}).(bool)
 }
 
-func (p *StatusManager) SetClosing(onSuccess func(ch chan struct{})) bool {
+func (p *StatusManager) SetClosing(onSuccess func(ch chan bool)) bool {
 	return p.lock.CallWithLock(func() interface{} {
 		if atomic.CompareAndSwapInt32(
 			&p.status,
 			statusManagerRunning,
 			statusManagerClosing,
 		) {
-			p.closeCH = make(chan struct{}, 1)
+			p.closeCH = make(chan bool, 1)
 			if onSuccess != nil {
 				onSuccess(p.closeCH)
 			}
@@ -57,7 +57,7 @@ func (p *StatusManager) SetClosed(onSuccess func()) bool {
 			if onSuccess != nil {
 				onSuccess()
 			}
-			p.closeCH <- struct{}{}
+			p.closeCH <- true
 			close(p.closeCH)
 			p.closeCH = nil
 			return true
