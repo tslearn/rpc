@@ -610,7 +610,9 @@ func (p *Server) onConnRun(conn internal.IStreamConn) {
 				p.readTimeout,
 				p.readLimit,
 			); err != nil {
-				p.onError(err)
+				if err != internal.ErrTransportStreamConnIsClosed {
+					p.onError(err)
+				}
 				return
 			} else {
 				cbID := stream.GetCallbackID()

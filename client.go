@@ -296,7 +296,9 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	// receive messages
 	for p.IsRunning() {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
-			err = e
+			if e != internal.ErrTransportStreamConnIsClosed {
+				err = e
+			}
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
 			p.DoWithLock(func() {

@@ -16,26 +16,31 @@ type webSocketStreamConn struct {
 	conn    *websocket.Conn
 }
 
+func (p *webSocketStreamConn) toTransportError(err error) Error {
+	if atomic.CompareAndSwapInt32(
+		&p.running,
+		webSocketStreamConnClosed,
+		webSocketStreamConnClosed,
+	) {
+		return ErrTransportStreamConnIsClosed
+	} else if err == nil {
+		return nil
+	} else if websocket.IsCloseError(err, websocket.CloseAbnormalClosure) {
+		return ErrTransportStreamConnIsClosed
+	} else {
+		return NewTransportError(err.Error())
+	}
+}
+
 func (p *webSocketStreamConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
 ) (stream *Stream, err Error) {
-	defer func() {
-		if atomic.CompareAndSwapInt32(
-			&p.running,
-			webSocketStreamConnClosed,
-			webSocketStreamConnClosed,
-		) {
-			stream = nil
-			err = ErrTransportStreamConnIsClosed
-		}
-	}()
-
 	p.conn.SetReadLimit(readLimit)
 	if e := p.conn.SetReadDeadline(time.Now().Add(timeout)); e != nil {
-		return nil, NewTransportError(e.Error())
+		return nil, p.toTransportError(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
-		return nil, NewTransportError(e.Error())
+		return nil, p.toTransportError(e)
 	} else if mt != websocket.BinaryMessage {
 		return nil, NewTransportError("unsupported websocket protocol")
 	} else {
@@ -50,25 +55,15 @@ func (p *webSocketStreamConn) WriteStream(
 	stream *Stream,
 	timeout time.Duration,
 ) (err Error) {
-	defer func() {
-		if atomic.CompareAndSwapInt32(
-			&p.running,
-			webSocketStreamConnClosed,
-			webSocketStreamConnClosed,
-		) {
-			err = ErrTransportStreamConnIsClosed
-		}
-	}()
-
 	if stream == nil {
 		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
 	} else if e := p.conn.SetWriteDeadline(time.Now().Add(timeout)); e != nil {
-		return NewTransportError(e.Error())
+		return p.toTransportError(e)
 	} else if e := p.conn.WriteMessage(
 		websocket.BinaryMessage,
 		stream.GetBufferUnsafe(),
 	); e != nil {
-		return NewTransportError(e.Error())
+		return p.toTransportError(e)
 	} else {
 		return nil
 	}
