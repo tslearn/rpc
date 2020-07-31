@@ -21,9 +21,9 @@ type webSocketStreamConn struct {
 
 func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
 	ret := &webSocketStreamConn{
+		status:   webSocketStreamConnRunning,
 		conn:     conn,
 		canClose: make(chan bool, 1),
-		status:   webSocketStreamConnRunning,
 	}
 	conn.SetCloseHandler(ret.onCloseMessage)
 	return ret
@@ -106,30 +106,30 @@ func (p *webSocketStreamConn) Close() Error {
 		webSocketStreamConnRunning,
 		webSocketStreamConnClosing,
 	) {
+		// 1. send close message to peer
 		_ = p.conn.WriteMessage(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
 		)
 
+		// 2. wait for peer confirm close message (within 2 seconds)
 		select {
 		case <-p.canClose:
 		case <-time.After(2 * time.Second):
 		}
 
+		// 3. change the status
 		atomic.StoreInt32(&p.status, webSocketStreamConnClosed)
-		if e := p.conn.Close(); e != nil {
-			return NewTransportError(e.Error())
-		}
-		return nil
+
+		// 4. close and return
+		return toTransportError(p.conn.Close())
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnCanClose,
 		webSocketStreamConnClosed,
 	) {
-		if e := p.conn.Close(); e != nil {
-			return NewTransportError(e.Error())
-		}
-		return nil
+		// 1. close and return
+		return toTransportError(p.conn.Close())
 	} else {
 		return nil
 	}
