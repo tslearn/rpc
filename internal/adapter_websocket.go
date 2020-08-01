@@ -56,7 +56,6 @@ func (p *webSocketStreamConn) writeMessage(
 ) Error {
 	p.writeLock.Lock()
 	defer p.writeLock.Unlock()
-
 	_ = p.conn.SetWriteDeadline(TimeNow().Add(timeout))
 	return toTransportError(p.conn.WriteMessage(messageType, data))
 }
