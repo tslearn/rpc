@@ -62,63 +62,63 @@ func TestNewWebSocketStreamConn(t *testing.T) {
 
 func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 	assert := NewAssert(t)
-	//
-	//// Test(1)
-	//assert(testWithStreamConn(
-	//  func(server IAdapter, conn IStreamConn) {
-	//    for {
-	//      if _, err := conn.ReadStream(time.Second, 999999); err != nil {
-	//        return
-	//      }
-	//    }
-	//  },
-	//  func(client IAdapter, conn IStreamConn) {
-	//    testConn := conn.(*webSocketStreamConn)
-	//    assert(atomic.LoadInt32(&testConn.status)).
-	//      Equals(webSocketStreamConnRunning)
-	//    // 1. onCloseMessage case
-	//    //    webSocketStreamConnRunning => webSocketStreamConnCanClose
-	//    assert(testConn.onCloseMessage(
-	//      websocket.CloseNormalClosure,
-	//      "",
-	//    )).IsNil()
-	//    assert(atomic.LoadInt32(&testConn.status)).
-	//      Equals(webSocketStreamConnCanClose)
-	//    time.Sleep(300 * time.Millisecond)
-	//  },
-	//)).Equals([]Error{})
-	//
-	//// Test(2)
-	//assert(testWithStreamConn(
-	//  func(server IAdapter, conn IStreamConn) {
-	//    for {
-	//      if _, err := conn.ReadStream(time.Second, 999999); err != nil {
-	//        return
-	//      }
-	//    }
-	//  },
-	//  func(client IAdapter, conn IStreamConn) {
-	//    go func() {
-	//      time.Sleep(100 * time.Millisecond)
-	//      testConn := conn.(*webSocketStreamConn)
-	//      assert(atomic.LoadInt32(&testConn.status)).
-	//        Equals(webSocketStreamConnRunning)
-	//      // 1. Close() invoke onCloseMessage case
-	//      //    webSocketStreamConnClosing => webSocketStreamConnCanClose
-	//      assert(testConn.Close()).IsNil()
-	//      assert(atomic.LoadInt32(&testConn.status)).
-	//        Equals(webSocketStreamConnClosed)
-	//      time.Sleep(300 * time.Millisecond)
-	//    }()
-	//
-	//    for {
-	//      if _, err := conn.ReadStream(time.Second, 999999); err != nil {
-	//        fmt.Println(err)
-	//        return
-	//      }
-	//    }
-	//  },
-	//)).Equals([]Error{})
+
+	// Test(1)
+	assert(testWithStreamConn(
+		func(server IAdapter, conn IStreamConn) {
+			for {
+				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
+					return
+				}
+			}
+		},
+		func(client IAdapter, conn IStreamConn) {
+			testConn := conn.(*webSocketStreamConn)
+			assert(atomic.LoadInt32(&testConn.status)).
+				Equals(webSocketStreamConnRunning)
+			// 1. onCloseMessage case
+			//    webSocketStreamConnRunning => webSocketStreamConnCanClose
+			assert(testConn.onCloseMessage(
+				websocket.CloseNormalClosure,
+				"",
+			)).IsNil()
+			assert(atomic.LoadInt32(&testConn.status)).
+				Equals(webSocketStreamConnCanClose)
+			time.Sleep(300 * time.Millisecond)
+		},
+	)).Equals([]Error{})
+
+	// Test(2)
+	assert(testWithStreamConn(
+		func(server IAdapter, conn IStreamConn) {
+			for {
+				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
+					return
+				}
+			}
+		},
+		func(client IAdapter, conn IStreamConn) {
+			go func() {
+				time.Sleep(100 * time.Millisecond)
+				testConn := conn.(*webSocketStreamConn)
+				assert(atomic.LoadInt32(&testConn.status)).
+					Equals(webSocketStreamConnRunning)
+				// 1. Close() invoke onCloseMessage case
+				//    webSocketStreamConnClosing => webSocketStreamConnCanClose
+				assert(testConn.Close()).IsNil()
+				assert(atomic.LoadInt32(&testConn.status)).
+					Equals(webSocketStreamConnClosed)
+				time.Sleep(300 * time.Millisecond)
+			}()
+
+			for {
+				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
+					fmt.Println(err)
+					return
+				}
+			}
+		},
+	)).Equals([]Error{})
 
 	// Test(3)
 	assert(testWithStreamConn(

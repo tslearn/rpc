@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"runtime/debug"
@@ -76,18 +75,15 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 			websocket.FormatCloseMessage(code, ""),
 			time.Second,
 		)
-		fmt.Println("CC1")
 		return nil
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnClosing,
 		webSocketStreamConnCanClose,
 	) {
-		fmt.Println("CC2")
 		p.closeCH <- true
 		return nil
 	} else {
-		fmt.Println("CC3")
 		return nil
 	}
 }
