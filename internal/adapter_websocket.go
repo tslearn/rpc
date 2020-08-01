@@ -269,7 +269,7 @@ type wsClientAdapter struct {
 	StatusManager
 }
 
-func NewWebSocketClientEndPoint(connectString string) IAdapter {
+func NewWebSocketClientAdapter(connectString string) IAdapter {
 	return &wsClientAdapter{
 		conn:          nil,
 		connectString: connectString,
