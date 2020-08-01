@@ -471,11 +471,10 @@ func TestWsServerAdapter_Open(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	err1 := testRunWithPanicCatch(func() {
+	assert(testRunWithCatchPanic(func() {
 		NewWebSocketServerAdapter("test").Open(func(conn IStreamConn) {}, nil)
-	})
-	fmt.Println("OKOKf")
-	assert(err1).IsNotNil()
+	})).Equals("onError is nil")
+
 	//assert(err1.GetMessage()).Equals("onError is nil")
 	//assert(strings.Contains(err1.GetDebug(), "TestWsServerAdapter_Open"))
 	//assert(strings.Contains(err1.GetDebug(), "adapter_websocket.go"))

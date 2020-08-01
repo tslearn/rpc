@@ -8,7 +8,7 @@ func TestReportPanic(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	assert(testRunWithCatchPanic(
+	assert(testRunWithSubscribePanic(
 		func() {
 			reportPanic(NewReplyPanic("reply panic error"))
 		},

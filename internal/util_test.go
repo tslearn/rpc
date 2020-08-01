@@ -424,7 +424,7 @@ func BenchmarkRunWithPanicCatch(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			testRunWithPanicCatch(func() {
+			testRunWithCatchPanic(func() {
 				a = a + 1
 			})
 		}
@@ -523,7 +523,7 @@ func getFakeContext(debug bool) Context {
 	return &ContextObject{thread: unsafe.Pointer(getFakeThread(debug))}
 }
 
-func testRunWithCatchPanic(fn func()) Error {
+func testRunWithSubscribePanic(fn func()) Error {
 	ch := make(chan Error, 1)
 	sub := subscribePanic(func(err Error) {
 		ch <- err
@@ -540,7 +540,7 @@ func testRunWithCatchPanic(fn func()) Error {
 	}
 }
 
-func testRunWithPanicCatch(fn func()) (ret interface{}) {
+func testRunWithCatchPanic(fn func()) (ret interface{}) {
 	defer func() {
 		ret = recover()
 	}()

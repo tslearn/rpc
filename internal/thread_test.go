@@ -69,7 +69,7 @@ func TestRpcThread_Close(t *testing.T) {
 	assert(thread1.Close()).IsTrue()
 
 	// Test(2) cant close
-	assert(testRunWithPanicCatch(func() {
+	assert(testRunWithCatchPanic(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
 			func(ctx *ContextObject, name string) *ReturnObject {
 				time.Sleep(8 * time.Second)
