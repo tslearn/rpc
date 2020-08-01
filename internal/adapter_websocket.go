@@ -160,6 +160,8 @@ func (p *webSocketStreamConn) Close() Error {
 		if atomic.LoadInt32(&p.reading) > 0 || atomic.LoadInt32(&p.writing) > 0 {
 			select {
 			case <-p.closeCH:
+				// p.conn has already been closed gracefully. do not close it again!
+				return nil
 			case <-time.After(2 * time.Second):
 			}
 		}
