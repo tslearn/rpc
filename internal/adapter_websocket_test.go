@@ -47,6 +47,23 @@ func testWithStreamConn(
 	return ret
 }
 
+func TestToTransportError(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	assert(toTransportError(nil)).IsNil()
+
+	// Test(2)
+	assert(toTransportError(&websocket.CloseError{
+		Code: websocket.CloseNormalClosure,
+	})).Equals(ErrTransportStreamConnIsClosed)
+
+	// Test(3)
+	assert(toTransportError(&websocket.CloseError{
+		Code: websocket.CloseAbnormalClosure,
+	})).Equals(NewTransportError("websocket: close 1006 (abnormal closure)"))
+}
+
 func TestNewWebSocketStreamConn(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -58,6 +75,13 @@ func TestNewWebSocketStreamConn(t *testing.T) {
 	assert(sc1.status).Equals(webSocketStreamConnRunning)
 	assert(sc1.conn).Equals(wsConn)
 	assert(cap(sc1.closeCH)).Equals(1)
+
+	// Test(2)
+	assert(newWebSocketStreamConn(nil)).IsNil()
+}
+
+func TestWebSocketStreamConn_writeMessage(t *testing.T) {
+
 }
 
 func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
@@ -113,7 +137,6 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
-					fmt.Println(err)
 					return
 				}
 			}
@@ -141,10 +164,10 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 					Equals(webSocketStreamConnCanClose)
 				// 1. Close() invoke onCloseMessage case
 				//    webSocketStreamConnCanClose (error status, do nothing)
-				testConn.onCloseMessage(
+				assert(testConn.onCloseMessage(
 					websocket.CloseNormalClosure,
 					"",
-				)
+				)).IsNil()
 				assert(atomic.LoadInt32(&testConn.status)).
 					Equals(webSocketStreamConnCanClose)
 				time.Sleep(300 * time.Millisecond)
@@ -152,7 +175,6 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
-					fmt.Println(err)
 					return
 				}
 			}
