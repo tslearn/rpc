@@ -57,7 +57,7 @@ func TestNewWebSocketStreamConn(t *testing.T) {
 		Equals(fmt.Sprintf("%p", sc1.onCloseMessage))
 	assert(sc1.status).Equals(webSocketStreamConnRunning)
 	assert(sc1.conn).Equals(wsConn)
-	assert(cap(sc1.canClose)).Equals(1)
+	assert(cap(sc1.closeCH)).Equals(1)
 }
 
 func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {

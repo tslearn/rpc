@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -14,19 +15,47 @@ const webSocketStreamConnClosing = int32(2)
 const webSocketStreamConnCanClose = int32(2)
 
 type webSocketStreamConn struct {
-	status   int32
-	canClose chan bool
-	conn     *websocket.Conn
+	status    int32
+	reading   int32
+	writing   int32
+	closeCH   chan bool
+	conn      *websocket.Conn
+	writeLock sync.Mutex
+}
+
+func toTransportError(err error) Error {
+	if err == nil {
+		return nil
+	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+		return ErrTransportStreamConnIsClosed
+	} else {
+		return NewTransportError(err.Error())
+	}
 }
 
 func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
 	ret := &webSocketStreamConn{
-		status:   webSocketStreamConnRunning,
-		conn:     conn,
-		canClose: make(chan bool, 1),
+		status:  webSocketStreamConnRunning,
+		conn:    conn,
+		closeCH: make(chan bool, 1),
 	}
 	conn.SetCloseHandler(ret.onCloseMessage)
 	return ret
+}
+
+func (p *webSocketStreamConn) writeMessage(
+	messageType int,
+	data []byte,
+	timeout time.Duration,
+) Error {
+	p.writeLock.Lock()
+	defer p.writeLock.Unlock()
+
+	if e := p.conn.SetWriteDeadline(TimeNow().Add(timeout)); e != nil {
+		return toTransportError(e)
+	}
+
+	return toTransportError(p.conn.WriteMessage(messageType, data))
 }
 
 func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
@@ -46,20 +75,10 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 		webSocketStreamConnClosing,
 		webSocketStreamConnCanClose,
 	) {
-		p.canClose <- true
+		p.closeCH <- true
 		return nil
 	} else {
 		return nil
-	}
-}
-
-func toTransportError(err error) Error {
-	if err == nil {
-		return nil
-	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		return ErrTransportStreamConnIsClosed
-	} else {
-		return NewTransportError(err.Error())
 	}
 }
 
@@ -67,8 +86,17 @@ func (p *webSocketStreamConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
 ) (stream *Stream, err Error) {
+	atomic.StoreInt32(&p.reading, 1)
+	defer atomic.StoreInt32(&p.reading, 0)
+
 	p.conn.SetReadLimit(readLimit)
-	if e := p.conn.SetReadDeadline(time.Now().Add(timeout)); e != nil {
+	if !atomic.CompareAndSwapInt32(
+		&p.status,
+		webSocketStreamConnRunning,
+		webSocketStreamConnRunning,
+	) {
+		return nil, ErrTransportStreamConnIsClosed
+	} else if e := p.conn.SetReadDeadline(TimeNow().Add(timeout)); e != nil {
 		return nil, toTransportError(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
 		return nil, toTransportError(e)
@@ -86,17 +114,23 @@ func (p *webSocketStreamConn) WriteStream(
 	stream *Stream,
 	timeout time.Duration,
 ) (err Error) {
+	atomic.StoreInt32(&p.writing, 1)
+	defer atomic.StoreInt32(&p.writing, 0)
+
 	if stream == nil {
 		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
-	} else if e := p.conn.SetWriteDeadline(time.Now().Add(timeout)); e != nil {
-		return toTransportError(e)
-	} else if e := p.conn.WriteMessage(
-		websocket.BinaryMessage,
-		stream.GetBufferUnsafe(),
-	); e != nil {
-		return toTransportError(e)
+	} else if atomic.CompareAndSwapInt32(
+		&p.status,
+		webSocketStreamConnRunning,
+		webSocketStreamConnRunning,
+	) {
+		return p.writeMessage(
+			websocket.BinaryMessage,
+			stream.GetBufferUnsafe(),
+			timeout,
+		)
 	} else {
-		return nil
+		return ErrTransportStreamConnIsClosed
 	}
 }
 
@@ -106,22 +140,25 @@ func (p *webSocketStreamConn) Close() Error {
 		webSocketStreamConnRunning,
 		webSocketStreamConnClosing,
 	) {
+		defer atomic.StoreInt32(&p.status, webSocketStreamConnClosed)
+
 		// 1. send close message to peer
-		_ = p.conn.WriteMessage(
+		_ = p.writeMessage(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+			time.Second,
 		)
 
-		// 2. wait for peer confirm close message (within 2 seconds)
-		select {
-		case <-p.canClose:
-		case <-time.After(2 * time.Second):
+		// 2. if it is reading or writing now,
+		//    wait for peer confirm close message (within 2 seconds)
+		if atomic.LoadInt32(&p.reading) > 0 || atomic.LoadInt32(&p.writing) > 0 {
+			select {
+			case <-p.closeCH:
+			case <-time.After(2 * time.Second):
+			}
 		}
 
-		// 3. change the status
-		atomic.StoreInt32(&p.status, webSocketStreamConnClosed)
-
-		// 4. close and return
+		// 3. close and return
 		return toTransportError(p.conn.Close())
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
