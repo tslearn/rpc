@@ -34,10 +34,16 @@ func toTransportError(err error) Error {
 }
 
 func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
+	if conn == nil {
+		return nil
+	}
+
 	ret := &webSocketStreamConn{
 		status:  webSocketStreamConnRunning,
-		conn:    conn,
+		reading: 0,
+		writing: 0,
 		closeCH: make(chan bool, 1),
+		conn:    conn,
 	}
 	conn.SetCloseHandler(ret.onCloseMessage)
 	return ret
@@ -64,10 +70,10 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 		webSocketStreamConnRunning,
 		webSocketStreamConnCanClose,
 	) {
-		_ = p.conn.WriteControl(
+		_ = p.writeMessage(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(code, ""),
-			TimeNow().Add(time.Second),
+			time.Second,
 		)
 		return nil
 	} else if atomic.CompareAndSwapInt32(
@@ -119,18 +125,18 @@ func (p *webSocketStreamConn) WriteStream(
 
 	if stream == nil {
 		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
-	} else if atomic.CompareAndSwapInt32(
+	} else if !atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
 		webSocketStreamConnRunning,
 	) {
+		return ErrTransportStreamConnIsClosed
+	} else {
 		return p.writeMessage(
 			websocket.BinaryMessage,
 			stream.GetBufferUnsafe(),
 			timeout,
 		)
-	} else {
-		return ErrTransportStreamConnIsClosed
 	}
 }
 
