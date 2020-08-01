@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"runtime/debug"
@@ -12,7 +13,7 @@ import (
 const webSocketStreamConnClosed = int32(0)
 const webSocketStreamConnRunning = int32(1)
 const webSocketStreamConnClosing = int32(2)
-const webSocketStreamConnCanClose = int32(2)
+const webSocketStreamConnCanClose = int32(3)
 
 type webSocketStreamConn struct {
 	status    int32
@@ -75,15 +76,18 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 			websocket.FormatCloseMessage(code, ""),
 			time.Second,
 		)
+		fmt.Println("CC1")
 		return nil
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnClosing,
 		webSocketStreamConnCanClose,
 	) {
+		fmt.Println("CC2")
 		p.closeCH <- true
 		return nil
 	} else {
+		fmt.Println("CC3")
 		return nil
 	}
 }
