@@ -841,61 +841,81 @@ func TestWsClientAdapter_Open(t *testing.T) {
 }
 
 func TestWsClientAdapter_Close(t *testing.T) {
-	// assert := NewAssert()
-}
+	assert := NewAssert(t)
 
-//
-//func TestNewWebSocketServerEndPoint(t *testing.T) {
-//	assert := internal.NewAssert(t)
-//
-//	server := NewWebSocketServerAdapter("127.0.0.1:20080", "/test")
-//
-//	for i := 0; i < 2; i++ {
-//		assert(
-//			server.Open(func(conn IStreamConn) {
-//				fmt.Println(conn)
-//			}, func(err Error) {
-//				fmt.Println(err)
-//			}),
-//		).IsTrue()
-//
-//		time.Sleep(2 * time.Second)
-//
-//		assert(
-//			server.Close(func(err Error) {
-//				fmt.Println(err)
-//			}),
-//		).IsTrue()
-//	}
-//}
-//
-//func TestNewWebSocketClientEndPoint(t *testing.T) {
-//	assert := internal.NewAssert(t)
-//	server := NewWebSocketServerAdapter("127.0.0.1:20080", "/test")
-//	server.Open(func(conn IStreamConn) {
-//		time.Sleep(3 * time.Second)
-//	}, func(err Error) {
-//		fmt.Println(err)
-//	})
-//
-//	client := NewWebSocketClientAdapter("ws://127.0.0.1:20080/test")
-//	assert(
-//		client.Open(func(conn IStreamConn) {
-//			time.Sleep(3 * time.Second)
-//		}, func(err Error) {
-//			fmt.Println(err)
-//		}),
-//	).IsTrue()
-//
-//	time.Sleep(1 * time.Second)
-//
-//	assert(
-//		client.Close(func(err Error) {
-//			fmt.Println(err)
-//		}),
-//	).IsTrue()
-//
-//	server.Close(func(err Error) {
-//		fmt.Println(err)
-//	})
-//}
+	// Test(1) onError is nil
+	assert(testRunWithCatchPanic(func() {
+		NewWebSocketClientAdapter("test").Close(nil)
+	})).Equals("onError is nil")
+
+	// Test(2) SetClosing is false
+	assert(testRunWithCatchPanic(func() {
+		NewWebSocketClientAdapter("test").Close(func(e Error) {
+			assert(e.GetMessage()).Equals("it is not running")
+			assert(strings.Contains(e.GetDebug(), "goroutine")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "[running]")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "Close")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "adapter_websocket")).IsTrue()
+		})
+	})).IsNil()
+
+	// Test(3) OK
+	assert(testRunWithCatchPanic(func() {
+		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
+		go func() {
+			serverAdapter.Open(
+				func(conn IStreamConn) {},
+				func(e Error) {},
+			)
+		}()
+
+		clientAdapter := NewWebSocketClientAdapter("ws://127.0.0.1:12345")
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			clientAdapter.Open(
+				func(conn IStreamConn) {
+					time.Sleep(time.Second)
+				},
+				func(e Error) {},
+			)
+		}()
+
+		time.Sleep(200 * time.Millisecond)
+		clientAdapter.Close(func(e Error) {
+			fmt.Println(e)
+			assert().Fail("error run here")
+		})
+
+		serverAdapter.Close(func(e Error) {})
+	})).IsNil()
+
+	// Test(4) conn.Close() error
+	assert(testRunWithCatchPanic(func() {
+		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
+		go func() {
+			serverAdapter.Open(
+				func(conn IStreamConn) {},
+				func(e Error) {},
+			)
+		}()
+
+		clientAdapter := NewWebSocketClientAdapter("ws://127.0.0.1:12345")
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			clientAdapter.Open(
+				func(conn IStreamConn) {
+					makeConnSetReadDeadlineError(conn.(*webSocketStreamConn).conn)
+					time.Sleep(6 * time.Second)
+				},
+				func(e Error) {},
+			)
+		}()
+
+		time.Sleep(200 * time.Millisecond)
+		clientAdapter.Close(func(e Error) {
+			assert(e).IsNotNil()
+		})
+
+		serverAdapter.Close(func(e Error) {})
+	})).IsNil()
+}
