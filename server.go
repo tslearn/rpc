@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"path"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -127,9 +128,9 @@ func (p *serverSession) WriteStream(stream *Stream) Error {
 				p.writeTimeout,
 			)
 		} else {
-			return internal.NewBaseError(
+			return internal.NewKernelPanic(
 				"serverSession: WriteStream: conn is nil",
-			)
+			).AddDebug(string(debug.Stack()))
 		}
 	}))
 }
@@ -139,11 +140,11 @@ func (p *serverSession) OnDataStream(
 	processor *internal.Processor,
 ) Error {
 	if stream == nil {
-		return internal.NewBaseError("stream is nil")
+		return internal.NewKernelPanic("stream is nil")
 	}
 
 	if processor == nil {
-		return internal.NewBaseError(
+		return internal.NewKernelPanic(
 			"serverSession: OnDataStream: processor is nil",
 		)
 	}
@@ -151,7 +152,7 @@ func (p *serverSession) OnDataStream(
 	record, ok := p.callMap[stream.GetCallbackID()]
 
 	if !ok {
-		return internal.NewBaseError(
+		return internal.NewProtocolError(
 			"serverSession: OnDataStream: stream callbackID error",
 		)
 	}
@@ -165,7 +166,7 @@ func (p *serverSession) OnDataStream(
 	stream.SetSessionID(p.id)
 
 	if !processor.PutStream(stream) {
-		return internal.NewBaseError(
+		return internal.NewReplyError(
 			"serverSession: OnDataStream: processor can not deal with stream",
 		)
 	}
@@ -176,21 +177,21 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnControlStream(stream *Stream) Error {
 	return internal.ConvertToError(p.CallWithLock(func() interface{} {
 		if stream == nil {
-			return internal.NewBaseError(
+			return internal.NewKernelPanic(
 				"Server: OnControlStream: stream is nil",
 			)
 		}
 		defer stream.Release()
 
 		if p.conn == nil {
-			return internal.NewBaseError(
+			return internal.NewKernelPanic(
 				"Server: OnControlStream: conn is nil",
 			)
 		}
 
 		controlSequence := stream.GetSequence()
 		if controlSequence <= p.controlSeed {
-			return internal.NewBaseError(
+			return internal.NewRuntimePanic(
 				"Server: OnControlStream: sequence is omit",
 			)
 		}
@@ -198,7 +199,7 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 
 		kind, ok := stream.ReadInt64()
 		if !ok {
-			return internal.NewBaseError(
+			return internal.NewTransportError(
 				"Server: OnControlStream: stream format error",
 			)
 		}
@@ -506,13 +507,13 @@ func (p *Server) Close() {
 	p.DoWithLock(func() {
 		processor := atomic.LoadPointer(&p.processor)
 		if processor == nil {
-			p.onError(internal.NewBaseError("it is not running"))
+			p.onError(internal.NewRuntimePanic("it is not running"))
 		} else if !atomic.CompareAndSwapPointer(
 			&p.processor,
 			unsafe.Pointer(processor),
 			nil,
 		) {
-			p.onError(internal.NewBaseError("it is not running"))
+			p.onError(internal.NewRuntimePanic("it is not running"))
 		} else {
 			for _, item := range p.adapters {
 				go func(adapter internal.IAdapter) {
@@ -525,7 +526,7 @@ func (p *Server) Close() {
 
 func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	if conn == nil {
-		return nil, internal.NewBaseError(
+		return nil, internal.NewKernelPanic(
 			"Server: getSession: conn is nil",
 		)
 	} else if stream, err := conn.ReadStream(
@@ -592,7 +593,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn internal.IStreamConn) {
 	if conn == nil {
-		p.onError(internal.NewBaseError("Server: onConnRun: conn is nil"))
+		p.onError(internal.NewKernelPanic("Server: onConnRun: conn is nil"))
 	} else if session, err := p.getSession(conn); err != nil {
 		p.onError(err)
 	} else {

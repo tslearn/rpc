@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// Begin ***** sendItem ***** //
 const sendItemStatusRunning = int32(1)
 const sendItemStatusFinish = int32(2)
 
@@ -28,14 +27,7 @@ type sendItem struct {
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &sendItem{
-			id:        0,
-			status:    sendItemStatusRunning,
-			startTime: time.Time{},
-			sendTime:  time.Time{},
-			timeout:   0,
-			finishCH:  nil,
-			stream:    internal.NewStream(),
-			next:      nil,
+			stream: internal.NewStream(),
 		}
 	},
 }
@@ -224,9 +216,9 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
-		return internal.NewBaseError(
+		return internal.NewKernelPanic(
 			"Client: initConn: conn is nil",
-		)
+		).AddDebug(string(debug.Stack()))
 	} else if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
 		return err
 	} else if backStream, err = conn.ReadStream(3*time.Second, 0); err != nil {
@@ -478,7 +470,7 @@ func (p *Client) sendMessage(
 	// write args
 	for i := 0; i < len(args); i++ {
 		if item.stream.Write(args[i]) != internal.StreamWriteOK {
-			return nil, internal.NewBaseError(
+			return nil, internal.NewRuntimePanic(
 				"Client: send: args not supported",
 			)
 		}
@@ -497,7 +489,7 @@ func (p *Client) sendMessage(
 
 	// wait for response
 	if ok := <-item.finishCH; !ok {
-		return nil, internal.NewBaseError(internal.ErrStringTimeout)
+		return nil, internal.NewReplyError(internal.ErrStringTimeout)
 	} else if errKind, ok := item.stream.ReadUint64(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if errKind == uint64(internal.ErrorKindNone) {
