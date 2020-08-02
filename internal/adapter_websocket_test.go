@@ -613,15 +613,15 @@ func TestWsServerAdapter_Open(t *testing.T) {
 	})
 }
 
-type fadeNetListener struct{}
+type fakeNetListener struct{}
 
-func (p fadeNetListener) Accept() (net.Conn, error) {
+func (p fakeNetListener) Accept() (net.Conn, error) {
 	return nil, nil
 }
-func (p fadeNetListener) Close() error {
+func (p fakeNetListener) Close() error {
 	return errors.New("test error")
 }
-func (p fadeNetListener) Addr() net.Addr {
+func (p fakeNetListener) Addr() net.Addr {
 	return nil
 }
 
@@ -689,7 +689,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 			wsServer,
 			"listeners",
 		))
-		fakeListener := net.Listener(fadeNetListener{})
+		fakeListener := net.Listener(fakeNetListener{})
 		httpServerMuPointer.Lock()
 		*listenersPtr = map[*net.Listener]struct{}{
 			&fakeListener: {},
