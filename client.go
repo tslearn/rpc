@@ -212,7 +212,7 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 
 	sendStream.SetCallbackID(0)
 	sendStream.SetSequence(sequence)
-	sendStream.WriteInt64(SystemStreamKindInit)
+	sendStream.WriteInt64(controlStreamKindInit)
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
@@ -228,7 +228,7 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	} else if backStream.GetSequence() != sequence {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
-		kind != SystemStreamKindInitBack {
+		kind != controlStreamKindInitBack {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
@@ -301,7 +301,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 				}
 			})
 		} else if kind, ok := stream.ReadInt64(); !ok ||
-			kind != SystemStreamKindRequestIdsBack {
+			kind != controlStreamKindRequestIdsBack {
 			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else if maxCallbackId, ok := stream.ReadUint64(); !ok {
@@ -344,7 +344,7 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 			sendStream := internal.NewStream()
 			sendStream.SetCallbackID(0)
 			sendStream.SetSequence(p.systemSeed)
-			sendStream.WriteInt64(SystemStreamKindRequestIds)
+			sendStream.WriteInt64(controlStreamKindRequestIds)
 			sendStream.WriteUint64(p.currCallbackId)
 
 			for key := range p.sendMap {

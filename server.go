@@ -205,11 +205,11 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 		}
 
 		switch kind {
-		case SystemStreamKindInit:
+		case controlStreamKindInit:
 			stream.Reset()
 			stream.SetCallbackID(0)
 			stream.SetSequence(controlSequence)
-			stream.WriteInt64(SystemStreamKindInitBack)
+			stream.WriteInt64(controlStreamKindInitBack)
 			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
 			stream.WriteInt64(int64(p.readTimeout / time.Millisecond))
 			stream.WriteInt64(int64(p.writeTimeout / time.Millisecond))
@@ -217,7 +217,7 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			stream.WriteInt64(p.readLimit)
 			stream.WriteInt64(p.maxStreams)
 			return p.conn.WriteStream(stream, p.writeTimeout)
-		case SystemStreamKindRequestIds:
+		case controlStreamKindRequestIds:
 			currCallbackId, ok := stream.ReadUint64()
 			if !ok {
 				return internal.NewProtocolError(internal.ErrStringBadStream)
@@ -257,7 +257,7 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			stream.Reset()
 			stream.SetCallbackID(0)
 			stream.SetSequence(controlSequence)
-			stream.WriteInt64(SystemStreamKindRequestIdsBack)
+			stream.WriteInt64(controlStreamKindRequestIdsBack)
 			stream.WriteUint64(p.dataSeed)
 			return p.conn.WriteStream(stream, time.Second)
 		default:
@@ -539,7 +539,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	} else if stream.GetSequence() == 0 {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := stream.ReadInt64(); !ok ||
-		kind != SystemStreamKindInit {
+		kind != controlStreamKindInit {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)

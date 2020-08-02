@@ -4,10 +4,10 @@ import (
 	"github.com/rpccloud/rpc/internal"
 )
 
-const SystemStreamKindInit = int64(1)
-const SystemStreamKindInitBack = int64(2)
-const SystemStreamKindRequestIds = int64(3)
-const SystemStreamKindRequestIdsBack = int64(4)
+const controlStreamKindInit = int64(1)
+const controlStreamKindInitBack = int64(2)
+const controlStreamKindRequestIds = int64(3)
+const controlStreamKindRequestIdsBack = int64(4)
 
 // Bool ...
 type Bool = internal.Bool
