@@ -1,11 +1,14 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net"
+	"net/http"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -475,13 +478,239 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		NewWebSocketServerAdapter("test").Open(func(conn IStreamConn) {}, nil)
 	})).Equals("onError is nil")
 
-	//assert(err1.GetMessage()).Equals("onError is nil")
-	//assert(strings.Contains(err1.GetDebug(), "TestWsServerAdapter_Open"))
-	//assert(strings.Contains(err1.GetDebug(), "adapter_websocket.go"))
+	// Test(2)
+	assert(testRunWithCatchPanic(func() {
+		NewWebSocketServerAdapter("test").Open(nil, func(e Error) {})
+	})).Equals("onConnRun is nil")
+
+	// Test(3) it is already running
+	_ = testRunWithSubscribePanic(func() {
+		serverAdapter := NewWebSocketServerAdapter("test").(*wsServerAdapter)
+		serverAdapter.status = statusManagerRunning
+		waitCH := make(chan Error, 1)
+
+		serverAdapter.Open(
+			func(conn IStreamConn) {},
+			func(e Error) {
+				waitCH <- e
+			},
+		)
+
+		err := <-waitCH
+		assert(err.GetMessage()).Equals("it is already running")
+		assert(strings.Contains(err.GetDebug(), "goroutine")).IsTrue()
+		assert(strings.Contains(err.GetDebug(), "[running]")).IsTrue()
+		assert(strings.Contains(err.GetDebug(), "Open")).IsTrue()
+	})
+
+	// Test(4) error addr
+	_ = testRunWithSubscribePanic(func() {
+		serverAdapter := NewWebSocketServerAdapter("error-addr").(*wsServerAdapter)
+		waitCH := make(chan Error, 1)
+
+		serverAdapter.Open(
+			func(conn IStreamConn) {},
+			func(e Error) {
+				waitCH <- e
+			},
+		)
+
+		err := <-waitCH
+		assert(strings.Contains(err.GetMessage(), "error-addr")).IsTrue()
+		assert(err.GetDebug()).Equals("")
+	})
+
+	// Test(5) server OK, but conn upgrade error
+	_ = testRunWithSubscribePanic(func() {
+		serverAdapter := NewWebSocketServerAdapter(
+			"127.0.0.1:12345",
+		).(*wsServerAdapter)
+
+		go func() {
+			time.Sleep(200 * time.Millisecond)
+			_, _ = http.Get("http://127.0.0.1:12345")
+			serverAdapter.Close(func(e Error) {
+				assert().Fail("error run here")
+			})
+		}()
+
+		waitCH := make(chan Error, 1)
+		serverAdapter.Open(
+			func(conn IStreamConn) {},
+			func(e Error) {
+				waitCH <- e
+			},
+		)
+
+		err := <-waitCH
+		assert(strings.Contains(
+			err.GetMessage(),
+			"the client is not using the websocket protocol",
+		)).IsTrue()
+		assert(err.GetDebug()).Equals("")
+	})
+
+	// Test(6) OK
+	_ = testRunWithSubscribePanic(func() {
+		serverAdapter := NewWebSocketServerAdapter(
+			"127.0.0.1:12345",
+		).(*wsServerAdapter)
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			NewWebSocketClientAdapter("ws://127.0.0.1:12345").Open(
+				func(conn IStreamConn) {
+					// empty
+				}, func(e Error) {
+					assert().Fail("error run here")
+				},
+			)
+			serverAdapter.Close(func(e Error) {
+				assert().Fail("error run here")
+			})
+		}()
+
+		serverAdapter.Open(
+			func(conn IStreamConn) {
+				time.Sleep(300 * time.Millisecond)
+			},
+			func(e Error) {
+				assert().Fail("error run here")
+			},
+		)
+	})
+
+	// Test(7) stream conn Close error
+	_ = testRunWithSubscribePanic(func() {
+		serverAdapter := NewWebSocketServerAdapter(
+			"127.0.0.1:12345",
+		).(*wsServerAdapter)
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			NewWebSocketClientAdapter("ws://127.0.0.1:12345").Open(
+				func(conn IStreamConn) {
+					// empty
+				}, func(e Error) {
+					assert().Fail("error run here")
+				},
+			)
+			time.Sleep(500 * time.Millisecond)
+			serverAdapter.Close(func(e Error) {
+				assert().Fail("error run here")
+			})
+		}()
+
+		serverAdapter.Open(
+			func(conn IStreamConn) {
+				time.Sleep(300 * time.Millisecond)
+				makeConnSetReadDeadlineError(conn.(*webSocketStreamConn).conn)
+			},
+			func(e Error) {
+				assert(e).IsNotNil()
+			},
+		)
+	})
+}
+
+type fadeNetListener struct{}
+
+func (p fadeNetListener) Accept() (net.Conn, error) {
+	return nil, nil
+}
+func (p fadeNetListener) Close() error {
+	return errors.New("test error")
+}
+func (p fadeNetListener) Addr() net.Addr {
+	return nil
 }
 
 func TestWsServerAdapter_Close(t *testing.T) {
+	assert := NewAssert(t)
 
+	// Test(1) onError is nil
+	assert(testRunWithCatchPanic(func() {
+		NewWebSocketServerAdapter("test").Close(nil)
+	})).Equals("onError is nil")
+
+	// Test(2) SetClosing is false
+	assert(testRunWithCatchPanic(func() {
+		NewWebSocketServerAdapter("test").Close(func(e Error) {
+			assert(e.GetMessage()).Equals("it is not running")
+			assert(strings.Contains(e.GetDebug(), "goroutine")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "[running]")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "Close")).IsTrue()
+			assert(strings.Contains(e.GetDebug(), "adapter_websocket")).IsTrue()
+		})
+	})).IsNil()
+
+	// Test(3) OK
+	assert(testRunWithCatchPanic(func() {
+		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
+		go func() {
+			serverAdapter.Open(
+				func(conn IStreamConn) {},
+				func(e Error) {
+					fmt.Println(e)
+					assert().Fail("error run here")
+				},
+			)
+		}()
+		time.Sleep(100 * time.Millisecond)
+		serverAdapter.Close(func(e Error) {
+			fmt.Println(e)
+			assert().Fail("error run here")
+		})
+	})).IsNil()
+
+	// Test(4) server Close error
+	assert(testRunWithCatchPanic(func() {
+		fnGetField := func(objPointer interface{}, fileName string) unsafe.Pointer {
+			val := reflect.Indirect(reflect.ValueOf(objPointer))
+			return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
+		}
+
+		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
+		go func() {
+			serverAdapter.Open(
+				func(conn IStreamConn) {},
+				func(e Error) {
+					fmt.Println(e)
+					assert().Fail("error run here")
+				},
+			)
+		}()
+
+		time.Sleep(200 * time.Millisecond)
+		// make fake error
+		wsServer := serverAdapter.(*wsServerAdapter).wsServer
+		httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
+		listenersPtr := (*map[*net.Listener]struct{})(fnGetField(
+			wsServer,
+			"listeners",
+		))
+		fakeListener := net.Listener(fadeNetListener{})
+		httpServerMuPointer.Lock()
+		*listenersPtr = map[*net.Listener]struct{}{
+			&fakeListener: {},
+		}
+		httpServerMuPointer.Unlock()
+
+		errCount := 0
+		serverAdapter.Close(func(e Error) {
+			if errCount == 0 {
+				assert(e.GetKind()).Equals(ErrorKindRuntimePanic)
+				assert(e.GetMessage()).Equals("test error")
+			} else if errCount == 1 {
+				assert(e.GetKind()).Equals(ErrorKindRuntimePanic)
+				assert(e.GetMessage()).Equals("it cannot be closed within 5 seconds")
+			} else {
+				assert().Fail("error run here")
+			}
+
+			errCount++
+		})
+	})).IsNil()
 }
 
 //

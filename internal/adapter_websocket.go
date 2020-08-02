@@ -255,9 +255,9 @@ func (p *wsServerAdapter) Close(onError func(Error)) {
 	} else {
 		select {
 		case <-waitCH:
-		case <-time.After(20 * time.Second):
+		case <-time.After(5 * time.Second):
 			onError(NewRuntimePanic(
-				"can not close within 20 seconds",
+				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}
 	}
