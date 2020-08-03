@@ -14,11 +14,9 @@ import (
 	"unsafe"
 )
 
-// Begin ***** serverSessionRecord ***** //
 const serverSessionRecordStatusNone = 0
 const serverSessionRecordStatusRunning = 1
-const serverSessionRecordStatusBack = 2
-const serverSessionRecordStatusClosed = 3
+const serverSessionRecordStatusReturn = 2
 
 type serverSessionRecord struct {
 	id     uint64
@@ -29,12 +27,7 @@ type serverSessionRecord struct {
 
 var serverSessionRecordCache = &sync.Pool{
 	New: func() interface{} {
-		return &serverSessionRecord{
-			id:     0,
-			status: 0,
-			mark:   false,
-			stream: nil,
-		}
+		return &serverSessionRecord{}
 	},
 }
 
@@ -54,19 +47,17 @@ func (p *serverSessionRecord) SetRunning() bool {
 	)
 }
 
-func (p *serverSessionRecord) BackStream(stream *Stream) {
+func (p *serverSessionRecord) SetReturn(stream *Stream) {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		serverSessionRecordStatusRunning,
-		serverSessionRecordStatusBack,
+		serverSessionRecordStatusReturn,
 	) {
 		p.stream = stream
 	}
 }
 
 func (p *serverSessionRecord) Release() {
-	atomic.StoreInt32(&p.status, serverSessionRecordStatusClosed)
-
 	if p.stream != nil {
 		p.stream.Release()
 		p.stream = nil
@@ -74,9 +65,6 @@ func (p *serverSessionRecord) Release() {
 	serverSessionRecordCache.Put(p)
 }
 
-// End ***** serverSessionRecord ***** //
-
-// Begin ***** serverSession ***** //
 type serverSession struct {
 	id           uint64
 	security     string
@@ -85,7 +73,6 @@ type serverSession struct {
 	controlSeed  uint64
 	callMap      map[uint64]*serverSessionRecord
 	readLimit    int64
-	writeLimit   int64
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 	maxStreams   int64
@@ -102,7 +89,6 @@ func newServerSession(
 	id uint64,
 	maxStreams int64,
 	readLimit int64,
-	writeLimit int64,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
 ) *serverSession {
@@ -113,7 +99,6 @@ func newServerSession(
 	ret.controlSeed = 0
 	ret.callMap = make(map[uint64]*serverSessionRecord)
 	ret.readLimit = readLimit
-	ret.writeLimit = writeLimit
 	ret.readTimeout = readTimeout
 	ret.writeTimeout = writeTimeout
 	ret.maxStreams = maxStreams
@@ -213,7 +198,6 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
 			stream.WriteInt64(int64(p.readTimeout / time.Millisecond))
 			stream.WriteInt64(int64(p.writeTimeout / time.Millisecond))
-			stream.WriteInt64(p.writeLimit)
 			stream.WriteInt64(p.readLimit)
 			stream.WriteInt64(p.maxStreams)
 			return p.conn.WriteStream(stream, p.writeTimeout)
@@ -571,7 +555,6 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 				atomic.AddUint64(&p.sessionSeed, 1),
 				p.sessionSize,
 				p.readLimit,
-				p.writeLimit,
 				p.readTimeout,
 				p.writeTimeout,
 			)

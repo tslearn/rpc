@@ -100,7 +100,6 @@ type Client struct {
 	readTimeout          time.Duration
 	writeTimeout         time.Duration
 	readLimit            int64
-	writeLimit           int64
 	currCallbackId       uint64
 	maxCallbackId        uint64
 	callbackSize         int64
@@ -137,7 +136,6 @@ func newClient(endPoint internal.IAdapter) *Client {
 		readTimeout:          0,
 		writeTimeout:         0,
 		readLimit:            0,
-		writeLimit:           0,
 		currCallbackId:       0,
 		maxCallbackId:        0,
 		callbackSize:         0,
@@ -246,9 +244,6 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	} else if readLimit, ok := backStream.ReadInt64(); !ok ||
 		readLimit <= 0 {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if writeLimit, ok := backStream.ReadInt64(); !ok ||
-		writeLimit <= 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if callBackSize, ok := backStream.ReadInt64(); !ok ||
 		callBackSize <= 0 {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
@@ -259,7 +254,6 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 		p.readTimeout = time.Duration(readTimeoutMS) * time.Millisecond
 		p.writeTimeout = time.Duration(writeTimeoutMS) * time.Millisecond
 		p.readLimit = readLimit
-		p.writeLimit = writeLimit
 		p.callbackSize = callBackSize
 		return nil
 	}
