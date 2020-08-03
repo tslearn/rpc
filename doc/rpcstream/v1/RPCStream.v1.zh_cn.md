@@ -1,4 +1,4 @@
-## RPCStream v1.0
+# RPCStream v1.0
 
 ### 目的 （Purpose）
 定义一种二进制字节流格式，用于高速RPC传输
