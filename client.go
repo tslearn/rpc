@@ -14,20 +14,20 @@ const sendItemStatusRunning = int32(1)
 const sendItemStatusFinish = int32(2)
 
 type sendItem struct {
-	id        uint64
-	status    int32
-	startTime time.Time
-	sendTime  time.Time
-	timeout   time.Duration
-	finishCH  chan bool
-	stream    *Stream
-	next      *sendItem
+	id         uint64
+	status     int32
+	startTime  time.Time
+	sendTime   time.Time
+	timeout    time.Duration
+	returnCH   chan *Stream
+	sendStream *Stream
+	next       *sendItem
 }
 
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &sendItem{
-			stream: internal.NewStream(),
+			sendStream: internal.NewStream(),
 		}
 	},
 }
@@ -39,7 +39,7 @@ func newSendItem() *sendItem {
 	ret.startTime = time.Time{}
 	ret.sendTime = time.Time{}
 	ret.timeout = 0
-	ret.finishCH = make(chan bool, 1)
+	ret.returnCH = make(chan *Stream, 1)
 	ret.next = nil
 	return ret
 }
@@ -55,9 +55,7 @@ func (p *sendItem) Return(stream *Stream) bool {
 		stream.Release()
 		return false
 	} else {
-		p.stream.Release()
-		p.stream = stream
-		p.finishCH <- true
+		p.returnCH <- stream
 		return true
 	}
 }
@@ -68,7 +66,13 @@ func (p *sendItem) Timeout() bool {
 		sendItemStatusRunning,
 		sendItemStatusFinish,
 	) {
-		p.finishCH <- false
+		// return timeout stream
+		stream := internal.NewStream()
+		stream.SetCallbackID(p.sendStream.GetCallbackID())
+		stream.WriteUint64(uint64(internal.ErrorKindReply))
+		stream.WriteString(internal.ErrStringTimeout)
+		stream.WriteString("")
+		p.returnCH <- stream
 		return true
 	} else {
 		return false
@@ -76,9 +80,9 @@ func (p *sendItem) Timeout() bool {
 }
 
 func (p *sendItem) Release() {
-	close(p.finishCH)
-	p.finishCH = nil
-	p.stream.Reset()
+	close(p.returnCH)
+	p.returnCH = nil
+	p.sendStream.Reset()
 	sendItemCache.Put(p)
 }
 
@@ -428,15 +432,15 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			p.currCallbackId++
 			item.id = p.currCallbackId
 			item.next = nil
-			item.stream.SetCallbackID(item.id)
-			item.stream.SetSequence(0)
+			item.sendStream.SetCallbackID(item.id)
+			item.sendStream.SetSequence(0)
 
 			// set to sendMap
 			p.sendMap[item.id] = item
 
 			// try to send
 			if err := p.conn.WriteStream(
-				item.stream,
+				item.sendStream,
 				p.writeTimeout,
 			); err != nil {
 				p.onError(err)
@@ -462,14 +466,14 @@ func (p *Client) sendMessage(
 	item.timeout = timeout
 
 	// write target
-	item.stream.WriteString(target)
+	item.sendStream.WriteString(target)
 	// write depth
-	item.stream.WriteUint64(0)
+	item.sendStream.WriteUint64(0)
 	// write from
-	item.stream.WriteString("@")
+	item.sendStream.WriteString("@")
 	// write args
 	for i := 0; i < len(args); i++ {
-		if item.stream.Write(args[i]) != internal.StreamWriteOK {
+		if item.sendStream.Write(args[i]) != internal.StreamWriteOK {
 			return nil, internal.NewRuntimePanic(
 				"Client: send: args not supported",
 			)
@@ -488,26 +492,35 @@ func (p *Client) sendMessage(
 	})
 
 	// wait for response
-	if ok := <-item.finishCH; !ok {
-		return nil, internal.NewReplyError(internal.ErrStringTimeout)
-	} else if errKind, ok := item.stream.ReadUint64(); !ok {
+	if stream := <-item.returnCH; stream == nil {
+		return nil, internal.NewKernelPanic("stream is nil").
+			AddDebug(string(debug.Stack()))
+	} else if errKind, ok := stream.ReadUint64(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if errKind == uint64(internal.ErrorKindNone) {
-		if ret, ok := item.stream.Read(); !ok {
+		if ret, ok := stream.Read(); !ok {
 			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 		} else {
 			return ret, nil
 		}
-	} else if message, ok := item.stream.ReadString(); !ok {
+	} else if message, ok := stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if debug, ok := item.stream.ReadString(); !ok {
+	} else if debug, ok := stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if !item.stream.IsReadFinish() {
+	} else if !stream.IsReadFinish() {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
 		return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
 	}
 }
+
+//func (p *Server) onError(err Error) {
+//  p.onSessionError(0, err)
+//}
+//
+//func (p *Server) onSessionError(sessionID uint64, err Error) {
+//  fmt.Println("client", sessionID, err)
+//}
 
 func (p *Client) onError(err Error) {
 	fmt.Println("client", err)
