@@ -21,5 +21,6 @@ Uint64.MaxValue = 18446744073709551615
 字节流由版本和内容两部分组成。版本占一个字节（0-255），其余为内容部分。<br>
 结构如下图所示:
 ![avatar](img/RPCStream-structure.png)
-<br>内容编码如下图所示:
+
+### 内容编码:
 ![avatar](img/RPCStream-codes.v1.png)
