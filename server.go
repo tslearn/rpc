@@ -298,7 +298,7 @@ type Server struct {
 	isDebug               bool
 	listens               []*listenItem
 	adapters              []internal.IAdapter
-	processor             unsafe.Pointer
+	processor             *internal.Processor
 	numOfThreads          int
 	sessionMap            sync.Map
 	sessionMaxConcurrency int64
@@ -308,7 +308,8 @@ type Server struct {
 	readTimeout           time.Duration
 	writeTimeout          time.Duration
 	replyCache            internal.ReplyCache
-	internal.Lock
+	internal.StatusManager
+	sync.Mutex
 }
 
 func NewServer() *Server {
@@ -328,81 +329,152 @@ func NewServer() *Server {
 	}
 }
 
+// SetDebug ...
 func (p *Server) SetDebug() *Server {
-	p.DoWithLock(func() {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetDebug must be called before Serve",
+		).AddDebug(string(debug.Stack())))
+	} else {
 		p.isDebug = true
-	})
-	return p
-}
-
-func (p *Server) SetRelease() *Server {
-	p.DoWithLock(func() {
-		p.isDebug = false
-	})
-	return p
-}
-
-func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
-	if numOfThreads <= 0 {
-		panic("numOfThreads must be greater than 0")
 	}
-	p.DoWithLock(func() {
-		p.numOfThreads = numOfThreads
-	})
+
 	return p
 }
 
+// SetRelease ...
+func (p *Server) SetRelease() *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetRelease must be called before Serve",
+		).AddDebug(string(debug.Stack())))
+	} else {
+		p.isDebug = false
+	}
+
+	return p
+}
+
+// SetNumOfThreads ...
+func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if numOfThreads <= 0 {
+		p.onError(internal.NewRuntimePanic(
+			"numOfThreads must be greater than 0",
+		).AddDebug(string(debug.Stack())))
+	} else if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetNumOfThreads must be called before Serve",
+		).AddDebug(string(debug.Stack())))
+	} else {
+		p.numOfThreads = numOfThreads
+	}
+
+	return p
+}
+
+// SetTransportLimit ...
 func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
+	p.Lock()
+	defer p.Unlock()
+
 	if maxTransportBytes < minTransportLimit {
-		panic(fmt.Sprintf(
+		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"maxTransportBytes must be greater than or equal to %d",
 			minTransportLimit,
-		))
-	}
-	p.DoWithLock(func() {
+		)).AddDebug(string(debug.Stack())))
+	} else if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetTransportLimit must be called before Serve",
+		).AddDebug(string(debug.Stack())))
+	} else {
 		p.transportLimit = int64(maxTransportBytes)
-	})
+	}
+
 	return p
 }
 
+// SetReplyCache ...
 func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
-	p.DoWithLock(func() {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetReplyCache must be called before Serve",
+		).AddDebug(string(debug.Stack())))
+	} else {
 		p.replyCache = replyCache
-	})
+	}
+
 	return p
 }
 
-// AddChildService ...
+// AddService ...
 func (p *Server) AddService(
 	name string,
 	service *Service,
 ) *Server {
+	p.Lock()
+	defer p.Unlock()
+
 	fileLine := internal.GetFileLine(1)
-	p.DoWithLock(func() {
-		if atomic.LoadPointer(&p.processor) == nil {
-			p.services = append(p.services, internal.NewServiceMeta(
-				name,
-				service,
-				fileLine,
-			))
-		} else {
-			p.onError(internal.NewRuntimePanic(
-				"AddService must be before Serve",
-			).AddDebug(fileLine))
-		}
-	})
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"AddService must be called before Serve",
+		).AddDebug(fileLine))
+	} else {
+		p.services = append(p.services, internal.NewServiceMeta(
+			name,
+			service,
+			fileLine,
+		))
+	}
+
+	return p
+}
+
+// ListenWebSocket ...
+func (p *Server) ListenWebSocket(addr string) *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	fileLine := internal.GetFileLine(1)
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"ListenWebSocket must be called before Serve",
+		).AddDebug(fileLine))
+	} else {
+		p.listens = append(p.listens, &listenItem{
+			scheme:   listenItemSchemeWS,
+			addr:     addr,
+			certFile: "",
+			keyFile:  "",
+			fileLine: fileLine,
+		})
+	}
+
 	return p
 }
 
 // BuildReplyCache ...
-func (p *Server) BuildReplyCache() Error {
+func (p *Server) BuildReplyCache() *Server {
 	_, file, _, _ := runtime.Caller(1)
 	buildDir := path.Join(path.Dir(file))
 
-	services := ([]*internal.ServiceMeta)(nil)
-	p.DoWithLock(func() {
-		services = p.services
-	})
+	services := func() []*internal.ServiceMeta {
+		p.Lock()
+		defer p.Unlock()
+		return p.services
+	}()
 
 	processor := internal.NewProcessor(
 		p.isDebug,
@@ -416,30 +488,13 @@ func (p *Server) BuildReplyCache() Error {
 	)
 	defer processor.Close()
 
-	return processor.BuildCache(
+	if err := processor.BuildCache(
 		"cache",
 		path.Join(buildDir, "cache", "reply_cache.go"),
-	)
-}
+	); err != nil {
+		p.onError(err)
+	}
 
-// ListenWebSocket ...
-func (p *Server) ListenWebSocket(addr string) *Server {
-	fileLine := internal.GetFileLine(1)
-	p.DoWithLock(func() {
-		if atomic.LoadPointer(&p.processor) == nil {
-			p.listens = append(p.listens, &listenItem{
-				scheme:   listenItemSchemeWS,
-				addr:     addr,
-				certFile: "",
-				keyFile:  "",
-				fileLine: fileLine,
-			})
-		} else {
-			p.onError(internal.NewRuntimePanic(
-				"ListenWebSocket must be before Serve",
-			).AddDebug(fileLine))
-		}
-	})
 	return p
 }
 
@@ -447,21 +502,24 @@ func (p *Server) Serve() {
 	waitCount := 0
 	waitCH := make(chan struct{})
 
-	p.DoWithLock(func() {
+	func() {
+		p.Lock()
+		defer p.Unlock()
+
 		// create adapters by listens
-		p.adapters = make([]internal.IAdapter, 0)
+		adapters := make([]internal.IAdapter, 0)
 		for _, listener := range p.listens {
 			switch listener.scheme {
 			case listenItemSchemeWS:
-				p.adapters = append(
-					p.adapters,
+				adapters = append(
+					adapters,
 					internal.NewWebSocketServerAdapter(listener.addr),
 				)
 			default:
 			}
 		}
 
-		if len(p.adapters) <= 0 {
+		if len(adapters) <= 0 {
 			p.onError(internal.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
@@ -488,55 +546,62 @@ func (p *Server) Serve() {
 				}
 			},
 		); processor == nil {
-			// ignore
-		} else if !atomic.CompareAndSwapPointer(
-			&p.processor,
-			nil,
-			unsafe.Pointer(processor),
-		) {
+			p.onError(internal.NewKernelPanic(
+				"processor is nil",
+			).AddDebug(string(debug.Stack())))
+		} else if !p.SetRunning(func() {
+			p.adapters = adapters
+			p.processor = processor
+		}) {
 			processor.Close()
 			p.onError(internal.NewRuntimePanic("it is already running"))
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
 				go func(serverAdapter internal.IAdapter) {
-					for atomic.CompareAndSwapPointer(
-						&p.processor,
-						unsafe.Pointer(processor),
-						unsafe.Pointer(processor),
-					) {
+					for p.IsRunning() {
 						serverAdapter.Open(p.onConnRun, p.onError)
 					}
 					waitCH <- struct{}{}
 				}(item)
 			}
 		}
-	})
+	}()
 
 	for i := 0; i < waitCount; i++ {
 		<-waitCH
 	}
+
+	p.SetClosed(func() {
+		p.adapters = nil
+		p.processor = nil
+	})
 }
 
 func (p *Server) Close() {
-	p.DoWithLock(func() {
-		processor := atomic.LoadPointer(&p.processor)
-		if processor == nil {
-			p.onError(internal.NewRuntimePanic("it is not running"))
-		} else if !atomic.CompareAndSwapPointer(
-			&p.processor,
-			processor,
-			nil,
-		) {
-			p.onError(internal.NewRuntimePanic("it is not running"))
-		} else {
-			for _, item := range p.adapters {
-				go func(adapter internal.IAdapter) {
-					adapter.Close(p.onError)
-				}(item)
-			}
+	waitCH := chan bool(nil)
+
+	if !p.SetClosing(func(ch chan bool) {
+		waitCH = ch
+		p.processor.Close()
+		for _, item := range p.adapters {
+			go func(adapter internal.IAdapter) {
+				adapter.Close(p.onError)
+			}(item)
 		}
-	})
+	}) {
+		p.onError(internal.NewKernelPanic(
+			"it is not running",
+		).AddDebug(string(debug.Stack())))
+	} else {
+		select {
+		case <-waitCH:
+		case <-time.After(5 * time.Second):
+			p.onError(internal.NewRuntimePanic(
+				"it cannot be closed within 5 seconds",
+			).AddDebug(string(debug.Stack())))
+		}
+	}
 }
 
 func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
