@@ -249,7 +249,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	// Test(1)
 	helper3 := newTestProcessorReturnHelper()
-	processor3 := NewProcessor(
+	processor1 := NewProcessor(
 		true,
 		1024,
 		2,
@@ -259,15 +259,13 @@ func TestProcessor_BuildCache(t *testing.T) {
 		nil,
 		helper3.GetFunction(),
 	)
-	defer processor3.Close()
-	assert(processor3.BuildCache(
+	defer processor1.Close()
+	err1 := processor1.BuildCache(
 		"pkgName",
 		path.Join(currDir, "processor_test.go/err_dir.go"),
-	)).IsFalse()
-	_, _, panicArray3 := helper3.GetReturn()
-	assert(len(panicArray3)).Equals(1)
-	assert(panicArray3[0].GetKind()).Equals(ErrorKindRuntimePanic)
-	assert(strings.Contains(panicArray3[0].GetMessage(), "processor_test.go")).
+	)
+	assert(err1.GetKind()).Equals(ErrorKindRuntimePanic)
+	assert(strings.Contains(err1.GetMessage(), "processor_test.go")).
 		IsTrue()
 
 	// Test(2)
@@ -291,7 +289,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		helper2.GetFunction(),
 	)
 	defer processor2.Close()
-	assert(processor2.BuildCache("pkgName", tmpFile2)).IsTrue()
+	assert(processor2.BuildCache("pkgName", tmpFile2)).IsNil()
 	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{})
 	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
 }

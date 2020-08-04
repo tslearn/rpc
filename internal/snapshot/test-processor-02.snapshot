@@ -21,7 +21,7 @@ func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {
 
 func fnCache0(ctx rpc.Context, stream *rpc.Stream, fn interface{}) bool {
 	if !stream.IsReadFinish() {
-		return true
+		return false
 	} else {
 		fn.(func(rpc.Context) rpc.Return)(ctx)
 		return true
