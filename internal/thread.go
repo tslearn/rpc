@@ -347,7 +347,7 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		if ok && !inStream.IsReadFinish() {
+		if _, ok := inStream.Read(); !ok {
 			return p.WriteError(NewProtocolError(ErrStringBadStream))
 		} else if !p.processor.isDebug {
 			return p.WriteError(
