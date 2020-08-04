@@ -232,7 +232,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			// make error
 			makeConnSetReadDeadlineError(testConn.conn)
-			stream, err := testConn.ReadStream(-time.Second, 999999)
+			stream, err := testConn.ReadStream(time.Second, 999999)
 			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
 			assert(stream).IsNil()
 			assert(err).IsNotNil()
@@ -274,7 +274,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 		func(client IAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
-			assert(testConn.ReadStream(-time.Second, 999999)).Equals(
+			assert(testConn.ReadStream(time.Second, 999999)).Equals(
 				(*Stream)(nil),
 				NewTransportError("unsupported websocket protocol"),
 			)
@@ -296,7 +296,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 		func(client IAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
-			stream, err := testConn.ReadStream(-time.Second, 999999)
+			stream, err := testConn.ReadStream(time.Second, 999999)
 			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
 			assert(stream).IsNotNil()
 			assert(err).IsNil()
