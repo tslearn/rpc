@@ -1175,7 +1175,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	)).Equals(true, nil, nil)
 
 	// Test(34) stream is not finish
-	assert(testRunWithProcessor(true, nil,
+	ret32, error34, panic34 := testRunWithProcessor(true, nil,
 		func(ctx *ContextObject,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
@@ -1199,9 +1199,24 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
-	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+	)
+	assert(ret32, panic34).Equals(nil, nil)
+	assert(error34).IsNotNil()
+	assert(error34.GetMessage())
 
-	// Test(35) stream is not finish
+	assert(error34.GetKind()).Equals(ErrorKindReply)
+	assert(error34.GetMessage()).Equals(
+		"#.test:Eval reply arguments does not match\n" +
+			"want: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
+			"got: #.test:Eval(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map, rpc.Bool) " +
+			"rpc.Return",
+	)
+	assert(strings.Contains(error34.GetDebug(), "#.test:Eval")).IsTrue()
+	assert(strings.Contains(error34.GetDebug(), "util_test.go:")).IsTrue()
+	//
+	// Test(35) badStream
 	assert(testRunWithProcessor(true, &testFuncCache{},
 		func(ctx *ContextObject,
 			b bool, i int64, u uint64, f float64, s string,
@@ -1224,37 +1239,10 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			// error
 			stream.Write(true)
+			stream.Write(Map{"name": "world"})
+			stream.SetWritePos(stream.GetWritePos() - 2)
+
 			return stream
 		},
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 }
-
-//func TestRpcThread_Eval2(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//  // Test(32) return without ctx
-//  ret32, error32, panic32 := testRunWithProcessor(true, nil,
-//    func(ctx *ContextObject, bVal bool) *ReturnObject {
-//      return Return(nil)
-//    },
-//    func(_ *Processor) *Stream {
-//      stream := NewStream()
-//      stream.WriteString("#.test:Eval")
-//      stream.WriteUint64(3)
-//      stream.WriteString("#")
-//      stream.Write(true)
-//      return stream
-//    },
-//  )
-//  fmt.Println(ret32, error32, panic32)
-//  assert(ret32, panic32).Equals(nil, nil)
-//  assert(error32).IsNotNil()
-//  if error32 != nil {
-//    assert(error32.GetKind()).Equals(ErrorKindReplyPanic)
-//    assert(error32.GetMessage()).
-//      Equals("#.test:Eval must return through Context.OK or Context.Error")
-//    assert(strings.Contains(error32.GetDebug(), "util_test.go")).IsTrue()
-//  } else {
-//    assert().Fail("nil)")
-//  }
-//}
