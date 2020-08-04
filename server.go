@@ -14,15 +14,14 @@ import (
 	"unsafe"
 )
 
-const serverSessionRecordStatusNone = 0
+const serverSessionRecordStatusNotRunning = 0
 const serverSessionRecordStatusRunning = 1
-const serverSessionRecordStatusReturn = 2
 
 type serverSessionRecord struct {
 	id     uint64
 	status int32
 	mark   bool
-	stream *Stream
+	stream unsafe.Pointer
 }
 
 var serverSessionRecordCache = &sync.Pool{
@@ -34,49 +33,45 @@ var serverSessionRecordCache = &sync.Pool{
 func newServerSessionRecord(id uint64) *serverSessionRecord {
 	ret := serverSessionRecordCache.Get().(*serverSessionRecord)
 	ret.id = id
-	atomic.StoreInt32(&ret.status, serverSessionRecordStatusNone)
+	ret.status = serverSessionRecordStatusNotRunning
 	ret.mark = false
+	ret.stream = nil
 	return ret
 }
 
 func (p *serverSessionRecord) SetRunning() bool {
 	return atomic.CompareAndSwapInt32(
 		&p.status,
-		serverSessionRecordStatusNone,
+		serverSessionRecordStatusNotRunning,
 		serverSessionRecordStatusRunning,
 	)
 }
 
-func (p *serverSessionRecord) SetReturn(stream *Stream) {
-	if atomic.CompareAndSwapInt32(
-		&p.status,
-		serverSessionRecordStatusRunning,
-		serverSessionRecordStatusReturn,
-	) {
-		p.stream = stream
-	}
+func (p *serverSessionRecord) GetReturn() *Stream {
+	return (*Stream)(atomic.LoadPointer(&p.stream))
+}
+
+func (p *serverSessionRecord) SetReturn(stream *Stream) bool {
+	return atomic.CompareAndSwapPointer(&p.stream, nil, unsafe.Pointer(stream))
 }
 
 func (p *serverSessionRecord) Release() {
-	if p.stream != nil {
-		p.stream.Release()
-		p.stream = nil
+	if stream := p.GetReturn(); stream != nil {
+		stream.Release()
 	}
+	atomic.StorePointer(&p.stream, nil)
 	serverSessionRecordCache.Put(p)
 }
 
 type serverSession struct {
-	id           uint64
-	security     string
-	conn         internal.IStreamConn
-	dataSeed     uint64
-	controlSeed  uint64
-	callMap      map[uint64]*serverSessionRecord
-	readLimit    int64
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	maxStreams   int64
-	internal.Lock
+	id          uint64
+	server      *Server
+	security    string
+	conn        internal.IStreamConn
+	dataSeed    uint64
+	controlSeed uint64
+	callMap     map[uint64]*serverSessionRecord
+	sync.Mutex
 }
 
 var serverSessionCache = &sync.Pool{
@@ -85,128 +80,76 @@ var serverSessionCache = &sync.Pool{
 	},
 }
 
-func newServerSession(
-	id uint64,
-	maxStreams int64,
-	readLimit int64,
-	readTimeout time.Duration,
-	writeTimeout time.Duration,
-) *serverSession {
+func newServerSession(id uint64, server *Server) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
+	ret.server = server
 	ret.security = internal.GetRandString(32)
+	ret.conn = nil
 	ret.dataSeed = 0
 	ret.controlSeed = 0
 	ret.callMap = make(map[uint64]*serverSessionRecord)
-	ret.readLimit = readLimit
-	ret.readTimeout = readTimeout
-	ret.writeTimeout = writeTimeout
-	ret.maxStreams = maxStreams
 	return ret
 }
 
-func (p *serverSession) WriteStream(stream *Stream) Error {
-	return internal.ConvertToError(p.CallWithLock(func() interface{} {
-		if p.conn != nil {
-			return p.conn.WriteStream(
-				stream,
-				p.writeTimeout,
-			)
-		} else {
-			return internal.NewKernelPanic(
-				"serverSession: WriteStream: conn is nil",
-			).AddDebug(string(debug.Stack()))
-		}
-	}))
+func (p *serverSession) GetConn() internal.IStreamConn {
+	p.Lock()
+	defer p.Unlock()
+
+	return p.conn
 }
 
-func (p *serverSession) OnDataStream(
+func (p *serverSession) SetConn(conn internal.IStreamConn) {
+	p.Lock()
+	defer p.Unlock()
+
+	p.conn = conn
+}
+
+//func (p *serverSession) SetReturn(stream *Stream) bool {
+//  p.Lock()
+//  defer p.Unlock()
+//
+//  if item, ok := p.callMap[stream.GetCallbackID()]; !ok {
+//    return false
+//  } else if !item.SetReturn(stream) {
+//    return false
+//  } else {
+//    if conn := p.conn; conn != nil {
+//      _ = conn.WriteStream(stream, p.server.writeTimeout)
+//    }
+//    return true
+//  }
+//}
+
+func (p *serverSession) OnControlStream(
+	conn internal.IStreamConn,
 	stream *Stream,
-	processor *internal.Processor,
 ) Error {
-	if stream == nil {
-		return internal.NewKernelPanic("stream is nil")
-	}
-
-	if processor == nil {
-		return internal.NewKernelPanic(
-			"serverSession: OnDataStream: processor is nil",
-		)
-	}
-
-	record, ok := p.callMap[stream.GetCallbackID()]
-
-	if !ok {
-		return internal.NewProtocolError(
-			"serverSession: OnDataStream: stream callbackID error",
-		)
-	}
-
-	if !record.SetRunning() {
-		// it not error, it is just redundant
+	if kind, ok := stream.ReadInt64(); !ok {
+		return internal.NewTransportError(internal.ErrStringBadStream)
+	} else if seq := stream.GetSequence(); seq <= p.controlSeed {
 		return nil
-	}
-
-	stream.GetCallbackID()
-	stream.SetSessionID(p.id)
-
-	if !processor.PutStream(stream) {
-		return internal.NewReplyError(
-			"serverSession: OnDataStream: processor can not deal with stream",
-		)
-	}
-
-	return nil
-}
-
-func (p *serverSession) OnControlStream(stream *Stream) Error {
-	return internal.ConvertToError(p.CallWithLock(func() interface{} {
-		if stream == nil {
-			return internal.NewKernelPanic(
-				"Server: OnControlStream: stream is nil",
-			)
-		}
-		defer stream.Release()
-
-		if p.conn == nil {
-			return internal.NewKernelPanic(
-				"Server: OnControlStream: conn is nil",
-			)
-		}
-
-		controlSequence := stream.GetSequence()
-		if controlSequence <= p.controlSeed {
-			return internal.NewRuntimePanic(
-				"Server: OnControlStream: sequence is omit",
-			)
-		}
-		p.controlSeed = controlSequence
-
-		kind, ok := stream.ReadInt64()
-		if !ok {
-			return internal.NewTransportError(
-				"Server: OnControlStream: stream format error",
-			)
-		}
-
+	} else {
+		p.controlSeed = seq
 		switch kind {
 		case controlStreamKindInit:
 			stream.Reset()
 			stream.SetCallbackID(0)
-			stream.SetSequence(controlSequence)
+			stream.SetSequence(seq)
 			stream.WriteInt64(controlStreamKindInitBack)
 			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-			stream.WriteInt64(int64(p.readTimeout / time.Millisecond))
-			stream.WriteInt64(int64(p.writeTimeout / time.Millisecond))
-			stream.WriteInt64(p.readLimit)
-			stream.WriteInt64(p.maxStreams)
-			return p.conn.WriteStream(stream, p.writeTimeout)
+			stream.WriteInt64(int64(p.server.readTimeout / time.Millisecond))
+			stream.WriteInt64(int64(p.server.writeTimeout / time.Millisecond))
+			stream.WriteInt64(p.server.transportLimit)
+			stream.WriteInt64(p.server.sessionMaxConcurrency)
+			return conn.WriteStream(stream, p.server.writeTimeout)
 		case controlStreamKindRequestIds:
+			// get client currCallbackId
 			currCallbackId, ok := stream.ReadUint64()
 			if !ok {
 				return internal.NewProtocolError(internal.ErrStringBadStream)
 			}
-
 			// mark
 			for stream.CanRead() {
 				if markId, ok := stream.ReadUint64(); ok {
@@ -220,52 +163,141 @@ func (p *serverSession) OnControlStream(stream *Stream) Error {
 			if !stream.IsReadFinish() {
 				return internal.NewProtocolError(internal.ErrStringBadStream)
 			}
-			// swipe
-			count := int64(0)
-			for k, v := range p.callMap {
-				if v.id <= currCallbackId && !v.mark {
-					delete(p.callMap, k)
-					v.Release()
-				} else {
-					v.mark = false
+			// do swipe and alloc with lock
+			func() {
+				p.Lock()
+				defer p.Unlock()
+				// swipe
+				count := int64(0)
+				for k, v := range p.callMap {
+					if v.id <= currCallbackId && !v.mark {
+						delete(p.callMap, k)
+						v.Release()
+					} else {
+						v.mark = false
+						count++
+					}
+				}
+				// alloc
+				for count < p.server.sessionMaxConcurrency {
+					p.dataSeed++
+					p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
 					count++
 				}
-			}
-			// alloc
-			for count < p.maxStreams {
-				p.dataSeed++
-				p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
-				count++
-			}
+			}()
 			// return stream
 			stream.Reset()
 			stream.SetCallbackID(0)
-			stream.SetSequence(controlSequence)
+			stream.SetSequence(seq)
 			stream.WriteInt64(controlStreamKindRequestIdsBack)
 			stream.WriteUint64(p.dataSeed)
-			return p.conn.WriteStream(stream, time.Second)
+			return conn.WriteStream(stream, p.server.writeTimeout)
 		default:
 			return internal.NewProtocolError(internal.ErrStringBadStream)
 		}
-	}))
+	}
+}
+
+func (p *serverSession) OnDataStream(
+	conn internal.IStreamConn,
+	stream *Stream,
+	processor *internal.Processor,
+) Error {
+	if record, ok := p.callMap[stream.GetCallbackID()]; !ok {
+		return internal.NewProtocolError("client callbackID error")
+	} else if !record.SetRunning() {
+		if stream := record.GetReturn(); stream != nil {
+			return conn.WriteStream(stream, p.server.writeTimeout)
+		}
+		return nil
+	} else {
+		stream.GetCallbackID()
+		stream.SetSessionID(p.id)
+		processor.PutStream(stream)
+		return nil
+	}
+}
+
+func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
+	if errKind, ok := stream.ReadUint64(); !ok {
+		stream.Release()
+		return internal.NewKernelPanic(
+			"stream error",
+		).AddDebug(string(debug.Stack()))
+	} else {
+		// mask panic message for client
+		switch internal.ErrorKind(errKind) {
+		case internal.ErrorKindReplyPanic:
+			fallthrough
+		case internal.ErrorKindRuntimePanic:
+			fallthrough
+		case internal.ErrorKindKernelPanic:
+			if message, ok := stream.ReadString(); !ok {
+				stream.Release()
+				return internal.NewKernelPanic(
+					"stream error",
+				).AddDebug(string(debug.Stack()))
+			} else if dbgMessage, ok := stream.ReadString(); !ok {
+				stream.Release()
+				return internal.NewKernelPanic(
+					"stream error",
+				).AddDebug(string(debug.Stack()))
+			} else {
+				stream.SetWritePosToBodyStart()
+				stream.WriteUint64(errKind)
+				stream.WriteString("internal error")
+				stream.WriteString("")
+				// report error to server
+				ret = internal.NewError(
+					internal.ErrorKind(errKind),
+					message,
+					dbgMessage,
+				)
+			}
+		}
+
+		// SetReturn and get conn with lock
+		conn, needRelease := func() (internal.IStreamConn, bool) {
+			p.Lock()
+			defer p.Unlock()
+			if item, ok := p.callMap[stream.GetCallbackID()]; !ok {
+				return p.conn, true
+			} else if !item.SetReturn(stream) {
+				return p.conn, true
+			} else {
+				return p.conn, false
+			}
+		}()
+
+		if conn != nil {
+			_ = conn.WriteStream(stream, p.server.writeTimeout)
+		}
+
+		if needRelease {
+			stream.Release()
+		}
+
+		return
+	}
 }
 
 func (p *serverSession) Release() {
-	p.DoWithLock(func() {
-		if p.callMap != nil {
-			for _, v := range p.callMap {
-				v.Release()
-			}
-			p.callMap = nil
+	func() {
+		p.Lock()
+		defer p.Unlock()
+
+		for _, v := range p.callMap {
+			v.Release()
 		}
+		p.callMap = nil
 		p.conn = nil
-	})
+	}()
 
 	p.id = 0
 	p.security = ""
 	p.dataSeed = 0
 	p.controlSeed = 0
-	p.maxStreams = 0
+	p.server = nil
 	serverSessionCache.Put(p)
 }
 
@@ -286,41 +318,41 @@ type listenItem struct {
 }
 
 type Server struct {
-	isDebug      bool
-	runSeed      uint64
-	listens      []*listenItem
-	adapters     []internal.IAdapter
-	cacheDir     string
-	processor    unsafe.Pointer
-	numOfThreads int
-	sessionMap   sync.Map
-	sessionSize  int64
-	sessionSeed  uint64
-	fnCache      internal.ReplyCache
-	services     []*internal.ServiceMeta
-	readLimit    int64
-	writeLimit   int64
-	readTimeout  time.Duration
-	writeTimeout time.Duration
+	isDebug               bool
+	runSeed               uint64
+	listens               []*listenItem
+	adapters              []internal.IAdapter
+	cacheDir              string
+	processor             unsafe.Pointer
+	numOfThreads          int
+	sessionMap            sync.Map
+	sessionMaxConcurrency int64
+	sessionSeed           uint64
+	fnCache               internal.ReplyCache
+	services              []*internal.ServiceMeta
+	transportLimit        int64
+	writeLimit            int64
+	readTimeout           time.Duration
+	writeTimeout          time.Duration
 	internal.Lock
 }
 
 func NewServer() *Server {
 	return &Server{
-		isDebug:      false,
-		listens:      make([]*listenItem, 0),
-		adapters:     nil,
-		cacheDir:     "",
-		processor:    nil,
-		numOfThreads: runtime.NumCPU() * 16384,
-		sessionMap:   sync.Map{},
-		sessionSize:  64,
-		sessionSeed:  0,
-		readLimit:    int64(1024 * 1024),
-		writeLimit:   int64(1024 * 1024),
-		readTimeout:  10 * time.Second,
-		writeTimeout: 1 * time.Second,
-		fnCache:      nil,
+		isDebug:               false,
+		listens:               make([]*listenItem, 0),
+		adapters:              nil,
+		cacheDir:              "",
+		processor:             nil,
+		numOfThreads:          runtime.NumCPU() * 16384,
+		sessionMap:            sync.Map{},
+		sessionMaxConcurrency: 64,
+		sessionSeed:           0,
+		transportLimit:        int64(1024 * 1024),
+		writeLimit:            int64(1024 * 1024),
+		readTimeout:           10 * time.Second,
+		writeTimeout:          1 * time.Second,
+		fnCache:               nil,
 	}
 }
 
@@ -384,45 +416,17 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 }
 
 func (p *Server) OnReturnStream(stream *Stream) {
-	if stream != nil {
-		sessionID := stream.GetSessionID()
-		stream.SetReadPosToBodyStart()
-
-		if errKind, ok := stream.ReadUint64(); ok {
-			switch internal.ErrorKind(errKind) {
-			case internal.ErrorKindNone:
-				fallthrough
-			case internal.ErrorKindProtocol:
-				fallthrough
-			case internal.ErrorKindTransport:
-				fallthrough
-			case internal.ErrorKindReply:
-				if v, ok := p.sessionMap.Load(sessionID); ok {
-					if session, ok := v.(*serverSession); ok && session != nil {
-						if err := session.WriteStream(stream); err != nil {
-							p.onSessionError(stream.GetSessionID(), err)
-						}
-					}
-				}
-			case internal.ErrorKindReplyPanic:
-				fallthrough
-			case internal.ErrorKindRuntimePanic:
-				fallthrough
-			case internal.ErrorKindKernelPanic:
-				if message, ok := stream.ReadString(); !ok {
-					// stream.SetReadPosToBodyStart()
-				} else if debug, ok := stream.ReadString(); !ok {
-					// stream.SetReadPosToBodyStart()
-				} else {
-					p.onSessionError(stream.GetSessionID(), internal.NewError(
-						internal.ErrorKind(errKind),
-						message,
-						debug,
-					))
-				}
-			}
-		}
+	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
 		stream.Release()
+	} else if session, ok := item.(*serverSession); !ok {
+		stream.Release()
+		p.onSessionError(stream.GetSessionID(), internal.NewKernelPanic(
+			"serverSession is nil",
+		).AddDebug(string(debug.Stack())))
+	} else {
+		if err := session.OnReturnStream(stream); err != nil {
+			p.onSessionError(stream.GetSessionID(), err)
+		}
 	}
 }
 
@@ -515,7 +519,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 		)
 	} else if stream, err := conn.ReadStream(
 		p.readTimeout,
-		p.readLimit,
+		p.transportLimit,
 	); err != nil {
 		return nil, err
 	} else if stream.GetCallbackID() != 0 {
@@ -551,13 +555,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 
 		// if session not find by session string, create a new session
 		if session == nil {
-			session = newServerSession(
-				atomic.AddUint64(&p.sessionSeed, 1),
-				p.sessionSize,
-				p.readLimit,
-				p.readTimeout,
-				p.writeTimeout,
-			)
+			session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), p)
 			p.sessionMap.Store(session.id, session)
 		}
 
@@ -566,7 +564,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 
 		// Set stream read pos to start
 		stream.SetReadPosToBodyStart()
-		if err := session.OnControlStream(stream); err != nil {
+		if err := session.OnControlStream(conn, stream); err != nil {
 			return nil, err
 		} else {
 			return session, nil
@@ -592,7 +590,7 @@ func (p *Server) onConnRun(conn internal.IStreamConn) {
 		for {
 			if stream, err := conn.ReadStream(
 				p.readTimeout,
-				p.readLimit,
+				p.transportLimit,
 			); err != nil {
 				if err != internal.ErrTransportStreamConnIsClosed {
 					p.onError(err)
@@ -605,12 +603,12 @@ func (p *Server) onConnRun(conn internal.IStreamConn) {
 				if cbID == 0 && sequence == 0 {
 					return
 				} else if cbID == 0 {
-					if err := session.OnControlStream(stream); err != nil {
+					if err := session.OnControlStream(conn, stream); err != nil {
 						p.onError(err)
 						return
 					}
 				} else {
-					if err := session.OnDataStream(stream, processor); err != nil {
+					if err := session.OnDataStream(conn, stream, processor); err != nil {
 						p.onError(err)
 						return
 					}
