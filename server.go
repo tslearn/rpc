@@ -448,6 +448,7 @@ func (p *Server) Serve() {
 	waitCH := make(chan struct{})
 
 	p.DoWithLock(func() {
+		// create adapters by listens
 		p.adapters = make([]internal.IAdapter, 0)
 		for _, listener := range p.listens {
 			switch listener.scheme {
@@ -560,8 +561,8 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	} else if !stream.IsReadFinish() {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
-		session := (*serverSession)(nil)
 		// try to find session by session string
+		session := (*serverSession)(nil)
 		sessionArray := strings.Split(sessionString, "-")
 		if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
 			if id, err := strconv.ParseUint(
@@ -578,15 +579,13 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 				}
 			}
 		}
-
 		// if session not find by session string, create a new session
 		if session == nil {
 			session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), p)
 			p.sessionMap.Store(session.id, session)
 		}
-
 		// set the session conn
-		session.conn = conn
+		session.SetConn(conn)
 
 		// Set stream read pos to start
 		stream.SetReadPosToBodyStart()
@@ -600,12 +599,14 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 
 func (p *Server) onConnRun(conn internal.IStreamConn) {
 	if conn == nil {
-		p.onError(internal.NewKernelPanic("Server: onConnRun: conn is nil"))
+		p.onError(
+			internal.NewKernelPanic("conn is nil").AddDebug(string(debug.Stack())),
+		)
 	} else if session, err := p.getSession(conn); err != nil {
 		p.onError(err)
 	} else {
 		defer func() {
-			session.conn = nil
+			session.SetConn(nil)
 			if err := conn.Close(); err != nil {
 				p.onError(err)
 			}
