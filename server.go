@@ -92,35 +92,12 @@ func newServerSession(id uint64, server *Server) *serverSession {
 	return ret
 }
 
-func (p *serverSession) GetConn() internal.IStreamConn {
-	p.Lock()
-	defer p.Unlock()
-
-	return p.conn
-}
-
 func (p *serverSession) SetConn(conn internal.IStreamConn) {
 	p.Lock()
 	defer p.Unlock()
 
 	p.conn = conn
 }
-
-//func (p *serverSession) SetReturn(stream *Stream) bool {
-//  p.Lock()
-//  defer p.Unlock()
-//
-//  if item, ok := p.callMap[stream.GetCallbackID()]; !ok {
-//    return false
-//  } else if !item.SetReturn(stream) {
-//    return false
-//  } else {
-//    if conn := p.conn; conn != nil {
-//      _ = conn.WriteStream(stream, p.server.writeTimeout)
-//    }
-//    return true
-//  }
-//}
 
 func (p *serverSession) OnControlStream(
 	conn internal.IStreamConn,
