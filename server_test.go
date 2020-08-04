@@ -19,9 +19,8 @@ func TestServer_Basic(t *testing.T) {
 
 	server := NewServer().
 		AddService("user", userService).
-		ListenWebSocket("127.0.0.1:8080")
-
-	fmt.Println(server.BuildReplyCache())
+		ListenWebSocket("127.0.0.1:8080").
+		BuildReplyCache()
 
 	go func() {
 		server.Serve()
@@ -33,7 +32,7 @@ func TestServer_Basic(t *testing.T) {
 		panic(err)
 	}
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 500; i++ {
 		go func(idx int) {
 			fmt.Println(client.sendMessage(
 				5*time.Second,
@@ -47,6 +46,6 @@ func TestServer_Basic(t *testing.T) {
 
 	_ = client.Close()
 
-	time.Sleep(3 * time.Second)
-	//server.Close()
+	time.Sleep(1 * time.Second)
+	server.Close()
 }
