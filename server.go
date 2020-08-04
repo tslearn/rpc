@@ -14,6 +14,8 @@ import (
 	"unsafe"
 )
 
+const maxSessionConcurrency = 1024
+const minTransportLimit = 10240
 const serverSessionRecordStatusNotRunning = 0
 const serverSessionRecordStatusRunning = 1
 
@@ -301,11 +303,11 @@ type Server struct {
 	sessionMap            sync.Map
 	sessionMaxConcurrency int64
 	sessionSeed           uint64
-	fnCache               internal.ReplyCache
 	services              []*internal.ServiceMeta
 	transportLimit        int64
 	readTimeout           time.Duration
 	writeTimeout          time.Duration
+	replyCache            internal.ReplyCache
 	internal.Lock
 }
 
@@ -315,15 +317,59 @@ func NewServer() *Server {
 		listens:               make([]*listenItem, 0),
 		adapters:              nil,
 		processor:             nil,
-		numOfThreads:          runtime.NumCPU() * 16384,
+		numOfThreads:          runtime.NumCPU() * 8192,
 		sessionMap:            sync.Map{},
 		sessionMaxConcurrency: 64,
 		sessionSeed:           0,
-		transportLimit:        int64(1024 * 1024),
+		transportLimit:        1024 * 1024,
 		readTimeout:           10 * time.Second,
 		writeTimeout:          1 * time.Second,
-		fnCache:               nil,
+		replyCache:            nil,
 	}
+}
+
+func (p *Server) SetDebug() *Server {
+	p.DoWithLock(func() {
+		p.isDebug = true
+	})
+	return p
+}
+
+func (p *Server) SetRelease() *Server {
+	p.DoWithLock(func() {
+		p.isDebug = false
+	})
+	return p
+}
+
+func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
+	if numOfThreads <= 0 {
+		panic("numOfThreads must be greater than 0")
+	}
+	p.DoWithLock(func() {
+		p.numOfThreads = numOfThreads
+	})
+	return p
+}
+
+func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
+	if maxTransportBytes < minTransportLimit {
+		panic(fmt.Sprintf(
+			"maxTransportBytes must be greater than or equal to %d",
+			minTransportLimit,
+		))
+	}
+	p.DoWithLock(func() {
+		p.transportLimit = int64(maxTransportBytes)
+	})
+	return p
+}
+
+func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
+	p.DoWithLock(func() {
+		p.replyCache = replyCache
+	})
+	return p
 }
 
 // AddChildService ...
@@ -423,7 +469,7 @@ func (p *Server) Serve() {
 			p.numOfThreads,
 			32,
 			32,
-			p.fnCache,
+			p.replyCache,
 			20*time.Second,
 			p.services,
 			func(stream *internal.Stream) {
@@ -478,7 +524,7 @@ func (p *Server) Close() {
 			p.onError(internal.NewRuntimePanic("it is not running"))
 		} else if !atomic.CompareAndSwapPointer(
 			&p.processor,
-			unsafe.Pointer(processor),
+			processor,
 			nil,
 		) {
 			p.onError(internal.NewRuntimePanic("it is not running"))
