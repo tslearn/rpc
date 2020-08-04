@@ -1175,7 +1175,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	)).Equals(true, nil, nil)
 
 	// Test(34) stream is not finish
-	ret32, error34, panic34 := testRunWithProcessor(true, nil,
+	ret34, error34, panic34 := testRunWithProcessor(true, nil,
 		func(ctx *ContextObject,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
@@ -1200,7 +1200,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			return stream
 		},
 	)
-	assert(ret32, panic34).Equals(nil, nil)
+	assert(ret34, panic34).Equals(nil, nil)
 	assert(error34).IsNotNil()
 	assert(error34.GetMessage())
 
@@ -1215,8 +1215,8 @@ func TestRpcThread_Eval(t *testing.T) {
 	)
 	assert(strings.Contains(error34.GetDebug(), "#.test:Eval")).IsTrue()
 	assert(strings.Contains(error34.GetDebug(), "util_test.go:")).IsTrue()
-	//
-	// Test(35) badStream
+
+	// Test(35) bad stream
 	assert(testRunWithProcessor(true, &testFuncCache{},
 		func(ctx *ContextObject,
 			b bool, i int64, u uint64, f float64, s string,
