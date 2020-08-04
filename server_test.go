@@ -19,8 +19,7 @@ func TestServer_Basic(t *testing.T) {
 
 	server := NewServer().
 		AddService("user", userService).
-		ListenWebSocket("127.0.0.1:8080").
-		BuildReplyCache()
+		ListenWebSocket("127.0.0.1:8080")
 
 	go func() {
 		server.Serve()
