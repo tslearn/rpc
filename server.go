@@ -679,43 +679,34 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 }
 
 func (p *Server) onConnRun(conn internal.IStreamConn) {
+	runError := Error(nil)
+
 	if session, err := p.getSession(conn); err != nil {
-		p.onError(err)
+		runError = err
 	} else {
 		defer session.SetConn(nil)
-
-		for {
+		for runError == nil {
 			if stream, err := conn.ReadStream(
 				p.readTimeout,
 				p.transportLimit,
 			); err != nil {
-				if err != internal.ErrTransportStreamConnIsClosed {
-					p.onError(err)
-				}
-				return
+				runError = err
 			} else {
 				cbID := stream.GetCallbackID()
 				sequence := stream.GetSequence()
-
 				if cbID == 0 && sequence == 0 {
 					return
 				} else if cbID == 0 {
-					if err := session.OnControlStream(conn, stream); err != nil {
-						p.onError(err)
-						return
-					}
+					runError = session.OnControlStream(conn, stream)
 				} else {
-					if err := session.OnDataStream(
-						conn,
-						stream,
-						p.processor,
-					); err != nil {
-						p.onError(err)
-						return
-					}
+					runError = session.OnDataStream(conn, stream, p.processor)
 				}
 			}
 		}
+	}
+
+	if runError != internal.ErrTransportStreamConnIsClosed {
+		p.onError(runError)
 	}
 }
 
