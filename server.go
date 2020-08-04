@@ -294,10 +294,8 @@ type listenItem struct {
 
 type Server struct {
 	isDebug               bool
-	runSeed               uint64
 	listens               []*listenItem
 	adapters              []internal.IAdapter
-	cacheDir              string
 	processor             unsafe.Pointer
 	numOfThreads          int
 	sessionMap            sync.Map
@@ -306,7 +304,6 @@ type Server struct {
 	fnCache               internal.ReplyCache
 	services              []*internal.ServiceMeta
 	transportLimit        int64
-	writeLimit            int64
 	readTimeout           time.Duration
 	writeTimeout          time.Duration
 	internal.Lock
@@ -317,14 +314,12 @@ func NewServer() *Server {
 		isDebug:               false,
 		listens:               make([]*listenItem, 0),
 		adapters:              nil,
-		cacheDir:              "",
 		processor:             nil,
 		numOfThreads:          runtime.NumCPU() * 16384,
 		sessionMap:            sync.Map{},
 		sessionMaxConcurrency: 64,
 		sessionSeed:           0,
 		transportLimit:        int64(1024 * 1024),
-		writeLimit:            int64(1024 * 1024),
 		readTimeout:           10 * time.Second,
 		writeTimeout:          1 * time.Second,
 		fnCache:               nil,
@@ -354,19 +349,31 @@ func (p *Server) AddService(
 }
 
 // BuildReplyCache ...
-func (p *Server) BuildReplyCache() *Server {
+func (p *Server) BuildReplyCache() Error {
 	_, file, _, _ := runtime.Caller(1)
-	fileLine := internal.GetFileLine(1)
+	buildDir := path.Join(path.Dir(file))
+
+	services := ([]*internal.ServiceMeta)(nil)
 	p.DoWithLock(func() {
-		if atomic.LoadPointer(&p.processor) == nil {
-			p.cacheDir = path.Join(path.Dir(file))
-		} else {
-			p.onError(internal.NewRuntimePanic(
-				"ListenWebSocket must be before Serve",
-			).AddDebug(fileLine))
-		}
+		services = p.services
 	})
-	return p
+
+	processor := internal.NewProcessor(
+		p.isDebug,
+		1,
+		32,
+		32,
+		nil,
+		time.Second,
+		services,
+		func(stream *internal.Stream) {},
+	)
+	defer processor.Close()
+
+	return processor.BuildCache(
+		"cache",
+		path.Join(buildDir, "cache", "reply_cache.go"),
+	)
 }
 
 // ListenWebSocket ...

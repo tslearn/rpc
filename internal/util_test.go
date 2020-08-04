@@ -440,7 +440,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			if arg0, ok := stream.ReadString(); !ok {
 				return false
 			} else if !stream.IsReadFinish() {
-				return true
+				return false
 			} else {
 				fn.(func(Context, String) Return)(ctx, arg0)
 				return true
@@ -465,7 +465,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			} else if arg7, ok := stream.ReadMap(); !ok {
 				return false
 			} else if !stream.IsReadFinish() {
-				return true
+				return false
 			} else {
 				fn.(func(
 					Context, Bool, Int64, Uint64,

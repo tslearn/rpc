@@ -23,7 +23,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	typeArray := []string{"rpc.Context"}
 
 	if kind == "" {
-		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn true\n\t}")
+		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn false\n\t}")
 	} else {
 		for idx, c := range kind {
 			argName := "arg" + strconv.Itoa(idx)
@@ -73,7 +73,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 			))
 		}
 
-		sb.AppendString(" else if !stream.IsReadFinish() {\n\t\t return true\n\t}")
+		sb.AppendString(" else if !stream.IsReadFinish() {\n\t\treturn false\n\t}")
 	}
 
 	sb.AppendString(fmt.Sprintf(

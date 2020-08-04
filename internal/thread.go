@@ -268,7 +268,7 @@ func (p *rpcThread) Eval(
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(ctx, inStream, execReplyNode.meta.handler)
 			hasFuncReturn = true
-			if ok && inStream.IsReadFinish() {
+			if ok {
 				return nilReturn
 			}
 		} else {
@@ -336,7 +336,11 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			if ok && inStream.IsReadFinish() {
+			if !inStream.IsReadFinish() {
+				ok = false
+			}
+
+			if ok {
 				execReplyNode.reflectFn.Call(p.execArgs)
 				hasFuncReturn = true
 				return nilReturn
