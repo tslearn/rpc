@@ -103,6 +103,8 @@ func (p *serverSession) OnControlStream(
 	conn internal.IStreamConn,
 	stream *Stream,
 ) Error {
+	defer stream.Release()
+
 	if kind, ok := stream.ReadInt64(); !ok {
 		return internal.NewTransportError(internal.ErrStringBadStream)
 	} else if seq := stream.GetSequence(); seq <= p.controlSeed {
@@ -111,9 +113,7 @@ func (p *serverSession) OnControlStream(
 		p.controlSeed = seq
 		switch kind {
 		case controlStreamKindInit:
-			stream.Reset()
-			stream.SetCallbackID(0)
-			stream.SetSequence(seq)
+			stream.SetWritePosToBodyStart()
 			stream.WriteInt64(controlStreamKindInitBack)
 			stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
 			stream.WriteInt64(int64(p.server.readTimeout / time.Millisecond))
@@ -163,9 +163,7 @@ func (p *serverSession) OnControlStream(
 				}
 			}()
 			// return stream
-			stream.Reset()
-			stream.SetCallbackID(0)
-			stream.SetSequence(seq)
+			stream.SetWritePosToBodyStart()
 			stream.WriteInt64(controlStreamKindRequestIdsBack)
 			stream.WriteUint64(p.dataSeed)
 			return conn.WriteStream(stream, p.server.writeTimeout)
@@ -181,14 +179,15 @@ func (p *serverSession) OnDataStream(
 	processor *internal.Processor,
 ) Error {
 	if record, ok := p.callMap[stream.GetCallbackID()]; !ok {
+		stream.Release()
 		return internal.NewProtocolError("client callbackID error")
 	} else if !record.SetRunning() {
-		if stream := record.GetReturn(); stream != nil {
-			return conn.WriteStream(stream, p.server.writeTimeout)
+		stream.Release()
+		if retStream := record.GetReturn(); retStream != nil {
+			return conn.WriteStream(retStream, p.server.writeTimeout)
 		}
 		return nil
 	} else {
-		stream.GetCallbackID()
 		stream.SetSessionID(p.id)
 		processor.PutStream(stream)
 		return nil
@@ -232,7 +231,6 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 				)
 			}
 		}
-
 		// SetReturn and get conn with lock
 		conn, needRelease := func() (internal.IStreamConn, bool) {
 			p.Lock()
@@ -245,11 +243,11 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 				return p.conn, false
 			}
 		}()
-
+		// WriteStream
 		if conn != nil {
 			_ = conn.WriteStream(stream, p.server.writeTimeout)
 		}
-
+		// Release
 		if needRelease {
 			stream.Release()
 		}
@@ -392,21 +390,6 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 	return p
 }
 
-func (p *Server) OnReturnStream(stream *Stream) {
-	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
-		stream.Release()
-	} else if session, ok := item.(*serverSession); !ok {
-		stream.Release()
-		p.onSessionError(stream.GetSessionID(), internal.NewKernelPanic(
-			"serverSession is nil",
-		).AddDebug(string(debug.Stack())))
-	} else {
-		if err := session.OnReturnStream(stream); err != nil {
-			p.onSessionError(stream.GetSessionID(), err)
-		}
-	}
-}
-
 func (p *Server) Serve() {
 	waitCount := 0
 	waitCH := make(chan struct{})
@@ -436,7 +419,20 @@ func (p *Server) Serve() {
 			p.fnCache,
 			20*time.Second,
 			p.services,
-			p.OnReturnStream,
+			func(stream *internal.Stream) {
+				if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
+					stream.Release()
+				} else if session, ok := item.(*serverSession); !ok {
+					stream.Release()
+					p.onSessionError(stream.GetSessionID(), internal.NewKernelPanic(
+						"serverSession is nil",
+					).AddDebug(string(debug.Stack())))
+				} else {
+					if err := session.OnReturnStream(stream); err != nil {
+						p.onSessionError(stream.GetSessionID(), err)
+					}
+				}
+			},
 		); processor == nil {
 			// ignore
 		} else if !atomic.CompareAndSwapPointer(
