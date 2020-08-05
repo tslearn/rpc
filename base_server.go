@@ -279,7 +279,6 @@ type listenItem struct {
 }
 
 type baseServer struct {
-	isDebug            bool
 	listens            []*listenItem
 	adapters           []internal.IAdapter
 	hub                streamHub
@@ -292,32 +291,6 @@ type baseServer struct {
 	replyCache         internal.ReplyCache
 	internal.StatusManager
 	sync.Mutex
-}
-
-func (p *baseServer) setDebug(fileLne string) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetDebug must be called before Serve",
-		).AddDebug(fileLne))
-	} else {
-		p.isDebug = true
-	}
-}
-
-func (p *baseServer) setRelease(fileLne string) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetRelease must be called before Serve",
-		).AddDebug(fileLne))
-	} else {
-		p.isDebug = false
-	}
 }
 
 func (p *baseServer) setTransportLimit(
@@ -403,12 +376,12 @@ func (p *baseServer) onReturnStream(stream *internal.Stream) {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
 		stream.Release()
-		p.onSessionError(stream.GetSessionID(), internal.NewKernelPanic(
+		p.OnSessionError(stream.GetSessionID(), internal.NewKernelPanic(
 			"serverSession is nil",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		if err := session.OnReturnStream(stream); err != nil {
-			p.onSessionError(stream.GetSessionID(), err)
+			p.OnSessionError(stream.GetSessionID(), err)
 		}
 	}
 }
@@ -599,10 +572,10 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn) {
 }
 
 func (p *baseServer) onError(err Error) {
-	p.onSessionError(0, err)
+	p.OnSessionError(0, err)
 }
 
-func (p *baseServer) onSessionError(sessionID uint64, err Error) {
+func (p *baseServer) OnSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
 

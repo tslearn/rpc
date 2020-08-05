@@ -10,6 +10,7 @@ import (
 )
 
 type Server struct {
+	isDebug      bool
 	services     []*internal.ServiceMeta
 	numOfThreads int
 	baseServer
@@ -17,10 +18,10 @@ type Server struct {
 
 func NewServer() *Server {
 	return &Server{
+		isDebug:      false,
 		services:     make([]*internal.ServiceMeta, 0),
 		numOfThreads: runtime.NumCPU() * 8192,
 		baseServer: baseServer{
-			isDebug:            false,
 			listens:            make([]*listenItem, 0),
 			adapters:           nil,
 			hub:                nil,
@@ -33,6 +34,36 @@ func NewServer() *Server {
 			replyCache:         nil,
 		},
 	}
+}
+
+func (p *Server) SetDebug() *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetDebug must be called before Serve",
+		).AddDebug(internal.GetFileLine(1)))
+	} else {
+		p.isDebug = true
+	}
+
+	return p
+}
+
+func (p *Server) setRelease() *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetRelease must be called before Serve",
+		).AddDebug(internal.GetFileLine(1)))
+	} else {
+		p.isDebug = false
+	}
+
+	return p
 }
 
 // SetNumOfThreads ...
@@ -66,16 +97,15 @@ func (p *Server) AddService(name string, service *Service) *Server {
 	p.Lock()
 	defer p.Unlock()
 
-	fileLine := internal.GetFileLine(1)
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"AddService must be called before Serve",
-		).AddDebug(fileLine))
+		).AddDebug(internal.GetFileLine(1)))
 	} else {
 		p.services = append(p.services, internal.NewServiceMeta(
 			name,
 			service,
-			fileLine,
+			internal.GetFileLine(1),
 		))
 	}
 
