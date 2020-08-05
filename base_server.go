@@ -475,7 +475,6 @@ func (p *baseServer) getSession(
 				return nil, err
 			}
 			// return session
-			session.SetConn(conn)
 			return session, nil
 		}
 	}
@@ -487,6 +486,7 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn) {
 	if session, err := p.getSession(conn); err != nil {
 		runError = err
 	} else {
+		session.SetConn(conn)
 		defer session.SetConn(nil)
 		for runError == nil {
 			if stream, err := conn.ReadStream(
