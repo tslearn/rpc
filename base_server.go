@@ -276,50 +276,54 @@ type baseServer struct {
 	sync.Mutex
 }
 
-func (p *baseServer) setTransportLimit(maxTransportBytes int, fileLne string) {
+func (p *baseServer) setTransportLimit(maxTransportBytes int, dbg string) {
 	p.Lock()
 	defer p.Unlock()
 
-	if maxTransportBytes < minTransportLimit {
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetTransportLimit must be called before Serve",
+		).AddDebug(dbg))
+	} else if maxTransportBytes < minTransportLimit {
 		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"maxTransportBytes must be greater than or equal to %d",
 			minTransportLimit,
-		)).AddDebug(fileLne))
-	} else if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetTransportLimit must be called before Serve",
-		).AddDebug(fileLne))
+		)).AddDebug(dbg))
 	} else {
 		p.transportLimit = int64(maxTransportBytes)
 	}
 }
 
-func (p *baseServer) setSessionConcurrency(concurrency int, fileLne string) {
+func (p *baseServer) setSessionConcurrency(sessionConcurrency int, dbg string) {
 	p.Lock()
 	defer p.Unlock()
 
-	if concurrency > maxSessionConcurrency {
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetSessionConcurrency must be called before Serve",
+		).AddDebug(dbg))
+	} else if sessionConcurrency <= 0 {
+		p.onError(internal.NewRuntimePanic(
+			"sessionConcurrency be greater than 0",
+		).AddDebug(dbg))
+	} else if sessionConcurrency > maxSessionConcurrency {
 		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"sessionConcurrency be less than or equal to %d",
 			maxSessionConcurrency,
-		)).AddDebug(fileLne))
-	} else if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetSessionConcurrency must be called before Serve",
-		).AddDebug(fileLne))
+		)).AddDebug(dbg))
 	} else {
-		p.sessionConcurrency = int64(concurrency)
+		p.sessionConcurrency = int64(sessionConcurrency)
 	}
 }
 
-func (p *baseServer) listenWebSocket(addr string, fileLine string) {
+func (p *baseServer) listenWebSocket(addr string, dbg string) {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"ListenWebSocket must be called before Serve",
-		).AddDebug(fileLine))
+		).AddDebug(dbg))
 	} else {
 		p.adapters = append(
 			p.adapters,
@@ -357,7 +361,7 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 			))
 		} else if hub := onGetStreamHub(); hub == nil {
 			p.onError(internal.NewKernelPanic(
-				"can not get stream hub is nil",
+				"hub is nil",
 			).AddDebug(string(debug.Stack())))
 		} else if !p.SetRunning(func() {
 			p.hub = hub
@@ -367,12 +371,16 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
-				go func(serverAdapter internal.IAdapter) {
-					for p.IsRunning() {
-						serverAdapter.Open(p.onConnRun, p.onError)
-						time.Sleep(time.Second)
+				go func(adapter internal.IAdapter) {
+					for {
+						adapter.Open(p.onConnRun, p.onError)
+						if p.IsRunning() {
+							time.Sleep(time.Second)
+						} else {
+							waitCH <- true
+							return
+						}
 					}
-					waitCH <- true
 				}(item)
 			}
 		}
@@ -520,5 +528,3 @@ func (p *baseServer) onError(err Error) {
 func (p *baseServer) onSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
-
-// End ***** baseServer ***** //
