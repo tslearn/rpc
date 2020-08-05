@@ -4,96 +4,53 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"path"
 	"runtime"
-	"sync"
 	"time"
 )
 
 type Server struct {
-	isDebug       bool
 	services      []*internal.ServiceMeta
-	numOfThreads  int
-	replyCache    internal.ReplyCache
+	serverConfig  *serverConfig
 	sessionConfig *sessionConfig
 	serverCore
 }
 
 func NewServer() *Server {
 	return &Server{
-		isDebug:       false,
-		services:      make([]*internal.ServiceMeta, 0),
-		numOfThreads:  runtime.NumCPU() * 8192,
-		replyCache:    nil,
+		services:      nil,
+		serverConfig:  newServerConfig(),
 		sessionConfig: newSessionConfig(),
-		serverCore: serverCore{
-			adapters:    nil,
-			hub:         nil,
-			sessionMap:  sync.Map{},
-			sessionSeed: 0,
-		},
 	}
 }
 
+// SetDebug ...
 func (p *Server) SetDebug() *Server {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetDebug must be called before Serve",
-		).AddDebug(internal.GetFileLine(1)))
-	} else {
-		p.isDebug = true
-	}
-
+	p.serverConfig.setDebug(true, internal.GetFileLine(1), p.onError)
 	return p
 }
 
-func (p *Server) setRelease() *Server {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetRelease must be called before Serve",
-		).AddDebug(internal.GetFileLine(1)))
-	} else {
-		p.isDebug = false
-	}
-
+// SetRelease ...
+func (p *Server) SetRelease() *Server {
+	p.serverConfig.setDebug(false, internal.GetFileLine(1), p.onError)
 	return p
 }
 
 // SetNumOfThreads ...
 func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
-	p.Lock()
-	defer p.Unlock()
-
-	if numOfThreads <= 0 {
-		p.onError(0, internal.NewRuntimePanic(
-			"numOfThreads must be greater than 0",
-		).AddDebug(internal.GetFileLine(1)))
-	} else if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetNumOfThreads must be called before Serve",
-		).AddDebug(internal.GetFileLine(1)))
-	} else {
-		p.numOfThreads = numOfThreads
-	}
+	p.serverConfig.setNumOfThreads(
+		numOfThreads,
+		internal.GetFileLine(1),
+		p.onError,
+	)
 
 	return p
 }
 
-func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetReplyCache must be called before Serve",
-		).AddDebug(internal.GetFileLine(1)))
-	} else {
-		p.replyCache = replyCache
-	}
+func (p *Server) SetReplyCache(replyCache ReplyCache) *Server {
+	p.serverConfig.setReplyCache(
+		replyCache,
+		internal.GetFileLine(1),
+		p.onError,
+	)
 
 	return p
 }
@@ -154,7 +111,7 @@ func (p *Server) BuildReplyCache() *Server {
 	}()
 
 	processor := internal.NewProcessor(
-		p.isDebug,
+		false,
 		1,
 		32,
 		32,
@@ -176,18 +133,22 @@ func (p *Server) BuildReplyCache() *Server {
 }
 
 func (p *Server) Serve() {
-	copySessionConfig := p.sessionConfig.LockConfig()
-	defer p.sessionConfig.UnlockConfig()
+	p.sessionConfig.LockConfig()
+	p.serverConfig.LockConfig()
+	defer func() {
+		p.sessionConfig.UnlockConfig()
+		p.serverConfig.UnlockConfig()
+	}()
 
 	p.serve(
-		copySessionConfig,
+		p.sessionConfig.Clone(),
 		func() streamHub {
 			return internal.NewProcessor(
-				p.isDebug,
-				p.numOfThreads,
+				p.serverConfig.isDebug,
+				p.serverConfig.numOfThreads,
 				32,
 				32,
-				p.replyCache,
+				p.serverConfig.replyCache,
 				20*time.Second,
 				p.services,
 				p.onReturnStream,

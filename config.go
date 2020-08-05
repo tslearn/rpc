@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -10,13 +11,29 @@ import (
 const sessionConfigMaxConcurrency = 1024
 const sessionConfigMinTransportLimit = 10240
 
+type baseConfig struct {
+	locked bool
+	sync.Mutex
+}
+
+func (p *baseConfig) LockConfig() {
+	p.Lock()
+	defer p.Unlock()
+	p.locked = true
+}
+
+func (p *baseConfig) UnlockConfig() {
+	p.Lock()
+	defer p.Unlock()
+	p.locked = false
+}
+
 type sessionConfig struct {
 	concurrency    int64
 	transportLimit int64
 	readTimeout    time.Duration
 	writeTimeout   time.Duration
-	locked         bool
-	sync.Mutex
+	baseConfig
 }
 
 func newSessionConfig() *sessionConfig {
@@ -25,28 +42,7 @@ func newSessionConfig() *sessionConfig {
 		transportLimit: 4 * 1024 * 1024,
 		readTimeout:    12 * time.Second,
 		writeTimeout:   2 * time.Second,
-		locked:         false,
 	}
-}
-
-func (p *sessionConfig) LockConfig() *sessionConfig {
-	p.Lock()
-	defer p.Unlock()
-	p.locked = true
-
-	return &sessionConfig{
-		concurrency:    p.concurrency,
-		transportLimit: p.transportLimit,
-		readTimeout:    p.readTimeout,
-		writeTimeout:   p.writeTimeout,
-		locked:         false,
-	}
-}
-
-func (p *sessionConfig) UnlockConfig() {
-	p.Lock()
-	defer p.Unlock()
-	p.locked = false
 }
 
 func (p *sessionConfig) setTransportLimit(
@@ -90,5 +86,92 @@ func (p *sessionConfig) setConcurrency(
 		)).AddDebug(dbg))
 	} else {
 		p.concurrency = int64(concurrency)
+	}
+}
+
+func (p *sessionConfig) Clone() *sessionConfig {
+	p.Lock()
+	defer p.Unlock()
+
+	return &sessionConfig{
+		concurrency:    p.concurrency,
+		transportLimit: p.transportLimit,
+		readTimeout:    p.readTimeout,
+		writeTimeout:   p.writeTimeout,
+	}
+}
+
+type serverConfig struct {
+	isDebug      bool
+	numOfThreads int
+	replyCache   ReplyCache
+	baseConfig
+}
+
+func newServerConfig() *serverConfig {
+	return &serverConfig{
+		isDebug:      false,
+		numOfThreads: runtime.NumCPU() * 8192,
+		replyCache:   nil,
+	}
+}
+
+func (p *serverConfig) setDebug(
+	isDebug bool,
+	dbg string,
+	onError func(uint64, Error),
+) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.locked {
+		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
+	} else {
+		p.isDebug = isDebug
+	}
+}
+
+func (p *serverConfig) setNumOfThreads(
+	numOfThreads int,
+	dbg string,
+	onError func(uint64, Error),
+) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.locked {
+		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
+	} else if numOfThreads <= 0 {
+		onError(0, internal.NewRuntimePanic(
+			"sessionConcurrency be greater than 0",
+		).AddDebug(dbg))
+	} else {
+		p.numOfThreads = numOfThreads
+	}
+}
+
+func (p *serverConfig) setReplyCache(
+	replyCache ReplyCache,
+	dbg string,
+	onError func(uint64, Error),
+) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.locked {
+		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
+	} else {
+		p.replyCache = replyCache
+	}
+}
+
+func (p *serverConfig) Clone() *serverConfig {
+	p.Lock()
+	defer p.Unlock()
+
+	return &serverConfig{
+		isDebug:      p.isDebug,
+		numOfThreads: p.numOfThreads,
+		replyCache:   p.replyCache,
 	}
 }

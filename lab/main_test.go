@@ -8,6 +8,12 @@ import (
 )
 
 func BenchmarkParallelDebug01(b *testing.B) {
+
+	arr := []int(nil)
+	arr = append(arr, 12)
+
+	fmt.Println(arr)
+
 	mp := &sync.Map{}
 
 	for i := 0; i < 1000000; i++ {
