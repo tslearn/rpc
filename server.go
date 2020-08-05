@@ -113,8 +113,8 @@ func (p *Server) BuildReplyCache() *Server {
 	processor := internal.NewProcessor(
 		false,
 		1,
-		256,
-		256,
+		64,
+		64,
 		nil,
 		time.Second,
 		services,
@@ -146,8 +146,8 @@ func (p *Server) Serve() {
 			return internal.NewProcessor(
 				p.serverConfig.isDebug,
 				p.serverConfig.numOfThreads,
-				256,
-				256,
+				64,
+				64,
 				p.serverConfig.replyCache,
 				20*time.Second,
 				p.services,
