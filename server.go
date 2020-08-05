@@ -14,7 +14,7 @@ type Server struct {
 	numOfThreads  int
 	replyCache    internal.ReplyCache
 	sessionConfig *sessionConfig
-	baseServer
+	serverCore
 }
 
 func NewServer() *Server {
@@ -24,7 +24,7 @@ func NewServer() *Server {
 		numOfThreads:  runtime.NumCPU() * 8192,
 		replyCache:    nil,
 		sessionConfig: newSessionConfig(),
-		baseServer: baseServer{
+		serverCore: serverCore{
 			adapters:    nil,
 			hub:         nil,
 			sessionMap:  sync.Map{},

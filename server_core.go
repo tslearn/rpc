@@ -262,7 +262,7 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
-type baseServer struct {
+type serverCore struct {
 	adapters    []internal.IServerAdapter
 	hub         streamHub
 	sessionMap  sync.Map
@@ -271,7 +271,7 @@ type baseServer struct {
 	sync.Mutex
 }
 
-func (p *baseServer) listenWebSocket(addr string, dbg string) {
+func (p *serverCore) listenWebSocket(addr string, dbg string) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -287,7 +287,7 @@ func (p *baseServer) listenWebSocket(addr string, dbg string) {
 	}
 }
 
-func (p *baseServer) onReturnStream(stream *internal.Stream) {
+func (p *serverCore) onReturnStream(stream *internal.Stream) {
 	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
@@ -302,7 +302,7 @@ func (p *baseServer) onReturnStream(stream *internal.Stream) {
 	}
 }
 
-func (p *baseServer) serve(
+func (p *serverCore) serve(
 	config *sessionConfig,
 	onGetStreamHub func() streamHub,
 ) {
@@ -358,7 +358,7 @@ func (p *baseServer) serve(
 	})
 }
 
-func (p *baseServer) Close() {
+func (p *serverCore) Close() {
 	waitCH := chan bool(nil)
 
 	if !p.SetClosing(func(ch chan bool) {
@@ -384,7 +384,7 @@ func (p *baseServer) Close() {
 	}
 }
 
-func (p *baseServer) getSession(
+func (p *serverCore) getSession(
 	conn internal.IStreamConn,
 	config *sessionConfig,
 ) (*serverSession, Error) {
@@ -444,7 +444,7 @@ func (p *baseServer) getSession(
 	}
 }
 
-func (p *baseServer) onConnRun(
+func (p *serverCore) onConnRun(
 	conn internal.IStreamConn,
 	config *sessionConfig,
 	addr net.Addr,
@@ -488,6 +488,6 @@ func (p *baseServer) onConnRun(
 	}
 }
 
-func (p *baseServer) onError(sessionID uint64, err Error) {
+func (p *serverCore) onError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
