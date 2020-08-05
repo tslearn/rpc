@@ -454,6 +454,7 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 				go func(serverAdapter internal.IAdapter) {
 					for p.IsRunning() {
 						serverAdapter.Open(p.onConnRun, p.onError)
+						time.Sleep(time.Second)
 					}
 					waitCH <- true
 				}(item)
