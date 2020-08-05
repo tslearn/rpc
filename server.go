@@ -9,28 +9,26 @@ import (
 )
 
 type Server struct {
-	isDebug      bool
-	services     []*internal.ServiceMeta
-	numOfThreads int
-	replyCache   internal.ReplyCache
+	isDebug       bool
+	services      []*internal.ServiceMeta
+	numOfThreads  int
+	replyCache    internal.ReplyCache
+	sessionConfig *sessionConfig
 	baseServer
 }
 
 func NewServer() *Server {
 	return &Server{
-		isDebug:      false,
-		services:     make([]*internal.ServiceMeta, 0),
-		numOfThreads: runtime.NumCPU() * 8192,
-		replyCache:   nil,
+		isDebug:       false,
+		services:      make([]*internal.ServiceMeta, 0),
+		numOfThreads:  runtime.NumCPU() * 8192,
+		replyCache:    nil,
+		sessionConfig: newSessionConfig(),
 		baseServer: baseServer{
-			adapters:           nil,
-			hub:                nil,
-			sessionMap:         sync.Map{},
-			sessionConcurrency: 64,
-			sessionSeed:        0,
-			transportLimit:     1024 * 1024,
-			readTimeout:        10 * time.Second,
-			writeTimeout:       1 * time.Second,
+			adapters:    nil,
+			hub:         nil,
+			sessionMap:  sync.Map{},
+			sessionSeed: 0,
 		},
 	}
 }
@@ -100,6 +98,24 @@ func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
 	return p
 }
 
+func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
+	p.sessionConfig.setTransportLimit(
+		maxTransportBytes,
+		internal.GetFileLine(1),
+		p.onError,
+	)
+	return p
+}
+
+func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
+	p.sessionConfig.setConcurrency(
+		sessionConcurrency,
+		internal.GetFileLine(1),
+		p.onError,
+	)
+	return p
+}
+
 // ListenWebSocket ...
 func (p *Server) ListenWebSocket(addr string) *Server {
 	p.listenWebSocket(addr, internal.GetFileLine(1))
@@ -160,19 +176,25 @@ func (p *Server) BuildReplyCache() *Server {
 }
 
 func (p *Server) Serve() {
-	p.serve(func() streamHub {
-		ret := internal.NewProcessor(
-			p.isDebug,
-			p.numOfThreads,
-			32,
-			32,
-			p.replyCache,
-			20*time.Second,
-			p.services,
-			p.onReturnStream,
-		)
+	copySessionConfig := p.sessionConfig.LockConfig()
+	defer p.sessionConfig.UnlockConfig()
 
-		// fmt.Println(ret)
-		return ret
-	})
+	p.serve(
+		copySessionConfig,
+		func() streamHub {
+			ret := internal.NewProcessor(
+				p.isDebug,
+				p.numOfThreads,
+				32,
+				32,
+				p.replyCache,
+				20*time.Second,
+				p.services,
+				p.onReturnStream,
+			)
+
+			// fmt.Println(ret)
+			return ret
+		},
+	)
 }

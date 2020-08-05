@@ -13,8 +13,6 @@ import (
 	"unsafe"
 )
 
-const maxSessionConcurrency = 1024
-const minTransportLimit = 10240
 const serverSessionRecordStatusNotRunning = 0
 const serverSessionRecordStatusRunning = 1
 
@@ -66,7 +64,7 @@ func (p *serverSessionRecord) Release() {
 
 type serverSession struct {
 	id           uint64
-	server       *baseServer
+	config       *sessionConfig
 	security     string
 	conn         internal.IStreamConn
 	dataSequence uint64
@@ -81,10 +79,10 @@ var serverSessionCache = &sync.Pool{
 	},
 }
 
-func newServerSession(id uint64, server *baseServer) *serverSession {
+func newServerSession(id uint64, config *sessionConfig) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
-	ret.server = server
+	ret.config = config
 	ret.security = internal.GetRandString(32)
 	ret.conn = nil
 	ret.dataSequence = 0
@@ -146,7 +144,7 @@ func (p *serverSession) OnControlStream(
 				}
 			}
 			// alloc
-			for count < p.server.sessionConcurrency {
+			for count < p.config.concurrency {
 				p.dataSequence++
 				p.callMap[p.dataSequence] = newServerSessionRecord(p.dataSequence)
 				count++
@@ -156,7 +154,7 @@ func (p *serverSession) OnControlStream(
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(controlStreamKindRequestIdsBack)
 		stream.WriteUint64(p.dataSequence)
-		return conn.WriteStream(stream, p.server.writeTimeout)
+		return conn.WriteStream(stream, p.config.writeTimeout)
 	}
 }
 
@@ -177,7 +175,7 @@ func (p *serverSession) OnDataStream(
 	} else if retStream := record.GetReturn(); retStream != nil {
 		// Write return stream directly if record is finish
 		stream.Release()
-		return conn.WriteStream(retStream, p.server.writeTimeout)
+		return conn.WriteStream(retStream, p.config.writeTimeout)
 	} else {
 		// Wait if record is not finish
 		stream.Release()
@@ -233,7 +231,7 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 		}()
 		// WriteStream
 		if conn != nil {
-			_ = conn.WriteStream(stream, p.server.writeTimeout)
+			_ = conn.WriteStream(stream, p.config.writeTimeout)
 		}
 		// Release
 		if needRelease {
@@ -257,7 +255,7 @@ func (p *serverSession) Release() {
 	}()
 
 	p.id = 0
-	p.server = nil
+	p.config = nil
 	p.security = ""
 	p.dataSequence = 0
 	p.ctrlSequence = 0
@@ -265,56 +263,12 @@ func (p *serverSession) Release() {
 }
 
 type baseServer struct {
-	adapters           []internal.IServerAdapter
-	hub                streamHub
-	sessionMap         sync.Map
-	sessionSeed        uint64
-	sessionConcurrency int64
-	transportLimit     int64
-	readTimeout        time.Duration
-	writeTimeout       time.Duration
+	adapters    []internal.IServerAdapter
+	hub         streamHub
+	sessionMap  sync.Map
+	sessionSeed uint64
 	internal.StatusManager
 	sync.Mutex
-}
-
-func (p *baseServer) setTransportLimit(maxTransportBytes int, dbg string) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetTransportLimit must be called before Serve",
-		).AddDebug(dbg))
-	} else if maxTransportBytes < minTransportLimit {
-		p.onError(0, internal.NewRuntimePanic(fmt.Sprintf(
-			"maxTransportBytes must be greater than or equal to %d",
-			minTransportLimit,
-		)).AddDebug(dbg))
-	} else {
-		p.transportLimit = int64(maxTransportBytes)
-	}
-}
-
-func (p *baseServer) setSessionConcurrency(sessionConcurrency int, dbg string) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
-			"SetSessionConcurrency must be called before Serve",
-		).AddDebug(dbg))
-	} else if sessionConcurrency <= 0 {
-		p.onError(0, internal.NewRuntimePanic(
-			"sessionConcurrency be greater than 0",
-		).AddDebug(dbg))
-	} else if sessionConcurrency > maxSessionConcurrency {
-		p.onError(0, internal.NewRuntimePanic(fmt.Sprintf(
-			"sessionConcurrency be less than or equal to %d",
-			maxSessionConcurrency,
-		)).AddDebug(dbg))
-	} else {
-		p.sessionConcurrency = int64(sessionConcurrency)
-	}
 }
 
 func (p *baseServer) listenWebSocket(addr string, dbg string) {
@@ -348,7 +302,10 @@ func (p *baseServer) onReturnStream(stream *internal.Stream) {
 	}
 }
 
-func (p *baseServer) serve(onGetStreamHub func() streamHub) {
+func (p *baseServer) serve(
+	config *sessionConfig,
+	onGetStreamHub func() streamHub,
+) {
 	waitCount := 0
 	waitCH := make(chan bool)
 
@@ -374,7 +331,12 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 				waitCount++
 				go func(adapter internal.IServerAdapter) {
 					for {
-						adapter.Open(p.onConnRun, p.onError)
+						adapter.Open(
+							func(conn internal.IStreamConn, addr net.Addr) {
+								p.onConnRun(conn, config, addr)
+							},
+							p.onError,
+						)
 						if p.IsRunning() {
 							time.Sleep(time.Second)
 						} else {
@@ -424,10 +386,11 @@ func (p *baseServer) Close() {
 
 func (p *baseServer) getSession(
 	conn internal.IStreamConn,
+	config *sessionConfig,
 ) (*serverSession, Error) {
 	if stream, err := conn.ReadStream(
-		p.readTimeout,
-		p.transportLimit,
+		config.readTimeout,
+		config.transportLimit,
 	); err != nil {
 		return nil, err
 	} else {
@@ -461,18 +424,18 @@ func (p *baseServer) getSession(
 			}
 			// if session not find by session string, create a new session
 			if session == nil {
-				session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), p)
+				session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), config)
 				p.sessionMap.Store(session.id, session)
 			}
 			// write respond stream
 			stream.SetWritePosToBodyStart()
 			stream.WriteInt64(controlStreamKindInitBack)
 			stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
-			stream.WriteInt64(int64(p.readTimeout / time.Millisecond))
-			stream.WriteInt64(int64(p.writeTimeout / time.Millisecond))
-			stream.WriteInt64(p.transportLimit)
-			stream.WriteInt64(p.sessionConcurrency)
-			if err := conn.WriteStream(stream, p.writeTimeout); err != nil {
+			stream.WriteInt64(int64(config.readTimeout / time.Millisecond))
+			stream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
+			stream.WriteInt64(config.transportLimit)
+			stream.WriteInt64(config.concurrency)
+			if err := conn.WriteStream(stream, config.writeTimeout); err != nil {
 				return nil, err
 			}
 			// return session
@@ -481,7 +444,11 @@ func (p *baseServer) getSession(
 	}
 }
 
-func (p *baseServer) onConnRun(conn internal.IStreamConn, addr net.Addr) {
+func (p *baseServer) onConnRun(
+	conn internal.IStreamConn,
+	config *sessionConfig,
+	addr net.Addr,
+) {
 	runError := Error(nil)
 	sessionId := uint64(0)
 
@@ -494,7 +461,7 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 		}
 	}()
 
-	if session, err := p.getSession(conn); err != nil {
+	if session, err := p.getSession(conn, config); err != nil {
 		runError = err
 	} else {
 		sessionId = session.id
@@ -502,8 +469,8 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 		defer session.SetConn(nil)
 		for runError == nil {
 			if stream, err := conn.ReadStream(
-				p.readTimeout,
-				p.transportLimit,
+				config.readTimeout,
+				config.transportLimit,
 			); err != nil {
 				runError = err
 			} else {
