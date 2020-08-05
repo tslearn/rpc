@@ -146,8 +146,8 @@ func (p *Server) Serve() {
 			return internal.NewProcessor(
 				p.serverConfig.isDebug,
 				p.serverConfig.numOfThreads,
-				32,
-				32,
+				256,
+				256,
 				p.serverConfig.replyCache,
 				20*time.Second,
 				p.services,
