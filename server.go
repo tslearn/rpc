@@ -258,10 +258,10 @@ func (p *serverSession) Release() {
 	}()
 
 	p.id = 0
+	p.server = nil
 	p.security = ""
 	p.dataSequence = 0
 	p.ctrlSequence = 0
-	p.server = nil
 	serverSessionCache.Put(p)
 }
 
