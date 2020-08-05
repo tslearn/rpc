@@ -182,7 +182,7 @@ func (p *Server) Serve() {
 	p.serve(
 		copySessionConfig,
 		func() streamHub {
-			ret := internal.NewProcessor(
+			return internal.NewProcessor(
 				p.isDebug,
 				p.numOfThreads,
 				32,
@@ -192,9 +192,6 @@ func (p *Server) Serve() {
 				p.services,
 				p.onReturnStream,
 			)
-
-			// fmt.Println(ret)
-			return ret
 		},
 	)
 }
