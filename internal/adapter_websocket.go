@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/gorilla/websocket"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"sync"
@@ -15,12 +16,12 @@ const webSocketStreamConnClosing = int32(2)
 const webSocketStreamConnCanClose = int32(3)
 
 type webSocketStreamConn struct {
-	status    int32
-	reading   int32
-	writing   int32
-	closeCH   chan bool
-	conn      *websocket.Conn
-	writeLock sync.Mutex
+	status  int32
+	reading int32
+	writing int32
+	closeCH chan bool
+	conn    *websocket.Conn
+	sync.Mutex
 }
 
 func toTransportError(err error) Error {
@@ -54,8 +55,8 @@ func (p *webSocketStreamConn) writeMessage(
 	data []byte,
 	timeout time.Duration,
 ) Error {
-	p.writeLock.Lock()
-	defer p.writeLock.Unlock()
+	p.Lock()
+	defer p.Unlock()
 	_ = p.conn.SetWriteDeadline(TimeNow().Add(timeout))
 	return toTransportError(p.conn.WriteMessage(messageType, data))
 }
@@ -190,7 +191,7 @@ type wsServerAdapter struct {
 	StatusManager
 }
 
-func NewWebSocketServerAdapter(addr string) IAdapter {
+func NewWebSocketServerAdapter(addr string) IServerAdapter {
 	return &wsServerAdapter{
 		addr:     addr,
 		wsServer: nil,
@@ -199,8 +200,8 @@ func NewWebSocketServerAdapter(addr string) IAdapter {
 
 // Open ...
 func (p *wsServerAdapter) Open(
-	onConnRun func(IStreamConn),
-	onError func(Error),
+	onConnRun func(IStreamConn, net.Addr),
+	onError func(uint64, Error),
 ) {
 	if onError == nil {
 		panic("onError is nil")
@@ -210,13 +211,10 @@ func (p *wsServerAdapter) Open(
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-				onError(NewTransportError(err.Error()))
+				onError(0, NewTransportError(err.Error()))
 			} else {
 				streamConn := newWebSocketStreamConn(conn)
-				onConnRun(streamConn)
-				if err := streamConn.Close(); err != nil {
-					onError(err)
-				}
+				onConnRun(streamConn, conn.RemoteAddr())
 			}
 		})
 		p.wsServer = &http.Server{
@@ -224,12 +222,12 @@ func (p *wsServerAdapter) Open(
 			Handler: mux,
 		}
 	}) {
-		onError(NewKernelPanic(
+		onError(0, NewKernelPanic(
 			"it is already running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		if e := p.wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-			onError(NewRuntimePanic(e.Error()))
+			onError(0, NewRuntimePanic(e.Error()))
 		}
 		p.SetClosing(nil)
 		p.SetClosed(func() {
@@ -239,24 +237,24 @@ func (p *wsServerAdapter) Open(
 }
 
 // Close ...
-func (p *wsServerAdapter) Close(onError func(Error)) {
+func (p *wsServerAdapter) Close(onError func(uint64, Error)) {
 	waitCH := chan bool(nil)
 	if onError == nil {
 		panic("onError is nil")
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.wsServer.Close(); e != nil {
-			onError(NewRuntimePanic(e.Error()))
+			onError(0, NewRuntimePanic(e.Error()))
 		}
 	}) {
-		onError(NewKernelPanic(
+		onError(0, NewKernelPanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			onError(NewRuntimePanic(
+			onError(0, NewRuntimePanic(
 				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}
@@ -269,7 +267,7 @@ type wsClientAdapter struct {
 	StatusManager
 }
 
-func NewWebSocketClientAdapter(connectString string) IAdapter {
+func NewWebSocketClientAdapter(connectString string) IClientAdapter {
 	return &wsClientAdapter{
 		conn:          nil,
 		connectString: connectString,
@@ -304,9 +302,6 @@ func (p *wsClientAdapter) Open(
 			p.SetClosed(func() {
 				p.conn = nil
 			})
-			if err := streamConn.Close(); err != nil {
-				onError(err)
-			}
 		}
 	}
 }

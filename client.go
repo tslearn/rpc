@@ -124,7 +124,7 @@ func Dial(connectString string) (*Client, Error) {
 	}
 }
 
-func newClient(endPoint internal.IAdapter) *Client {
+func newClient(endPoint internal.IClientAdapter) *Client {
 	ret := &Client{
 		sessionString:        "",
 		conn:                 nil,
@@ -278,9 +278,14 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 		if err != nil {
 			p.onError(err)
 		}
+
 		p.DoWithLock(func() {
 			p.conn = nil
 		})
+
+		if err := conn.Close(); err != nil {
+			p.onError(err)
+		}
 	}()
 
 	// receive messages

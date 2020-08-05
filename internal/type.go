@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"net"
 	"runtime/debug"
 	"sync/atomic"
 	"time"
@@ -40,7 +41,12 @@ type IStreamConn interface {
 	Close() Error
 }
 
-type IAdapter interface {
+type IServerAdapter interface {
+	Open(onConnRun func(IStreamConn, net.Addr), onError func(uint64, Error))
+	Close(onError func(uint64, Error))
+}
+
+type IClientAdapter interface {
 	Open(onConnRun func(IStreamConn), onError func(Error))
 	Close(onError func(Error))
 }

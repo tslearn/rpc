@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"net"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -264,7 +265,7 @@ func (p *serverSession) Release() {
 }
 
 type baseServer struct {
-	adapters           []internal.IAdapter
+	adapters           []internal.IServerAdapter
 	hub                streamHub
 	sessionMap         sync.Map
 	sessionSeed        uint64
@@ -281,11 +282,11 @@ func (p *baseServer) setTransportLimit(maxTransportBytes int, dbg string) {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
+		p.onSessionError(0, internal.NewRuntimePanic(
 			"SetTransportLimit must be called before Serve",
 		).AddDebug(dbg))
 	} else if maxTransportBytes < minTransportLimit {
-		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
+		p.onSessionError(0, internal.NewRuntimePanic(fmt.Sprintf(
 			"maxTransportBytes must be greater than or equal to %d",
 			minTransportLimit,
 		)).AddDebug(dbg))
@@ -299,15 +300,15 @@ func (p *baseServer) setSessionConcurrency(sessionConcurrency int, dbg string) {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
+		p.onSessionError(0, internal.NewRuntimePanic(
 			"SetSessionConcurrency must be called before Serve",
 		).AddDebug(dbg))
 	} else if sessionConcurrency <= 0 {
-		p.onError(internal.NewRuntimePanic(
+		p.onSessionError(0, internal.NewRuntimePanic(
 			"sessionConcurrency be greater than 0",
 		).AddDebug(dbg))
 	} else if sessionConcurrency > maxSessionConcurrency {
-		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
+		p.onSessionError(0, internal.NewRuntimePanic(fmt.Sprintf(
 			"sessionConcurrency be less than or equal to %d",
 			maxSessionConcurrency,
 		)).AddDebug(dbg))
@@ -321,7 +322,7 @@ func (p *baseServer) listenWebSocket(addr string, dbg string) {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
+		p.onSessionError(0, internal.NewRuntimePanic(
 			"ListenWebSocket must be called before Serve",
 		).AddDebug(dbg))
 	} else {
@@ -356,24 +357,24 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 		defer p.Unlock()
 
 		if len(p.adapters) <= 0 {
-			p.onError(internal.NewRuntimePanic(
+			p.onSessionError(0, internal.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
 		} else if hub := onGetStreamHub(); hub == nil {
-			p.onError(internal.NewKernelPanic(
+			p.onSessionError(0, internal.NewKernelPanic(
 				"hub is nil",
 			).AddDebug(string(debug.Stack())))
 		} else if !p.SetRunning(func() {
 			p.hub = hub
 		}) {
 			hub.Close()
-			p.onError(internal.NewRuntimePanic("it is already running"))
+			p.onSessionError(0, internal.NewRuntimePanic("it is already running"))
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
-				go func(adapter internal.IAdapter) {
+				go func(adapter internal.IServerAdapter) {
 					for {
-						adapter.Open(p.onConnRun, p.onError)
+						adapter.Open(p.onConnRun, p.onSessionError)
 						if p.IsRunning() {
 							time.Sleep(time.Second)
 						} else {
@@ -402,19 +403,19 @@ func (p *baseServer) Close() {
 		waitCH = ch
 		p.hub.Close()
 		for _, item := range p.adapters {
-			go func(adapter internal.IAdapter) {
-				adapter.Close(p.onError)
+			go func(adapter internal.IServerAdapter) {
+				adapter.Close(p.onSessionError)
 			}(item)
 		}
 	}) {
-		p.onError(internal.NewKernelPanic(
+		p.onSessionError(0, internal.NewKernelPanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			p.onError(internal.NewRuntimePanic(
+			p.onSessionError(0, internal.NewRuntimePanic(
 				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}
@@ -480,12 +481,23 @@ func (p *baseServer) getSession(
 	}
 }
 
-func (p *baseServer) onConnRun(conn internal.IStreamConn) {
+func (p *baseServer) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 	runError := Error(nil)
+	sessionId := uint64(0)
+
+	defer func() {
+		if runError != internal.ErrTransportStreamConnIsClosed {
+			p.onSessionError(sessionId, runError)
+		}
+		if err := conn.Close(); err != nil {
+			p.onSessionError(sessionId, err)
+		}
+	}()
 
 	if session, err := p.getSession(conn); err != nil {
 		runError = err
 	} else {
+		sessionId = session.id
 		session.SetConn(conn)
 		defer session.SetConn(nil)
 		for runError == nil {
@@ -507,14 +519,6 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn) {
 			}
 		}
 	}
-
-	if runError != internal.ErrTransportStreamConnIsClosed {
-		p.onError(runError)
-	}
-}
-
-func (p *baseServer) onError(err Error) {
-	p.onSessionError(0, err)
 }
 
 func (p *baseServer) onSessionError(sessionID uint64, err Error) {
