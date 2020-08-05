@@ -4,7 +4,6 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"path"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -13,6 +12,7 @@ type Server struct {
 	isDebug      bool
 	services     []*internal.ServiceMeta
 	numOfThreads int
+	replyCache   internal.ReplyCache
 	baseServer
 }
 
@@ -21,8 +21,8 @@ func NewServer() *Server {
 		isDebug:      false,
 		services:     make([]*internal.ServiceMeta, 0),
 		numOfThreads: runtime.NumCPU() * 8192,
+		replyCache:   nil,
 		baseServer: baseServer{
-			listens:            make([]*listenItem, 0),
 			adapters:           nil,
 			hub:                nil,
 			sessionMap:         sync.Map{},
@@ -31,7 +31,6 @@ func NewServer() *Server {
 			transportLimit:     1024 * 1024,
 			readTimeout:        10 * time.Second,
 			writeTimeout:       1 * time.Second,
-			replyCache:         nil,
 		},
 	}
 }
@@ -74,13 +73,28 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	if numOfThreads <= 0 {
 		p.onError(internal.NewRuntimePanic(
 			"numOfThreads must be greater than 0",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(internal.GetFileLine(1)))
 	} else if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetNumOfThreads must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(internal.GetFileLine(1)))
 	} else {
 		p.numOfThreads = numOfThreads
+	}
+
+	return p
+}
+
+func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		p.onError(internal.NewRuntimePanic(
+			"SetReplyCache must be called before Serve",
+		).AddDebug(internal.GetFileLine(1)))
+	} else {
+		p.replyCache = replyCache
 	}
 
 	return p

@@ -263,23 +263,22 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
-const listenItemSchemeTCP = uint32(1)
-const listenItemSchemeUDP = uint32(2)
-const listenItemSchemeHTTP = uint32(3)
-const listenItemSchemeHTTPS = uint32(4)
-const listenItemSchemeWS = uint32(5)
-const listenItemSchemeWSS = uint32(6)
-
-type listenItem struct {
-	scheme   uint32
-	addr     string
-	certFile string
-	keyFile  string
-	fileLine string
-}
+//const listenItemSchemeTCP = uint32(1)
+//const listenItemSchemeUDP = uint32(2)
+//const listenItemSchemeHTTP = uint32(3)
+//const listenItemSchemeHTTPS = uint32(4)
+//const listenItemSchemeWS = uint32(5)
+//const listenItemSchemeWSS = uint32(6)
+//
+//type listenItem struct {
+//	scheme   uint32
+//	addr     string
+//	certFile string
+//	keyFile  string
+//	fileLine string
+//}
 
 type baseServer struct {
-	listens            []*listenItem
 	adapters           []internal.IAdapter
 	hub                streamHub
 	sessionMap         sync.Map
@@ -288,7 +287,6 @@ type baseServer struct {
 	transportLimit     int64
 	readTimeout        time.Duration
 	writeTimeout       time.Duration
-	replyCache         internal.ReplyCache
 	internal.StatusManager
 	sync.Mutex
 }
@@ -335,23 +333,6 @@ func (p *baseServer) setSessionConcurrency(
 	}
 }
 
-func (p *baseServer) setReplyCache(
-	replyCache internal.ReplyCache,
-	fileLne string,
-) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetReplyCache must be called before Serve",
-		).AddDebug(fileLne))
-	} else {
-		p.replyCache = replyCache
-	}
-}
-
-// ListenWebSocket ...
 func (p *baseServer) listenWebSocket(addr string, fileLine string) {
 	p.Lock()
 	defer p.Unlock()
@@ -361,13 +342,10 @@ func (p *baseServer) listenWebSocket(addr string, fileLine string) {
 			"ListenWebSocket must be called before Serve",
 		).AddDebug(fileLine))
 	} else {
-		p.listens = append(p.listens, &listenItem{
-			scheme:   listenItemSchemeWS,
-			addr:     addr,
-			certFile: "",
-			keyFile:  "",
-			fileLine: fileLine,
-		})
+		p.adapters = append(
+			p.adapters,
+			internal.NewWebSocketServerAdapter(addr),
+		)
 	}
 }
 
@@ -394,20 +372,7 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 		p.Lock()
 		defer p.Unlock()
 
-		// create adapters by listens
-		adapters := make([]internal.IAdapter, 0)
-		for _, ln := range p.listens {
-			switch ln.scheme {
-			case listenItemSchemeWS:
-				adapters = append(
-					adapters,
-					internal.NewWebSocketServerAdapter(ln.addr),
-				)
-			default:
-			}
-		}
-
-		if len(adapters) <= 0 {
+		if len(p.adapters) <= 0 {
 			p.onError(internal.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
@@ -416,7 +381,6 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 				"can not get stream hub is nil",
 			).AddDebug(string(debug.Stack())))
 		} else if !p.SetRunning(func() {
-			p.adapters = adapters
 			p.hub = hub
 		}) {
 			hub.Close()
@@ -440,7 +404,6 @@ func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 	}
 
 	p.SetClosed(func() {
-		p.adapters = nil
 		p.hub = nil
 	})
 }
