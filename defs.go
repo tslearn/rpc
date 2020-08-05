@@ -9,6 +9,11 @@ const controlStreamKindInitBack = int64(2)
 const controlStreamKindRequestIds = int64(3)
 const controlStreamKindRequestIdsBack = int64(4)
 
+type streamHub interface {
+	PutStream(*Stream) bool
+	Close() bool
+}
+
 // Bool ...
 type Bool = internal.Bool
 

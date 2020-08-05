@@ -67,7 +67,7 @@ func (p *serverSessionRecord) Release() {
 
 type serverSession struct {
 	id           uint64
-	server       *Server
+	server       *sessionServer
 	security     string
 	conn         internal.IStreamConn
 	dataSequence uint64
@@ -82,7 +82,7 @@ var serverSessionCache = &sync.Pool{
 	},
 }
 
-func newServerSession(id uint64, server *Server) *serverSession {
+func newServerSession(id uint64, server *sessionServer) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
 	ret.server = server
@@ -281,7 +281,7 @@ type listenItem struct {
 	fileLine string
 }
 
-type Server struct {
+type sessionServer struct {
 	isDebug            bool
 	listens            []*listenItem
 	adapters           []internal.IAdapter
@@ -299,8 +299,8 @@ type Server struct {
 	sync.Mutex
 }
 
-func NewServer() *Server {
-	return &Server{
+func NewServer() *sessionServer {
+	return &sessionServer{
 		isDebug:            false,
 		listens:            make([]*listenItem, 0),
 		adapters:           nil,
@@ -317,7 +317,7 @@ func NewServer() *Server {
 }
 
 // SetDebug ...
-func (p *Server) SetDebug() *Server {
+func (p *sessionServer) SetDebug() *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -333,7 +333,7 @@ func (p *Server) SetDebug() *Server {
 }
 
 // SetRelease ...
-func (p *Server) SetRelease() *Server {
+func (p *sessionServer) SetRelease() *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -349,7 +349,7 @@ func (p *Server) SetRelease() *Server {
 }
 
 // SetNumOfThreads ...
-func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
+func (p *sessionServer) SetNumOfThreads(numOfThreads int) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -369,7 +369,7 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 }
 
 // SetTransportLimit ...
-func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
+func (p *sessionServer) SetTransportLimit(maxTransportBytes int) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -389,7 +389,7 @@ func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
 	return p
 }
 
-func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
+func (p *sessionServer) SetSessionConcurrency(sessionConcurrency int) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -410,7 +410,7 @@ func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
 }
 
 // SetReplyCache ...
-func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
+func (p *sessionServer) SetReplyCache(replyCache internal.ReplyCache) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -426,10 +426,10 @@ func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
 }
 
 // AddService ...
-func (p *Server) AddService(
+func (p *sessionServer) AddService(
 	name string,
 	service *Service,
-) *Server {
+) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -450,7 +450,7 @@ func (p *Server) AddService(
 }
 
 // ListenWebSocket ...
-func (p *Server) ListenWebSocket(addr string) *Server {
+func (p *sessionServer) ListenWebSocket(addr string) *sessionServer {
 	p.Lock()
 	defer p.Unlock()
 
@@ -473,7 +473,7 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 }
 
 // BuildReplyCache ...
-func (p *Server) BuildReplyCache() *Server {
+func (p *sessionServer) BuildReplyCache() *sessionServer {
 	_, file, _, _ := runtime.Caller(1)
 	buildDir := path.Join(path.Dir(file))
 
@@ -505,7 +505,7 @@ func (p *Server) BuildReplyCache() *Server {
 	return p
 }
 
-func (p *Server) OnReturnStream(stream *internal.Stream) {
+func (p *sessionServer) OnReturnStream(stream *internal.Stream) {
 	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
@@ -520,7 +520,7 @@ func (p *Server) OnReturnStream(stream *internal.Stream) {
 	}
 }
 
-func (p *Server) Serve() {
+func (p *sessionServer) Serve() {
 	waitCount := 0
 	waitCH := make(chan bool)
 
@@ -587,7 +587,7 @@ func (p *Server) Serve() {
 	})
 }
 
-func (p *Server) Close() {
+func (p *sessionServer) Close() {
 	waitCH := chan bool(nil)
 
 	if !p.SetClosing(func(ch chan bool) {
@@ -613,7 +613,7 @@ func (p *Server) Close() {
 	}
 }
 
-func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
+func (p *sessionServer) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	if conn == nil {
 		return nil, internal.NewKernelPanic(
 			"conn is nil",
@@ -679,7 +679,7 @@ func (p *Server) getSession(conn internal.IStreamConn) (*serverSession, Error) {
 	}
 }
 
-func (p *Server) onConnRun(conn internal.IStreamConn) {
+func (p *sessionServer) onConnRun(conn internal.IStreamConn) {
 	runError := Error(nil)
 
 	if session, err := p.getSession(conn); err != nil {
@@ -711,12 +711,12 @@ func (p *Server) onConnRun(conn internal.IStreamConn) {
 	}
 }
 
-func (p *Server) onError(err Error) {
+func (p *sessionServer) onError(err Error) {
 	p.onSessionError(0, err)
 }
 
-func (p *Server) onSessionError(sessionID uint64, err Error) {
+func (p *sessionServer) onSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
 
-// End ***** Server ***** //
+// End ***** sessionServer ***** //
