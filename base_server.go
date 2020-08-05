@@ -424,11 +424,7 @@ func (p *baseServer) Close() {
 func (p *baseServer) getSession(
 	conn internal.IStreamConn,
 ) (*serverSession, Error) {
-	if conn == nil {
-		return nil, internal.NewKernelPanic(
-			"conn is nil",
-		).AddDebug(string(debug.Stack()))
-	} else if stream, err := conn.ReadStream(
+	if stream, err := conn.ReadStream(
 		p.readTimeout,
 		p.transportLimit,
 	); err != nil {
@@ -452,11 +448,7 @@ func (p *baseServer) getSession(
 			session := (*serverSession)(nil)
 			sessionArray := strings.Split(sessionString, "-")
 			if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
-				if id, err := strconv.ParseUint(
-					sessionArray[0],
-					10,
-					64,
-				); err == nil && id > 0 {
+				if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
 					if v, ok := p.sessionMap.Load(id); ok {
 						if s, ok := v.(*serverSession); ok && s != nil {
 							if s.security == sessionArray[1] {
