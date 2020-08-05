@@ -16,8 +16,8 @@ import (
 )
 
 func testWithStreamConn(
-	runOnServer func(IAdapter, IStreamConn),
-	runOnClient func(IAdapter, IStreamConn),
+	runOnServer func(IServerAdapter, IStreamConn),
+	runOnClient func(IClientAdapter, IStreamConn),
 ) []Error {
 	ret := make([]Error, 0)
 	lock := NewLock()
@@ -31,9 +31,14 @@ func testWithStreamConn(
 	serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 	clientAdapter := NewWebSocketClientAdapter("ws://127.0.0.1:12345")
 	go func() {
-		serverAdapter.Open(func(conn IStreamConn) {
-			runOnServer(serverAdapter, conn)
-		}, fnOnError)
+		serverAdapter.Open(
+			func(conn IStreamConn, _ net.Addr) {
+				runOnServer(serverAdapter, conn)
+			},
+			func(_ uint64, err Error) {
+				fnOnError(err)
+			},
+		)
 		waitCH <- true
 	}()
 
@@ -43,7 +48,9 @@ func testWithStreamConn(
 			runOnClient(clientAdapter, conn)
 		}, fnOnError)
 		time.Sleep(100 * time.Millisecond)
-		serverAdapter.Close(fnOnError)
+		serverAdapter.Close(func(u uint64, err Error) {
+			fnOnError(err)
+		})
 		waitCH <- true
 	}()
 
@@ -106,14 +113,14 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 	// Test(1)
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnRunning)
 			// 1. onCloseMessage case
@@ -129,14 +136,14 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 	// Test(2)
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosing)
 			// 1. onCloseMessage case
@@ -152,14 +159,14 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 	// Test(3)
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 			// 1. onCloseMessage case
@@ -175,14 +182,14 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 
 	// Test(4)
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 			// 1. onCloseMessage case
@@ -202,14 +209,14 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 
 	// Test(1) status is not webSocketStreamConnRunning
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 			// status is not running
@@ -221,14 +228,14 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 
 	// Test(2) SetReadDeadline Error
 	testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// make error
 			makeConnSetReadDeadlineError(testConn.conn)
@@ -241,14 +248,14 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 
 	// Test(3) ReadMessage timeout
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage timeout
 			stream, err := testConn.ReadStream(-time.Second, 999999)
@@ -262,7 +269,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 
 	// Test(4) type is websocket.TextMessage
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			_ = testConn.conn.WriteMessage(websocket.TextMessage, []byte("hello"))
 			for {
@@ -271,7 +278,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
 			assert(testConn.ReadStream(time.Second, 999999)).Equals(
@@ -284,7 +291,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 
 	// Test(5) OK
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			_ = testConn.conn.WriteMessage(websocket.BinaryMessage, []byte("hello"))
 			for {
@@ -293,7 +300,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
 			stream, err := testConn.ReadStream(time.Second, 999999)
@@ -310,14 +317,14 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 
 	// Test(1) stream is nil
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			err := testConn.WriteStream(nil, time.Second)
 			assert(err).IsNotNil()
@@ -329,14 +336,14 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 
 	// Test(2) status is not webSocketStreamConnRunning
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 			assert(testConn.WriteStream(NewStream(), time.Second)).
@@ -346,14 +353,14 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 
 	// Test(3) timeout
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			err := testConn.WriteStream(NewStream(), -time.Second)
 			assert(err).IsNotNil()
@@ -363,14 +370,14 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 
 	// Test(4) OK
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			assert(testConn.WriteStream(NewStream(), time.Second)).IsNil()
 		},
@@ -381,28 +388,28 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 	assert := NewAssert(t)
 	// Test(1) webSocketStreamConnRunning => webSocketStreamConnClosing no wait
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			assert(conn.Close()).IsNil()
 		},
 	)).Equals([]Error{})
 
 	// Test(2) webSocketStreamConnRunning => webSocketStreamConnClosing wait ok
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			go func() {
 				_, _ = conn.ReadStream(10*time.Second, 999999)
 			}()
@@ -414,10 +421,10 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 	// Test(3) webSocketStreamConnRunning => webSocketStreamConnClosing
 	// wait failed
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			time.Sleep(2500 * time.Millisecond)
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			go func() {
 				_, _ = conn.ReadStream(10*time.Second, 999999)
 			}()
@@ -428,14 +435,14 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 
 	// Test(4) webSocketStreamConnCanClose => webSocketStreamConnClosed
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 			testConn.closeCH <- true
@@ -445,14 +452,14 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 
 	// Test(5) webSocketStreamConnClosed => webSocketStreamConnClosed
 	assert(testWithStreamConn(
-		func(server IAdapter, conn IStreamConn) {
+		func(server IServerAdapter, conn IStreamConn) {
 			for {
 				if _, err := conn.ReadStream(time.Second, 999999); err != nil {
 					return
 				}
 			}
 		},
-		func(client IAdapter, conn IStreamConn) {
+		func(client IClientAdapter, conn IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 			assert(conn.Close()).IsNil()
@@ -475,12 +482,12 @@ func TestWsServerAdapter_Open(t *testing.T) {
 
 	// Test(1)
 	assert(testRunWithCatchPanic(func() {
-		NewWebSocketServerAdapter("test").Open(func(conn IStreamConn) {}, nil)
+		NewWebSocketServerAdapter("test").Open(func(IStreamConn, net.Addr) {}, nil)
 	})).Equals("onError is nil")
 
 	// Test(2)
 	assert(testRunWithCatchPanic(func() {
-		NewWebSocketServerAdapter("test").Open(nil, func(e Error) {})
+		NewWebSocketServerAdapter("test").Open(nil, func(uint64, Error) {})
 	})).Equals("onConnRun is nil")
 
 	// Test(3) it is already running
@@ -490,8 +497,8 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		waitCH := make(chan Error, 1)
 
 		serverAdapter.Open(
-			func(conn IStreamConn) {},
-			func(e Error) {
+			func(conn IStreamConn, _ net.Addr) {},
+			func(_ uint64, e Error) {
 				waitCH <- e
 			},
 		)
@@ -509,8 +516,8 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		waitCH := make(chan Error, 1)
 
 		serverAdapter.Open(
-			func(conn IStreamConn) {},
-			func(e Error) {
+			func(conn IStreamConn, _ net.Addr) {},
+			func(_ uint64, e Error) {
 				waitCH <- e
 			},
 		)
@@ -529,15 +536,15 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		go func() {
 			time.Sleep(200 * time.Millisecond)
 			_, _ = http.Get("http://127.0.0.1:12345")
-			serverAdapter.Close(func(e Error) {
+			serverAdapter.Close(func(_ uint64, e Error) {
 				assert().Fail("error run here")
 			})
 		}()
 
 		waitCH := make(chan Error, 1)
 		serverAdapter.Open(
-			func(conn IStreamConn) {},
-			func(e Error) {
+			func(conn IStreamConn, _ net.Addr) {},
+			func(_ uint64, e Error) {
 				waitCH <- e
 			},
 		)
@@ -565,16 +572,16 @@ func TestWsServerAdapter_Open(t *testing.T) {
 					assert().Fail("error run here")
 				},
 			)
-			serverAdapter.Close(func(e Error) {
+			serverAdapter.Close(func(_ uint64, e Error) {
 				assert().Fail("error run here")
 			})
 		}()
 
 		serverAdapter.Open(
-			func(conn IStreamConn) {
+			func(conn IStreamConn, _ net.Addr) {
 				time.Sleep(300 * time.Millisecond)
 			},
-			func(e Error) {
+			func(_ uint64, e Error) {
 				assert().Fail("error run here")
 			},
 		)
@@ -596,17 +603,17 @@ func TestWsServerAdapter_Open(t *testing.T) {
 				},
 			)
 			time.Sleep(500 * time.Millisecond)
-			serverAdapter.Close(func(e Error) {
+			serverAdapter.Close(func(_ uint64, e Error) {
 				assert().Fail("error run here")
 			})
 		}()
 
 		serverAdapter.Open(
-			func(conn IStreamConn) {
+			func(conn IStreamConn, _ net.Addr) {
 				time.Sleep(300 * time.Millisecond)
 				makeConnSetReadDeadlineError(conn.(*webSocketStreamConn).conn)
 			},
-			func(e Error) {
+			func(_ uint64, e Error) {
 				assert(e).IsNotNil()
 			},
 		)
@@ -635,7 +642,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 
 	// Test(2) SetClosing is false
 	assert(testRunWithCatchPanic(func() {
-		NewWebSocketServerAdapter("test").Close(func(e Error) {
+		NewWebSocketServerAdapter("test").Close(func(_ uint64, e Error) {
 			assert(e.GetMessage()).Equals("it is not running")
 			assert(strings.Contains(e.GetDebug(), "goroutine")).IsTrue()
 			assert(strings.Contains(e.GetDebug(), "[running]")).IsTrue()
@@ -649,16 +656,15 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {
 					fmt.Println(e)
 					assert().Fail("error run here")
 				},
 			)
 		}()
 		time.Sleep(100 * time.Millisecond)
-		serverAdapter.Close(func(e Error) {
-			fmt.Println(e)
+		serverAdapter.Close(func(_ uint64, e Error) {
 			assert().Fail("error run here")
 		})
 	})).IsNil()
@@ -673,8 +679,8 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {
 					fmt.Println(e)
 					assert().Fail("error run here")
 				},
@@ -697,7 +703,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		httpServerMuPointer.Unlock()
 
 		errCount := 0
-		serverAdapter.Close(func(e Error) {
+		serverAdapter.Close(func(_ uint64, e Error) {
 			if errCount == 0 {
 				assert(e.GetKind()).Equals(ErrorKindRuntimePanic)
 				assert(e.GetMessage()).Equals("test error")
@@ -757,8 +763,8 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {},
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {},
 			)
 		}()
 		time.Sleep(100 * time.Millisecond)
@@ -783,7 +789,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		assert(strings.Contains(err.GetDebug(), "Open")).IsTrue()
 		assert(strings.Contains(err.GetDebug(), "adapter_websocket.go")).IsTrue()
 
-		serverAdapter.Close(func(e Error) {})
+		serverAdapter.Close(func(_ uint64, e Error) {})
 	})
 
 	// Test(5) OK
@@ -791,8 +797,8 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {},
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {},
 			)
 		}()
 		time.Sleep(100 * time.Millisecond)
@@ -808,7 +814,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		)
 
 		clientAdapter.Close(func(e Error) {})
-		serverAdapter.Close(func(e Error) {})
+		serverAdapter.Close(func(_ uint64, e Error) {})
 	})
 
 	// Test(6) streamConn Close error
@@ -816,8 +822,8 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {},
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {},
 			)
 		}()
 		time.Sleep(100 * time.Millisecond)
@@ -835,7 +841,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		)
 
 		clientAdapter.Close(func(e Error) {})
-		serverAdapter.Close(func(e Error) {})
+		serverAdapter.Close(func(_ uint64, e Error) {})
 	})
 
 }
@@ -864,8 +870,8 @@ func TestWsClientAdapter_Close(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {},
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {},
 			)
 		}()
 
@@ -886,7 +892,7 @@ func TestWsClientAdapter_Close(t *testing.T) {
 			assert().Fail("error run here")
 		})
 
-		serverAdapter.Close(func(e Error) {})
+		serverAdapter.Close(func(_ uint64, e Error) {})
 	})).IsNil()
 
 	// Test(4) conn.Close() error
@@ -894,8 +900,8 @@ func TestWsClientAdapter_Close(t *testing.T) {
 		serverAdapter := NewWebSocketServerAdapter("127.0.0.1:12345")
 		go func() {
 			serverAdapter.Open(
-				func(conn IStreamConn) {},
-				func(e Error) {},
+				func(conn IStreamConn, _ net.Addr) {},
+				func(_ uint64, e Error) {},
 			)
 		}()
 
@@ -916,6 +922,6 @@ func TestWsClientAdapter_Close(t *testing.T) {
 			assert(e).IsNotNil()
 		})
 
-		serverAdapter.Close(func(e Error) {})
+		serverAdapter.Close(func(_ uint64, e Error) {})
 	})).IsNil()
 }
