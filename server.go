@@ -193,7 +193,7 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 			"stream error",
 		).AddDebug(string(debug.Stack()))
 	} else {
-		// mask panic message for client
+		// Transform panic message for client
 		switch internal.ErrorKind(errKind) {
 		case internal.ErrorKindReplyPanic:
 			fallthrough
@@ -227,13 +227,10 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 		conn, needRelease := func() (internal.IStreamConn, bool) {
 			p.Lock()
 			defer p.Unlock()
-			if item, ok := p.callMap[stream.GetCallbackID()]; !ok {
-				return p.conn, true
-			} else if !item.SetReturn(stream) {
-				return p.conn, true
-			} else {
-				return p.conn, false
+			if item, ok := p.callMap[stream.GetCallbackID()]; ok {
+				return p.conn, !item.SetReturn(stream)
 			}
+			return p.conn, true
 		}()
 		// WriteStream
 		if conn != nil {
