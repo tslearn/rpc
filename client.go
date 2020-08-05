@@ -513,14 +513,6 @@ func (p *Client) sendMessage(
 	}
 }
 
-//func (p *baseServer) onError(err Error) {
-//  p.onSessionError(0, err)
-//}
-//
-//func (p *baseServer) onSessionError(sessionID uint64, err Error) {
-//  fmt.Println("client", sessionID, err)
-//}
-
 func (p *Client) onError(err Error) {
 	fmt.Println("client", err)
 }

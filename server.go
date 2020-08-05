@@ -40,7 +40,7 @@ func (p *Server) SetDebug() *Server {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"SetDebug must be called before Serve",
 		).AddDebug(internal.GetFileLine(1)))
 	} else {
@@ -55,7 +55,7 @@ func (p *Server) setRelease() *Server {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"SetRelease must be called before Serve",
 		).AddDebug(internal.GetFileLine(1)))
 	} else {
@@ -71,11 +71,11 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	defer p.Unlock()
 
 	if numOfThreads <= 0 {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"numOfThreads must be greater than 0",
 		).AddDebug(internal.GetFileLine(1)))
 	} else if p.IsRunning() {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"SetNumOfThreads must be called before Serve",
 		).AddDebug(internal.GetFileLine(1)))
 	} else {
@@ -90,7 +90,7 @@ func (p *Server) SetReplyCache(replyCache internal.ReplyCache) *Server {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"SetReplyCache must be called before Serve",
 		).AddDebug(internal.GetFileLine(1)))
 	} else {
@@ -112,7 +112,7 @@ func (p *Server) AddService(name string, service *Service) *Server {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onSessionError(0, internal.NewRuntimePanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"AddService must be called before Serve",
 		).AddDebug(internal.GetFileLine(1)))
 	} else {
@@ -153,7 +153,7 @@ func (p *Server) BuildReplyCache() *Server {
 		"cache",
 		path.Join(buildDir, "cache", "reply_cache.go"),
 	); err != nil {
-		p.onSessionError(0, err)
+		p.onError(0, err)
 	}
 
 	return p
