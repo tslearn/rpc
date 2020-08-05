@@ -3,8 +3,6 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
-	"path"
-	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -67,7 +65,7 @@ func (p *serverSessionRecord) Release() {
 
 type serverSession struct {
 	id           uint64
-	server       *sessionServer
+	server       *baseServer
 	security     string
 	conn         internal.IStreamConn
 	dataSequence uint64
@@ -82,7 +80,7 @@ var serverSessionCache = &sync.Pool{
 	},
 }
 
-func newServerSession(id uint64, server *sessionServer) *serverSession {
+func newServerSession(id uint64, server *baseServer) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
 	ret.server = server
@@ -164,7 +162,7 @@ func (p *serverSession) OnControlStream(
 func (p *serverSession) OnDataStream(
 	conn internal.IStreamConn,
 	stream *Stream,
-	processor *internal.Processor,
+	hub streamHub,
 ) Error {
 	if record, ok := p.callMap[stream.GetCallbackID()]; !ok {
 		// Cant find record by callbackID
@@ -173,7 +171,7 @@ func (p *serverSession) OnDataStream(
 	} else if record.SetRunning() {
 		// Run the stream. Dont release stream because it will manage by processor
 		stream.SetSessionID(p.id)
-		processor.PutStream(stream)
+		hub.PutStream(stream)
 		return nil
 	} else if retStream := record.GetReturn(); retStream != nil {
 		// Write return stream directly if record is finish
@@ -265,7 +263,6 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
-const listenItemSchemeNone = uint32(0)
 const listenItemSchemeTCP = uint32(1)
 const listenItemSchemeUDP = uint32(2)
 const listenItemSchemeHTTP = uint32(3)
@@ -281,16 +278,14 @@ type listenItem struct {
 	fileLine string
 }
 
-type sessionServer struct {
+type baseServer struct {
 	isDebug            bool
 	listens            []*listenItem
 	adapters           []internal.IAdapter
-	processor          *internal.Processor
-	numOfThreads       int
+	hub                streamHub
 	sessionMap         sync.Map
 	sessionConcurrency int64
 	sessionSeed        uint64
-	services           []*internal.ServiceMeta
 	transportLimit     int64
 	readTimeout        time.Duration
 	writeTimeout       time.Duration
@@ -299,77 +294,36 @@ type sessionServer struct {
 	sync.Mutex
 }
 
-func NewServer() *sessionServer {
-	return &sessionServer{
-		isDebug:            false,
-		listens:            make([]*listenItem, 0),
-		adapters:           nil,
-		processor:          nil,
-		numOfThreads:       runtime.NumCPU() * 8192,
-		sessionMap:         sync.Map{},
-		sessionConcurrency: 64,
-		sessionSeed:        0,
-		transportLimit:     1024 * 1024,
-		readTimeout:        10 * time.Second,
-		writeTimeout:       1 * time.Second,
-		replyCache:         nil,
-	}
-}
-
-// SetDebug ...
-func (p *sessionServer) SetDebug() *sessionServer {
+func (p *baseServer) setDebug(fileLne string) {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetDebug must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(fileLne))
 	} else {
 		p.isDebug = true
 	}
-
-	return p
 }
 
-// SetRelease ...
-func (p *sessionServer) SetRelease() *sessionServer {
+func (p *baseServer) setRelease(fileLne string) {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetRelease must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(fileLne))
 	} else {
 		p.isDebug = false
 	}
-
-	return p
 }
 
-// SetNumOfThreads ...
-func (p *sessionServer) SetNumOfThreads(numOfThreads int) *sessionServer {
-	p.Lock()
-	defer p.Unlock()
-
-	if numOfThreads <= 0 {
-		p.onError(internal.NewRuntimePanic(
-			"numOfThreads must be greater than 0",
-		).AddDebug(string(debug.Stack())))
-	} else if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"SetNumOfThreads must be called before Serve",
-		).AddDebug(string(debug.Stack())))
-	} else {
-		p.numOfThreads = numOfThreads
-	}
-
-	return p
-}
-
-// SetTransportLimit ...
-func (p *sessionServer) SetTransportLimit(maxTransportBytes int) *sessionServer {
+func (p *baseServer) setTransportLimit(
+	maxTransportBytes int,
+	fileLne string,
+) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -377,19 +331,20 @@ func (p *sessionServer) SetTransportLimit(maxTransportBytes int) *sessionServer 
 		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"maxTransportBytes must be greater than or equal to %d",
 			minTransportLimit,
-		)).AddDebug(string(debug.Stack())))
+		)).AddDebug(fileLne))
 	} else if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetTransportLimit must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(fileLne))
 	} else {
 		p.transportLimit = int64(maxTransportBytes)
 	}
-
-	return p
 }
 
-func (p *sessionServer) SetSessionConcurrency(sessionConcurrency int) *sessionServer {
+func (p *baseServer) setSessionConcurrency(
+	sessionConcurrency int,
+	fileLne string,
+) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -397,64 +352,37 @@ func (p *sessionServer) SetSessionConcurrency(sessionConcurrency int) *sessionSe
 		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"sessionConcurrency be less than or equal to %d",
 			maxSessionConcurrency,
-		)).AddDebug(string(debug.Stack())))
+		)).AddDebug(fileLne))
 	} else if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetSessionConcurrency must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(fileLne))
 	} else {
 		p.sessionConcurrency = int64(sessionConcurrency)
 	}
-
-	return p
 }
 
-// SetReplyCache ...
-func (p *sessionServer) SetReplyCache(replyCache internal.ReplyCache) *sessionServer {
+func (p *baseServer) setReplyCache(
+	replyCache internal.ReplyCache,
+	fileLne string,
+) {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"SetReplyCache must be called before Serve",
-		).AddDebug(string(debug.Stack())))
+		).AddDebug(fileLne))
 	} else {
 		p.replyCache = replyCache
 	}
-
-	return p
-}
-
-// AddService ...
-func (p *sessionServer) AddService(
-	name string,
-	service *Service,
-) *sessionServer {
-	p.Lock()
-	defer p.Unlock()
-
-	fileLine := internal.GetFileLine(1)
-	if p.IsRunning() {
-		p.onError(internal.NewRuntimePanic(
-			"AddService must be called before Serve",
-		).AddDebug(fileLine))
-	} else {
-		p.services = append(p.services, internal.NewServiceMeta(
-			name,
-			service,
-			fileLine,
-		))
-	}
-
-	return p
 }
 
 // ListenWebSocket ...
-func (p *sessionServer) ListenWebSocket(addr string) *sessionServer {
+func (p *baseServer) listenWebSocket(addr string, fileLine string) {
 	p.Lock()
 	defer p.Unlock()
 
-	fileLine := internal.GetFileLine(1)
 	if p.IsRunning() {
 		p.onError(internal.NewRuntimePanic(
 			"ListenWebSocket must be called before Serve",
@@ -468,44 +396,9 @@ func (p *sessionServer) ListenWebSocket(addr string) *sessionServer {
 			fileLine: fileLine,
 		})
 	}
-
-	return p
 }
 
-// BuildReplyCache ...
-func (p *sessionServer) BuildReplyCache() *sessionServer {
-	_, file, _, _ := runtime.Caller(1)
-	buildDir := path.Join(path.Dir(file))
-
-	services := func() []*internal.ServiceMeta {
-		p.Lock()
-		defer p.Unlock()
-		return p.services
-	}()
-
-	processor := internal.NewProcessor(
-		p.isDebug,
-		1,
-		32,
-		32,
-		nil,
-		time.Second,
-		services,
-		func(stream *internal.Stream) {},
-	)
-	defer processor.Close()
-
-	if err := processor.BuildCache(
-		"cache",
-		path.Join(buildDir, "cache", "reply_cache.go"),
-	); err != nil {
-		p.onError(err)
-	}
-
-	return p
-}
-
-func (p *sessionServer) OnReturnStream(stream *internal.Stream) {
+func (p *baseServer) onReturnStream(stream *internal.Stream) {
 	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
@@ -520,7 +413,7 @@ func (p *sessionServer) OnReturnStream(stream *internal.Stream) {
 	}
 }
 
-func (p *sessionServer) Serve() {
+func (p *baseServer) serve(onGetStreamHub func() streamHub) {
 	waitCount := 0
 	waitCH := make(chan bool)
 
@@ -545,24 +438,15 @@ func (p *sessionServer) Serve() {
 			p.onError(internal.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
-		} else if processor := internal.NewProcessor(
-			p.isDebug,
-			p.numOfThreads,
-			32,
-			32,
-			p.replyCache,
-			20*time.Second,
-			p.services,
-			p.OnReturnStream,
-		); processor == nil {
+		} else if hub := onGetStreamHub(); hub == nil {
 			p.onError(internal.NewKernelPanic(
-				"processor is nil",
+				"can not get stream hub is nil",
 			).AddDebug(string(debug.Stack())))
 		} else if !p.SetRunning(func() {
 			p.adapters = adapters
-			p.processor = processor
+			p.hub = hub
 		}) {
-			processor.Close()
+			hub.Close()
 			p.onError(internal.NewRuntimePanic("it is already running"))
 		} else {
 			for _, item := range p.adapters {
@@ -583,16 +467,16 @@ func (p *sessionServer) Serve() {
 
 	p.SetClosed(func() {
 		p.adapters = nil
-		p.processor = nil
+		p.hub = nil
 	})
 }
 
-func (p *sessionServer) Close() {
+func (p *baseServer) Close() {
 	waitCH := chan bool(nil)
 
 	if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
-		p.processor.Close()
+		p.hub.Close()
 		for _, item := range p.adapters {
 			go func(adapter internal.IAdapter) {
 				adapter.Close(p.onError)
@@ -613,7 +497,9 @@ func (p *sessionServer) Close() {
 	}
 }
 
-func (p *sessionServer) getSession(conn internal.IStreamConn) (*serverSession, Error) {
+func (p *baseServer) getSession(
+	conn internal.IStreamConn,
+) (*serverSession, Error) {
 	if conn == nil {
 		return nil, internal.NewKernelPanic(
 			"conn is nil",
@@ -679,7 +565,7 @@ func (p *sessionServer) getSession(conn internal.IStreamConn) (*serverSession, E
 	}
 }
 
-func (p *sessionServer) onConnRun(conn internal.IStreamConn) {
+func (p *baseServer) onConnRun(conn internal.IStreamConn) {
 	runError := Error(nil)
 
 	if session, err := p.getSession(conn); err != nil {
@@ -700,7 +586,7 @@ func (p *sessionServer) onConnRun(conn internal.IStreamConn) {
 				} else if cbID == 0 {
 					runError = session.OnControlStream(conn, stream)
 				} else {
-					runError = session.OnDataStream(conn, stream, p.processor)
+					runError = session.OnDataStream(conn, stream, p.hub)
 				}
 			}
 		}
@@ -711,12 +597,12 @@ func (p *sessionServer) onConnRun(conn internal.IStreamConn) {
 	}
 }
 
-func (p *sessionServer) onError(err Error) {
+func (p *baseServer) onError(err Error) {
 	p.onSessionError(0, err)
 }
 
-func (p *sessionServer) onSessionError(sessionID uint64, err Error) {
+func (p *baseServer) onSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
 
-// End ***** sessionServer ***** //
+// End ***** baseServer ***** //
