@@ -263,27 +263,12 @@ func (p *serverSession) Release() {
 	serverSessionCache.Put(p)
 }
 
-//const listenItemSchemeTCP = uint32(1)
-//const listenItemSchemeUDP = uint32(2)
-//const listenItemSchemeHTTP = uint32(3)
-//const listenItemSchemeHTTPS = uint32(4)
-//const listenItemSchemeWS = uint32(5)
-//const listenItemSchemeWSS = uint32(6)
-//
-//type listenItem struct {
-//	scheme   uint32
-//	addr     string
-//	certFile string
-//	keyFile  string
-//	fileLine string
-//}
-
 type baseServer struct {
 	adapters           []internal.IAdapter
 	hub                streamHub
 	sessionMap         sync.Map
-	sessionConcurrency int64
 	sessionSeed        uint64
+	sessionConcurrency int64
 	transportLimit     int64
 	readTimeout        time.Duration
 	writeTimeout       time.Duration
@@ -291,10 +276,7 @@ type baseServer struct {
 	sync.Mutex
 }
 
-func (p *baseServer) setTransportLimit(
-	maxTransportBytes int,
-	fileLne string,
-) {
+func (p *baseServer) setTransportLimit(maxTransportBytes int, fileLne string) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -312,14 +294,11 @@ func (p *baseServer) setTransportLimit(
 	}
 }
 
-func (p *baseServer) setSessionConcurrency(
-	sessionConcurrency int,
-	fileLne string,
-) {
+func (p *baseServer) setSessionConcurrency(concurrency int, fileLne string) {
 	p.Lock()
 	defer p.Unlock()
 
-	if sessionConcurrency > maxSessionConcurrency {
+	if concurrency > maxSessionConcurrency {
 		p.onError(internal.NewRuntimePanic(fmt.Sprintf(
 			"sessionConcurrency be less than or equal to %d",
 			maxSessionConcurrency,
@@ -329,7 +308,7 @@ func (p *baseServer) setSessionConcurrency(
 			"SetSessionConcurrency must be called before Serve",
 		).AddDebug(fileLne))
 	} else {
-		p.sessionConcurrency = int64(sessionConcurrency)
+		p.sessionConcurrency = int64(concurrency)
 	}
 }
 
@@ -354,12 +333,12 @@ func (p *baseServer) onReturnStream(stream *internal.Stream) {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
 		stream.Release()
-		p.OnSessionError(stream.GetSessionID(), internal.NewKernelPanic(
+		p.onSessionError(stream.GetSessionID(), internal.NewKernelPanic(
 			"serverSession is nil",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		if err := session.OnReturnStream(stream); err != nil {
-			p.OnSessionError(stream.GetSessionID(), err)
+			p.onSessionError(stream.GetSessionID(), err)
 		}
 	}
 }
@@ -535,10 +514,10 @@ func (p *baseServer) onConnRun(conn internal.IStreamConn) {
 }
 
 func (p *baseServer) onError(err Error) {
-	p.OnSessionError(0, err)
+	p.onSessionError(0, err)
 }
 
-func (p *baseServer) OnSessionError(sessionID uint64, err Error) {
+func (p *baseServer) onSessionError(sessionID uint64, err Error) {
 	fmt.Println(sessionID, err)
 }
 
