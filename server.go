@@ -215,7 +215,7 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 				stream.WriteUint64(errKind)
 				stream.WriteString("internal error")
 				stream.WriteString("")
-				// report error to server
+				// Report error
 				ret = internal.NewError(
 					internal.ErrorKind(errKind),
 					message,
