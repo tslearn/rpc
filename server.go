@@ -66,13 +66,13 @@ func (p *serverSessionRecord) Release() {
 }
 
 type serverSession struct {
-	id          uint64
-	server      *Server
-	security    string
-	conn        internal.IStreamConn
-	dataSeed    uint64
-	controlSeed uint64
-	callMap     map[uint64]*serverSessionRecord
+	id           uint64
+	server       *Server
+	security     string
+	conn         internal.IStreamConn
+	dataSequence uint64
+	ctrlSequence uint64
+	callMap      map[uint64]*serverSessionRecord
 	sync.Mutex
 }
 
@@ -88,8 +88,8 @@ func newServerSession(id uint64, server *Server) *serverSession {
 	ret.server = server
 	ret.security = internal.GetRandString(32)
 	ret.conn = nil
-	ret.dataSeed = 0
-	ret.controlSeed = 0
+	ret.dataSequence = 0
+	ret.ctrlSequence = 0
 	ret.callMap = make(map[uint64]*serverSessionRecord)
 	return ret
 }
@@ -111,13 +111,13 @@ func (p *serverSession) OnControlStream(
 		return internal.NewTransportError(internal.ErrStringBadStream)
 	} else if kind != controlStreamKindRequestIds {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if seq := stream.GetSequence(); seq <= p.controlSeed {
+	} else if seq := stream.GetSequence(); seq <= p.ctrlSequence {
 		return nil
 	} else if currCallbackId, ok := stream.ReadUint64(); !ok {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
 		// update sequence
-		p.controlSeed = seq
+		p.ctrlSequence = seq
 		// mark
 		for stream.CanRead() {
 			if markId, ok := stream.ReadUint64(); ok {
@@ -148,15 +148,15 @@ func (p *serverSession) OnControlStream(
 			}
 			// alloc
 			for count < p.server.sessionConcurrency {
-				p.dataSeed++
-				p.callMap[p.dataSeed] = newServerSessionRecord(p.dataSeed)
+				p.dataSequence++
+				p.callMap[p.dataSequence] = newServerSessionRecord(p.dataSequence)
 				count++
 			}
 		}()
 		// return stream
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(controlStreamKindRequestIdsBack)
-		stream.WriteUint64(p.dataSeed)
+		stream.WriteUint64(p.dataSequence)
 		return conn.WriteStream(stream, p.server.writeTimeout)
 	}
 }
@@ -167,17 +167,21 @@ func (p *serverSession) OnDataStream(
 	processor *internal.Processor,
 ) Error {
 	if record, ok := p.callMap[stream.GetCallbackID()]; !ok {
+		// Cant find record by callbackID
 		stream.Release()
 		return internal.NewProtocolError("client callbackID error")
-	} else if !record.SetRunning() {
-		stream.Release()
-		if retStream := record.GetReturn(); retStream != nil {
-			return conn.WriteStream(retStream, p.server.writeTimeout)
-		}
-		return nil
-	} else {
+	} else if record.SetRunning() {
+		// Run the stream. Dont release stream because it will manage by processor
 		stream.SetSessionID(p.id)
 		processor.PutStream(stream)
+		return nil
+	} else if retStream := record.GetReturn(); retStream != nil {
+		// Write return stream directly if record is finish
+		stream.Release()
+		return conn.WriteStream(retStream, p.server.writeTimeout)
+	} else {
+		// Wait if record is not finish
+		stream.Release()
 		return nil
 	}
 }
@@ -258,8 +262,8 @@ func (p *serverSession) Release() {
 
 	p.id = 0
 	p.security = ""
-	p.dataSeed = 0
-	p.controlSeed = 0
+	p.dataSequence = 0
+	p.ctrlSequence = 0
 	p.server = nil
 	serverSessionCache.Put(p)
 }
