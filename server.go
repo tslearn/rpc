@@ -123,8 +123,8 @@ func (p *Server) BuildReplyCache() *Server {
 	defer processor.Close()
 
 	if err := processor.BuildCache(
-		"cache",
-		path.Join(buildDir, "cache", "reply_cache.go"),
+		"replycache",
+		path.Join(buildDir, "replycache", "cache.go"),
 	); err != nil {
 		p.onError(0, err)
 	}
