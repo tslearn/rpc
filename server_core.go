@@ -369,7 +369,7 @@ func (p *serverCore) Close() {
 			}(item)
 		}
 	}) {
-		p.onError(0, internal.NewKernelPanic(
+		p.onError(0, internal.NewRuntimePanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
