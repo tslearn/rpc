@@ -17,10 +17,10 @@ const serverSessionRecordStatusNotRunning = int32(0)
 const serverSessionRecordStatusRunning = int32(1)
 
 type serverSessionRecord struct {
-	id     uint64
-	status int32
-	mark   bool
-	stream unsafe.Pointer
+	callbackID uint64
+	status     int32
+	mark       bool
+	stream     unsafe.Pointer
 }
 
 var serverSessionRecordCache = &sync.Pool{
@@ -29,9 +29,9 @@ var serverSessionRecordCache = &sync.Pool{
 	},
 }
 
-func newServerSessionRecord(id uint64) *serverSessionRecord {
+func newServerSessionRecord(callbackID uint64) *serverSessionRecord {
 	ret := serverSessionRecordCache.Get().(*serverSessionRecord)
-	ret.id = id
+	ret.callbackID = callbackID
 	ret.status = serverSessionRecordStatusNotRunning
 	ret.mark = false
 	ret.stream = nil
@@ -104,13 +104,12 @@ func (p *serverSession) OnControlStream(
 ) Error {
 	defer stream.Release()
 
-	if kind, ok := stream.ReadInt64(); !ok {
+	if kind, ok := stream.ReadInt64(); !ok ||
+		kind != controlStreamKindRequestIds {
 		return internal.NewTransportError(internal.ErrStringBadStream)
-	} else if kind != controlStreamKindRequestIds {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if seq := stream.GetSequence(); seq <= p.ctrlSequence {
 		return nil
-	} else if currCallbackId, ok := stream.ReadUint64(); !ok {
+	} else if currClientCallbackID, ok := stream.ReadUint64(); !ok {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
 		// update sequence
@@ -135,7 +134,7 @@ func (p *serverSession) OnControlStream(
 			// swipe
 			count := int64(0)
 			for k, v := range p.callMap {
-				if v.id <= currCallbackId && !v.mark {
+				if v.callbackID <= currClientCallbackID && !v.mark {
 					delete(p.callMap, k)
 					v.Release()
 				} else {
@@ -384,105 +383,107 @@ func (p *serverCore) Close() {
 	}
 }
 
-func (p *serverCore) getSession(
-	conn internal.IStreamConn,
-	config *sessionConfig,
-) (*serverSession, Error) {
-	if stream, err := conn.ReadStream(
-		config.readTimeout,
-		config.transportLimit,
-	); err != nil {
-		return nil, err
-	} else {
-		defer stream.Release()
-
-		if stream.GetCallbackID() != 0 {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if stream.GetSequence() == 0 {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if kind, ok := stream.ReadInt64(); !ok ||
-			kind != controlStreamKindInit {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if sessionString, ok := stream.ReadString(); !ok {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else if !stream.IsReadFinish() {
-			return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-		} else {
-			// try to find session by session string
-			session := (*serverSession)(nil)
-			sessionArray := strings.Split(sessionString, "-")
-			if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
-				if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
-					if v, ok := p.sessionMap.Load(id); ok {
-						if s, ok := v.(*serverSession); ok && s != nil {
-							if s.security == sessionArray[1] {
-								session = s
-							}
-						}
-					}
-				}
-			}
-			// if session not find by session string, create a new session
-			if session == nil {
-				session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), config)
-				p.sessionMap.Store(session.id, session)
-			}
-			// write respond stream
-			stream.SetWritePosToBodyStart()
-			stream.WriteInt64(controlStreamKindInitBack)
-			stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
-			stream.WriteInt64(int64(config.readTimeout / time.Millisecond))
-			stream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
-			stream.WriteInt64(config.transportLimit)
-			stream.WriteInt64(config.concurrency)
-			if err := conn.WriteStream(stream, config.writeTimeout); err != nil {
-				return nil, err
-			}
-			// return session
-			return session, nil
-		}
-	}
-}
-
 func (p *serverCore) onConnRun(
 	conn internal.IStreamConn,
 	config *sessionConfig,
 	addr net.Addr,
 ) {
-	runError := Error(nil)
-	sessionId := uint64(0)
+	session := (*serverSession)(nil)
+
+	initStream, runError := conn.ReadStream(
+		config.readTimeout,
+		config.transportLimit,
+	)
 
 	defer func() {
+		sessionID := uint64(0)
+		if session != nil {
+			sessionID = session.id
+		}
 		if runError != internal.ErrTransportStreamConnIsClosed {
-			p.onError(sessionId, runError)
+			p.onError(sessionID, runError)
 		}
 		if err := conn.Close(); err != nil {
-			p.onError(sessionId, err)
+			p.onError(sessionID, err)
+		}
+		if initStream != nil {
+			initStream.Release()
 		}
 	}()
 
-	if session, err := p.getSession(conn, config); err != nil {
-		runError = err
+	// init conn
+	if runError != nil {
+		return
+	} else if initStream.GetCallbackID() != 0 {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if seq := initStream.GetSequence(); seq == 0 {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if kind, ok := initStream.ReadInt64(); !ok ||
+		kind != controlStreamKindInit {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if sessionString, ok := initStream.ReadString(); !ok {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if !initStream.IsReadFinish() {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
-		sessionId = session.id
-		session.SetConn(conn)
-		defer session.SetConn(nil)
-		for runError == nil {
-			if stream, err := conn.ReadStream(
-				config.readTimeout,
-				config.transportLimit,
-			); err != nil {
-				runError = err
-			} else {
-				cbID := stream.GetCallbackID()
-				sequence := stream.GetSequence()
-				if cbID == 0 && sequence == 0 {
-					return
-				} else if cbID == 0 {
-					runError = session.OnControlStream(conn, stream)
-				} else {
-					runError = session.OnDataStream(conn, stream, p.hub)
+		// try to find session by session string
+		sessionArray := strings.Split(sessionString, "-")
+		if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
+			if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
+				if v, ok := p.sessionMap.Load(id); ok {
+					if s, ok := v.(*serverSession); ok && s != nil {
+						if s.security == sessionArray[1] {
+							session = s
+						}
+					}
 				}
+			}
+		}
+		// if session not find by session string, create a new session
+		if session == nil {
+			session = newServerSession(atomic.AddUint64(&p.sessionSeed, 1), config)
+			p.sessionMap.Store(session.id, session)
+		}
+
+		// if sequence is old. ignore it
+		if seq <= session.ctrlSequence {
+			return
+		} else {
+			session.ctrlSequence = seq
+			// write respond stream
+			initStream.SetWritePosToBodyStart()
+			initStream.WriteInt64(controlStreamKindInitBack)
+			initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
+			initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
+			initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
+			initStream.WriteInt64(config.transportLimit)
+			initStream.WriteInt64(config.concurrency)
+
+			if err := conn.WriteStream(initStream, config.writeTimeout); err != nil {
+				runError = err
+				return
+			}
+		}
+	}
+
+	// Pump message from client
+	session.SetConn(conn)
+	defer session.SetConn(nil)
+	for runError == nil {
+		if stream, err := conn.ReadStream(
+			config.readTimeout,
+			config.transportLimit,
+		); err != nil {
+			runError = err
+		} else {
+			cbID := stream.GetCallbackID()
+			sequence := stream.GetSequence()
+			if cbID == 0 && sequence == 0 {
+				return
+			} else if cbID == 0 {
+				runError = session.OnControlStream(conn, stream)
+			} else {
+				runError = session.OnDataStream(conn, stream, p.hub)
 			}
 		}
 	}
