@@ -13,8 +13,8 @@ import (
 	"unsafe"
 )
 
-const serverSessionRecordStatusNotRunning = 0
-const serverSessionRecordStatusRunning = 1
+const serverSessionRecordStatusNotRunning = int32(0)
+const serverSessionRecordStatusRunning = int32(1)
 
 type serverSessionRecord struct {
 	id     uint64
