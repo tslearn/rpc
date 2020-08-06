@@ -591,8 +591,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
-				Reply("sayHello", func(ctx Context, name String) Return {
-					return ctx.OK(name)
+				Reply("sayHello", func(ctx Context, mp Map) Return {
+					return ctx.OK(true)
 				}),
 			fileLine: "",
 		}},
@@ -609,8 +609,10 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		},
 	)
 
+	mp := Map{"hello": "world", "age": 18, "like": Array{"fish", "meat"}}
+
 	b.ReportAllocs()
-	b.N = 100000000
+	b.N = 20000000
 	b.SetParallelism(1024)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -618,7 +620,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.WriteString("#.user:sayHello")
 			stream.WriteUint64(3)
 			stream.WriteString("")
-			stream.WriteString("")
+			stream.Write(mp)
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}
