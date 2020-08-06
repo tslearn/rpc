@@ -12,11 +12,11 @@ const streamBodyPos = 33
 
 const (
 	// StreamWriteOK ...
-	StreamWriteOK int = iota
+	StreamWriteOK = int(0)
 	// StreamWriteUnsupportedType ...
-	StreamWriteUnsupportedType
+	StreamWriteUnsupportedType = int(1)
 	// StreamWriteOverflow ...
-	StreamWriteOverflow
+	StreamWriteOverflow = int(2)
 )
 
 var (
