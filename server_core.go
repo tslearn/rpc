@@ -459,7 +459,10 @@ func (p *serverCore) onConnRun(
 			initStream.WriteInt64(config.transportLimit)
 			initStream.WriteInt64(config.concurrency)
 
-			if err := conn.WriteStream(initStream, config.writeTimeout); err != nil {
+			if err := conn.WriteStream(initStream, config.writeTimeout); err == nil {
+				initStream.Release()
+				initStream = nil
+			} else {
 				runError = err
 				return
 			}
