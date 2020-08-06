@@ -6,6 +6,7 @@ type rpcReplyMeta struct {
 	fileLine string      // where the reply add in source file
 }
 
+// ServiceMeta ...
 type ServiceMeta struct {
 	name     string   // the name of child service
 	service  *Service // the real service

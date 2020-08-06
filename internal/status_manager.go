@@ -6,12 +6,14 @@ const statusManagerClosed = int32(0)
 const statusManagerRunning = int32(1)
 const statusManagerClosing = int32(2)
 
+// StatusManager ...
 type StatusManager struct {
 	status  int32
 	closeCH chan bool
 	lock    Lock
 }
 
+// SetRunning ...
 func (p *StatusManager) SetRunning(onSuccess func()) bool {
 	return p.lock.CallWithLock(func() interface{} {
 		if atomic.CompareAndSwapInt32(
@@ -29,6 +31,7 @@ func (p *StatusManager) SetRunning(onSuccess func()) bool {
 	}).(bool)
 }
 
+// SetClosing ...
 func (p *StatusManager) SetClosing(onSuccess func(ch chan bool)) bool {
 	return p.lock.CallWithLock(func() interface{} {
 		if atomic.CompareAndSwapInt32(
@@ -47,6 +50,7 @@ func (p *StatusManager) SetClosing(onSuccess func(ch chan bool)) bool {
 	}).(bool)
 }
 
+// SetClosed ...
 func (p *StatusManager) SetClosed(onSuccess func()) bool {
 	return p.lock.CallWithLock(func() interface{} {
 		if atomic.CompareAndSwapInt32(
@@ -67,6 +71,7 @@ func (p *StatusManager) SetClosed(onSuccess func()) bool {
 	}).(bool)
 }
 
+// IsRunning ...
 func (p *StatusManager) IsRunning() bool {
 	return atomic.CompareAndSwapInt32(
 		&p.status,

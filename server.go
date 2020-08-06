@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Server ...
 type Server struct {
 	services      []*internal.ServiceMeta
 	serverConfig  *serverConfig
@@ -14,6 +15,7 @@ type Server struct {
 	serverCore
 }
 
+// NewServer ...
 func NewServer() *Server {
 	return &Server{
 		services:      nil,
@@ -45,6 +47,7 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	return p
 }
 
+// SetReplyCache ...
 func (p *Server) SetReplyCache(replyCache ReplyCache) *Server {
 	p.serverConfig.setReplyCache(
 		replyCache,
@@ -55,6 +58,7 @@ func (p *Server) SetReplyCache(replyCache ReplyCache) *Server {
 	return p
 }
 
+// SetTransportLimit ...
 func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
 	p.sessionConfig.setTransportLimit(
 		maxTransportBytes,
@@ -64,6 +68,7 @@ func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
 	return p
 }
 
+// SetSessionConcurrency ...
 func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
 	p.sessionConfig.setConcurrency(
 		sessionConcurrency,
@@ -132,6 +137,7 @@ func (p *Server) BuildReplyCache() *Server {
 	return p
 }
 
+// Serve ...
 func (p *Server) Serve() {
 	p.sessionConfig.LockConfig()
 	p.serverConfig.LockConfig()

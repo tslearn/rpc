@@ -116,8 +116,8 @@ func (p *serverSession) OnControlStream(
 		p.ctrlSequence = seq
 		// mark
 		for stream.CanRead() {
-			if markId, ok := stream.ReadUint64(); ok {
-				if v, ok := p.callMap[markId]; ok {
+			if markID, ok := stream.ReadUint64(); ok {
+				if v, ok := p.callMap[markID]; ok {
 					v.mark = true
 				}
 			} else {
@@ -185,7 +185,7 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 	if errKind, ok := stream.ReadUint64(); !ok {
 		stream.Release()
-		return internal.NewKernelPanic(
+		ret = internal.NewKernelPanic(
 			"stream error",
 		).AddDebug(string(debug.Stack()))
 	} else {
@@ -236,9 +236,9 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 		if needRelease {
 			stream.Release()
 		}
-
-		return
 	}
+
+	return
 }
 
 func (p *serverSession) Release() {
@@ -448,24 +448,24 @@ func (p *serverCore) onConnRun(
 		// if sequence is old. ignore it
 		if seq <= session.ctrlSequence {
 			return
-		} else {
-			session.ctrlSequence = seq
-			// write respond stream
-			initStream.SetWritePosToBodyStart()
-			initStream.WriteInt64(controlStreamKindInitBack)
-			initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
-			initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
-			initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
-			initStream.WriteInt64(config.transportLimit)
-			initStream.WriteInt64(config.concurrency)
+		}
 
-			if err := conn.WriteStream(initStream, config.writeTimeout); err == nil {
-				initStream.Release()
-				initStream = nil
-			} else {
-				runError = err
-				return
-			}
+		session.ctrlSequence = seq
+		// write respond stream
+		initStream.SetWritePosToBodyStart()
+		initStream.WriteInt64(controlStreamKindInitBack)
+		initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
+		initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
+		initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
+		initStream.WriteInt64(config.transportLimit)
+		initStream.WriteInt64(config.concurrency)
+
+		if err := conn.WriteStream(initStream, config.writeTimeout); err == nil {
+			initStream.Release()
+			initStream = nil
+		} else {
+			runError = err
+			return
 		}
 	}
 

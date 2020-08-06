@@ -35,17 +35,20 @@ type Map = map[string]interface{}
 // Any ...
 type Any = interface{}
 
+// IStreamConn ...
 type IStreamConn interface {
 	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
 	WriteStream(stream *Stream, timeout time.Duration) Error
 	Close() Error
 }
 
+// IServerAdapter ...
 type IServerAdapter interface {
 	Open(onConnRun func(IStreamConn, net.Addr), onError func(uint64, Error))
 	Close(onError func(uint64, Error))
 }
 
+// IClientAdapter ...
 type IClientAdapter interface {
 	Open(onConnRun func(IStreamConn), onError func(Error))
 	Close(onError func(Error))

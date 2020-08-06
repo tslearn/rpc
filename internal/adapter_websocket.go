@@ -191,6 +191,7 @@ type wsServerAdapter struct {
 	StatusManager
 }
 
+// NewWebSocketServerAdapter ...
 func NewWebSocketServerAdapter(addr string) IServerAdapter {
 	return &wsServerAdapter{
 		addr:     addr,
@@ -267,6 +268,7 @@ type wsClientAdapter struct {
 	StatusManager
 }
 
+// NewWebSocketClientAdapter ...
 func NewWebSocketClientAdapter(connectString string) IClientAdapter {
 	return &wsClientAdapter{
 		conn:          nil,
