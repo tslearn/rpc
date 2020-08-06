@@ -143,7 +143,7 @@ func (p *serverConfig) setNumOfThreads(
 		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if numOfThreads <= 0 {
 		onError(0, internal.NewRuntimePanic(
-			"sessionConcurrency must be greater than 0",
+			"numOfThreads must be greater than 0",
 		).AddDebug(dbg))
 	} else {
 		p.numOfThreads = numOfThreads
