@@ -45,26 +45,6 @@ func newSessionConfig() *sessionConfig {
 	}
 }
 
-func (p *sessionConfig) setTransportLimit(
-	maxTransportBytes int,
-	dbg string,
-	onError func(uint64, Error),
-) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.locked {
-		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
-	} else if maxTransportBytes < sessionConfigMinTransportLimit {
-		onError(0, internal.NewRuntimePanic(fmt.Sprintf(
-			"maxTransportBytes must be greater than or equal to %d",
-			sessionConfigMinTransportLimit,
-		)).AddDebug(dbg))
-	} else {
-		p.transportLimit = int64(maxTransportBytes)
-	}
-}
-
 func (p *sessionConfig) setConcurrency(
 	concurrency int,
 	dbg string,
@@ -86,6 +66,26 @@ func (p *sessionConfig) setConcurrency(
 		)).AddDebug(dbg))
 	} else {
 		p.concurrency = int64(concurrency)
+	}
+}
+
+func (p *sessionConfig) setTransportLimit(
+	maxTransportBytes int,
+	dbg string,
+	onError func(uint64, Error),
+) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.locked {
+		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
+	} else if maxTransportBytes < sessionConfigMinTransportLimit {
+		onError(0, internal.NewRuntimePanic(fmt.Sprintf(
+			"maxTransportBytes must be greater than or equal to %d",
+			sessionConfigMinTransportLimit,
+		)).AddDebug(dbg))
+	} else {
+		p.transportLimit = int64(maxTransportBytes)
 	}
 }
 
