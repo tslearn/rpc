@@ -77,11 +77,11 @@ func (p *sessionConfig) setConcurrency(
 		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if concurrency <= 0 {
 		onError(0, internal.NewRuntimePanic(
-			"sessionConcurrency be greater than 0",
+			"sessionConcurrency must be greater than 0",
 		).AddDebug(dbg))
 	} else if concurrency > sessionConfigMaxConcurrency {
 		onError(0, internal.NewRuntimePanic(fmt.Sprintf(
-			"sessionConcurrency be less than or equal to %d",
+			"sessionConcurrency must be less than or equal to %d",
 			sessionConfigMaxConcurrency,
 		)).AddDebug(dbg))
 	} else {
@@ -143,7 +143,7 @@ func (p *serverConfig) setNumOfThreads(
 		onError(0, internal.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if numOfThreads <= 0 {
 		onError(0, internal.NewRuntimePanic(
-			"sessionConcurrency be greater than 0",
+			"sessionConcurrency must be greater than 0",
 		).AddDebug(dbg))
 	} else {
 		p.numOfThreads = numOfThreads
