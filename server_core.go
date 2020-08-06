@@ -469,24 +469,26 @@ func (p *serverCore) onConnRun(
 		}
 	}
 
-	// Pump message from client
-	session.SetConn(conn)
-	defer session.SetConn(nil)
-	for runError == nil {
-		if stream, err := conn.ReadStream(
-			config.readTimeout,
-			config.transportLimit,
-		); err != nil {
-			runError = err
-		} else {
-			cbID := stream.GetCallbackID()
-			sequence := stream.GetSequence()
-			if cbID == 0 && sequence == 0 {
-				return
-			} else if cbID == 0 {
-				runError = session.OnControlStream(conn, stream)
+	if session != nil {
+		// Pump message from client
+		session.SetConn(conn)
+		defer session.SetConn(nil)
+		for runError == nil {
+			if stream, err := conn.ReadStream(
+				config.readTimeout,
+				config.transportLimit,
+			); err != nil {
+				runError = err
 			} else {
-				runError = session.OnDataStream(conn, stream, p.hub)
+				cbID := stream.GetCallbackID()
+				sequence := stream.GetSequence()
+				if cbID == 0 && sequence == 0 {
+					return
+				} else if cbID == 0 {
+					runError = session.OnControlStream(conn, stream)
+				} else {
+					runError = session.OnDataStream(conn, stream, p.hub)
+				}
 			}
 		}
 	}
