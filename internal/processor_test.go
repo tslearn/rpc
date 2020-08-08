@@ -610,7 +610,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	)
 
 	b.ReportAllocs()
-	b.N = 5000000
+	b.N = 100000000
 	b.SetParallelism(1024)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
