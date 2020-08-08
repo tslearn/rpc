@@ -104,13 +104,13 @@ import (
 func TestContextObject_OK(t *testing.T) {
 	assert := NewAssert(t)
 
-	//// Test(1)
-	//source1 := ""
-	//assert(testRunWithSubscribePanic(func() {
-	//	ret, source := Context(nil).OK(true), GetFileLine(0)
-	//	source1 = source
-	//	assert(ret).Equals(nilReturn)
-	//})).Equals(NewReplyPanic("rpc: context is nil").AddDebug(source1))
+	// Test(1)
+	source1 := ""
+	assert(testRunWithSubscribePanic(func() {
+		ret, source := emptyContext.OK(true), GetFileLine(0)
+		source1 = source
+		assert(ret).Equals(nilReturn)
+	})).Equals(NewReplyPanic("bad Context").AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -118,7 +118,7 @@ func TestContextObject_OK(t *testing.T) {
 		ret, source := (&Context{thread: nil}).OK(true), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
+	})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
 
 	// Test(3)
 	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
@@ -130,14 +130,14 @@ func TestContextObject_OK(t *testing.T) {
 
 func TestContextObject_Error(t *testing.T) {
 	assert := NewAssert(t)
-	//
-	//// Test(1)
-	//source1 := ""
-	//assert(testRunWithSubscribePanic(func() {
-	//	ret, source := Context(nil).Error(errors.New("error")), GetFileLine(0)
-	//	source1 = source
-	//	assert(ret).Equals(nilReturn)
-	//})).Equals(NewReplyPanic("rpc: context is nil").AddDebug(source1))
+
+	// Test(1)
+	source1 := ""
+	assert(testRunWithSubscribePanic(func() {
+		ret, source := emptyContext.Error(errors.New("error")), GetFileLine(0)
+		source1 = source
+		assert(ret).Equals(nilReturn)
+	})).Equals(NewReplyPanic("bad Context").AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -146,7 +146,7 @@ func TestContextObject_Error(t *testing.T) {
 		ret, source := (&Context{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(source2))
+	})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
 
 	// Test(3)
 	source3 := ""

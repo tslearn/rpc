@@ -236,21 +236,16 @@ func (p *rpcThread) Eval(
 
 			for !atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+2) {
 				// ctx or lazyObject may not used in reply goroutine
-				// TODO: need to handler dead lock and report
+				// TODO: need to handler dead lock
+				if !p.processor.isDebug {
+					p.WriteError(
+						NewReplyPanic(
+							"race detected, please turn on debugging for detail",
+						).AddDebug(p.GetExecReplyFileLine()),
+					)
+				}
 				time.Sleep(10 * time.Millisecond)
 			}
-
-			//
-			//else {
-			//  // ctx or lazyObject not used in reply goroutine
-			//  atomic.StoreUint64(&p.sequence, p.sequence + 2)
-			//}
-			//if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID) {
-			//
-			//} else {
-			//
-			//  atomic.StoreUint64(&p.sequence, p.sequence + 2)
-			//}
 
 			inStream.Reset()
 			retStream := p.execStream
