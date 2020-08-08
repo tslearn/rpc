@@ -446,6 +446,17 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 				return true
 			}
 		}
+	case "I":
+		return func(ctx Context, stream *Stream, fn interface{}) bool {
+			if arg0, ok := stream.ReadInt64(); !ok {
+				return false
+			} else if !stream.IsReadFinish() {
+				return false
+			} else {
+				fn.(func(Context, Int64) Return)(ctx, arg0)
+				return true
+			}
+		}
 	case "M":
 		return func(ctx Context, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadMap(); !ok {
