@@ -18,17 +18,18 @@ const (
 )
 
 type rpcThread struct {
-	goroutineID   int64
-	processor     *Processor
-	inputCH       chan *Stream
-	closeCH       chan bool
-	closeTimeout  time.Duration
-	execStream    *Stream
-	execDepth     uint64
-	execReplyNode unsafe.Pointer
-	execArgs      []reflect.Value
-	execStatus    int
-	execFrom      string
+	goroutineID    int64
+	processor      *Processor
+	inputCH        chan *Stream
+	closeCH        chan bool
+	closeTimeout   time.Duration
+	execStream     *Stream
+	execDepth      uint64
+	execReplyNode  unsafe.Pointer
+	execArgs       []reflect.Value
+	execStatus     int
+	execFrom       string
+	allocIntBuffer []int
 	Lock
 }
 

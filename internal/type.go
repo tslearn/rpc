@@ -107,6 +107,18 @@ func (p *ContextObject) getThread() *rpcThread {
 	}
 }
 
+func (p *ContextObject) check() bool {
+	if thread := (*rpcThread)(atomic.LoadPointer(&p.thread)); thread == nil {
+		reportPanic(
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(2)),
+		)
+		return false
+	} else if !thread.processor.isDebug {
+		return true
+	}
+	return p != nil && atomic.LoadPointer(&p.thread) != nil
+}
+
 func (p *ContextObject) stop() bool {
 	if p == nil {
 		reportPanic(
