@@ -15,13 +15,7 @@ func (p Context) OK(value interface{}) Return {
 			NewReplyPanic("bad Context").AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
-	} else if thread.processor.isDebug &&
-		thread.GetGoroutineID() != CurrentGoroutineID() {
-		thread.processor.Panic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(1)),
-		)
-		return nilReturn
-	} else if !thread.lockByContext(p.id) {
+	} else if !thread.lockByContext(p.id, 2) {
 		reportPanic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(1)),
 		)
@@ -39,13 +33,7 @@ func (p Context) Error(value error) Return {
 			NewReplyPanic("bad Context").AddDebug(GetFileLine(1)),
 		)
 		return nilReturn
-	} else if thread.processor.isDebug &&
-		thread.GetGoroutineID() != CurrentGoroutineID() {
-		thread.processor.Panic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(1)),
-		)
-		return nilReturn
-	} else if !thread.lockByContext(p.id) {
+	} else if !thread.lockByContext(p.id, 2) {
 		reportPanic(
 			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(1)),
 		)

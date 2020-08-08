@@ -18,24 +18,39 @@ const (
 )
 
 type rpcThread struct {
-	goroutineID    int64
-	processor      *Processor
-	inputCH        chan *Stream
-	closeCH        chan bool
-	closeTimeout   time.Duration
-	execStream     *Stream
-	execDepth      uint64
-	execReplyNode  unsafe.Pointer
-	execArgs       []reflect.Value
-	execStatus     int
-	execFrom       string
-	allocIntBuffer []int
-	sequence       uint64
+	goroutineID   int64
+	processor     *Processor
+	inputCH       chan *Stream
+	closeCH       chan bool
+	closeTimeout  time.Duration
+	execStream    *Stream
+	execDepth     uint64
+	execReplyNode unsafe.Pointer
+	execArgs      []reflect.Value
+	execStatus    int
+	execFrom      string
+	lazyMemory    *lazyMemory
+	sequence      uint64
 	Lock
 }
 
-func (p *rpcThread) lockByContext(contextID uint64) bool {
-	return atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1)
+func (p *rpcThread) lockByContext(contextID uint64, skip uint) bool {
+	if p.processor.isDebug && p.GetGoroutineID() != CurrentGoroutineID() {
+		p.processor.Panic(
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(skip)),
+		)
+		return false
+	}
+
+	ret := atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1)
+
+	if !ret {
+		p.processor.Panic(
+			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(skip)),
+		)
+	}
+
+	return ret
 }
 
 func (p *rpcThread) unlockByContext(contextID uint64) bool {
@@ -76,6 +91,7 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
+			lazyMemory:    newLazyMemory(),
 			sequence:      2,
 		}
 
@@ -87,6 +103,7 @@ func newThread(
 
 		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
 			thread.Eval(stream, onEvalBack, onEvalFinish)
+			thread.lazyMemory.Reset()
 		}
 
 		thread.closeCH <- true
