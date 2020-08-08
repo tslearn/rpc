@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 type testFuncCache struct{}
@@ -118,7 +117,7 @@ func getFakeThread(debug bool) *rpcThread {
 }
 
 func getFakeContext(debug bool) Context {
-	return &ContextObject{thread: unsafe.Pointer(getFakeThread(debug))}
+	return Context{thread: getFakeThread(debug)}
 }
 
 func testRunWithSubscribePanic(fn func()) Error {

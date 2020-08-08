@@ -134,7 +134,7 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
-				replyFileLine2 = ctx.getThread().GetExecReplyFileLine()
+				replyFileLine2 = ctx.thread.GetExecReplyFileLine()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
@@ -170,7 +170,7 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
-				replyFileLine3 = ctx.getThread().GetExecReplyFileLine()
+				replyFileLine3 = ctx.thread.GetExecReplyFileLine()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
@@ -610,7 +610,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	)
 
 	b.ReportAllocs()
-	b.N = 100000000
+	b.N = 1000000000
 	b.SetParallelism(1024)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

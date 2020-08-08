@@ -71,7 +71,7 @@ func TestRpcThread_Close(t *testing.T) {
 	// Test(2) cant close
 	assert(testRunWithCatchPanic(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
-			func(ctx *ContextObject, name string) *ReturnObject {
+			func(ctx Context, name string) *ReturnObject {
 				time.Sleep(8 * time.Second)
 				return ctx.OK("hello " + name)
 			},
@@ -149,7 +149,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 	// Test(1) ok
 	source1 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
 			source1 = source
 			return ret
@@ -171,7 +171,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	// Test(1) value is endless loop
 	source1 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			v := make(Map)
 			v["v"] = v
 			ret, source := ctx.OK(v), GetFileLine(0)
@@ -203,7 +203,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	// Test(2) value is not support
 	source2 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
 			source2 = source
 			return ret
@@ -226,7 +226,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 
 	// Test(3) ok
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -259,7 +259,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(0) basic
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -274,7 +274,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(1) read reply path error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -290,7 +290,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(2) reply path is not mounted
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -306,7 +306,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(3) depth data format error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -322,7 +322,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(4) depth is overflow
 	ret4, error4, panic4 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -344,7 +344,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(5) execFrom data format error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, name string) *ReturnObject {
+		func(ctx Context, name string) *ReturnObject {
 			return ctx.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
@@ -360,7 +360,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(6) ok call with all type value
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -385,7 +385,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(7) error with 1st param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -415,7 +415,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(8) error with 1st param
 	ret8, error8, panic8 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -453,7 +453,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(9) error with 2nd param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -483,7 +483,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(10) error with 2nd param
 	ret10, error10, panic10 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -520,7 +520,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(11) error with 3rd param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -550,7 +550,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(12) error with 3rd param
 	ret12, error12, panic12 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -587,7 +587,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(13) error with 4th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -617,7 +617,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(14) error with 4th param
 	ret14, error14, panic14 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -654,7 +654,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(15) error with 5th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -684,7 +684,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(16) error with 5th param
 	ret16, error16, panic16 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -721,7 +721,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(17) error with 6th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -751,7 +751,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(18) error with 6th param
 	ret18, error18, panic18 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -788,7 +788,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(19) error with 7th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -818,7 +818,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(20) error with 6th param
 	ret20, error20, panic20 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -855,7 +855,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(21) error with 8th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -885,7 +885,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(22) error with 8th param
 	ret22, error22, panic22 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -922,7 +922,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(23) nil rpcBytes
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, a Bytes) *ReturnObject {
+		func(ctx Context, a Bytes) *ReturnObject {
 			if a != nil {
 				return ctx.Error(errors.New("param is not nil"))
 			}
@@ -940,7 +940,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(24) nil rpcArray
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, a Array) *ReturnObject {
+		func(ctx Context, a Array) *ReturnObject {
 			if a != nil {
 				return ctx.Error(errors.New("param is not nil"))
 			}
@@ -958,7 +958,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(25) nil rpcMap
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, a Map) *ReturnObject {
+		func(ctx Context, a Map) *ReturnObject {
 			if a != nil {
 				return ctx.Error(errors.New("param is not nil"))
 			}
@@ -976,7 +976,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(26) unsupported type
 	assert(testRunWithProcessor(false, nil,
-		func(ctx *ContextObject, a bool) *ReturnObject {
+		func(ctx Context, a bool) *ReturnObject {
 			return ctx.OK(a)
 		},
 		func(processor *Processor) *Stream {
@@ -997,7 +997,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(27) test
 	ret27, error27, panic27 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+		func(ctx Context, bVal bool, rpcMap Map) *ReturnObject {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -1023,7 +1023,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(28) badStream
 	assert(testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool, rpcMap Map) *ReturnObject {
+		func(ctx Context, bVal bool, rpcMap Map) *ReturnObject {
 			return ctx.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
@@ -1039,7 +1039,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(29) call function error
 	ret29, error29, panic29 := testRunWithProcessor(false, nil,
-		func(ctx *ContextObject, bVal bool) *ReturnObject {
+		func(ctx Context, bVal bool) *ReturnObject {
 			if bVal {
 				panic("this is a error")
 			}
@@ -1071,7 +1071,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(30) call function error
 	ret30, error30, panic30 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool) *ReturnObject {
+		func(ctx Context, bVal bool) *ReturnObject {
 			if bVal {
 				panic("this is a error")
 			}
@@ -1103,7 +1103,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(31) return TransportError to make onEvalFinish panic
 	ret31, error31, panic31 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool) *ReturnObject {
+		func(ctx Context, bVal bool) *ReturnObject {
 			return ctx.Error(NewTransportError("it makes onEvalFinish panic"))
 		},
 		func(_ *Processor) *Stream {
@@ -1126,7 +1126,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(32) return without ctx
 	ret32, error32, panic32 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject, bVal bool) *ReturnObject {
+		func(ctx Context, bVal bool) *ReturnObject {
 			return Return(nil)
 		},
 		func(_ *Processor) *Stream {
@@ -1151,7 +1151,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(33) ok call with  cache
 	assert(testRunWithProcessor(true, &testFuncCache{},
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -1176,7 +1176,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(34) stream is not finish
 	ret34, error34, panic34 := testRunWithProcessor(true, nil,
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {
@@ -1218,7 +1218,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(35) bad stream
 	assert(testRunWithProcessor(true, &testFuncCache{},
-		func(ctx *ContextObject,
+		func(ctx Context,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) *ReturnObject {

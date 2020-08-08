@@ -30,7 +30,16 @@ type rpcThread struct {
 	execStatus     int
 	execFrom       string
 	allocIntBuffer []int
+	sequence       uint64
 	Lock
+}
+
+func (p *rpcThread) lockByContext(contextID uint64) bool {
+	return atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1)
+}
+
+func (p *rpcThread) unlockByContext(contextID uint64) bool {
+	return atomic.CompareAndSwapUint64(&p.sequence, contextID+1, contextID)
 }
 
 func (p *rpcThread) GetReplyNode() *rpcReplyNode {
@@ -67,6 +76,7 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
+			sequence:      2,
 		}
 
 		if processor.isDebug {
@@ -170,14 +180,16 @@ func (p *rpcThread) Eval(
 	onEvalBack func(*Stream),
 	onEvalFinish func(*rpcThread),
 ) Return {
+	contextID := atomic.LoadUint64(&p.sequence)
 	timeStart := TimeNow()
 	inStream.SetReadPosToBodyStart()
 	p.execStatus = rpcThreadExecNone
 	// copy head
 	copy(p.execStream.GetHeader(), inStream.GetHeader())
 	// create context
-	ctx := &ContextObject{
-		thread: unsafe.Pointer(p),
+	ctx := Context{
+		id:     contextID,
+		thread: p,
 	}
 	hasFuncReturn := false
 	execReplyNode := (*rpcReplyNode)(nil)
@@ -222,7 +234,24 @@ func (p *rpcThread) Eval(
 				)
 			}
 
-			ctx.stop()
+			for !atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+2) {
+				// ctx or lazyObject may not used in reply goroutine
+				// TODO: need to handler dead lock and report
+				time.Sleep(10 * time.Millisecond)
+			}
+
+			//
+			//else {
+			//  // ctx or lazyObject not used in reply goroutine
+			//  atomic.StoreUint64(&p.sequence, p.sequence + 2)
+			//}
+			//if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID) {
+			//
+			//} else {
+			//
+			//  atomic.StoreUint64(&p.sequence, p.sequence + 2)
+			//}
+
 			inStream.Reset()
 			retStream := p.execStream
 			p.execStream = inStream
