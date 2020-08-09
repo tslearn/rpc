@@ -435,7 +435,8 @@ func (p *Stream) SetReadPos(pos int) bool {
 
 // SetReadPosToBodyStart ...
 func (p *Stream) SetReadPosToBodyStart() bool {
-	return p.SetReadPos(streamBodyPos)
+	p.setReadPosUnsafe(streamBodyPos)
+	return true
 }
 
 func (p *Stream) setReadPosUnsafe(pos int) {
@@ -465,7 +466,7 @@ func (p *Stream) SetWritePos(length int) {
 
 // SetWritePosToBodyStart ...
 func (p *Stream) SetWritePosToBodyStart() {
-	p.SetWritePos(streamBodyPos)
+	p.setWritePosUnsafe(streamBodyPos)
 }
 
 func (p *Stream) setWritePosUnsafe(pos int) {

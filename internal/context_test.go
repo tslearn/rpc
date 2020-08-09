@@ -104,21 +104,23 @@ import (
 func TestContextObject_OK(t *testing.T) {
 	assert := NewAssert(t)
 
-	// Test(1)
-	source1 := ""
-	assert(testRunWithSubscribePanic(func() {
-		ret, source := emptyContext.OK(true), GetFileLine(0)
-		source1 = source
-		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic("bad Context").AddDebug(source1))
-
-	// Test(2)
-	source2 := ""
-	assert(testRunWithSubscribePanic(func() {
-		ret, source := (&Context{thread: nil}).OK(true), GetFileLine(0)
-		source2 = source
-		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
+	//// Test(1)
+	//source1 := ""
+	//assert(testRunWithSubscribePanic(func() {
+	//  ret, source := Context{}.OK(true), GetFileLine(0)
+	//  source1 = source
+	//  assert(ret).Equals(nilReturn)
+	//})).Equals(
+	//  NewReplyPanic("Context is illegal in current goroutine").AddDebug(source1),
+	//)
+	//
+	//// Test(2)
+	//source2 := ""
+	//assert(testRunWithSubscribePanic(func() {
+	//  ret, source := (&Context{thread: nil}).OK(true), GetFileLine(0)
+	//  source2 = source
+	//  assert(ret).Equals(nilReturn)
+	//})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
 
 	// Test(3)
 	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
@@ -134,10 +136,12 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		ret, source := emptyContext.Error(errors.New("error")), GetFileLine(0)
+		ret, source := Context{}.Error(errors.New("error")), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic("bad Context").AddDebug(source1))
+	})).Equals(NewReplyPanic(
+		"Context is illegal in current goroutine",
+	).AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
@@ -146,7 +150,9 @@ func TestContextObject_Error(t *testing.T) {
 		ret, source := (&Context{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
+	})).Equals(
+		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source2),
+	)
 
 	// Test(3)
 	source3 := ""

@@ -34,7 +34,6 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.execDepth).IsNotNil()
 	assert(thread4.execReplyNode).IsNil()
 	assert(thread4.execArgs).IsNotNil()
-	assert(thread4.execStatus).Equals(rpcThreadExecNone)
 	assert(thread4.execFrom).Equals("")
 
 	// Test(5) release thread
@@ -48,7 +47,6 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.execDepth).IsNotNil()
 	assert(thread5.execReplyNode).IsNil()
 	assert(thread5.execArgs).IsNotNil()
-	assert(thread5.execStatus).Equals(rpcThreadExecNone)
 	assert(thread5.execFrom).Equals("")
 
 	// Test(6) closeTimeout is less than 1 * time.Second

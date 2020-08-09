@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	rpcThreadExecFailed  = -1
-	rpcThreadExecNone    = 0
-	rpcThreadExecSuccess = 1
+	rpcThreadReturnStatusOK            = 0
+	rpcThreadReturnStatusAlreadyCalled = 1
+	rpcThreadReturnStatusContextError  = 2
 )
 
 type rpcThread struct {
@@ -28,33 +28,21 @@ type rpcThread struct {
 	execDepth     uint64
 	execReplyNode unsafe.Pointer
 	execArgs      []reflect.Value
-	execStatus    int
 	execFrom      string
 	sequence      uint64
 	Lock
 }
 
-func (p *rpcThread) lockByContext(contextID uint64, skip uint) bool {
-	if p.processor.isDebug && p.GetGoroutineID() != CurrentGoroutineID() {
-		p.processor.Panic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(skip)),
-		)
-		return false
+func (p *rpcThread) setReturn(contextID uint64) int {
+	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
+		return rpcThreadReturnStatusOK
 	}
 
-	ret := atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1)
-
-	if !ret {
-		p.processor.Panic(
-			NewReplyPanic(ErrStringRunOutOfReplyScope).AddDebug(GetFileLine(skip)),
-		)
+	if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
+		return rpcThreadReturnStatusAlreadyCalled
+	} else {
+		return rpcThreadReturnStatusContextError
 	}
-
-	return ret
-}
-
-func (p *rpcThread) unlockByContext(contextID uint64) bool {
-	return atomic.CompareAndSwapUint64(&p.sequence, contextID+1, contextID)
 }
 
 func (p *rpcThread) GetReplyNode() *rpcReplyNode {
@@ -89,7 +77,6 @@ func newThread(
 			execDepth:     0,
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
-			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
 			sequence:      rand.Uint64() % (1 << 56),
 		}
@@ -156,7 +143,6 @@ func (p *rpcThread) WriteError(err Error) Return {
 	stream.WriteUint64(uint64(err.GetKind()))
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
-	p.execStatus = rpcThreadExecFailed
 	return nilReturn
 }
 
@@ -174,7 +160,6 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
 		)
 	}
-	p.execStatus = rpcThreadExecSuccess
 	return nilReturn
 }
 
@@ -195,18 +180,16 @@ func (p *rpcThread) Eval(
 	onEvalBack func(*Stream),
 	onEvalFinish func(*rpcThread),
 ) Return {
-	contextID := atomic.LoadUint64(&p.sequence)
+	ctxID := atomic.LoadUint64(&p.sequence)
 	timeStart := TimeNow()
 	inStream.SetReadPosToBodyStart()
-	p.execStatus = rpcThreadExecNone
 	// copy head
 	copy(p.execStream.GetHeader(), inStream.GetHeader())
 	// create context
 	ctx := Context{
-		id:     contextID,
+		id:     ctxID,
 		thread: p,
 	}
-	hasFuncReturn := false
 	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
@@ -227,6 +210,7 @@ func (p *rpcThread) Eval(
 		func() {
 			defer func() {
 				if v := recover(); v != nil {
+					// runtime error
 					p.processor.Panic(
 						NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
@@ -234,40 +218,40 @@ func (p *rpcThread) Eval(
 				}
 			}()
 
-			if execReplyNode != nil {
-				if hasFuncReturn && p.execStatus == rpcThreadExecNone {
-					p.WriteError(
-						NewReplyPanic(
-							"reply must return through Context.OK or Context.Error",
-						).AddDebug(p.GetExecReplyFileLine()),
-					)
-				}
-
-				execReplyNode.indicator.Count(
-					TimeNow().Sub(timeStart),
-					p.execStatus == rpcThreadExecSuccess,
+			if atomic.CompareAndSwapUint64(&p.sequence, ctxID+1, ctxID+2) {
+				// return ok
+			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID+2, ctxID+3) {
+				// return error
+			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+3) {
+				// Context.OK or Context.Error not called
+				p.WriteError(
+					NewReplyPanic(
+						"reply must return through Context.OK or Context.Error",
+					).AddDebug(p.GetExecReplyFileLine()),
 				)
-			}
-
-			for !atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+2) {
-				// ctx or lazyObject may not used in reply goroutine
-				// TODO: need to handler dead lock
-				if !p.processor.isDebug {
-					p.WriteError(
-						NewReplyPanic(
-							"race detected, please turn on debugging for detail",
-						).AddDebug(p.GetExecReplyFileLine()),
-					)
-				}
-				time.Sleep(10 * time.Millisecond)
+			} else {
+				// code should not run here
+				p.WriteError(
+					NewReplyPanic("internal error").
+						AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
+				)
 			}
 
 			inStream.Reset()
 			retStream := p.execStream
 			p.execStream = inStream
-			if p.execStatus != rpcThreadExecNone {
-				onEvalBack(retStream)
+
+			// count
+			retStream.SetReadPosToBodyStart()
+			if k, ok := retStream.ReadUint64(); ok && ErrorKind(k) == ErrorKindNone {
+				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), true)
+			} else {
+				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), false)
 			}
+
+			// eval back
+			onEvalBack(retStream)
+
 			p.execFrom = ""
 			p.execDepth = 0
 			p.execArgs = p.execArgs[:0]
@@ -307,7 +291,6 @@ func (p *rpcThread) Eval(
 
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(ctx, inStream, execReplyNode.meta.handler)
-			hasFuncReturn = true
 			if ok {
 				return nilReturn
 			}
@@ -382,7 +365,6 @@ func (p *rpcThread) Eval(
 
 			if ok {
 				execReplyNode.reflectFn.Call(p.execArgs)
-				hasFuncReturn = true
 				return nilReturn
 			}
 		}
