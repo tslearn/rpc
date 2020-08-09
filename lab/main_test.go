@@ -6,6 +6,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
+	fmt.Println(1 << 60)
 	buf := []int{1, 2, 3, 4, 5}
 
 	buf1 := buf

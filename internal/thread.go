@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"runtime/debug"
 	"strconv"
@@ -90,7 +91,7 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
-			sequence:      2,
+			sequence:      rand.Uint64() % (1 << 56),
 		}
 
 		if processor.isDebug {
