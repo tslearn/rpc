@@ -252,6 +252,26 @@ func TestRpcThread_PutStream(t *testing.T) {
 	assert(thread2.PutStream(NewStream())).IsFalse()
 }
 
+func TestRpcThread_Eval1(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1) read reply path error
+	assert(testRunWithProcessor(true, nil,
+		func(ctx Context, name string) *ReturnObject {
+			return ctx.OK("hello " + name)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			// path format error
+			stream.WriteBytes([]byte("#.test:Eval"))
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			stream.WriteString("world")
+			return stream
+		},
+	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+}
+
 func TestRpcThread_Eval(t *testing.T) {
 	assert := NewAssert(t)
 

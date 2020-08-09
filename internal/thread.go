@@ -137,6 +137,11 @@ func (p *rpcThread) GetExecReplyFileLine() string {
 	return ""
 }
 
+func (p *rpcThread) writeSystemError(ctxID uint64, err Error) Return {
+	atomic.StoreUint64(&p.sequence, ctxID+1)
+	return p.WriteError(err)
+}
+
 func (p *rpcThread) WriteError(err Error) Return {
 	stream := p.execStream
 	stream.SetWritePosToBodyStart()
@@ -202,7 +207,8 @@ func (p *rpcThread) Eval(
 			)
 
 			// write runtime error
-			p.WriteError(
+			p.writeSystemError(
+				ctxID,
 				NewReplyError("runtime error").AddDebug(p.GetExecReplyFileLine()),
 			)
 		}
@@ -220,18 +226,18 @@ func (p *rpcThread) Eval(
 
 			if atomic.CompareAndSwapUint64(&p.sequence, ctxID+1, ctxID+2) {
 				// return ok
-			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID+2, ctxID+3) {
-				// return error
-			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+3) {
+			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+2) {
 				// Context.OK or Context.Error not called
-				p.WriteError(
+				p.writeSystemError(
+					ctxID,
 					NewReplyPanic(
 						"reply must return through Context.OK or Context.Error",
 					).AddDebug(p.GetExecReplyFileLine()),
 				)
 			} else {
 				// code should not run here
-				p.WriteError(
+				p.writeSystemError(
+					ctxID,
 					NewReplyPanic("internal error").
 						AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
 				)
@@ -242,11 +248,13 @@ func (p *rpcThread) Eval(
 			p.execStream = inStream
 
 			// count
-			retStream.SetReadPosToBodyStart()
-			if k, ok := retStream.ReadUint64(); ok && ErrorKind(k) == ErrorKindNone {
-				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), true)
-			} else {
-				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), false)
+			if execReplyNode != nil {
+				retStream.SetReadPosToBodyStart()
+				if k, ok := retStream.ReadUint64(); ok && ErrorKind(k) == ErrorKindNone {
+					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), true)
+				} else {
+					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), false)
+				}
 			}
 
 			// eval back
@@ -263,9 +271,10 @@ func (p *rpcThread) Eval(
 	// set exec reply node
 	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
-		return p.WriteError(NewProtocolError(ErrStringBadStream))
+		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return p.WriteError(
+		return p.writeSystemError(
+			ctxID,
 			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
 		)
 	} else {
@@ -273,9 +282,10 @@ func (p *rpcThread) Eval(
 	}
 
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
-		return p.WriteError(NewProtocolError(ErrStringBadStream))
+		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else if p.execDepth > p.processor.maxCallDepth {
-		return p.WriteError(
+		return p.writeSystemError(
+			ctxID,
 			NewReplyError(ConcatString(
 				"call ",
 				replyPath,
@@ -285,7 +295,7 @@ func (p *rpcThread) Eval(
 			)).AddDebug(p.GetExecReplyFileLine()),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
-		return p.WriteError(NewProtocolError(ErrStringBadStream))
+		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
 		argsStreamPos := inStream.GetReadPos()
 
@@ -370,9 +380,10 @@ func (p *rpcThread) Eval(
 		}
 
 		if _, ok := inStream.Read(); !ok {
-			return p.WriteError(NewProtocolError(ErrStringBadStream))
+			return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 		} else if !p.processor.isDebug {
-			return p.WriteError(
+			return p.writeSystemError(
+				ctxID,
 				NewReplyError(ConcatString(
 					replyPath,
 					" reply arguments does not match",
@@ -384,7 +395,7 @@ func (p *rpcThread) Eval(
 			inStream.setReadPosUnsafe(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
-					return p.WriteError(NewProtocolError(ErrStringBadStream))
+					return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,
@@ -409,7 +420,8 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			return p.WriteError(
+			return p.writeSystemError(
+				ctxID,
 				NewReplyError(ConcatString(
 					replyPath,
 					" reply arguments does not match\nwant: ",
