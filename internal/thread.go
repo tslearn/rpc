@@ -239,12 +239,12 @@ func (p *rpcThread) Eval(
 
 			// count
 			if execReplyNode != nil {
-				retStream.SetReadPosToBodyStart()
-				if k, ok := retStream.ReadUint64(); ok && ErrorKind(k) == ErrorKindNone {
+				if k, ok := retStream.ReadUint64(); ok && k == uint64(ErrorKindNone) {
 					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), true)
 				} else {
 					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), false)
 				}
+				retStream.SetReadPosToBodyStart()
 			}
 
 			// eval back
