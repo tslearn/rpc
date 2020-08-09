@@ -29,7 +29,6 @@ type rpcThread struct {
 	execArgs      []reflect.Value
 	execStatus    int
 	execFrom      string
-	lazyMemory    *lazyMemory
 	sequence      uint64
 	Lock
 }
@@ -91,7 +90,6 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execStatus:    rpcThreadExecNone,
 			execFrom:      "",
-			lazyMemory:    newLazyMemory(),
 			sequence:      2,
 		}
 
@@ -103,7 +101,6 @@ func newThread(
 
 		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
 			thread.Eval(stream, onEvalBack, onEvalFinish)
-			thread.lazyMemory.Reset()
 		}
 
 		thread.closeCH <- true
