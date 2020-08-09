@@ -24,7 +24,9 @@ func TestContextObject_OK(t *testing.T) {
 		ret, source := (&Context{thread: nil}).OK(true), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(nilReturn)
-	})).Equals(NewReplyPanic("bad Context").AddDebug(source2))
+	})).Equals(
+		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source2),
+	)
 
 	// Test(3)
 	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
