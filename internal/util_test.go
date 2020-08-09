@@ -334,37 +334,6 @@ func TestGetFileLine(t *testing.T) {
 	assert(strings.Contains(fileLine1, "util_test.go")).IsTrue()
 }
 
-func TestCurrentGoroutineID(t *testing.T) {
-	assert := NewAssert(t)
-	idMap := make(map[int64]bool)
-	lock := NewLock()
-	waitCH := make(chan bool)
-	testCount := 100000
-
-	for i := 0; i < testCount; i++ {
-		go func() {
-			id := CurrentGoroutineID()
-			assert(id > 0).IsTrue()
-
-			lock.DoWithLock(func() {
-				idMap[id] = true
-				waitCH <- true
-			})
-		}()
-	}
-
-	for i := 0; i < testCount; i++ {
-		<-waitCH
-	}
-	assert(len(idMap)).Equals(testCount)
-
-	// make fake error
-	temp := goroutinePrefix
-	goroutinePrefix = "fake "
-	assert(CurrentGoroutineID()).Equals(int64(0))
-	goroutinePrefix = temp
-}
-
 func BenchmarkAddPrefixPerLine(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
@@ -407,15 +376,6 @@ func BenchmarkTimeNowISOString(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		TimeNowISOString()
 	}
-}
-
-func BenchmarkCurGoroutineID(b *testing.B) {
-	b.ReportAllocs()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			CurrentGoroutineID()
-		}
-	})
 }
 
 func BenchmarkRunWithPanicCatch(b *testing.B) {

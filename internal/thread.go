@@ -19,7 +19,6 @@ const (
 )
 
 type rpcThread struct {
-	goroutineID   int64
 	processor     *Processor
 	inputCH       chan *Stream
 	closeCH       chan bool
@@ -68,7 +67,6 @@ func newThread(
 
 	go func() {
 		thread := &rpcThread{
-			goroutineID:   0,
 			processor:     processor,
 			inputCH:       make(chan *Stream),
 			closeCH:       make(chan bool, 1),
@@ -79,10 +77,6 @@ func newThread(
 			execArgs:      make([]reflect.Value, 0, 16),
 			execFrom:      "",
 			sequence:      rand.Uint64() % (1 << 56),
-		}
-
-		if processor.isDebug {
-			thread.goroutineID = CurrentGoroutineID()
 		}
 
 		retCH <- thread
@@ -117,10 +111,6 @@ func (p *rpcThread) Close() bool {
 
 		return false
 	}).(bool)
-}
-
-func (p *rpcThread) GetGoroutineID() int64 {
-	return p.goroutineID
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {

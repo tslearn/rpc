@@ -357,21 +357,22 @@ func ConvertOrdinalToString(n uint) string {
 	}
 }
 
-// CurrentGoroutineID ...
-func CurrentGoroutineID() (ret int64) {
-	buf := [32]byte{}
-
-	// Parse the 4707 out of "goroutine 4707 ["
-	str := strings.TrimPrefix(
-		string(buf[:runtime.Stack(buf[:], false)]),
-		goroutinePrefix,
-	)
-
-	if lastPos := strings.IndexByte(str, ' '); lastPos > 0 {
-		if id, err := strconv.ParseInt(str[:lastPos], 10, 64); err == nil {
-			return id
-		}
-	}
-
-	return 0
-}
+//
+//// CurrentGoroutineID ...
+//func CurrentGoroutineID() (ret int64) {
+//	buf := [32]byte{}
+//
+//	// Parse the 4707 out of "goroutine 4707 ["
+//	str := strings.TrimPrefix(
+//		string(buf[:runtime.Stack(buf[:], false)]),
+//		goroutinePrefix,
+//	)
+//
+//	if lastPos := strings.IndexByte(str, ' '); lastPos > 0 {
+//		if id, err := strconv.ParseInt(str[:lastPos], 10, 64); err == nil {
+//			return id
+//		}
+//	}
+//
+//	return 0
+//}
