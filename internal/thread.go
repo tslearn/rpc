@@ -141,23 +141,6 @@ func (p *rpcThread) WriteError(err Error) Return {
 	return nilReturn
 }
 
-func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
-	stream := p.execStream
-	stream.SetWritePosToBodyStart()
-	stream.WriteUint64(uint64(ErrorKindNone))
-	if stream.Write(value) != StreamWriteOK {
-		p.processor.Panic(
-			NewReplyPanic(checkValue(value, "value", 64)).
-				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
-		)
-		return p.WriteError(
-			NewReplyError("reply return value error").
-				AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip)),
-		)
-	}
-	return nilReturn
-}
-
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 	defer func() {
 		if v := recover(); v != nil {

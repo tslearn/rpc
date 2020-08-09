@@ -16,7 +16,20 @@ func (p Context) OK(value interface{}) Return {
 		)
 		return nilReturn
 	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
-		return p.thread.WriteOK(value, 2)
+		stream := thread.execStream
+		stream.SetWritePosToBodyStart()
+		stream.WriteUint64(uint64(ErrorKindNone))
+		if stream.Write(value) != StreamWriteOK {
+			thread.processor.Panic(
+				NewReplyPanic(checkValue(value, "value", 64)).
+					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			)
+			return thread.WriteError(
+				NewReplyError("reply return value error").
+					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			)
+		}
+		return nilReturn
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
 		reportPanic(
 			NewReplyPanic(
