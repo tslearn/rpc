@@ -25,13 +25,13 @@ func TestServer_Basic(t *testing.T) {
 		server.Serve()
 	}()
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	client, err := Dial("ws://127.0.0.1:8080/")
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		go func(idx int) {
 			fmt.Println(client.sendMessage(
 				5*time.Second,
