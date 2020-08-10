@@ -102,9 +102,7 @@ func (p *rpcThread) Close() bool {
 func (p *rpcThread) setReturn(contextID uint64) int {
 	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
 		return rpcThreadReturnStatusOK
-	}
-
-	if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
+	} else if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
 		return rpcThreadReturnStatusAlreadyCalled
 	} else {
 		return rpcThreadReturnStatusContextError
