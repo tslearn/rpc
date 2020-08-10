@@ -466,7 +466,9 @@ func testReadFromFile(filePath string) (string, Error) {
 	if err != nil {
 		return "", NewKernelPanic(err.Error())
 	}
-	return string(ret), nil
+
+	// for windows, remove \r
+	return strings.Replace(string(ret), "\r", "", -1), nil
 }
 
 func getFakeOnEvalBack() func(*Stream) {
