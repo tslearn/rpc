@@ -221,7 +221,7 @@ func TestTimeNow(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		now := TimeNow()
 		time.Sleep(50 * time.Millisecond)
-		assert(TimeNow().Sub(now) < 90*time.Millisecond).IsTrue()
+		assert(TimeNow().Sub(now) < 100*time.Millisecond).IsTrue()
 		assert(TimeNow().Sub(now) > 30*time.Millisecond).IsTrue()
 	}
 }
@@ -234,7 +234,7 @@ func TestTimeNowISOString(t *testing.T) {
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
-			assert(time.Since(now) < 40*time.Millisecond).IsTrue()
+			assert(time.Since(now) < 50*time.Millisecond).IsTrue()
 			assert(time.Since(now) > -20*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail("time parse error")
