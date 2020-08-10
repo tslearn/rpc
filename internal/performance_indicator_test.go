@@ -53,7 +53,7 @@ func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
 			}
 		}(i)
 	}
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(time.Second)
 	assert(pi1.Calculate(pi1.lastTime.Add(time.Second))).
 		Equals(int64(300000), time.Second)
 
