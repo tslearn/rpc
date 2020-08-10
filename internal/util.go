@@ -34,12 +34,11 @@ var (
 		0x54, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E,
 		0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
 	}
-	intToStringCache2 = make([][]byte, 100, 100)
-	intToStringCache3 = make([][]byte, 1000, 1000)
-	intToStringCache4 = make([][]byte, 10000, 10000)
+	intToStringCache2 = make([][]byte, 100)
+	intToStringCache3 = make([][]byte, 1000)
+	intToStringCache4 = make([][]byte, 10000)
 
-	goroutinePrefix = "goroutine "
-	base64String    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+	base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"abcdefghijklmnopqrstuvwxyz" +
 		"0123456789" +
 		"+/"
@@ -205,7 +204,7 @@ func onTimeCacheFailed() {
 // ConvertToIsoDateString convert time.Time to iso string
 // return format "2019-09-09T09:47:16.180+08:00"
 func ConvertToIsoDateString(date time.Time) string {
-	buf := make([]byte, 29, 29)
+	buf := make([]byte, 29)
 	// copy template
 	copy(buf, defaultISODateBuffer)
 	// copy year

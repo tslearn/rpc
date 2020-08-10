@@ -14,8 +14,8 @@ func TestNewSpeedCounter(t *testing.T) {
 	assert(sc1).IsNotNil()
 	assert(sc1.total).Equals(int64(0))
 	assert(sc1.lastCount).Equals(int64(0))
-	assert(time.Now().Sub(sc1.lastTime) < 10*time.Millisecond).IsTrue()
-	assert(time.Now().Sub(sc1.lastTime) > -10*time.Millisecond).IsTrue()
+	assert(time.Since(sc1.lastTime) < 10*time.Millisecond).IsTrue()
+	assert(time.Since(sc1.lastTime) > -10*time.Millisecond).IsTrue()
 }
 
 func TestSpeedCounter_Count(t *testing.T) {

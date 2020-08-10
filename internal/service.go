@@ -37,8 +37,8 @@ type Service struct {
 // NewService define a new service
 func NewService() *Service {
 	return &Service{
-		children: make([]*ServiceMeta, 0, 0),
-		replies:  make([]*rpcReplyMeta, 0, 0),
+		children: nil,
+		replies:  nil,
 		fileLine: GetFileLine(1),
 	}
 }

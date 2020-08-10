@@ -67,7 +67,7 @@ func NewProcessor(
 
 	fnError := func(err Error) {
 		defer func() {
-			recover()
+			_ = recover()
 		}()
 		stream := NewStream()
 		stream.WriteUint64(uint64(err.GetKind()))
@@ -102,7 +102,7 @@ func NewProcessor(
 			servicesMap:    make(map[string]*rpcServiceNode),
 			maxNodeDepth:   uint64(maxNodeDepth),
 			maxCallDepth:   uint64(maxCallDepth),
-			threads:        make([]*rpcThread, size, size),
+			threads:        make([]*rpcThread, size),
 			freeCHArray:    nil,
 			readThreadPos:  0,
 			writeThreadPos: 0,
@@ -127,7 +127,7 @@ func NewProcessor(
 		ret.panicSubscription = subscribePanic(fnError)
 
 		// start threads
-		freeCHArray := make([]chan *rpcThread, freeGroups, freeGroups)
+		freeCHArray := make([]chan *rpcThread, freeGroups)
 		for i := 0; i < freeGroups; i++ {
 			freeCHArray[i] = make(chan *rpcThread, size/freeGroups)
 		}
@@ -368,8 +368,8 @@ func (p *Processor) mountReply(
 
 		// mount the replyRecord
 		numOfArgs := fn.Type().NumIn()
-		argTypes := make([]reflect.Type, numOfArgs, numOfArgs)
-		argStrings := make([]string, numOfArgs, numOfArgs)
+		argTypes := make([]reflect.Type, numOfArgs)
+		argStrings := make([]string, numOfArgs)
 		for i := 0; i < numOfArgs; i++ {
 			argTypes[i] = fn.Type().In(i)
 			argStrings[i] = convertTypeToString(argTypes[i])

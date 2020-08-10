@@ -411,7 +411,7 @@ func TestStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
-	bytes8 := make([]byte, 8, 8)
+	bytes8 := make([]byte, 8)
 
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
@@ -427,7 +427,7 @@ func TestStream_GetSessionId_SetSessionId(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
-	bytes8 := make([]byte, 8, 8)
+	bytes8 := make([]byte, 8)
 
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
@@ -443,7 +443,7 @@ func TestStream_GetSequence_SetSequence(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
-	bytes8 := make([]byte, 8, 8)
+	bytes8 := make([]byte, 8)
 
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
@@ -459,7 +459,7 @@ func TestStream_getMachineID_setMachineID(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream := NewStream()
-	bytes8 := make([]byte, 8, 8)
+	bytes8 := make([]byte, 8)
 
 	for i := 0; i < 1000; i++ {
 		v := rand.Uint64()
@@ -475,7 +475,7 @@ func TestStream_GetHeader(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
-		bytes := make([]byte, i, i)
+		bytes := make([]byte, i)
 		for n := 0; n < i; n++ {
 			bytes[n] = byte(n)
 		}
@@ -491,7 +491,7 @@ func TestStream_GetBuffer(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
-		bytes := make([]byte, i, i)
+		bytes := make([]byte, i)
 		for n := 0; n < i; n++ {
 			bytes[n] = byte(n)
 		}
@@ -508,7 +508,7 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
-		bytes := make([]byte, i, i)
+		bytes := make([]byte, i)
 		for n := 0; n < i; n++ {
 			bytes[n] = byte(n)
 		}
@@ -777,7 +777,7 @@ func TestStream_putBytes(t *testing.T) {
 		for n := 0; n < 600; n++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
-			bytes := make([]byte, n, n)
+			bytes := make([]byte, n)
 			for z := 0; z < n; z++ {
 				bytes[z] = byte(z)
 			}
@@ -795,7 +795,7 @@ func TestStream_putString(t *testing.T) {
 		for n := 0; n < 600; n++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
-			bytes := make([]byte, n, n)
+			bytes := make([]byte, n)
 			for z := 0; z < n; z++ {
 				bytes[z] = byte(z)
 			}
@@ -1848,7 +1848,7 @@ func TestStream_ReadMap(t *testing.T) {
 func TestStream_Read(t *testing.T) {
 	assert := NewAssert(t)
 
-	testCollections := make([][2]interface{}, 0, 0)
+	testCollections := make([][2]interface{}, 0)
 
 	for key := range streamTestCollections {
 		for _, v := range streamTestCollections[key] {

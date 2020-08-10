@@ -234,8 +234,8 @@ func TestTimeNowISOString(t *testing.T) {
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
-			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
-			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
+			assert(time.Since(now) < 30*time.Millisecond).IsTrue()
+			assert(time.Since(now) > -20*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail("time parse error")
 		}
@@ -247,8 +247,8 @@ func TestTimeNowISOString(t *testing.T) {
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
-			assert(time.Now().Sub(now) < 30*time.Millisecond).IsTrue()
-			assert(time.Now().Sub(now) > -20*time.Millisecond).IsTrue()
+			assert(time.Since(now) < 30*time.Millisecond).IsTrue()
+			assert(time.Since(now) > -20*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail("time parse error")
 		}
@@ -499,10 +499,6 @@ func getFakeThread(debug bool) *rpcThread {
 		getFakeOnEvalBack(),
 		getFakeOnEvalFinish(),
 	)
-}
-
-func getFakeContext(debug bool) Context {
-	return Context{thread: getFakeThread(debug)}
 }
 
 func testRunWithSubscribePanic(fn func()) Error {

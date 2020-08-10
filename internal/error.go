@@ -40,7 +40,7 @@ var (
 // reportPanic ...
 func reportPanic(err Error) {
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	gPanicLocker.DoWithLock(func() {

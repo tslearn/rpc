@@ -30,7 +30,7 @@ var (
 				writeSeg:   0,
 				writeIndex: streamBodyPos,
 			}
-			zeroFrame := make([]byte, 512, 512)
+			zeroFrame := make([]byte, 512)
 			ret.frames[0] = &zeroFrame
 			ret.readFrame = zeroFrame
 			ret.writeFrame = zeroFrame
@@ -41,22 +41,20 @@ var (
 	}
 	frameCache = &sync.Pool{
 		New: func() interface{} {
-			ret := make([]byte, 512, 512)
+			ret := make([]byte, 512)
 			return &ret
 		},
 	}
 )
 
 func checkArray(v Array, path string, depth int) string {
-	if v != nil {
-		for idx, item := range v {
-			if reason := checkValue(
-				item,
-				ConcatString(path, "[", strconv.Itoa(idx), "]"),
-				depth-1,
-			); reason != "" {
-				return reason
-			}
+	for idx, item := range v {
+		if reason := checkValue(
+			item,
+			ConcatString(path, "[", strconv.Itoa(idx), "]"),
+			depth-1,
+		); reason != "" {
+			return reason
 		}
 	}
 
@@ -64,15 +62,13 @@ func checkArray(v Array, path string, depth int) string {
 }
 
 func checkMap(v Map, path string, depth int) string {
-	if v != nil {
-		for key, item := range v {
-			if reason := checkValue(
-				item,
-				ConcatString(path, "[\"", key, "\"]"),
-				depth-1,
-			); reason != "" {
-				return reason
-			}
+	for key, item := range v {
+		if reason := checkValue(
+			item,
+			ConcatString(path, "[\"", key, "\"]"),
+			depth-1,
+		); reason != "" {
+			return reason
 		}
 	}
 
@@ -340,7 +336,7 @@ func (p *Stream) GetHeader() []byte {
 // GetBuffer ...
 func (p *Stream) GetBuffer() []byte {
 	length := p.GetWritePos()
-	ret := make([]byte, length, length)
+	ret := make([]byte, length)
 	for i := 0; i <= p.writeSeg; i++ {
 		copy(ret[i<<9:], *p.frames[i])
 	}
@@ -528,7 +524,7 @@ func (p *Stream) PutString(v string) {
 }
 
 func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 3, 3)
+	v := make([]byte, 3)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
 	p.readFrame = *p.frames[p.readSeg]
@@ -537,14 +533,14 @@ func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
 }
 
 func (p *Stream) peek5BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 5, 5)
+	v := make([]byte, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	copy(v[copyBytes:], *p.frames[p.readSeg+1])
 	return v
 }
 
 func (p *Stream) read5BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 5, 5)
+	v := make([]byte, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
 	p.readFrame = *p.frames[p.readSeg]
@@ -553,7 +549,7 @@ func (p *Stream) read5BytesCrossFrameUnsafe() []byte {
 }
 
 func (p *Stream) read9BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 9, 9)
+	v := make([]byte, 9)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
 	p.readFrame = *p.frames[p.readSeg]
@@ -562,7 +558,7 @@ func (p *Stream) read9BytesCrossFrameUnsafe() []byte {
 }
 
 func (p *Stream) readNBytesUnsafe(n int) []byte {
-	ret := make([]byte, n, n)
+	ret := make([]byte, n)
 	reads := 0
 	for reads < n {
 		readLen := copy(ret[reads:], p.readFrame[p.readIndex:])
@@ -1374,7 +1370,7 @@ func (p *Stream) ReadString() (string, bool) {
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
 			readStart := p.GetReadPos()
-			b := make([]byte, strLen, strLen)
+			b := make([]byte, strLen)
 			copyBytes := copy(b, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
@@ -1417,7 +1413,7 @@ func (p *Stream) ReadString() (string, bool) {
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
-				b := make([]byte, strLen, strLen)
+				b := make([]byte, strLen)
 				reads := 0
 				for reads < strLen {
 					readLen := copy(b[reads:], p.readFrame[p.readIndex:])
@@ -1464,7 +1460,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
 			readStart := p.GetReadPos()
-			b := make([]byte, strLen, strLen)
+			b := make([]byte, strLen)
 			copyBytes := copy(b, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
@@ -1511,7 +1507,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
-				b := make([]byte, strLen, strLen)
+				b := make([]byte, strLen)
 				reads := 0
 				for reads < strLen {
 					readLen := copy(b[reads:], p.readFrame[p.readIndex:])
@@ -1585,12 +1581,12 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 
 		if bytesLen > 62 {
 			if p.isSafetyReadNBytesInCurrentFrame(bytesLen) {
-				ret := make(Bytes, bytesLen, bytesLen)
+				ret := make(Bytes, bytesLen)
 				copy(ret, p.readFrame[p.readIndex:])
 				p.readIndex += bytesLen
 				return ret, true
 			} else if p.hasNBytesToRead(bytesLen) {
-				ret := make(Bytes, bytesLen, bytesLen)
+				ret := make(Bytes, bytesLen)
 				reads := 0
 				for reads < bytesLen {
 					readLen := copy(ret[reads:], p.readFrame[p.readIndex:])
@@ -1730,7 +1726,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 		}
 
 		if arrLen > 0 && totalLen > 4 {
-			ret := make(Array, arrLen, arrLen)
+			ret := make(Array, arrLen)
 			for i := 0; i < arrLen; i++ {
 				if rv, ok := p.Read(); ok {
 					ret[i] = rv
