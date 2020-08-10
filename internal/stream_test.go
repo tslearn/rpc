@@ -1851,9 +1851,7 @@ func TestStream_Read(t *testing.T) {
 	testCollections := make([][2]interface{}, 0)
 
 	for key := range streamTestCollections {
-		for _, v := range streamTestCollections[key] {
-			testCollections = append(testCollections, v)
-		}
+		testCollections = append(testCollections, streamTestCollections[key]...)
 	}
 
 	for _, item := range testCollections {

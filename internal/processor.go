@@ -140,7 +140,7 @@ func NewProcessor(
 				onReturnStream,
 				func(thread *rpcThread) {
 					defer func() {
-						recover()
+						_ = recover()
 					}()
 					freeCHArray[atomic.AddUint64(
 						&ret.writeThreadPos,

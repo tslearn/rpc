@@ -80,7 +80,7 @@ func checkValue(v interface{}, path string, depth int) string {
 		return ConcatString(path, " is too complicated")
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	case nil:
 		return ""
 	case bool:
@@ -114,9 +114,9 @@ func checkValue(v interface{}, path string, depth int) string {
 	case Bytes:
 		return ""
 	case Array:
-		return checkArray(v.(Array), path, depth)
+		return checkArray(v, path, depth)
 	case Map:
-		return checkMap(v.(Map), path, depth)
+		return checkMap(v, path, depth)
 	default:
 		return ConcatString(
 			path,
@@ -1091,59 +1091,59 @@ func (p *Stream) write(v interface{}, depth int) int {
 		return StreamWriteOverflow
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	case nil:
 		p.WriteNil()
 		return StreamWriteOK
 	case bool:
-		p.WriteBool(v.(bool))
+		p.WriteBool(v)
 		return StreamWriteOK
 	case int:
-		p.WriteInt64(int64(v.(int)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int8:
-		p.WriteInt64(int64(v.(int8)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int16:
-		p.WriteInt64(int64(v.(int16)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int32:
-		p.WriteInt64(int64(v.(int32)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int64:
-		p.WriteInt64(v.(int64))
+		p.WriteInt64(v)
 		return StreamWriteOK
 	case uint:
-		p.WriteUint64(uint64(v.(uint)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint8:
-		p.WriteUint64(uint64(v.(uint8)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint16:
-		p.WriteUint64(uint64(v.(uint16)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint32:
-		p.WriteUint64(uint64(v.(uint32)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint64:
-		p.WriteUint64(v.(uint64))
+		p.WriteUint64(v)
 		return StreamWriteOK
 	case float32:
-		p.WriteFloat64(float64(v.(float32)))
+		p.WriteFloat64(float64(v))
 		return StreamWriteOK
 	case float64:
-		p.WriteFloat64(v.(float64))
+		p.WriteFloat64(v)
 		return StreamWriteOK
 	case string:
-		p.WriteString(v.(string))
+		p.WriteString(v)
 		return StreamWriteOK
 	case Bytes:
-		p.WriteBytes(v.(Bytes))
+		p.WriteBytes(v)
 		return StreamWriteOK
 	case Array:
-		return p.writeArray(v.(Array), depth)
+		return p.writeArray(v, depth)
 	case Map:
-		return p.writeMap(v.(Map), depth)
+		return p.writeMap(v, depth)
 	}
 
 	return StreamWriteUnsupportedType
@@ -1546,7 +1546,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 		}
 	} else if v > 192 && v < 255 {
 		bytesLen := int(v - 192)
-		ret := make(Bytes, bytesLen, bytesLen)
+		ret := make(Bytes, bytesLen)
 		if p.isSafetyReadNBytesInCurrentFrame(bytesLen + 1) {
 			copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += bytesLen + 1
@@ -1624,7 +1624,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 			p.readIndex += bytesLen + 1
 			return p.readFrame[p.readIndex-bytesLen : p.readIndex], true
 		} else if p.hasNBytesToRead(bytesLen + 1) {
-			ret := make(Bytes, bytesLen, bytesLen)
+			ret := make(Bytes, bytesLen)
 			copyBytes := copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
