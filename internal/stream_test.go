@@ -1878,7 +1878,6 @@ func BenchmarkRPCStream_ReadString(b *testing.B) {
 	stream.WriteString("#.user.login:isUserARight")
 
 	b.ReportAllocs()
-	b.N = 10000000
 	for i := 0; i < b.N; i++ {
 		stream.SetReadPos(streamBodyPos)
 		stream.ReadString()
