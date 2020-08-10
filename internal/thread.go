@@ -28,6 +28,7 @@ type rpcThread struct {
 	execReplyNode unsafe.Pointer
 	execArgs      []reflect.Value
 	execFrom      string
+	execOK        bool
 	sequence      uint64
 	Lock
 }
@@ -76,6 +77,7 @@ func newThread(
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
 			execFrom:      "",
+			execOK:        false,
 			sequence:      rand.Uint64() % (1 << 56),
 		}
 
@@ -138,6 +140,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 	stream.WriteUint64(uint64(err.GetKind()))
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
+	p.execOK = false
 	return nilReturn
 }
 
@@ -159,6 +162,7 @@ func (p *rpcThread) Eval(
 	onEvalFinish func(*rpcThread),
 ) Return {
 	timeStart := TimeNow()
+	p.execOK = true
 	ctxID := atomic.LoadUint64(&p.sequence)
 	execReplyNode := (*rpcReplyNode)(nil)
 
@@ -181,7 +185,7 @@ func (p *rpcThread) Eval(
 		func() {
 			defer func() {
 				if v := recover(); v != nil {
-					// runtime error
+					// kernel error
 					p.processor.Panic(
 						NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
@@ -193,16 +197,14 @@ func (p *rpcThread) Eval(
 				// return ok
 			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+2) {
 				// Context.OK or Context.Error not called
-				p.writeSystemError(
-					ctxID,
+				p.WriteError(
 					NewReplyPanic(
 						"reply must return through Context.OK or Context.Error",
 					).AddDebug(p.GetExecReplyFileLine()),
 				)
 			} else {
 				// code should not run here
-				p.writeSystemError(
-					ctxID,
+				p.WriteError(
 					NewReplyPanic("internal error").
 						AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
 				)
@@ -212,21 +214,14 @@ func (p *rpcThread) Eval(
 			retStream := p.execStream
 			p.execStream = inStream
 
-			// count
-			if execReplyNode != nil {
-				if k, ok := retStream.ReadUint64(); ok && k == uint64(ErrorKindNone) {
-					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), true)
-				} else {
-					execReplyNode.indicator.Count(TimeNow().Sub(timeStart), false)
-				}
-				retStream.SetReadPosToBodyStart()
-			}
-
 			// eval back
 			onEvalBack(retStream)
 
-			p.execFrom = ""
-			p.execDepth = 0
+			// count
+			if execReplyNode != nil {
+				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), p.execOK)
+			}
+
 			p.execArgs = p.execArgs[:0]
 			atomic.StorePointer(&p.execReplyNode, nil)
 			onEvalFinish(p)
