@@ -191,6 +191,14 @@ func (p *rpcThread) Eval(
 							AddDebug(string(debug.Stack())),
 					)
 				}
+
+				// clean up
+				inStream.Reset()
+				p.execStream = inStream
+				atomic.StorePointer(&p.execReplyNode, nil)
+				p.execFrom = ""
+				p.execArgs = p.execArgs[:0]
+				onEvalFinish(p)
 			}()
 
 			if atomic.CompareAndSwapUint64(&p.sequence, ctxID+1, ctxID+2) {
@@ -210,22 +218,13 @@ func (p *rpcThread) Eval(
 				)
 			}
 
-			inStream.Reset()
-			retStream := p.execStream
-			p.execStream = inStream
-
-			// eval back
-			onEvalBack(retStream)
+			// callback
+			onEvalBack(p.execStream)
 
 			// count
 			if execReplyNode != nil {
 				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), p.execOK)
 			}
-
-			atomic.StorePointer(&p.execReplyNode, nil)
-			p.execFrom = ""
-			p.execArgs = p.execArgs[:0]
-			onEvalFinish(p)
 		}()
 	}()
 
@@ -239,7 +238,7 @@ func (p *rpcThread) Eval(
 			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
 		)
 	} else {
-		p.execReplyNode = unsafe.Pointer(execReplyNode)
+		atomic.StorePointer(&p.execReplyNode, unsafe.Pointer(execReplyNode))
 	}
 
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
