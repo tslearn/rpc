@@ -139,7 +139,7 @@ func (p *rpcThread) WriteError(err Error) Return {
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
 	p.execOK = false
-	return nilReturn
+	return emptyReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
@@ -261,7 +261,7 @@ func (p *rpcThread) Eval(
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(ctx, inStream, execReplyNode.meta.handler)
 			if ok {
-				return nilReturn
+				return emptyReturn
 			}
 		} else {
 			p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
@@ -334,7 +334,7 @@ func (p *rpcThread) Eval(
 
 			if ok {
 				execReplyNode.reflectFn.Call(p.execArgs)
-				return nilReturn
+				return emptyReturn
 			}
 		}
 

@@ -74,7 +74,7 @@ func TestContextObject_Error(t *testing.T) {
 	assert(testRunWithSubscribePanic(func() {
 		ret, source := Context{}.Error(errors.New("error")), GetFileLine(0)
 		source1 = source
-		assert(ret).Equals(nilReturn)
+		assert(ret).Equals(emptyReturn)
 	})).Equals(NewReplyPanic(
 		"Context is illegal in current goroutine",
 	).AddDebug(source1))
@@ -85,7 +85,7 @@ func TestContextObject_Error(t *testing.T) {
 		err := NewReplyError("error")
 		ret, source := (&Context{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source
-		assert(ret).Equals(nilReturn)
+		assert(ret).Equals(emptyReturn)
 	})).Equals(
 		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source2),
 	)
@@ -95,7 +95,7 @@ func TestContextObject_Error(t *testing.T) {
 	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(NewReplyError("error")), GetFileLine(0)
 		source3 = ctx.thread.GetReplyNode().path + " " + source
-		assert(ret).Equals(nilReturn)
+		assert(ret).Equals(emptyReturn)
 		return ret
 	})).Equals(
 		nil,
@@ -108,7 +108,7 @@ func TestContextObject_Error(t *testing.T) {
 	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
 		source4 = ctx.thread.GetReplyNode().path + " " + source
-		assert(ret).Equals(nilReturn)
+		assert(ret).Equals(emptyReturn)
 		return ret
 	})).Equals(
 		nil,
@@ -121,7 +121,7 @@ func TestContextObject_Error(t *testing.T) {
 	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
 		ret, source := ctx.Error(nil), GetFileLine(0)
 		source5 = source
-		assert(ret).Equals(nilReturn)
+		assert(ret).Equals(emptyReturn)
 		return ret
 	})).Equals(
 		nil,

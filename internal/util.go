@@ -15,7 +15,7 @@ import (
 
 var (
 	contextType = reflect.ValueOf(Context{}).Type()
-	returnType  = reflect.ValueOf(nilReturn).Type()
+	returnType  = reflect.ValueOf(emptyReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
 	int64Type   = reflect.ValueOf(int64(0)).Type()
 	uint64Type  = reflect.ValueOf(uint64(0)).Type()
@@ -108,7 +108,7 @@ func getFuncKind(fn reflect.Value) (string, error) {
 			convertTypeToString(contextType),
 		)
 	} else if fn.Type().NumOut() != 1 ||
-		fn.Type().Out(0) != reflect.ValueOf(nilReturn).Type() {
+		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
 		return "", fmt.Errorf(
 			"handler return type must be %s",
 			convertTypeToString(returnType),

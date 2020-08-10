@@ -14,7 +14,7 @@ func (p Context) OK(value interface{}) Return {
 				"Context is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
-		return nilReturn
+		return emptyReturn
 	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
 		stream := thread.execStream
 		stream.SetWritePosToBodyStart()
@@ -25,21 +25,21 @@ func (p Context) OK(value interface{}) Return {
 					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 			)
 		}
-		return nilReturn
+		return emptyReturn
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
 		thread.WriteError(
 			NewReplyPanic(
 				"Context.OK or Context.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
-		return nilReturn
+		return emptyReturn
 	} else {
 		thread.WriteError(
 			NewReplyPanic(
 				"Context is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
-		return nilReturn
+		return emptyReturn
 	}
 }
 
@@ -51,7 +51,7 @@ func (p Context) Error(value error) Return {
 				"Context is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
-		return nilReturn
+		return emptyReturn
 	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
 		if err, ok := value.(Error); ok && err != nil {
 			return p.thread.WriteError(
@@ -76,13 +76,13 @@ func (p Context) Error(value error) Return {
 				"Context.OK or Context.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
-		return nilReturn
+		return emptyReturn
 	} else {
 		thread.WriteError(
 			NewReplyPanic(
 				"Context is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
-		return nilReturn
+		return emptyReturn
 	}
 }

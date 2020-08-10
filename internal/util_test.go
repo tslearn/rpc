@@ -41,7 +41,7 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(reflect.ValueOf(fn4))).
 		Equals("", errors.New("handler return type must be rpc.Return"))
 
-	fn5 := func(ctx Context, _ bool) (Return, bool) { return nilReturn, true }
+	fn5 := func(ctx Context, _ bool) (Return, bool) { return emptyReturn, true }
 	assert(getFuncKind(reflect.ValueOf(fn5))).
 		Equals("", errors.New("handler return type must be rpc.Return"))
 
