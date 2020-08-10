@@ -158,16 +158,8 @@ func (p *rpcThread) Eval(
 	onEvalBack func(*Stream),
 	onEvalFinish func(*rpcThread),
 ) Return {
-	ctxID := atomic.LoadUint64(&p.sequence)
 	timeStart := TimeNow()
-	inStream.SetReadPosToBodyStart()
-	// copy head
-	copy(p.execStream.GetHeader(), inStream.GetHeader())
-	// create context
-	ctx := Context{
-		id:     ctxID,
-		thread: p,
-	}
+	ctxID := atomic.LoadUint64(&p.sequence)
 	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
@@ -270,6 +262,11 @@ func (p *rpcThread) Eval(
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
+		// copy head
+		copy(p.execStream.GetHeader(), inStream.GetHeader())
+		// create context
+		ctx := Context{id: ctxID, thread: p}
+		// save argsPos
 		argsStreamPos := inStream.GetReadPos()
 
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
