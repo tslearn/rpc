@@ -1056,18 +1056,13 @@ func TestRpcThread_Eval(t *testing.T) {
 			return stream
 		},
 	)
-	assert(ret29).IsNil()
-	assert(error29, panic29).IsNotNil()
-	if error29 != nil {
-		assert(error29.GetKind()).Equals(ErrorKindReply)
-		assert(error29.GetMessage()).Equals("runtime error")
-		assert(strings.Contains(error29.GetDebug(), "#.test:Eval")).IsTrue()
-		assert(strings.Contains(error29.GetDebug(), "type_test.go")).IsTrue()
-	}
+	assert(ret29, error29).IsNil()
+	assert(panic29).IsNotNil()
 	if panic29 != nil {
 		assert(panic29.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic29.GetMessage()).
 			Equals("runtime error: this is a error")
+		assert(strings.Contains(panic29.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
@@ -1088,18 +1083,13 @@ func TestRpcThread_Eval(t *testing.T) {
 			return stream
 		},
 	)
-	assert(ret30).IsNil()
-	assert(error30, panic30).IsNotNil()
-	if error30 != nil {
-		assert(error30.GetKind()).Equals(ErrorKindReply)
-		assert(error30.GetMessage()).Equals("runtime error")
-		assert(strings.Contains(error30.GetDebug(), "#.test:Eval")).IsTrue()
-		assert(strings.Contains(error30.GetDebug(), "type_test.go")).IsTrue()
-	}
+	assert(ret30, error30).IsNil()
+	assert(panic30).IsNotNil()
 	if panic30 != nil {
 		assert(panic30.GetKind()).Equals(ErrorKindReplyPanic)
 		assert(panic30.GetMessage()).
 			Equals("runtime error: this is a error")
+		assert(strings.Contains(panic30.GetDebug(), "#.test:Eval")).IsTrue()
 		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
 	}
 
