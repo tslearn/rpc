@@ -597,14 +597,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			stream.SetReadPosToBodyStart()
-
-			if kind, ok := stream.ReadUint64(); ok && kind == uint64(ErrorKindNone) {
-				atomic.AddUint64(&success, 1)
-			} else {
-				atomic.AddUint64(&failed, 1)
-			}
-
 			stream.Release()
 		},
 	)

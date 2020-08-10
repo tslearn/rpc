@@ -222,8 +222,9 @@ func (p *rpcThread) Eval(
 				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), p.execOK)
 			}
 
-			p.execArgs = p.execArgs[:0]
 			atomic.StorePointer(&p.execReplyNode, nil)
+			p.execFrom = ""
+			p.execArgs = p.execArgs[:0]
 			onEvalFinish(p)
 		}()
 	}()
