@@ -8,7 +8,7 @@ import (
 
 // LogWriter ...
 type LogWriter interface {
-	Write(sessionId uint64, err internal.Error)
+	Write(sessionID uint64, err internal.Error)
 }
 
 // StdoutLogWriter ...
@@ -20,15 +20,15 @@ func NewStdoutLogWriter() LogWriter {
 }
 
 func (p *StdoutLogWriter) Write(
-	sessionId uint64,
+	sessionID uint64,
 	err internal.Error,
 ) {
 	sb := internal.NewStringBuilder()
 	defer sb.Release()
 	sb.AppendString(internal.TimeNowISOString())
-	if sessionId > 0 {
+	if sessionID > 0 {
 		sb.AppendByte('(')
-		sb.AppendString(strconv.FormatUint(sessionId, 10))
+		sb.AppendString(strconv.FormatUint(sessionID, 10))
 		sb.AppendByte(')')
 	}
 	sb.AppendByte(' ')
@@ -51,10 +51,10 @@ func NewCallbackLogWriter(
 
 // Write ...
 func (p *CallbackLogWriter) Write(
-	sessionId uint64,
+	sessionID uint64,
 	err internal.Error,
 ) {
 	if p.onWrite != nil {
-		p.onWrite(sessionId, err)
+		p.onWrite(sessionID, err)
 	}
 }
