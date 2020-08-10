@@ -47,23 +47,22 @@ func TestBuildFuncCache(t *testing.T) {
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")
 	fmt.Println(buildFuncCache("pkgName", tmpFile5, []string{"A"}))
-	assert(strings.Contains(
-		buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
-		"fn_cache_test.go: not a directory",
-	)).IsTrue()
-
-	// Test(6)
-	tmpFile6 := path.Join(path.Dir(file), "_tmp_")
-	fmt.Println(buildFuncCache("pkgName", tmpFile6, []string{"A"}))
 	if runtime.GOOS == "windows" {
 		assert(strings.Contains(
-			buildFuncCache("pkgName", tmpFile6, []string{"A"}).Error(),
+			buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
 			"The system cannot find the path specified",
 		)).IsTrue()
 	} else {
 		assert(strings.Contains(
-			buildFuncCache("pkgName", tmpFile6, []string{"A"}).Error(),
-			"_tmp_: is a directory",
+			buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
+			"fn_cache_test.go: not a directory",
 		)).IsTrue()
 	}
+
+	// Test(6)
+	tmpFile6 := path.Join(path.Dir(file), "_tmp_")
+	assert(strings.Contains(
+		buildFuncCache("pkgName", tmpFile6, []string{"A"}).Error(),
+		"_tmp_: is a directory",
+	)).IsTrue()
 }
