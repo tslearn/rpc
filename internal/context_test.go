@@ -11,29 +11,59 @@ func TestContextObject_OK(t *testing.T) {
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		ret, source := Context{}.OK(true), GetFileLine(0)
-		source1 = source
-		assert(ret).Equals(nilReturn)
+		_, source1 = Context{}.OK(true), GetFileLine(0)
 	})).Equals(
 		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source1),
 	)
 
-	// Test(2)
+	// Test(2) return value type error
 	source2 := ""
-	assert(testRunWithSubscribePanic(func() {
-		ret, source := (&Context{thread: nil}).OK(true), GetFileLine(0)
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+		// return value type error
+		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
 		source2 = source
-		assert(ret).Equals(nilReturn)
+		return ret
 	})).Equals(
-		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source2),
+		nil,
+		nil,
+		NewReplyPanic("value type (chan bool) is not supported").
+			AddDebug("#.test:Eval "+source2),
 	)
 
-	// Test(3)
+	// Test(3) OK
 	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
-		ret := ctx.OK(true)
-		assert(ret).Equals(nilReturn)
-		return ret
+		return ctx.OK(true)
 	})).Equals(true, nil, nil)
+
+	// Test(4) rpcThreadReturnStatusAlreadyCalled
+	source4 := ""
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+		// OK called twice
+		ctx.OK(true)
+		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+		source4 = source
+		return ret
+	})).Equals(
+		nil,
+		nil,
+		NewReplyPanic("Context.OK or Context.Error has been called before").
+			AddDebug("#.test:Eval "+source4),
+	)
+
+	// Test(5) rpcThreadReturnStatusContextError
+	source5 := ""
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+		ctx.OK(true)
+		ctx.id = 0
+		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+		source5 = source
+		return ret
+	})).Equals(
+		nil,
+		nil,
+		NewReplyPanic("Context is illegal in current goroutine").
+			AddDebug("#.test:Eval "+source5),
+	)
 }
 
 func TestContextObject_Error(t *testing.T) {
