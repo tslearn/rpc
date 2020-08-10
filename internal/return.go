@@ -1,9 +1,6 @@
 package internal
 
 // Return ...
-type Return = *ReturnObject
+type Return struct{}
 
-// ReturnObject ...
-type ReturnObject struct{}
-
-var nilReturn = (Return)(nil)
+var nilReturn = Return{}
