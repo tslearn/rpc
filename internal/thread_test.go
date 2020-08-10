@@ -170,8 +170,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("reply return value error").
-			AddDebug("#.test:Eval "+source1),
+		nil,
 		NewReplyPanic("value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -200,8 +199,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		},
 	)).Equals(
 		nil,
-		NewReplyError("reply return value error").
-			AddDebug("#.test:Eval "+source2),
+		nil,
 		NewReplyPanic("value type (chan bool) is not supported").
 			AddDebug("#.test:Eval "+source2),
 	)
