@@ -203,16 +203,22 @@ func (p *rpcThread) Eval(
 				// return ok
 			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+2) {
 				// Context.OK or Context.Error not called
-				p.WriteError(
+				p.processor.Panic(
 					NewReplyPanic(
 						"reply must return through Context.OK or Context.Error",
 					).AddDebug(p.GetExecReplyDebug()),
 				)
+				p.WriteError(
+					NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
+				)
 			} else {
 				// code should not run here
-				p.WriteError(
+				p.processor.Panic(
 					NewReplyPanic("internal error").
 						AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
+				)
+				p.WriteError(
+					NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
 				)
 			}
 
