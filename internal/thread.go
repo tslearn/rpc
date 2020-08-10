@@ -129,7 +129,7 @@ func (p *rpcThread) GetExecReplyDebug() string {
 	return ""
 }
 
-func (p *rpcThread) writeSystemError(ctxID uint64, err Error) Return {
+func (p *rpcThread) returnError(ctxID uint64, err Error) Return {
 	atomic.StoreUint64(&p.sequence, ctxID+1)
 	return p.WriteError(err)
 }
@@ -176,7 +176,7 @@ func (p *rpcThread) Eval(
 			)
 
 			// write runtime error
-			p.writeSystemError(
+			p.returnError(
 				ctxID,
 				NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
 			)
@@ -231,9 +231,9 @@ func (p *rpcThread) Eval(
 	// set exec reply node
 	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
-		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
+		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return p.writeSystemError(
+		return p.returnError(
 			ctxID,
 			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
 		)
@@ -242,9 +242,9 @@ func (p *rpcThread) Eval(
 	}
 
 	if p.execDepth, ok = inStream.ReadUint64(); !ok {
-		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
+		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else if p.execDepth > p.processor.maxCallDepth {
-		return p.writeSystemError(
+		return p.returnError(
 			ctxID,
 			NewReplyError(ConcatString(
 				"call ",
@@ -255,7 +255,7 @@ func (p *rpcThread) Eval(
 			)).AddDebug(p.GetExecReplyDebug()),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
-		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
+		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
 		// copy head
 		copy(p.execStream.GetHeader(), inStream.GetHeader())
@@ -345,9 +345,9 @@ func (p *rpcThread) Eval(
 		}
 
 		if _, ok := inStream.Read(); !ok {
-			return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
+			return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 		} else if !p.processor.isDebug {
-			return p.writeSystemError(
+			return p.returnError(
 				ctxID,
 				NewReplyError(ConcatString(
 					replyPath,
@@ -360,7 +360,7 @@ func (p *rpcThread) Eval(
 			inStream.setReadPosUnsafe(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
-					return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
+					return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,
@@ -385,7 +385,7 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			return p.writeSystemError(
+			return p.returnError(
 				ctxID,
 				NewReplyError(ConcatString(
 					replyPath,
