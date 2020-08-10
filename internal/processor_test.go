@@ -134,7 +134,7 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
-				replyFileLine2 = ctx.thread.GetExecReplyFileLine()
+				replyFileLine2 = ctx.thread.GetExecReplyDebug()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
@@ -170,7 +170,7 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
-				replyFileLine3 = ctx.thread.GetExecReplyFileLine()
+				replyFileLine3 = ctx.thread.GetExecReplyDebug()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),

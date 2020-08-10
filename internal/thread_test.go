@@ -113,7 +113,7 @@ func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 	// Test(1)
 	thread1 := getFakeThread(true)
 	defer thread1.Close()
-	assert(thread1.GetExecReplyFileLine()).Equals("")
+	assert(thread1.GetExecReplyDebug()).Equals("")
 
 	// Test(2)
 	thread2 := getFakeThread(true)
@@ -122,7 +122,7 @@ func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 		path: "#.test:Eval",
 		meta: &rpcReplyMeta{fileLine: "/test_file:234"},
 	})
-	assert(thread2.GetExecReplyFileLine()).Equals("#.test:Eval /test_file:234")
+	assert(thread2.GetExecReplyDebug()).Equals("#.test:Eval /test_file:234")
 }
 
 func TestRpcThread_WriteError(t *testing.T) {

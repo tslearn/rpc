@@ -33,22 +33,6 @@ type rpcThread struct {
 	Lock
 }
 
-func (p *rpcThread) setReturn(contextID uint64) int {
-	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
-		return rpcThreadReturnStatusOK
-	}
-
-	if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
-		return rpcThreadReturnStatusAlreadyCalled
-	} else {
-		return rpcThreadReturnStatusContextError
-	}
-}
-
-func (p *rpcThread) GetReplyNode() *rpcReplyNode {
-	return (*rpcReplyNode)(atomic.LoadPointer(&p.execReplyNode))
-}
-
 func newThread(
 	processor *Processor,
 	closeTimeout time.Duration,
@@ -115,6 +99,22 @@ func (p *rpcThread) Close() bool {
 	}).(bool)
 }
 
+func (p *rpcThread) setReturn(contextID uint64) int {
+	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
+		return rpcThreadReturnStatusOK
+	}
+
+	if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
+		return rpcThreadReturnStatusAlreadyCalled
+	} else {
+		return rpcThreadReturnStatusContextError
+	}
+}
+
+func (p *rpcThread) GetReplyNode() *rpcReplyNode {
+	return (*rpcReplyNode)(atomic.LoadPointer(&p.execReplyNode))
+}
+
 func (p *rpcThread) GetExecReplyNodePath() string {
 	if node := p.GetReplyNode(); node != nil {
 		return node.path
@@ -122,7 +122,7 @@ func (p *rpcThread) GetExecReplyNodePath() string {
 	return ""
 }
 
-func (p *rpcThread) GetExecReplyFileLine() string {
+func (p *rpcThread) GetExecReplyDebug() string {
 	if node := p.GetReplyNode(); node != nil && node.meta != nil {
 		return ConcatString(node.path, " ", node.meta.fileLine)
 	}
@@ -172,13 +172,13 @@ func (p *rpcThread) Eval(
 			p.processor.Panic(
 				NewReplyPanic(
 					fmt.Sprintf("runtime error: %v", v),
-				).AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
+				).AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 			)
 
 			// write runtime error
 			p.writeSystemError(
 				ctxID,
-				NewReplyError("runtime error").AddDebug(p.GetExecReplyFileLine()),
+				NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
 			)
 		}
 
@@ -208,13 +208,13 @@ func (p *rpcThread) Eval(
 				p.WriteError(
 					NewReplyPanic(
 						"reply must return through Context.OK or Context.Error",
-					).AddDebug(p.GetExecReplyFileLine()),
+					).AddDebug(p.GetExecReplyDebug()),
 				)
 			} else {
 				// code should not run here
 				p.WriteError(
 					NewReplyPanic("internal error").
-						AddDebug(p.GetExecReplyFileLine()).AddDebug(string(debug.Stack())),
+						AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 				)
 			}
 
@@ -252,7 +252,7 @@ func (p *rpcThread) Eval(
 				" level(",
 				strconv.FormatUint(p.execDepth, 10),
 				") overflows",
-			)).AddDebug(p.GetExecReplyFileLine()),
+			)).AddDebug(p.GetExecReplyDebug()),
 		)
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.writeSystemError(ctxID, NewProtocolError(ErrStringBadStream))
@@ -395,7 +395,7 @@ func (p *rpcThread) Eval(
 					replyPath,
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
-				)).AddDebug(p.GetExecReplyFileLine()),
+				)).AddDebug(p.GetExecReplyDebug()),
 			)
 		}
 	}

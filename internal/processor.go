@@ -166,7 +166,7 @@ func (p *Processor) Close() bool {
 				if p.threads[idx].Close() {
 					closeCH <- ""
 				} else {
-					closeCH <- p.threads[idx].GetExecReplyFileLine()
+					closeCH <- p.threads[idx].GetExecReplyDebug()
 				}
 			}(i)
 		}
