@@ -111,7 +111,7 @@ type Client struct {
 func Dial(connectString string) (*Client, Error) {
 	url, err := url.Parse(connectString)
 
-	if err == nil {
+	if err != nil {
 		return nil, internal.NewRuntimePanic(err.Error())
 	}
 
