@@ -17,7 +17,7 @@ func TestServer_Basic(t *testing.T) {
 			return ctx.OK("hello " + userName)
 		})
 
-	server := NewServer().
+	server := NewServer().SetNumOfThreads(1).
 		AddService("user", userService).
 		ListenWebSocket("127.0.0.1:8080")
 

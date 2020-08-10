@@ -73,7 +73,7 @@ func TestNewProcessor(t *testing.T) {
 	helper6 := newTestProcessorReturnHelper()
 	processor6 := NewProcessor(
 		true,
-		65535,
+		2048,
 		2,
 		3,
 		nil,
@@ -88,7 +88,7 @@ func TestNewProcessor(t *testing.T) {
 		}},
 		helper6.GetFunction(),
 	)
-	for i := 0; i < 65536; i++ {
+	for i := 0; i < 2048; i++ {
 		stream := NewStream()
 		stream.WriteString("#.test:Eval")
 		stream.WriteUint64(3)
@@ -101,17 +101,17 @@ func TestNewProcessor(t *testing.T) {
 	assert(len(processor6.servicesMap)).Equals(2)
 	assert(processor6.maxNodeDepth).Equals(uint64(2))
 	assert(processor6.maxCallDepth).Equals(uint64(3))
-	assert(len(processor6.threads)).Equals(65536)
+	assert(len(processor6.threads)).Equals(2048)
 	assert(len(processor6.freeCHArray)).Equals(freeGroups)
-	assert(processor6.readThreadPos).Equals(uint64(65536))
+	assert(processor6.readThreadPos).Equals(uint64(2048))
 	assert(processor6.fnError).IsNotNil()
 	processor6.Close()
-	assert(processor6.writeThreadPos).Equals(uint64(65536))
+	assert(processor6.writeThreadPos).Equals(uint64(2048))
 	sumFrees := 0
 	for _, freeCH := range processor6.freeCHArray {
 		sumFrees += len(freeCH)
 	}
-	assert(sumFrees).Equals(65536)
+	assert(sumFrees).Equals(2048)
 }
 
 func TestProcessor_Close(t *testing.T) {

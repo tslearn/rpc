@@ -69,7 +69,6 @@ func makeConnSetReadDeadlineError(conn *websocket.Conn) {
 
 	// Network file descriptor.
 	type netFD struct{}
-
 	netConnPtr := (*net.Conn)(fnGetField(conn, "conn"))
 	fdPointer := (**netFD)(fnGetField(*netConnPtr, "fd"))
 	*fdPointer = nil
@@ -688,6 +687,8 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		}()
 
 		time.Sleep(200 * time.Millisecond)
+
+		serverAdapter.(*wsServerAdapter).lock.mutex.Lock()
 		// make fake error
 		wsServer := serverAdapter.(*wsServerAdapter).wsServer
 		httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
@@ -701,6 +702,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 			&fakeListener: {},
 		}
 		httpServerMuPointer.Unlock()
+		serverAdapter.(*wsServerAdapter).lock.mutex.Unlock()
 
 		errCount := 0
 		serverAdapter.Close(func(_ uint64, e Error) {
@@ -910,7 +912,9 @@ func TestWsClientAdapter_Close(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			clientAdapter.Open(
 				func(conn IStreamConn) {
+					conn.(*webSocketStreamConn).Lock()
 					makeConnSetReadDeadlineError(conn.(*webSocketStreamConn).conn)
+					conn.(*webSocketStreamConn).Unlock()
 					time.Sleep(6 * time.Second)
 				},
 				func(e Error) {},

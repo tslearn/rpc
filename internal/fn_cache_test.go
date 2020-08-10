@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -46,7 +45,6 @@ func TestBuildFuncCache(t *testing.T) {
 
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")
-	fmt.Println(buildFuncCache("pkgName", tmpFile5, []string{"A"}))
 	if runtime.GOOS == "windows" {
 		assert(strings.Contains(
 			buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
