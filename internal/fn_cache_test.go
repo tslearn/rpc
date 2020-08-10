@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -44,15 +45,17 @@ func TestBuildFuncCache(t *testing.T) {
 		Equals(NewKernelPanic("error kind Y"))
 
 	// Test(5)
-	tmpFile5 := path.Join(path.Dir(file), "/fn_cache_test.go/test-cache-05.go")
+	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")
 	assert(strings.Contains(
 		buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
 		"fn_cache_test.go: not a directory",
 	)).IsTrue()
 
 	// Test(6)
+	tmpFile6 := path.Join(path.Dir(file), "_tmp_")
+	fmt.Println(buildFuncCache("pkgName", tmpFile6, []string{"A"}))
 	assert(strings.Contains(
-		buildFuncCache("pkgName", "/", []string{"A"}).Error(),
+		buildFuncCache("pkgName", tmpFile6, []string{"A"}).Error(),
 		"is a directory",
 	)).IsTrue()
 }

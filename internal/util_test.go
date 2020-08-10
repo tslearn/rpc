@@ -221,7 +221,7 @@ func TestTimeNow(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		now := TimeNow()
 		time.Sleep(50 * time.Millisecond)
-		assert(TimeNow().Sub(now) < 100*time.Millisecond).IsTrue()
+		assert(TimeNow().Sub(now) < 150*time.Millisecond).IsTrue()
 		assert(TimeNow().Sub(now) > 30*time.Millisecond).IsTrue()
 	}
 }
@@ -229,19 +229,19 @@ func TestTimeNow(t *testing.T) {
 func TestTimeNowISOString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 100000; i++ {
 		if now, err := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
 		); err == nil {
-			assert(time.Since(now) < 50*time.Millisecond).IsTrue()
+			assert(time.Since(now) < 100*time.Millisecond).IsTrue()
 			assert(time.Since(now) > -20*time.Millisecond).IsTrue()
 		} else {
 			assert().Fail("time parse error")
 		}
 	}
 
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 100000; i++ {
 		atomic.StorePointer(&timeNowPointer, nil)
 		if now, err := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
