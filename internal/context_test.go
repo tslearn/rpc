@@ -129,4 +129,34 @@ func TestContextObject_Error(t *testing.T) {
 			AddDebug("#.test:Eval "+source5),
 		nil,
 	)
+
+	// Test(6) rpcThreadReturnStatusAlreadyCalled
+	source6 := ""
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+		// OK called twice
+		ctx.OK(true)
+		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+		source6 = source
+		return ret
+	})).Equals(
+		nil,
+		nil,
+		NewReplyPanic("Context.OK or Context.Error has been called before").
+			AddDebug("#.test:Eval "+source6),
+	)
+
+	// Test(7) rpcThreadReturnStatusContextError
+	source7 := ""
+	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+		ctx.OK(true)
+		ctx.id = 0
+		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+		source7 = source
+		return ret
+	})).Equals(
+		nil,
+		nil,
+		NewReplyPanic("Context is illegal in current goroutine").
+			AddDebug("#.test:Eval "+source7),
+	)
 }
