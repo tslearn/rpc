@@ -166,17 +166,12 @@ func (p *rpcThread) Eval(
 
 	defer func() {
 		if v := recover(); v != nil {
-			// report panic
-			p.processor.Panic(
-				NewReplyPanic(
-					fmt.Sprintf("runtime error: %v", v),
-				).AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
-			)
-
 			// write runtime error
 			p.returnError(
 				ctxID,
-				NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
+				NewReplyPanic(
+					fmt.Sprintf("runtime error: %v", v),
+				).AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 			)
 		}
 
@@ -184,7 +179,7 @@ func (p *rpcThread) Eval(
 			defer func() {
 				if v := recover(); v != nil {
 					// kernel error
-					p.processor.Panic(
+					reportPanic(
 						NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
 							AddDebug(string(debug.Stack())),
 					)
@@ -196,6 +191,7 @@ func (p *rpcThread) Eval(
 				atomic.StorePointer(&p.execReplyNode, nil)
 				p.execFrom = ""
 				p.execArgs = p.execArgs[:0]
+
 				onEvalFinish(p)
 			}()
 
@@ -203,22 +199,16 @@ func (p *rpcThread) Eval(
 				// return ok
 			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+2) {
 				// Context.OK or Context.Error not called
-				p.processor.Panic(
+				p.WriteError(
 					NewReplyPanic(
 						"reply must return through Context.OK or Context.Error",
 					).AddDebug(p.GetExecReplyDebug()),
 				)
-				p.WriteError(
-					NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
-				)
 			} else {
 				// code should not run here
-				p.processor.Panic(
-					NewReplyPanic("internal error").
-						AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
-				)
 				p.WriteError(
-					NewReplyError("runtime error").AddDebug(p.GetExecReplyDebug()),
+					NewKernelPanic("internal error").
+						AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 				)
 			}
 

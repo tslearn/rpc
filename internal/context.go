@@ -20,25 +20,21 @@ func (p Context) OK(value interface{}) Return {
 		stream.SetWritePosToBodyStart()
 		stream.WriteUint64(uint64(ErrorKindNone))
 		if stream.Write(value) != StreamWriteOK {
-			thread.processor.Panic(
-				NewReplyPanic(checkValue(value, "value", 64)).
-					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
-			)
 			return thread.WriteError(
-				NewReplyError("reply return value error").
+				NewReplyPanic(checkValue(value, "value", 64)).
 					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 			)
 		}
 		return nilReturn
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
-		reportPanic(
+		thread.WriteError(
 			NewReplyPanic(
 				"Context.OK or Context.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return nilReturn
 	} else {
-		reportPanic(
+		thread.WriteError(
 			NewReplyPanic(
 				"Context is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
@@ -75,14 +71,14 @@ func (p Context) Error(value error) Return {
 			)
 		}
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
-		reportPanic(
+		thread.WriteError(
 			NewReplyPanic(
 				"Context.OK or Context.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return nilReturn
 	} else {
-		reportPanic(
+		thread.WriteError(
 			NewReplyPanic(
 				"Context is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),

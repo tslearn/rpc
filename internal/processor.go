@@ -118,7 +118,7 @@ func NewProcessor(
 
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
-				ret.Panic(err)
+				ret.fnError(err)
 				return nil
 			}
 		}
@@ -139,6 +139,9 @@ func NewProcessor(
 				closeTimeout,
 				onReturnStream,
 				func(thread *rpcThread) {
+					defer func() {
+						recover()
+					}()
 					freeCHArray[atomic.AddUint64(
 						&ret.writeThreadPos,
 						1,
@@ -234,11 +237,6 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 	}
 
 	return false
-}
-
-// Panic ...
-func (p *Processor) Panic(err Error) {
-	p.fnError(err)
 }
 
 // BuildCache ...

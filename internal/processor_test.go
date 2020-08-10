@@ -156,6 +156,7 @@ func TestProcessor_Close(t *testing.T) {
 				replyFileLine2 + " (1 goroutine)",
 		),
 	})
+	time.Sleep(2 * time.Second)
 
 	// Test(3)
 	replyFileLine3 := ""
@@ -192,6 +193,7 @@ func TestProcessor_Close(t *testing.T) {
 				replyFileLine3 + " (2 goroutines)",
 		),
 	})
+	time.Sleep(2 * time.Second)
 }
 
 func TestProcessor_PutStream(t *testing.T) {
@@ -218,7 +220,7 @@ func TestProcessor_PutStream(t *testing.T) {
 	}
 }
 
-func TestProcessor_Panic(t *testing.T) {
+func TestProcessor_fnError(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
@@ -235,7 +237,7 @@ func TestProcessor_Panic(t *testing.T) {
 		helper1.GetFunction(),
 	)
 	defer processor1.Close()
-	processor1.Panic(err1)
+	processor1.fnError(err1)
 	assert(helper1.GetReturn()).Equals([]Any{}, []Error{}, []Error{err1})
 }
 
