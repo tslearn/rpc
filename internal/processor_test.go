@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -122,6 +123,7 @@ func TestProcessor_Close(t *testing.T) {
 	assert(processor1.Close()).IsFalse()
 
 	// Test(2)
+	lock2 := sync.Mutex{}
 	replyFileLine2 := ""
 	helper2 := newTestProcessorReturnHelper()
 	processor2 := NewProcessor(
@@ -134,7 +136,9 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
+				lock2.Lock()
 				replyFileLine2 = ctx.thread.GetExecReplyDebug()
+				lock2.Unlock()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
@@ -150,16 +154,19 @@ func TestProcessor_Close(t *testing.T) {
 		processor2.PutStream(stream)
 	}
 	assert(processor2.Close()).IsFalse()
+	lock2.Lock()
 	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{
 		NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine2 + " (1 goroutine)",
 		),
 	})
+	lock2.Unlock()
 	time.Sleep(2 * time.Second)
 
 	// Test(3)
 	replyFileLine3 := ""
+	lock3 := sync.Mutex{}
 	helper3 := newTestProcessorReturnHelper()
 	processor3 := NewProcessor(
 		true,
@@ -171,7 +178,9 @@ func TestProcessor_Close(t *testing.T) {
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().Reply("Eval", func(ctx Context) Return {
+				lock3.Lock()
 				replyFileLine3 = ctx.thread.GetExecReplyDebug()
+				lock3.Unlock()
 				time.Sleep(2 * time.Second)
 				return ctx.OK(true)
 			}),
@@ -187,12 +196,14 @@ func TestProcessor_Close(t *testing.T) {
 		processor3.PutStream(stream)
 	}
 	assert(processor3.Close()).IsFalse()
+	lock3.Lock()
 	assert(helper3.GetReturn()).Equals([]Any{}, []Error{}, []Error{
 		NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine3 + " (2 goroutines)",
 		),
 	})
+	lock3.Unlock()
 	time.Sleep(2 * time.Second)
 }
 
