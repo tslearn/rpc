@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -252,6 +253,28 @@ func TestRpcThread_Eval1(t *testing.T) {
 			return stream
 		},
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+}
+
+func TestRpcThread_setReturn(t *testing.T) {
+	assert := NewAssert(t)
+
+	thread := getFakeThread(false)
+
+	// Test(1)
+	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence))).
+		Equals(rpcThreadReturnStatusOK)
+
+	// Test(2)
+	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 1)).
+		Equals(rpcThreadReturnStatusAlreadyCalled)
+
+	// Test(3)
+	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 2)).
+		Equals(rpcThreadReturnStatusContextError)
+
+	// Test(4)
+	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) + 1)).
+		Equals(rpcThreadReturnStatusContextError)
 }
 
 func TestRpcThread_Eval(t *testing.T) {
@@ -1235,4 +1258,31 @@ func TestRpcThread_Eval(t *testing.T) {
 			return stream
 		},
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
+
+	// Test(36) sequence error
+	ret36, error36, panic36 := testRunWithProcessor(true, &testFuncCache{},
+		func(ctx Context) *ReturnObject {
+			ctx.OK(true)
+			// hack sequence error
+			ctx.id = ctx.id + 1
+			return ctx.OK(true)
+		},
+		func(_ *Processor) *Stream {
+			stream := NewStream()
+			stream.WriteString("#.test:Eval")
+			stream.WriteUint64(3)
+			stream.WriteString("#")
+			return stream
+		},
+	)
+
+	assert(ret36, error36).IsNil()
+	assert(panic36).IsNotNil()
+
+	assert(panic36.GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panic36.GetMessage()).Equals("internal error")
+	assert(strings.Contains(panic36.GetDebug(), "goroutine"))
+	assert(strings.Contains(panic36.GetDebug(), "[running]"))
+	assert(strings.Contains(panic36.GetDebug(), "Eval"))
+	assert(strings.Contains(panic36.GetDebug(), "thread.go"))
 }
