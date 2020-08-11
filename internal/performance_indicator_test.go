@@ -44,7 +44,7 @@ func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
 
 	// Test(1)
 	pi1 := newPerformanceIndicator()
-	for i := 0; i < 1500; i++ {
+	for i := 0; i < 100; i++ {
 		go func(idx int) {
 			for k := 0; k < 100; k++ {
 				pi1.Count(time.Duration(idx)*time.Millisecond, true)
@@ -55,7 +55,7 @@ func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
 	}
 	time.Sleep(time.Second)
 	assert(pi1.Calculate(pi1.lastTime.Add(time.Second))).
-		Equals(int64(300000), time.Second)
+		Equals(int64(20000), time.Second)
 
 	// Test(2)
 	pi2 := newPerformanceIndicator()

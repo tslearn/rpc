@@ -24,16 +24,16 @@ func TestSpeedCounter_Count(t *testing.T) {
 	// Test(1)
 	sc1 := NewSpeedCounter()
 	waitCH := make(chan bool)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			sc1.Count()
 			waitCH <- true
 		}()
 	}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		<-waitCH
 	}
-	assert(sc1.Total()).Equals(int64(1000))
+	assert(sc1.Total()).Equals(int64(100))
 }
 
 func TestSpeedCounter_Total(t *testing.T) {
@@ -42,16 +42,16 @@ func TestSpeedCounter_Total(t *testing.T) {
 	// Test(1)
 	sc1 := NewSpeedCounter()
 	waitCH := make(chan bool)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			sc1.Count()
 			waitCH <- true
 		}()
 	}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		<-waitCH
 	}
-	assert(sc1.Total()).Equals(int64(1000))
+	assert(sc1.Total()).Equals(int64(100))
 }
 
 func TestSpeedCounter_CalculateSpeed(t *testing.T) {
@@ -62,19 +62,19 @@ func TestSpeedCounter_CalculateSpeed(t *testing.T) {
 
 	for n := 0; n < 100; n++ {
 		waitCH := make(chan bool)
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			go func() {
 				sc1.Count()
 				waitCH <- true
 			}()
 		}
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			<-waitCH
 		}
 		assert(sc1.Calculate(sc1.lastTime)).
 			Equals(int64(0), time.Duration(0))
 		assert(sc1.Calculate(sc1.lastTime.Add(time.Second))).
-			Equals(int64(1000), time.Second)
+			Equals(int64(100), time.Second)
 	}
 
 	// Test(1)
