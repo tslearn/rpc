@@ -72,7 +72,7 @@ func TestRpcThread_Close(t *testing.T) {
 				time.Sleep(8 * time.Second)
 				return ctx.OK("hello " + name)
 			},
-			func() *Stream {
+			func(_ *Processor) *Stream {
 				stream := NewStream()
 				stream.WriteString("#.test:Eval")
 				stream.WriteUint64(3)
@@ -139,7 +139,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 			source1 = source
 			return ret
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -164,7 +164,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			source1 = source
 			return ret
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -194,7 +194,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			source2 = source
 			return ret
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -215,7 +215,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -255,7 +255,7 @@ func TestRpcThread_Eval1(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			// path format error
 			stream.WriteBytes([]byte("#.test:Eval"))
@@ -298,7 +298,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -314,7 +314,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			// path format error
 			stream.WriteBytes([]byte("#.test:Eval"))
@@ -331,7 +331,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			// reply path is not mounted
 			stream.WriteString("#.system:Eval")
@@ -348,7 +348,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			// depth type error
@@ -365,7 +365,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			//  depth is overflow
@@ -388,7 +388,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -408,7 +408,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -434,7 +434,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -465,7 +465,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -504,7 +504,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -535,7 +535,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -573,7 +573,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -604,7 +604,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -642,7 +642,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -673,7 +673,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -711,7 +711,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -742,7 +742,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -780,7 +780,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -811,7 +811,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -849,7 +849,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -880,7 +880,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -918,7 +918,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -949,7 +949,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -987,7 +987,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1006,7 +1006,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1025,7 +1025,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1041,7 +1041,9 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, a bool) Return {
 			return ctx.OK(a)
 		},
-		func() *Stream {
+		func(processor *Processor) *Stream {
+			replyNode := processor.repliesMap["#.test:Eval"]
+			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1049,10 +1051,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
-		func(processor *Processor) {
-			replyNode := processor.repliesMap["#.test:Eval"]
-			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
-		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -1064,7 +1063,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool, rpcMap Map) Return {
 			return ctx.OK(bVal)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1091,7 +1090,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool, rpcMap Map) Return {
 			return ctx.OK(bVal)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1111,7 +1110,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1139,7 +1138,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1164,7 +1163,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool) Return {
 			return ctx.Error(NewTransportError("it makes onEvalFinish panic"))
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1188,7 +1187,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool) Return {
 			return Return{}
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1217,7 +1216,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1243,7 +1242,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1286,7 +1285,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1317,7 +1316,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			ctx.id = ctx.id + 1
 			return ctx.OK(true)
 		},
-		func() *Stream {
+		func(_ *Processor) *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
