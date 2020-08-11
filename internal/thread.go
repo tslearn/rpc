@@ -21,7 +21,7 @@ const (
 type rpcThread struct {
 	processor     *Processor
 	inputCH       chan *Stream
-	closeCH       chan bool
+	closeCH       unsafe.Pointer
 	closeTimeout  time.Duration
 	execStream    *Stream
 	execDepth     uint64
@@ -46,15 +46,17 @@ func newThread(
 	retCH := make(chan *rpcThread)
 
 	timeout := closeTimeout
-	if timeout < time.Second {
-		timeout = time.Second
+	if timeout < 3*time.Second {
+		timeout = 3 * time.Second
 	}
 
+	inputCH := make(chan *Stream)
+	closeCH := make(chan bool, 1)
 	go func() {
 		thread := &rpcThread{
 			processor:     processor,
-			inputCH:       make(chan *Stream),
-			closeCH:       make(chan bool, 1),
+			inputCH:       inputCH,
+			closeCH:       unsafe.Pointer(&closeCH),
 			closeTimeout:  timeout,
 			execStream:    NewStream(),
 			execDepth:     0,
@@ -67,11 +69,11 @@ func newThread(
 
 		retCH <- thread
 
-		for stream := <-thread.inputCH; stream != nil; stream = <-thread.inputCH {
+		for stream := <-inputCH; stream != nil; stream = <-inputCH {
 			thread.Eval(stream, onEvalBack, onEvalFinish)
 		}
 
-		thread.closeCH <- true
+		closeCH <- true
 	}()
 
 	return <-retCH
@@ -79,14 +81,12 @@ func newThread(
 
 func (p *rpcThread) Close() bool {
 	return p.CallWithLock(func() interface{} {
-		if p.closeCH != nil {
-			defer func() {
-				p.closeCH = nil
-			}()
-
+		if chPtr := (*chan bool)(atomic.LoadPointer(&p.closeCH)); chPtr != nil {
+			atomic.StorePointer(&p.closeCH, nil)
+			time.Sleep(500 * time.Millisecond)
 			close(p.inputCH)
 			select {
-			case <-p.closeCH:
+			case <-*chPtr:
 				p.execStream.Release()
 				p.execStream = nil
 				return true
@@ -146,12 +146,13 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 	defer func() {
 		if v := recover(); v != nil {
 			ret = false
-		} else {
-			ret = true
 		}
 	}()
-	p.inputCH <- stream
-	return
+	if atomic.LoadPointer(&p.closeCH) != nil {
+		p.inputCH <- stream
+		return true
+	}
+	return false
 }
 
 func (p *rpcThread) Eval(

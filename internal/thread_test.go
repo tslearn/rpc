@@ -55,7 +55,7 @@ func TestNewThread(t *testing.T) {
 		getFakeOnEvalBack(),
 		getFakeOnEvalFinish(),
 	)
-	assert(thread6.closeTimeout).Equals(time.Second)
+	assert(thread6.closeTimeout).Equals(3 * time.Second)
 }
 
 func TestRpcThread_Close(t *testing.T) {
@@ -233,6 +233,12 @@ func TestRpcThread_PutStream(t *testing.T) {
 	thread2 := getFakeThread(true)
 	thread2.Close()
 	assert(thread2.PutStream(NewStream())).IsFalse()
+
+	// Test(3)
+	thread3 := getFakeThread(true)
+	thread3.Close()
+	atomic.StorePointer(&thread3.closeCH, unsafe.Pointer(thread3))
+	assert(thread3.PutStream(NewStream())).IsFalse()
 }
 
 func TestRpcThread_Eval1(t *testing.T) {

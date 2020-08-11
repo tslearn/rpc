@@ -139,7 +139,7 @@ func TestProcessor_Close(t *testing.T) {
 				lock2.Lock()
 				replyFileLine2 = ctx.thread.GetExecReplyDebug()
 				lock2.Unlock()
-				time.Sleep(2 * time.Second)
+				time.Sleep(4 * time.Second)
 				return ctx.OK(true)
 			}),
 			fileLine: "",
@@ -181,7 +181,7 @@ func TestProcessor_Close(t *testing.T) {
 				lock3.Lock()
 				replyFileLine3 = ctx.thread.GetExecReplyDebug()
 				lock3.Unlock()
-				time.Sleep(2 * time.Second)
+				time.Sleep(4 * time.Second)
 				return ctx.OK(true)
 			}),
 			fileLine: "",
