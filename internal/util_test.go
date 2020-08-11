@@ -533,7 +533,8 @@ func testRunWithProcessor(
 	isDebug bool,
 	fnCache ReplyCache,
 	handler interface{},
-	getStream func(processor *Processor) *Stream,
+	getStream func() *Stream,
+	onTest func(processor *Processor),
 ) (ret interface{}, retError Error, retPanic Error) {
 	helper := newTestProcessorReturnHelper()
 	service := NewService().Reply("Eval", handler)
@@ -553,10 +554,13 @@ func testRunWithProcessor(
 		helper.GetFunction(),
 	); processor == nil {
 		panic("internal error")
-	} else if inStream := getStream(processor); inStream == nil {
+	} else if inStream := getStream(); inStream == nil {
 		panic("internal error")
 	} else {
 		processor.PutStream(inStream)
+		if onTest != nil {
+			onTest(processor)
+		}
 
 		helper.WaitForFirstStream()
 
@@ -590,20 +594,22 @@ func testRunOnContext(
 	isDebug bool,
 	fn func(processor *Processor, ctx Context) Return,
 ) (interface{}, Error, Error) {
-	callProcessor := (*Processor)(nil)
+	processorCH := make(chan *Processor)
 	return testRunWithProcessor(
 		isDebug,
 		nil,
 		func(ctx Context) Return {
-			return fn(callProcessor, ctx)
+			return fn(<-processorCH, ctx)
 		},
-		func(processor *Processor) *Stream {
-			callProcessor = processor
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("")
 			return stream
+		},
+		func(processor *Processor) {
+			processorCH <- processor
 		},
 	)
 }

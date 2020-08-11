@@ -72,17 +72,19 @@ func TestRpcThread_Close(t *testing.T) {
 				time.Sleep(8 * time.Second)
 				return ctx.OK("hello " + name)
 			},
-			func(processor *Processor) *Stream {
-				go func() {
-					time.Sleep(time.Second)
-					assert(processor.Close()).IsFalse()
-				}()
+			func() *Stream {
 				stream := NewStream()
 				stream.WriteString("#.test:Eval")
 				stream.WriteUint64(3)
 				stream.WriteString("#")
 				stream.WriteString("world")
 				return stream
+			},
+			func(processor *Processor) {
+				go func() {
+					time.Sleep(time.Second)
+					assert(processor.Close()).IsFalse()
+				}()
 			},
 		)
 	})).IsNotNil()
@@ -137,7 +139,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 			source1 = source
 			return ret
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -145,6 +147,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewReplyError("error").AddDebug("#.test:Eval "+source1), nil)
 }
 
@@ -161,7 +164,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			source1 = source
 			return ret
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -169,6 +172,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		nil,
@@ -190,7 +194,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			source2 = source
 			return ret
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -198,6 +202,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		nil,
@@ -210,7 +215,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -218,6 +223,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals("hello world", nil, nil)
 }
 
@@ -249,7 +255,7 @@ func TestRpcThread_Eval1(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			// path format error
 			stream.WriteBytes([]byte("#.test:Eval"))
@@ -258,6 +264,7 @@ func TestRpcThread_Eval1(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 }
 
@@ -291,7 +298,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -299,6 +306,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals("hello world", nil, nil)
 
 	// Test(1) read reply path error
@@ -306,7 +314,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			// path format error
 			stream.WriteBytes([]byte("#.test:Eval"))
@@ -315,6 +323,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(2) reply path is not mounted
@@ -322,7 +331,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			// reply path is not mounted
 			stream.WriteString("#.system:Eval")
@@ -331,6 +340,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewReplyError("target #.system:Eval does not exist"), nil)
 
 	// Test(3) depth data format error
@@ -338,7 +348,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			// depth type error
@@ -347,6 +357,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(4) depth is overflow
@@ -354,7 +365,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			//  depth is overflow
@@ -363,6 +374,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)
 	assert(ret4, panic4).IsNil()
 	assert(error4.GetKind()).Equals(ErrorKindReply)
@@ -376,7 +388,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, name string) Return {
 			return ctx.OK("hello " + name)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -385,6 +397,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.WriteString("world")
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(6) ok call with all type value
@@ -395,7 +408,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -410,6 +423,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(true, nil, nil)
 
 	// Test(7) error with 1st param
@@ -420,7 +434,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -436,6 +450,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -450,7 +465,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -466,6 +481,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret8, panic8).IsNil()
 	assert(error8.GetKind()).Equals(ErrorKindReply)
@@ -488,7 +504,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -504,6 +520,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -518,7 +535,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -534,6 +551,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret10, panic10).IsNil()
 	assert(error10.GetKind()).Equals(ErrorKindReply)
@@ -555,7 +573,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -571,6 +589,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -585,7 +604,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -601,6 +620,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret12, panic12).IsNil()
 	assert(error12.GetKind()).Equals(ErrorKindReply)
@@ -622,7 +642,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -638,6 +658,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -652,7 +673,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -668,6 +689,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret14, panic14).IsNil()
 	assert(error14.GetKind()).Equals(ErrorKindReply)
@@ -689,7 +711,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -705,6 +727,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -719,7 +742,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -735,6 +758,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret16, panic16).IsNil()
 	assert(error16.GetKind()).Equals(ErrorKindReply)
@@ -756,7 +780,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -772,6 +796,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -786,7 +811,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -802,6 +827,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret18, panic18).IsNil()
 	assert(error18.GetKind()).Equals(ErrorKindReply)
@@ -823,7 +849,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -839,6 +865,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -853,7 +880,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -869,6 +896,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)
 	assert(ret20, panic20).IsNil()
 	assert(error20.GetKind()).Equals(ErrorKindReply)
@@ -890,7 +918,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -906,6 +934,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)).Equals(
 		nil,
 		NewReplyError("#.test:Eval reply arguments does not match"),
@@ -920,7 +949,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -936,6 +965,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret22, panic22).IsNil()
 	assert(error22.GetKind()).Equals(ErrorKindReply)
@@ -957,7 +987,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -965,6 +995,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(nil)
 			return stream
 		},
+		nil,
 	)).Equals(true, nil, nil)
 
 	// Test(24) nil rpcArray
@@ -975,7 +1006,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -983,6 +1014,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(nil)
 			return stream
 		},
+		nil,
 	)).Equals(true, nil, nil)
 
 	// Test(25) nil rpcMap
@@ -993,7 +1025,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1001,6 +1033,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(nil)
 			return stream
 		},
+		nil,
 	)).Equals(true, nil, nil)
 
 	// Test(26) unsupported type
@@ -1008,15 +1041,17 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, a bool) Return {
 			return ctx.OK(a)
 		},
-		func(processor *Processor) *Stream {
-			replyNode := processor.repliesMap["#.test:Eval"]
-			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			stream.Write(true)
 			return stream
+		},
+		func(processor *Processor) {
+			replyNode := processor.repliesMap["#.test:Eval"]
+			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 		},
 	)).Equals(
 		nil,
@@ -1029,7 +1064,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool, rpcMap Map) Return {
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1039,6 +1074,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(nil)
 			return stream
 		},
+		nil,
 	)
 	assert(ret27, panic27).IsNil()
 	assert(error27.GetKind()).Equals(ErrorKindReply)
@@ -1055,7 +1091,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool, rpcMap Map) Return {
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1064,6 +1100,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.SetWritePos(stream.GetWritePos() - 1)
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(29) call function error
@@ -1074,7 +1111,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1082,6 +1119,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret29, error29).IsNil()
 	assert(panic29).IsNotNil()
@@ -1101,7 +1139,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			}
 			return ctx.OK(bVal)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1109,6 +1147,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret30, error30).IsNil()
 	assert(panic30).IsNotNil()
@@ -1125,7 +1164,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool) Return {
 			return ctx.Error(NewTransportError("it makes onEvalFinish panic"))
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1133,6 +1172,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret31, error31).Equals(nil, nil)
 	assert(panic31).IsNotNil()
@@ -1148,7 +1188,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		func(ctx Context, bVal bool) Return {
 			return Return{}
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1156,6 +1196,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret32, error32).Equals(nil, nil)
 	assert(panic32).IsNotNil()
@@ -1176,7 +1217,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1191,6 +1232,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(Map{"name": "world"})
 			return stream
 		},
+		nil,
 	)).Equals(true, nil, nil)
 
 	// Test(34) stream is not finish
@@ -1201,7 +1243,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1218,6 +1260,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			stream.Write(true)
 			return stream
 		},
+		nil,
 	)
 	assert(ret34, panic34).Equals(nil, nil)
 	assert(error34).IsNotNil()
@@ -1243,7 +1286,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		) Return {
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
@@ -1263,6 +1306,7 @@ func TestRpcThread_Eval(t *testing.T) {
 
 			return stream
 		},
+		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 
 	// Test(36) sequence error
@@ -1273,13 +1317,14 @@ func TestRpcThread_Eval(t *testing.T) {
 			ctx.id = ctx.id + 1
 			return ctx.OK(true)
 		},
-		func(_ *Processor) *Stream {
+		func() *Stream {
 			stream := NewStream()
 			stream.WriteString("#.test:Eval")
 			stream.WriteUint64(3)
 			stream.WriteString("#")
 			return stream
 		},
+		nil,
 	)
 
 	assert(ret36, error36).IsNil()
