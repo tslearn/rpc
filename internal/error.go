@@ -17,19 +17,19 @@ var ErrTransportStreamConnIsClosed = NewTransportError("stream conn is closed")
 
 const (
 	// ErrorKindNone ...
-	ErrorKindNone ErrorKind = 0
+	ErrorKindNone = ErrorKind(0)
 	// ErrorKindProtocol ...
-	ErrorKindProtocol ErrorKind = 1
+	ErrorKindProtocol = ErrorKind(1)
 	// ErrorKindTransport ...
-	ErrorKindTransport ErrorKind = 2
+	ErrorKindTransport = ErrorKind(2)
 	// ErrorKindReply ...
-	ErrorKindReply ErrorKind = 3
+	ErrorKindReply = ErrorKind(3)
 	// ErrorKindReplyPanic ...
-	ErrorKindReplyPanic ErrorKind = 4
+	ErrorKindReplyPanic = ErrorKind(4)
 	// ErrorKindRuntimePanic ...
-	ErrorKindRuntimePanic ErrorKind = 5
+	ErrorKindRuntimePanic = ErrorKind(5)
 	// ErrorKindKernelPanic ...
-	ErrorKindKernelPanic ErrorKind = 6
+	ErrorKindKernelPanic = ErrorKind(6)
 )
 
 var (
