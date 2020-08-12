@@ -31,6 +31,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+          golangci-lint run
+
       # runs go test ./...
       - name: Test and generate coverage report
         run: |

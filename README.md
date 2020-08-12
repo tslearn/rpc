@@ -1,7 +1,5 @@
 # RPC
 [![Test](https://github.com/rpccloud/rpc/workflows/Test/badge.svg)](https://github.com/rpccloud/rpc/actions?query=workflow%3ATest)
-[![Lint](https://github.com/rpccloud/rpc/workflows/Lint/badge.svg)](https://github.com/rpccloud/rpc/actions?query=workflow%3ALint)
-
 
 ### 性能测试
 ```bash
