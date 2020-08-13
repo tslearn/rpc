@@ -109,22 +109,22 @@ type Client struct {
 
 // Dial ...
 func Dial(connectString string) (*Client, Error) {
-	url, err := url.Parse(connectString)
+	urlInfo, err := url.Parse(connectString)
 
 	if err != nil {
 		return nil, internal.NewRuntimePanic(err.Error())
 	}
 
-	switch url.Scheme {
+	switch urlInfo.Scheme {
 	case "ws":
 		return newClient(internal.NewWebSocketClientAdapter(connectString)), nil
 	default:
 		return nil,
-			internal.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", url.Scheme))
+			internal.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))
 	}
 }
 
-func newClient(endPoint internal.IClientAdapter) *Client {
+func newClient(adapter internal.IClientAdapter) *Client {
 	ret := &Client{
 		sessionString:        "",
 		conn:                 nil,
@@ -147,7 +147,7 @@ func newClient(endPoint internal.IClientAdapter) *Client {
 
 	go func() {
 		for ret.IsRunning() {
-			endPoint.Open(ret.onConnRun, ret.onError)
+			adapter.Open(ret.onConnRun, ret.onError)
 		}
 		ret.SetClosed(nil)
 	}()
@@ -164,7 +164,7 @@ func newClient(endPoint internal.IClientAdapter) *Client {
 		}
 
 		ret.SetClosed(func() {
-			endPoint.Close(ret.onError)
+			adapter.Close(ret.onError)
 		})
 	}()
 
@@ -502,12 +502,12 @@ func (p *Client) sendMessage(
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if message, ok := stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if debug, ok := stream.ReadString(); !ok {
+	} else if dbg, ok := stream.ReadString(); !ok {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if !stream.IsReadFinish() {
 		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
 	} else {
-		return nil, internal.NewError(internal.ErrorKind(errKind), message, debug)
+		return nil, internal.NewError(internal.ErrorKind(errKind), message, dbg)
 	}
 }
 
