@@ -30,6 +30,8 @@ const (
 	ErrorKindRuntimePanic = ErrorKind(5)
 	// ErrorKindKernelPanic ...
 	ErrorKindKernelPanic = ErrorKind(6)
+	// ErrorKindSecurityLimit ...
+	ErrorKindSecurityLimit = ErrorKind(7)
 )
 
 var (
@@ -138,6 +140,11 @@ func NewRuntimePanic(message string) Error {
 // NewKernelPanic ...
 func NewKernelPanic(message string) Error {
 	return NewError(ErrorKindKernelPanic, message, "")
+}
+
+// NewSecurityLimitError ...
+func NewSecurityLimitError(message string) Error {
+	return NewError(ErrorKindSecurityLimit, message, "")
 }
 
 // ConvertToError convert interface{} to Error if type matches

@@ -108,6 +108,14 @@ func TestNewKernelError(t *testing.T) {
 		Equals(NewError(ErrorKindKernelPanic, "message", ""))
 }
 
+func TestNewSecurityLimitError(t *testing.T) {
+	assert := NewAssert(t)
+
+	// Test(1)
+	assert(NewSecurityLimitError("message")).
+		Equals(NewError(ErrorKindSecurityLimit, "message", ""))
+}
+
 func TestConvertToError(t *testing.T) {
 	assert := NewAssert(t)
 
