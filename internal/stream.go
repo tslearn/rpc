@@ -967,8 +967,7 @@ func (p *Stream) writeArray(v Array, depth int) int {
 	}
 
 	for i := 0; i < length; i++ {
-		errCode := p.write(v[i], depth-1)
-		if errCode != StreamWriteOK {
+		if errCode := p.write(v[i], depth-1); errCode != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
 			return errCode
 		}
@@ -1053,8 +1052,7 @@ func (p *Stream) writeMap(v Map, depth int) int {
 
 	for name, value := range v {
 		p.WriteString(name)
-		errCode := p.write(value, depth-1)
-		if errCode != StreamWriteOK {
+		if errCode := p.write(value, depth-1); errCode != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
 			return errCode
 		}
