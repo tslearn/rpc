@@ -333,13 +333,10 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 		deltaTime := now.Sub(p.lastControlSendTime)
 		if p.conn == nil {
 			return
-		} else if deltaTime < 500*time.Millisecond {
+		} else if deltaTime < 1000*time.Millisecond {
 			return
 		} else if deltaTime < p.getHeartbeatDuration() &&
 			int64(len(p.sendMap)) > p.callbackSize/2 {
-			return
-		} else if deltaTime < p.getHeartbeatDuration() &&
-			int64(p.maxCallbackID-p.currCallbackID) > p.callbackSize/2 {
 			return
 		} else {
 			p.lastControlSendTime = now
