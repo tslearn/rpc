@@ -103,8 +103,8 @@ type Client struct {
 	callbackSize         int64
 	lastControlSendTime  time.Time
 	lastTimeoutCheckTime time.Time
-	internal.Lock
-	internal.StatusManager
+	lock                 internal.Lock
+	statusManager        internal.StatusManager
 }
 
 // Dial ...
@@ -141,19 +141,21 @@ func newClient(adapter internal.IClientAdapter) *Client {
 		callbackSize:         0,
 		lastControlSendTime:  time.Now().Add(-10 * time.Second),
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
+		lock:                 internal.Lock{},
+		statusManager:        internal.StatusManager{},
 	}
 
-	ret.SetRunning(nil)
+	ret.statusManager.SetRunning(nil)
 
 	go func() {
-		for ret.IsRunning() {
+		for ret.statusManager.IsRunning() {
 			adapter.Open(ret.onConnRun, ret.onError)
 		}
-		ret.SetClosed(nil)
+		ret.statusManager.SetClosed(nil)
 	}()
 
 	go func() {
-		for ret.IsRunning() {
+		for ret.statusManager.IsRunning() {
 			now := internal.TimeNow()
 			ret.tryToTimeout(now)
 			ret.tryToDeliverControlMessage(now)
@@ -163,7 +165,7 @@ func newClient(adapter internal.IClientAdapter) *Client {
 			time.Sleep(100 * time.Millisecond)
 		}
 
-		ret.SetClosed(func() {
+		ret.statusManager.SetClosed(func() {
 			adapter.Close(ret.onError)
 		})
 	}()
@@ -175,7 +177,7 @@ func newClient(adapter internal.IClientAdapter) *Client {
 func (p *Client) Close() bool {
 	waitCH := chan bool(nil)
 
-	if !p.SetClosing(func(ch chan bool) {
+	if !p.statusManager.SetClosing(func(ch chan bool) {
 		waitCH = ch
 	}) {
 		p.onError(internal.NewRuntimePanic(
@@ -197,7 +199,7 @@ func (p *Client) Close() bool {
 
 func (p *Client) initConn(conn internal.IStreamConn) Error {
 	// get the sequence
-	sequence := p.CallWithLock(func() interface{} {
+	sequence := p.lock.CallWithLock(func() interface{} {
 		p.systemSeed++
 		ret := p.systemSeed
 		return ret
@@ -268,7 +270,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	}
 
 	// set the conn
-	p.DoWithLock(func() {
+	p.lock.DoWithLock(func() {
 		p.conn = conn
 	})
 
@@ -280,7 +282,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			p.onError(err)
 		}
 
-		p.DoWithLock(func() {
+		p.lock.DoWithLock(func() {
 			p.conn = nil
 		})
 
@@ -290,14 +292,14 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	}()
 
 	// receive messages
-	for p.IsRunning() {
+	for p.statusManager.IsRunning() {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
 			if e != internal.ErrTransportStreamConnIsClosed {
 				err = e
 			}
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
-			p.DoWithLock(func() {
+			p.lock.DoWithLock(func() {
 				if v, ok := p.sendMap[callbackID]; ok {
 					if v.Return(stream) {
 						delete(p.sendMap, callbackID)
@@ -315,7 +317,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else {
-			p.DoWithLock(func() {
+			p.lock.DoWithLock(func() {
 				if maxCallbackID > p.maxCallbackID {
 					p.maxCallbackID = maxCallbackID
 				}
@@ -329,7 +331,7 @@ func (p *Client) getHeartbeatDuration() time.Duration {
 }
 
 func (p *Client) tryToDeliverControlMessage(now time.Time) {
-	p.DoWithLock(func() {
+	p.lock.DoWithLock(func() {
 		deltaTime := now.Sub(p.lastControlSendTime)
 		if p.conn == nil {
 			return
@@ -365,7 +367,7 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 }
 
 func (p *Client) tryToTimeout(now time.Time) {
-	p.DoWithLock(func() {
+	p.lock.DoWithLock(func() {
 		if now.Sub(p.lastTimeoutCheckTime) > 800*time.Millisecond {
 			p.lastTimeoutCheckTime = now
 
@@ -406,8 +408,8 @@ func (p *Client) tryToTimeout(now time.Time) {
 }
 
 func (p *Client) tryToDeliverPreSendMessage() bool {
-	return p.CallWithLock(func() interface{} {
-		if !p.IsRunning() { // not running
+	return p.lock.CallWithLock(func() interface{} {
+		if !p.statusManager.IsRunning() { // not running
 			return false
 		} else if p.conn == nil { // not connected
 			return false
@@ -476,7 +478,7 @@ func (p *Client) sendMessage(
 	}
 
 	// add item to the list tail
-	p.DoWithLock(func() {
+	p.lock.DoWithLock(func() {
 		if p.preSendTail == nil {
 			p.preSendHead = item
 			p.preSendTail = item
