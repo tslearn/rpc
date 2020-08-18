@@ -450,8 +450,8 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 	}).(bool)
 }
 
-// sendMessage ...
-func (p *Client) sendMessage(
+// SendMessage ...
+func (p *Client) SendMessage(
 	timeout time.Duration,
 	target string,
 	args ...interface{},
