@@ -18,7 +18,7 @@ func TestServer_Basic(t *testing.T) {
 		})
 
 	server := NewServer().SetNumOfThreads(1).
-		AddService("user", userService).
+		AddService("user", userService, nil).
 		ListenWebSocket("127.0.0.1:8080")
 
 	go func() {

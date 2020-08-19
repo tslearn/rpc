@@ -154,3 +154,23 @@ func (p Context) Error(value error) Return {
 		return emptyReturn
 	}
 }
+
+func (p Context) GetServiceData() interface{} {
+	if thread := p.thread; thread == nil {
+		reportPanic(
+			NewReplyPanic(
+				"Context is illegal in current goroutine",
+			).AddDebug(GetFileLine(1)),
+		)
+		return nil
+	} else if node := thread.GetReplyNode(); node == nil {
+		reportPanic(
+			NewReplyPanic(
+				"Context is illegal in current goroutine",
+			).AddDebug(GetFileLine(1)),
+		)
+		return nil
+	} else {
+		return node.service.addMeta.data
+	}
+}

@@ -21,6 +21,7 @@ var (
 type rpcReplyNode struct {
 	path       string
 	meta       *rpcReplyMeta
+	service    *rpcServiceNode
 	cacheFN    ReplyCacheFunc
 	reflectFn  reflect.Value
 	callString string
@@ -378,6 +379,7 @@ func (p *Processor) mountReply(
 		replyNode := &rpcReplyNode{
 			path:      replyPath,
 			meta:      meta,
+			service:   serviceNode,
 			cacheFN:   nil,
 			reflectFn: fn,
 			callString: fmt.Sprintf(

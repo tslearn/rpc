@@ -85,7 +85,11 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 }
 
 // AddService ...
-func (p *Server) AddService(name string, service *Service) *Server {
+func (p *Server) AddService(
+	name string,
+	service *Service,
+	data interface{},
+) *Server {
 	p.Lock()
 	defer p.Unlock()
 
@@ -98,6 +102,7 @@ func (p *Server) AddService(name string, service *Service) *Server {
 			name,
 			service,
 			internal.GetFileLine(1),
+			data,
 		))
 	}
 
