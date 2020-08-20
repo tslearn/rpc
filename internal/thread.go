@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -18,18 +19,53 @@ const (
 	rpcThreadReturnStatusContextError  = 2
 )
 
+var rpcThreadFrameCache = &sync.Pool{
+	New: func() interface{} {
+		return &rpcThreadFrame{
+			stream:    nil,
+			depth:     0,
+			replyNode: nil,
+			args:      make([]reflect.Value, 0, 8),
+			from:      "",
+			ok:        false,
+		}
+	},
+}
+
+type rpcThreadFrame struct {
+	stream    *Stream
+	depth     uint64
+	replyNode unsafe.Pointer
+	args      []reflect.Value
+	from      string
+	ok        bool
+	next      *rpcThreadFrame
+}
+
+func newRPCThreadFrame() *rpcThreadFrame {
+	return rpcThreadFrameCache.Get().(*rpcThreadFrame)
+}
+
+func (p *rpcThreadFrame) Reset() {
+	p.stream = nil
+	atomic.StorePointer(&p.replyNode, nil)
+	p.from = ""
+	p.args = p.args[:0]
+	p.next = nil
+}
+
+func (p *rpcThreadFrame) Release() {
+	p.Reset()
+	rpcThreadFrameCache.Put(p)
+}
+
 type rpcThread struct {
-	processor     *Processor
-	inputCH       chan *Stream
-	closeCH       unsafe.Pointer
-	closeTimeout  time.Duration
-	execStream    *Stream
-	execDepth     uint64
-	execReplyNode unsafe.Pointer
-	execArgs      []reflect.Value
-	execFrom      string
-	execOK        bool
-	sequence      uint64
+	processor    *Processor
+	inputCH      chan *Stream
+	closeCH      unsafe.Pointer
+	closeTimeout time.Duration
+	top          *rpcThreadFrame
+	sequence     uint64
 	Lock
 }
 
@@ -54,17 +90,12 @@ func newThread(
 	closeCH := make(chan bool, 1)
 	go func() {
 		thread := &rpcThread{
-			processor:     processor,
-			inputCH:       inputCH,
-			closeCH:       unsafe.Pointer(&closeCH),
-			closeTimeout:  timeout,
-			execStream:    nil,
-			execDepth:     0,
-			execReplyNode: nil,
-			execArgs:      make([]reflect.Value, 0, 16),
-			execFrom:      "",
-			execOK:        false,
-			sequence:      rand.Uint64() % (1 << 56),
+			processor:    processor,
+			inputCH:      inputCH,
+			closeCH:      unsafe.Pointer(&closeCH),
+			closeTimeout: timeout,
+			top:          newRPCThreadFrame(),
+			sequence:     rand.Uint64() % (1 << 56),
 		}
 
 		retCH <- thread
@@ -87,6 +118,8 @@ func (p *rpcThread) Close() bool {
 			close(p.inputCH)
 			select {
 			case <-*chPtr:
+				p.top.Release()
+				p.top = nil
 				return true
 			case <-time.After(p.closeTimeout):
 				return false
@@ -108,7 +141,7 @@ func (p *rpcThread) setReturn(contextID uint64) int {
 }
 
 func (p *rpcThread) GetReplyNode() *rpcReplyNode {
-	return (*rpcReplyNode)(atomic.LoadPointer(&p.execReplyNode))
+	return (*rpcReplyNode)(atomic.LoadPointer(&p.top.replyNode))
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {
@@ -131,12 +164,12 @@ func (p *rpcThread) returnError(ctxID uint64, err Error) Return {
 }
 
 func (p *rpcThread) WriteError(err Error) Return {
-	stream := p.execStream
+	stream := p.top.stream
 	stream.SetWritePosToBodyStart()
 	stream.WriteUint64(uint64(err.GetKind()))
 	stream.WriteString(err.GetMessage())
 	stream.WriteString(err.GetDebug())
-	p.execOK = false
+	p.top.ok = false
 	return emptyReturn
 }
 
@@ -159,8 +192,9 @@ func (p *rpcThread) Eval(
 	onEvalFinish func(*rpcThread),
 ) Return {
 	timeStart := TimeNow()
-	p.execOK = true
-	p.execStream = inStream
+	frame := p.top
+	frame.ok = true
+	frame.stream = inStream
 	ctxID := atomic.LoadUint64(&p.sequence)
 	execReplyNode := (*rpcReplyNode)(nil)
 
@@ -185,12 +219,7 @@ func (p *rpcThread) Eval(
 					)
 				}
 
-				// clean up
-				p.execStream = nil
-				atomic.StorePointer(&p.execReplyNode, nil)
-				p.execFrom = ""
-				p.execArgs = p.execArgs[:0]
-
+				frame.Reset()
 				onEvalFinish(p)
 			}()
 
@@ -217,7 +246,7 @@ func (p *rpcThread) Eval(
 
 			// count
 			if execReplyNode != nil {
-				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), p.execOK)
+				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), frame.ok)
 			}
 		}()
 	}()
@@ -232,23 +261,23 @@ func (p *rpcThread) Eval(
 			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
 		)
 	} else {
-		atomic.StorePointer(&p.execReplyNode, unsafe.Pointer(execReplyNode))
+		atomic.StorePointer(&frame.replyNode, unsafe.Pointer(execReplyNode))
 	}
 
-	if p.execDepth, ok = inStream.ReadUint64(); !ok {
+	if frame.depth, ok = inStream.ReadUint64(); !ok {
 		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
-	} else if p.execDepth > p.processor.maxCallDepth {
+	} else if frame.depth > p.processor.maxCallDepth {
 		return p.returnError(
 			ctxID,
 			NewReplyError(ConcatString(
 				"call ",
 				replyPath,
 				" level(",
-				strconv.FormatUint(p.execDepth, 10),
+				strconv.FormatUint(frame.depth, 10),
 				") overflows",
 			)).AddDebug(p.GetExecReplyDebug()),
 		)
-	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
+	} else if frame.from, ok = inStream.ReadUnsafeString(); !ok {
 		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
 		// create context
@@ -262,7 +291,7 @@ func (p *rpcThread) Eval(
 				return emptyReturn
 			}
 		} else {
-			p.execArgs = append(p.execArgs, reflect.ValueOf(ctx))
+			frame.args = append(frame.args, reflect.ValueOf(ctx))
 			for i := 1; i < len(execReplyNode.argTypes); i++ {
 				var rv reflect.Value
 
@@ -322,7 +351,7 @@ func (p *rpcThread) Eval(
 				if !ok {
 					break
 				} else {
-					p.execArgs = append(p.execArgs, rv)
+					frame.args = append(frame.args, rv)
 				}
 			}
 
@@ -332,7 +361,7 @@ func (p *rpcThread) Eval(
 
 			if ok {
 				inStream.SetWritePosToBodyStart()
-				execReplyNode.reflectFn.Call(p.execArgs)
+				execReplyNode.reflectFn.Call(frame.args)
 				return emptyReturn
 			}
 		}

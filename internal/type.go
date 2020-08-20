@@ -84,7 +84,7 @@ func (p Context) OK(value interface{}) Return {
 		)
 		return emptyReturn
 	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
-		stream := thread.execStream
+		stream := thread.top.stream
 		stream.SetWritePosToBodyStart()
 		stream.WriteUint64(uint64(ErrorKindNone))
 		if stream.Write(value) != StreamWriteOK {

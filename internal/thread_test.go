@@ -30,11 +30,11 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.processor).IsNotNil()
 	assert(thread4.inputCH).IsNotNil()
 	assert(thread4.closeCH).IsNotNil()
-	assert(thread4.execStream).IsNil()
-	assert(thread4.execDepth).IsNotNil()
-	assert(thread4.execReplyNode).IsNil()
-	assert(thread4.execArgs).IsNotNil()
-	assert(thread4.execFrom).Equals("")
+	assert(thread4.top.stream).IsNil()
+	assert(thread4.top.depth).IsNotNil()
+	assert(thread4.top.replyNode).IsNil()
+	assert(thread4.top.args).IsNotNil()
+	assert(thread4.top.from).Equals("")
 
 	// Test(5) release thread
 	thread5 := getFakeThread(false)
@@ -42,11 +42,11 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.processor).IsNotNil()
 	assert(thread5.inputCH).IsNotNil()
 	assert(thread5.closeCH).IsNotNil()
-	assert(thread5.execStream).IsNil()
-	assert(thread5.execDepth).IsNotNil()
-	assert(thread5.execReplyNode).IsNil()
-	assert(thread5.execArgs).IsNotNil()
-	assert(thread5.execFrom).Equals("")
+	assert(thread5.top.stream).IsNil()
+	assert(thread5.top.depth).IsNotNil()
+	assert(thread5.top.replyNode).IsNil()
+	assert(thread5.top.args).IsNotNil()
+	assert(thread5.top.from).Equals("")
 
 	// Test(6) closeTimeout is less than 1 * time.Second
 	thread6 := newThread(
@@ -106,7 +106,7 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 	// Test(2)
 	thread2 := getFakeThread(true)
 	defer thread2.Close()
-	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
+	thread2.top.replyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
 	assert(thread2.GetExecReplyNodePath()).Equals("#.test:Eval")
 }
 
@@ -121,7 +121,7 @@ func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 	// Test(2)
 	thread2 := getFakeThread(true)
 	defer thread2.Close()
-	thread2.execReplyNode = unsafe.Pointer(&rpcReplyNode{
+	thread2.top.replyNode = unsafe.Pointer(&rpcReplyNode{
 		path: "#.test:Eval",
 		meta: &rpcReplyMeta{fileLine: "/test_file:234"},
 	})
