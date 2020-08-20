@@ -7,21 +7,20 @@ import (
 )
 
 func main() {
-	seedServiceConfig := &system.SeedServiceConfig{
-		Collection: "seedtest05",
-		Obscure:    false,
-		MongoDatabaseConfig: util.MongoDatabaseConfig{
-			DataBase:    "dev",
-			Host:        "192.168.1.61",
-			Port:        27017,
-			Username:    "dev",
-			Password:    "World2019",
-			ExtraParams: "w=majority",
-		},
+	mongoDatabaseConfig := util.MongoDatabaseConfig{
+		DataBase:    "dev",
+		Host:        "192.168.1.61",
+		Port:        27017,
+		Username:    "dev",
+		Password:    "World2019",
+		ExtraParams: "w=majority",
 	}
 
 	rpc.NewServer().
-		AddService("system", system.SeedService, seedServiceConfig).
+		AddService("system", system.SeedService, &system.SeedServiceConfig{
+			Collection:          "seedtest12",
+			MongoDatabaseConfig: mongoDatabaseConfig,
+		}).
 		ListenWebSocket("0.0.0.0:8080").
 		Serve()
 }

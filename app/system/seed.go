@@ -3,7 +3,6 @@ package system
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/util"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +12,9 @@ import (
 	"time"
 	"unsafe"
 )
+
+var SeedService = rpc.NewService().
+	Reply("GetSeed", getSeedWrapper())
 
 const seedManagerBlockSize = 1 << 20
 
@@ -189,19 +191,12 @@ func getSeedWrapper() interface{} {
 	}
 
 	return func(ctx rpc.Context) rpc.Return {
-		fmt.Println("request")
 		if mgr, err := getManager(ctx); err != nil {
-			fmt.Println(err)
 			return ctx.Error(err)
 		} else if ret, err := mgr.getSeed(); err != nil {
-			fmt.Println(err)
 			return ctx.Error(err)
 		} else {
-			fmt.Println(ret)
 			return ctx.OK(ret)
 		}
 	}
 }
-
-var SeedService = rpc.NewService().
-	Reply("GetSeed", getSeedWrapper())
