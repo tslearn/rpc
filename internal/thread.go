@@ -130,6 +130,22 @@ func (p *rpcThread) Close() bool {
 	}).(bool)
 }
 
+func (p *rpcThread) pushFrame() {
+	frame := newRPCThreadFrame()
+	frame.next = p.top
+	p.top = frame
+}
+
+func (p *rpcThread) popFrame() bool {
+	if frame := p.top.next; frame != nil {
+		frame.Release()
+		p.top = frame
+		return true
+	} else {
+		return false
+	}
+}
+
 func (p *rpcThread) setReturn(contextID uint64) int {
 	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
 		return rpcThreadReturnStatusOK
