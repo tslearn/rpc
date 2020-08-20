@@ -8,7 +8,7 @@ import (
 
 func main() {
 	seedServiceConfig := &system.SeedServiceConfig{
-		Collection: "seedtest04",
+		Collection: "seedtest05",
 		Obscure:    false,
 		MongoDatabaseConfig: util.MongoDatabaseConfig{
 			DataBase:    "dev",

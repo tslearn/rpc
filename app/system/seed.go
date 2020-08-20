@@ -22,7 +22,7 @@ type SeedServiceConfig struct {
 	util.MongoDatabaseConfig
 }
 
-type getBlockByMongoDBKind = func(cfg *SeedServiceConfig) (*seedBlock, *seedError)
+type getBlockByMongoDBKind = func(cfg *SeedServiceConfig) (*seedBlock, error)
 
 var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 	type mongoDBItem struct {
@@ -40,10 +40,10 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 		if !isExist {
 			_, _ = util.WithMongoClient(
 				cfg.GetURI(),
-				2*time.Second,
+				3*time.Second,
 				func(client *mongo.Client, ctx context.Context) (interface{}, error) {
 					collection := client.Database(cfg.DataBase).Collection(cfg.Collection)
-					_, _ = collection.InsertOne(ctx, bson.M{"_id": 0, "seed": 1})
+					_, _ = collection.InsertOne(ctx, mongoDBItem{ID: 0, Seed: 1})
 					cur, err := collection.Find(ctx, bson.M{"_id": 0})
 					if err != nil {
 						return nil, err
@@ -58,7 +58,7 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 		return
 	}
 
-	return func(cfg *SeedServiceConfig) (*seedBlock, *seedError) {
+	return func(cfg *SeedServiceConfig) (*seedBlock, error) {
 		fnCreateIfNotExist(cfg)
 		if ret, err := util.WithMongoClient(
 			cfg.GetURI(),
@@ -66,7 +66,6 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 			func(client *mongo.Client, ctx context.Context) (interface{}, error) {
 				collection := client.Database(cfg.DataBase).Collection(cfg.Collection)
 				result := mongoDBItem{}
-
 				if err := collection.FindOneAndUpdate(
 					ctx,
 					bson.M{"_id": 0},
@@ -78,9 +77,9 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 				}
 			},
 		); err != nil {
-			return nil, &seedError{message: err.Error(), time: time.Now()}
-		} else if blcokID := ret.(int64); blcokID < 0 {
-			return nil, &seedError{message: "internal error", time: time.Now()}
+			return nil, err
+		} else if blockID := ret.(int64); blockID <= 0 {
+			return nil, errors.New("internal database error")
 		} else {
 			return &seedBlock{blockID: ret.(int64), innerID: 0}, nil
 		}
@@ -90,11 +89,6 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 type seedBlock struct {
 	blockID int64
 	innerID int64
-}
-
-type seedError struct {
-	message string
-	time    time.Time
 }
 
 func (p *seedBlock) getSeed() (ret int64) {
@@ -120,10 +114,6 @@ func newSeedManager(config *SeedServiceConfig) *seedManager {
 		time:      time.Now().Add(-time.Hour),
 	}
 }
-
-//const currBlockIsOK = 0
-//const currBlockIsNil = 1
-//const currBlockIsExhausted = 2
 
 func (p *seedManager) getSeedInner() (int64, *seedBlock) {
 	if block := (*seedBlock)(atomic.LoadPointer(&p.currBlock)); block != nil {
@@ -164,7 +154,7 @@ func (p *seedManager) getSeed() (int64, error) {
 		) {
 			atomic.StorePointer(&p.nextBlock, nil)
 			go func() {
-				if block, seedErr := getBlockByMongoDB(p.config); seedErr == nil {
+				if block, err := getBlockByMongoDB(p.config); err == nil {
 					atomic.StorePointer(&p.nextBlock, unsafe.Pointer(block))
 				}
 			}()
