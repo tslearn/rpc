@@ -402,6 +402,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
+				stream.SetWritePosToBodyStart()
 				fn.(func(Context, String) Return)(ctx, arg0)
 				return true
 			}
@@ -413,6 +414,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
+				stream.SetWritePosToBodyStart()
 				fn.(func(Context, Int64) Return)(ctx, arg0)
 				return true
 			}
@@ -424,6 +426,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
+				stream.SetWritePosToBodyStart()
 				fn.(func(Context, Map) Return)(ctx, arg0)
 				return true
 			}
@@ -449,6 +452,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
+				stream.SetWritePosToBodyStart()
 				fn.(func(
 					Context, Bool, Int64, Uint64,
 					Float64, String, Bytes, Array, Map,

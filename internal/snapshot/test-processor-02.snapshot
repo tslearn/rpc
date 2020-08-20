@@ -23,6 +23,7 @@ func fnCache0(ctx rpc.Context, stream *rpc.Stream, fn interface{}) bool {
 	if !stream.IsReadFinish() {
 		return false
 	} else {
+		stream.SetWritePosToBodyStart()
 		fn.(func(rpc.Context) rpc.Return)(ctx)
 		return true
 	}

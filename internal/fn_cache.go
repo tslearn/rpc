@@ -77,7 +77,10 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	}
 
 	sb.AppendString(fmt.Sprintf(
-		" else {\n\t\tfn.(func(%s) rpc.Return)(%s)\n\t\treturn true\n\t}\n}",
+		" else {"+
+			"\n\t\tstream.SetWritePosToBodyStart()"+
+			"\n\t\tfn.(func(%s) rpc.Return)(%s)\n\t\t"+
+			"return true\n\t}\n}",
 		strings.Join(typeArray, ", "),
 		strings.Join(argArray, ", "),
 	))

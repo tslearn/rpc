@@ -58,7 +58,7 @@ func newThread(
 			inputCH:       inputCH,
 			closeCH:       unsafe.Pointer(&closeCH),
 			closeTimeout:  timeout,
-			execStream:    NewStream(),
+			execStream:    nil,
 			execDepth:     0,
 			execReplyNode: nil,
 			execArgs:      make([]reflect.Value, 0, 16),
@@ -87,8 +87,6 @@ func (p *rpcThread) Close() bool {
 			close(p.inputCH)
 			select {
 			case <-*chPtr:
-				p.execStream.Release()
-				p.execStream = nil
 				return true
 			case <-time.After(p.closeTimeout):
 				return false
@@ -162,6 +160,7 @@ func (p *rpcThread) Eval(
 ) Return {
 	timeStart := TimeNow()
 	p.execOK = true
+	p.execStream = inStream
 	ctxID := atomic.LoadUint64(&p.sequence)
 	execReplyNode := (*rpcReplyNode)(nil)
 
@@ -187,8 +186,7 @@ func (p *rpcThread) Eval(
 				}
 
 				// clean up
-				inStream.Reset()
-				p.execStream = inStream
+				p.execStream = nil
 				atomic.StorePointer(&p.execReplyNode, nil)
 				p.execFrom = ""
 				p.execArgs = p.execArgs[:0]
@@ -214,7 +212,8 @@ func (p *rpcThread) Eval(
 			}
 
 			// callback
-			onEvalBack(p.execStream)
+			inStream.SetReadPosToBodyStart()
+			onEvalBack(inStream)
 
 			// count
 			if execReplyNode != nil {
@@ -252,8 +251,6 @@ func (p *rpcThread) Eval(
 	} else if p.execFrom, ok = inStream.ReadUnsafeString(); !ok {
 		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
-		// copy head
-		copy(p.execStream.GetHeader(), inStream.GetHeader())
 		// create context
 		ctx := Context{id: ctxID, thread: p}
 		// save argsPos
@@ -334,6 +331,7 @@ func (p *rpcThread) Eval(
 			}
 
 			if ok {
+				inStream.SetWritePosToBodyStart()
 				execReplyNode.reflectFn.Call(p.execArgs)
 				return emptyReturn
 			}
