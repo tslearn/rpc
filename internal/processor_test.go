@@ -365,11 +365,12 @@ func TestProcessor_mountNode(t *testing.T) {
 	}}, ErrorKindRuntimePanic, "service is nil", "DebugMessage")
 
 	// Test(4)
-	s4, source1 := NewService().AddChildService("s", NewService()), GetFileLine(0)
+	s4, source1 := NewService().
+		AddChildService("s", NewService(), nil), GetFileLine(0)
 	fnTestMount(
 		[]*ServiceMeta{{
 			name:     "s",
-			service:  NewService().AddChildService("s", s4),
+			service:  NewService().AddChildService("s", s4, nil),
 			fileLine: "DebugMessage",
 		}},
 		ErrorKindRuntimePanic,

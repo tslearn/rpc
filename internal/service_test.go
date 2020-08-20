@@ -8,7 +8,7 @@ func TestNewServiceMeta(t *testing.T) {
 	assert := NewAssert(t)
 	service := NewService()
 
-	assert(NewServiceMeta("test", service, "debug")).Equals(&ServiceMeta{
+	assert(NewServiceMeta("test", service, "debug", nil)).Equals(&ServiceMeta{
 		name:     "test",
 		service:  service,
 		fileLine: "debug",
@@ -31,7 +31,8 @@ func TestService_AddChildService(t *testing.T) {
 
 	// Test(1)
 	child := NewService()
-	service, fileLine := NewService().AddChildService("ch", child), GetFileLine(0)
+	service, fileLine := NewService().
+		AddChildService("ch", child, nil), GetFileLine(0)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(1)
 	assert(len(service.replies)).Equals(0)
