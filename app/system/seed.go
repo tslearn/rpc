@@ -17,10 +17,9 @@ import (
 const seedManagerBlockSize = 1 << 20
 
 type SeedServiceConfig struct {
-	URI        string
-	DataBase   string
 	Collection string
 	Obscure    bool
+	util.MongoDatabaseConfig
 }
 
 type getBlockByMongoDBKind = func(cfg *SeedServiceConfig) (*seedBlock, *seedError)
@@ -40,7 +39,7 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 
 		if !isExist {
 			_, _ = util.WithMongoClient(
-				cfg.URI,
+				cfg.GetURI(),
 				2*time.Second,
 				func(client *mongo.Client, ctx context.Context) (interface{}, error) {
 					collection := client.Database(cfg.DataBase).Collection(cfg.Collection)
@@ -62,7 +61,7 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 	return func(cfg *SeedServiceConfig) (*seedBlock, *seedError) {
 		fnCreateIfNotExist(cfg)
 		if ret, err := util.WithMongoClient(
-			cfg.URI,
+			cfg.GetURI(),
 			2*time.Second,
 			func(client *mongo.Client, ctx context.Context) (interface{}, error) {
 				collection := client.Database(cfg.DataBase).Collection(cfg.Collection)

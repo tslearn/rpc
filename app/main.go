@@ -3,14 +3,21 @@ package main
 import (
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/system"
+	"github.com/rpccloud/rpc/app/util"
 )
 
 func main() {
 	seedServiceConfig := &system.SeedServiceConfig{
-		URI:        "mongodb://dev:World2019@192.168.1.61:27017/dev?w=majority",
-		DataBase:   "dev",
 		Collection: "seedtest04",
 		Obscure:    false,
+		MongoDatabaseConfig: util.MongoDatabaseConfig{
+			DataBase:    "dev",
+			Host:        "192.168.1.61",
+			Port:        27017,
+			Username:    "dev",
+			Password:    "World2019",
+			ExtraParams: "w=majority",
+		},
 	}
 
 	rpc.NewServer().
