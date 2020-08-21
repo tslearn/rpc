@@ -1,7 +1,9 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -12,9 +14,19 @@ func TestServer_Debug(t *testing.T) {
 }
 
 func TestServer_Basic(t *testing.T) {
+	seed := uint64(0)
 	userService := NewService().
 		Reply("SayHello", func(ctx Context, userName string) Return {
-			return ctx.OK("hello " + userName)
+			if ret, err := ctx.Call("#.user:GetIndex"); err != nil {
+				return ctx.Error(err)
+			} else if idx, ok := ret.(uint64); !ok {
+				return ctx.Error(errors.New("#.user:GetIndex return type error"))
+			} else {
+				return ctx.OK(idx)
+			}
+		}).
+		Reply("GetIndex", func(ctx Context) Return {
+			return ctx.OK(atomic.AddUint64(&seed, 1))
 		})
 
 	server := NewServer().SetNumOfThreads(1).
@@ -39,12 +51,16 @@ func TestServer_Basic(t *testing.T) {
 				fmt.Sprintf("ts%d", idx),
 			))
 		}(i)
-
+		// fmt.Println(client.SendMessage(
+		//   5*time.Second,
+		//   "#.user:SayHello",
+		//   fmt.Sprintf("ts"),
+		// ))
 		time.Sleep(30 * time.Millisecond)
 	}
 
 	_ = client.Close()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	server.Close()
 }

@@ -155,6 +155,69 @@ func (p Context) Error(value error) Return {
 	}
 }
 
+func (p Context) Call(target string, args ...interface{}) (interface{}, Error) {
+
+	if thread := p.thread; thread == nil {
+		return nil, NewReplyPanic(
+			"Context is illegal in current goroutine",
+		)
+	} else {
+		frame := thread.top
+		stream := NewStream()
+		// write target
+		stream.WriteString(target)
+		// write depth
+		stream.WriteUint64(frame.depth + 1)
+		// write from
+		stream.WriteString(frame.from)
+		// write args
+		for i := 0; i < len(args); i++ {
+			if stream.Write(args[i]) != StreamWriteOK {
+				return nil, NewReplyPanic(ConcatString(
+					ConvertOrdinalToString(uint(i+1)),
+					" argument not supported",
+				))
+			}
+		}
+
+		if !thread.pushFrame(p.id) {
+			stream.Release()
+			return nil, NewReplyPanic(
+				"Context is illegal in current goroutine",
+			)
+		}
+
+		defer func() {
+			thread.popFrame()
+			stream.Release()
+		}()
+
+		thread.Eval(
+			stream,
+			func(stream *Stream) {},
+			func(thread *rpcThread) {},
+		)
+
+		// parse the stream
+		if errKind, ok := stream.ReadUint64(); !ok {
+			return nil, NewProtocolError(ErrStringBadStream)
+		} else if errKind == uint64(ErrorKindNone) {
+			if ret, ok := stream.Read(); ok {
+				return ret, nil
+			}
+			return nil, NewProtocolError(ErrStringBadStream)
+		} else if message, ok := stream.ReadString(); !ok {
+			return nil, NewProtocolError(ErrStringBadStream)
+		} else if dbg, ok := stream.ReadString(); !ok {
+			return nil, NewProtocolError(ErrStringBadStream)
+		} else if !stream.IsReadFinish() {
+			return nil, NewProtocolError(ErrStringBadStream)
+		} else {
+			return nil, NewError(ErrorKind(errKind), message, dbg)
+		}
+	}
+}
+
 func (p Context) GetServiceData() interface{} {
 	if thread := p.thread; thread == nil {
 		reportPanic(

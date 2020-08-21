@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -605,8 +606,17 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
+				Reply("inner", func(ctx Context, mp int64) Return {
+					return ctx.OK(mp)
+				}).
 				Reply("sayHello", func(ctx Context, mp int64) Return {
-					return ctx.OK(true)
+					if ret, err := ctx.Call("#.user:inner", mp); err != nil {
+						return ctx.Error(err)
+					} else if idx, ok := ret.(int64); !ok {
+						return ctx.Error(errors.New("#.user:inner return type error"))
+					} else {
+						return ctx.OK(idx)
+					}
 				}),
 			fileLine: "",
 		}},
@@ -615,8 +625,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		},
 	)
 
+	b.ResetTimer()
 	b.ReportAllocs()
-	// b.N = 50000000
+	b.N = 50000000
 	b.SetParallelism(1024)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

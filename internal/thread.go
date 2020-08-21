@@ -52,11 +52,11 @@ func (p *rpcThreadFrame) Reset() {
 	atomic.StorePointer(&p.replyNode, nil)
 	p.from = ""
 	p.args = p.args[:0]
-	p.next = nil
 }
 
 func (p *rpcThreadFrame) Release() {
 	p.Reset()
+	p.next = nil
 	rpcThreadFrameCache.Put(p)
 }
 
@@ -96,7 +96,7 @@ func newThread(
 			closeCH:      unsafe.Pointer(&closeCH),
 			closeTimeout: timeout,
 			top:          newRPCThreadFrame(),
-			sequence:     rand.Uint64() % (1 << 56),
+			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
 		}
 
 		retCH <- thread
@@ -131,15 +131,20 @@ func (p *rpcThread) Close() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) pushFrame() {
-	frame := newRPCThreadFrame()
-	frame.next = p.top
-	p.top = frame
+func (p *rpcThread) pushFrame(ctxID uint64) bool {
+	if status := atomic.LoadUint64(&p.top.status); (status/2)*2 == ctxID {
+		frame := newRPCThreadFrame()
+		frame.next = p.top
+		p.top = frame
+		return true
+	} else {
+		return false
+	}
 }
 
 func (p *rpcThread) popFrame() bool {
 	if frame := p.top.next; frame != nil {
-		frame.Release()
+		p.top.Release()
 		p.top = frame
 		return true
 	} else {
