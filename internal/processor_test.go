@@ -606,11 +606,11 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
-				Reply("inner", func(ctx Context, mp int64) Return {
-					return ctx.OK(mp)
+				Reply("inner", func(ctx Context) Return {
+					return ctx.OK(int64(0))
 				}).
 				Reply("sayHello", func(ctx Context, mp int64) Return {
-					if ret, err := ctx.Call("#.user:inner", mp); err != nil {
+					if ret, err := ctx.Call("#.user:inner"); err != nil {
 						return ctx.Error(err)
 					} else if idx, ok := ret.(int64); !ok {
 						return ctx.Error(errors.New("#.user:inner return type error"))

@@ -395,6 +395,16 @@ type testFuncCache struct{}
 
 func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	switch fnString {
+	case "":
+		return func(ctx Context, stream *Stream, fn interface{}) bool {
+			if !stream.IsReadFinish() {
+				return false
+			} else {
+				stream.SetWritePosToBodyStart()
+				fn.(func(Context) Return)(ctx)
+				return true
+			}
+		}
 	case "S":
 		return func(ctx Context, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadString(); !ok {
