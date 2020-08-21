@@ -1189,7 +1189,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	// Test(32) return without ctx
 	ret32, error32, panic32 := testRunWithProcessor(true, nil,
 		func(ctx Context, bVal bool) Return {
-			return Return{}
+			return emptyReturn
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()

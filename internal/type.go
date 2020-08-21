@@ -64,9 +64,10 @@ type Map = map[string]interface{}
 type Any = interface{}
 
 // Return ...
-type Return struct{}
+type returnObject struct{}
+type Return = *returnObject
 
-var emptyReturn = Return{}
+var emptyReturn = &returnObject{}
 
 // Context ...
 type Context struct {
