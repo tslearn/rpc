@@ -274,18 +274,22 @@ func TestRpcThread_setReturn(t *testing.T) {
 	thread := getFakeThread(false)
 
 	// Test(1)
+	thread.top.status = atomic.LoadUint64(&thread.sequence)
 	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence))).
 		Equals(rpcThreadReturnStatusOK)
 
-	// Test(2)
+		// Test(2)
+	thread.top.status = atomic.LoadUint64(&thread.sequence)
 	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 1)).
 		Equals(rpcThreadReturnStatusAlreadyCalled)
 
-	// Test(3)
+		// Test(3)
+	thread.top.status = atomic.LoadUint64(&thread.sequence)
 	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 2)).
 		Equals(rpcThreadReturnStatusContextError)
 
-	// Test(4)
+		// Test(4)
+	thread.top.status = atomic.LoadUint64(&thread.sequence)
 	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) + 1)).
 		Equals(rpcThreadReturnStatusContextError)
 }

@@ -39,6 +39,7 @@ type rpcThreadFrame struct {
 	args      []reflect.Value
 	from      string
 	ok        bool
+	status    uint64
 	next      *rpcThreadFrame
 }
 
@@ -147,9 +148,10 @@ func (p *rpcThread) popFrame() bool {
 }
 
 func (p *rpcThread) setReturn(contextID uint64) int {
-	if atomic.CompareAndSwapUint64(&p.sequence, contextID, contextID+1) {
+	frame := p.top
+	if atomic.CompareAndSwapUint64(&frame.status, contextID, contextID+1) {
 		return rpcThreadReturnStatusOK
-	} else if delta := atomic.LoadUint64(&p.sequence) - contextID; delta == 1 {
+	} else if delta := atomic.LoadUint64(&frame.status) - contextID; delta == 1 {
 		return rpcThreadReturnStatusAlreadyCalled
 	} else {
 		return rpcThreadReturnStatusContextError
@@ -175,7 +177,7 @@ func (p *rpcThread) GetExecReplyDebug() string {
 }
 
 func (p *rpcThread) returnError(ctxID uint64, err Error) Return {
-	atomic.StoreUint64(&p.sequence, ctxID+1)
+	atomic.StoreUint64(&p.top.status, ctxID+1)
 	return p.WriteError(err)
 }
 
@@ -211,7 +213,9 @@ func (p *rpcThread) Eval(
 	frame := p.top
 	frame.ok = true
 	frame.stream = inStream
-	ctxID := atomic.LoadUint64(&p.sequence)
+	p.sequence += 2
+	ctxID := p.sequence
+	frame.status = ctxID
 	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
@@ -239,9 +243,9 @@ func (p *rpcThread) Eval(
 				onEvalFinish(p)
 			}()
 
-			if atomic.CompareAndSwapUint64(&p.sequence, ctxID+1, ctxID+2) {
+			if atomic.CompareAndSwapUint64(&frame.status, ctxID+1, ctxID+2) {
 				// return ok
-			} else if atomic.CompareAndSwapUint64(&p.sequence, ctxID, ctxID+2) {
+			} else if atomic.CompareAndSwapUint64(&frame.status, ctxID, ctxID+2) {
 				// Context.OK or Context.Error not called
 				p.WriteError(
 					NewReplyPanic(
