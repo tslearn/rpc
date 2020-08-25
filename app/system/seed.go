@@ -18,13 +18,9 @@ var SeedService = rpc.NewService().
 
 const seedManagerBlockSize = 1 << 20
 
-type SeedServiceConfig struct {
-	Collection string
-	Obscure    bool
-	util.MongoDatabaseConfig
-}
-
-type getBlockByMongoDBKind = func(cfg *SeedServiceConfig) (*seedBlock, error)
+type getBlockByMongoDBKind = func(
+	cfg *util.MongoDatabaseConfig,
+) (*seedBlock, error)
 
 var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 	type mongoDBItem struct {
@@ -35,16 +31,16 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 	isExist := false
 	mu := sync.Mutex{}
 
-	fnCreateIfNotExist := func(cfg *SeedServiceConfig) {
+	fnCreateIfNotExist := func(cfg *util.MongoDatabaseConfig) {
 		mu.Lock()
 		defer mu.Unlock()
 
 		if !isExist {
 			_, _ = util.WithMongoClient(
-				cfg.GetURI(),
+				cfg.URI,
 				3*time.Second,
 				func(client *mongo.Client, ctx context.Context) (interface{}, error) {
-					collection := client.Database(cfg.DataBase).Collection(cfg.Collection)
+					collection := client.Database(cfg.DataBase).Collection("system_seed")
 					_, _ = collection.InsertOne(ctx, mongoDBItem{ID: 0, Seed: 1})
 					cur, err := collection.Find(ctx, bson.M{"_id": 0})
 					if err != nil {
@@ -60,13 +56,13 @@ var getBlockByMongoDB = (func() getBlockByMongoDBKind {
 		return
 	}
 
-	return func(cfg *SeedServiceConfig) (*seedBlock, error) {
+	return func(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
 		fnCreateIfNotExist(cfg)
 		if ret, err := util.WithMongoClient(
-			cfg.GetURI(),
+			cfg.URI,
 			2*time.Second,
 			func(client *mongo.Client, ctx context.Context) (interface{}, error) {
-				collection := client.Database(cfg.DataBase).Collection(cfg.Collection)
+				collection := client.Database(cfg.DataBase).Collection("system_seed")
 				result := mongoDBItem{}
 				if err := collection.FindOneAndUpdate(
 					ctx,
@@ -101,14 +97,14 @@ func (p *seedBlock) getSeed() (ret int64) {
 }
 
 type seedManager struct {
-	config    *SeedServiceConfig
+	config    *util.MongoDatabaseConfig
 	currBlock unsafe.Pointer
 	nextBlock unsafe.Pointer
 	time      time.Time
 	sync.Mutex
 }
 
-func newSeedManager(config *SeedServiceConfig) *seedManager {
+func newSeedManager(config *util.MongoDatabaseConfig) *seedManager {
 	return &seedManager{
 		config:    config,
 		currBlock: nil,
@@ -178,7 +174,7 @@ func getSeedWrapper() interface{} {
 	getManager := func(ctx rpc.Context) (*seedManager, error) {
 		if ptr := atomic.LoadPointer(&manager); ptr != nil {
 			return (*seedManager)(ptr), nil
-		} else if cfg, ok := ctx.GetServiceData().(*SeedServiceConfig); !ok {
+		} else if cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig); !ok {
 			return nil, errors.New("config error")
 		} else {
 			mu.Lock()

@@ -294,6 +294,16 @@ func (p *Processor) mountNode(
 				AddPrefixPerLine(item.addMeta.fileLine, "\t"),
 			))
 		} else {
+			// do onMount
+			if nodeMeta.service.onMount != nil {
+				if err := nodeMeta.service.onMount(nodeMeta.data); err != nil {
+					return NewRuntimePanic(fmt.Sprintf(
+						"onMount error: %s",
+						err.Error(),
+					)).AddDebug(nodeMeta.fileLine)
+				}
+			}
+
 			node := &rpcServiceNode{
 				path:    servicePath,
 				addMeta: nodeMeta,
