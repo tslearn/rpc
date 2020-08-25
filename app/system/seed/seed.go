@@ -1,4 +1,4 @@
-package system
+package seed
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"unsafe"
 )
 
-var SeedService = rpc.NewServiceWithOnMount(onMountSeedService).
+var Service = rpc.NewServiceWithOnMount(onMountSeedService).
 	Reply("GetSeed", getSeedWrapper())
 
 const seedManagerBlockSize = 1 << 20
@@ -23,7 +23,7 @@ type mongoDBSeedItem struct {
 	Seed int64 `bson:"seed"`
 }
 
-func onMountSeedService(data interface{}) error {
+func onMountSeedService(_ *rpc.Service, data interface{}) error {
 	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
 		_, err := util.WithMongoClient(
 			cfg.URI,

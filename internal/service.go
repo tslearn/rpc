@@ -34,7 +34,7 @@ type Service struct {
 	children []*ServiceMeta  // all the children node meta pointer
 	replies  []*rpcReplyMeta // all the replies meta pointer
 	fileLine string          // where the service define in source file
-	onMount  func(data interface{}) error
+	onMount  func(service *Service, data interface{}) error
 	Lock
 }
 
@@ -49,7 +49,9 @@ func NewService() *Service {
 }
 
 // NewServiceWithOnMount define a new service with onMount
-func NewServiceWithOnMount(onMount func(data interface{}) error) *Service {
+func NewServiceWithOnMount(
+	onMount func(service *Service, data interface{}) error,
+) *Service {
 	return &Service{
 		children: nil,
 		replies:  nil,

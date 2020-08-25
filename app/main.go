@@ -25,7 +25,7 @@ func test() {
 
 	fmt.Println(client.SendMessage(
 		5*time.Second,
-		"#.system:GetSeed",
+		"#.system.seed:GetSeed",
 	))
 }
 
@@ -41,7 +41,7 @@ func main() {
 	}()
 
 	rpc.NewServer().
-		AddService("system", system.SeedService, mongoDatabaseConfig).
+		AddService("system", system.Service, mongoDatabaseConfig).
 		ListenWebSocket("0.0.0.0:8080").
 		Serve()
 }

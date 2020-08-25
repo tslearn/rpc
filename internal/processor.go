@@ -296,7 +296,10 @@ func (p *Processor) mountNode(
 		} else {
 			// do onMount
 			if nodeMeta.service.onMount != nil {
-				if err := nodeMeta.service.onMount(nodeMeta.data); err != nil {
+				if err := nodeMeta.service.onMount(
+					nodeMeta.service,
+					nodeMeta.data,
+				); err != nil {
 					return NewRuntimePanic(fmt.Sprintf(
 						"onMount error: %s",
 						err.Error(),
