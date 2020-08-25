@@ -13,76 +13,72 @@ import (
 	"unsafe"
 )
 
-var SeedService = rpc.NewService().
+var SeedService = rpc.NewServiceWithOnMount(onMountSeedService).
 	Reply("GetSeed", getSeedWrapper())
 
 const seedManagerBlockSize = 1 << 20
 
-type getBlockByMongoDBKind = func(
-	cfg *util.MongoDatabaseConfig,
-) (*seedBlock, error)
+type mongoDBSeedItem struct {
+	ID   int64 `bson:"_id"`
+	Seed int64 `bson:"seed"`
+}
 
-var getBlockByMongoDB = (func() getBlockByMongoDBKind {
-	type mongoDBItem struct {
-		ID   int64 `bson:"_id"`
-		Seed int64 `bson:"seed"`
-	}
-
-	isExist := false
-	mu := sync.Mutex{}
-
-	fnCreateIfNotExist := func(cfg *util.MongoDatabaseConfig) {
-		mu.Lock()
-		defer mu.Unlock()
-
-		if !isExist {
-			_, _ = util.WithMongoClient(
-				cfg.URI,
-				3*time.Second,
-				func(client *mongo.Client, ctx context.Context) (interface{}, error) {
-					collection := client.Database(cfg.DataBase).Collection("system_seed")
-					_, _ = collection.InsertOne(ctx, mongoDBItem{ID: 0, Seed: 1})
-					cur, err := collection.Find(ctx, bson.M{"_id": 0})
-					if err != nil {
-						return nil, err
-					}
-					isExist = cur.RemainingBatchLength() == 1
-					_ = cur.Close(ctx)
-
-					return nil, nil
-				},
-			)
-		}
-		return
-	}
-
-	return func(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
-		fnCreateIfNotExist(cfg)
-		if ret, err := util.WithMongoClient(
+func onMountSeedService(data interface{}) error {
+	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
+		_, err := util.WithMongoClient(
 			cfg.URI,
-			2*time.Second,
+			3*time.Second,
 			func(client *mongo.Client, ctx context.Context) (interface{}, error) {
 				collection := client.Database(cfg.DataBase).Collection("system_seed")
-				result := mongoDBItem{}
-				if err := collection.FindOneAndUpdate(
-					ctx,
-					bson.M{"_id": 0},
-					bson.M{"$inc": bson.M{"seed": 1}},
-				).Decode(&result); err != nil {
-					return int64(-1), err
+				_, _ = collection.InsertOne(ctx, mongoDBSeedItem{ID: 0, Seed: 1})
+				cur, err := collection.Find(ctx, bson.M{"_id": 0})
+				if err != nil {
+					return nil, err
+				}
+
+				defer func() {
+					_ = cur.Close(ctx)
+				}()
+
+				if cur.RemainingBatchLength() == 1 {
+					return nil, nil
 				} else {
-					return result.Seed, nil
+					return nil, errors.New("cannot init database")
 				}
 			},
-		); err != nil {
-			return nil, err
-		} else if blockID := ret.(int64); blockID <= 0 {
-			return nil, errors.New("internal database error")
-		} else {
-			return &seedBlock{blockID: ret.(int64), innerID: 0}, nil
-		}
+		)
+
+		return err
+	} else {
+		return errors.New("config error")
 	}
-})()
+}
+
+func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
+	if ret, err := util.WithMongoClient(
+		cfg.URI,
+		2*time.Second,
+		func(client *mongo.Client, ctx context.Context) (interface{}, error) {
+			collection := client.Database(cfg.DataBase).Collection("system_seed")
+			result := mongoDBSeedItem{}
+			if err := collection.FindOneAndUpdate(
+				ctx,
+				bson.M{"_id": 0},
+				bson.M{"$inc": bson.M{"seed": 1}},
+			).Decode(&result); err != nil {
+				return int64(-1), err
+			} else {
+				return result.Seed, nil
+			}
+		},
+	); err != nil {
+		return nil, err
+	} else if blockID := ret.(int64); blockID <= 0 {
+		return nil, errors.New("internal database error")
+	} else {
+		return &seedBlock{blockID: ret.(int64), innerID: 0}, nil
+	}
+}
 
 type seedBlock struct {
 	blockID int64
@@ -175,7 +171,7 @@ func getSeedWrapper() interface{} {
 		if ptr := atomic.LoadPointer(&manager); ptr != nil {
 			return (*seedManager)(ptr), nil
 		} else if cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig); !ok {
-			return nil, errors.New("config error")
+			return nil, errors.New("config data error")
 		} else {
 			mu.Lock()
 			defer mu.Unlock()

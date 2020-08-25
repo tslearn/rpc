@@ -53,6 +53,9 @@ type Service = internal.Service
 // NewService ...
 var NewService = internal.NewService
 
+// NewServiceWithOnMount ...
+var NewServiceWithOnMount = internal.NewServiceWithOnMount
+
 // Error ...
 type Error = internal.Error
 
