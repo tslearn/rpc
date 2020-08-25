@@ -36,7 +36,7 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
 		test()
 	}()
 
