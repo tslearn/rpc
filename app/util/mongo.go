@@ -15,17 +15,17 @@ type MongoDatabaseConfig struct {
 func WithMongoClient(
 	uri string,
 	timeout time.Duration,
-	fn func(client *mongo.Client, ctx context.Context) (interface{}, error),
-) (ret interface{}, err error) {
+	fn func(client *mongo.Client, ctx context.Context) error,
+) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	if client, e := mongo.Connect(ctx, options.Client().ApplyURI(uri)); e != nil {
-		return nil, e
+		return e
 	} else {
 		defer func() {
 			if e = client.Disconnect(ctx); e != nil && err != nil {
-				ret, err = nil, e
+				err = nil
 			}
 		}()
 		return fn(client, ctx)

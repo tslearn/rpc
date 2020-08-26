@@ -25,15 +25,15 @@ type mongoDBSeedItem struct {
 
 func onMountSeedService(_ *rpc.Service, data interface{}) error {
 	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-		_, err := util.WithMongoClient(
+		return util.WithMongoClient(
 			cfg.URI,
 			3*time.Second,
-			func(client *mongo.Client, ctx context.Context) (interface{}, error) {
+			func(client *mongo.Client, ctx context.Context) error {
 				collection := client.Database(cfg.DataBase).Collection("system_seed")
 				_, _ = collection.InsertOne(ctx, mongoDBSeedItem{ID: 0, Seed: 1})
 				cur, err := collection.Find(ctx, bson.M{"_id": 0})
 				if err != nil {
-					return nil, err
+					return err
 				}
 
 				defer func() {
@@ -41,24 +41,23 @@ func onMountSeedService(_ *rpc.Service, data interface{}) error {
 				}()
 
 				if cur.RemainingBatchLength() == 1 {
-					return nil, nil
+					return nil
 				} else {
-					return nil, errors.New("cannot init database")
+					return errors.New("cannot init database")
 				}
 			},
 		)
-
-		return err
 	} else {
 		return errors.New("config error")
 	}
 }
 
 func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
-	if ret, err := util.WithMongoClient(
+	blockID := int64(0)
+	if err := util.WithMongoClient(
 		cfg.URI,
 		2*time.Second,
-		func(client *mongo.Client, ctx context.Context) (interface{}, error) {
+		func(client *mongo.Client, ctx context.Context) error {
 			collection := client.Database(cfg.DataBase).Collection("system_seed")
 			result := mongoDBSeedItem{}
 			if err := collection.FindOneAndUpdate(
@@ -66,17 +65,18 @@ func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
 				bson.M{"_id": 0},
 				bson.M{"$inc": bson.M{"seed": 1}},
 			).Decode(&result); err != nil {
-				return int64(-1), err
+				return err
 			} else {
-				return result.Seed, nil
+				blockID = result.Seed
+				return nil
 			}
 		},
 	); err != nil {
 		return nil, err
-	} else if blockID := ret.(int64); blockID <= 0 {
+	} else if blockID <= 0 {
 		return nil, errors.New("internal database error")
 	} else {
-		return &seedBlock{blockID: ret.(int64), innerID: 0}, nil
+		return &seedBlock{blockID: blockID, innerID: 0}, nil
 	}
 }
 

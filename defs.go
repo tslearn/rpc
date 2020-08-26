@@ -67,3 +67,6 @@ type ReplyCache = internal.ReplyCache
 
 // ReplyCacheFunc ...
 type ReplyCacheFunc = internal.ReplyCacheFunc
+
+// GetRandString ...
+var GetRandString = internal.GetRandString

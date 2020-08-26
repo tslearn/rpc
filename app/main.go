@@ -4,17 +4,10 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/system"
+	"github.com/rpccloud/rpc/app/user"
 	"github.com/rpccloud/rpc/app/util"
 	"time"
 )
-
-// "mongodb://%s:%s@%s:%d/%s?%s",
-//			p.Username,
-//			p.Password,
-//			p.Host,
-//			p.Port,
-//			p.DataBase,
-//			p.ExtraParams,
 
 func test() {
 	client, err := rpc.Dial("ws://127.0.0.1:8080/")
@@ -25,7 +18,9 @@ func test() {
 
 	fmt.Println(client.SendMessage(
 		5*time.Second,
-		"#.system.seed:GetSeed",
+		"#.user.phone:Create",
+		"+86",
+		"13011112222",
 	))
 }
 
@@ -36,12 +31,13 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Second)
 		test()
 	}()
 
 	rpc.NewServer().
 		AddService("system", system.Service, mongoDatabaseConfig).
+		AddService("user", user.Service, mongoDatabaseConfig).
 		ListenWebSocket("0.0.0.0:8080").
 		Serve()
 }
