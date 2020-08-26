@@ -80,7 +80,7 @@ func create(
 				// Create collections.
 				wcMajority := writeconcern.New(
 					writeconcern.WMajority(),
-					writeconcern.WTimeout(1*time.Second),
+					writeconcern.WTimeout(3*time.Second),
 				)
 				opts := options.Collection().SetWriteConcern(wcMajority)
 				users := client.Database(cfg.DataBase).Collection("user", opts)

@@ -56,7 +56,7 @@ func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
 	blockID := int64(0)
 	if err := util.WithMongoClient(
 		cfg.URI,
-		2*time.Second,
+		3*time.Second,
 		func(client *mongo.Client, ctx context.Context) error {
 			collection := client.Database(cfg.DataBase).Collection("system_seed")
 			result := mongoDBSeedItem{}

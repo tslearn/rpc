@@ -16,23 +16,26 @@ func test() {
 	}
 	defer client.Close()
 
+	fmt.Println("Start Req")
 	fmt.Println(client.SendMessage(
 		5*time.Second,
 		"#.user.phone:Create",
 		"+86",
-		"13011112229",
+		"13011112236",
 	))
 }
 
 func main() {
 	mongoDatabaseConfig := &util.MongoDatabaseConfig{
-		URI: "mongodb+srv://dev:World2019@cluster0.epusb.mongodb.net/dev" +
-			"?retryWrites=true&w=majority",
+		URI: "mongodb://dev:World2019@" +
+			"192.168.1.61:27011," +
+			"192.168.1.61:27012," +
+			"192.168.1.61:27013/dev?replicaSet=rs0",
 		DataBase: "dev",
 	}
 
 	go func() {
-		time.Sleep(6 * time.Second)
+		time.Sleep(3 * time.Second)
 		test()
 	}()
 

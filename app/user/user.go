@@ -19,7 +19,7 @@ var Service = rpc.NewServiceWithOnMount(
 			func(client *mongo.Client, ctx context.Context) error {
 				return client.Database(cfg.DataBase).CreateCollection(ctx, "user")
 			},
-		); err != nil && !strings.HasSuffix(err.Error(), "already exists") {
+		); err != nil && !strings.Contains(err.Error(), "already exists") {
 			return err
 		} else {
 			service.AddChildService("phone", phoneService, data)
