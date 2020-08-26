@@ -15,13 +15,11 @@ func test() {
 		panic(err)
 	}
 	defer client.Close()
-
-	fmt.Println("Start Req")
 	fmt.Println(client.SendMessage(
 		5*time.Second,
 		"#.user.phone:Create",
 		"+86",
-		"13011112236",
+		"13011112239",
 	))
 }
 
@@ -35,7 +33,7 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 		test()
 	}()
 

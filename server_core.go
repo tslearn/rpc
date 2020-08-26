@@ -287,7 +287,19 @@ func (p *serverCore) listenWebSocket(addr string, dbg string) {
 }
 
 func (p *serverCore) onReturnStream(stream *internal.Stream) {
-	if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
+	if stream.GetSessionID() == 0 {
+		errKind, ok1 := stream.ReadUint64()
+		message, ok2 := stream.ReadString()
+		dbgMessage, ok3 := stream.ReadString()
+		if ok1 && ok2 && ok3 {
+			p.onError(0, internal.NewError(
+				internal.ErrorKind(errKind),
+				message,
+				dbgMessage,
+			))
+		}
+		stream.Release()
+	} else if item, ok := p.sessionMap.Load(stream.GetSessionID()); !ok {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
 		stream.Release()
