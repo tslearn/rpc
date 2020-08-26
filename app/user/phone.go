@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/util"
 	"github.com/rpccloud/rpc/internal"
@@ -55,11 +54,9 @@ func create(
 		return ctx.Error(errors.New("config error"))
 	}
 
-	uid := int64(0)
-
 	if ret, err := ctx.Call("#.system.seed:GetSeed"); err != nil {
 		return ctx.Error(err)
-	} else if uid, ok = ret.(int64); !ok || uid <= 0 {
+	} else if uid, ok := ret.(int64); !ok || uid <= 0 {
 		return ctx.Error(errors.New("internal error"))
 	} else {
 		globalPhone := internal.ConcatString(zone, " ", phone)
@@ -76,7 +73,7 @@ func create(
 			SecurityL3: rpc.GetRandString(256),
 		}
 
-		util.WithMongoClient(
+		if err := util.WithMongoClient(
 			cfg.URI,
 			3*time.Second,
 			func(client *mongo.Client, ctx context.Context) error {
@@ -100,7 +97,6 @@ func create(
 					if _, err := phones.InsertOne(sessCtx, insertPhone); err != nil {
 						return nil, err
 					}
-
 					return nil, nil
 				}
 
@@ -110,15 +106,16 @@ func create(
 					return err
 				}
 				defer session.EndSession(ctx)
-				result, err := session.WithTransaction(ctx, callback)
-				if err != nil {
+				if _, err = session.WithTransaction(ctx, callback); err != nil {
 					return err
 				}
-				fmt.Printf("result: %v\n", result)
+
 				return nil
 			},
-		)
+		); err != nil {
+			return ctx.Error(err)
+		} else {
+			return ctx.OK(true)
+		}
 	}
-
-	return ctx.OK("createUserByPhone")
 }

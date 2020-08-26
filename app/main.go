@@ -20,18 +20,19 @@ func test() {
 		5*time.Second,
 		"#.user.phone:Create",
 		"+86",
-		"13011112222",
+		"13011112229",
 	))
 }
 
 func main() {
 	mongoDatabaseConfig := &util.MongoDatabaseConfig{
-		URI:      "mongodb://dev:World2019@192.168.1.61:27017/dev?w=majority",
+		URI: "mongodb+srv://dev:World2019@cluster0.epusb.mongodb.net/dev" +
+			"?retryWrites=true&w=majority",
 		DataBase: "dev",
 	}
 
 	go func() {
-		time.Sleep(time.Second)
+		time.Sleep(6 * time.Second)
 		test()
 	}()
 
