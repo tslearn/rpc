@@ -70,11 +70,12 @@ func (p *mongoDBManagerPool) waitConn(
 }
 
 func (p *mongoDBManagerPool) onTimer() {
-	fmt.Println("onTimer")
+	defer func() {
+		recover()
+	}()
+
 	now := rpc.TimeNow()
-
 	start := (*mongoDBConn)(nil)
-
 	for {
 		select {
 		case ret := <-p.ch:
