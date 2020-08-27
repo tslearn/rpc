@@ -49,19 +49,17 @@ func (p *mongoManagerPool) getConn(ctx context.Context) (*mongoConn, error) {
 				isFull = true
 			}
 		}()
+
 		if !isFull {
 			return conn, err
 		}
-		return p.waitConn(ctx)
-	}
-}
 
-func (p *mongoManagerPool) waitConn(ctx context.Context) (*mongoConn, error) {
-	select {
-	case ret := <-p.ch:
-		return ret, nil
-	case <-ctx.Done():
-		return nil, errors.New("timeout")
+		select {
+		case ret := <-p.ch:
+			return ret, nil
+		case <-ctx.Done():
+			return nil, errors.New("timeout")
+		}
 	}
 }
 
