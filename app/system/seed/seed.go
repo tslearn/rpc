@@ -17,7 +17,7 @@ import (
 var Service = rpc.NewServiceWithOnMount(
 	func(_ *rpc.Service, data interface{}) error {
 		if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-			return util.WithMongoClient(cfg.URI, 3*time.Second,
+			return util.WithMongoClient(cfg, 3*time.Second,
 				func(client *mongo.Client, ctx context.Context) error {
 					_, err := client.
 						Database(cfg.DataBase).
@@ -46,9 +46,7 @@ type mongoDBSeedItem struct {
 
 func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
 	blockID := int64(0)
-	if err := util.WithMongoClient(
-		cfg.URI,
-		3*time.Second,
+	if err := util.WithMongoClient(cfg, 3*time.Second,
 		func(client *mongo.Client, ctx context.Context) error {
 			collection := client.Database(cfg.DataBase).Collection("system_seed")
 			result := mongoDBSeedItem{}

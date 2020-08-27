@@ -23,7 +23,7 @@ type mongoDBUserPhone struct {
 var phoneService = rpc.NewServiceWithOnMount(
 	func(service *internal.Service, data interface{}) error {
 		if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-			return util.WithMongoClient(cfg.URI, 3*time.Second,
+			return util.WithMongoClient(cfg, 3*time.Second,
 				func(client *mongo.Client, ctx context.Context) error {
 					collection := client.Database(cfg.DataBase).Collection("user_phone")
 					opts := options.Index().SetUnique(true).SetName("user_phone_index")
@@ -73,9 +73,7 @@ func create(
 			SecurityL3: rpc.GetRandString(256),
 		}
 
-		if err := util.WithMongoClient(
-			cfg.URI,
-			3*time.Second,
+		if err := util.WithMongoClient(cfg, 3*time.Second,
 			func(client *mongo.Client, ctx context.Context) error {
 				// Create collections.
 				wcMajority := writeconcern.New(
