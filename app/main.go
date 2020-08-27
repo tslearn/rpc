@@ -19,7 +19,7 @@ func test() {
 		5*time.Second,
 		"#.user.phone:Create",
 		"+86",
-		"13011112239",
+		"13011112242",
 	))
 }
 
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(1 * time.Second)
+		time.Sleep(1500 * time.Millisecond)
 		test()
 	}()
 

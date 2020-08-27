@@ -7,6 +7,7 @@ import (
 	"github.com/rpccloud/rpc/app/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,26 +26,18 @@ type mongoDBSeedItem struct {
 
 func onMountSeedService(_ *rpc.Service, data interface{}) error {
 	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-		return util.WithMongoClient(
-			cfg.URI,
-			3*time.Second,
+		return util.WithMongoClient(cfg.URI, 3*time.Second,
 			func(client *mongo.Client, ctx context.Context) error {
-				collection := client.Database(cfg.DataBase).Collection("system_seed")
-				_, _ = collection.InsertOne(ctx, mongoDBSeedItem{ID: 0, Seed: 1})
-				cur, err := collection.Find(ctx, bson.M{"_id": 0})
-				if err != nil {
-					return err
-				}
-
-				defer func() {
-					_ = cur.Close(ctx)
-				}()
-
-				if cur.RemainingBatchLength() == 1 {
-					return nil
-				} else {
-					return errors.New("cannot init database")
-				}
+				_, err := client.
+					Database(cfg.DataBase).
+					Collection("system_seed").
+					UpdateOne(
+						ctx,
+						bson.M{"_id": 0},
+						bson.M{"$inc": bson.M{"seed": int64(1)}},
+						options.Update().SetUpsert(true),
+					)
+				return err
 			},
 		)
 	} else {
@@ -63,7 +56,8 @@ func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
 			if err := collection.FindOneAndUpdate(
 				ctx,
 				bson.M{"_id": 0},
-				bson.M{"$inc": bson.M{"seed": 1}},
+				bson.M{"$inc": bson.M{"seed": int64(1)}},
+				options.FindOneAndUpdate().SetUpsert(true),
 			).Decode(&result); err != nil {
 				return err
 			} else {
