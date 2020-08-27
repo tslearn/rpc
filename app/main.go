@@ -19,7 +19,7 @@ func test() {
 		5*time.Second,
 		"#.user.phone:Create",
 		"+86",
-		"13011112243",
+		"13011112248",
 	))
 }
 
