@@ -17,26 +17,6 @@ type MongoDatabaseConfig struct {
 	MaxConnections int
 }
 
-//func WithMongoClient(
-//  uri string,
-//  timeout time.Duration,
-//  fn func(client *mongo.Client, ctx context.Context) error,
-//) (err error) {
-//  ctx, cancel := context.WithDeadline(context.Background(), rpc.TimeNow().Add(timeout))
-//  defer cancel()
-//
-//  if client, e := mongo.Connect(ctx, options.Client().ApplyURI(uri)); e != nil {
-//    return e
-//  } else {
-//    defer func() {
-//      if e = client.Disconnect(ctx); e != nil && err != nil {
-//        err = nil
-//      }
-//    }()
-//    return fn(client, ctx)
-//  }
-//}
-
 type mongoDBConn struct {
 	client       *mongo.Client
 	lastUsedTime time.Time
@@ -90,7 +70,38 @@ func (p *mongoDBManagerPool) waitConn(
 }
 
 func (p *mongoDBManagerPool) onTimer() {
+	fmt.Println("onTimer")
+	now := rpc.TimeNow()
 
+	start := (*mongoDBConn)(nil)
+
+	for {
+		select {
+		case ret := <-p.ch:
+			if ret == start {
+				p.ch <- ret
+				return
+			} else if now.Sub(ret.lastUsedTime) > 10*time.Second {
+				p.Lock()
+				p.currSize -= 1
+				p.Unlock()
+
+				ctx, cancel := context.WithDeadline(
+					context.Background(),
+					rpc.TimeNow().Add(3*time.Second),
+				)
+				_ = ret.client.Disconnect(ctx)
+				cancel()
+			} else {
+				if start == nil {
+					start = ret
+				}
+				p.ch <- ret
+			}
+		default:
+			return
+		}
+	}
 }
 
 type withClientType = func(
@@ -103,10 +114,13 @@ var WithMongoClient = func() withClientType {
 	mp := sync.Map{}
 
 	go func() {
-		mp.Range(func(k, v interface{}) bool {
-			v.(*mongoDBManagerPool).onTimer()
-			return true
-		})
+		for {
+			mp.Range(func(k, v interface{}) bool {
+				v.(*mongoDBManagerPool).onTimer()
+				return true
+			})
+			time.Sleep(2 * time.Second)
+		}
 	}()
 
 	return func(
