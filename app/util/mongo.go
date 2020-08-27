@@ -17,27 +17,25 @@ type MongoDatabaseConfig struct {
 	MaxConnections int
 }
 
-type mongoDBConn struct {
+type mongoConn struct {
 	client       *mongo.Client
 	lastUsedTime time.Time
 }
 
-type mongoDBManagerPool struct {
+type mongoManagerPool struct {
 	uri      string
-	ch       chan *mongoDBConn
+	ch       chan *mongoConn
 	currSize int
 	maxSize  int
 	sync.Mutex
 }
 
-func (p *mongoDBManagerPool) getConn(
-	ctx context.Context,
-) (*mongoDBConn, error) {
+func (p *mongoManagerPool) getConn(ctx context.Context) (*mongoConn, error) {
 	select {
 	case ret := <-p.ch:
 		return ret, nil
 	default:
-		conn, err, isFull := (*mongoDBConn)(nil), error(nil), false
+		conn, err, isFull := (*mongoConn)(nil), error(nil), false
 		func() {
 			p.Lock()
 			defer p.Unlock()
@@ -45,7 +43,7 @@ func (p *mongoDBManagerPool) getConn(
 				client, err := mongo.Connect(ctx, options.Client().ApplyURI(p.uri))
 				if err == nil {
 					p.currSize++
-					conn = &mongoDBConn{client: client}
+					conn = &mongoConn{client: client}
 				}
 			} else {
 				isFull = true
@@ -58,9 +56,7 @@ func (p *mongoDBManagerPool) getConn(
 	}
 }
 
-func (p *mongoDBManagerPool) waitConn(
-	ctx context.Context,
-) (*mongoDBConn, error) {
+func (p *mongoManagerPool) waitConn(ctx context.Context) (*mongoConn, error) {
 	select {
 	case ret := <-p.ch:
 		return ret, nil
@@ -69,13 +65,13 @@ func (p *mongoDBManagerPool) waitConn(
 	}
 }
 
-func (p *mongoDBManagerPool) onTimer() {
+func (p *mongoManagerPool) onTimer() {
 	defer func() {
 		recover()
 	}()
 
 	now := rpc.TimeNow()
-	start := (*mongoDBConn)(nil)
+	start := (*mongoConn)(nil)
 	for {
 		select {
 		case ret := <-p.ch:
@@ -117,7 +113,7 @@ var WithMongoClient = func() withClientType {
 	go func() {
 		for {
 			mp.Range(func(k, v interface{}) bool {
-				v.(*mongoDBManagerPool).onTimer()
+				v.(*mongoManagerPool).onTimer()
 				return true
 			})
 			time.Sleep(10 * time.Second)
@@ -129,19 +125,19 @@ var WithMongoClient = func() withClientType {
 		timeout time.Duration,
 		fn func(client *mongo.Client, ctx context.Context) error,
 	) (ret error) {
-		pool := (*mongoDBManagerPool)(nil)
+		pool := (*mongoManagerPool)(nil)
 		if cfg == nil {
 			return errors.New("config error")
 		} else if v, ok := mp.Load(cfg.URI); !ok {
-			pool = &mongoDBManagerPool{
+			pool = &mongoManagerPool{
 				uri:      cfg.URI,
-				ch:       make(chan *mongoDBConn, cfg.MaxConnections),
+				ch:       make(chan *mongoConn, cfg.MaxConnections),
 				currSize: 0,
 				maxSize:  cfg.MaxConnections,
 			}
 			mp.Store(cfg.URI, pool)
 		} else {
-			pool = v.(*mongoDBManagerPool)
+			pool = v.(*mongoManagerPool)
 		}
 
 		ctx, cancel := context.WithDeadline(
