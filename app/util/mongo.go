@@ -81,7 +81,7 @@ func (p *mongoDBManagerPool) onTimer() {
 			if ret == start {
 				p.ch <- ret
 				return
-			} else if now.Sub(ret.lastUsedTime) > 10*time.Second {
+			} else if now.Sub(ret.lastUsedTime) > 120*time.Second {
 				p.Lock()
 				p.currSize -= 1
 				p.Unlock()
@@ -119,7 +119,7 @@ var WithMongoClient = func() withClientType {
 				v.(*mongoDBManagerPool).onTimer()
 				return true
 			})
-			time.Sleep(2 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}()
 
