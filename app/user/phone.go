@@ -66,7 +66,7 @@ func create(
 			Code:        "",
 			SendTimeMS:  0,
 		}
-		insertUser := MongoDBUser{
+		insertUser := mongoDBUser{
 			ID:         uid,
 			SecurityL1: rpc.GetRandString(256),
 			SecurityL2: rpc.GetRandString(256),

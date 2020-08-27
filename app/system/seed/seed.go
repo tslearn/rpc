@@ -14,35 +14,34 @@ import (
 	"unsafe"
 )
 
-var Service = rpc.NewServiceWithOnMount(onMountSeedService).
-	Reply("GetSeed", getSeedWrapper())
+var Service = rpc.NewServiceWithOnMount(
+	func(_ *rpc.Service, data interface{}) error {
+		if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
+			return util.WithMongoClient(cfg.URI, 3*time.Second,
+				func(client *mongo.Client, ctx context.Context) error {
+					_, err := client.
+						Database(cfg.DataBase).
+						Collection("system_seed").
+						UpdateOne(
+							ctx,
+							bson.M{"_id": 0},
+							bson.M{"$inc": bson.M{"seed": int64(1)}},
+							options.Update().SetUpsert(true),
+						)
+					return err
+				},
+			)
+		} else {
+			return errors.New("config error")
+		}
+	},
+).Reply("GetSeed", getSeedWrapper())
 
 const seedManagerBlockSize = 1 << 20
 
 type mongoDBSeedItem struct {
 	ID   int64 `bson:"_id"`
 	Seed int64 `bson:"seed"`
-}
-
-func onMountSeedService(_ *rpc.Service, data interface{}) error {
-	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-		return util.WithMongoClient(cfg.URI, 3*time.Second,
-			func(client *mongo.Client, ctx context.Context) error {
-				_, err := client.
-					Database(cfg.DataBase).
-					Collection("system_seed").
-					UpdateOne(
-						ctx,
-						bson.M{"_id": 0},
-						bson.M{"$inc": bson.M{"seed": int64(1)}},
-						options.Update().SetUpsert(true),
-					)
-				return err
-			},
-		)
-	} else {
-		return errors.New("config error")
-	}
 }
 
 func getBlockByMongoDB(cfg *util.MongoDatabaseConfig) (*seedBlock, error) {
