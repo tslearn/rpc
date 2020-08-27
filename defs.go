@@ -70,3 +70,6 @@ type ReplyCacheFunc = internal.ReplyCacheFunc
 
 // GetRandString ...
 var GetRandString = internal.GetRandString
+
+// TimeNow
+var TimeNow = internal.TimeNow

@@ -29,7 +29,8 @@ func main() {
 			"192.168.1.61:27011," +
 			"192.168.1.61:27012," +
 			"192.168.1.61:27013/dev?replicaSet=rs0",
-		DataBase: "dev",
+		DataBase:       "dev",
+		MaxConnections: 1000,
 	}
 
 	go func() {
