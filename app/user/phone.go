@@ -16,39 +16,61 @@ import (
 type mongoDBUserPhone struct {
 	ID          int64  `bson:"_id"`
 	GlobalPhone string `bson:"globalPhone"`
-	Code        string `bson:"code"`
-	SendTimeMS  int64  `bson:"sendTimeMS"`
+	Password    string `bson:"password"`
+	Active      bool   `bson:"active"`
 }
 
-var phoneService = rpc.NewServiceWithOnMount(
-	func(service *internal.Service, data interface{}) error {
-		if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
-			return util.WithMongoClient(cfg, 3*time.Second,
-				func(client *mongo.Client, ctx context.Context) error {
-					collection := client.Database(cfg.DataBase).Collection("user_phone")
-					opts := options.Index().SetUnique(true).SetName("user_phone_index")
-					if name, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
-						Keys: bson.M{"globalPhone": 1}, Options: opts,
-					}); err != nil {
-						return err
-					} else if name != "user_phone_index" {
-						return errors.New("internal error")
-					} else {
-						return nil
-					}
-				},
-			)
-		} else {
-			return errors.New("config error")
-		}
-	},
-).Reply("Create", create)
+var phoneService = rpc.NewServiceWithOnMount(onPhoneServiceMount).
+	Reply("Create", create).
+	Reply("GetCode", getCode)
+
+func onPhoneServiceMount(service *internal.Service, data interface{}) error {
+	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
+		return util.WithMongoClient(cfg, 3*time.Second,
+			func(client *mongo.Client, ctx context.Context) error {
+				collection := client.Database(cfg.DataBase).Collection("user_phone")
+				opts := options.Index().SetUnique(true).SetName("user_phone_index")
+				if name, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+					Keys: bson.M{"globalPhone": 1}, Options: opts,
+				}); err != nil {
+					return err
+				} else if name != "user_phone_index" {
+					return errors.New("internal error")
+				} else {
+					return nil
+				}
+			},
+		)
+	} else {
+		return errors.New("config error")
+	}
+}
+
+func getGlobalPhone(zone string, phone string) string {
+	return internal.ConcatString(zone, " ", phone)
+}
+
+func getCode(ctx rpc.Context, zone string, phone string) rpc.Return {
+	if err := getCheckManager().SendCheckCode(
+		getGlobalPhone(zone, phone),
+	); err != nil {
+		return ctx.Error(err)
+	} else {
+		return ctx.OK(true)
+	}
+}
 
 func create(
 	ctx rpc.Context,
 	zone string,
 	phone string,
+	checkCode string,
 ) rpc.Return {
+	globalPhone := getGlobalPhone(zone, phone)
+	if !getCheckManager().CheckCode(globalPhone, checkCode) {
+		return ctx.Error(errors.New("check code error"))
+	}
+
 	cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig)
 	if !ok || cfg == nil {
 		return ctx.Error(errors.New("config error"))
@@ -59,12 +81,11 @@ func create(
 	} else if uid, ok := ret.(int64); !ok || uid <= 0 {
 		return ctx.Error(errors.New("internal error"))
 	} else {
-		globalPhone := internal.ConcatString(zone, " ", phone)
 		insertPhone := mongoDBUserPhone{
 			ID:          uid,
 			GlobalPhone: globalPhone,
-			Code:        "",
-			SendTimeMS:  0,
+			Password:    "",
+			Active:      false,
 		}
 		insertUser := mongoDBUser{
 			ID:         uid,
@@ -113,7 +134,7 @@ func create(
 		); err != nil {
 			return ctx.Error(err)
 		} else {
-			return ctx.OK(true)
+			return ctx.OK(insertUser.SecurityL1)
 		}
 	}
 }

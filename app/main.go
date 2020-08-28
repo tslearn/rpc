@@ -15,6 +15,7 @@ func test() {
 		panic(err)
 	}
 	defer client.Close()
+
 	fmt.Println(client.SendMessage(
 		5*time.Second,
 		"#.user.phone:Create",
