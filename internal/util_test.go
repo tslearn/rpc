@@ -38,94 +38,94 @@ func TestGetFuncKind(t *testing.T) {
 	assert(getFuncKind(reflect.ValueOf(fn3))).
 		Equals("", errors.New("handler 1st argument type must be rpc.Runtime"))
 
-	fn4 := func(ctx Runtime, _ bool) {}
+	fn4 := func(rt Runtime, _ bool) {}
 	assert(getFuncKind(reflect.ValueOf(fn4))).
 		Equals("", errors.New("handler return type must be rpc.Return"))
 
-	fn5 := func(ctx Runtime, _ bool) (Return, bool) { return emptyReturn, true }
+	fn5 := func(rt Runtime, _ bool) (Return, bool) { return emptyReturn, true }
 	assert(getFuncKind(reflect.ValueOf(fn5))).
 		Equals("", errors.New("handler return type must be rpc.Return"))
 
-	fn6 := func(ctx Runtime, _ bool) bool { return true }
+	fn6 := func(rt Runtime, _ bool) bool { return true }
 	assert(getFuncKind(reflect.ValueOf(fn6))).
 		Equals("", errors.New("handler return type must be rpc.Return"))
 
-	fn7 := func(ctx Runtime,
+	fn7 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
 		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn7))).Equals("BIUFSXAM", nil)
 
-	fn8 := func(ctx Runtime,
+	fn8 := func(rt Runtime,
 		_ int32, _ int64, _ uint64, _ float64,
 		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn8))).
 		Equals("", errors.New("handler 2nd argument type int32 is not supported"))
 
-	fn9 := func(ctx Runtime,
+	fn9 := func(rt Runtime,
 		_ bool, _ int32, _ uint64, _ float64,
 		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn9))).
 		Equals("", errors.New("handler 3rd argument type int32 is not supported"))
 
-	fn10 := func(ctx Runtime,
+	fn10 := func(rt Runtime,
 		_ bool, _ int64, _ int32, _ float64,
 		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn10))).
 		Equals("", errors.New("handler 4th argument type int32 is not supported"))
 
-	fn11 := func(ctx Runtime,
+	fn11 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ int32,
 		_ string, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn11))).
 		Equals("", errors.New("handler 5th argument type int32 is not supported"))
 
-	fn12 := func(ctx Runtime,
+	fn12 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
 		_ int32, _ Bytes, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn12))).
 		Equals("", errors.New("handler 6th argument type int32 is not supported"))
 
-	fn13 := func(ctx Runtime,
+	fn13 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
 		_ string, _ int32, _ Array, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn13))).
 		Equals("", errors.New("handler 7th argument type int32 is not supported"))
 
-	fn14 := func(ctx Runtime,
+	fn14 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
 		_ string, _ Bytes, _ int32, _ Map,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn14))).
 		Equals("", errors.New("handler 8th argument type int32 is not supported"))
 
-	fn15 := func(ctx Runtime,
+	fn15 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
 		_ string, _ Bytes, _ Array, _ int32,
 	) Return {
-		return ctx.OK(true)
+		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn15))).
 		Equals("", errors.New("handler 9th argument type int32 is not supported"))
@@ -396,53 +396,53 @@ type testFuncCache struct{}
 func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	switch fnString {
 	case "":
-		return func(ctx Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if !stream.IsReadFinish() {
 				return false
 			} else {
 				stream.SetWritePosToBodyStart()
-				fn.(func(Runtime) Return)(ctx)
+				fn.(func(Runtime) Return)(rt)
 				return true
 			}
 		}
 	case "S":
-		return func(ctx Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadString(); !ok {
 				return false
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
 				stream.SetWritePosToBodyStart()
-				fn.(func(Runtime, String) Return)(ctx, arg0)
+				fn.(func(Runtime, String) Return)(rt, arg0)
 				return true
 			}
 		}
 	case "I":
-		return func(ctx Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadInt64(); !ok {
 				return false
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
 				stream.SetWritePosToBodyStart()
-				fn.(func(Runtime, Int64) Return)(ctx, arg0)
+				fn.(func(Runtime, Int64) Return)(rt, arg0)
 				return true
 			}
 		}
 	case "M":
-		return func(ctx Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadMap(); !ok {
 				return false
 			} else if !stream.IsReadFinish() {
 				return false
 			} else {
 				stream.SetWritePosToBodyStart()
-				fn.(func(Runtime, Map) Return)(ctx, arg0)
+				fn.(func(Runtime, Map) Return)(rt, arg0)
 				return true
 			}
 		}
 	case "BIUFSXAM":
-		return func(ctx Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadBool(); !ok {
 				return false
 			} else if arg1, ok := stream.ReadInt64(); !ok {
@@ -466,7 +466,7 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 				fn.(func(
 					Runtime, Bool, Int64, Uint64,
 					Float64, String, Bytes, Array, Map,
-				) Return)(ctx, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+				) Return)(rt, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 				return true
 			}
 		}
@@ -606,14 +606,14 @@ func testRunWithProcessor(
 
 func testRunOnContext(
 	isDebug bool,
-	fn func(processor *Processor, ctx Runtime) Return,
+	fn func(processor *Processor, rt Runtime) Return,
 ) (interface{}, Error, Error) {
 	processorCH := make(chan *Processor)
 	return testRunWithProcessor(
 		isDebug,
 		nil,
-		func(ctx Runtime) Return {
-			return fn(<-processorCH, ctx)
+		func(rt Runtime) Return {
+			return fn(<-processorCH, rt)
 		},
 		func(processor *Processor) *Stream {
 			stream := NewStream()

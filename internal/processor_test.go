@@ -82,9 +82,9 @@ func TestNewProcessor(t *testing.T) {
 		5*time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Runtime) Return {
+			service: NewService().Reply("Eval", func(rt Runtime) Return {
 				time.Sleep(time.Second)
-				return ctx.OK(true)
+				return rt.OK(true)
 			}),
 			fileLine: "",
 		}},
@@ -136,12 +136,12 @@ func TestProcessor_Close(t *testing.T) {
 		time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Runtime) Return {
+			service: NewService().Reply("Eval", func(rt Runtime) Return {
 				lock2.Lock()
-				replyFileLine2 = ctx.thread.GetExecReplyDebug()
+				replyFileLine2 = rt.thread.GetExecReplyDebug()
 				lock2.Unlock()
 				time.Sleep(4 * time.Second)
-				return ctx.OK(true)
+				return rt.OK(true)
 			}),
 			fileLine: "",
 		}},
@@ -178,12 +178,12 @@ func TestProcessor_Close(t *testing.T) {
 		time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Runtime) Return {
+			service: NewService().Reply("Eval", func(rt Runtime) Return {
 				lock3.Lock()
-				replyFileLine3 = ctx.thread.GetExecReplyDebug()
+				replyFileLine3 = rt.thread.GetExecReplyDebug()
 				lock3.Unlock()
 				time.Sleep(4 * time.Second)
-				return ctx.OK(true)
+				return rt.OK(true)
 			}),
 			fileLine: "",
 		}},
@@ -295,8 +295,8 @@ func TestProcessor_BuildCache(t *testing.T) {
 		5*time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Runtime) Return {
-				return ctx.OK(true)
+			service: NewService().Reply("Eval", func(rt Runtime) Return {
+				return rt.OK(true)
 			}),
 			fileLine: "",
 		}},
@@ -467,7 +467,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			fileLine: "Debug1",
 		}},
 		ErrorKindRuntimePanic,
-		"handler must be func(ctx rpc.Runtime, ...) rpc.Return",
+		"handler must be func(rt rpc.Runtime, ...) rpc.Return",
 		"DebugReply",
 	)
 
@@ -499,11 +499,11 @@ func TestProcessor_mountNode(t *testing.T) {
 				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
-					handler:  func(ctx Runtime) Return { return ctx.OK(true) },
+					handler:  func(rt Runtime) Return { return rt.OK(true) },
 					fileLine: "DebugReply1",
 				}, {
 					name:     "Eval",
-					handler:  func(ctx Runtime) Return { return ctx.OK(true) },
+					handler:  func(rt Runtime) Return { return rt.OK(true) },
 					fileLine: "DebugReply2",
 				}},
 				fileLine: "DebugService",
@@ -518,18 +518,18 @@ func TestProcessor_mountNode(t *testing.T) {
 	// Test(12)
 	replyMeta12Eval1 := &rpcReplyMeta{
 		name: "Eval1",
-		handler: func(ctx Runtime, _a Array) Return {
-			return ctx.OK(true)
+		handler: func(rt Runtime, _a Array) Return {
+			return rt.OK(true)
 		},
 		fileLine: "DebugEval1",
 	}
 	replyMeta12Eval2 := &rpcReplyMeta{
 		name: "Eval2",
-		handler: func(ctx Runtime,
+		handler: func(rt Runtime,
 			_ bool, _ int64, _ uint64, _ float64,
 			_ string, _ Bytes, _ Array, _ Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		fileLine: "DebugEval2",
 	}
@@ -606,16 +606,16 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
-				Reply("inner", func(ctx Runtime) Return {
-					return ctx.OK(int64(0))
+				Reply("inner", func(rt Runtime) Return {
+					return rt.OK(int64(0))
 				}).
-				Reply("sayHello", func(ctx Runtime, mp int64) Return {
-					if ret, err := ctx.Call("#.user:inner"); err != nil {
-						return ctx.Error(err)
+				Reply("sayHello", func(rt Runtime, mp int64) Return {
+					if ret, err := rt.Call("#.user:inner"); err != nil {
+						return rt.Error(err)
 					} else if idx, ok := ret.(int64); !ok {
-						return ctx.Error(errors.New("#.user:inner return type error"))
+						return rt.Error(errors.New("#.user:inner return type error"))
 					} else {
-						return ctx.OK(idx)
+						return rt.OK(idx)
 					}
 				}),
 			fileLine: "",

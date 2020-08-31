@@ -359,7 +359,7 @@ func (p *Processor) mountReply(
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
 		return NewRuntimePanic(fmt.Sprintf(
-			"handler must be func(ctx %s, ...) %s",
+			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)

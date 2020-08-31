@@ -15,11 +15,11 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	defer sb.Release()
 
 	sb.AppendString(fmt.Sprintf(
-		"func %s(ctx rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {\n",
+		"func %s(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {\n",
 		name,
 	))
 
-	argArray := []string{"ctx"}
+	argArray := []string{"rt"}
 	typeArray := []string{"rpc.Runtime"}
 
 	if kind == "" {

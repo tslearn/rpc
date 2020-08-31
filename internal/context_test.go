@@ -18,9 +18,9 @@ func TestContextObject_OK(t *testing.T) {
 
 	// Test(2) return value type error
 	source2 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// return value type error
-		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+		ret, source := rt.OK(make(chan bool)), GetFileLine(0)
 		source2 = source
 		return ret
 	})).Equals(
@@ -31,16 +31,16 @@ func TestContextObject_OK(t *testing.T) {
 	)
 
 	// Test(3) OK
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
-		return ctx.OK(true)
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+		return rt.OK(true)
 	})).Equals(true, nil, nil)
 
 	// Test(4) rpcThreadReturnStatusAlreadyCalled
 	source4 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// OK called twice
-		ctx.OK(true)
-		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+		rt.OK(true)
+		ret, source := rt.OK(make(chan bool)), GetFileLine(0)
 		source4 = source
 		return ret
 	})).Equals(
@@ -52,10 +52,10 @@ func TestContextObject_OK(t *testing.T) {
 
 	// Test(5) rpcThreadReturnStatusContextError
 	source5 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
-		ctx.OK(true)
-		ctx.id = 0
-		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+		rt.OK(true)
+		rt.id = 0
+		ret, source := rt.OK(make(chan bool)), GetFileLine(0)
 		source5 = source
 		return ret
 	})).Equals(
@@ -92,9 +92,9 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(3)
 	source3 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
-		ret, source := ctx.Error(NewReplyError("error")), GetFileLine(0)
-		source3 = ctx.thread.GetReplyNode().path + " " + source
+	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
+		ret, source := rt.Error(NewReplyError("error")), GetFileLine(0)
+		source3 = rt.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
 		return ret
 	})).Equals(
@@ -105,9 +105,9 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(4)
 	source4 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
-		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
-		source4 = ctx.thread.GetReplyNode().path + " " + source
+	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
+		ret, source := rt.Error(errors.New("error")), GetFileLine(0)
+		source4 = rt.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
 		return ret
 	})).Equals(
@@ -118,8 +118,8 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(5)
 	source5 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
-		ret, source := ctx.Error(nil), GetFileLine(0)
+	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
+		ret, source := rt.Error(nil), GetFileLine(0)
 		source5 = source
 		assert(ret).Equals(emptyReturn)
 		return ret
@@ -132,10 +132,10 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(6) rpcThreadReturnStatusAlreadyCalled
 	source6 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// OK called twice
-		ctx.OK(true)
-		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+		rt.OK(true)
+		ret, source := rt.Error(errors.New("error")), GetFileLine(0)
 		source6 = source
 		return ret
 	})).Equals(
@@ -147,10 +147,10 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(7) rpcThreadReturnStatusContextError
 	source7 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
-		ctx.OK(true)
-		ctx.id = 0
-		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+		rt.OK(true)
+		rt.id = 0
+		ret, source := rt.Error(errors.New("error")), GetFileLine(0)
 		source7 = source
 		return ret
 	})).Equals(

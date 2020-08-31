@@ -68,9 +68,9 @@ func TestRpcThread_Close(t *testing.T) {
 	// Test(2) cant close
 	assert(testRunWithCatchPanic(func() {
 		_, _, _ = testRunWithProcessor(true, nil,
-			func(ctx Runtime, name string) Return {
+			func(rt Runtime, name string) Return {
 				time.Sleep(8 * time.Second)
-				return ctx.OK("hello " + name)
+				return rt.OK("hello " + name)
 			},
 			func(_ *Processor) *Stream {
 				stream := NewStream()
@@ -134,8 +134,8 @@ func TestRpcThread_WriteError(t *testing.T) {
 	// Test(1) ok
 	source1 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
+		func(rt Runtime, name string) Return {
+			ret, source := rt.Error(errors.New("error")), GetFileLine(0)
 			source1 = source
 			return ret
 		},
@@ -157,10 +157,10 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	// Test(1) value is endless loop
 	source1 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
+		func(rt Runtime, name string) Return {
 			v := make(Map)
 			v["v"] = v
-			ret, source := ctx.OK(v), GetFileLine(0)
+			ret, source := rt.OK(v), GetFileLine(0)
 			source1 = source
 			return ret
 		},
@@ -189,8 +189,8 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	// Test(2) value is not support
 	source2 := ""
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
+		func(rt Runtime, name string) Return {
+			ret, source := rt.OK(make(chan bool)), GetFileLine(0)
 			source2 = source
 			return ret
 		},
@@ -212,8 +212,8 @@ func TestRpcThread_WriteOK(t *testing.T) {
 
 	// Test(3) ok
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -252,8 +252,8 @@ func TestRpcThread_Eval1(t *testing.T) {
 
 	// Test(1) read reply path error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -299,8 +299,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(0) basic
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -315,8 +315,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(1) read reply path error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -332,8 +332,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(2) reply path is not mounted
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -349,8 +349,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(3) depth data format error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -366,8 +366,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(4) depth is overflow
 	ret4, error4, panic4 := testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -389,8 +389,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(5) execFrom data format error
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, name string) Return {
-			return ctx.OK("hello " + name)
+		func(rt Runtime, name string) Return {
+			return rt.OK("hello " + name)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -406,11 +406,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(6) ok call with all type value
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -432,11 +432,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(7) error with 1st param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -463,11 +463,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(8) error with 1st param
 	ret8, error8, panic8 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -502,11 +502,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(9) error with 2nd param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -533,11 +533,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(10) error with 2nd param
 	ret10, error10, panic10 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -571,11 +571,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(11) error with 3rd param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -602,11 +602,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(12) error with 3rd param
 	ret12, error12, panic12 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -640,11 +640,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(13) error with 4th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -671,11 +671,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(14) error with 4th param
 	ret14, error14, panic14 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -709,11 +709,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(15) error with 5th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -740,11 +740,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(16) error with 5th param
 	ret16, error16, panic16 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -778,11 +778,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(17) error with 6th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -809,11 +809,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(18) error with 6th param
 	ret18, error18, panic18 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -847,11 +847,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(19) error with 7th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -878,11 +878,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(20) error with 6th param
 	ret20, error20, panic20 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -916,11 +916,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(21) error with 8th param
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -947,11 +947,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(22) error with 8th param
 	ret22, error22, panic22 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -985,11 +985,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(23) nil rpcBytes
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, a Bytes) Return {
+		func(rt Runtime, a Bytes) Return {
 			if a != nil {
-				return ctx.Error(errors.New("param is not nil"))
+				return rt.Error(errors.New("param is not nil"))
 			}
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1004,11 +1004,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(24) nil rpcArray
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, a Array) Return {
+		func(rt Runtime, a Array) Return {
 			if a != nil {
-				return ctx.Error(errors.New("param is not nil"))
+				return rt.Error(errors.New("param is not nil"))
 			}
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1023,11 +1023,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(25) nil rpcMap
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, a Map) Return {
+		func(rt Runtime, a Map) Return {
 			if a != nil {
-				return ctx.Error(errors.New("param is not nil"))
+				return rt.Error(errors.New("param is not nil"))
 			}
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1042,8 +1042,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(26) unsupported type
 	assert(testRunWithProcessor(false, nil,
-		func(ctx Runtime, a bool) Return {
-			return ctx.OK(a)
+		func(rt Runtime, a bool) Return {
+			return rt.OK(a)
 		},
 		func(processor *Processor) *Stream {
 			replyNode := processor.repliesMap["#.test:Eval"]
@@ -1064,8 +1064,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(27) test
 	ret27, error27, panic27 := testRunWithProcessor(true, nil,
-		func(ctx Runtime, bVal bool, rpcMap Map) Return {
-			return ctx.OK(bVal)
+		func(rt Runtime, bVal bool, rpcMap Map) Return {
+			return rt.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1091,8 +1091,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(28) badStream
 	assert(testRunWithProcessor(true, nil,
-		func(ctx Runtime, bVal bool, rpcMap Map) Return {
-			return ctx.OK(bVal)
+		func(rt Runtime, bVal bool, rpcMap Map) Return {
+			return rt.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1108,11 +1108,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(29) call function error
 	ret29, error29, panic29 := testRunWithProcessor(false, nil,
-		func(ctx Runtime, bVal bool) Return {
+		func(rt Runtime, bVal bool) Return {
 			if bVal {
 				panic("this is a error")
 			}
-			return ctx.OK(bVal)
+			return rt.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1136,11 +1136,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(30) call function error
 	ret30, error30, panic30 := testRunWithProcessor(true, nil,
-		func(ctx Runtime, bVal bool) Return {
+		func(rt Runtime, bVal bool) Return {
 			if bVal {
 				panic("this is a error")
 			}
-			return ctx.OK(bVal)
+			return rt.OK(bVal)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1164,8 +1164,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(31) return TransportError to make onEvalFinish panic
 	ret31, error31, panic31 := testRunWithProcessor(true, nil,
-		func(ctx Runtime, bVal bool) Return {
-			return ctx.Error(NewTransportError("it makes onEvalFinish panic"))
+		func(rt Runtime, bVal bool) Return {
+			return rt.Error(NewTransportError("it makes onEvalFinish panic"))
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1186,9 +1186,9 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert(strings.Contains(panic31.GetDebug(), "util_test.go")).IsTrue()
 	}
 
-	// Test(32) return without ctx
+	// Test(32) return without rt
 	ret32, error32, panic32 := testRunWithProcessor(true, nil,
-		func(ctx Runtime, bVal bool) Return {
+		func(rt Runtime, bVal bool) Return {
 			return emptyReturn
 		},
 		func(_ *Processor) *Stream {
@@ -1214,11 +1214,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(33) ok call with  cache
 	assert(testRunWithProcessor(true, &testFuncCache{},
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1240,11 +1240,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(34) stream is not finish
 	ret34, error34, panic34 := testRunWithProcessor(true, nil,
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1283,11 +1283,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(35) bad stream
 	assert(testRunWithProcessor(true, &testFuncCache{},
-		func(ctx Runtime,
+		func(rt Runtime,
 			b bool, i int64, u uint64, f float64, s string,
 			x Bytes, a Array, m Map,
 		) Return {
-			return ctx.OK(true)
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
@@ -1314,11 +1314,11 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	// Test(36) sequence error
 	ret36, error36, panic36 := testRunWithProcessor(true, &testFuncCache{},
-		func(ctx Runtime) Return {
-			ctx.OK(true)
+		func(rt Runtime) Return {
+			rt.OK(true)
 			// hack sequence error
-			ctx.id = ctx.id + 1
-			return ctx.OK(true)
+			rt.id = rt.id + 1
+			return rt.OK(true)
 		},
 		func(_ *Processor) *Stream {
 			stream := NewStream()
