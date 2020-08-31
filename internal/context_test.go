@@ -11,14 +11,14 @@ func TestContextObject_OK(t *testing.T) {
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		_, source1 = Context{}.OK(true), GetFileLine(0)
+		_, source1 = Runtime{}.OK(true), GetFileLine(0)
 	})).Equals(
-		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source1),
+		NewReplyPanic("Runtime is illegal in current goroutine").AddDebug(source1),
 	)
 
 	// Test(2) return value type error
 	source2 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		// return value type error
 		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
 		source2 = source
@@ -31,13 +31,13 @@ func TestContextObject_OK(t *testing.T) {
 	)
 
 	// Test(3) OK
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		return ctx.OK(true)
 	})).Equals(true, nil, nil)
 
 	// Test(4) rpcThreadReturnStatusAlreadyCalled
 	source4 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		// OK called twice
 		ctx.OK(true)
 		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
@@ -46,13 +46,13 @@ func TestContextObject_OK(t *testing.T) {
 	})).Equals(
 		nil,
 		nil,
-		NewReplyPanic("Context.OK or Context.Error has been called before").
+		NewReplyPanic("Runtime.OK or Runtime.Error has been called before").
 			AddDebug("#.test:Eval "+source4),
 	)
 
 	// Test(5) rpcThreadReturnStatusContextError
 	source5 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		ctx.OK(true)
 		ctx.id = 0
 		ret, source := ctx.OK(make(chan bool)), GetFileLine(0)
@@ -61,7 +61,7 @@ func TestContextObject_OK(t *testing.T) {
 	})).Equals(
 		nil,
 		nil,
-		NewReplyPanic("Context is illegal in current goroutine").
+		NewReplyPanic("Runtime is illegal in current goroutine").
 			AddDebug("#.test:Eval "+source5),
 	)
 }
@@ -72,27 +72,27 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		ret, source := Context{}.Error(errors.New("error")), GetFileLine(0)
+		ret, source := Runtime{}.Error(errors.New("error")), GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(emptyReturn)
 	})).Equals(NewReplyPanic(
-		"Context is illegal in current goroutine",
+		"Runtime is illegal in current goroutine",
 	).AddDebug(source1))
 
 	// Test(2)
 	source2 := ""
 	assert(testRunWithSubscribePanic(func() {
 		err := NewReplyError("error")
-		ret, source := (&Context{thread: nil}).Error(err), GetFileLine(0)
+		ret, source := (&Runtime{thread: nil}).Error(err), GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(emptyReturn)
 	})).Equals(
-		NewReplyPanic("Context is illegal in current goroutine").AddDebug(source2),
+		NewReplyPanic("Runtime is illegal in current goroutine").AddDebug(source2),
 	)
 
 	// Test(3)
 	source3 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
 		ret, source := ctx.Error(NewReplyError("error")), GetFileLine(0)
 		source3 = ctx.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
@@ -105,7 +105,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(4)
 	source4 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
 		source4 = ctx.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
@@ -118,7 +118,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(5)
 	source5 := ""
-	assert(testRunOnContext(false, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(false, func(_ *Processor, ctx Runtime) Return {
 		ret, source := ctx.Error(nil), GetFileLine(0)
 		source5 = source
 		assert(ret).Equals(emptyReturn)
@@ -132,7 +132,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(6) rpcThreadReturnStatusAlreadyCalled
 	source6 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		// OK called twice
 		ctx.OK(true)
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
@@ -141,13 +141,13 @@ func TestContextObject_Error(t *testing.T) {
 	})).Equals(
 		nil,
 		nil,
-		NewReplyPanic("Context.OK or Context.Error has been called before").
+		NewReplyPanic("Runtime.OK or Runtime.Error has been called before").
 			AddDebug("#.test:Eval "+source6),
 	)
 
 	// Test(7) rpcThreadReturnStatusContextError
 	source7 := ""
-	assert(testRunOnContext(true, func(_ *Processor, ctx Context) Return {
+	assert(testRunOnContext(true, func(_ *Processor, ctx Runtime) Return {
 		ctx.OK(true)
 		ctx.id = 0
 		ret, source := ctx.Error(errors.New("error")), GetFileLine(0)
@@ -156,7 +156,7 @@ func TestContextObject_Error(t *testing.T) {
 	})).Equals(
 		nil,
 		nil,
-		NewReplyPanic("Context is illegal in current goroutine").
+		NewReplyPanic("Runtime is illegal in current goroutine").
 			AddDebug("#.test:Eval "+source7),
 	)
 }

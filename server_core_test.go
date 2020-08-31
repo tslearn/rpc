@@ -16,7 +16,7 @@ func TestServer_Debug(t *testing.T) {
 func TestServer_Basic(t *testing.T) {
 	seed := uint64(0)
 	userService := NewService().
-		Reply("SayHello", func(ctx Context, userName string) Return {
+		Reply("SayHello", func(ctx Runtime, userName string) Return {
 			if ret, err := ctx.Call("#.user:GetIndex"); err != nil {
 				return ctx.Error(err)
 			} else if idx, ok := ret.(uint64); !ok {
@@ -25,7 +25,7 @@ func TestServer_Basic(t *testing.T) {
 				return ctx.OK(idx)
 			}
 		}).
-		Reply("GetIndex", func(ctx Context) Return {
+		Reply("GetIndex", func(ctx Runtime) Return {
 			return ctx.OK(atomic.AddUint64(&seed, 1))
 		})
 

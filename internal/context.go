@@ -1,17 +1,17 @@
 package internal
 
-// Context ...
-type Context struct {
+// Runtime ...
+type Runtime struct {
 	id     uint64
 	thread *rpcThread
 }
 
 // OK ...
-func (p Context) OK(value interface{}) Return {
+func (p Runtime) OK(value interface{}) Return {
 	if thread := p.thread; thread == nil {
 		reportPanic(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
 		return emptyReturn
@@ -29,14 +29,14 @@ func (p Context) OK(value interface{}) Return {
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
 		thread.WriteError(
 			NewReplyPanic(
-				"Context.OK or Context.Error has been called before",
+				"Runtime.OK or Runtime.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return emptyReturn
 	} else {
 		thread.WriteError(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return emptyReturn
@@ -44,11 +44,11 @@ func (p Context) OK(value interface{}) Return {
 }
 
 // Error ...
-func (p Context) Error(value error) Return {
+func (p Runtime) Error(value error) Return {
 	if thread := p.thread; thread == nil {
 		reportPanic(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
 		return emptyReturn
@@ -73,25 +73,25 @@ func (p Context) Error(value error) Return {
 	} else if code == rpcThreadReturnStatusAlreadyCalled {
 		thread.WriteError(
 			NewReplyPanic(
-				"Context.OK or Context.Error has been called before",
+				"Runtime.OK or Runtime.Error has been called before",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return emptyReturn
 	} else {
 		thread.WriteError(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		)
 		return emptyReturn
 	}
 }
 
-func (p Context) Call(target string, args ...interface{}) (interface{}, Error) {
+func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 
 	if thread := p.thread; thread == nil {
 		return nil, NewReplyPanic(
-			"Context is illegal in current goroutine",
+			"Runtime is illegal in current goroutine",
 		)
 	} else {
 		frame := thread.top
@@ -115,7 +115,7 @@ func (p Context) Call(target string, args ...interface{}) (interface{}, Error) {
 		if !thread.pushFrame(p.id) {
 			stream.Release()
 			return nil, NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			)
 		}
 
@@ -150,18 +150,18 @@ func (p Context) Call(target string, args ...interface{}) (interface{}, Error) {
 	}
 }
 
-func (p Context) GetServiceData() interface{} {
+func (p Runtime) GetServiceData() interface{} {
 	if thread := p.thread; thread == nil {
 		reportPanic(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
 		return nil
 	} else if node := thread.GetReplyNode(); node == nil {
 		reportPanic(
 			NewReplyPanic(
-				"Context is illegal in current goroutine",
+				"Runtime is illegal in current goroutine",
 			).AddDebug(GetFileLine(1)),
 		)
 		return nil

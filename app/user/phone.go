@@ -50,7 +50,7 @@ func getGlobalPhone(zone string, phone string) string {
 	return internal.ConcatString(zone, " ", phone)
 }
 
-func getCode(ctx rpc.Context, zone string, phone string) rpc.Return {
+func getCode(ctx rpc.Runtime, zone string, phone string) rpc.Return {
 	if err := getCheckManager().SendCheckCode(
 		getGlobalPhone(zone, phone),
 	); err != nil {
@@ -61,7 +61,7 @@ func getCode(ctx rpc.Context, zone string, phone string) rpc.Return {
 }
 
 func create(
-	ctx rpc.Context,
+	ctx rpc.Runtime,
 	zone string,
 	phone string,
 	checkCode string,

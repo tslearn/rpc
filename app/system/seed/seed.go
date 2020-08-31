@@ -158,7 +158,7 @@ func getSeedWrapper() interface{} {
 	manager := unsafe.Pointer(nil)
 	mu := sync.Mutex{}
 
-	getManager := func(ctx rpc.Context) (*seedManager, error) {
+	getManager := func(ctx rpc.Runtime) (*seedManager, error) {
 		if ptr := atomic.LoadPointer(&manager); ptr != nil {
 			return (*seedManager)(ptr), nil
 		} else if cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig); !ok {
@@ -173,7 +173,7 @@ func getSeedWrapper() interface{} {
 		}
 	}
 
-	return func(ctx rpc.Context) rpc.Return {
+	return func(ctx rpc.Runtime) rpc.Return {
 		if mgr, err := getManager(ctx); err != nil {
 			return ctx.Error(err)
 		} else if ret, err := mgr.getSeed(); err != nil {

@@ -31,7 +31,7 @@ type ReplyCache interface {
 
 // ReplyCacheFunc ...
 type ReplyCacheFunc = func(
-	ctx Context,
+	ctx Runtime,
 	stream *Stream,
 	fn interface{},
 ) bool

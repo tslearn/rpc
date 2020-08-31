@@ -82,7 +82,7 @@ func TestNewProcessor(t *testing.T) {
 		5*time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Context) Return {
+			service: NewService().Reply("Eval", func(ctx Runtime) Return {
 				time.Sleep(time.Second)
 				return ctx.OK(true)
 			}),
@@ -136,7 +136,7 @@ func TestProcessor_Close(t *testing.T) {
 		time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Context) Return {
+			service: NewService().Reply("Eval", func(ctx Runtime) Return {
 				lock2.Lock()
 				replyFileLine2 = ctx.thread.GetExecReplyDebug()
 				lock2.Unlock()
@@ -178,7 +178,7 @@ func TestProcessor_Close(t *testing.T) {
 		time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Context) Return {
+			service: NewService().Reply("Eval", func(ctx Runtime) Return {
 				lock3.Lock()
 				replyFileLine3 = ctx.thread.GetExecReplyDebug()
 				lock3.Unlock()
@@ -295,7 +295,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		5*time.Second,
 		[]*ServiceMeta{{
 			name: "test",
-			service: NewService().Reply("Eval", func(ctx Context) Return {
+			service: NewService().Reply("Eval", func(ctx Runtime) Return {
 				return ctx.OK(true)
 			}),
 			fileLine: "",
@@ -467,7 +467,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			fileLine: "Debug1",
 		}},
 		ErrorKindRuntimePanic,
-		"handler must be func(ctx rpc.Context, ...) rpc.Return",
+		"handler must be func(ctx rpc.Runtime, ...) rpc.Return",
 		"DebugReply",
 	)
 
@@ -487,7 +487,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			fileLine: "Debug1",
 		}},
 		ErrorKindRuntimePanic,
-		"handler 1st argument type must be rpc.Context",
+		"handler 1st argument type must be rpc.Runtime",
 		"DebugReply",
 	)
 
@@ -499,11 +499,11 @@ func TestProcessor_mountNode(t *testing.T) {
 				children: []*ServiceMeta{},
 				replies: []*rpcReplyMeta{{
 					name:     "Eval",
-					handler:  func(ctx Context) Return { return ctx.OK(true) },
+					handler:  func(ctx Runtime) Return { return ctx.OK(true) },
 					fileLine: "DebugReply1",
 				}, {
 					name:     "Eval",
-					handler:  func(ctx Context) Return { return ctx.OK(true) },
+					handler:  func(ctx Runtime) Return { return ctx.OK(true) },
 					fileLine: "DebugReply2",
 				}},
 				fileLine: "DebugService",
@@ -518,14 +518,14 @@ func TestProcessor_mountNode(t *testing.T) {
 	// Test(12)
 	replyMeta12Eval1 := &rpcReplyMeta{
 		name: "Eval1",
-		handler: func(ctx Context, _a Array) Return {
+		handler: func(ctx Runtime, _a Array) Return {
 			return ctx.OK(true)
 		},
 		fileLine: "DebugEval1",
 	}
 	replyMeta12Eval2 := &rpcReplyMeta{
 		name: "Eval2",
-		handler: func(ctx Context,
+		handler: func(ctx Runtime,
 			_ bool, _ int64, _ uint64, _ float64,
 			_ string, _ Bytes, _ Array, _ Map,
 		) Return {
@@ -570,7 +570,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	assert(getFuncKind(processor12.repliesMap["#.test:Eval1"].reflectFn)).
 		Equals("A", nil)
 	assert(processor12.repliesMap["#.test:Eval1"].callString).
-		Equals("#.test:Eval1(rpc.Context, rpc.Array) rpc.Return")
+		Equals("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
 	assert(processor12.repliesMap["#.test:Eval1"].argTypes).
 		Equals([]reflect.Type{contextType, arrayType})
 	assert(processor12.repliesMap["#.test:Eval1"].indicator).IsNotNil()
@@ -581,7 +581,7 @@ func TestProcessor_mountNode(t *testing.T) {
 	assert(getFuncKind(processor12.repliesMap["#.test:Eval2"].reflectFn)).
 		Equals("BIUFSXAM", nil)
 	assert(processor12.repliesMap["#.test:Eval2"].callString).Equals(
-		"#.test:Eval2(rpc.Context, rpc.Bool, rpc.Int64, rpc.Uint64, " +
+		"#.test:Eval2(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(processor12.repliesMap["#.test:Eval2"].argTypes).
@@ -606,10 +606,10 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
-				Reply("inner", func(ctx Context) Return {
+				Reply("inner", func(ctx Runtime) Return {
 					return ctx.OK(int64(0))
 				}).
-				Reply("sayHello", func(ctx Context, mp int64) Return {
+				Reply("sayHello", func(ctx Runtime, mp int64) Return {
 					if ret, err := ctx.Call("#.user:inner"); err != nil {
 						return ctx.Error(err)
 					} else if idx, ok := ret.(int64); !ok {

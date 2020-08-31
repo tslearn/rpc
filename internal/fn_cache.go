@@ -15,12 +15,12 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	defer sb.Release()
 
 	sb.AppendString(fmt.Sprintf(
-		"func %s(ctx rpc.Context, stream *rpc.Stream, fn interface{}) bool {\n",
+		"func %s(ctx rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {\n",
 		name,
 	))
 
 	argArray := []string{"ctx"}
-	typeArray := []string{"rpc.Context"}
+	typeArray := []string{"rpc.Runtime"}
 
 	if kind == "" {
 		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn false\n\t}")

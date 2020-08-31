@@ -251,10 +251,10 @@ func (p *rpcThread) Eval(
 			if atomic.CompareAndSwapUint64(&frame.status, ctxID+1, ctxID+2) {
 				// return ok
 			} else if atomic.CompareAndSwapUint64(&frame.status, ctxID, ctxID+2) {
-				// Context.OK or Context.Error not called
+				// Runtime.OK or Runtime.Error not called
 				p.WriteError(
 					NewReplyPanic(
-						"reply must return through Context.OK or Context.Error",
+						"reply must return through Runtime.OK or Runtime.Error",
 					).AddDebug(p.GetExecReplyDebug()),
 				)
 			} else {
@@ -306,7 +306,7 @@ func (p *rpcThread) Eval(
 		return p.returnError(ctxID, NewProtocolError(ErrStringBadStream))
 	} else {
 		// create context
-		ctx := Context{id: ctxID, thread: p}
+		ctx := Runtime{id: ctxID, thread: p}
 		// save argsPos
 		argsStreamPos := inStream.GetReadPos()
 
