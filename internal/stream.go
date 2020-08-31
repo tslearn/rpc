@@ -8,6 +8,20 @@ import (
 	"unsafe"
 )
 
+const (
+	streamPosTargetID   = 0
+	streamPosSourceID   = 8
+	streamPosZone       = 16
+	streamPosIPMap      = 18
+	streamPosConnID     = 26
+	streamPosCallbackID = 34
+	streamPosDepth      = 42
+
+	streamPosServerHead = 0
+	streamPosClientHead = 34
+	streamPosBody       = 44
+)
+
 const streamBodyPos = 33
 
 const (
