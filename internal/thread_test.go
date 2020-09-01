@@ -206,7 +206,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	)).Equals(
 		nil,
 		nil,
-		NewReplyPanic("value type (chan bool) is not supported").
+		NewReplyPanic("value type is not supported").
 			AddDebug("#.test:Eval "+source2),
 	)
 

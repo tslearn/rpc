@@ -934,7 +934,6 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	return StreamWriteOK
 }
 
-// Write write generic value to stream
 func (p *Stream) Write(v interface{}) string {
 	return p.write(v, 64)
 }
@@ -944,66 +943,64 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return " write overflow"
 	}
 
-	switch v := v.(type) {
+	switch v.(type) {
 	case nil:
 		p.WriteNil()
 		return StreamWriteOK
 	case bool:
-		p.WriteBool(v)
+		p.WriteBool(v.(bool))
 		return StreamWriteOK
 	case int:
-		p.WriteInt64(int64(v))
+		p.WriteInt64(int64(v.(int)))
 		return StreamWriteOK
 	case int8:
-		p.WriteInt64(int64(v))
+		p.WriteInt64(int64(v.(int8)))
 		return StreamWriteOK
 	case int16:
-		p.WriteInt64(int64(v))
+		p.WriteInt64(int64(v.(int16)))
 		return StreamWriteOK
 	case int32:
-		p.WriteInt64(int64(v))
+		p.WriteInt64(int64(v.(int32)))
 		return StreamWriteOK
 	case int64:
-		p.WriteInt64(v)
+		p.WriteInt64(v.(int64))
 		return StreamWriteOK
 	case uint:
-		p.WriteUint64(uint64(v))
+		p.WriteUint64(uint64(v.(uint)))
 		return StreamWriteOK
 	case uint8:
-		p.WriteUint64(uint64(v))
+		p.WriteUint64(uint64(v.(uint8)))
 		return StreamWriteOK
 	case uint16:
-		p.WriteUint64(uint64(v))
+		p.WriteUint64(uint64(v.(uint16)))
 		return StreamWriteOK
 	case uint32:
-		p.WriteUint64(uint64(v))
+		p.WriteUint64(uint64(v.(uint32)))
 		return StreamWriteOK
 	case uint64:
-		p.WriteUint64(v)
+		p.WriteUint64(v.(uint64))
 		return StreamWriteOK
 	case float32:
-		p.WriteFloat64(float64(v))
+		p.WriteFloat64(float64(v.(float32)))
 		return StreamWriteOK
 	case float64:
-		p.WriteFloat64(v)
+		p.WriteFloat64(v.(float64))
 		return StreamWriteOK
 	case string:
-		p.WriteString(v)
+		p.WriteString(v.(string))
 		return StreamWriteOK
 	case Bytes:
-		p.WriteBytes(v)
+		p.WriteBytes(v.(Bytes))
 		return StreamWriteOK
 	case Array:
-		return p.writeArray(v, depth)
+		return p.writeArray(v.(Array), depth)
 	case Map:
-		return p.writeMap(v, depth)
+		return p.writeMap(v.(Map), depth)
+	default:
+		return ConcatString(
+			" type is not supported",
+		)
 	}
-
-	return ConcatString(
-		" type (",
-		convertTypeToString(reflect.ValueOf(v).Type()),
-		") is not supported",
-	)
 }
 
 // ReadNil read a nil

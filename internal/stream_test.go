@@ -920,7 +920,7 @@ func TestStream_WriteArray(t *testing.T) {
 			stream.SetWritePos(i)
 			assert(
 				stream.WriteArray(Array{true, true, true, make(chan bool), true}),
-			).Equals("[3] type (chan bool) is not supported")
+			).Equals("[3] type is not supported")
 			assert(stream.GetWritePos()).Equals(i)
 			stream.Release()
 		}
@@ -949,7 +949,7 @@ func TestStream_WriteMap(t *testing.T) {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
-				Equals("[\"1\"] type (chan bool) is not supported")
+				Equals("[\"1\"] type is not supported")
 			assert(stream.GetWritePos()).Equals(i)
 			stream.Release()
 		}
@@ -978,7 +978,7 @@ func TestStream_Write(t *testing.T) {
 	assert(stream.Write(Array{})).Equals(StreamWriteOK)
 	assert(stream.Write(Map{})).Equals(StreamWriteOK)
 	assert(stream.Write(make(chan bool))).
-		Equals(" type (chan bool) is not supported")
+		Equals(" type is not supported")
 	stream.Release()
 }
 

@@ -26,7 +26,7 @@ func TestContextObject_OK(t *testing.T) {
 	})).Equals(
 		nil,
 		nil,
-		NewReplyPanic("value type (chan bool) is not supported").
+		NewReplyPanic("value type is not supported").
 			AddDebug("#.test:Eval "+source2),
 	)
 
@@ -159,4 +159,20 @@ func TestContextObject_Error(t *testing.T) {
 		NewReplyPanic("Runtime is illegal in current goroutine").
 			AddDebug("#.test:Eval "+source7),
 	)
+}
+
+func getTestStream() *Stream {
+	stream := NewStream()
+	mp := Map{"user": "tianshuo", "age": 33}
+	stream.Write(mp)
+	return stream
+}
+
+func BenchmarkDebug(b *testing.B) {
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		stream := getTestStream()
+		stream.Release()
+	}
 }
