@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/binary"
 	"math"
 	"reflect"
 	"strconv"
@@ -11,15 +12,15 @@ import (
 const (
 	streamPosTargetID   = 0
 	streamPosSourceID   = 8
-	streamPosZone       = 16
+	streamPosZoneID     = 16
 	streamPosIPMap      = 18
-	streamPosConnID     = 26
+	streamPosSessionID  = 26
 	streamPosCallbackID = 34
 	streamPosDepth      = 42
 
-	streamPosServerHead = 0
-	streamPosClientHead = 34
-	streamPosBody       = 44
+	//streamPosServerHead = 0
+	//streamPosClientHead = 34
+	streamPosBody = 44
 
 	// StreamWriteOK ...
 	StreamWriteOK = ""
@@ -112,108 +113,74 @@ func (p *Stream) Release() {
 	streamCache.Put(p)
 }
 
-// GetCallbackID ...
-func (p *Stream) GetCallbackID() uint64 {
-	b := p.header[0:8]
-	return uint64(b[0]) |
-		uint64(b[1])<<8 |
-		uint64(b[2])<<16 |
-		uint64(b[3])<<24 |
-		uint64(b[4])<<32 |
-		uint64(b[5])<<40 |
-		uint64(b[6])<<48 |
-		uint64(b[7])<<56
+// GetTargetID ...
+func (p *Stream) GetTargetID() uint64 {
+	return binary.LittleEndian.Uint64(p.header[streamPosTargetID:])
 }
 
-// SetCallbackID ...
-func (p *Stream) SetCallbackID(v uint64) {
-	b := p.header[0:8]
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
-	b[2] = byte(v >> 16)
-	b[3] = byte(v >> 24)
-	b[4] = byte(v >> 32)
-	b[5] = byte(v >> 40)
-	b[6] = byte(v >> 48)
-	b[7] = byte(v >> 56)
+// SetTargetID ...
+func (p *Stream) SetTargetID(v uint64) {
+	binary.LittleEndian.PutUint64(p.header[streamPosTargetID:], v)
+}
+
+// GetSourceID ...
+func (p *Stream) GetSourceID() uint64 {
+	return binary.LittleEndian.Uint64(p.header[streamPosSourceID:])
+}
+
+// SetSourceID ...
+func (p *Stream) SetSourceID(v uint64) {
+	binary.LittleEndian.PutUint64(p.header[streamPosSourceID:], v)
+}
+
+// GetZoneID ...
+func (p *Stream) GetZoneID() uint16 {
+	return binary.LittleEndian.Uint16(p.header[streamPosZoneID:])
+}
+
+// SetZoneID ...
+func (p *Stream) SetZoneID(v uint16) {
+	binary.LittleEndian.PutUint16(p.header[streamPosZoneID:], v)
+}
+
+// GetIPMap ...
+func (p *Stream) GetIPMap() uint64 {
+	return binary.LittleEndian.Uint64(p.header[streamPosIPMap:])
+}
+
+// SetIPMap ...
+func (p *Stream) SetIPMap(v uint64) {
+	binary.LittleEndian.PutUint64(p.header[streamPosIPMap:], v)
 }
 
 // GetSessionID ...
 func (p *Stream) GetSessionID() uint64 {
-	b := p.header[8:16]
-	return uint64(b[0]) |
-		uint64(b[1])<<8 |
-		uint64(b[2])<<16 |
-		uint64(b[3])<<24 |
-		uint64(b[4])<<32 |
-		uint64(b[5])<<40 |
-		uint64(b[6])<<48 |
-		uint64(b[7])<<56
+	return binary.LittleEndian.Uint64(p.header[streamPosSessionID:])
 }
 
 // SetSessionID ...
 func (p *Stream) SetSessionID(v uint64) {
-	b := p.header[8:16]
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
-	b[2] = byte(v >> 16)
-	b[3] = byte(v >> 24)
-	b[4] = byte(v >> 32)
-	b[5] = byte(v >> 40)
-	b[6] = byte(v >> 48)
-	b[7] = byte(v >> 56)
+	binary.LittleEndian.PutUint64(p.header[streamPosSessionID:], v)
 }
 
-// GetSequence ...
-func (p *Stream) GetSequence() uint64 {
-	b := p.header[8:16]
-	return uint64(b[0]) |
-		uint64(b[1])<<8 |
-		uint64(b[2])<<16 |
-		uint64(b[3])<<24 |
-		uint64(b[4])<<32 |
-		uint64(b[5])<<40 |
-		uint64(b[6])<<48 |
-		uint64(b[7])<<56
+// GetCallbackID ...
+func (p *Stream) GetCallbackID() uint64 {
+	return binary.LittleEndian.Uint64(p.header[streamPosCallbackID:])
 }
 
-// SetSequence ...
-func (p *Stream) SetSequence(v uint64) {
-	b := p.header[8:16]
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
-	b[2] = byte(v >> 16)
-	b[3] = byte(v >> 24)
-	b[4] = byte(v >> 32)
-	b[5] = byte(v >> 40)
-	b[6] = byte(v >> 48)
-	b[7] = byte(v >> 56)
+// SetCallbackID ...
+func (p *Stream) SetCallbackID(v uint64) {
+	binary.LittleEndian.PutUint64(p.header[streamPosCallbackID:], v)
 }
 
-// GetMachineID ...
-func (p *Stream) GetMachineID() uint64 {
-	b := p.header[16:24]
-	return uint64(b[0]) |
-		uint64(b[1])<<8 |
-		uint64(b[2])<<16 |
-		uint64(b[3])<<24 |
-		uint64(b[4])<<32 |
-		uint64(b[5])<<40 |
-		uint64(b[6])<<48 |
-		uint64(b[7])<<56
+// GetDepth ...
+func (p *Stream) GetDepth() uint16 {
+	return binary.LittleEndian.Uint16(p.header[streamPosDepth:])
 }
 
-// SetMachineID ...
-func (p *Stream) SetMachineID(v uint64) {
-	b := p.header[16:24]
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
-	b[2] = byte(v >> 16)
-	b[3] = byte(v >> 24)
-	b[4] = byte(v >> 32)
-	b[5] = byte(v >> 40)
-	b[6] = byte(v >> 48)
-	b[7] = byte(v >> 56)
+// SetDepth ...
+func (p *Stream) SetDepth(v uint16) {
+	binary.LittleEndian.PutUint16(p.header[streamPosDepth:], v)
 }
 
 // GetHeader ...
