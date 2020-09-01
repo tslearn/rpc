@@ -22,8 +22,6 @@ const (
 	streamPosBody       = 44
 )
 
-const streamBodyPos = 33
-
 const (
 	// StreamWriteOK ...
 	StreamWriteOK = int(0)
@@ -34,22 +32,21 @@ const (
 )
 
 var (
-	zeroHeader  = make([]byte, streamBodyPos-1)
+	zeroHeader  = make([]byte, streamPosBody)
 	streamCache = sync.Pool{
 		New: func() interface{} {
 			ret := Stream{
 				frames:     make([]*[]byte, 1, 8),
 				readSeg:    0,
-				readIndex:  streamBodyPos,
+				readIndex:  streamPosBody,
 				writeSeg:   0,
-				writeIndex: streamBodyPos,
+				writeIndex: streamPosBody,
 			}
 			zeroFrame := make([]byte, 512)
 			ret.frames[0] = &zeroFrame
 			ret.readFrame = zeroFrame
 			ret.writeFrame = zeroFrame
-			ret.writeFrame[0] = 1
-			ret.header = zeroFrame[1:streamBodyPos]
+			ret.header = zeroFrame[:streamPosBody]
 			return &ret
 		},
 	}
@@ -223,13 +220,13 @@ func (p *Stream) Reset() {
 		p.readSeg = 0
 		p.readFrame = *p.frames[0]
 	}
-	p.readIndex = streamBodyPos
+	p.readIndex = streamPosBody
 
 	if p.writeSeg != 0 {
 		p.writeSeg = 0
 		p.writeFrame = *p.frames[0]
 	}
-	p.writeIndex = streamBodyPos
+	p.writeIndex = streamPosBody
 }
 
 // Release clean the Stream
@@ -388,7 +385,7 @@ func (p *Stream) SetReadPos(pos int) bool {
 
 // SetReadPosToBodyStart ...
 func (p *Stream) SetReadPosToBodyStart() bool {
-	p.setReadPosUnsafe(streamBodyPos)
+	p.setReadPosUnsafe(streamPosBody)
 	return true
 }
 
@@ -419,7 +416,7 @@ func (p *Stream) SetWritePos(length int) {
 
 // SetWritePosToBodyStart ...
 func (p *Stream) SetWritePosToBodyStart() {
-	p.setWritePosUnsafe(streamBodyPos)
+	p.setWritePosUnsafe(streamPosBody)
 }
 
 func (p *Stream) setWritePosUnsafe(pos int) {

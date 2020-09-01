@@ -372,10 +372,10 @@ func TestStream_basic(t *testing.T) {
 	assert(len(stream.frames)).Equals(1)
 	assert(cap(stream.frames)).Equals(8)
 	assert(stream.readSeg).Equals(0)
-	assert(stream.readIndex).Equals(streamBodyPos)
+	assert(stream.readIndex).Equals(streamPosBody)
 	assert(stream.readFrame).Equals(*stream.frames[0])
 	assert(stream.writeSeg).Equals(0)
-	assert(stream.writeIndex).Equals(streamBodyPos)
+	assert(stream.writeIndex).Equals(streamPosBody)
 	assert(stream.writeFrame).Equals(*stream.frames[0])
 
 	// test frameCache
@@ -394,10 +394,10 @@ func TestStream_newRPCStream_Release_Reset(t *testing.T) {
 		assert(len(stream.frames)).Equals(1)
 		assert(cap(stream.frames)).Equals(8)
 		assert(stream.readSeg).Equals(0)
-		assert(stream.readIndex).Equals(streamBodyPos)
+		assert(stream.readIndex).Equals(streamPosBody)
 		assert(stream.readFrame).Equals(*stream.frames[0])
 		assert(stream.writeSeg).Equals(0)
-		assert(stream.writeIndex).Equals(streamBodyPos)
+		assert(stream.writeIndex).Equals(streamPosBody)
 		assert(stream.writeFrame).Equals(*stream.frames[0])
 
 		for n := 0; n < i; n++ {
@@ -418,7 +418,7 @@ func TestStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
 		binary.LittleEndian.PutUint64(bytes8, v)
 		stream.SetCallbackID(v)
 		assert(stream.header[0:8]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[1:9]).Equals(bytes8)
+		assert(stream.GetBufferUnsafe()[0:8]).Equals(bytes8)
 		assert(stream.GetCallbackID()).Equals(v)
 	}
 }
@@ -434,7 +434,7 @@ func TestStream_GetSessionId_SetSessionId(t *testing.T) {
 		binary.LittleEndian.PutUint64(bytes8, v)
 		stream.SetSessionID(v)
 		assert(stream.header[8:16]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[9:17]).Equals(bytes8)
+		assert(stream.GetBufferUnsafe()[8:16]).Equals(bytes8)
 		assert(stream.GetSessionID()).Equals(v)
 	}
 }
@@ -450,7 +450,7 @@ func TestStream_GetSequence_SetSequence(t *testing.T) {
 		binary.LittleEndian.PutUint64(bytes8, v)
 		stream.SetSequence(v)
 		assert(stream.header[8:16]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[9:17]).Equals(bytes8)
+		assert(stream.GetBufferUnsafe()[8:16]).Equals(bytes8)
 		assert(stream.GetSequence()).Equals(v)
 	}
 }
@@ -466,7 +466,7 @@ func TestStream_getMachineID_setMachineID(t *testing.T) {
 		binary.LittleEndian.PutUint64(bytes8, v)
 		stream.SetMachineID(v)
 		assert(stream.header[16:24]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[17:25]).Equals(bytes8)
+		assert(stream.GetBufferUnsafe()[16:24]).Equals(bytes8)
 		assert(stream.GetMachineID()).Equals(v)
 	}
 }
@@ -498,8 +498,7 @@ func TestStream_GetBuffer(t *testing.T) {
 
 		stream := NewStream()
 		stream.PutBytes(bytes)
-		assert(stream.GetBuffer()[0]).Equals(byte(1))
-		assert(stream.GetBuffer()[streamBodyPos:]).Equals(bytes)
+		assert(stream.GetBuffer()[streamPosBody:]).Equals(bytes)
 		stream.Release()
 	}
 }
@@ -515,9 +514,8 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 
 		stream := NewStream()
 		stream.PutBytes(bytes)
-		assert(stream.GetBufferUnsafe()[0]).Equals(byte(1))
-		assert(stream.GetBufferUnsafe()[1:streamBodyPos]).Equals(stream.header)
-		assert(stream.GetBufferUnsafe()[streamBodyPos:]).Equals(bytes)
+		assert(stream.GetBufferUnsafe()[0:streamPosBody]).Equals(stream.header)
+		assert(stream.GetBufferUnsafe()[streamPosBody:]).Equals(bytes)
 		stream.Release()
 	}
 }
@@ -551,13 +549,13 @@ func TestStream_SetReadPos(t *testing.T) {
 func TestStream_SetReadPosToBodyStart(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := streamBodyPos; i < streamBodyPos+5000; i++ {
+	for i := streamPosBody; i < streamPosBody+5000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i + 1)
 		stream.SetReadPos(i)
 		assert(stream.GetReadPos()).Equals(i)
 		stream.SetReadPosToBodyStart()
-		assert(stream.GetReadPos()).Equals(streamBodyPos)
+		assert(stream.GetReadPos()).Equals(streamPosBody)
 	}
 }
 
@@ -604,7 +602,7 @@ func TestStream_SetWritePosToBodyStart(t *testing.T) {
 		stream.SetWritePos(i)
 		assert(stream.GetWritePos()).Equals(i)
 		stream.SetWritePosToBodyStart()
-		assert(stream.GetWritePos()).Equals(streamBodyPos)
+		assert(stream.GetWritePos()).Equals(streamPosBody)
 	}
 }
 
@@ -1412,7 +1410,7 @@ func TestStream_ReadString(t *testing.T) {
 		0xA9, 0x00,
 	})
 	assert(stream1.ReadString()).Equals("", false)
-	assert(stream1.GetReadPos()).Equals(streamBodyPos)
+	assert(stream1.GetReadPos()).Equals(streamPosBody)
 
 	// read string utf8 error
 	stream2 := NewStream()
@@ -1431,7 +1429,7 @@ func TestStream_ReadString(t *testing.T) {
 		0xF0, 0x9F, 0x8D, 0x8A, 0x00,
 	})
 	assert(stream2.ReadString()).Equals("", false)
-	assert(stream2.GetReadPos()).Equals(streamBodyPos)
+	assert(stream2.GetReadPos()).Equals(streamPosBody)
 
 	// read string length error
 	stream3 := NewStream()
@@ -1445,7 +1443,7 @@ func TestStream_ReadString(t *testing.T) {
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x00,
 	})
 	assert(stream3.ReadString()).Equals("", false)
-	assert(stream3.GetReadPos()).Equals(streamBodyPos)
+	assert(stream3.GetReadPos()).Equals(streamPosBody)
 }
 
 func TestStream_ReadUnsafeString(t *testing.T) {
@@ -1513,7 +1511,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0xA9, 0x00,
 	})
 	assert(stream1.ReadUnsafeString()).Equals("", false)
-	assert(stream1.GetReadPos()).Equals(streamBodyPos)
+	assert(stream1.GetReadPos()).Equals(streamPosBody)
 
 	// read string utf8 error
 	stream2 := NewStream()
@@ -1532,7 +1530,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0xF0, 0x9F, 0x8D, 0x8A, 0x00,
 	})
 	assert(stream2.ReadUnsafeString()).Equals("", false)
-	assert(stream2.GetReadPos()).Equals(streamBodyPos)
+	assert(stream2.GetReadPos()).Equals(streamPosBody)
 
 	// read string length error
 	stream3 := NewStream()
@@ -1546,7 +1544,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x00,
 	})
 	assert(stream3.ReadUnsafeString()).Equals("", false)
-	assert(stream3.GetReadPos()).Equals(streamBodyPos)
+	assert(stream3.GetReadPos()).Equals(streamPosBody)
 }
 
 func TestStream_ReadBytes(t *testing.T) {
@@ -1604,7 +1602,7 @@ func TestStream_ReadBytes(t *testing.T) {
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
 	})
 	assert(stream1.ReadBytes()).Equals(Bytes(nil), false)
-	assert(stream1.GetReadPos()).Equals(streamBodyPos)
+	assert(stream1.GetReadPos()).Equals(streamPosBody)
 }
 
 func TestStream_ReadUnsafeBytes(t *testing.T) {
@@ -1662,7 +1660,7 @@ func TestStream_ReadUnsafeBytes(t *testing.T) {
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
 	})
 	assert(stream1.ReadUnsafeBytes()).Equals(Bytes(nil), false)
-	assert(stream1.GetReadPos()).Equals(streamBodyPos)
+	assert(stream1.GetReadPos()).Equals(streamPosBody)
 }
 
 func TestStream_ReadArray(t *testing.T) {
@@ -1879,7 +1877,7 @@ func BenchmarkRPCStream_ReadString(b *testing.B) {
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		stream.SetReadPos(streamBodyPos)
+		stream.SetReadPos(streamPosBody)
 		stream.ReadString()
 	}
 }
