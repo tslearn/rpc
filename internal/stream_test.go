@@ -287,42 +287,6 @@ var streamTestCollections = map[string][][2]interface{}{
 	},
 }
 
-func TestCheckValue(t *testing.T) {
-	assert := NewAssert(t)
-	assert(checkValue(nil, "value", 1)).Equals("")
-	assert(checkValue(Array(nil), "value", 1)).Equals("")
-	assert(checkValue(Map(nil), "value", 1)).Equals("")
-	assert(checkValue(true, "value", 1)).Equals("")
-	assert(checkValue(1, "value", 1)).Equals("")
-	assert(checkValue(int8(1), "value", 1)).Equals("")
-	assert(checkValue(int16(1), "value", 1)).Equals("")
-	assert(checkValue(int32(1), "value", 1)).Equals("")
-	assert(checkValue(int64(1), "value", 1)).Equals("")
-	assert(checkValue(uint(1), "value", 1)).Equals("")
-	assert(checkValue(uint8(1), "value", 1)).Equals("")
-	assert(checkValue(uint16(1), "value", 1)).Equals("")
-	assert(checkValue(uint32(1), "value", 1)).Equals("")
-	assert(checkValue(uint64(1), "value", 1)).Equals("")
-	assert(checkValue(float32(1), "value", 1)).Equals("")
-	assert(checkValue(float64(1), "value", 1)).Equals("")
-	assert(checkValue("", "value", 1)).Equals("")
-	assert(checkValue(Bytes{}, "value", 1)).Equals("")
-	assert(checkValue(Array{}, "value", 1)).Equals("")
-	assert(checkValue(Map{}, "value", 1)).Equals("")
-
-	assert(checkValue(nil, "value", 0)).
-		Equals("value is too complicated")
-	assert(checkValue(make(chan bool), "value", 1)).
-		Equals("value type (chan bool) is not supported")
-
-	assert(checkValue(Array{true}, "value", 1)).
-		Equals("value[0] is too complicated")
-	assert(checkValue(Array{true}, "value", 2)).Equals("")
-	assert(checkValue(Map{"key": "value"}, "value", 1)).
-		Equals("value[\"key\"] is too complicated")
-	assert(checkValue(Map{"key": "value"}, "value", 2)).Equals("")
-}
-
 func TestStream_basic(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -1022,7 +986,7 @@ func TestStream_WriteArray(t *testing.T) {
 			stream.SetWritePos(i)
 			assert(
 				stream.WriteArray(Array{true, true, true, make(chan bool), true}),
-			).Equals(StreamWriteUnsupportedType)
+			).Equals("[3] type (chan bool) is not supported")
 			assert(stream.GetWritePos()).Equals(i)
 			stream.Release()
 		}
@@ -1051,7 +1015,7 @@ func TestStream_WriteMap(t *testing.T) {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
-				Equals(StreamWriteUnsupportedType)
+				Equals("[\"1\"] type (chan bool) is not supported")
 			assert(stream.GetWritePos()).Equals(i)
 			stream.Release()
 		}
@@ -1079,7 +1043,8 @@ func TestStream_Write(t *testing.T) {
 	assert(stream.Write([]byte{})).Equals(StreamWriteOK)
 	assert(stream.Write(Array{})).Equals(StreamWriteOK)
 	assert(stream.Write(Map{})).Equals(StreamWriteOK)
-	assert(stream.Write(make(chan bool))).Equals(StreamWriteUnsupportedType)
+	assert(stream.Write(make(chan bool))).
+		Equals(" type (chan bool) is not supported")
 	stream.Release()
 }
 

@@ -19,9 +19,9 @@ func (p Runtime) OK(value interface{}) Return {
 		stream := thread.top.stream
 		stream.SetWritePosToBodyStart()
 		stream.WriteUint64(uint64(ErrorKindNone))
-		if stream.Write(value) != StreamWriteOK {
+		if reason := stream.Write(value); reason != StreamWriteOK {
 			return thread.WriteError(
-				NewReplyPanic(checkValue(value, "value", 64)).
+				NewReplyPanic(ConcatString("value", reason)).
 					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
 			)
 		}

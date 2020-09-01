@@ -20,15 +20,9 @@ const (
 	streamPosServerHead = 0
 	streamPosClientHead = 34
 	streamPosBody       = 44
-)
 
-const (
 	// StreamWriteOK ...
-	StreamWriteOK = int(0)
-	// StreamWriteUnsupportedType ...
-	StreamWriteUnsupportedType = int(1)
-	// StreamWriteOverflow ...
-	StreamWriteOverflow = int(2)
+	StreamWriteOK = ""
 )
 
 var (
@@ -57,86 +51,6 @@ var (
 		},
 	}
 )
-
-func checkArray(v Array, path string, depth int) string {
-	for idx, item := range v {
-		if reason := checkValue(
-			item,
-			ConcatString(path, "[", strconv.Itoa(idx), "]"),
-			depth-1,
-		); reason != "" {
-			return reason
-		}
-	}
-
-	return ""
-}
-
-func checkMap(v Map, path string, depth int) string {
-	for key, item := range v {
-		if reason := checkValue(
-			item,
-			ConcatString(path, "[\"", key, "\"]"),
-			depth-1,
-		); reason != "" {
-			return reason
-		}
-	}
-
-	return ""
-}
-
-func checkValue(v interface{}, path string, depth int) string {
-	if depth <= 0 {
-		return ConcatString(path, " is too complicated")
-	}
-
-	switch v := v.(type) {
-	case nil:
-		return ""
-	case bool:
-		return ""
-	case int:
-		return ""
-	case int8:
-		return ""
-	case int16:
-		return ""
-	case int32:
-		return ""
-	case int64:
-		return ""
-	case uint:
-		return ""
-	case uint8:
-		return ""
-	case uint16:
-		return ""
-	case uint32:
-		return ""
-	case uint64:
-		return ""
-	case float32:
-		return ""
-	case float64:
-		return ""
-	case string:
-		return ""
-	case Bytes:
-		return ""
-	case Array:
-		return checkArray(v, path, depth)
-	case Map:
-		return checkMap(v, path, depth)
-	default:
-		return ConcatString(
-			path,
-			" type (",
-			convertTypeToString(reflect.ValueOf(v).Type()),
-			") is not supported",
-		)
-	}
-}
 
 // Stream ...
 type Stream struct {
@@ -886,11 +800,11 @@ func (p *Stream) WriteBytes(v Bytes) {
 }
 
 // WriteArray ...
-func (p *Stream) WriteArray(v Array) int {
+func (p *Stream) WriteArray(v Array) string {
 	return p.writeArray(v, 64)
 }
 
-func (p *Stream) writeArray(v Array, depth int) int {
+func (p *Stream) writeArray(v Array, depth int) string {
 	if v == nil {
 		p.WriteNil()
 		return StreamWriteOK
@@ -941,9 +855,9 @@ func (p *Stream) writeArray(v Array, depth int) int {
 	}
 
 	for i := 0; i < length; i++ {
-		if errCode := p.write(v[i], depth-1); errCode != StreamWriteOK {
+		if reason := p.write(v[i], depth-1); reason != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
-			return errCode
+			return ConcatString("[", strconv.Itoa(i), "]", reason)
 		}
 	}
 
@@ -969,11 +883,11 @@ func (p *Stream) writeArray(v Array, depth int) int {
 }
 
 // WriteMap write Map value to stream
-func (p *Stream) WriteMap(v Map) int {
+func (p *Stream) WriteMap(v Map) string {
 	return p.writeMap(v, 64)
 }
 
-func (p *Stream) writeMap(v Map, depth int) int {
+func (p *Stream) writeMap(v Map, depth int) string {
 	if v == nil {
 		p.WriteNil()
 		return StreamWriteOK
@@ -1026,9 +940,9 @@ func (p *Stream) writeMap(v Map, depth int) int {
 
 	for name, value := range v {
 		p.WriteString(name)
-		if errCode := p.write(value, depth-1); errCode != StreamWriteOK {
+		if reason := p.write(value, depth-1); reason != StreamWriteOK {
 			p.setWritePosUnsafe(startPos)
-			return errCode
+			return ConcatString("[\"", name, "\"]", reason)
 		}
 	}
 
@@ -1054,13 +968,13 @@ func (p *Stream) writeMap(v Map, depth int) int {
 }
 
 // Write write generic value to stream
-func (p *Stream) Write(v interface{}) int {
+func (p *Stream) Write(v interface{}) string {
 	return p.write(v, 64)
 }
 
-func (p *Stream) write(v interface{}, depth int) int {
+func (p *Stream) write(v interface{}, depth int) string {
 	if depth <= 0 {
-		return StreamWriteOverflow
+		return " write overflow"
 	}
 
 	switch v := v.(type) {
@@ -1118,7 +1032,11 @@ func (p *Stream) write(v interface{}, depth int) int {
 		return p.writeMap(v, depth)
 	}
 
-	return StreamWriteUnsupportedType
+	return ConcatString(
+		" type (",
+		convertTypeToString(reflect.ValueOf(v).Type()),
+		") is not supported",
+	)
 }
 
 // ReadNil read a nil
