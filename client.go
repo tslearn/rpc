@@ -216,8 +216,8 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	}()
 
 	sendStream.SetCallbackID(0)
-	sendStream.SetSequence(sequence)
 	sendStream.WriteInt64(controlStreamKindInit)
+	sendStream.WriteUint64(sequence)
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
@@ -230,10 +230,10 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if backStream.GetSequence() != sequence {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
 		kind != controlStreamKindInitBack {
+		return internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if seq, ok := backStream.ReadUint64(); !ok || seq != sequence {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
@@ -346,8 +346,8 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 
 			sendStream := internal.NewStream()
 			sendStream.SetCallbackID(0)
-			sendStream.SetSequence(p.systemSeed)
 			sendStream.WriteInt64(controlStreamKindRequestIds)
+			sendStream.WriteUint64(p.systemSeed)
 			sendStream.WriteUint64(p.currCallbackID)
 
 			for key := range p.sendMap {
@@ -430,7 +430,6 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			item.id = p.currCallbackID
 			item.next = nil
 			item.sendStream.SetCallbackID(item.id)
-			item.sendStream.SetSequence(0)
 
 			// set to sendMap
 			p.sendMap[item.id] = item

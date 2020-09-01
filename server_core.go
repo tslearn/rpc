@@ -107,7 +107,9 @@ func (p *serverSession) OnControlStream(
 	if kind, ok := stream.ReadInt64(); !ok ||
 		kind != controlStreamKindRequestIds {
 		return internal.NewTransportError(internal.ErrStringBadStream)
-	} else if seq := stream.GetSequence(); seq <= p.ctrlSequence {
+	} else if seq, ok := stream.ReadUint64(); !ok {
+		return internal.NewTransportError(internal.ErrStringBadStream)
+	} else if seq <= p.ctrlSequence {
 		return nil
 	} else if currClientCallbackID, ok := stream.ReadUint64(); !ok {
 		return internal.NewProtocolError(internal.ErrStringBadStream)
@@ -428,10 +430,10 @@ func (p *serverCore) onConnRun(
 		return
 	} else if initStream.GetCallbackID() != 0 {
 		runError = internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if seq := initStream.GetSequence(); seq == 0 {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if kind, ok := initStream.ReadInt64(); !ok ||
 		kind != controlStreamKindInit {
+		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+	} else if seq, ok := initStream.ReadUint64(); !ok {
 		runError = internal.NewProtocolError(internal.ErrStringBadStream)
 	} else if sessionString, ok := initStream.ReadString(); !ok {
 		runError = internal.NewProtocolError(internal.ErrStringBadStream)
@@ -466,6 +468,7 @@ func (p *serverCore) onConnRun(
 		// write respond stream
 		initStream.SetWritePosToBodyStart()
 		initStream.WriteInt64(controlStreamKindInitBack)
+		initStream.WriteUint64(seq)
 		initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
 		initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
 		initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
@@ -493,10 +496,7 @@ func (p *serverCore) onConnRun(
 				runError = err
 			} else {
 				cbID := stream.GetCallbackID()
-				sequence := stream.GetSequence()
-				if cbID == 0 && sequence == 0 {
-					return
-				} else if cbID == 0 {
+				if cbID == 0 {
 					runError = session.OnControlStream(conn, stream)
 				} else {
 					runError = session.OnDataStream(conn, stream, p.hub)

@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"encoding/binary"
-	"math/rand"
 	"testing"
 )
 
@@ -327,70 +325,6 @@ func TestStream_newRPCStream_Release_Reset(t *testing.T) {
 			stream.PutBytes([]byte{9})
 		}
 		stream.Release()
-	}
-}
-
-func TestStream_getServerCallbackID_setServerCallbackID(t *testing.T) {
-	assert := NewAssert(t)
-
-	stream := NewStream()
-	bytes8 := make([]byte, 8)
-
-	for i := 0; i < 1000; i++ {
-		v := rand.Uint64()
-		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetCallbackID(v)
-		assert(stream.header[0:8]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[0:8]).Equals(bytes8)
-		assert(stream.GetCallbackID()).Equals(v)
-	}
-}
-
-func TestStream_GetSessionId_SetSessionId(t *testing.T) {
-	assert := NewAssert(t)
-
-	stream := NewStream()
-	bytes8 := make([]byte, 8)
-
-	for i := 0; i < 1000; i++ {
-		v := rand.Uint64()
-		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetSessionID(v)
-		assert(stream.header[8:16]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[8:16]).Equals(bytes8)
-		assert(stream.GetSessionID()).Equals(v)
-	}
-}
-
-func TestStream_GetSequence_SetSequence(t *testing.T) {
-	assert := NewAssert(t)
-
-	stream := NewStream()
-	bytes8 := make([]byte, 8)
-
-	for i := 0; i < 1000; i++ {
-		v := rand.Uint64()
-		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetSequence(v)
-		assert(stream.header[8:16]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[8:16]).Equals(bytes8)
-		assert(stream.GetSequence()).Equals(v)
-	}
-}
-
-func TestStream_getMachineID_setMachineID(t *testing.T) {
-	assert := NewAssert(t)
-
-	stream := NewStream()
-	bytes8 := make([]byte, 8)
-
-	for i := 0; i < 1000; i++ {
-		v := rand.Uint64()
-		binary.LittleEndian.PutUint64(bytes8, v)
-		stream.SetMachineID(v)
-		assert(stream.header[16:24]).Equals(bytes8)
-		assert(stream.GetBufferUnsafe()[16:24]).Equals(bytes8)
-		assert(stream.GetMachineID()).Equals(v)
 	}
 }
 
