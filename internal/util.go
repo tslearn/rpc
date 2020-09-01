@@ -97,6 +97,43 @@ func isNil(val interface{}) (ret bool) {
 	return reflect.ValueOf(val).IsNil()
 }
 
+func isUTF8Bytes(bytes []byte) bool {
+	idx := 0
+	length := len(bytes)
+
+	for idx < length {
+		c := bytes[idx]
+		if c < 128 {
+			idx++
+		} else if c < 224 {
+			if (idx+2 > length) ||
+				(bytes[idx+1]&0xC0 != 0x80) {
+				return false
+			}
+			idx += 2
+		} else if c < 240 {
+			if (idx+3 > length) ||
+				(bytes[idx+1]&0xC0 != 0x80) ||
+				(bytes[idx+2]&0xC0 != 0x80) {
+				return false
+			}
+			idx += 3
+		} else if c < 248 {
+			if (idx+4 > length) ||
+				(bytes[idx+1]&0xC0 != 0x80) ||
+				(bytes[idx+2]&0xC0 != 0x80) ||
+				(bytes[idx+3]&0xC0 != 0x80) {
+				return false
+			}
+			idx += 4
+		} else {
+			return false
+		}
+	}
+
+	return idx == length
+}
+
 func getFuncKind(fn reflect.Value) (string, error) {
 	if fn.Kind() != reflect.Func {
 		return "", errors.New("handler must be a function")
