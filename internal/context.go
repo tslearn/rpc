@@ -8,6 +8,7 @@ type Runtime struct {
 
 // OK ...
 func (p Runtime) OK(value interface{}) Return {
+	ctxID := p.id
 	if thread := p.thread; thread == nil {
 		reportPanic(
 			NewReplyPanic(
@@ -15,36 +16,22 @@ func (p Runtime) OK(value interface{}) Return {
 			).AddDebug(GetFileLine(1)),
 		)
 		return emptyReturn
-	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
-		stream := thread.top.stream
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(uint64(ErrorKindNone))
-		if reason := stream.Write(value); reason != StreamWriteOK {
-			return thread.WriteError(
-				NewReplyPanic(ConcatString("value", reason)).
-					AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
-			)
-		}
-		return emptyReturn
-	} else if code == rpcThreadReturnStatusAlreadyCalled {
-		thread.WriteError(
-			NewReplyPanic(
-				"Runtime.OK or Runtime.Error has been called before",
-			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
-		)
-		return emptyReturn
-	} else {
-		thread.WriteError(
+	} else if thread.lock(ctxID) == nil {
+		return thread.WriteError(
 			NewReplyPanic(
 				"Runtime is illegal in current goroutine",
-			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			).AddDebug(GetFileLine(1)),
+			1,
 		)
-		return emptyReturn
+	} else {
+		defer thread.unlock(ctxID)
+		return thread.WriteOK(value, 1)
 	}
 }
 
 // Error ...
 func (p Runtime) Error(value error) Return {
+	ctxID := p.id
 	if thread := p.thread; thread == nil {
 		reportPanic(
 			NewReplyPanic(
@@ -52,50 +39,51 @@ func (p Runtime) Error(value error) Return {
 			).AddDebug(GetFileLine(1)),
 		)
 		return emptyReturn
-	} else if code := thread.setReturn(p.id); code == rpcThreadReturnStatusOK {
+	} else if thread.lock(ctxID) == nil {
+		return thread.WriteError(
+			NewReplyPanic(
+				"Runtime is illegal in current goroutine",
+			).AddDebug(GetFileLine(1)),
+			1,
+		)
+	} else {
+		defer thread.unlock(ctxID)
+
 		if err, ok := value.(Error); ok && err != nil {
 			return p.thread.WriteError(
 				err.AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				1,
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
 				NewReplyError(
 					value.Error(),
 				).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				1,
 			)
 		} else {
 			return p.thread.WriteError(
 				NewReplyError(
 					"argument should not nil",
 				).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				1,
 			)
 		}
-	} else if code == rpcThreadReturnStatusAlreadyCalled {
-		thread.WriteError(
-			NewReplyPanic(
-				"Runtime.OK or Runtime.Error has been called before",
-			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
-		)
-		return emptyReturn
-	} else {
-		thread.WriteError(
-			NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
-		)
-		return emptyReturn
 	}
 }
 
 func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
-
-	if thread := p.thread; thread == nil {
+	ctxID := p.id
+	if thread := p.thread; thread == nil || thread.lock(ctxID) == nil {
 		return nil, NewReplyPanic(
 			"Runtime is illegal in current goroutine",
 		)
 	} else {
-		frame := thread.top
+		defer thread.unlock(ctxID)
 		stream := NewStream()
+		defer stream.Release()
+
+		frame := thread.top
 		// write target
 		stream.WriteString(target)
 		// write depth
@@ -112,17 +100,8 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 			}
 		}
 
-		if !thread.pushFrame(p.id) {
-			stream.Release()
-			return nil, NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			)
-		}
-
-		defer func() {
-			thread.popFrame()
-			stream.Release()
-		}()
+		thread.pushFrame()
+		defer thread.popFrame()
 
 		thread.Eval(
 			stream,

@@ -13,34 +13,29 @@ import (
 	"unsafe"
 )
 
-const (
-	rpcThreadReturnStatusOK            = 0
-	rpcThreadReturnStatusAlreadyCalled = 1
-	rpcThreadReturnStatusContextError  = 2
-)
-
 var rpcThreadFrameCache = &sync.Pool{
 	New: func() interface{} {
 		return &rpcThreadFrame{
-			stream:    nil,
-			depth:     0,
-			replyNode: nil,
-			args:      make([]reflect.Value, 0, 8),
-			from:      "",
-			ok:        false,
+			stream:     nil,
+			depth:      0,
+			replyNode:  nil,
+			args:       make([]reflect.Value, 0, 8),
+			from:       "",
+			retStatus:  0,
+			lockStatus: 0,
 		}
 	},
 }
 
 type rpcThreadFrame struct {
-	stream    *Stream
-	depth     uint64
-	replyNode unsafe.Pointer
-	args      []reflect.Value
-	from      string
-	ok        bool
-	status    uint64
-	next      *rpcThreadFrame
+	stream     *Stream
+	depth      uint64
+	replyNode  unsafe.Pointer
+	args       []reflect.Value
+	from       string
+	retStatus  uint32
+	lockStatus uint64
+	next       *rpcThreadFrame
 }
 
 func newRPCThreadFrame() *rpcThreadFrame {
@@ -131,35 +126,27 @@ func (p *rpcThread) Close() bool {
 	}).(bool)
 }
 
-func (p *rpcThread) pushFrame(rtID uint64) bool {
-	if status := atomic.LoadUint64(&p.top.status); (status/2)*2 == rtID {
-		frame := newRPCThreadFrame()
-		frame.next = p.top
-		p.top = frame
-		return true
-	} else {
-		return false
+func (p *rpcThread) lock(rtID uint64) *rpcThread {
+	if atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID, rtID+1) {
+		return p
 	}
+	return nil
 }
 
-func (p *rpcThread) popFrame() bool {
+func (p *rpcThread) unlock(rtID uint64) {
+	atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID+1, rtID)
+}
+
+func (p *rpcThread) pushFrame() {
+	frame := newRPCThreadFrame()
+	frame.next = p.top
+	p.top = frame
+}
+
+func (p *rpcThread) popFrame() {
 	if frame := p.top.next; frame != nil {
 		p.top.Release()
 		p.top = frame
-		return true
-	} else {
-		return false
-	}
-}
-
-func (p *rpcThread) setReturn(contextID uint64) int {
-	frame := p.top
-	if atomic.CompareAndSwapUint64(&frame.status, contextID, contextID+1) {
-		return rpcThreadReturnStatusOK
-	} else if delta := atomic.LoadUint64(&frame.status) - contextID; delta == 1 {
-		return rpcThreadReturnStatusAlreadyCalled
-	} else {
-		return rpcThreadReturnStatusContextError
 	}
 }
 
@@ -181,18 +168,44 @@ func (p *rpcThread) GetExecReplyDebug() string {
 	return ""
 }
 
-func (p *rpcThread) returnError(rtID uint64, err Error) Return {
-	atomic.StoreUint64(&p.top.status, rtID+1)
-	return p.WriteError(err)
+func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
+	if p.top.retStatus == 0 {
+		stream := p.top.stream
+		stream.SetWritePosToBodyStart()
+		stream.WriteUint64(uint64(ErrorKindNone))
+		if reason := stream.Write(value); reason != StreamWriteOK {
+			return p.WriteError(
+				NewReplyPanic(ConcatString("value", reason)).
+					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+				skip+1,
+			)
+		}
+		p.top.retStatus = 1
+		return emptyReturn
+	} else {
+		return p.WriteError(nil, skip+1)
+	}
 }
 
-func (p *rpcThread) WriteError(err Error) Return {
+func (p *rpcThread) WriteError(err Error, skip uint) Return {
 	stream := p.top.stream
 	stream.SetWritePosToBodyStart()
-	stream.WriteUint64(uint64(err.GetKind()))
-	stream.WriteString(err.GetMessage())
-	stream.WriteString(err.GetDebug())
-	p.top.ok = false
+
+	if p.top.retStatus == 0 {
+		stream.WriteUint64(uint64(err.GetKind()))
+		stream.WriteString(err.GetMessage())
+		stream.WriteString(err.GetDebug())
+	} else if p.top.retStatus == 1 {
+		stream.WriteUint64(uint64(ErrorKindReplyPanic))
+		stream.WriteString("Runtime.OK has been called before")
+		stream.WriteString(AddFileLine(p.GetExecReplyNodePath(), skip+1))
+	} else {
+		stream.WriteUint64(uint64(ErrorKindReplyPanic))
+		stream.WriteString("Runtime.Error has been called before")
+		stream.WriteString(AddFileLine(p.GetExecReplyNodePath(), skip+1))
+	}
+
+	p.top.retStatus = 2
 	return emptyReturn
 }
 
@@ -216,21 +229,21 @@ func (p *rpcThread) Eval(
 ) Return {
 	timeStart := TimeNow()
 	frame := p.top
-	frame.ok = true
 	frame.stream = inStream
 	p.sequence += 2
 	rtID := p.sequence
-	frame.status = rtID
+	frame.lockStatus = rtID
+	frame.retStatus = 0
 	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
 		if v := recover(); v != nil {
 			// write runtime error
-			p.returnError(
-				rtID,
+			p.WriteError(
 				NewReplyPanic(
 					fmt.Sprintf("runtime error: %v", v),
 				).AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
+				0,
 			)
 		}
 
@@ -248,52 +261,50 @@ func (p *rpcThread) Eval(
 				onEvalFinish(p)
 			}()
 
-			if atomic.CompareAndSwapUint64(&frame.status, rtID+1, rtID+2) {
-				// return ok
-			} else if atomic.CompareAndSwapUint64(&frame.status, rtID, rtID+2) {
-				// Runtime.OK or Runtime.Error not called
+			for !atomic.CompareAndSwapUint64(&frame.lockStatus, rtID, rtID+2) {
+				time.Sleep(10 * time.Millisecond)
+			}
+
+			if frame.retStatus == 0 {
 				p.WriteError(
 					NewReplyPanic(
 						"reply must return through Runtime.OK or Runtime.Error",
 					).AddDebug(p.GetExecReplyDebug()),
+					0,
 				)
 			} else {
-				// code should not run here
-				p.WriteError(
-					NewKernelPanic("internal error").
-						AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
-				)
+				// count
+				if execReplyNode != nil {
+					execReplyNode.indicator.Count(
+						TimeNow().Sub(timeStart),
+						frame.retStatus == 1,
+					)
+				}
 			}
 
 			// callback
 			inStream.SetReadPosToBodyStart()
 			onEvalBack(inStream)
-
-			// count
-			if execReplyNode != nil {
-				execReplyNode.indicator.Count(TimeNow().Sub(timeStart), frame.ok)
-			}
 		}()
 	}()
 
 	// set exec reply node
 	replyPath, ok := inStream.ReadUnsafeString()
 	if !ok {
-		return p.returnError(rtID, NewProtocolError(ErrStringBadStream))
+		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
-		return p.returnError(
-			rtID,
+		return p.WriteError(
 			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
+			0,
 		)
 	} else {
 		atomic.StorePointer(&frame.replyNode, unsafe.Pointer(execReplyNode))
 	}
 
 	if frame.depth, ok = inStream.ReadUint64(); !ok {
-		return p.returnError(rtID, NewProtocolError(ErrStringBadStream))
+		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else if frame.depth > p.processor.maxCallDepth {
-		return p.returnError(
-			rtID,
+		return p.WriteError(
 			NewReplyError(ConcatString(
 				"call ",
 				replyPath,
@@ -301,9 +312,10 @@ func (p *rpcThread) Eval(
 				strconv.FormatUint(frame.depth, 10),
 				") overflows",
 			)).AddDebug(p.GetExecReplyDebug()),
+			0,
 		)
 	} else if frame.from, ok = inStream.ReadUnsafeString(); !ok {
-		return p.returnError(rtID, NewProtocolError(ErrStringBadStream))
+		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else {
 		// create context
 		rt := Runtime{id: rtID, thread: p}
@@ -392,14 +404,14 @@ func (p *rpcThread) Eval(
 		}
 
 		if _, ok := inStream.Read(); !ok {
-			return p.returnError(rtID, NewProtocolError(ErrStringBadStream))
+			return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 		} else if !p.processor.isDebug {
-			return p.returnError(
-				rtID,
+			return p.WriteError(
 				NewReplyError(ConcatString(
 					replyPath,
 					" reply arguments does not match",
 				)),
+				0,
 			)
 		} else {
 			remoteArgsType := make([]string, 0)
@@ -407,7 +419,7 @@ func (p *rpcThread) Eval(
 			inStream.setReadPosUnsafe(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
-					return p.returnError(rtID, NewProtocolError(ErrStringBadStream))
+					return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,
@@ -432,8 +444,7 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			return p.returnError(
-				rtID,
+			return p.WriteError(
 				NewReplyError(ConcatString(
 					replyPath,
 					" reply arguments does not match\nwant: ",
@@ -443,6 +454,7 @@ func (p *rpcThread) Eval(
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
 				)).AddDebug(p.GetExecReplyDebug()),
+				0,
 			)
 		}
 	}

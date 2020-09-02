@@ -268,32 +268,6 @@ func TestRpcThread_Eval1(t *testing.T) {
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
 }
 
-func TestRpcThread_setReturn(t *testing.T) {
-	assert := NewAssert(t)
-
-	thread := getFakeThread(false)
-
-	// Test(1)
-	thread.top.status = atomic.LoadUint64(&thread.sequence)
-	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence))).
-		Equals(rpcThreadReturnStatusOK)
-
-		// Test(2)
-	thread.top.status = atomic.LoadUint64(&thread.sequence)
-	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 1)).
-		Equals(rpcThreadReturnStatusAlreadyCalled)
-
-		// Test(3)
-	thread.top.status = atomic.LoadUint64(&thread.sequence)
-	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) - 2)).
-		Equals(rpcThreadReturnStatusContextError)
-
-		// Test(4)
-	thread.top.status = atomic.LoadUint64(&thread.sequence)
-	assert(thread.setReturn(atomic.LoadUint64(&thread.sequence) + 1)).
-		Equals(rpcThreadReturnStatusContextError)
-}
-
 func TestRpcThread_Eval(t *testing.T) {
 	assert := NewAssert(t)
 
@@ -1311,32 +1285,4 @@ func TestRpcThread_Eval(t *testing.T) {
 		},
 		nil,
 	)).Equals(nil, NewProtocolError(ErrStringBadStream), nil)
-
-	// Test(36) sequence error
-	ret36, error36, panic36 := testRunWithProcessor(true, &testFuncCache{},
-		func(rt Runtime) Return {
-			rt.OK(true)
-			// hack sequence error
-			rt.id = rt.id + 1
-			return rt.OK(true)
-		},
-		func(_ *Processor) *Stream {
-			stream := NewStream()
-			stream.WriteString("#.test:Eval")
-			stream.WriteUint64(3)
-			stream.WriteString("#")
-			return stream
-		},
-		nil,
-	)
-
-	assert(ret36, error36).IsNil()
-	assert(panic36).IsNotNil()
-
-	assert(panic36.GetKind()).Equals(ErrorKindKernelPanic)
-	assert(panic36.GetMessage()).Equals("internal error")
-	assert(strings.Contains(panic36.GetDebug(), "goroutine"))
-	assert(strings.Contains(panic36.GetDebug(), "[running]"))
-	assert(strings.Contains(panic36.GetDebug(), "Eval"))
-	assert(strings.Contains(panic36.GetDebug(), "thread.go"))
 }
