@@ -92,8 +92,8 @@ func TestNewProcessor(t *testing.T) {
 	)
 	for i := 0; i < 2048; i++ {
 		stream := NewStream()
+		stream.SetDepth(3)
 		stream.WriteString("#.test:Eval")
-		stream.WriteUint64(3)
 		stream.WriteString("")
 		processor6.PutStream(stream)
 	}
@@ -101,8 +101,8 @@ func TestNewProcessor(t *testing.T) {
 	assert(processor6.isDebug).IsTrue()
 	assert(len(processor6.repliesMap)).Equals(1)
 	assert(len(processor6.servicesMap)).Equals(2)
-	assert(processor6.maxNodeDepth).Equals(uint64(2))
-	assert(processor6.maxCallDepth).Equals(uint64(3))
+	assert(processor6.maxNodeDepth).Equals(uint16(2))
+	assert(processor6.maxCallDepth).Equals(uint16(3))
 	assert(len(processor6.threads)).Equals(2048)
 	assert(len(processor6.freeCHArray)).Equals(freeGroups)
 	assert(processor6.readThreadPos).Equals(uint64(2048))
@@ -149,8 +149,8 @@ func TestProcessor_Close(t *testing.T) {
 	)
 	for i := 0; i < 1; i++ {
 		stream := NewStream()
+		stream.SetDepth(3)
 		stream.WriteString("#.test:Eval")
-		stream.WriteUint64(3)
 		stream.WriteString("")
 		processor2.PutStream(stream)
 	}
@@ -191,8 +191,8 @@ func TestProcessor_Close(t *testing.T) {
 	)
 	for i := 0; i < 2; i++ {
 		stream := NewStream()
+		stream.SetDepth(3)
 		stream.WriteString("#.test:Eval")
-		stream.WriteUint64(3)
 		stream.WriteString("")
 		processor3.PutStream(stream)
 	}
@@ -632,8 +632,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
+			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
-			stream.WriteUint64(3)
 			stream.WriteString("")
 			stream.Write(3)
 			atomic.AddUint64(&total, 1)

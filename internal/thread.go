@@ -29,7 +29,7 @@ var rpcThreadFrameCache = &sync.Pool{
 
 type rpcThreadFrame struct {
 	stream     *Stream
-	depth      uint64
+	depth      uint16
 	replyNode  unsafe.Pointer
 	args       []reflect.Value
 	from       string
@@ -234,6 +234,7 @@ func (p *rpcThread) Eval(
 	rtID := p.sequence
 	frame.lockStatus = rtID
 	frame.retStatus = 0
+	frame.depth = inStream.GetDepth()
 	execReplyNode := (*rpcReplyNode)(nil)
 
 	defer func() {
@@ -301,15 +302,13 @@ func (p *rpcThread) Eval(
 		atomic.StorePointer(&frame.replyNode, unsafe.Pointer(execReplyNode))
 	}
 
-	if frame.depth, ok = inStream.ReadUint64(); !ok {
-		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
-	} else if frame.depth > p.processor.maxCallDepth {
+	if frame.depth > p.processor.maxCallDepth {
 		return p.WriteError(
 			NewReplyError(ConcatString(
 				"call ",
 				replyPath,
 				" level(",
-				strconv.FormatUint(frame.depth, 10),
+				strconv.FormatUint(uint64(frame.depth), 10),
 				") overflows",
 			)).AddDebug(p.GetExecReplyDebug()),
 			0,

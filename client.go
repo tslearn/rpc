@@ -461,10 +461,10 @@ func (p *Client) SendMessage(
 	item.startTime = internal.TimeNow()
 	item.timeout = timeout
 
+	// set depth
+	item.sendStream.SetDepth(0)
 	// write target
 	item.sendStream.WriteString(target)
-	// write depth
-	item.sendStream.WriteUint64(0)
 	// write from
 	item.sendStream.WriteString("@")
 	// write args

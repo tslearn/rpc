@@ -658,8 +658,8 @@ func testRunOnContext(
 		},
 		func(processor *Processor) *Stream {
 			stream := NewStream()
+			stream.SetDepth(3)
 			stream.WriteString("#.test:Eval")
-			stream.WriteUint64(3)
 			stream.WriteString("")
 			return stream
 		},

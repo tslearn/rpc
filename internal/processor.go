@@ -32,7 +32,7 @@ type rpcReplyNode struct {
 type rpcServiceNode struct {
 	path    string
 	addMeta *ServiceMeta
-	depth   uint
+	depth   uint16
 }
 
 // Processor ...
@@ -40,8 +40,8 @@ type Processor struct {
 	isDebug           bool
 	repliesMap        map[string]*rpcReplyNode
 	servicesMap       map[string]*rpcServiceNode
-	maxNodeDepth      uint64
-	maxCallDepth      uint64
+	maxNodeDepth      uint16
+	maxCallDepth      uint16
 	threads           []*rpcThread
 	freeCHArray       []chan *rpcThread
 	readThreadPos     uint64
@@ -55,8 +55,8 @@ type Processor struct {
 func NewProcessor(
 	isDebug bool,
 	numOfThreads int,
-	maxNodeDepth int,
-	maxCallDepth int,
+	maxNodeDepth int16,
+	maxCallDepth int16,
 	fnCache ReplyCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
@@ -101,8 +101,8 @@ func NewProcessor(
 			isDebug:        isDebug,
 			repliesMap:     make(map[string]*rpcReplyNode),
 			servicesMap:    make(map[string]*rpcServiceNode),
-			maxNodeDepth:   uint64(maxNodeDepth),
-			maxCallDepth:   uint64(maxCallDepth),
+			maxNodeDepth:   uint16(maxNodeDepth),
+			maxCallDepth:   uint16(maxCallDepth),
 			threads:        make([]*rpcThread, size),
 			freeCHArray:    nil,
 			readThreadPos:  0,
@@ -277,7 +277,7 @@ func (p *Processor) mountNode(
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
-		if uint64(parentNode.depth+1) > p.maxNodeDepth {
+		if parentNode.depth+1 > p.maxNodeDepth {
 			// check max node depth overflow
 			return NewRuntimePanic(fmt.Sprintf(
 				"service path %s is too long",

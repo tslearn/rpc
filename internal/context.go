@@ -84,10 +84,10 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 		defer stream.Release()
 
 		frame := thread.top
+
+		stream.SetDepth(frame.depth + 1)
 		// write target
 		stream.WriteString(target)
-		// write depth
-		stream.WriteUint64(frame.depth + 1)
 		// write from
 		stream.WriteString(frame.from)
 		// write args
