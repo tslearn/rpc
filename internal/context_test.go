@@ -130,19 +130,3 @@ func TestContextObject_Error(t *testing.T) {
 			AddDebug("#.test:Eval "+source6),
 	)
 }
-
-func getTestStream() *Stream {
-	stream := NewStream()
-	mp := Map{"user": "tianshuo", "age": 33}
-	stream.Write(mp)
-	return stream
-}
-
-func BenchmarkDebug(b *testing.B) {
-	b.ReportAllocs()
-
-	for n := 0; n < b.N; n++ {
-		stream := getTestStream()
-		stream.Release()
-	}
-}
