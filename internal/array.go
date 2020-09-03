@@ -5,16 +5,29 @@ type RTArray struct {
 	items []int
 }
 
-//func newRPCArray(ctx *rpcContext) rpcArray {
-//  if ctx.ok() {
-//    return rpcArray{
-//      ctx: ctx,
-//      in:  rpcArrayInnerCache.Get().(*rpcArrayInner),
-//    }
-//  }
-//  return nilRPCArray
-//}
-//
+func newRTArray(rt Runtime, items []int) RTArray {
+	return RTArray{
+		rt:    rt,
+		items: items,
+	}
+}
+
+func (p RTArray) Get(index int) RTValue {
+	if index >= 0 && index < len(p.items) {
+		return RTValue{
+			rt:  p.rt,
+			pos: p.items[index],
+			buf: nil,
+		}
+	} else {
+		return RTValue{
+			rt:  p.rt,
+			pos: p.items[index],
+			buf: nil,
+		}
+	}
+}
+
 //func newRPCArrayByArray(ctx *rpcContext, val Array) rpcArray {
 //  if val == nil {
 //    return nilRPCArray

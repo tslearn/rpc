@@ -1,11 +1,5 @@
 package internal
 
-type RuntimeValue struct {
-	rt  Runtime
-	pos int
-	buf []byte
-}
-
 // Runtime ...
 type Runtime struct {
 	id     uint64
