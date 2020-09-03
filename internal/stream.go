@@ -92,18 +92,19 @@ func (p *Stream) Reset() {
 		} else {
 			p.frames = p.frames[:1]
 		}
+
+		if p.readSeg != 0 {
+			p.readSeg = 0
+			p.readFrame = *p.frames[0]
+		}
+
+		if p.writeSeg != 0 {
+			p.writeSeg = 0
+			p.writeFrame = *p.frames[0]
+		}
 	}
 
-	if p.readSeg != 0 {
-		p.readSeg = 0
-		p.readFrame = *p.frames[0]
-	}
 	p.readIndex = streamPosBody
-
-	if p.writeSeg != 0 {
-		p.writeSeg = 0
-		p.writeFrame = *p.frames[0]
-	}
 	p.writeIndex = streamPosBody
 }
 

@@ -62,6 +62,7 @@ type rpcThread struct {
 	closeTimeout time.Duration
 	top          *rpcThreadFrame
 	sequence     uint64
+	rtStream     *Stream
 	Lock
 }
 
@@ -92,6 +93,7 @@ func newThread(
 			closeTimeout: timeout,
 			top:          newRPCThreadFrame(),
 			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
+			rtStream:     NewStream(),
 		}
 
 		retCH <- thread
@@ -116,6 +118,8 @@ func (p *rpcThread) Close() bool {
 			case <-*chPtr:
 				p.top.Release()
 				p.top = nil
+				p.rtStream.Release()
+				p.rtStream = nil
 				return true
 			case <-time.After(p.closeTimeout):
 				return false
