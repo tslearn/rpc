@@ -12,48 +12,39 @@ type Runtime struct {
 	thread *rpcThread
 }
 
+func (p Runtime) lock() *rpcThread {
+	if thread := p.thread; thread != nil {
+		return thread.lock(p.id)
+	}
+
+	return nil
+}
+
+func (p Runtime) unlock() {
+	if thread := p.thread; thread != nil {
+		thread.unlock(p.id)
+	}
+}
+
 // OK ...
 func (p Runtime) OK(value interface{}) Return {
-	ctxID := p.id
-	if thread := p.thread; thread == nil {
-		reportPanic(
-			NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
-		)
-		return emptyReturn
-	} else if thread.lock(ctxID) == nil {
-		return thread.WriteError(
-			NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
-			1,
-		)
-	} else {
-		defer thread.unlock(ctxID)
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
 		return thread.WriteOK(value, 1)
 	}
+
+	reportPanic(
+		NewReplyPanic(
+			"Runtime is illegal in current goroutine",
+		).AddDebug(GetFileLine(1)),
+	)
+	return emptyReturn
 }
 
 // Error ...
 func (p Runtime) Error(value error) Return {
-	ctxID := p.id
-	if thread := p.thread; thread == nil {
-		reportPanic(
-			NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
-		)
-		return emptyReturn
-	} else if thread.lock(ctxID) == nil {
-		return thread.WriteError(
-			NewReplyPanic(
-				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
-			1,
-		)
-	} else {
-		defer thread.unlock(ctxID)
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
 
 		if err, ok := value.(Error); ok && err != nil {
 			return p.thread.WriteError(
@@ -76,19 +67,21 @@ func (p Runtime) Error(value error) Return {
 			)
 		}
 	}
+
+	reportPanic(
+		NewReplyPanic(
+			"Runtime is illegal in current goroutine",
+		).AddDebug(GetFileLine(1)),
+	)
+	return emptyReturn
 }
 
 func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
-	ctxID := p.id
-	if thread := p.thread; thread == nil || thread.lock(ctxID) == nil {
-		return nil, NewReplyPanic(
-			"Runtime is illegal in current goroutine",
-		)
-	} else {
-		defer thread.unlock(ctxID)
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+
 		stream := NewStream()
 		defer stream.Release()
-
 		frame := thread.top
 
 		stream.SetDepth(frame.depth + 1)
@@ -133,6 +126,10 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 			return nil, NewError(ErrorKind(errKind), message, dbg)
 		}
 	}
+
+	return nil, NewReplyPanic(
+		"Runtime is illegal in current goroutine",
+	)
 }
 
 func (p Runtime) GetServiceData() interface{} {

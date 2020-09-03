@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -48,7 +49,7 @@ type Processor struct {
 	writeThreadPos    uint64
 	panicSubscription *rpcPanicSubscription
 	fnError           func(err Error)
-	Lock
+	sync.Mutex
 }
 
 // NewProcessor ...
@@ -158,61 +159,62 @@ func NewProcessor(
 
 // Close ...
 func (p *Processor) Close() bool {
-	return p.CallWithLock(func() interface{} {
-		if p.panicSubscription == nil {
-			return false
-		}
+	p.Lock()
+	defer p.Unlock()
 
-		closeCH := make(chan string)
+	if p.panicSubscription == nil {
+		return false
+	}
 
-		for i := 0; i < len(p.threads); i++ {
-			go func(idx int) {
-				if p.threads[idx].Close() {
-					closeCH <- ""
-				} else {
-					closeCH <- p.threads[idx].GetExecReplyDebug()
-				}
-			}(i)
-		}
+	closeCH := make(chan string)
 
-		// wait all rpcThread close
-		errMap := make(map[string]int)
-		for i := 0; i < len(p.threads); i++ {
-			if errString := <-closeCH; errString != "" {
-				if v, ok := errMap[errString]; ok {
-					errMap[errString] = v + 1
-				} else {
-					errMap[errString] = 1
-				}
-			}
-		}
-
-		errList := make([]string, 0)
-		for k, v := range errMap {
-			if v > 1 {
-				errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
+	for i := 0; i < len(p.threads); i++ {
+		go func(idx int) {
+			if p.threads[idx].Close() {
+				closeCH <- ""
 			} else {
-				errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
+				closeCH <- p.threads[idx].GetExecReplyDebug()
+			}
+		}(i)
+	}
+
+	// wait all rpcThread close
+	errMap := make(map[string]int)
+	for i := 0; i < len(p.threads); i++ {
+		if errString := <-closeCH; errString != "" {
+			if v, ok := errMap[errString]; ok {
+				errMap[errString] = v + 1
+			} else {
+				errMap[errString] = 1
 			}
 		}
+	}
 
-		if len(errList) > 0 {
-			p.fnError(
-				NewReplyPanic(ConcatString(
-					"the following replies can not close: \n\t",
-					strings.Join(errList, "\n\t"),
-				)),
-			)
+	errList := make([]string, 0)
+	for k, v := range errMap {
+		if v > 1 {
+			errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
+		} else {
+			errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
 		}
+	}
 
-		for _, freeCH := range p.freeCHArray {
-			close(freeCH)
-		}
+	if len(errList) > 0 {
+		p.fnError(
+			NewReplyPanic(ConcatString(
+				"the following replies can not close: \n\t",
+				strings.Join(errList, "\n\t"),
+			)),
+		)
+	}
 
-		p.panicSubscription.Close()
-		p.panicSubscription = nil
-		return len(errList) == 0
-	}).(bool)
+	for _, freeCH := range p.freeCHArray {
+		close(freeCH)
+	}
+
+	p.panicSubscription.Close()
+	p.panicSubscription = nil
+	return len(errList) == 0
 }
 
 // PutStream ...

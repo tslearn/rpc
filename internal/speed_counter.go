@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -10,7 +11,7 @@ type SpeedCounter struct {
 	total     int64
 	lastCount int64
 	lastTime  time.Time
-	Lock
+	sync.Mutex
 }
 
 // NewSpeedCounter ...
@@ -35,24 +36,20 @@ func (p *SpeedCounter) Total() int64 {
 // Calculate ...
 func (p *SpeedCounter) Calculate(
 	now time.Time,
-) (speed int64, duration time.Duration) {
-	p.DoWithLock(func() {
-		deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
-		deltaTime := now.Sub(p.lastTime)
+) (int64, time.Duration) {
+	p.Lock()
+	defer p.Unlock()
 
-		if deltaTime <= 0 {
-			speed = 0
-			duration = 0
-		} else if deltaCount < 0 {
-			speed = 0
-			duration = 0
-		} else {
-			speed = (deltaCount * int64(time.Second)) / int64(deltaTime)
-			duration = deltaTime
-			p.lastCount += deltaCount
-			p.lastTime = now
-		}
-	})
+	deltaCount := atomic.LoadInt64(&p.total) - p.lastCount
+	deltaTime := now.Sub(p.lastTime)
 
-	return
+	if deltaTime <= 0 {
+		return 0, 0
+	} else if deltaCount < 0 {
+		return 0, 0
+	} else {
+		p.lastCount += deltaCount
+		p.lastTime = now
+		return (deltaCount * int64(time.Second)) / int64(deltaTime), deltaTime
+	}
 }

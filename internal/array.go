@@ -1,11 +1,10 @@
 package internal
 
-//
-//type rpcArray struct {
-//  rt    Runtime
-//  items []int
-//}
-//
+type RTArray struct {
+	rt    Runtime
+	items []int
+}
+
 //func newRPCArray(ctx *rpcContext) rpcArray {
 //  if ctx.ok() {
 //    return rpcArray{

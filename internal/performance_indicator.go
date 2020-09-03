@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -11,7 +12,7 @@ type rpcPerformanceIndicator struct {
 	successArray [8]int64
 	lastTotal    int64
 	lastTime     time.Time
-	Lock
+	sync.Mutex
 }
 
 // newPerformanceIndicator ...
@@ -27,34 +28,30 @@ func newPerformanceIndicator() *rpcPerformanceIndicator {
 // Calculate ...
 func (p *rpcPerformanceIndicator) Calculate(
 	now time.Time,
-) (speed int64, duration time.Duration) {
-	p.DoWithLock(func() {
-		// calculate total called
-		total := int64(0)
-		for i := 0; i < len(p.failArray); i++ {
-			total += atomic.LoadInt64(&p.failArray[i])
-		}
-		for i := 0; i < len(p.successArray); i++ {
-			total += atomic.LoadInt64(&p.successArray[i])
-		}
-		deltaCount := total - p.lastTotal
-		deltaTime := now.Sub(p.lastTime)
+) (int64, time.Duration) {
+	p.Lock()
+	defer p.Unlock()
 
-		if deltaTime <= 0 {
-			speed = 0
-			duration = 0
-		} else if deltaCount < 0 {
-			speed = 0
-			duration = 0
-		} else {
-			p.lastTime = now
-			p.lastTotal = total
-			speed = (deltaCount * int64(time.Second)) / int64(deltaTime)
-			duration = deltaTime
-		}
-	})
+	// calculate total called
+	total := int64(0)
+	for i := 0; i < len(p.failArray); i++ {
+		total += atomic.LoadInt64(&p.failArray[i])
+	}
+	for i := 0; i < len(p.successArray); i++ {
+		total += atomic.LoadInt64(&p.successArray[i])
+	}
+	deltaCount := total - p.lastTotal
+	deltaTime := now.Sub(p.lastTime)
 
-	return
+	if deltaTime <= 0 {
+		return 0, 0
+	} else if deltaCount < 0 {
+		return 0, 0
+	} else {
+		p.lastTime = now
+		p.lastTotal = total
+		return (deltaCount * int64(time.Second)) / int64(deltaTime), deltaTime
+	}
 }
 
 // Count ...

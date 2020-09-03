@@ -20,11 +20,11 @@ func testWithStreamConn(
 	runOnClient func(IClientAdapter, IStreamConn),
 ) []Error {
 	ret := make([]Error, 0)
-	lock := NewLock()
+	lock := &sync.Mutex{}
 	fnOnError := func(err Error) {
-		lock.DoWithLock(func() {
-			ret = append(ret, err)
-		})
+		lock.Lock()
+		defer lock.Unlock()
+		ret = append(ret, err)
 	}
 
 	waitCH := make(chan bool)
@@ -688,7 +688,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 
 		time.Sleep(200 * time.Millisecond)
 
-		serverAdapter.(*wsServerAdapter).lock.mutex.Lock()
+		serverAdapter.(*wsServerAdapter).mutex.Lock()
 		// make fake error
 		wsServer := serverAdapter.(*wsServerAdapter).wsServer
 		httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
@@ -702,7 +702,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 			&fakeListener: {},
 		}
 		httpServerMuPointer.Unlock()
-		serverAdapter.(*wsServerAdapter).lock.mutex.Unlock()
+		serverAdapter.(*wsServerAdapter).mutex.Unlock()
 
 		errCount := 0
 		serverAdapter.Close(func(_ uint64, e Error) {

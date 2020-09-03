@@ -1,5 +1,7 @@
 package internal
 
+import "sync"
+
 // ErrorKind ...
 type ErrorKind uint64
 
@@ -35,7 +37,7 @@ const (
 )
 
 var (
-	gPanicLocker        = NewLock()
+	gPanicMutex         = &sync.Mutex{}
 	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
 )
 
@@ -45,13 +47,14 @@ func reportPanic(err Error) {
 		_ = recover()
 	}()
 
-	gPanicLocker.DoWithLock(func() {
-		for _, sub := range gPanicSubscriptions {
-			if sub != nil && sub.onPanic != nil {
-				sub.onPanic(err)
-			}
+	gPanicMutex.Lock()
+	defer gPanicMutex.Unlock()
+
+	for _, sub := range gPanicSubscriptions {
+		if sub != nil && sub.onPanic != nil {
+			sub.onPanic(err)
 		}
-	})
+	}
 }
 
 // subscribePanic ...
@@ -60,14 +63,15 @@ func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
 		return nil
 	}
 
-	return gPanicLocker.CallWithLock(func() interface{} {
-		ret := &rpcPanicSubscription{
-			id:      GetSeed(),
-			onPanic: onPanic,
-		}
-		gPanicSubscriptions = append(gPanicSubscriptions, ret)
-		return ret
-	}).(*rpcPanicSubscription)
+	gPanicMutex.Lock()
+	defer gPanicMutex.Unlock()
+
+	ret := &rpcPanicSubscription{
+		id:      GetSeed(),
+		onPanic: onPanic,
+	}
+	gPanicSubscriptions = append(gPanicSubscriptions, ret)
+	return ret
 }
 
 type rpcPanicSubscription struct {
@@ -80,18 +84,19 @@ func (p *rpcPanicSubscription) Close() bool {
 		return false
 	}
 
-	return gPanicLocker.CallWithLock(func() interface{} {
-		for i := 0; i < len(gPanicSubscriptions); i++ {
-			if gPanicSubscriptions[i].id == p.id {
-				gPanicSubscriptions = append(
-					gPanicSubscriptions[:i],
-					gPanicSubscriptions[i+1:]...,
-				)
-				return true
-			}
+	gPanicMutex.Lock()
+	defer gPanicMutex.Unlock()
+
+	for i := 0; i < len(gPanicSubscriptions); i++ {
+		if gPanicSubscriptions[i].id == p.id {
+			gPanicSubscriptions = append(
+				gPanicSubscriptions[:i],
+				gPanicSubscriptions[i+1:]...,
+			)
+			return true
 		}
-		return false
-	}).(bool)
+	}
+	return false
 }
 
 // Error ...

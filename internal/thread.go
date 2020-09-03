@@ -63,7 +63,7 @@ type rpcThread struct {
 	top          *rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
-	Lock
+	sync.Mutex
 }
 
 func newThread(
@@ -109,25 +109,26 @@ func newThread(
 }
 
 func (p *rpcThread) Close() bool {
-	return p.CallWithLock(func() interface{} {
-		if chPtr := (*chan bool)(atomic.LoadPointer(&p.closeCH)); chPtr != nil {
-			atomic.StorePointer(&p.closeCH, nil)
-			time.Sleep(500 * time.Millisecond)
-			close(p.inputCH)
-			select {
-			case <-*chPtr:
-				p.top.Release()
-				p.top = nil
-				p.rtStream.Release()
-				p.rtStream = nil
-				return true
-			case <-time.After(p.closeTimeout):
-				return false
-			}
-		}
+	p.Lock()
+	defer p.Unlock()
 
-		return false
-	}).(bool)
+	if chPtr := (*chan bool)(atomic.LoadPointer(&p.closeCH)); chPtr != nil {
+		atomic.StorePointer(&p.closeCH, nil)
+		time.Sleep(500 * time.Millisecond)
+		close(p.inputCH)
+		select {
+		case <-*chPtr:
+			p.top.Release()
+			p.top = nil
+			p.rtStream.Release()
+			p.rtStream = nil
+			return true
+		case <-time.After(p.closeTimeout):
+			return false
+		}
+	}
+
+	return false
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
