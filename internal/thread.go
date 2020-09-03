@@ -127,10 +127,16 @@ func (p *rpcThread) Close() bool {
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
-	if atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID, rtID+1) {
-		return p
+	for !atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID, rtID+1) {
+		currStatus := atomic.LoadUint64(&p.top.lockStatus)
+		if currStatus == rtID || rtID == rtID+1 {
+			time.Sleep(10 * time.Millisecond)
+		} else {
+			return nil
+		}
 	}
-	return nil
+
+	return p
 }
 
 func (p *rpcThread) unlock(rtID uint64) {
