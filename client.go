@@ -103,8 +103,8 @@ type Client struct {
 	callbackSize         int64
 	lastControlSendTime  time.Time
 	lastTimeoutCheckTime time.Time
-	lock                 internal.Lock
 	statusManager        internal.StatusManager
+	mutex                *sync.Mutex
 }
 
 // Dial ...
@@ -141,8 +141,8 @@ func newClient(adapter internal.IClientAdapter) *Client {
 		callbackSize:         0,
 		lastControlSendTime:  time.Now().Add(-10 * time.Second),
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
-		lock:                 internal.Lock{},
 		statusManager:        internal.StatusManager{},
+		mutex:                &sync.Mutex{},
 	}
 
 	ret.statusManager.SetRunning(nil)
@@ -199,11 +199,10 @@ func (p *Client) Close() bool {
 
 func (p *Client) initConn(conn internal.IStreamConn) Error {
 	// get the sequence
-	sequence := p.lock.CallWithLock(func() interface{} {
-		p.systemSeed++
-		ret := p.systemSeed
-		return ret
-	}).(uint64)
+	p.mutex.Lock()
+	p.systemSeed++
+	sequence := p.systemSeed
+	p.mutex.Unlock()
 
 	sendStream := internal.NewStream()
 	backStream := (*internal.Stream)(nil)
@@ -270,9 +269,9 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	}
 
 	// set the conn
-	p.lock.DoWithLock(func() {
-		p.conn = conn
-	})
+	p.mutex.Lock()
+	p.conn = conn
+	p.mutex.Unlock()
 
 	err := Error(nil)
 
@@ -282,9 +281,9 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			p.onError(err)
 		}
 
-		p.lock.DoWithLock(func() {
-			p.conn = nil
-		})
+		p.mutex.Lock()
+		p.conn = nil
+		p.mutex.Unlock()
 
 		if err := conn.Close(); err != nil {
 			p.onError(err)
@@ -299,13 +298,13 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			}
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
-			p.lock.DoWithLock(func() {
-				if v, ok := p.sendMap[callbackID]; ok {
-					if v.Return(stream) {
-						delete(p.sendMap, callbackID)
-					}
+			p.mutex.Lock()
+			if v, ok := p.sendMap[callbackID]; ok {
+				if v.Return(stream) {
+					delete(p.sendMap, callbackID)
 				}
-			})
+			}
+			p.mutex.Unlock()
 		} else if kind, ok := stream.ReadInt64(); !ok ||
 			kind != controlStreamKindRequestIdsBack {
 			err = internal.NewProtocolError(internal.ErrStringBadStream)
@@ -317,11 +316,11 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			err = internal.NewProtocolError(internal.ErrStringBadStream)
 			return
 		} else {
-			p.lock.DoWithLock(func() {
-				if maxCallbackID > p.maxCallbackID {
-					p.maxCallbackID = maxCallbackID
-				}
-			})
+			p.mutex.Lock()
+			if maxCallbackID > p.maxCallbackID {
+				p.maxCallbackID = maxCallbackID
+			}
+			p.mutex.Unlock()
 		}
 	}
 }
@@ -331,122 +330,125 @@ func (p *Client) getHeartbeatDuration() time.Duration {
 }
 
 func (p *Client) tryToDeliverControlMessage(now time.Time) {
-	p.lock.DoWithLock(func() {
-		deltaTime := now.Sub(p.lastControlSendTime)
-		if p.conn == nil {
-			return
-		} else if deltaTime < 1000*time.Millisecond {
-			return
-		} else if deltaTime < p.getHeartbeatDuration() &&
-			int64(len(p.sendMap)) > p.callbackSize/2 {
-			return
-		} else {
-			p.lastControlSendTime = now
-			p.systemSeed++
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
-			sendStream := internal.NewStream()
-			sendStream.SetCallbackID(0)
-			sendStream.WriteInt64(controlStreamKindRequestIds)
-			sendStream.WriteUint64(p.systemSeed)
-			sendStream.WriteUint64(p.currCallbackID)
+	deltaTime := now.Sub(p.lastControlSendTime)
+	if p.conn == nil {
+		return
+	} else if deltaTime < 1000*time.Millisecond {
+		return
+	} else if deltaTime < p.getHeartbeatDuration() &&
+		int64(len(p.sendMap)) > p.callbackSize/2 {
+		return
+	} else {
+		p.lastControlSendTime = now
+		p.systemSeed++
 
-			for key := range p.sendMap {
-				sendStream.WriteUint64(key)
-			}
+		sendStream := internal.NewStream()
+		sendStream.SetCallbackID(0)
+		sendStream.WriteInt64(controlStreamKindRequestIds)
+		sendStream.WriteUint64(p.systemSeed)
+		sendStream.WriteUint64(p.currCallbackID)
 
-			if err := p.conn.WriteStream(
-				sendStream,
-				p.writeTimeout,
-			); err != nil {
-				p.onError(err)
-			}
-
-			sendStream.Release()
+		for key := range p.sendMap {
+			sendStream.WriteUint64(key)
 		}
-	})
+
+		if err := p.conn.WriteStream(
+			sendStream,
+			p.writeTimeout,
+		); err != nil {
+			p.onError(err)
+		}
+
+		sendStream.Release()
+	}
 }
 
 func (p *Client) tryToTimeout(now time.Time) {
-	p.lock.DoWithLock(func() {
-		if now.Sub(p.lastTimeoutCheckTime) > 800*time.Millisecond {
-			p.lastTimeoutCheckTime = now
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
-			// sweep pre send list
-			preValidItem := (*sendItem)(nil)
-			item := p.preSendHead
-			for item != nil {
-				if now.Sub(item.startTime) > item.timeout && item.Timeout() {
-					nextItem := item.next
+	if now.Sub(p.lastTimeoutCheckTime) > 800*time.Millisecond {
+		p.lastTimeoutCheckTime = now
 
-					if preValidItem == nil {
-						p.preSendHead = nextItem
-					} else {
-						preValidItem.next = nextItem
-					}
+		// sweep pre send list
+		preValidItem := (*sendItem)(nil)
+		item := p.preSendHead
+		for item != nil {
+			if now.Sub(item.startTime) > item.timeout && item.Timeout() {
+				nextItem := item.next
 
-					if item == p.preSendTail {
-						p.preSendTail = preValidItem
-						if p.preSendTail != nil {
-							p.preSendTail.next = nil
-						}
-					}
-					item = nextItem
+				if preValidItem == nil {
+					p.preSendHead = nextItem
 				} else {
-					preValidItem = item
-					item = item.next
+					preValidItem.next = nextItem
 				}
-			}
 
-			// sweep send map
-			for key, value := range p.sendMap {
-				if now.Sub(value.startTime) > value.timeout && value.Timeout() {
-					delete(p.sendMap, key)
+				if item == p.preSendTail {
+					p.preSendTail = preValidItem
+					if p.preSendTail != nil {
+						p.preSendTail.next = nil
+					}
 				}
+				item = nextItem
+			} else {
+				preValidItem = item
+				item = item.next
 			}
 		}
-	})
+
+		// sweep send map
+		for key, value := range p.sendMap {
+			if now.Sub(value.startTime) > value.timeout && value.Timeout() {
+				delete(p.sendMap, key)
+			}
+		}
+	}
 }
 
 func (p *Client) tryToDeliverPreSendMessage() bool {
-	return p.lock.CallWithLock(func() interface{} {
-		if !p.statusManager.IsRunning() { // not running
-			return false
-		} else if p.conn == nil { // not connected
-			return false
-		} else if p.preSendHead == nil { // preSend queue is empty
-			return false
-		} else if p.currCallbackID >= p.maxCallbackID { // id is not available
-			return false
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if !p.statusManager.IsRunning() { // not running
+		return false
+	} else if p.conn == nil { // not connected
+		return false
+	} else if p.preSendHead == nil { // preSend queue is empty
+		return false
+	} else if p.currCallbackID >= p.maxCallbackID { // id is not available
+		return false
+	} else {
+		// get and set the send item
+		item := p.preSendHead
+		if item == p.preSendTail {
+			p.preSendHead = nil
+			p.preSendTail = nil
 		} else {
-			// get and set the send item
-			item := p.preSendHead
-			if item == p.preSendTail {
-				p.preSendHead = nil
-				p.preSendTail = nil
-			} else {
-				p.preSendHead = p.preSendHead.next
-			}
-			p.currCallbackID++
-			item.id = p.currCallbackID
-			item.next = nil
-			item.sendStream.SetCallbackID(item.id)
-
-			// set to sendMap
-			p.sendMap[item.id] = item
-
-			// try to send
-			if err := p.conn.WriteStream(
-				item.sendStream,
-				p.writeTimeout,
-			); err != nil {
-				p.onError(err)
-				return false
-			}
-
-			item.sendTime = internal.TimeNow()
-			return true
+			p.preSendHead = p.preSendHead.next
 		}
-	}).(bool)
+		p.currCallbackID++
+		item.id = p.currCallbackID
+		item.next = nil
+		item.sendStream.SetCallbackID(item.id)
+
+		// set to sendMap
+		p.sendMap[item.id] = item
+
+		// try to send
+		if err := p.conn.WriteStream(
+			item.sendStream,
+			p.writeTimeout,
+		); err != nil {
+			p.onError(err)
+			return false
+		}
+
+		item.sendTime = internal.TimeNow()
+		return true
+	}
 }
 
 // SendMessage ...
@@ -477,15 +479,15 @@ func (p *Client) SendMessage(
 	}
 
 	// add item to the list tail
-	p.lock.DoWithLock(func() {
-		if p.preSendTail == nil {
-			p.preSendHead = item
-			p.preSendTail = item
-		} else {
-			p.preSendTail.next = item
-			p.preSendTail = item
-		}
-	})
+	p.mutex.Lock()
+	if p.preSendTail == nil {
+		p.preSendHead = item
+		p.preSendTail = item
+	} else {
+		p.preSendTail.next = item
+		p.preSendTail = item
+	}
+	p.mutex.Unlock()
 
 	// wait for response
 	if stream := <-item.returnCH; stream == nil {
