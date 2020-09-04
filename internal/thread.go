@@ -28,9 +28,9 @@ var rpcThreadFrameCache = &sync.Pool{
 
 type rpcThreadFrame struct {
 	stream     *Stream
-	depth      uint16
 	replyNode  unsafe.Pointer
 	from       string
+	depth      uint16
 	retStatus  uint32
 	lockStatus uint64
 	next       *rpcThreadFrame
