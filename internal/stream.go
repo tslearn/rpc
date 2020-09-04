@@ -51,7 +51,66 @@ var (
 			return &ret
 		},
 	}
+	readSkipArray = make([]int, 256, 256)
 )
+
+func init() {
+	for op := 0; op < 256; op++ {
+		switch op {
+		case 0:
+			readSkipArray[op] = -64
+		case 1:
+			readSkipArray[op] = 1
+		case 2:
+			readSkipArray[op] = 1
+		case 3:
+			readSkipArray[op] = 1
+		case 4:
+			readSkipArray[op] = 1
+		case 5:
+			readSkipArray[op] = 9
+		case 6:
+			readSkipArray[op] = 3
+		case 7:
+			readSkipArray[op] = 5
+		case 8:
+			readSkipArray[op] = 9
+		case 9:
+			readSkipArray[op] = 3
+		case 10:
+			readSkipArray[op] = 5
+		case 11:
+			readSkipArray[op] = 9
+		case 12:
+			readSkipArray[op] = -64
+		case 13:
+			readSkipArray[op] = -64
+		case 64:
+			readSkipArray[op] = 1
+		case 96:
+			readSkipArray[op] = 1
+		case 128:
+			readSkipArray[op] = 1
+		case 191:
+			readSkipArray[op] = -6
+		case 192:
+			readSkipArray[op] = 1
+		case 255:
+			readSkipArray[op] = -5
+		default:
+			switch op >> 6 {
+			case 0:
+				readSkipArray[op] = 1
+			case 1:
+				readSkipArray[op] = 0
+			case 2:
+				readSkipArray[op] = op - 126
+			case 3:
+				readSkipArray[op] = op - 191
+			}
+		}
+	}
+}
 
 // Stream ...
 type Stream struct {
@@ -425,6 +484,155 @@ func (p *Stream) readNBytesUnsafe(n int) []byte {
 		}
 	}
 	return ret
+}
+
+// return how many bytes to skip
+func (p *Stream) peekSkip() int {
+	skip := readSkipArray[p.readFrame[p.readIndex]]
+	if skip > 0 {
+		return skip
+	}
+
+	if skip == -64 {
+		return 0
+	}
+
+	if p.isSafetyRead5BytesInCurrentFrame() {
+		b := p.readFrame[p.readIndex:]
+		return int(uint32(b[1])|
+			(uint32(b[2])<<8)|
+			(uint32(b[3])<<16)|
+			(uint32(b[4])<<24)) - skip
+	} else if p.hasNBytesToRead(5) {
+		b := p.peek5BytesCrossFrameUnsafe()
+		return int(uint32(b[1])|
+			(uint32(b[2])<<8)|
+			(uint32(b[3])<<16)|
+			(uint32(b[4])<<24)) - skip
+	} else {
+		return 0
+	}
+}
+
+func (p *Stream) writeStreamUnsafe(s *Stream, length int) {
+	if p.writeIndex+length < 512 {
+		if s.readIndex+length < 512 {
+			copy(
+				p.writeFrame[p.writeIndex:],
+				s.readFrame[s.readIndex:s.readIndex+length],
+			)
+			p.writeIndex += length
+			s.readIndex += length
+		} else {
+			copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
+			p.writeIndex += copyCount
+			length -= copyCount
+			s.gotoNextReadFrameUnsafe()
+			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
+			p.writeIndex += length
+			s.readIndex = length
+		}
+	} else if p.writeIndex < s.readIndex {
+		copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
+		p.writeIndex += copyCount
+		length -= copyCount
+		s.gotoNextReadFrameUnsafe()
+
+		for length > 511 {
+			s.readIndex = copy(p.writeFrame[p.writeIndex:], s.readFrame)
+			p.gotoNextWriteFrame()
+			p.writeIndex = copy(p.writeFrame, s.readFrame[s.readIndex:])
+			s.gotoNextReadFrameUnsafe()
+			length -= 512
+		}
+
+		if p.writeIndex+length < 512 {
+			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
+			p.writeIndex += length
+			s.readIndex = length
+		} else {
+			copyCount = copy(p.writeFrame[p.writeIndex:], s.readFrame)
+			s.readIndex = copyCount
+			length -= copyCount
+			p.gotoNextWriteFrame()
+			copy(p.writeFrame, s.readFrame[s.readIndex:s.readIndex+length])
+			p.writeIndex = length
+			s.readIndex += length
+		}
+	} else if p.writeIndex > s.readIndex {
+		copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
+		s.readIndex += copyCount
+		length -= copyCount
+		p.gotoNextWriteFrame()
+		if length < 512-s.readIndex {
+			p.writeIndex = copy(
+				p.writeFrame,
+				s.readFrame[s.readIndex:s.readIndex+length],
+			)
+			s.readIndex += length
+			return
+		}
+		copyCount = copy(p.writeFrame, s.readFrame[s.readIndex:])
+		p.writeIndex = copyCount
+		length -= copyCount
+		s.gotoNextReadFrameUnsafe()
+
+		for length > 511 {
+			s.readIndex = copy(p.writeFrame[p.writeIndex:], s.readFrame)
+			p.gotoNextWriteFrame()
+			p.writeIndex = copy(p.writeFrame, s.readFrame[s.readIndex:])
+			s.gotoNextReadFrameUnsafe()
+			length -= 512
+		}
+
+		if p.writeIndex+length < 512 {
+			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
+			p.writeIndex += length
+			s.readIndex = length
+		} else {
+			copyCount = copy(p.writeFrame[p.writeIndex:], s.readFrame)
+			s.readIndex = copyCount
+			length -= copyCount
+			p.gotoNextWriteFrame()
+			copy(p.writeFrame, s.readFrame[s.readIndex:s.readIndex+length])
+			p.writeIndex = length
+			s.readIndex += length
+		}
+	} else {
+		length -= copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
+		s.gotoNextReadFrameUnsafe()
+		p.gotoNextWriteFrame()
+		for length > 511 {
+			length -= copy(p.writeFrame, s.readFrame)
+			s.gotoNextReadFrameUnsafe()
+			p.gotoNextWriteFrame()
+		}
+		copy(p.writeFrame, s.readFrame[:length])
+		p.writeIndex = length
+		s.readIndex = length
+	}
+}
+
+func (p *Stream) writeStreamNext(s *Stream) bool {
+	skip := s.peekSkip()
+	if skip > 0 {
+		if s.isSafetyReadNBytesInCurrentFrame(skip) && p.writeIndex+skip < 512 {
+			copy(
+				p.writeFrame[p.writeIndex:],
+				s.readFrame[s.readIndex:s.readIndex+skip],
+			)
+			p.writeIndex += skip
+			s.readIndex += skip
+			return true
+		} else if s.hasNBytesToRead(skip) {
+			p.writeStreamUnsafe(s, skip)
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }
 
 // WriteNil put nil value to stream
@@ -1768,25 +1976,28 @@ func (p *Stream) tryToReadBufferCacheForStringOrBytes(pos int) []byte {
 }
 
 //
-//
 //// ReadRPCArray read a RPCArray value
 //func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 //  v := p.readFrame[p.readIndex]
-//  if thread := rt.lock(); cs != nil && v >= 64 && v < 96 {
-//    ret := newRPCArray(ctx)
-//    in := ret.in
+//  if v >= 64 && v < 96 {
+//    thread := rt.lock()
+//    if thread == nil {
+//      return emptyRTArray, false
+//    }
+//    defer rt.unlock()
+//    rtStream := thread.rtStream
 //    arrLen := 0
 //    totalLen := 0
 //    readStart := p.GetReadPos()
 //
-//    if p != cs {
-//      wPos := cs.GetWritePos()
-//      if !cs.writeStreamNext(p) {
-//        return nilRPCArray, false
+//    if p != rtStream {
+//      if !rtStream.writeStreamNext(p) {
+//        return emptyRTArray, false
 //      }
-//      cs.SetReadPos(wPos)
 //    }
 //
+//    ret := newRTArray(ctx)
+//    in := ret.in
 //    start := cs.GetReadPos()
 //
 //    if v == 64 {

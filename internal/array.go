@@ -1,5 +1,7 @@
 package internal
 
+var emptyRTArray = RTArray{}
+
 type RTArray struct {
 	rt    Runtime
 	items []posRecord
