@@ -35,11 +35,11 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(5000 * time.Millisecond)
 		test()
 	}()
 
-	rpc.NewServer().
+	rpc.NewServer().SetNumOfThreads(1000000).
 		AddService("system", system.Service, mongoDatabaseConfig).
 		AddService("user", user.Service, mongoDatabaseConfig).
 		ListenWebSocket("0.0.0.0:8080").

@@ -33,7 +33,6 @@ func TestNewThread(t *testing.T) {
 	assert(thread4.top.stream).IsNil()
 	assert(thread4.top.depth).IsNotNil()
 	assert(thread4.top.replyNode).IsNil()
-	assert(thread4.top.args).IsNotNil()
 	assert(thread4.top.from).Equals("")
 
 	// Test(5) release thread
@@ -45,7 +44,6 @@ func TestNewThread(t *testing.T) {
 	assert(thread5.top.stream).IsNil()
 	assert(thread5.top.depth).IsNotNil()
 	assert(thread5.top.replyNode).IsNil()
-	assert(thread5.top.args).IsNotNil()
 	assert(thread5.top.from).Equals("")
 
 	// Test(6) closeTimeout is less than 1 * time.Second

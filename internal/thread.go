@@ -19,7 +19,6 @@ var rpcThreadFrameCache = &sync.Pool{
 			stream:     nil,
 			depth:      0,
 			replyNode:  nil,
-			args:       make([]reflect.Value, 0, 8),
 			from:       "",
 			retStatus:  0,
 			lockStatus: 0,
@@ -31,7 +30,6 @@ type rpcThreadFrame struct {
 	stream     *Stream
 	depth      uint16
 	replyNode  unsafe.Pointer
-	args       []reflect.Value
 	from       string
 	retStatus  uint32
 	lockStatus uint64
@@ -46,7 +44,6 @@ func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
 	atomic.StorePointer(&p.replyNode, nil)
 	p.from = ""
-	p.args = p.args[:0]
 }
 
 func (p *rpcThreadFrame) Release() {
@@ -338,7 +335,8 @@ func (p *rpcThread) Eval(
 				return emptyReturn
 			}
 		} else {
-			frame.args = append(frame.args, reflect.ValueOf(rt))
+			args := make([]reflect.Value, 0, 8)
+			args = append(args, reflect.ValueOf(rt))
 			for i := 1; i < len(execReplyNode.argTypes); i++ {
 				var rv reflect.Value
 
@@ -398,7 +396,7 @@ func (p *rpcThread) Eval(
 				if !ok {
 					break
 				} else {
-					frame.args = append(frame.args, rv)
+					args = append(args, rv)
 				}
 			}
 
@@ -408,7 +406,7 @@ func (p *rpcThread) Eval(
 
 			if ok {
 				inStream.SetWritePosToBodyStart()
-				execReplyNode.reflectFn.Call(frame.args)
+				execReplyNode.reflectFn.Call(args)
 				return emptyReturn
 			}
 		}
