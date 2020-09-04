@@ -36,6 +36,8 @@ type rpcThreadFrame struct {
 	next       *rpcThreadFrame
 }
 
+const bufferBodyPos = 1 + unsafe.Sizeof(rpcThreadFrame{})
+
 func newRPCThreadFrame() *rpcThreadFrame {
 	return rpcThreadFrameCache.Get().(*rpcThreadFrame)
 }
@@ -60,6 +62,7 @@ type rpcThread struct {
 	top          *rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
+	buffer       [256]uint8
 	sync.Mutex
 }
 
@@ -88,10 +91,11 @@ func newThread(
 			inputCH:      inputCH,
 			closeCH:      unsafe.Pointer(&closeCH),
 			closeTimeout: timeout,
-			top:          newRPCThreadFrame(),
 			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
 			rtStream:     NewStream(),
 		}
+
+		thread.top = (*rpcThreadFrame)(unsafe.Pointer(&thread.buffer[1]))
 
 		retCH <- thread
 
@@ -115,8 +119,6 @@ func (p *rpcThread) Close() bool {
 		close(p.inputCH)
 		select {
 		case <-*chPtr:
-			p.top.Release()
-			p.top = nil
 			p.rtStream.Release()
 			p.rtStream = nil
 			return true
@@ -126,6 +128,20 @@ func (p *rpcThread) Close() bool {
 	}
 
 	return false
+}
+
+func (p *rpcThread) malloc(numOfBytes uint) unsafe.Pointer {
+	startPos := uint(p.buffer[0])
+	if 256-startPos > numOfBytes {
+		p.buffer[0] = uint8(numOfBytes + startPos)
+		return unsafe.Pointer(&p.buffer[startPos])
+	} else {
+		return nil
+	}
+}
+
+func (p *rpcThread) resetBuffer() {
+	p.buffer[0] = uint8(bufferBodyPos + 1)
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
