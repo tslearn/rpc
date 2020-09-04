@@ -36,8 +36,6 @@ type rpcThreadFrame struct {
 	next       *rpcThreadFrame
 }
 
-const bufferBodyPos = 1 + unsafe.Sizeof(rpcThreadFrame{})
-
 func newRPCThreadFrame() *rpcThreadFrame {
 	return rpcThreadFrameCache.Get().(*rpcThreadFrame)
 }
@@ -60,6 +58,7 @@ type rpcThread struct {
 	closeCH      unsafe.Pointer
 	closeTimeout time.Duration
 	top          *rpcThreadFrame
+	rootFrame    rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
 	buffer       [256]uint8
@@ -95,7 +94,7 @@ func newThread(
 			rtStream:     NewStream(),
 		}
 
-		thread.top = (*rpcThreadFrame)(unsafe.Pointer(&thread.buffer[1]))
+		thread.top = &thread.rootFrame
 
 		retCH <- thread
 
@@ -141,7 +140,7 @@ func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
 }
 
 func (p *rpcThread) resetBuffer() {
-	p.buffer[0] = uint8(bufferBodyPos + 1)
+	p.buffer[0] = 1
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
