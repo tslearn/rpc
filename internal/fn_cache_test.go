@@ -40,8 +40,8 @@ func TestBuildFuncCache(t *testing.T) {
 
 	// Test(4)
 	tmpFile4 := path.Join(path.Dir(file), "_tmp_/test-cache-04.go")
-	assert(buildFuncCache("pkgName", tmpFile4, []string{"Y", "A"})).
-		Equals(NewKernelPanic("error kind Y"))
+	assert(buildFuncCache("pkgName", tmpFile4, []string{"T", "A"})).
+		Equals(NewKernelPanic("error kind T"))
 
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")

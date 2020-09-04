@@ -281,6 +281,8 @@ func (p *rpcThread) Eval(
 				}
 
 				frame.Reset()
+				p.rtStream.Reset()
+				p.resetBuffer()
 				onEvalFinish(p)
 			}()
 
@@ -397,12 +399,24 @@ func (p *rpcThread) Eval(
 					} else {
 						ok = false
 					}
+				case rtArrayType:
+					if yVar, success := inStream.ReadRTArray(rt); success {
+						rv = reflect.ValueOf(yVar)
+					} else {
+						ok = false
+					}
 				case mapType:
 					if mVar, success := inStream.ReadMap(); success {
 						rv = reflect.ValueOf(mVar)
 					} else {
 						ok = false
 					}
+					//case rtMapType:
+					//  if zVar, success := inStream.ReadRTMap(rt); success {
+					//    rv = reflect.ValueOf(zVar)
+					//  } else {
+					//    ok = false
+					//  }
 				default:
 					ok = false
 				}

@@ -32,29 +32,35 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 
 			switch c {
 			case 'B':
-				callString = "ReadBool"
+				callString = "stream.ReadBool()"
 				typeArray = append(typeArray, "rpc.Bool")
 			case 'I':
-				callString = "ReadInt64"
+				callString = "stream.ReadInt64()"
 				typeArray = append(typeArray, "rpc.Int64")
 			case 'U':
-				callString = "ReadUint64"
+				callString = "stream.ReadUint64()"
 				typeArray = append(typeArray, "rpc.Uint64")
 			case 'F':
-				callString = "ReadFloat64"
+				callString = "stream.ReadFloat64()"
 				typeArray = append(typeArray, "rpc.Float64")
 			case 'S':
-				callString = "ReadString"
+				callString = "stream.ReadString()"
 				typeArray = append(typeArray, "rpc.String")
 			case 'X':
-				callString = "ReadBytes"
+				callString = "stream.ReadBytes()"
 				typeArray = append(typeArray, "rpc.Bytes")
 			case 'A':
-				callString = "ReadArray"
+				callString = "stream.ReadArray()"
 				typeArray = append(typeArray, "rpc.Array")
+			case 'Y':
+				callString = "stream.ReadRTArray(rt)"
+				typeArray = append(typeArray, "rpc.RTArray")
 			case 'M':
-				callString = "ReadMap"
+				callString = "stream.ReadMap()"
 				typeArray = append(typeArray, "rpc.Map")
+			case 'Z':
+				callString = "stream.ReadRTMap(rt)"
+				typeArray = append(typeArray, "rpc.RTMap")
 			default:
 				return "nil", NewKernelPanic(fmt.Sprintf("error kind %s", kind))
 			}
@@ -66,7 +72,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 			}
 
 			sb.AppendString(fmt.Sprintf(
-				"%s %s, ok := stream.%s(); !ok {\n\t\treturn false\n\t}",
+				"%s %s, ok := %s; !ok {\n\t\treturn false\n\t}",
 				condString,
 				argName,
 				callString,

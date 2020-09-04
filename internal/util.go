@@ -161,8 +161,12 @@ func getFuncKind(fn reflect.Value) (string, error) {
 				sb.AppendByte('X')
 			case arrayType:
 				sb.AppendByte('A')
+			case rtArrayType:
+				sb.AppendByte('Y')
 			case mapType:
 				sb.AppendByte('M')
+			case rtMapType:
+				sb.AppendByte('Z')
 			case int64Type:
 				sb.AppendByte('I')
 			case uint64Type:
@@ -198,8 +202,12 @@ func convertTypeToString(reflectType reflect.Type) string {
 		return "rpc.Bytes"
 	case arrayType:
 		return "rpc.Array"
+	case rtArrayType:
+		return "rpc.RTArray"
 	case mapType:
 		return "rpc.Map"
+	case rtMapType:
+		return "rpc.RTMap"
 	case boolType:
 		return "rpc.Bool"
 	case int64Type:
