@@ -24,6 +24,8 @@ var (
 	bytesType   = reflect.ValueOf(Bytes{}).Type()
 	arrayType   = reflect.ValueOf(Array{}).Type()
 	mapType     = reflect.ValueOf(Map{}).Type()
+	rtArrayType = reflect.ValueOf(RTArray{}).Type()
+	rtMapType   = reflect.ValueOf(RTMap{}).Type()
 
 	seedInt64 = int64(10000)
 

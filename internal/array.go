@@ -5,8 +5,6 @@ import (
 	"unsafe"
 )
 
-var emptyRTArray = RTArray{}
-
 const sizeOfPosRecord = int(unsafe.Sizeof(posRecord(0)))
 
 type RTArray struct {

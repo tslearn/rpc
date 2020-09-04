@@ -2001,7 +2001,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 	if v >= 64 && v < 96 {
 		thread := rt.lock()
 		if thread == nil {
-			return emptyRTArray, false
+			return RTArray{}, false
 		}
 		defer rt.unlock()
 		cs := &thread.rtStream
@@ -2011,7 +2011,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 
 		if p != cs {
 			if !cs.writeStreamNext(p) {
-				return emptyRTArray, false
+				return RTArray{}, false
 			}
 		}
 
@@ -2075,14 +2075,14 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 					itemPos = cs.GetReadPos()
 					if itemPos < start || itemPos+skip > end {
 						p.setReadPosUnsafe(readStart)
-						return emptyRTArray, false
+						return RTArray{}, false
 					}
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start {
 						p.setReadPosUnsafe(readStart)
-						return emptyRTArray, false
+						return RTArray{}, false
 					}
 				}
 
@@ -2100,5 +2100,5 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 		p.setReadPosUnsafe(readStart)
 	}
 
-	return emptyRTArray, false
+	return RTArray{}, false
 }
