@@ -30,8 +30,18 @@ var (
 	zeroHeader  = make([]byte, streamPosBody)
 	streamCache = sync.Pool{
 		New: func() interface{} {
-			ret := &Stream{}
-			ret.init()
+			ret := &Stream{
+				readSeg:    0,
+				readIndex:  streamPosBody,
+				writeSeg:   0,
+				writeIndex: streamPosBody,
+			}
+
+			ret.frames = ret.bufferFrames[0:1]
+			ret.frames[0] = ret.bufferBytes[0:]
+			ret.readFrame = ret.frames[0]
+			ret.writeFrame = ret.frames[0]
+			ret.header = ret.frames[0][:streamPosBody]
 			return ret
 		},
 	}
@@ -121,19 +131,6 @@ type Stream struct {
 // NewStream ...
 func NewStream() *Stream {
 	return streamCache.Get().(*Stream)
-}
-
-func (p *Stream) init() {
-	p.frames = p.bufferFrames[0:1]
-	// fmt.Println(len(p.frames), cap(p.frames))
-	p.readSeg = 0
-	p.readIndex = streamPosBody
-	p.writeSeg = 0
-	p.writeIndex = streamPosBody
-	p.frames[0] = p.bufferBytes[0:]
-	p.readFrame = p.frames[0]
-	p.writeFrame = p.frames[0]
-	p.header = p.frames[0][:streamPosBody]
 }
 
 // Reset ...
@@ -2004,7 +2001,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 			return RTArray{}, false
 		}
 		defer rt.unlock()
-		cs := &thread.rtStream
+		cs := thread.rtStream
 		arrLen := 0
 		totalLen := 0
 		readStart := p.GetReadPos()
