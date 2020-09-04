@@ -37,8 +37,7 @@ var (
 	}
 	frameCache = &sync.Pool{
 		New: func() interface{} {
-			ret := make([]byte, 512)
-			return &ret
+			return make([]byte, 512)
 		},
 	}
 	readSkipArray = make([]int, 256, 256)
@@ -104,7 +103,7 @@ func init() {
 
 // Stream ...
 type Stream struct {
-	frames []*[]byte
+	frames [][]byte
 
 	readSeg   int
 	readIndex int
@@ -114,7 +113,9 @@ type Stream struct {
 	writeIndex int
 	writeFrame []byte
 
-	header []byte
+	header       []byte
+	bufferBytes  [512]byte
+	bufferFrames [4][]byte
 }
 
 // NewStream ...
@@ -123,16 +124,16 @@ func NewStream() *Stream {
 }
 
 func (p *Stream) init() {
-	p.frames = make([]*[]byte, 1, 8)
+	p.frames = p.bufferFrames[0:1]
+	// fmt.Println(len(p.frames), cap(p.frames))
 	p.readSeg = 0
 	p.readIndex = streamPosBody
 	p.writeSeg = 0
 	p.writeIndex = streamPosBody
-	zeroFrame := make([]byte, 512)
-	p.frames[0] = &zeroFrame
-	p.readFrame = zeroFrame
-	p.writeFrame = zeroFrame
-	p.header = zeroFrame[:streamPosBody]
+	p.frames[0] = p.bufferBytes[0:]
+	p.readFrame = p.frames[0]
+	p.writeFrame = p.frames[0]
+	p.header = p.frames[0][:streamPosBody]
 }
 
 // Reset ...
@@ -147,22 +148,20 @@ func (p *Stream) Reset() {
 			p.frames[i] = nil
 		}
 
-		if cap(p.frames) > 8 {
-			newFrames := make([]*[]byte, 1, 8)
-			newFrames[0] = p.frames[0]
-			p.frames = newFrames
+		if cap(p.frames) > 4 {
+			p.frames = p.bufferFrames[0:1]
 		} else {
 			p.frames = p.frames[:1]
 		}
 
 		if p.readSeg != 0 {
 			p.readSeg = 0
-			p.readFrame = *p.frames[0]
+			p.readFrame = p.frames[0]
 		}
 
 		if p.writeSeg != 0 {
 			p.writeSeg = 0
-			p.writeFrame = *p.frames[0]
+			p.writeFrame = p.frames[0]
 		}
 	}
 
@@ -256,7 +255,7 @@ func (p *Stream) GetBuffer() []byte {
 	length := p.GetWritePos()
 	ret := make([]byte, length)
 	for i := 0; i <= p.writeSeg; i++ {
-		copy(ret[i<<9:], *p.frames[i])
+		copy(ret[i<<9:], p.frames[i])
 	}
 	return ret
 }
@@ -283,7 +282,7 @@ func (p *Stream) SetReadPos(pos int) bool {
 		p.readIndex = readIndex
 		if p.readSeg != readSeg {
 			p.readSeg = readSeg
-			p.readFrame = *p.frames[readSeg]
+			p.readFrame = p.frames[readSeg]
 		}
 		return true
 	}
@@ -301,7 +300,7 @@ func (p *Stream) setReadPosUnsafe(pos int) {
 	readSeg := pos >> 9
 	if p.readSeg != readSeg {
 		p.readSeg = readSeg
-		p.readFrame = *p.frames[readSeg]
+		p.readFrame = p.frames[readSeg]
 	}
 }
 
@@ -315,7 +314,7 @@ func (p *Stream) SetWritePos(length int) {
 	numToCreate := length>>9 - len(p.frames) + 1
 
 	for numToCreate > 0 {
-		p.frames = append(p.frames, frameCache.Get().(*[]byte))
+		p.frames = append(p.frames, frameCache.Get().([]byte))
 		numToCreate--
 	}
 	p.setWritePosUnsafe(length)
@@ -331,7 +330,7 @@ func (p *Stream) setWritePosUnsafe(pos int) {
 	writeSeg := pos >> 9
 	if p.writeSeg != writeSeg {
 		p.writeSeg = writeSeg
-		p.writeFrame = *p.frames[writeSeg]
+		p.writeFrame = p.frames[writeSeg]
 	}
 }
 
@@ -349,15 +348,15 @@ func (p *Stream) gotoNextWriteFrame() {
 	p.writeSeg++
 	p.writeIndex = 0
 	if p.writeSeg == len(p.frames) {
-		p.frames = append(p.frames, frameCache.Get().(*[]byte))
+		p.frames = append(p.frames, frameCache.Get().([]byte))
 	}
-	p.writeFrame = *p.frames[p.writeSeg]
+	p.writeFrame = p.frames[p.writeSeg]
 }
 
 func (p *Stream) gotoNextReadFrameUnsafe() {
 	p.readSeg++
 	p.readIndex = 0
-	p.readFrame = *p.frames[p.readSeg]
+	p.readFrame = p.frames[p.readSeg]
 }
 
 func (p *Stream) gotoNextReadByteUnsafe() {
@@ -445,7 +444,7 @@ func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 3)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
-	p.readFrame = *p.frames[p.readSeg]
+	p.readFrame = p.frames[p.readSeg]
 	p.readIndex = copy(v[copyBytes:], p.readFrame)
 	return v
 }
@@ -453,7 +452,7 @@ func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
 func (p *Stream) peek5BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
-	copy(v[copyBytes:], *p.frames[p.readSeg+1])
+	copy(v[copyBytes:], p.frames[p.readSeg+1])
 	return v
 }
 
@@ -461,7 +460,7 @@ func (p *Stream) read5BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 5)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
-	p.readFrame = *p.frames[p.readSeg]
+	p.readFrame = p.frames[p.readSeg]
 	p.readIndex = copy(v[copyBytes:], p.readFrame)
 	return v
 }
@@ -470,7 +469,7 @@ func (p *Stream) read9BytesCrossFrameUnsafe() []byte {
 	v := make([]byte, 9)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
-	p.readFrame = *p.frames[p.readSeg]
+	p.readFrame = p.frames[p.readSeg]
 	p.readIndex = copy(v[copyBytes:], p.readFrame)
 	return v
 }
@@ -1441,7 +1440,7 @@ func (p *Stream) ReadString() (string, bool) {
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
 				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
+				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
 			}
 			if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
@@ -1531,7 +1530,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
 				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
+				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
 			}
 			if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
@@ -1622,7 +1621,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
 				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
+				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(ret[copyBytes:], p.readFrame)
 			}
 			return ret, true
@@ -1695,7 +1694,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 			p.readIndex += copyBytes + 1
 			if p.readIndex == 512 {
 				p.readSeg++
-				p.readFrame = *p.frames[p.readSeg]
+				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(ret[copyBytes:], p.readFrame)
 			}
 			return ret, true
