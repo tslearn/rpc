@@ -128,9 +128,9 @@ func (p *rpcThread) Close() bool {
 	return false
 }
 
-func (p *rpcThread) malloc(numOfBytes uint) unsafe.Pointer {
-	startPos := uint(p.buffer[0])
-	if 256-startPos > numOfBytes {
+func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
+	startPos := int(p.buffer[0])
+	if numOfBytes > 0 && 256-startPos > numOfBytes {
 		p.buffer[0] = uint8(numOfBytes + startPos)
 		return unsafe.Pointer(&p.buffer[startPos])
 	} else {

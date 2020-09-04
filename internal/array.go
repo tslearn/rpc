@@ -1,17 +1,34 @@
 package internal
 
+import (
+	"reflect"
+	"unsafe"
+)
+
 var emptyRTArray = RTArray{}
+
+const sizeOfPosRecord = int(unsafe.Sizeof(posRecord(0)))
 
 type RTArray struct {
 	rt    Runtime
 	items []posRecord
 }
 
-func newRTArray(rt Runtime, items []posRecord) RTArray {
-	return RTArray{
-		rt:    rt,
-		items: items,
+func newRTArray(rt Runtime, size int) (ret RTArray) {
+	ret.rt = rt
+
+	if thread := rt.thread; thread != nil {
+		if data := thread.malloc(sizeOfPosRecord * size); data != nil {
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
+			itemsHeader.Len = 0
+			itemsHeader.Cap = size
+			itemsHeader.Data = uintptr(data)
+		} else {
+			ret.items = make([]posRecord, 0, size)
+		}
 	}
+
+	return
 }
 
 func (p RTArray) Get(index int) RTValue {

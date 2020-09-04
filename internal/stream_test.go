@@ -788,6 +788,36 @@ func TestStream_readNBytesUnsafe(t *testing.T) {
 	}
 }
 
+func TestRpcStream_readSkipItem(t *testing.T) {
+	assert := NewAssert(t)
+
+	for i := 1; i < 600; i++ {
+		for j := 0; j < 600; j++ {
+			// skip > 0
+			bytes := make([]byte, j, j)
+			for n := 0; n < j; n++ {
+				bytes[n] = byte(n)
+			}
+			stream := NewStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.WriteBytes(bytes)
+			assert(stream.readSkipItem(stream.GetWritePos() - 1)).Equals(-1)
+			assert(stream.GetReadPos()).Equals(i)
+			assert(stream.readSkipItem(stream.GetWritePos())).Equals(i)
+			assert(stream.GetReadPos()).Equals(stream.GetWritePos())
+
+			// skip == 0
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.PutBytes([]byte{13})
+			assert(stream.readSkipItem(stream.GetWritePos())).Equals(-1)
+
+			stream.Release()
+		}
+	}
+}
+
 func TestRpcStream_peekSkip(t *testing.T) {
 	assert := NewAssert(t)
 
