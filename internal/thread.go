@@ -61,7 +61,7 @@ type rpcThread struct {
 	closeTimeout time.Duration
 	top          *rpcThreadFrame
 	sequence     uint64
-	rtStream     *Stream
+	rtStream     Stream
 	buffer       [256]uint8
 	sync.Mutex
 }
@@ -92,9 +92,9 @@ func newThread(
 			closeCH:      unsafe.Pointer(&closeCH),
 			closeTimeout: timeout,
 			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
-			rtStream:     NewStream(),
 		}
 
+		thread.rtStream.init()
 		thread.top = (*rpcThreadFrame)(unsafe.Pointer(&thread.buffer[1]))
 
 		retCH <- thread
@@ -119,8 +119,6 @@ func (p *rpcThread) Close() bool {
 		close(p.inputCH)
 		select {
 		case <-*chPtr:
-			p.rtStream.Release()
-			p.rtStream = nil
 			return true
 		case <-time.After(p.closeTimeout):
 			return false
