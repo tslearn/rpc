@@ -1735,6 +1735,38 @@ func (p *Stream) Read() (Any, bool) {
 	}
 }
 
+func (p *Stream) tryToReadBufferCacheForStringOrBytes(pos int) []byte {
+	readStart := p.GetReadPos()
+	defer p.setReadPosUnsafe(readStart)
+
+	if !p.SetReadPos(pos) {
+		return nil
+	}
+
+	v := p.readFrame[p.readIndex]
+
+	if v > 128 && v < 191 {
+		strLen := int(v - 128)
+		if p.isSafetyReadNBytesInCurrentFrame(strLen + 2) {
+			if p.readFrame[p.readIndex+strLen+1] == 0 {
+				b := p.readFrame[p.readIndex : p.readIndex+strLen+1]
+				if isUTF8Bytes(b[1:]) {
+					return b
+				}
+			}
+		}
+	}
+
+	if v > 192 && v < 255 {
+		bytesLen := int(v - 192)
+		if p.isSafetyReadNBytesInCurrentFrame(bytesLen + 1) {
+			return p.readFrame[p.readIndex : p.readIndex+bytesLen+1]
+		}
+	}
+
+	return nil
+}
+
 //
 //
 //// ReadRPCArray read a RPCArray value

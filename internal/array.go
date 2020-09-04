@@ -2,10 +2,10 @@ package internal
 
 type RTArray struct {
 	rt    Runtime
-	items []int
+	items []posRecord
 }
 
-func newRTArray(rt Runtime, items []int) RTArray {
+func newRTArray(rt Runtime, items []posRecord) RTArray {
 	return RTArray{
 		rt:    rt,
 		items: items,
@@ -14,18 +14,18 @@ func newRTArray(rt Runtime, items []int) RTArray {
 
 func (p RTArray) Get(index int) RTValue {
 	if index >= 0 && index < len(p.items) {
-		return RTValue{
-			rt:  p.rt,
-			pos: p.items[index],
-			buf: nil,
-		}
+		return makeRTValue(p.rt, p.items[index])
 	} else {
 		return RTValue{
 			rt:  p.rt,
-			pos: p.items[index],
+			pos: -1,
 			buf: nil,
 		}
 	}
+}
+
+func (p RTArray) Size() int {
+	return len(p.items)
 }
 
 //func newRPCArrayByArray(ctx *rpcContext, val Array) rpcArray {

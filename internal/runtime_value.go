@@ -1,25 +1,49 @@
 package internal
 
-type rtPosRecord uint64
+type posRecord uint64
 
-func (p rtPosRecord) getPos() uint64 {
-	return uint64(p) & 0x7FFFFFFFFFFFFFFF
+func (p posRecord) getPos() int64 {
+	return int64(p) & 0x7FFFFFFFFFFFFFFF
 }
 
-func (p rtPosRecord) needBuffer() bool {
+func (p posRecord) needBuffer() bool {
 	return (p & 0x8000000000000000) != 0
 }
 
-func makePosRecord(pos uint64, needBuffer bool) rtPosRecord {
+func makePosRecord(pos int64, needBuffer bool) posRecord {
 	if !needBuffer {
-		return rtPosRecord(pos)
+		return posRecord(pos)
 	} else {
-		return rtPosRecord(0x8000000000000000 | pos)
+		return 0x8000000000000000 | posRecord(pos)
 	}
 }
 
 type RTValue struct {
 	rt  Runtime
-	pos int
+	pos int64
 	buf []byte
+}
+
+func makeRTValue(rt Runtime, record posRecord) RTValue {
+	if !record.needBuffer() {
+		return RTValue{
+			rt:  rt,
+			pos: record.getPos(),
+			buf: nil,
+		}
+	} else if thread := rt.lock(); thread == nil {
+		return RTValue{
+			rt:  rt,
+			pos: record.getPos(),
+			buf: nil,
+		}
+	} else {
+		defer rt.unlock()
+		pos := record.getPos()
+		return RTValue{
+			rt:  rt,
+			pos: record.getPos(),
+			buf: thread.rtStream.tryToReadBufferCacheForStringOrBytes(int(pos)),
+		}
+	}
 }

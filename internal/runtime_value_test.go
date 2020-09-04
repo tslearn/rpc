@@ -8,7 +8,7 @@ import (
 func TestRTPosRecord(t *testing.T) {
 	assert := NewAssert(t)
 
-	posArray := []uint64{
+	posArray := []int64{
 		0,
 		1,
 		1000,
@@ -40,9 +40,9 @@ func TestRTPosRecord(t *testing.T) {
 }
 
 func BenchmarkRTPosRecord(b *testing.B) {
-	pos := uint64(128)
+	pos := int64(128)
 	flag := true
-	record := rtPosRecord(0)
+	record := posRecord(0)
 
 	b.ReportAllocs()
 
