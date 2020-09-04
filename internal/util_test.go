@@ -484,6 +484,18 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 				return true
 			}
 		}
+	case "Y":
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+			if arg0, ok := stream.ReadRTArray(rt); !ok {
+				return false
+			} else if !stream.IsReadFinish() {
+				return false
+			} else {
+				stream.SetWritePosToBodyStart()
+				fn.(func(Runtime, RTArray) Return)(rt, arg0)
+				return true
+			}
+		}
 	case "BIUFSXAM":
 		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, ok := stream.ReadBool(); !ok {
