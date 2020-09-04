@@ -30,19 +30,9 @@ var (
 	zeroHeader  = make([]byte, streamPosBody)
 	streamCache = sync.Pool{
 		New: func() interface{} {
-			ret := Stream{
-				frames:     make([]*[]byte, 1, 8),
-				readSeg:    0,
-				readIndex:  streamPosBody,
-				writeSeg:   0,
-				writeIndex: streamPosBody,
-			}
-			zeroFrame := make([]byte, 512)
-			ret.frames[0] = &zeroFrame
-			ret.readFrame = zeroFrame
-			ret.writeFrame = zeroFrame
-			ret.header = zeroFrame[:streamPosBody]
-			return &ret
+			ret := &Stream{}
+			ret.init()
+			return ret
 		},
 	}
 	frameCache = &sync.Pool{
@@ -130,6 +120,19 @@ type Stream struct {
 // NewStream ...
 func NewStream() *Stream {
 	return streamCache.Get().(*Stream)
+}
+
+func (p *Stream) init() {
+	p.frames = make([]*[]byte, 1, 8)
+	p.readSeg = 0
+	p.readIndex = streamPosBody
+	p.writeSeg = 0
+	p.writeIndex = streamPosBody
+	zeroFrame := make([]byte, 512)
+	p.frames[0] = &zeroFrame
+	p.readFrame = zeroFrame
+	p.writeFrame = zeroFrame
+	p.header = zeroFrame[:streamPosBody]
 }
 
 // Reset ...
