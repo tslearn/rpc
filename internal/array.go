@@ -34,9 +34,10 @@ func (p RTArray) Get(index int) RTValue {
 		return makeRTValue(p.rt, p.items[index])
 	} else {
 		return RTValue{
-			rt:  p.rt,
-			pos: -1,
-			buf: nil,
+			rt:          p.rt,
+			pos:         -1,
+			cacheString: "",
+			cacheOK:     false,
 		}
 	}
 }

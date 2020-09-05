@@ -32,7 +32,7 @@ func TestRTPosRecord(t *testing.T) {
 
 			fmt.Println("record", record)
 			assert(record.getPos()).Equals(pos)
-			assert(record.needBuffer()).Equals(flag)
+			assert(record.isString()).Equals(flag)
 
 			fmt.Println(record)
 		}
@@ -49,7 +49,7 @@ func BenchmarkRTPosRecord(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		record = makePosRecord(pos, flag)
 		pos = record.getPos()
-		flag = record.needBuffer()
+		flag = record.isString()
 	}
 
 	fmt.Println(record)

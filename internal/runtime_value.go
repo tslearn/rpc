@@ -1,17 +1,19 @@
 package internal
 
+import "sync/atomic"
+
 type posRecord uint64
 
 func (p posRecord) getPos() int64 {
 	return int64(p) & 0x7FFFFFFFFFFFFFFF
 }
 
-func (p posRecord) needBuffer() bool {
+func (p posRecord) isString() bool {
 	return (p & 0x8000000000000000) != 0
 }
 
-func makePosRecord(pos int64, needBuffer bool) posRecord {
-	if !needBuffer {
+func makePosRecord(pos int64, isString bool) posRecord {
+	if !isString {
 		return posRecord(pos)
 	} else {
 		return 0x8000000000000000 | posRecord(pos)
@@ -19,32 +21,37 @@ func makePosRecord(pos int64, needBuffer bool) posRecord {
 }
 
 type RTValue struct {
-	rt  Runtime
-	pos int64
-	buf []byte
+	rt          Runtime
+	pos         int64
+	cacheString string
+	cacheOK     bool
 }
 
 func makeRTValue(rt Runtime, record posRecord) RTValue {
-	if !record.needBuffer() {
+	if !record.isString() {
 		return RTValue{
-			rt:  rt,
-			pos: record.getPos(),
-			buf: nil,
+			rt:          rt,
+			pos:         record.getPos(),
+			cacheString: "",
+			cacheOK:     false,
 		}
 	} else if thread := rt.lock(); thread == nil {
 		return RTValue{
-			rt:  rt,
-			pos: record.getPos(),
-			buf: nil,
+			rt:          rt,
+			pos:         record.getPos(),
+			cacheString: "",
+			cacheOK:     false,
 		}
 	} else {
 		defer rt.unlock()
 		pos := record.getPos()
-		return RTValue{
+		thread.rtStream.setReadPosUnsafe(int(pos))
+		ret := RTValue{
 			rt:  rt,
 			pos: record.getPos(),
-			buf: thread.rtStream.tryToReadBufferCacheForStringOrBytes(int(pos)),
 		}
+		ret.cacheString, ret.cacheOK = thread.rtStream.ReadUnsafeString()
+		return ret
 	}
 }
 
@@ -59,8 +66,11 @@ func (p RTValue) ToUint64() (uint64, bool) {
 }
 
 func (p RTValue) ToString() (string, bool) {
-	if p.buf != nil && p.buf[0] > 128 && p.buf[0] < 191 {
-		return string(p.buf[1:]), true
+	ret, ok := p.cacheString, p.cacheOK
+	if p.rt.thread != nil &&
+		atomic.LoadUint64(&p.rt.thread.top.lockStatus) == p.rt.id {
+		return ret, ok
+	} else {
+		return "", false
 	}
-	return "", false
 }
