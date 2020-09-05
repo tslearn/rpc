@@ -66,10 +66,12 @@ func (p RTValue) ToUint64() (uint64, bool) {
 }
 
 func (p RTValue) ToString() (string, bool) {
-	ret, ok := p.cacheString, p.cacheOK
-	if p.rt.thread != nil &&
+	buf := []byte(p.cacheString)
+	ret := string(buf)
+
+	if p.cacheOK &&
 		atomic.LoadUint64(&p.rt.thread.top.lockStatus) == p.rt.id {
-		return ret, ok
+		return ret, true
 	} else {
 		return "", false
 	}
