@@ -55,7 +55,17 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 	}
 }
 
-func (p RTValue) ToUint64() (uint64, bool) {
+func (p RTValue) ToBool() (Bool, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadBool()
+	}
+
+	return false, false
+}
+
+func (p RTValue) ToUint64() (Uint64, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.setReadPosUnsafe(int(p.pos))
