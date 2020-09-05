@@ -47,3 +47,20 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 		}
 	}
 }
+
+func (p RTValue) ToUint64() (uint64, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadUint64()
+	}
+
+	return 0, false
+}
+
+func (p RTValue) ToString() (string, bool) {
+	if p.buf != nil && p.buf[0] > 128 && p.buf[0] < 191 {
+		return string(p.buf[1:]), true
+	}
+	return "", false
+}

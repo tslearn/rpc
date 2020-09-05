@@ -2083,7 +2083,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 					}
 				}
 
-				if (v > 128 && v < 191) || (v > 192 && v < 255) {
+				if (op > 128 && op < 191) || (op > 192 && op < 255) {
 					ret.items = append(ret.items, makePosRecord(int64(itemPos), true))
 				} else {
 					ret.items = append(ret.items, makePosRecord(int64(itemPos), false))
