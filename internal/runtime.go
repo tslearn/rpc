@@ -99,7 +99,6 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 		thread.Eval(
 			stream,
 			func(stream *Stream) {},
-			func(thread *rpcThread) {},
 		)
 
 		// parse the stream

@@ -45,6 +45,7 @@ func newRPCThreadFrame() *rpcThreadFrame {
 
 func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
+	p.cachePos = 0
 	atomic.StorePointer(&p.replyNode, nil)
 	p.from = ""
 }
@@ -102,8 +103,10 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
-			thread.rootFrame.cachePos = 0
-			thread.Eval(stream, onEvalBack, onEvalFinish)
+			thread.Eval(stream, onEvalBack)
+			thread.rtStream.Reset()
+			thread.rootFrame.Reset()
+			onEvalFinish(thread)
 		}
 
 		closeCH <- true
@@ -249,7 +252,6 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 func (p *rpcThread) Eval(
 	inStream *Stream,
 	onEvalBack func(*Stream),
-	onEvalFinish func(*rpcThread),
 ) Return {
 	timeStart := TimeNow()
 	frame := p.top
@@ -272,46 +274,40 @@ func (p *rpcThread) Eval(
 			)
 		}
 
-		func() {
-			defer func() {
-				if v := recover(); v != nil {
-					// kernel error
-					reportPanic(
-						NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
-							AddDebug(string(debug.Stack())),
-					)
-				}
-
-				frame.Reset()
-				p.rtStream.Reset()
-				onEvalFinish(p)
-			}()
-
-			for !atomic.CompareAndSwapUint64(&frame.lockStatus, rtID, rtID+2) {
-				time.Sleep(10 * time.Millisecond)
-			}
-
-			if frame.retStatus == 0 {
-				p.WriteError(
-					NewReplyPanic(
-						"reply must return through Runtime.OK or Runtime.Error",
-					).AddDebug(p.GetExecReplyDebug()),
-					0,
+		defer func() {
+			if v := recover(); v != nil {
+				// kernel error
+				reportPanic(
+					NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
+						AddDebug(string(debug.Stack())),
 				)
-			} else {
-				// count
-				if execReplyNode != nil {
-					execReplyNode.indicator.Count(
-						TimeNow().Sub(timeStart),
-						frame.retStatus == 1,
-					)
-				}
 			}
-
-			// callback
-			inStream.SetReadPosToBodyStart()
-			onEvalBack(inStream)
 		}()
+
+		for !atomic.CompareAndSwapUint64(&frame.lockStatus, rtID, rtID+2) {
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		if frame.retStatus == 0 {
+			p.WriteError(
+				NewReplyPanic(
+					"reply must return through Runtime.OK or Runtime.Error",
+				).AddDebug(p.GetExecReplyDebug()),
+				0,
+			)
+		} else {
+			// count
+			if execReplyNode != nil {
+				execReplyNode.indicator.Count(
+					TimeNow().Sub(timeStart),
+					frame.retStatus == 1,
+				)
+			}
+		}
+
+		// callback
+		inStream.SetReadPosToBodyStart()
+		onEvalBack(inStream)
 	}()
 
 	// set exec reply node
