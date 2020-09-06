@@ -609,8 +609,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 				Reply("inner", func(rt Runtime) Return {
 					return rt.OK(int64(0))
 				}).
-				Reply("sayHello", func(rt Runtime, rtArray RTArray) Return {
-					a, ok := rtArray.Get(0).ToString()
+				Reply("sayHello", func(rt Runtime, rtMap RTMap) Return {
+					a, ok := rtMap.Get("name").ToString()
 					if !ok {
 						return rt.Error(errors.New("param error"))
 					}
@@ -633,7 +633,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.WriteArray(Array{"12345678123456781234567812345678"})
+			stream.WriteMap(Map{"name": "tianshuo", "age": 13, "hasNo": true})
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}

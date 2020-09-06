@@ -43,7 +43,7 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 	return
 }
 
-func (p RTMap) Get(key string) RTValue {
+func (p *RTMap) Get(key string) RTValue {
 	if p.items != nil {
 		for i := 0; i < len(p.items); i++ {
 			if key == p.items[i].key {
@@ -61,7 +61,7 @@ func (p RTMap) Get(key string) RTValue {
 	}
 }
 
-func (p RTMap) Size() int {
+func (p *RTMap) Size() int {
 	if p.items != nil {
 		return len(p.items)
 	} else if p.largeMap != nil {
@@ -71,7 +71,7 @@ func (p RTMap) Size() int {
 	}
 }
 
-func (p RTMap) appendValue(key string, pos posRecord) {
+func (p *RTMap) appendValue(key string, pos posRecord) {
 	if p.items != nil {
 		p.items = append(p.items, mapItem{key: key, pos: pos})
 	} else {

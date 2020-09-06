@@ -27,7 +27,7 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 	return
 }
 
-func (p RTArray) Get(index int) RTValue {
+func (p *RTArray) Get(index int) RTValue {
 	if index >= 0 && index < len(p.items) {
 		return makeRTValue(p.rt, p.items[index])
 	} else {
@@ -35,7 +35,7 @@ func (p RTArray) Get(index int) RTValue {
 	}
 }
 
-func (p RTArray) Size() int {
+func (p *RTArray) Size() int {
 	if p.items != nil {
 		return len(p.items)
 	} else {

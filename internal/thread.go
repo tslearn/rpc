@@ -412,12 +412,12 @@ func (p *rpcThread) Eval(
 					} else {
 						ok = false
 					}
-					//case rtMapType:
-					//  if zVar, success := inStream.ReadRTMap(rt); success {
-					//    rv = reflect.ValueOf(zVar)
-					//  } else {
-					//    ok = false
-					//  }
+				case rtMapType:
+					if zVar, success := inStream.ReadRTMap(rt); success {
+						rv = reflect.ValueOf(zVar)
+					} else {
+						ok = false
+					}
 				default:
 					ok = false
 				}
