@@ -1,8 +1,13 @@
 package internal
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 type posRecord uint64
+
+const sizeOfPosRecord = int(unsafe.Sizeof(posRecord(0)))
 
 func (p posRecord) getPos() int64 {
 	return int64(p) & 0x7FFFFFFFFFFFFFFF
@@ -65,6 +70,16 @@ func (p RTValue) ToBool() (Bool, bool) {
 	return false, false
 }
 
+func (p RTValue) ToInt64() (Int64, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadInt64()
+	}
+
+	return 0, false
+}
+
 func (p RTValue) ToUint64() (Uint64, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
@@ -75,7 +90,17 @@ func (p RTValue) ToUint64() (Uint64, bool) {
 	return 0, false
 }
 
-func (p RTValue) ToString() (string, bool) {
+func (p RTValue) ToFloat64() (Float64, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadFloat64()
+	}
+
+	return 0, false
+}
+
+func (p RTValue) ToString() (String, bool) {
 	buf := []byte(p.cacheString)
 	ret := string(buf)
 
@@ -85,4 +110,44 @@ func (p RTValue) ToString() (string, bool) {
 	} else {
 		return "", false
 	}
+}
+
+func (p RTValue) ToBytes() (Bytes, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadBytes()
+	}
+
+	return Bytes(nil), false
+}
+
+func (p RTValue) ToArray() (Array, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadArray()
+	}
+
+	return Array(nil), false
+}
+
+func (p RTValue) ToRTArray() (RTArray, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadRTArray(p.rt)
+	}
+
+	return RTArray{}, false
+}
+
+func (p RTValue) ToMap() (Map, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadMap()
+	}
+
+	return Map(nil), false
 }

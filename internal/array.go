@@ -5,8 +5,6 @@ import (
 	"unsafe"
 )
 
-const sizeOfPosRecord = int(unsafe.Sizeof(posRecord(0)))
-
 type RTArray struct {
 	rt    Runtime
 	items []posRecord
@@ -21,11 +19,11 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 			itemsHeader.Len = 0
 			itemsHeader.Cap = size
 			itemsHeader.Data = uintptr(data)
-		} else {
-			ret.items = make([]posRecord, 0, size)
+			return
 		}
 	}
 
+	ret.items = make([]posRecord, 0, size)
 	return
 }
 
@@ -33,15 +31,14 @@ func (p RTArray) Get(index int) RTValue {
 	if index >= 0 && index < len(p.items) {
 		return makeRTValue(p.rt, p.items[index])
 	} else {
-		return RTValue{
-			rt:          p.rt,
-			pos:         -1,
-			cacheString: "",
-			cacheOK:     false,
-		}
+		return RTValue{}
 	}
 }
 
 func (p RTArray) Size() int {
-	return len(p.items)
+	if p.items != nil {
+		return len(p.items)
+	} else {
+		return -1
+	}
 }

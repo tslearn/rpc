@@ -1960,7 +1960,7 @@ func (p *Stream) Read() (Any, bool) {
 	}
 }
 
-// ReadRPCArray read a RPCArray value
+// ReadRTArray read a RPCArray value
 func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 	v := p.readFrame[p.readIndex]
 	if v >= 64 && v < 96 {
@@ -1985,7 +1985,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 		if v == 64 {
 			if cs.hasOneByteToRead() {
 				cs.gotoNextReadByteUnsafe()
-				return RTArray{rt: rt}, true
+				return newRTArray(rt, 0), true
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
@@ -2066,4 +2066,120 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 	}
 
 	return RTArray{}, false
+}
+
+// ReadRPCMap read a RPCMap value
+func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
+	v := p.readFrame[p.readIndex]
+
+	if v >= 96 && v < 128 {
+		thread := rt.lock()
+		if thread == nil {
+			return RTMap{}, false
+		}
+		defer rt.unlock()
+		cs := thread.rtStream
+
+		mapLen := 0
+		totalLen := 0
+		readStart := p.GetReadPos()
+
+		if p != cs {
+			if !cs.writeStreamNext(p) {
+				return RTMap{}, false
+			}
+		}
+
+		start := cs.GetReadPos()
+
+		if v == 96 {
+			if cs.hasOneByteToRead() {
+				cs.gotoNextReadByteUnsafe()
+				return newRTMap(rt, 0), true
+			}
+		} else if v < 127 {
+			mapLen = int(v - 96)
+			if cs.isSafetyRead5BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				cs.readIndex += 5
+			} else if cs.hasNBytesToRead(5) {
+				bytes4 := cs.read5BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes4[1]) |
+					(uint32(bytes4[2]) << 8) |
+					(uint32(bytes4[3]) << 16) |
+					(uint32(bytes4[4]) << 24))
+			}
+		} else {
+			if cs.isSafetyRead9BytesInCurrentFrame() {
+				b := cs.readFrame[cs.readIndex:]
+				totalLen = int(uint32(b[1]) |
+					(uint32(b[2]) << 8) |
+					(uint32(b[3]) << 16) |
+					(uint32(b[4]) << 24))
+				mapLen = int(uint32(b[5]) |
+					(uint32(b[6]) << 8) |
+					(uint32(b[7]) << 16) |
+					(uint32(b[8]) << 24))
+				cs.readIndex += 9
+			} else if cs.hasNBytesToRead(9) {
+				bytes8 := cs.read9BytesCrossFrameUnsafe()
+				totalLen = int(uint32(bytes8[1]) |
+					(uint32(bytes8[2]) << 8) |
+					(uint32(bytes8[3]) << 16) |
+					(uint32(bytes8[4]) << 24))
+				mapLen = int(uint32(bytes8[5]) |
+					(uint32(bytes8[6]) << 8) |
+					(uint32(bytes8[7]) << 16) |
+					(uint32(bytes8[8]) << 24))
+			}
+		}
+
+		end := start + totalLen
+		if mapLen > 0 && totalLen > 4 {
+			ret := newRTMap(rt, mapLen)
+
+			itemPos := 0
+
+			for i := 0; i < mapLen; i++ {
+				key, ok := cs.ReadUnsafeString()
+				if !ok {
+					p.setReadPosUnsafe(readStart)
+					return RTMap{}, false
+				}
+				op := cs.readFrame[cs.readIndex]
+				skip := readSkipArray[op]
+				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+					itemPos = cs.GetReadPos()
+					if itemPos < start || itemPos+skip > end {
+						p.setReadPosUnsafe(readStart)
+						return RTMap{}, false
+					}
+					cs.readIndex += skip
+				} else {
+					itemPos = cs.readSkipItem(end)
+					if itemPos < start {
+						p.setReadPosUnsafe(readStart)
+						return RTMap{}, false
+					}
+				}
+
+				if op > 128 && op < 191 {
+					ret.appendValue(key, makePosRecord(int64(itemPos), true))
+				} else {
+					ret.appendValue(key, makePosRecord(int64(itemPos), false))
+				}
+			}
+			if cs.GetReadPos() == end {
+				return ret, true
+			}
+		}
+
+		p.setReadPosUnsafe(readStart)
+	}
+
+	return RTMap{}, false
 }
