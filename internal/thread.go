@@ -61,7 +61,7 @@ type rpcThread struct {
 	rootFrame    rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
-	buffer       [256]uint8
+	buffer       [512]uint8
 	sync.Mutex
 }
 
