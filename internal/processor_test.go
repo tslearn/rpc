@@ -633,7 +633,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.WriteMap(Map{"name": "tianshuo", "age": 13, "hasNo": true})
+			stream.WriteMap(Map{"name": "tianshuo"})
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}

@@ -45,7 +45,7 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 
 func (p *RTMap) Get(key string) RTValue {
 	if p.items != nil {
-		for i := 0; i < len(p.items); i++ {
+		for i := len(p.items) - 1; i >= 0; i-- {
 			if key == p.items[i].key {
 				return makeRTValue(p.rt, p.items[i].pos)
 			}
