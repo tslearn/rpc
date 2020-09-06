@@ -13,6 +13,8 @@ import (
 	"unsafe"
 )
 
+const rpcThreadCacheSize = 512
+
 var rpcThreadFrameCache = &sync.Pool{
 	New: func() interface{} {
 		return &rpcThreadFrame{
@@ -31,6 +33,7 @@ type rpcThreadFrame struct {
 	replyNode  unsafe.Pointer
 	from       string
 	depth      uint16
+	cachePos   uint16
 	retStatus  uint32
 	lockStatus uint64
 	next       *rpcThreadFrame
@@ -61,7 +64,7 @@ type rpcThread struct {
 	rootFrame    rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
-	buffer       [512]uint8
+	cache        [rpcThreadCacheSize]byte
 	sync.Mutex
 }
 
@@ -99,6 +102,7 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
+			thread.rootFrame.cachePos = 0
 			thread.Eval(stream, onEvalBack, onEvalFinish)
 		}
 
@@ -130,17 +134,13 @@ func (p *rpcThread) Close() bool {
 }
 
 func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
-	startPos := int(p.buffer[0])
-	if numOfBytes > 0 && 256-startPos > numOfBytes {
-		p.buffer[0] = uint8(numOfBytes + startPos)
-		return unsafe.Pointer(&p.buffer[startPos])
+	if numOfBytes > 0 && rpcThreadCacheSize-int(p.top.cachePos) > numOfBytes {
+		ret := unsafe.Pointer(&p.cache[p.top.cachePos])
+		p.top.cachePos += uint16(numOfBytes)
+		return ret
 	} else {
 		return nil
 	}
-}
-
-func (p *rpcThread) resetBuffer() {
-	p.buffer[0] = 1
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
@@ -162,6 +162,7 @@ func (p *rpcThread) unlock(rtID uint64) {
 
 func (p *rpcThread) pushFrame() {
 	frame := newRPCThreadFrame()
+	frame.cachePos = p.top.cachePos
 	frame.next = p.top
 	p.top = frame
 }
@@ -283,7 +284,6 @@ func (p *rpcThread) Eval(
 
 				frame.Reset()
 				p.rtStream.Reset()
-				p.resetBuffer()
 				onEvalFinish(p)
 			}()
 
