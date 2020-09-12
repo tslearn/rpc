@@ -302,8 +302,8 @@ func TestStream_basic(t *testing.T) {
 	// test frameCache
 	frame := frameCache.Get().([]byte)
 	assert(frame).IsNotNil()
-	assert(len(frame)).Equals(512)
-	assert(cap(frame)).Equals(512)
+	assert(len(frame)).Equals(streamBlockSize)
+	assert(cap(frame)).Equals(streamBlockSize)
 }
 
 func TestStream_newRPCStream_Release_Reset(t *testing.T) {
@@ -487,7 +487,7 @@ func TestStream_CanRead(t *testing.T) {
 		stream.setReadPosUnsafe(i)
 		assert(stream.CanRead()).IsFalse()
 
-		if (i+1)%512 != 0 {
+		if (i+1)%streamBlockSize != 0 {
 			stream.setReadPosUnsafe(i + 1)
 			assert(stream.CanRead()).IsFalse()
 		}
@@ -578,7 +578,7 @@ func TestStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyReadNBytesInCurrentFrame(n)).
-				Equals(512-i%512 > n)
+				Equals(streamBlockSize-i%streamBlockSize > n)
 		}
 	}
 }
@@ -592,7 +592,7 @@ func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyReadNBytesInCurrentFrame(3)).
-				Equals(512-i%512 > 3)
+				Equals(streamBlockSize-i%streamBlockSize > 3)
 		}
 	}
 }
@@ -606,7 +606,7 @@ func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyReadNBytesInCurrentFrame(5)).
-				Equals(512-i%512 > 5)
+				Equals(streamBlockSize-i%streamBlockSize > 5)
 		}
 	}
 }
@@ -620,7 +620,7 @@ func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyReadNBytesInCurrentFrame(9)).
-				Equals(512-i%512 > 9)
+				Equals(streamBlockSize-i%streamBlockSize > 9)
 		}
 	}
 }
@@ -666,109 +666,109 @@ func TestStream_read3BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
-	stream0.SetWritePos(508)
+	stream0.SetWritePos(streamBlockSize - 4)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9})
-	stream0.SetReadPos(509)
+	stream0.SetReadPos(streamBlockSize - 3)
 	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{2, 3, 4})
-	assert(stream0.GetReadPos()).Equals(512)
-	stream0.SetReadPos(510)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize)
+	stream0.SetReadPos(streamBlockSize - 2)
 	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{3, 4, 5})
-	assert(stream0.GetReadPos()).Equals(513)
-	stream0.SetReadPos(511)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 1)
+	stream0.SetReadPos(streamBlockSize - 1)
 	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{4, 5, 6})
-	assert(stream0.GetReadPos()).Equals(514)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 2)
 }
 
 func TestStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
-	stream0.SetWritePos(506)
+	stream0.SetWritePos(streamBlockSize - 6)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13})
-	stream0.SetReadPos(507)
+	stream0.SetReadPos(streamBlockSize - 5)
 	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{2, 3, 4, 5, 6})
-	assert(stream0.GetReadPos()).Equals(507)
-	stream0.SetReadPos(508)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize - 5)
+	stream0.SetReadPos(streamBlockSize - 4)
 	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{3, 4, 5, 6, 7})
-	assert(stream0.GetReadPos()).Equals(508)
-	stream0.SetReadPos(509)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize - 4)
+	stream0.SetReadPos(streamBlockSize - 3)
 	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{4, 5, 6, 7, 8})
-	assert(stream0.GetReadPos()).Equals(509)
-	stream0.SetReadPos(510)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize - 3)
+	stream0.SetReadPos(streamBlockSize - 2)
 	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{5, 6, 7, 8, 9})
-	assert(stream0.GetReadPos()).Equals(510)
-	stream0.SetReadPos(511)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize - 2)
+	stream0.SetReadPos(streamBlockSize - 1)
 	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{6, 7, 8, 9, 10})
-	assert(stream0.GetReadPos()).Equals(511)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize - 1)
 }
 
 func TestStream_read5BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
-	stream0.SetWritePos(506)
+	stream0.SetWritePos(streamBlockSize - 6)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13})
-	stream0.SetReadPos(507)
+	stream0.SetReadPos(streamBlockSize - 5)
 	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{2, 3, 4, 5, 6})
-	assert(stream0.GetReadPos()).Equals(512)
-	stream0.SetReadPos(508)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize)
+	stream0.SetReadPos(streamBlockSize - 4)
 	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{3, 4, 5, 6, 7})
-	assert(stream0.GetReadPos()).Equals(513)
-	stream0.SetReadPos(509)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 1)
+	stream0.SetReadPos(streamBlockSize - 3)
 	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{4, 5, 6, 7, 8})
-	assert(stream0.GetReadPos()).Equals(514)
-	stream0.SetReadPos(510)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 2)
+	stream0.SetReadPos(streamBlockSize - 2)
 	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{5, 6, 7, 8, 9})
-	assert(stream0.GetReadPos()).Equals(515)
-	stream0.SetReadPos(511)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 3)
+	stream0.SetReadPos(streamBlockSize - 1)
 	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{6, 7, 8, 9, 10})
-	assert(stream0.GetReadPos()).Equals(516)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 4)
 }
 
 func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 	assert := NewAssert(t)
 
 	stream0 := NewStream()
-	stream0.SetWritePos(502)
+	stream0.SetWritePos(streamBlockSize - 10)
 	stream0.PutBytes([]byte{
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
 	})
-	stream0.SetReadPos(503)
+	stream0.SetReadPos(streamBlockSize - 9)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{2, 3, 4, 5, 6, 7, 8, 9, 10})
-	assert(stream0.GetReadPos()).Equals(512)
-	stream0.SetReadPos(504)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize)
+	stream0.SetReadPos(streamBlockSize - 8)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{3, 4, 5, 6, 7, 8, 9, 10, 11})
-	assert(stream0.GetReadPos()).Equals(513)
-	stream0.SetReadPos(505)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 1)
+	stream0.SetReadPos(streamBlockSize - 7)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{4, 5, 6, 7, 8, 9, 10, 11, 12})
-	assert(stream0.GetReadPos()).Equals(514)
-	stream0.SetReadPos(506)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 2)
+	stream0.SetReadPos(streamBlockSize - 6)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{5, 6, 7, 8, 9, 10, 11, 12, 13})
-	assert(stream0.GetReadPos()).Equals(515)
-	stream0.SetReadPos(507)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 3)
+	stream0.SetReadPos(streamBlockSize - 5)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{6, 7, 8, 9, 10, 11, 12, 13, 14})
-	assert(stream0.GetReadPos()).Equals(516)
-	stream0.SetReadPos(508)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 4)
+	stream0.SetReadPos(streamBlockSize - 4)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{7, 8, 9, 10, 11, 12, 13, 14, 15})
-	assert(stream0.GetReadPos()).Equals(517)
-	stream0.SetReadPos(509)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 5)
+	stream0.SetReadPos(streamBlockSize - 3)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{8, 9, 10, 11, 12, 13, 14, 15, 16})
-	assert(stream0.GetReadPos()).Equals(518)
-	stream0.SetReadPos(510)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 6)
+	stream0.SetReadPos(streamBlockSize - 2)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{9, 10, 11, 12, 13, 14, 15, 16, 17})
-	assert(stream0.GetReadPos()).Equals(519)
-	stream0.SetReadPos(511)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 7)
+	stream0.SetReadPos(streamBlockSize - 1)
 	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{10, 11, 12, 13, 14, 15, 16, 17, 18})
-	assert(stream0.GetReadPos()).Equals(520)
+	assert(stream0.GetReadPos()).Equals(streamBlockSize + 8)
 }
 
 func TestRpcStream_readSkipItem(t *testing.T) {
@@ -902,7 +902,7 @@ func TestRpcStream_peekSkip(t *testing.T) {
 func TestRpcStream_writeStreamNext(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := streamPosBody; i < 550; i++ {
+	for i := streamPosBody; i < streamBlockSize+20; i++ {
 		bytes := make([]byte, i, i)
 		dataStream := NewStream()
 		for n := 0; n < i; n++ {
@@ -918,7 +918,7 @@ func TestRpcStream_writeStreamNext(t *testing.T) {
 		bugStream1 := NewStream()
 		bugStream1.PutBytes([]byte{65, 6, 0, 0, 0})
 
-		for j := streamPosBody; j < 550; j++ {
+		for j := streamPosBody; j < streamBlockSize+20; j++ {
 			stream := NewStream()
 			stream.SetWritePos(j)
 			dataStream.SetReadPos(streamPosBody)
@@ -949,7 +949,7 @@ func TestStream_WriteNil(t *testing.T) {
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteNil()
@@ -965,7 +965,7 @@ func TestStream_WriteBool(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bool"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteBool(testData[0].(bool))
@@ -981,7 +981,7 @@ func TestStream_WriteFloat64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["float64"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteFloat64(testData[0].(float64))
@@ -997,7 +997,7 @@ func TestStream_WriteInt64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["int64"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteInt64(testData[0].(int64))
@@ -1013,7 +1013,7 @@ func TestStream_WriteUInt64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["uint64"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteUint64(testData[0].(uint64))
@@ -1029,7 +1029,7 @@ func TestStream_WriteString(t *testing.T) {
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteString(testData[0].(string))
@@ -1045,7 +1045,7 @@ func TestStream_WriteBytes(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteBytes(testData[0].([]byte))
@@ -1061,7 +1061,7 @@ func TestStream_WriteArray(t *testing.T) {
 
 	for _, testData := range streamTestCollections["array"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteArray(testData[0].(Array))).Equals(StreamWriteOK)
@@ -1071,7 +1071,7 @@ func TestStream_WriteArray(t *testing.T) {
 		}
 
 		// error type
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(
@@ -1088,7 +1088,7 @@ func TestStream_WriteMap(t *testing.T) {
 
 	for _, testData := range streamTestCollections["map"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(testData[0].(Map))).Equals(StreamWriteOK)
@@ -1101,7 +1101,7 @@ func TestStream_WriteMap(t *testing.T) {
 		}
 
 		// error type
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
@@ -1143,7 +1143,7 @@ func TestStream_ReadNil(t *testing.T) {
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
-		for i := streamPosBody; i < 1100; i++ {
+		for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1155,7 +1155,7 @@ func TestStream_ReadNil(t *testing.T) {
 		}
 
 		// overflow
-		for i := streamPosBody; i < 550; i++ {
+		for i := streamPosBody; i < streamBlockSize+20; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)

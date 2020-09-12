@@ -462,7 +462,7 @@ func (p *Stream) PutBytes(v []byte) {
 func (p *Stream) WriteNil() {
 	p.writeFrame[p.writeIndex] = 1
 	p.writeIndex++
-	if p.writeIndex == 512 {
+	if p.writeIndex == streamBlockSize {
 		p.gotoNextWriteFrame()
 	}
 }
@@ -476,7 +476,7 @@ func (p *Stream) WriteBool(v bool) {
 		p.writeFrame[p.writeIndex] = 3
 	}
 	p.writeIndex++
-	if p.writeIndex == 512 {
+	if p.writeIndex == streamBlockSize {
 		p.gotoNextWriteFrame()
 	}
 }
@@ -486,12 +486,12 @@ func (p *Stream) WriteFloat64(value float64) {
 	if value == 0 {
 		p.writeFrame[p.writeIndex] = 4
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	} else {
 		v := math.Float64bits(value)
-		if p.writeIndex < 503 {
+		if p.writeIndex < streamBlockSize-9 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 5
 			b[1] = byte(v)
@@ -524,7 +524,7 @@ func (p *Stream) WriteInt64(v int64) {
 	if v > -8 && v < 33 {
 		p.writeFrame[p.writeIndex] = byte(v + 21)
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 		return
@@ -532,7 +532,7 @@ func (p *Stream) WriteInt64(v int64) {
 
 	if v >= -32768 && v < 32768 {
 		v += 32768
-		if p.writeIndex < 509 {
+		if p.writeIndex < streamBlockSize-3 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 6
 			b[1] = byte(v)
@@ -547,7 +547,7 @@ func (p *Stream) WriteInt64(v int64) {
 		})
 	} else if v >= -2147483648 && v < 2147483648 {
 		v += 2147483648
-		if p.writeIndex < 507 {
+		if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 7
 			b[1] = byte(v)
@@ -571,7 +571,7 @@ func (p *Stream) WriteInt64(v int64) {
 		} else {
 			uv = 9223372036854775808 + uint64(v)
 		}
-		if p.writeIndex < 503 {
+		if p.writeIndex < streamBlockSize-9 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 8
 			b[1] = byte(uv)
@@ -604,11 +604,11 @@ func (p *Stream) WriteUint64(v uint64) {
 	if v < 10 {
 		p.writeFrame[p.writeIndex] = byte(v + 54)
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	} else if v < 65536 {
-		if p.writeIndex < 509 {
+		if p.writeIndex < streamBlockSize-3 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 9
 			b[1] = byte(v)
@@ -622,7 +622,7 @@ func (p *Stream) WriteUint64(v uint64) {
 			byte(v >> 8),
 		})
 	} else if v < 4294967296 {
-		if p.writeIndex < 507 {
+		if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 10
 			b[1] = byte(v)
@@ -640,7 +640,7 @@ func (p *Stream) WriteUint64(v uint64) {
 			byte(v >> 24),
 		})
 	} else {
-		if p.writeIndex < 503 {
+		if p.writeIndex < streamBlockSize-9 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 11
 			b[1] = byte(v)
@@ -674,11 +674,11 @@ func (p *Stream) WriteString(v string) {
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 128
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	} else if length < 63 {
-		if p.writeIndex+length < 510 {
+		if p.writeIndex+length < streamBlockSize-2 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = byte(length + 128)
 			b[length+1] = 0
@@ -688,7 +688,7 @@ func (p *Stream) WriteString(v string) {
 		// write header
 		p.writeFrame[p.writeIndex] = byte(length + 128)
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 		// write body
@@ -696,12 +696,12 @@ func (p *Stream) WriteString(v string) {
 		// write zero tail
 		p.writeFrame[p.writeIndex] = 0
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	} else {
 		totalLength := length + 6
-		if p.writeIndex+totalLength < 512 {
+		if p.writeIndex+totalLength < streamBlockSize {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 191
 			b[1] = byte(uint32(totalLength))
@@ -711,7 +711,7 @@ func (p *Stream) WriteString(v string) {
 			b[totalLength-1] = 0
 			p.writeIndex += copy(b[5:], v) + 6
 			return
-		} else if p.writeIndex < 507 {
+		} else if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 191
 			b[1] = byte(uint32(totalLength))
@@ -733,7 +733,7 @@ func (p *Stream) WriteString(v string) {
 		// write zero tail
 		p.writeFrame[p.writeIndex] = 0
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	}
@@ -749,11 +749,11 @@ func (p *Stream) WriteBytes(v Bytes) {
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 192
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 	} else if length < 63 {
-		if p.writeIndex+length < 511 {
+		if p.writeIndex+length < streamBlockSize-1 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = byte(length + 192)
 			p.writeIndex += copy(b[1:], v) + 1
@@ -762,14 +762,14 @@ func (p *Stream) WriteBytes(v Bytes) {
 		// write header
 		p.writeFrame[p.writeIndex] = byte(length + 192)
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 		// write body
 		p.PutBytes(v)
 	} else {
 		totalLength := length + 5
-		if p.writeIndex+totalLength < 512 {
+		if p.writeIndex+totalLength < streamBlockSize {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 255
 			b[1] = byte(uint32(totalLength))
@@ -778,7 +778,7 @@ func (p *Stream) WriteBytes(v Bytes) {
 			b[4] = byte(uint32(totalLength) >> 24)
 			p.writeIndex += copy(b[5:], v) + 5
 			return
-		} else if p.writeIndex < 507 {
+		} else if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 255
 			b[1] = byte(uint32(totalLength))
@@ -815,7 +815,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 64
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 		return StreamWriteOK
@@ -824,7 +824,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	startPos := p.GetWritePos()
 
 	b := p.writeFrame[p.writeIndex:]
-	if p.writeIndex < 507 {
+	if p.writeIndex < streamBlockSize-5 {
 		p.writeIndex += 5
 	} else {
 		b = b[0:1]
@@ -838,7 +838,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	}
 
 	if length > 30 {
-		if p.writeIndex < 508 {
+		if p.writeIndex < streamBlockSize-4 {
 			l := p.writeFrame[p.writeIndex:]
 			l[0] = byte(uint32(length))
 			l[1] = byte(uint32(length) >> 8)
@@ -899,7 +899,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 96
 		p.writeIndex++
-		if p.writeIndex == 512 {
+		if p.writeIndex == streamBlockSize {
 			p.gotoNextWriteFrame()
 		}
 		return StreamWriteOK
@@ -908,7 +908,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	startPos := p.GetWritePos()
 
 	b := p.writeFrame[p.writeIndex:]
-	if p.writeIndex < 507 {
+	if p.writeIndex < streamBlockSize-5 {
 		p.writeIndex += 5
 	} else {
 		b = b[0:1]
@@ -922,7 +922,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	}
 
 	if length > 30 {
-		if p.writeIndex < 508 {
+		if p.writeIndex < streamBlockSize-4 {
 			l := p.writeFrame[p.writeIndex:]
 			l[0] = byte(uint32(length))
 			l[1] = byte(uint32(length) >> 8)
@@ -1261,7 +1261,7 @@ func (p *Stream) ReadString() (string, bool) {
 			b := make([]byte, strLen)
 			copyBytes := copy(b, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
+			if p.readIndex == streamBlockSize {
 				p.readSeg++
 				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
@@ -1307,7 +1307,7 @@ func (p *Stream) ReadString() (string, bool) {
 					readLen := copy(b[reads:], p.readFrame[p.readIndex:])
 					reads += readLen
 					p.readIndex += readLen
-					if p.readIndex == 512 {
+					if p.readIndex == streamBlockSize {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
@@ -1351,7 +1351,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 			b := make([]byte, strLen)
 			copyBytes := copy(b, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
+			if p.readIndex == streamBlockSize {
 				p.readSeg++
 				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
@@ -1401,7 +1401,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 					readLen := copy(b[reads:], p.readFrame[p.readIndex:])
 					reads += readLen
 					p.readIndex += readLen
-					if p.readIndex == 512 {
+					if p.readIndex == streamBlockSize {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
@@ -1442,7 +1442,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 		} else if p.hasNBytesToRead(bytesLen + 1) {
 			copyBytes := copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
+			if p.readIndex == streamBlockSize {
 				p.readSeg++
 				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(ret[copyBytes:], p.readFrame)
@@ -1480,7 +1480,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 					readLen := copy(ret[reads:], p.readFrame[p.readIndex:])
 					reads += readLen
 					p.readIndex += readLen
-					if p.readIndex == 512 {
+					if p.readIndex == streamBlockSize {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
@@ -1515,7 +1515,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 			ret := make(Bytes, bytesLen)
 			copyBytes := copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
-			if p.readIndex == 512 {
+			if p.readIndex == streamBlockSize {
 				p.readSeg++
 				p.readFrame = p.frames[p.readSeg]
 				p.readIndex = copy(ret[copyBytes:], p.readFrame)
@@ -1552,7 +1552,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 					readLen := copy(ret[reads:], p.readFrame[p.readIndex:])
 					reads += readLen
 					p.readIndex += readLen
-					if p.readIndex == 512 {
+					if p.readIndex == streamBlockSize {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
@@ -2018,7 +2018,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 		if length == 0 {
 			p.writeFrame[p.writeIndex] = 64
 			p.writeIndex++
-			if p.writeIndex == 512 {
+			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
 			return ""
@@ -2027,7 +2027,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 		startPos := p.GetWritePos()
 
 		b := p.writeFrame[p.writeIndex:]
-		if p.writeIndex < 507 {
+		if p.writeIndex < streamBlockSize-5 {
 			p.writeIndex += 5
 		} else {
 			b = b[0:1]
@@ -2041,7 +2041,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 		}
 
 		if length > 30 {
-			if p.writeIndex < 508 {
+			if p.writeIndex < streamBlockSize-4 {
 				l := p.writeFrame[p.writeIndex:]
 				l[0] = byte(uint32(length))
 				l[1] = byte(uint32(length) >> 8)
@@ -2104,7 +2104,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 		if length == 0 {
 			p.writeFrame[p.writeIndex] = 96
 			p.writeIndex++
-			if p.writeIndex == 512 {
+			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
 			return ""
@@ -2113,7 +2113,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 		startPos := p.GetWritePos()
 
 		b := p.writeFrame[p.writeIndex:]
-		if p.writeIndex < 507 {
+		if p.writeIndex < streamBlockSize-5 {
 			p.writeIndex += 5
 		} else {
 			b = b[0:1]
@@ -2127,7 +2127,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 		}
 
 		if length > 30 {
-			if p.writeIndex < 508 {
+			if p.writeIndex < streamBlockSize-4 {
 				l := p.writeFrame[p.writeIndex:]
 				l[0] = byte(uint32(length))
 				l[1] = byte(uint32(length) >> 8)
