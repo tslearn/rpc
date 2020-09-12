@@ -805,39 +805,39 @@ func TestRpcStream_peekSkip(t *testing.T) {
 	assert := NewAssert(t)
 
 	testCollection := Array{
-		Array{[]byte{0}, 0},
-		Array{[]byte{1}, 1},
-		Array{[]byte{2}, 1},
-		Array{[]byte{3}, 1},
-		Array{[]byte{4}, 1},
-		Array{[]byte{5}, 9},
-		Array{[]byte{6}, 3},
-		Array{[]byte{7}, 5},
-		Array{[]byte{8}, 9},
-		Array{[]byte{9}, 3},
-		Array{[]byte{10}, 5},
-		Array{[]byte{11}, 9},
-		Array{[]byte{12}, 0},
-		Array{[]byte{13}, 0},
-		Array{[]byte{14}, 1},
-		Array{[]byte{63}, 1},
-		Array{[]byte{64}, 1},
-		Array{[]byte{65, 6, 0, 0, 0}, 6},
-		Array{[]byte{94, 6, 0, 0, 0}, 6},
-		Array{[]byte{95, 6, 0, 0, 0}, 6},
-		Array{[]byte{96, 6, 0, 0, 0}, 1},
-		Array{[]byte{97, 6, 0, 0, 0}, 6},
-		Array{[]byte{126, 6, 0, 0, 0}, 6},
-		Array{[]byte{127, 6, 0, 0, 0}, 6},
-		Array{[]byte{128, 6, 0, 0, 0}, 1},
-		Array{[]byte{129, 6, 0, 0, 0}, 3},
-		Array{[]byte{190, 6, 0, 0, 0}, 64},
-		Array{[]byte{191, 80, 0, 0, 0}, 80},
-		Array{[]byte{192, 6, 0, 0, 0}, 1},
-		Array{[]byte{193, 6, 0, 0, 0}, 2},
-		Array{[]byte{254, 6, 0, 0, 0}, 63},
-		Array{[]byte{255, 80, 0, 0, 0}, 80},
-		Array{[]byte{255, 80, 0}, 0},
+		Array{[]byte{0}, 0, byte(0)},
+		Array{[]byte{1}, 1, byte(1)},
+		Array{[]byte{2}, 1, byte(2)},
+		Array{[]byte{3}, 1, byte(3)},
+		Array{[]byte{4}, 1, byte(4)},
+		Array{[]byte{5}, 9, byte(5)},
+		Array{[]byte{6}, 3, byte(6)},
+		Array{[]byte{7}, 5, byte(7)},
+		Array{[]byte{8}, 9, byte(8)},
+		Array{[]byte{9}, 3, byte(9)},
+		Array{[]byte{10}, 5, byte(10)},
+		Array{[]byte{11}, 9, byte(11)},
+		Array{[]byte{12}, 0, byte(0)},
+		Array{[]byte{13}, 0, byte(0)},
+		Array{[]byte{14}, 1, byte(14)},
+		Array{[]byte{63}, 1, byte(63)},
+		Array{[]byte{64}, 1, byte(64)},
+		Array{[]byte{65, 6, 0, 0, 0}, 6, byte(65)},
+		Array{[]byte{94, 6, 0, 0, 0}, 6, byte(94)},
+		Array{[]byte{95, 6, 0, 0, 0}, 6, byte(95)},
+		Array{[]byte{96, 6, 0, 0, 0}, 1, byte(96)},
+		Array{[]byte{97, 6, 0, 0, 0}, 6, byte(97)},
+		Array{[]byte{126, 6, 0, 0, 0}, 6, byte(126)},
+		Array{[]byte{127, 6, 0, 0, 0}, 6, byte(127)},
+		Array{[]byte{128, 6, 0, 0, 0}, 1, byte(128)},
+		Array{[]byte{129, 6, 0, 0, 0}, 3, byte(129)},
+		Array{[]byte{190, 6, 0, 0, 0}, 64, byte(190)},
+		Array{[]byte{191, 80, 0, 0, 0}, 80, byte(191)},
+		Array{[]byte{192, 6, 0, 0, 0}, 1, byte(192)},
+		Array{[]byte{193, 6, 0, 0, 0}, 2, byte(193)},
+		Array{[]byte{254, 6, 0, 0, 0}, 63, byte(254)},
+		Array{[]byte{255, 80, 0, 0, 0}, 80, byte(255)},
+		Array{[]byte{255, 80, 0}, 0, byte(0)},
 	}
 
 	for i := streamPosBody; i < 600; i++ {
@@ -846,57 +846,58 @@ func TestRpcStream_peekSkip(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.PutBytes(item.(Array)[0].([]byte))
-			assert(stream.peekSkip()).Equals(item.(Array)[1])
+			assert(stream.peekSkip()).Equals(item.(Array)[1], item.(Array)[2])
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
 	}
 }
 
-func TestRpcStream_writeStreamUnsafe(t *testing.T) {
-	assert := NewAssert(t)
-
-	dataStream := NewStream()
-	for i := 0; i < 2000; i++ {
-		dataStream.PutBytes([]byte{byte(i)})
-	}
-	dataStreamBuf := dataStream.GetBuffer()
-
-	fnTest := func(length int) {
-		for i := streamPosBody; i < 550; i++ {
-			// skip for performance
-			if i > 50 && i < 480 {
-				continue
-			}
-			for j := 0; j < 550; j++ {
-				bytes := make([]byte, j, j)
-				for n := 0; n < j; n++ {
-					bytes[n] = byte(n)
-				}
-				stream := NewStream()
-				stream.PutBytes(bytes)
-				dataStream.SetReadPos(i)
-				stream.writeStreamUnsafe(dataStream, length)
-				streamBuf := stream.GetBuffer()
-				assert(streamBuf[streamPosBody : streamPosBody+j]).Equals(bytes)
-				assert(streamBuf[streamPosBody+j:]).Equals(dataStreamBuf[i : i+length])
-				assert(dataStream.GetReadPos()).Equals(i + length)
-				assert(stream.GetWritePos()).Equals(streamPosBody + j + length)
-				stream.Release()
-			}
-		}
-	}
-
-	fnTest(0)
-	fnTest(1)
-	fnTest(2)
-	fnTest(3)
-	fnTest(12)
-	fnTest(511)
-	fnTest(512)
-	fnTest(513)
-	fnTest(1024)
-}
+//
+//func TestRpcStream_writeStreamUnsafe(t *testing.T) {
+//	assert := NewAssert(t)
+//
+//	dataStream := NewStream()
+//	for i := 0; i < 2000; i++ {
+//		dataStream.PutBytes([]byte{byte(i)})
+//	}
+//	dataStreamBuf := dataStream.GetBuffer()
+//
+//	fnTest := func(length int) {
+//		for i := streamPosBody; i < 550; i++ {
+//			// skip for performance
+//			if i > 50 && i < 480 {
+//				continue
+//			}
+//			for j := 0; j < 550; j++ {
+//				bytes := make([]byte, j, j)
+//				for n := 0; n < j; n++ {
+//					bytes[n] = byte(n)
+//				}
+//				stream := NewStream()
+//				stream.PutBytes(bytes)
+//				dataStream.SetReadPos(i)
+//				stream.writeStreamUnsafe(dataStream, length)
+//				streamBuf := stream.GetBuffer()
+//				assert(streamBuf[streamPosBody : streamPosBody+j]).Equals(bytes)
+//				assert(streamBuf[streamPosBody+j:]).Equals(dataStreamBuf[i : i+length])
+//				assert(dataStream.GetReadPos()).Equals(i + length)
+//				assert(stream.GetWritePos()).Equals(streamPosBody + j + length)
+//				stream.Release()
+//			}
+//		}
+//	}
+//
+//	fnTest(0)
+//	fnTest(1)
+//	fnTest(2)
+//	fnTest(3)
+//	fnTest(12)
+//	fnTest(511)
+//	fnTest(512)
+//	fnTest(513)
+//	fnTest(1024)
+//}
 
 func TestRpcStream_writeStreamNext(t *testing.T) {
 	assert := NewAssert(t)

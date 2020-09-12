@@ -99,6 +99,22 @@ func isNil(val interface{}) (ret bool) {
 	return reflect.ValueOf(val).IsNil()
 }
 
+func minInt(v1 int, v2 int) int {
+	if v1 < v2 {
+		return v1
+	}
+
+	return v2
+}
+
+func maxInt(v1 int, v2 int) int {
+	if v1 < v2 {
+		return v2
+	}
+
+	return v1
+}
+
 func isUTF8Bytes(bytes []byte) bool {
 	idx := 0
 	length := len(bytes)

@@ -344,25 +344,26 @@ func (p *Stream) readNBytesCrossFrameUnsafe(n int) []byte {
 }
 
 // return how many bytes to skip, 0 means error
-func (p *Stream) peekSkip() int {
-	if skip := readSkipArray[p.readFrame[p.readIndex]]; skip > 0 {
-		return skip
+func (p *Stream) peekSkip() (int, byte) {
+	op := p.readFrame[p.readIndex]
+	if skip := readSkipArray[op]; skip > 0 && p.CanRead() {
+		return skip, op
 	} else if skip < 0 {
-		return 0
+		return 0, 0
 	} else if p.isSafetyReadNBytesInCurrentFrame(5) {
 		b := p.readFrame[p.readIndex:]
 		return int(uint32(b[1]) |
 			(uint32(b[2]) << 8) |
 			(uint32(b[3]) << 16) |
-			(uint32(b[4]) << 24))
+			(uint32(b[4]) << 24)), op
 	} else if p.hasNBytesToRead(5) {
 		b := p.peekNBytesCrossFrameUnsafe(5)
 		return int(uint32(b[1]) |
 			(uint32(b[2]) << 8) |
 			(uint32(b[3]) << 16) |
-			(uint32(b[4]) << 24))
+			(uint32(b[4]) << 24)), op
 	} else {
-		return 0
+		return 0, 0
 	}
 }
 
@@ -370,10 +371,10 @@ func (p *Stream) peekSkip() int {
 // end must be a valid pos
 func (p *Stream) readSkipItem(end int) int {
 	ret := p.GetReadPos()
-	skip := p.peekSkip()
+	skip, _ := p.peekSkip()
 
 	if skip > 0 && ret+skip <= end {
-		if p.readIndex+skip < 512 {
+		if p.readIndex+skip < streamBlockSize {
 			p.readIndex += skip
 		} else {
 			p.setReadPosUnsafe(ret + skip)
@@ -381,6 +382,39 @@ func (p *Stream) readSkipItem(end int) int {
 		return ret
 	} else {
 		return -1
+	}
+}
+
+func (p *Stream) writeStreamNext(s *Stream) bool {
+	if skip, _ := s.peekSkip(); skip <= 0 {
+		return false
+	} else if s.isSafetyReadNBytesInCurrentFrame(skip) && p.writeIndex+skip < streamBlockSize {
+		copy(
+			p.writeFrame[p.writeIndex:],
+			s.readFrame[s.readIndex:s.readIndex+skip],
+		)
+		p.writeIndex += skip
+		s.readIndex += skip
+		return true
+	} else if s.hasNBytesToRead(skip) {
+		for skip > 0 {
+			n := copy(
+				p.writeFrame[p.writeIndex:],
+				s.readFrame[s.readIndex:minInt(s.readIndex+skip, streamBlockSize)],
+			)
+			skip -= n
+			p.writeIndex += n
+			if p.writeIndex == streamBlockSize {
+				p.gotoNextWriteFrame()
+			}
+			s.readIndex += n
+			if s.readIndex == streamBlockSize {
+				s.gotoNextReadFrameUnsafe()
+			}
+		}
+		return true
+	} else {
+		return false
 	}
 }
 
@@ -450,127 +484,6 @@ func (p *Stream) PutString(v string) {
 				p.gotoNextWriteFrame()
 			}
 		}
-	}
-}
-
-func (p *Stream) writeStreamUnsafe(s *Stream, length int) {
-	if p.writeIndex+length < 512 {
-		if s.readIndex+length < 512 {
-			copy(
-				p.writeFrame[p.writeIndex:],
-				s.readFrame[s.readIndex:s.readIndex+length],
-			)
-			p.writeIndex += length
-			s.readIndex += length
-		} else {
-			copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
-			p.writeIndex += copyCount
-			length -= copyCount
-			s.gotoNextReadFrameUnsafe()
-			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
-			p.writeIndex += length
-			s.readIndex = length
-		}
-	} else if p.writeIndex < s.readIndex {
-		copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
-		p.writeIndex += copyCount
-		length -= copyCount
-		s.gotoNextReadFrameUnsafe()
-
-		for length > 511 {
-			s.readIndex = copy(p.writeFrame[p.writeIndex:], s.readFrame)
-			p.gotoNextWriteFrame()
-			p.writeIndex = copy(p.writeFrame, s.readFrame[s.readIndex:])
-			s.gotoNextReadFrameUnsafe()
-			length -= 512
-		}
-
-		if p.writeIndex+length < 512 {
-			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
-			p.writeIndex += length
-			s.readIndex = length
-		} else {
-			copyCount = copy(p.writeFrame[p.writeIndex:], s.readFrame)
-			s.readIndex = copyCount
-			length -= copyCount
-			p.gotoNextWriteFrame()
-			copy(p.writeFrame, s.readFrame[s.readIndex:s.readIndex+length])
-			p.writeIndex = length
-			s.readIndex += length
-		}
-	} else if p.writeIndex > s.readIndex {
-		copyCount := copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
-		s.readIndex += copyCount
-		length -= copyCount
-		p.gotoNextWriteFrame()
-		if length < 512-s.readIndex {
-			p.writeIndex = copy(
-				p.writeFrame,
-				s.readFrame[s.readIndex:s.readIndex+length],
-			)
-			s.readIndex += length
-			return
-		}
-		copyCount = copy(p.writeFrame, s.readFrame[s.readIndex:])
-		p.writeIndex = copyCount
-		length -= copyCount
-		s.gotoNextReadFrameUnsafe()
-
-		for length > 511 {
-			s.readIndex = copy(p.writeFrame[p.writeIndex:], s.readFrame)
-			p.gotoNextWriteFrame()
-			p.writeIndex = copy(p.writeFrame, s.readFrame[s.readIndex:])
-			s.gotoNextReadFrameUnsafe()
-			length -= 512
-		}
-
-		if p.writeIndex+length < 512 {
-			copy(p.writeFrame[p.writeIndex:p.writeIndex+length], s.readFrame)
-			p.writeIndex += length
-			s.readIndex = length
-		} else {
-			copyCount = copy(p.writeFrame[p.writeIndex:], s.readFrame)
-			s.readIndex = copyCount
-			length -= copyCount
-			p.gotoNextWriteFrame()
-			copy(p.writeFrame, s.readFrame[s.readIndex:s.readIndex+length])
-			p.writeIndex = length
-			s.readIndex += length
-		}
-	} else {
-		length -= copy(p.writeFrame[p.writeIndex:], s.readFrame[s.readIndex:])
-		s.gotoNextReadFrameUnsafe()
-		p.gotoNextWriteFrame()
-		for length > 511 {
-			length -= copy(p.writeFrame, s.readFrame)
-			s.gotoNextReadFrameUnsafe()
-			p.gotoNextWriteFrame()
-		}
-		copy(p.writeFrame, s.readFrame[:length])
-		p.writeIndex = length
-		s.readIndex = length
-	}
-}
-
-func (p *Stream) writeStreamNext(s *Stream) bool {
-	skip := s.peekSkip()
-	if skip > 0 {
-		if s.isSafetyReadNBytesInCurrentFrame(skip) && p.writeIndex+skip < 512 {
-			copy(
-				p.writeFrame[p.writeIndex:],
-				s.readFrame[s.readIndex:s.readIndex+skip],
-			)
-			p.writeIndex += skip
-			s.readIndex += skip
-			return true
-		} else if s.hasNBytesToRead(skip) {
-			p.writeStreamUnsafe(s, skip)
-			return true
-		} else {
-			return false
-		}
-	} else {
-		return false
 	}
 }
 
