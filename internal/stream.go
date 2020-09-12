@@ -388,7 +388,8 @@ func (p *Stream) readSkipItem(end int) int {
 func (p *Stream) writeStreamNext(s *Stream) bool {
 	if skip, _ := s.peekSkip(); skip <= 0 {
 		return false
-	} else if s.isSafetyReadNBytesInCurrentFrame(skip) && p.writeIndex+skip < streamBlockSize {
+	} else if s.isSafetyReadNBytesInCurrentFrame(skip) &&
+		p.writeIndex+skip < streamBlockSize {
 		copy(
 			p.writeFrame[p.writeIndex:],
 			s.readFrame[s.readIndex:s.readIndex+skip],
@@ -443,46 +444,16 @@ func (p *Stream) GetBufferUnsafe() []byte {
 
 // PutBytes ...
 func (p *Stream) PutBytes(v []byte) {
-	if p.writeIndex+len(v) < 512 {
+	if p.writeIndex+len(v) < streamBlockSize {
 		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
 	} else {
-		pBytes := (*reflect.SliceHeader)(unsafe.Pointer(&v))
-		remains := pBytes.Len
-		for remains > 0 {
-			canWriteCount := 512 - p.writeIndex
-			if canWriteCount > remains {
-				canWriteCount = remains
-			}
-			pBytes.Len = canWriteCount
-			remains -= copy(p.writeFrame[p.writeIndex:], v)
-			p.writeIndex += canWriteCount
-			pBytes.Data += uintptr(canWriteCount)
-			if p.writeIndex == 512 {
+		for len(v) > 0 {
+			n := copy(p.writeFrame[p.writeIndex:], v)
+			p.writeIndex += n
+			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
-		}
-	}
-}
-
-// PutString ...
-func (p *Stream) PutString(v string) {
-	if p.writeIndex+len(v) < 512 {
-		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
-	} else {
-		sBytes := (*reflect.StringHeader)(unsafe.Pointer(&v))
-		remains := sBytes.Len
-		for remains > 0 {
-			canWriteCount := 512 - p.writeIndex
-			if canWriteCount > remains {
-				canWriteCount = remains
-			}
-			sBytes.Len = canWriteCount
-			remains -= copy(p.writeFrame[p.writeIndex:], v)
-			p.writeIndex += canWriteCount
-			sBytes.Data += uintptr(canWriteCount)
-			if p.writeIndex == 512 {
-				p.gotoNextWriteFrame()
-			}
+			v = v[n:]
 		}
 	}
 }
@@ -721,7 +692,7 @@ func (p *Stream) WriteString(v string) {
 			p.gotoNextWriteFrame()
 		}
 		// write body
-		p.PutString(v)
+		p.PutBytes([]byte(v))
 		// write zero tail
 		p.writeFrame[p.writeIndex] = 0
 		p.writeIndex++
@@ -758,7 +729,7 @@ func (p *Stream) WriteString(v string) {
 			})
 		}
 		// write body
-		p.PutString(v)
+		p.PutBytes([]byte(v))
 		// write zero tail
 		p.writeFrame[p.writeIndex] = 0
 		p.writeIndex++

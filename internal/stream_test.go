@@ -655,7 +655,7 @@ func TestStream_putString(t *testing.T) {
 				bytes[z] = byte(z)
 			}
 			strVal := string(bytes)
-			stream.PutString(strVal)
+			stream.PutBytes([]byte(strVal))
 			assert(stream.GetBuffer()[i:]).Equals(bytes)
 			stream.Release()
 		}
