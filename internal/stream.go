@@ -327,6 +327,13 @@ func (p *Stream) isSafetyReadNBytesInCurrentFrame(n int) bool {
 		(lineEnd <= p.writeIndex || p.readSeg < p.writeSeg)
 }
 
+func (p *Stream) peekNBytesCrossFrameUnsafe(n int) []byte {
+	v := make([]byte, n)
+	copyBytes := copy(v, p.readFrame[p.readIndex:])
+	copy(v[copyBytes:], p.frames[p.readSeg+1])
+	return v
+}
+
 func (p *Stream) readNBytesCrossFrameUnsafe(n int) []byte {
 	v := make([]byte, n)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
@@ -336,11 +343,27 @@ func (p *Stream) readNBytesCrossFrameUnsafe(n int) []byte {
 	return v
 }
 
-func (p *Stream) peekNBytesCrossFrameUnsafe(n int) []byte {
-	v := make([]byte, n)
-	copyBytes := copy(v, p.readFrame[p.readIndex:])
-	copy(v[copyBytes:], p.frames[p.readSeg+1])
-	return v
+// return how many bytes to skip, 0 means error
+func (p *Stream) peekSkip() int {
+	if skip := readSkipArray[p.readFrame[p.readIndex]]; skip > 0 {
+		return skip
+	} else if skip < 0 {
+		return 0
+	} else if p.isSafetyReadNBytesInCurrentFrame(5) {
+		b := p.readFrame[p.readIndex:]
+		return int(uint32(b[1]) |
+			(uint32(b[2]) << 8) |
+			(uint32(b[3]) << 16) |
+			(uint32(b[4]) << 24))
+	} else if p.hasNBytesToRead(5) {
+		b := p.peekNBytesCrossFrameUnsafe(5)
+		return int(uint32(b[1]) |
+			(uint32(b[2]) << 8) |
+			(uint32(b[3]) << 16) |
+			(uint32(b[4]) << 24))
+	} else {
+		return 0
+	}
 }
 
 // return the item read pos, and skip it
@@ -358,34 +381,6 @@ func (p *Stream) readSkipItem(end int) int {
 		return ret
 	} else {
 		return -1
-	}
-}
-
-// return how many bytes to skip, 0 means error
-func (p *Stream) peekSkip() int {
-	skip := readSkipArray[p.readFrame[p.readIndex]]
-	if skip > 0 {
-		return skip
-	}
-
-	if skip < 0 {
-		return 0
-	}
-
-	if p.isSafetyReadNBytesInCurrentFrame(5) {
-		b := p.readFrame[p.readIndex:]
-		return int(uint32(b[1]) |
-			(uint32(b[2]) << 8) |
-			(uint32(b[3]) << 16) |
-			(uint32(b[4]) << 24))
-	} else if p.hasNBytesToRead(5) {
-		b := p.peekNBytesCrossFrameUnsafe(5)
-		return int(uint32(b[1]) |
-			(uint32(b[2]) << 8) |
-			(uint32(b[3]) << 16) |
-			(uint32(b[4]) << 24))
-	} else {
-		return 0
 	}
 }
 
