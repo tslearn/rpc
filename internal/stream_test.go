@@ -380,7 +380,7 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 func TestStream_GetReadPos(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 5000; i++ {
+	for i := streamPosBody; i < 5000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 		stream.SetReadPos(i)
@@ -392,7 +392,7 @@ func TestStream_GetReadPos(t *testing.T) {
 func TestStream_SetReadPos(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 5000; i++ {
+	for i := streamPosBody + 1; i < 5000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 		assert(stream.SetReadPos(-1)).IsFalse()
@@ -443,7 +443,7 @@ func TestStream_GetWritePos(t *testing.T) {
 func TestStream_SetWritePos(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 10000; i++ {
+	for i := streamPosBody; i < 10000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 		assert(stream.GetWritePos()).Equals(i)
@@ -454,7 +454,7 @@ func TestStream_SetWritePos(t *testing.T) {
 func TestStream_SetWritePosToBodyStart(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 5000; i++ {
+	for i := streamPosBody; i < 5000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 		assert(stream.GetWritePos()).Equals(i)
@@ -477,7 +477,7 @@ func TestStream_setWritePosUnsafe(t *testing.T) {
 func TestStream_CanRead(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 10000; i++ {
+	for i := streamPosBody + 1; i < 10000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 
@@ -497,7 +497,7 @@ func TestStream_CanRead(t *testing.T) {
 func TestStream_IsReadFinish(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 10000; i++ {
+	for i := streamPosBody + 1; i < 10000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 
@@ -507,7 +507,7 @@ func TestStream_IsReadFinish(t *testing.T) {
 		stream.setReadPosUnsafe(i)
 		assert(stream.IsReadFinish()).IsTrue()
 
-		if (i+1)%512 != 0 {
+		if (i+1)%streamBlockSize != 0 {
 			stream.setReadPosUnsafe(i + 1)
 			assert(stream.IsReadFinish()).IsFalse()
 		}
@@ -519,10 +519,10 @@ func TestStream_gotoNextReadFrameUnsafe(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(10000)
 
-	for i := 0; i < 8000; i++ {
+	for i := streamPosBody; i < 8000; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		stream.gotoNextReadFrameUnsafe()
-		assert(stream.GetReadPos()).Equals((i/512 + 1) * 512)
+		assert(stream.GetReadPos()).Equals((i/streamBlockSize + 1) * streamBlockSize)
 	}
 }
 
@@ -531,7 +531,7 @@ func TestStream_gotoNextReadByteUnsafe(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(10000)
 
-	for i := 0; i < 8000; i++ {
+	for i := streamPosBody; i < 8000; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		stream.gotoNextReadByteUnsafe()
 		assert(stream.GetReadPos()).Equals(i + 1)
@@ -541,17 +541,17 @@ func TestStream_gotoNextReadByteUnsafe(t *testing.T) {
 func TestStream_hasOneByteToRead(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 2000; i++ {
+	for i := streamPosBody; i < 2000; i++ {
 		stream := NewStream()
 		stream.SetWritePos(i)
 
-		for n := 0; n < i; n++ {
+		for n := streamPosBody; n < i; n++ {
 			assert(stream.SetReadPos(n))
-			assert(stream.hasOneByteToRead()).IsTrue()
+			assert(stream.CanRead()).IsTrue()
 		}
 
 		assert(stream.SetReadPos(i))
-		assert(stream.hasOneByteToRead()).IsFalse()
+		assert(stream.CanRead()).IsFalse()
 		stream.Release()
 	}
 }
@@ -561,7 +561,7 @@ func TestStream_hasNBytesToRead(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
-	for i := 0; i < 1000; i++ {
+	for i := streamPosBody; i < 1000; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 1600; n++ {
 			assert(stream.hasNBytesToRead(n)).Equals(i+n <= 1100)
@@ -574,7 +574,7 @@ func TestStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
-	for i := 0; i < 800; i++ {
+	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyReadNBytesInCurrentFrame(n)).
@@ -588,7 +588,7 @@ func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
-	for i := 0; i < 800; i++ {
+	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyRead3BytesInCurrentFrame()).
@@ -602,7 +602,7 @@ func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
-	for i := 0; i < 800; i++ {
+	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyRead5BytesInCurrentFrame()).
@@ -616,7 +616,7 @@ func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
-	for i := 0; i < 800; i++ {
+	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
 			assert(stream.isSafetyRead9BytesInCurrentFrame()).
@@ -628,7 +628,7 @@ func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 func TestStream_putBytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 600; i++ {
+	for i := streamPosBody; i < 600; i++ {
 		for n := 0; n < 600; n++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
@@ -646,7 +646,7 @@ func TestStream_putBytes(t *testing.T) {
 func TestStream_putString(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 600; i++ {
+	for i := streamPosBody; i < 600; i++ {
 		for n := 0; n < 600; n++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
@@ -771,27 +771,10 @@ func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 	assert(stream0.GetReadPos()).Equals(520)
 }
 
-func TestStream_readNBytesUnsafe(t *testing.T) {
-	assert := NewAssert(t)
-	stream := NewStream()
-	for i := 0; i < 2000; i++ {
-		stream.PutBytes([]byte{byte(i)})
-	}
-	streamBuf := stream.GetBuffer()
-
-	for i := 1; i < 600; i++ {
-		for n := 0; n < 1100; n++ {
-			stream.SetReadPos(i)
-			assert(stream.readNBytesUnsafe(n)).
-				Equals(streamBuf[i : i+n])
-		}
-	}
-}
-
 func TestRpcStream_readSkipItem(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 1; i < 600; i++ {
+	for i := streamPosBody; i < 600; i++ {
 		for j := 0; j < 600; j++ {
 			// skip > 0
 			bytes := make([]byte, j, j)
@@ -857,7 +840,7 @@ func TestRpcStream_peekSkip(t *testing.T) {
 		Array{[]byte{255, 80, 0}, 0},
 	}
 
-	for i := 1; i < 600; i++ {
+	for i := streamPosBody; i < 600; i++ {
 		for _, item := range testCollection {
 			stream := NewStream()
 			stream.SetWritePos(i)
@@ -880,7 +863,7 @@ func TestRpcStream_writeStreamUnsafe(t *testing.T) {
 	dataStreamBuf := dataStream.GetBuffer()
 
 	fnTest := func(length int) {
-		for i := 0; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			// skip for performance
 			if i > 50 && i < 480 {
 				continue
@@ -918,7 +901,7 @@ func TestRpcStream_writeStreamUnsafe(t *testing.T) {
 func TestRpcStream_writeStreamNext(t *testing.T) {
 	assert := NewAssert(t)
 
-	for i := 0; i < 550; i++ {
+	for i := streamPosBody; i < 550; i++ {
 		bytes := make([]byte, i, i)
 		dataStream := NewStream()
 		for n := 0; n < i; n++ {
@@ -934,7 +917,7 @@ func TestRpcStream_writeStreamNext(t *testing.T) {
 		bugStream1 := NewStream()
 		bugStream1.PutBytes([]byte{65, 6, 0, 0, 0})
 
-		for j := 0; j < 550; j++ {
+		for j := streamPosBody; j < 550; j++ {
 			stream := NewStream()
 			stream.SetWritePos(j)
 			dataStream.SetReadPos(streamPosBody)
@@ -965,7 +948,7 @@ func TestStream_WriteNil(t *testing.T) {
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteNil()
@@ -981,7 +964,7 @@ func TestStream_WriteBool(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bool"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteBool(testData[0].(bool))
@@ -997,7 +980,7 @@ func TestStream_WriteFloat64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["float64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteFloat64(testData[0].(float64))
@@ -1013,7 +996,7 @@ func TestStream_WriteInt64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["int64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteInt64(testData[0].(int64))
@@ -1029,7 +1012,7 @@ func TestStream_WriteUInt64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["uint64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteUint64(testData[0].(uint64))
@@ -1045,7 +1028,7 @@ func TestStream_WriteString(t *testing.T) {
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteString(testData[0].(string))
@@ -1061,7 +1044,7 @@ func TestStream_WriteBytes(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.WriteBytes(testData[0].([]byte))
@@ -1077,7 +1060,7 @@ func TestStream_WriteArray(t *testing.T) {
 
 	for _, testData := range streamTestCollections["array"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteArray(testData[0].(Array))).Equals(StreamWriteOK)
@@ -1087,7 +1070,7 @@ func TestStream_WriteArray(t *testing.T) {
 		}
 
 		// error type
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(
@@ -1104,7 +1087,7 @@ func TestStream_WriteMap(t *testing.T) {
 
 	for _, testData := range streamTestCollections["map"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(testData[0].(Map))).Equals(StreamWriteOK)
@@ -1117,7 +1100,7 @@ func TestStream_WriteMap(t *testing.T) {
 		}
 
 		// error type
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
@@ -1159,7 +1142,7 @@ func TestStream_ReadNil(t *testing.T) {
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1171,7 +1154,7 @@ func TestStream_ReadNil(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1187,7 +1170,7 @@ func TestStream_ReadNil(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1204,7 +1187,7 @@ func TestStream_ReadBool(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bool"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1215,7 +1198,7 @@ func TestStream_ReadBool(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1231,7 +1214,7 @@ func TestStream_ReadBool(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1248,7 +1231,7 @@ func TestStream_ReadFloat64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["float64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1259,7 +1242,7 @@ func TestStream_ReadFloat64(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1275,7 +1258,7 @@ func TestStream_ReadFloat64(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1292,7 +1275,7 @@ func TestStream_ReadInt64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["int64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1303,7 +1286,7 @@ func TestStream_ReadInt64(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1319,7 +1302,7 @@ func TestStream_ReadInt64(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1336,7 +1319,7 @@ func TestStream_ReadUint64(t *testing.T) {
 
 	for _, testData := range streamTestCollections["uint64"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1347,7 +1330,7 @@ func TestStream_ReadUint64(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1363,7 +1346,7 @@ func TestStream_ReadUint64(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1380,7 +1363,7 @@ func TestStream_ReadString(t *testing.T) {
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1391,7 +1374,7 @@ func TestStream_ReadString(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1407,7 +1390,7 @@ func TestStream_ReadString(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1418,7 +1401,7 @@ func TestStream_ReadString(t *testing.T) {
 		}
 
 		// read tail is not zero
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1481,7 +1464,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1492,7 +1475,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1508,7 +1491,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1519,7 +1502,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		}
 
 		// read tail is not zero
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1582,7 +1565,7 @@ func TestStream_ReadBytes(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1593,7 +1576,7 @@ func TestStream_ReadBytes(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1609,7 +1592,7 @@ func TestStream_ReadBytes(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1640,7 +1623,7 @@ func TestStream_ReadUnsafeBytes(t *testing.T) {
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
-		for i := 1; i < 1100; i++ {
+		for i := streamPosBody; i < 1100; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1651,7 +1634,7 @@ func TestStream_ReadUnsafeBytes(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1667,7 +1650,7 @@ func TestStream_ReadUnsafeBytes(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1698,7 +1681,7 @@ func TestStream_ReadArray(t *testing.T) {
 
 	for _, testData := range streamTestCollections["array"] {
 		// ok
-		for i := 1; i < 530; i++ {
+		for i := streamPosBody; i < 530; i++ {
 			for j := 1; j < 530; j++ {
 				// skip for performance
 				if j > 10 && j < 500 {
@@ -1716,7 +1699,7 @@ func TestStream_ReadArray(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1732,7 +1715,7 @@ func TestStream_ReadArray(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1743,7 +1726,7 @@ func TestStream_ReadArray(t *testing.T) {
 		}
 
 		// error in stream
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1758,7 +1741,7 @@ func TestStream_ReadArray(t *testing.T) {
 		}
 
 		// error in stream
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1775,7 +1758,7 @@ func TestStream_ReadMap(t *testing.T) {
 
 	for _, testData := range streamTestCollections["map"] {
 		// ok
-		for i := 1; i < 530; i++ {
+		for i := streamPosBody; i < 530; i++ {
 			for j := 1; j < 530; j++ {
 				// skip for performance
 				if j > 10 && j < 500 {
@@ -1792,7 +1775,7 @@ func TestStream_ReadMap(t *testing.T) {
 		}
 
 		// overflow
-		for i := 1; i < 530; i++ {
+		for i := streamPosBody; i < 530; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1808,7 +1791,7 @@ func TestStream_ReadMap(t *testing.T) {
 		}
 
 		// type not match
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1819,7 +1802,7 @@ func TestStream_ReadMap(t *testing.T) {
 		}
 
 		// error in stream
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1834,7 +1817,7 @@ func TestStream_ReadMap(t *testing.T) {
 		}
 
 		// error in stream, length error
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -1847,7 +1830,7 @@ func TestStream_ReadMap(t *testing.T) {
 		}
 
 		// error in stream, key error
-		for i := 1; i < 550; i++ {
+		for i := streamPosBody; i < 550; i++ {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
