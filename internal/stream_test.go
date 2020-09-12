@@ -591,7 +591,7 @@ func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
-			assert(stream.isSafetyRead3BytesInCurrentFrame()).
+			assert(stream.isSafetyReadNBytesInCurrentFrame(3)).
 				Equals(512-i%512 > 3)
 		}
 	}
@@ -605,7 +605,7 @@ func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
-			assert(stream.isSafetyRead5BytesInCurrentFrame()).
+			assert(stream.isSafetyReadNBytesInCurrentFrame(5)).
 				Equals(512-i%512 > 5)
 		}
 	}
@@ -619,7 +619,7 @@ func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 	for i := streamPosBody; i < 800; i++ {
 		assert(stream.SetReadPos(i)).IsTrue()
 		for n := 0; n < 800; n++ {
-			assert(stream.isSafetyRead9BytesInCurrentFrame()).
+			assert(stream.isSafetyReadNBytesInCurrentFrame(9)).
 				Equals(512-i%512 > 9)
 		}
 	}
@@ -669,13 +669,13 @@ func TestStream_read3BytesCrossFrameUnsafe(t *testing.T) {
 	stream0.SetWritePos(508)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9})
 	stream0.SetReadPos(509)
-	assert(stream0.read3BytesCrossFrameUnsafe()).Equals([]byte{2, 3, 4})
+	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{2, 3, 4})
 	assert(stream0.GetReadPos()).Equals(512)
 	stream0.SetReadPos(510)
-	assert(stream0.read3BytesCrossFrameUnsafe()).Equals([]byte{3, 4, 5})
+	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{3, 4, 5})
 	assert(stream0.GetReadPos()).Equals(513)
 	stream0.SetReadPos(511)
-	assert(stream0.read3BytesCrossFrameUnsafe()).Equals([]byte{4, 5, 6})
+	assert(stream0.readNBytesCrossFrameUnsafe(3)).Equals([]byte{4, 5, 6})
 	assert(stream0.GetReadPos()).Equals(514)
 }
 
@@ -686,19 +686,19 @@ func TestStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
 	stream0.SetWritePos(506)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13})
 	stream0.SetReadPos(507)
-	assert(stream0.peek5BytesCrossFrameUnsafe()).Equals([]byte{2, 3, 4, 5, 6})
+	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{2, 3, 4, 5, 6})
 	assert(stream0.GetReadPos()).Equals(507)
 	stream0.SetReadPos(508)
-	assert(stream0.peek5BytesCrossFrameUnsafe()).Equals([]byte{3, 4, 5, 6, 7})
+	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{3, 4, 5, 6, 7})
 	assert(stream0.GetReadPos()).Equals(508)
 	stream0.SetReadPos(509)
-	assert(stream0.peek5BytesCrossFrameUnsafe()).Equals([]byte{4, 5, 6, 7, 8})
+	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{4, 5, 6, 7, 8})
 	assert(stream0.GetReadPos()).Equals(509)
 	stream0.SetReadPos(510)
-	assert(stream0.peek5BytesCrossFrameUnsafe()).Equals([]byte{5, 6, 7, 8, 9})
+	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{5, 6, 7, 8, 9})
 	assert(stream0.GetReadPos()).Equals(510)
 	stream0.SetReadPos(511)
-	assert(stream0.peek5BytesCrossFrameUnsafe()).Equals([]byte{6, 7, 8, 9, 10})
+	assert(stream0.peekNBytesCrossFrameUnsafe(5)).Equals([]byte{6, 7, 8, 9, 10})
 	assert(stream0.GetReadPos()).Equals(511)
 }
 
@@ -709,19 +709,19 @@ func TestStream_read5BytesCrossFrameUnsafe(t *testing.T) {
 	stream0.SetWritePos(506)
 	stream0.PutBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13})
 	stream0.SetReadPos(507)
-	assert(stream0.read5BytesCrossFrameUnsafe()).Equals([]byte{2, 3, 4, 5, 6})
+	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{2, 3, 4, 5, 6})
 	assert(stream0.GetReadPos()).Equals(512)
 	stream0.SetReadPos(508)
-	assert(stream0.read5BytesCrossFrameUnsafe()).Equals([]byte{3, 4, 5, 6, 7})
+	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{3, 4, 5, 6, 7})
 	assert(stream0.GetReadPos()).Equals(513)
 	stream0.SetReadPos(509)
-	assert(stream0.read5BytesCrossFrameUnsafe()).Equals([]byte{4, 5, 6, 7, 8})
+	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{4, 5, 6, 7, 8})
 	assert(stream0.GetReadPos()).Equals(514)
 	stream0.SetReadPos(510)
-	assert(stream0.read5BytesCrossFrameUnsafe()).Equals([]byte{5, 6, 7, 8, 9})
+	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{5, 6, 7, 8, 9})
 	assert(stream0.GetReadPos()).Equals(515)
 	stream0.SetReadPos(511)
-	assert(stream0.read5BytesCrossFrameUnsafe()).Equals([]byte{6, 7, 8, 9, 10})
+	assert(stream0.readNBytesCrossFrameUnsafe(5)).Equals([]byte{6, 7, 8, 9, 10})
 	assert(stream0.GetReadPos()).Equals(516)
 }
 
@@ -734,39 +734,39 @@ func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
 	})
 	stream0.SetReadPos(503)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{2, 3, 4, 5, 6, 7, 8, 9, 10})
 	assert(stream0.GetReadPos()).Equals(512)
 	stream0.SetReadPos(504)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{3, 4, 5, 6, 7, 8, 9, 10, 11})
 	assert(stream0.GetReadPos()).Equals(513)
 	stream0.SetReadPos(505)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{4, 5, 6, 7, 8, 9, 10, 11, 12})
 	assert(stream0.GetReadPos()).Equals(514)
 	stream0.SetReadPos(506)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{5, 6, 7, 8, 9, 10, 11, 12, 13})
 	assert(stream0.GetReadPos()).Equals(515)
 	stream0.SetReadPos(507)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{6, 7, 8, 9, 10, 11, 12, 13, 14})
 	assert(stream0.GetReadPos()).Equals(516)
 	stream0.SetReadPos(508)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{7, 8, 9, 10, 11, 12, 13, 14, 15})
 	assert(stream0.GetReadPos()).Equals(517)
 	stream0.SetReadPos(509)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{8, 9, 10, 11, 12, 13, 14, 15, 16})
 	assert(stream0.GetReadPos()).Equals(518)
 	stream0.SetReadPos(510)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{9, 10, 11, 12, 13, 14, 15, 16, 17})
 	assert(stream0.GetReadPos()).Equals(519)
 	stream0.SetReadPos(511)
-	assert(stream0.read9BytesCrossFrameUnsafe()).
+	assert(stream0.readNBytesCrossFrameUnsafe(9)).
 		Equals([]byte{10, 11, 12, 13, 14, 15, 16, 17, 18})
 	assert(stream0.GetReadPos()).Equals(520)
 }

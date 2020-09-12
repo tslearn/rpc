@@ -327,23 +327,8 @@ func (p *Stream) isSafetyReadNBytesInCurrentFrame(n int) bool {
 		(lineEnd <= p.writeIndex || p.readSeg < p.writeSeg)
 }
 
-func (p *Stream) isSafetyRead3BytesInCurrentFrame() bool {
-	return (p.readIndex < streamBlockSize-3) &&
-		(p.readIndex+3 <= p.writeIndex || p.readSeg < p.writeSeg)
-}
-
-func (p *Stream) isSafetyRead5BytesInCurrentFrame() bool {
-	return (p.readIndex < streamBlockSize-5) &&
-		(p.readIndex+5 <= p.writeIndex || p.readSeg < p.writeSeg)
-}
-
-func (p *Stream) isSafetyRead9BytesInCurrentFrame() bool {
-	return (p.readIndex < streamBlockSize-9) &&
-		(p.readIndex+9 <= p.writeIndex || p.readSeg < p.writeSeg)
-}
-
-func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 3)
+func (p *Stream) readNBytesCrossFrameUnsafe(n int) []byte {
+	v := make([]byte, n)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	p.readSeg++
 	p.readFrame = p.frames[p.readSeg]
@@ -351,26 +336,8 @@ func (p *Stream) read3BytesCrossFrameUnsafe() []byte {
 	return v
 }
 
-func (p *Stream) read5BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 5)
-	copyBytes := copy(v, p.readFrame[p.readIndex:])
-	p.readSeg++
-	p.readFrame = p.frames[p.readSeg]
-	p.readIndex = copy(v[copyBytes:], p.readFrame)
-	return v
-}
-
-func (p *Stream) read9BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 9)
-	copyBytes := copy(v, p.readFrame[p.readIndex:])
-	p.readSeg++
-	p.readFrame = p.frames[p.readSeg]
-	p.readIndex = copy(v[copyBytes:], p.readFrame)
-	return v
-}
-
-func (p *Stream) peek5BytesCrossFrameUnsafe() []byte {
-	v := make([]byte, 5)
+func (p *Stream) peekNBytesCrossFrameUnsafe(n int) []byte {
+	v := make([]byte, n)
 	copyBytes := copy(v, p.readFrame[p.readIndex:])
 	copy(v[copyBytes:], p.frames[p.readSeg+1])
 	return v
@@ -405,14 +372,14 @@ func (p *Stream) peekSkip() int {
 		return 0
 	}
 
-	if p.isSafetyRead5BytesInCurrentFrame() {
+	if p.isSafetyReadNBytesInCurrentFrame(5) {
 		b := p.readFrame[p.readIndex:]
 		return int(uint32(b[1]) |
 			(uint32(b[2]) << 8) |
 			(uint32(b[3]) << 16) |
 			(uint32(b[4]) << 24))
 	} else if p.hasNBytesToRead(5) {
-		b := p.peek5BytesCrossFrameUnsafe()
+		b := p.peekNBytesCrossFrameUnsafe(5)
 		return int(uint32(b[1]) |
 			(uint32(b[2]) << 8) |
 			(uint32(b[3]) << 16) |
@@ -1224,7 +1191,7 @@ func (p *Stream) ReadFloat64() (float64, bool) {
 			return 0, true
 		}
 	} else if v == 5 {
-		if p.isSafetyRead9BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(9) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 9
 			return math.Float64frombits(
@@ -1239,7 +1206,7 @@ func (p *Stream) ReadFloat64() (float64, bool) {
 			), true
 		}
 		if p.hasNBytesToRead(9) {
-			b := p.read9BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(9)
 			return math.Float64frombits(
 				uint64(b[1]) |
 					(uint64(b[2]) << 8) |
@@ -1264,7 +1231,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 			return int64(v) - 21, true
 		}
 	} else if v == 6 {
-		if p.isSafetyRead3BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(3) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 3
 			return int64(uint16(b[1])|
@@ -1272,13 +1239,13 @@ func (p *Stream) ReadInt64() (int64, bool) {
 			) - 32768, true
 		}
 		if p.hasNBytesToRead(3) {
-			b := p.read3BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(3)
 			return int64(uint16(b[1])|
 				(uint16(b[2])<<8),
 			) - 32768, true
 		}
 	} else if v == 7 {
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 5
 			return int64(uint32(b[1])|
@@ -1288,7 +1255,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 			) - 2147483648, true
 		}
 		if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			return int64(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
@@ -1296,7 +1263,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 			) - 2147483648, true
 		}
 	} else if v == 8 {
-		if p.isSafetyRead9BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(9) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 9
 			return int64(
@@ -1311,7 +1278,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 					9223372036854775808), true
 		}
 		if p.hasNBytesToRead(9) {
-			b := p.read9BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(9)
 			return int64(
 				uint64(b[1]) |
 					(uint64(b[2]) << 8) |
@@ -1336,19 +1303,19 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 			return uint64(v) - 54, true
 		}
 	} else if v == 9 {
-		if p.isSafetyRead3BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(3) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 3
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8), true
 		}
 		if p.hasNBytesToRead(3) {
-			b := p.read3BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(3)
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8), true
 		}
 	} else if v == 10 {
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 5
 			return uint64(b[1]) |
@@ -1357,14 +1324,14 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 				(uint64(b[4]) << 24), true
 		}
 		if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8) |
 				(uint64(b[3]) << 16) |
 				(uint64(b[4]) << 24), true
 		}
 	} else if v == 11 {
-		if p.isSafetyRead9BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(9) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 9
 			return uint64(b[1]) |
@@ -1377,7 +1344,7 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 				(uint64(b[8]) << 56), true
 		}
 		if p.hasNBytesToRead(9) {
-			b := p.read9BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(9)
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8) |
 				(uint64(b[3]) << 16) |
@@ -1430,7 +1397,7 @@ func (p *Stream) ReadString() (string, bool) {
 		readStart := p.GetReadPos()
 		strLen := -1
 
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			strLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
@@ -1438,7 +1405,7 @@ func (p *Stream) ReadString() (string, bool) {
 				(uint32(b[4])<<24)) - 6
 			p.readIndex += 5
 		} else if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			strLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
@@ -1520,7 +1487,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 		readStart := p.GetReadPos()
 		strLen := -1
 
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			strLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
@@ -1528,7 +1495,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 				(uint32(b[4])<<24)) - 6
 			p.readIndex += 5
 		} else if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			strLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
@@ -1606,7 +1573,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 	} else if v == 255 {
 		readStart := p.GetReadPos()
 		bytesLen := -1
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			bytesLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
@@ -1614,7 +1581,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 				(uint32(b[4])<<24)) - 5
 			p.readIndex += 5
 		} else if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			bytesLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
@@ -1680,7 +1647,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 		readStart := p.GetReadPos()
 		bytesLen := -1
 
-		if p.isSafetyRead5BytesInCurrentFrame() {
+		if p.isSafetyReadNBytesInCurrentFrame(5) {
 			b := p.readFrame[p.readIndex:]
 			bytesLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
@@ -1688,7 +1655,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 				(uint32(b[4])<<24)) - 5
 			p.readIndex += 5
 		} else if p.hasNBytesToRead(5) {
-			b := p.read5BytesCrossFrameUnsafe()
+			b := p.readNBytesCrossFrameUnsafe(5)
 			bytesLen = int(uint32(b[1])|
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
@@ -1738,7 +1705,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
-			if p.isSafetyRead5BytesInCurrentFrame() {
+			if p.isSafetyReadNBytesInCurrentFrame(5) {
 				b := p.readFrame[p.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1746,14 +1713,14 @@ func (p *Stream) ReadArray() (Array, bool) {
 					(uint32(b[4]) << 24))
 				p.readIndex += 5
 			} else if p.hasNBytesToRead(5) {
-				bytes4 := p.read5BytesCrossFrameUnsafe()
+				bytes4 := p.readNBytesCrossFrameUnsafe(5)
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if p.isSafetyRead9BytesInCurrentFrame() {
+			if p.isSafetyReadNBytesInCurrentFrame(9) {
 				b := p.readFrame[p.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1765,7 +1732,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 					(uint32(b[8]) << 24))
 				p.readIndex += 9
 			} else if p.hasNBytesToRead(9) {
-				bytes8 := p.read9BytesCrossFrameUnsafe()
+				bytes8 := p.readNBytesCrossFrameUnsafe(9)
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
@@ -1817,7 +1784,7 @@ func (p *Stream) ReadMap() (Map, bool) {
 			}
 		} else if v < 127 {
 			mapLen = int(v - 96)
-			if p.isSafetyRead5BytesInCurrentFrame() {
+			if p.isSafetyReadNBytesInCurrentFrame(5) {
 				b := p.readFrame[p.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1825,14 +1792,14 @@ func (p *Stream) ReadMap() (Map, bool) {
 					(uint32(b[4]) << 24))
 				p.readIndex += 5
 			} else if p.hasNBytesToRead(5) {
-				bytes4 := p.read5BytesCrossFrameUnsafe()
+				bytes4 := p.readNBytesCrossFrameUnsafe(5)
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if p.isSafetyRead9BytesInCurrentFrame() {
+			if p.isSafetyReadNBytesInCurrentFrame(9) {
 				b := p.readFrame[p.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1844,7 +1811,7 @@ func (p *Stream) ReadMap() (Map, bool) {
 					(uint32(b[8]) << 24))
 				p.readIndex += 9
 			} else if p.hasNBytesToRead(9) {
-				bytes8 := p.read9BytesCrossFrameUnsafe()
+				bytes8 := p.readNBytesCrossFrameUnsafe(9)
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
@@ -1962,7 +1929,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
-			if cs.isSafetyRead5BytesInCurrentFrame() {
+			if cs.isSafetyReadNBytesInCurrentFrame(5) {
 				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1970,14 +1937,14 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 					(uint32(b[4]) << 24))
 				cs.readIndex += 5
 			} else if cs.hasNBytesToRead(5) {
-				bytes4 := cs.read5BytesCrossFrameUnsafe()
+				bytes4 := cs.readNBytesCrossFrameUnsafe(5)
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if cs.isSafetyRead9BytesInCurrentFrame() {
+			if cs.isSafetyReadNBytesInCurrentFrame(9) {
 				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -1989,7 +1956,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 					(uint32(b[8]) << 24))
 				cs.readIndex += 9
 			} else if cs.hasNBytesToRead(9) {
-				bytes8 := cs.read9BytesCrossFrameUnsafe()
+				bytes8 := cs.readNBytesCrossFrameUnsafe(9)
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
@@ -2073,7 +2040,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 			}
 		} else if v < 127 {
 			mapLen = int(v - 96)
-			if cs.isSafetyRead5BytesInCurrentFrame() {
+			if cs.isSafetyReadNBytesInCurrentFrame(5) {
 				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -2081,14 +2048,14 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 					(uint32(b[4]) << 24))
 				cs.readIndex += 5
 			} else if cs.hasNBytesToRead(5) {
-				bytes4 := cs.read5BytesCrossFrameUnsafe()
+				bytes4 := cs.readNBytesCrossFrameUnsafe(5)
 				totalLen = int(uint32(bytes4[1]) |
 					(uint32(bytes4[2]) << 8) |
 					(uint32(bytes4[3]) << 16) |
 					(uint32(bytes4[4]) << 24))
 			}
 		} else {
-			if cs.isSafetyRead9BytesInCurrentFrame() {
+			if cs.isSafetyReadNBytesInCurrentFrame(9) {
 				b := cs.readFrame[cs.readIndex:]
 				totalLen = int(uint32(b[1]) |
 					(uint32(b[2]) << 8) |
@@ -2100,7 +2067,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 					(uint32(b[8]) << 24))
 				cs.readIndex += 9
 			} else if cs.hasNBytesToRead(9) {
-				bytes8 := cs.read9BytesCrossFrameUnsafe()
+				bytes8 := cs.readNBytesCrossFrameUnsafe(9)
 				totalLen = int(uint32(bytes8[1]) |
 					(uint32(bytes8[2]) << 8) |
 					(uint32(bytes8[3]) << 16) |
