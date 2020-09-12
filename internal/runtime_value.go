@@ -151,3 +151,13 @@ func (p RTValue) ToMap() (Map, bool) {
 
 	return Map(nil), false
 }
+
+func (p RTValue) ToRTMap() (RTMap, bool) {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		return thread.rtStream.ReadRTMap(p.rt)
+	}
+
+	return RTMap{}, false
+}

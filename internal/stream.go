@@ -1975,6 +1975,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 		readStart := p.GetReadPos()
 
 		if p != cs {
+			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
 				return RTArray{}, false
 			}
@@ -2085,6 +2086,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 		readStart := p.GetReadPos()
 
 		if p != cs {
+			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
 				return RTMap{}, false
 			}
@@ -2365,5 +2367,39 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 		return ""
 	} else {
 		return "WriteRTMap: parameter is not available"
+	}
+}
+
+// ReadRTValue read a RPCArray value
+func (p *Stream) ReadRTValue(rt Runtime) RTValue {
+	thread := rt.lock()
+	if thread == nil {
+		return RTValue{}
+	}
+	defer rt.unlock()
+
+	cs := thread.rtStream
+	if p != cs {
+		cs.SetReadPos(cs.GetWritePos())
+		if !cs.writeStreamNext(p) {
+			return RTValue{}
+		}
+	}
+
+	if op := cs.readFrame[cs.readIndex]; op > 128 && op < 191 {
+		cacheString, ok := cs.ReadUnsafeString()
+		return RTValue{
+			rt:          rt,
+			pos:         int64(cs.GetReadPos()),
+			cacheString: cacheString,
+			cacheOK:     ok,
+		}
+	} else {
+		return RTValue{
+			rt:          rt,
+			pos:         int64(cs.GetReadPos()),
+			cacheString: "",
+			cacheOK:     false,
+		}
 	}
 }
