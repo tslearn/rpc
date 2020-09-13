@@ -5,7 +5,6 @@ import (
 	"math"
 	"reflect"
 	"strconv"
-	"sync"
 	"unsafe"
 )
 
@@ -30,7 +29,7 @@ const (
 
 var (
 	initFrame   = make([]byte, streamBlockSize)
-	streamCache = sync.Pool{
+	streamCache = &SyncPool{
 		New: func() interface{} {
 			ret := &Stream{
 				readSeg:    0,
@@ -47,7 +46,7 @@ var (
 			return ret
 		},
 	}
-	frameCache = &sync.Pool{
+	frameCache = &SyncPool{
 		New: func() interface{} {
 			return make([]byte, streamBlockSize)
 		},

@@ -6,7 +6,7 @@ import (
 )
 
 func TestSafePoolDebug(t *testing.T) {
-	pool := &SafePool{
+	pool := &SyncPool{
 		New: func() interface{} {
 			ret := make([]byte, 512)
 			return &ret
@@ -16,11 +16,11 @@ func TestSafePoolDebug(t *testing.T) {
 	v1 := pool.Get()
 	v2 := pool.Get()
 
-	fmt.Println(safePoolDebugAllocMap)
+	fmt.Println(safePoolDebugMap)
 
 	pool.Put(v1)
 	pool.Put(v2)
 
-	fmt.Println(safePoolDebugAllocMap)
+	fmt.Println(safePoolDebugMap)
 
 }
