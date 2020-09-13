@@ -1595,64 +1595,6 @@ func TestStream_ReadBytes(t *testing.T) {
 	assert(stream1.GetReadPos()).Equals(streamPosBody)
 }
 
-func TestStream_ReadUnsafeBytes(t *testing.T) {
-	assert := NewAssert(t)
-
-	for _, testData := range streamTestCollections["bytes"] {
-		// ok
-		for i := streamPosBody; i < 1100; i++ {
-			stream := NewStream()
-			stream.SetWritePos(i)
-			stream.SetReadPos(i)
-			stream.Write(testData[0])
-			assert(stream.ReadUnsafeBytes()).Equals(testData[0], true)
-			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
-			stream.Release()
-		}
-
-		// overflow
-		for i := streamPosBody; i < 550; i++ {
-			stream := NewStream()
-			stream.SetWritePos(i)
-			stream.SetReadPos(i)
-			stream.Write(testData[0])
-			writePos := stream.GetWritePos()
-			for idx := i; idx < writePos-1; idx++ {
-				stream.SetReadPos(i)
-				stream.SetWritePos(idx)
-				assert(stream.ReadUnsafeBytes()).Equals(Bytes(nil), false)
-				assert(stream.GetReadPos()).Equals(i)
-			}
-			stream.Release()
-		}
-
-		// type not match
-		for i := streamPosBody; i < 550; i++ {
-			stream := NewStream()
-			stream.SetWritePos(i)
-			stream.SetReadPos(i)
-			stream.PutBytes([]byte{13})
-			assert(stream.ReadUnsafeBytes()).Equals(Bytes(nil), false)
-			assert(stream.GetReadPos()).Equals(i)
-			stream.Release()
-		}
-	}
-
-	// read bytes length error
-	stream1 := NewStream()
-	stream1.PutBytes([]byte{
-		0xFF, 0x2F, 0x00, 0x00, 0x00, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
-	})
-	assert(stream1.ReadUnsafeBytes()).Equals(Bytes(nil), false)
-	assert(stream1.GetReadPos()).Equals(streamPosBody)
-}
-
 func TestStream_ReadArray(t *testing.T) {
 	assert := NewAssert(t)
 
