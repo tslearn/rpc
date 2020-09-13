@@ -209,6 +209,7 @@ type RTValue struct {
 	pos         int64
 	cacheString string
 	cacheOK     bool
+	cacheSafe   bool
 }
 
 func makeRTValue(rt Runtime, record posRecord) RTValue {
@@ -234,7 +235,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			rt:  rt,
 			pos: record.getPos(),
 		}
-		ret.cacheString, _, ret.cacheOK = thread.rtStream.readUnsafeString()
+		ret.cacheString, ret.cacheSafe, ret.cacheOK = thread.rtStream.readUnsafeString()
 		return ret
 	}
 }
@@ -279,9 +280,13 @@ func (p RTValue) ToFloat64() (Float64, bool) {
 	return 0, false
 }
 
-func (p RTValue) ToString() (String, bool) {
-	buf := []byte(p.cacheString)
-	ret := string(buf)
+func (p RTValue) ToString() (ret String, ok bool) {
+	if !p.cacheSafe {
+		buf := []byte(p.cacheString)
+		ret = string(buf)
+	} else {
+		ret = p.cacheString
+	}
 
 	if p.cacheOK &&
 		atomic.LoadUint64(&p.rt.thread.top.lockStatus) == p.rt.id {
