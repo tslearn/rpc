@@ -13,3 +13,17 @@ func TestDebug(t *testing.T) {
 
 	fmt.Println(buf)
 }
+
+func BenchmarkDebug(b *testing.B) {
+	b.ReportAllocs()
+
+	stream := NewStream()
+	stream.SetWritePos(200)
+
+	bytes := make([]byte, 10)
+
+	for i := 0; i < b.N; i++ {
+		stream.PutBytesTo(bytes, 300)
+	}
+
+}

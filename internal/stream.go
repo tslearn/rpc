@@ -19,9 +19,9 @@ const (
 	streamPosCallbackID = 34
 	streamPosDepth      = 42
 
-	//streamPosServerHead = 0
-	//streamPosClientHead = 34
-	streamPosBody = 44
+	streamPosServerHead = 0
+	streamPosClientHead = 34
+	streamPosBody       = 44
 
 	// StreamWriteOK ...
 	StreamWriteOK = ""
@@ -241,15 +241,10 @@ func (p *Stream) SetReadPos(pos int) bool {
 
 // SetReadPosToBodyStart ...
 func (p *Stream) SetReadPosToBodyStart() {
-	p.setReadPosUnsafe(streamPosBody)
-}
-
-func (p *Stream) setReadPosUnsafe(pos int) {
-	p.readIndex = pos % streamBlockSize
-	readSeg := pos / streamBlockSize
-	if p.readSeg != readSeg {
-		p.readSeg = readSeg
-		p.readFrame = p.frames[readSeg]
+	p.readIndex = streamPosBody
+	if p.readSeg != 0 {
+		p.readSeg = 0
+		p.readFrame = p.frames[0]
 	}
 }
 
@@ -266,7 +261,13 @@ func (p *Stream) SetWritePos(pos int) bool {
 			p.frames = append(p.frames, frameCache.Get().([]byte))
 			numToCreate--
 		}
-		p.setWritePosUnsafe(pos)
+
+		p.writeIndex = pos % streamBlockSize
+		writeSeg := pos / streamBlockSize
+		if p.writeSeg != writeSeg {
+			p.writeSeg = writeSeg
+			p.writeFrame = p.frames[writeSeg]
+		}
 		return true
 	}
 	return false
@@ -274,15 +275,10 @@ func (p *Stream) SetWritePos(pos int) bool {
 
 // SetWritePosToBodyStart ...
 func (p *Stream) SetWritePosToBodyStart() {
-	p.setWritePosUnsafe(streamPosBody)
-}
-
-func (p *Stream) setWritePosUnsafe(pos int) {
-	p.writeIndex = pos % streamBlockSize
-	writeSeg := pos / streamBlockSize
-	if p.writeSeg != writeSeg {
-		p.writeSeg = writeSeg
-		p.writeFrame = p.frames[writeSeg]
+	p.writeIndex = streamPosBody
+	if p.writeSeg != 0 {
+		p.writeSeg = 0
+		p.writeFrame = p.frames[0]
 	}
 }
 
@@ -378,7 +374,7 @@ func (p *Stream) readSkipItem(end int) int {
 		if p.readIndex+skip < streamBlockSize {
 			p.readIndex += skip
 		} else {
-			p.setReadPosUnsafe(ret + skip)
+			p.SetReadPos(ret + skip)
 		}
 		return ret
 	} else {
@@ -456,6 +452,32 @@ func (p *Stream) PutBytes(v []byte) {
 			}
 			v = v[n:]
 		}
+	}
+}
+
+// PutBytesTo ...
+func (p *Stream) PutBytesTo(v []byte, pos int) bool {
+	if pos+len(v) < streamPosBody {
+		return false
+	} else if pos+len(v) < streamBlockSize {
+		p.writeIndex = pos
+		if p.writeSeg != 0 {
+			p.writeSeg = 0
+			p.writeFrame = p.frames[0]
+		}
+		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
+		return true
+	} else {
+		p.SetWritePos(pos)
+		for len(v) > 0 {
+			n := copy(p.writeFrame[p.writeIndex:], v)
+			p.writeIndex += n
+			if p.writeIndex == streamBlockSize {
+				p.gotoNextWriteFrame()
+			}
+			v = v[n:]
+		}
+		return true
 	}
 }
 
@@ -858,7 +880,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 
 	for i := 0; i < length; i++ {
 		if reason := p.write(v[i], depth-1); reason != StreamWriteOK {
-			p.setWritePosUnsafe(startPos)
+			p.SetWritePos(startPos)
 			return ConcatString("[", strconv.Itoa(i), "]", reason)
 		}
 	}
@@ -871,14 +893,14 @@ func (p *Stream) writeArray(v Array, depth int) string {
 		b[4] = byte(totalLength >> 24)
 	} else {
 		endPos := p.GetWritePos()
-		p.setWritePosUnsafe(startPos + 1)
+		p.SetWritePos(startPos + 1)
 		p.PutBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
 			byte(totalLength >> 24),
 		})
-		p.setWritePosUnsafe(endPos)
+		p.SetWritePos(endPos)
 	}
 
 	return StreamWriteOK
@@ -943,7 +965,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	for name, value := range v {
 		p.WriteString(name)
 		if reason := p.write(value, depth-1); reason != StreamWriteOK {
-			p.setWritePosUnsafe(startPos)
+			p.SetWritePos(startPos)
 			return ConcatString("[\"", name, "\"]", reason)
 		}
 	}
@@ -956,14 +978,14 @@ func (p *Stream) writeMap(v Map, depth int) string {
 		b[4] = byte(totalLength >> 24)
 	} else {
 		endPos := p.GetWritePos()
-		p.setWritePosUnsafe(startPos + 1)
+		p.SetWritePos(startPos + 1)
 		p.PutBytes([]byte{
 			byte(totalLength),
 			byte(totalLength >> 8),
 			byte(totalLength >> 16),
 			byte(totalLength >> 24),
 		})
-		p.setWritePosUnsafe(endPos)
+		p.SetWritePos(endPos)
 	}
 
 	return StreamWriteOK
@@ -1271,7 +1293,7 @@ func (p *Stream) ReadString() (string, bool) {
 				p.gotoNextReadByteUnsafe()
 				return string(b), true
 			}
-			p.setReadPosUnsafe(readStart)
+			p.SetReadPos(readStart)
 		}
 	} else if v == 191 {
 		readStart := p.GetReadPos()
@@ -1318,7 +1340,7 @@ func (p *Stream) ReadString() (string, bool) {
 				}
 			}
 		}
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 
 	return "", false
@@ -1361,7 +1383,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 				p.gotoNextReadByteUnsafe()
 				return string(b), true
 			}
-			p.setReadPosUnsafe(readStart)
+			p.SetReadPos(readStart)
 		}
 	} else if v == 191 {
 		readStart := p.GetReadPos()
@@ -1413,7 +1435,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 			}
 		}
 
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 	return "", false
 }
@@ -1488,7 +1510,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 				return ret, true
 			}
 		}
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 	return Bytes(nil), false
 }
@@ -1560,7 +1582,7 @@ func (p *Stream) ReadUnsafeBytes() (ret Bytes, ok bool) {
 				return ret, true
 			}
 		}
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 	return Bytes(nil), false
 }
@@ -1630,7 +1652,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 				if rv, ok := p.Read(); ok {
 					ret[i] = rv
 				} else {
-					p.setReadPosUnsafe(readStart)
+					p.SetReadPos(readStart)
 					return Array(nil), false
 				}
 			}
@@ -1638,7 +1660,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 				return ret, true
 			}
 		}
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 
 	return Array(nil), false
@@ -1709,13 +1731,13 @@ func (p *Stream) ReadMap() (Map, bool) {
 			for i := 0; i < mapLen; i++ {
 				name, ok := p.ReadString()
 				if !ok {
-					p.setReadPosUnsafe(readStart)
+					p.SetReadPos(readStart)
 					return Map(nil), false
 				}
 				if rv, ok := p.Read(); ok {
 					ret[name] = rv
 				} else {
-					p.setReadPosUnsafe(readStart)
+					p.SetReadPos(readStart)
 					return Map(nil), false
 				}
 			}
@@ -1723,7 +1745,7 @@ func (p *Stream) ReadMap() (Map, bool) {
 				return ret, true
 			}
 		}
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 
 	return Map(nil), false
@@ -1859,14 +1881,14 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
 					itemPos = cs.GetReadPos()
 					if itemPos < start || itemPos+skip > end {
-						p.setReadPosUnsafe(readStart)
+						p.SetReadPos(readStart)
 						return RTArray{}, false
 					}
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start {
-						p.setReadPosUnsafe(readStart)
+						p.SetReadPos(readStart)
 						return RTArray{}, false
 					}
 				}
@@ -1882,7 +1904,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 			}
 		}
 
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 
 	return RTArray{}, false
@@ -1968,7 +1990,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 			for i := 0; i < mapLen; i++ {
 				key, ok := cs.ReadUnsafeString()
 				if !ok {
-					p.setReadPosUnsafe(readStart)
+					p.SetReadPos(readStart)
 					return RTMap{}, false
 				}
 				op := cs.readFrame[cs.readIndex]
@@ -1976,14 +1998,14 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
 					itemPos = cs.GetReadPos()
 					if itemPos < start || itemPos+skip > end {
-						p.setReadPosUnsafe(readStart)
+						p.SetReadPos(readStart)
 						return RTMap{}, false
 					}
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start {
-						p.setReadPosUnsafe(readStart)
+						p.SetReadPos(readStart)
 						return RTMap{}, false
 					}
 				}
@@ -1999,7 +2021,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 			}
 		}
 
-		p.setReadPosUnsafe(readStart)
+		p.SetReadPos(readStart)
 	}
 
 	return RTMap{}, false
@@ -2060,9 +2082,9 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 		}
 
 		for i := 0; i < length; i++ {
-			readStream.setReadPosUnsafe(int(v.items[i].getPos()))
+			readStream.SetReadPos(int(v.items[i].getPos()))
 			if !p.writeStreamNext(readStream) {
-				p.setWritePosUnsafe(startPos)
+				p.SetWritePos(startPos)
 				return "WriteRTArray: parameter is broken"
 			}
 		}
@@ -2075,14 +2097,14 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 			b[4] = byte(totalLength >> 24)
 		} else {
 			endPos := p.GetWritePos()
-			p.setWritePosUnsafe(startPos + 1)
+			p.SetWritePos(startPos + 1)
 			p.PutBytes([]byte{
 				byte(totalLength),
 				byte(totalLength >> 8),
 				byte(totalLength >> 16),
 				byte(totalLength >> 24),
 			})
-			p.setWritePosUnsafe(endPos)
+			p.SetWritePos(endPos)
 		}
 
 		return ""
@@ -2148,18 +2170,18 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 		if v.items != nil {
 			for i := 0; i < length; i++ {
 				p.WriteString(v.items[i].key)
-				readStream.setReadPosUnsafe(int(v.items[i].pos.getPos()))
+				readStream.SetReadPos(int(v.items[i].pos.getPos()))
 				if !p.writeStreamNext(readStream) {
-					p.setWritePosUnsafe(startPos)
+					p.SetWritePos(startPos)
 					return "WriteRTMap: parameter is broken"
 				}
 			}
 		} else if v.largeMap != nil {
 			for name, pos := range v.largeMap {
 				p.WriteString(name)
-				readStream.setReadPosUnsafe(int(pos.getPos()))
+				readStream.SetReadPos(int(pos.getPos()))
 				if !p.writeStreamNext(readStream) {
-					p.setWritePosUnsafe(startPos)
+					p.SetWritePos(startPos)
 					return "WriteRTMap: parameter is broken"
 				}
 			}
@@ -2173,14 +2195,14 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 			b[4] = byte(totalLength >> 24)
 		} else {
 			endPos := p.GetWritePos()
-			p.setWritePosUnsafe(startPos + 1)
+			p.SetWritePos(startPos + 1)
 			p.PutBytes([]byte{
 				byte(totalLength),
 				byte(totalLength >> 8),
 				byte(totalLength >> 16),
 				byte(totalLength >> 24),
 			})
-			p.setWritePosUnsafe(endPos)
+			p.SetWritePos(endPos)
 		}
 
 		return ""

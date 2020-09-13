@@ -449,7 +449,7 @@ func (p *rpcThread) Eval(
 		} else {
 			remoteArgsType := make([]string, 0)
 			remoteArgsType = append(remoteArgsType, convertTypeToString(contextType))
-			inStream.setReadPosUnsafe(argsStreamPos)
+			inStream.SetReadPos(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
 					return p.WriteError(NewProtocolError(ErrStringBadStream), 0)

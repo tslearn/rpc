@@ -8,7 +8,7 @@ import (
 // safePoolDebug should only works on Debug mode, when release it,
 // please replace it with sync.Pool
 // type SyncPool = sync.Pool
-type SyncPool = SyncPoolDebug
+type SyncPool = sync.Pool
 
 var (
 	safePoolDebugMap = sync.Map{}

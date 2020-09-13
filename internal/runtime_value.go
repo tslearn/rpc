@@ -50,7 +50,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 	} else {
 		defer rt.unlock()
 		pos := record.getPos()
-		thread.rtStream.setReadPosUnsafe(int(pos))
+		thread.rtStream.SetReadPos(int(pos))
 		ret := RTValue{
 			rt:  rt,
 			pos: record.getPos(),
@@ -63,7 +63,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 func (p RTValue) ToBool() (Bool, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBool()
 	}
 
@@ -73,7 +73,7 @@ func (p RTValue) ToBool() (Bool, bool) {
 func (p RTValue) ToInt64() (Int64, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadInt64()
 	}
 
@@ -83,7 +83,7 @@ func (p RTValue) ToInt64() (Int64, bool) {
 func (p RTValue) ToUint64() (Uint64, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadUint64()
 	}
 
@@ -93,7 +93,7 @@ func (p RTValue) ToUint64() (Uint64, bool) {
 func (p RTValue) ToFloat64() (Float64, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadFloat64()
 	}
 
@@ -115,7 +115,7 @@ func (p RTValue) ToString() (String, bool) {
 func (p RTValue) ToBytes() (Bytes, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBytes()
 	}
 
@@ -125,7 +125,7 @@ func (p RTValue) ToBytes() (Bytes, bool) {
 func (p RTValue) ToArray() (Array, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadArray()
 	}
 
@@ -135,7 +135,7 @@ func (p RTValue) ToArray() (Array, bool) {
 func (p RTValue) ToRTArray() (RTArray, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTArray(p.rt)
 	}
 
@@ -145,7 +145,7 @@ func (p RTValue) ToRTArray() (RTArray, bool) {
 func (p RTValue) ToMap() (Map, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadMap()
 	}
 
@@ -155,7 +155,7 @@ func (p RTValue) ToMap() (Map, bool) {
 func (p RTValue) ToRTMap() (RTMap, bool) {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
-		thread.rtStream.setReadPosUnsafe(int(p.pos))
+		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTMap(p.rt)
 	}
 

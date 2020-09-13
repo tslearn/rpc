@@ -107,8 +107,7 @@ func (p *webSocketStreamConn) ReadStream(
 		return nil, NewTransportError("unsupported websocket protocol")
 	} else {
 		stream := NewStream()
-		stream.SetWritePos(0)
-		stream.PutBytes(message)
+		stream.PutBytesTo(message, 0)
 		return stream, nil
 	}
 }
