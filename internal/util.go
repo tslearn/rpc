@@ -115,6 +115,23 @@ func maxInt(v1 int, v2 int) int {
 	return v1
 }
 
+func stringToBytesUnsafe(s string) (ret []byte) {
+	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret))
+	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bytesHeader.Len = stringHeader.Len
+	bytesHeader.Cap = stringHeader.Len
+	bytesHeader.Data = stringHeader.Data
+	return
+}
+
+func bytesToStringUnsafe(bytes []byte) (ret string) {
+	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
+	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&ret))
+	stringHeader.Len = bytesHeader.Len
+	stringHeader.Data = bytesHeader.Data
+	return
+}
+
 func isUTF8Bytes(bytes []byte) bool {
 	idx := 0
 	length := len(bytes)

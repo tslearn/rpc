@@ -294,16 +294,16 @@ func TestStream_basic(t *testing.T) {
 	assert(cap(stream.frames)).Equals(4)
 	assert(stream.readSeg).Equals(0)
 	assert(stream.readIndex).Equals(streamPosBody)
-	assert(stream.readFrame).Equals(stream.frames[0])
+	assert(stream.readFrame).Equals(*(stream.frames[0]))
 	assert(stream.writeSeg).Equals(0)
 	assert(stream.writeIndex).Equals(streamPosBody)
-	assert(stream.writeFrame).Equals(stream.frames[0])
+	assert(stream.writeFrame).Equals(*(stream.frames[0]))
 
 	// test frameCache
-	frame := frameCache.Get().([]byte)
+	frame := frameCache.Get().(*[]byte)
 	assert(frame).IsNotNil()
-	assert(len(frame)).Equals(streamBlockSize)
-	assert(cap(frame)).Equals(streamBlockSize)
+	assert(len(*frame)).Equals(streamBlockSize)
+	assert(cap(*frame)).Equals(streamBlockSize)
 }
 
 func TestStream_newRPCStream_Release_Reset(t *testing.T) {
@@ -316,10 +316,10 @@ func TestStream_newRPCStream_Release_Reset(t *testing.T) {
 		assert(cap(stream.frames)).Equals(4)
 		assert(stream.readSeg).Equals(0)
 		assert(stream.readIndex).Equals(streamPosBody)
-		assert(stream.readFrame).Equals(stream.frames[0])
+		assert(stream.readFrame).Equals(*(stream.frames[0]))
 		assert(stream.writeSeg).Equals(0)
 		assert(stream.writeIndex).Equals(streamPosBody)
-		assert(stream.writeFrame).Equals(stream.frames[0])
+		assert(stream.writeFrame).Equals(*(stream.frames[0]))
 
 		for n := 0; n < i; n++ {
 			stream.PutBytes([]byte{9})

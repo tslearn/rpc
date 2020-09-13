@@ -282,13 +282,7 @@ func (p RTValue) ToFloat64() (Float64, bool) {
 
 func (p RTValue) ToString() (ret String, ok bool) {
 	if !p.cacheSafe {
-		buf := []byte(nil)
-		pString := (*reflect.StringHeader)(unsafe.Pointer(&p.cacheString))
-		pBytes := (*reflect.SliceHeader)(unsafe.Pointer(&buf))
-		pBytes.Len = pString.Len
-		pBytes.Cap = pString.Len
-		pBytes.Data = pString.Data
-		ret = string(buf)
+		ret = string(stringToBytesUnsafe(p.cacheString))
 	} else {
 		ret = p.cacheString
 	}
