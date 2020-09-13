@@ -263,7 +263,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	// Test(1)
 	tmpFile1 := path.Join(currDir, "_tmp_/test-processor-01.go")
-	snapshotFile3 := path.Join(currDir, "snapshot/test-processor-01.snapshot")
+	snapshotFile3 := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
 	helper1 := newTestProcessorReturnHelper()
 	processor1 := NewProcessor(
 		true,
@@ -282,7 +282,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	// Test(2)
 	tmpFile2 := path.Join(currDir, "_tmp_/test-processor-02.go")
-	snapshotFile2 := path.Join(currDir, "snapshot/test-processor-02.snapshot")
+	snapshotFile2 := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
 	helper2 := newTestProcessorReturnHelper()
 	processor2 := NewProcessor(
 		true,

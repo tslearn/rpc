@@ -16,13 +16,13 @@ func TestBuildFuncCache(t *testing.T) {
 	}()
 	// Test(1)
 	tmpFile1 := path.Join(path.Dir(file), "_tmp_/test-cache-01.go")
-	snapshotFile1 := path.Join(path.Dir(file), "snapshot/test-cache-01.snapshot")
+	snapshotFile1 := path.Join(path.Dir(file), "_snapshot_/test-cache-01.snapshot")
 	assert(buildFuncCache("pkgName", tmpFile1, []string{})).IsNil()
 	assert(testReadFromFile(tmpFile1)).Equals(testReadFromFile(snapshotFile1))
 
 	// Test(2)
 	tmpFile2 := path.Join(path.Dir(file), "_tmp_/test-cache-02.go")
-	snapshotFile2 := path.Join(path.Dir(file), "snapshot/test-cache-02.snapshot")
+	snapshotFile2 := path.Join(path.Dir(file), "_snapshot_/test-cache-02.snapshot")
 	assert(buildFuncCache("pkgName", tmpFile2, []string{
 		"BMUF", "UUIB", "MSXA", "FFFFF",
 		"",
