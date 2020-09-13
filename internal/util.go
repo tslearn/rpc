@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"errors"
-	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -14,21 +12,7 @@ import (
 )
 
 var (
-	contextType = reflect.ValueOf(Runtime{}).Type()
-	returnType  = reflect.ValueOf(emptyReturn).Type()
-	boolType    = reflect.ValueOf(true).Type()
-	int64Type   = reflect.ValueOf(int64(0)).Type()
-	uint64Type  = reflect.ValueOf(uint64(0)).Type()
-	float64Type = reflect.ValueOf(float64(0)).Type()
-	stringType  = reflect.ValueOf("").Type()
-	bytesType   = reflect.ValueOf(Bytes{}).Type()
-	arrayType   = reflect.ValueOf(Array{}).Type()
-	mapType     = reflect.ValueOf(Map{}).Type()
-	rtArrayType = reflect.ValueOf(RTArray{}).Type()
-	rtMapType   = reflect.ValueOf(RTMap{}).Type()
-
-	seedInt64 = int64(10000)
-
+	seedInt64              = int64(10000)
 	timeNowPointer         = (unsafe.Pointer)(nil)
 	timeCacheFailedCounter = NewSpeedCounter()
 	defaultISODateBuffer   = []byte{
@@ -167,93 +151,6 @@ func isUTF8Bytes(bytes []byte) bool {
 	}
 
 	return idx == length
-}
-
-func getFuncKind(fn reflect.Value) (string, error) {
-	if fn.Kind() != reflect.Func {
-		return "", errors.New("handler must be a function")
-	} else if fn.Type().NumIn() < 1 ||
-		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
-		return "", fmt.Errorf(
-			"handler 1st argument type must be %s",
-			convertTypeToString(contextType),
-		)
-	} else if fn.Type().NumOut() != 1 ||
-		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
-		return "", fmt.Errorf(
-			"handler return type must be %s",
-			convertTypeToString(returnType),
-		)
-	} else {
-		sb := NewStringBuilder()
-		defer sb.Release()
-
-		for i := 1; i < fn.Type().NumIn(); i++ {
-			switch fn.Type().In(i) {
-			case bytesType:
-				sb.AppendByte('X')
-			case arrayType:
-				sb.AppendByte('A')
-			case rtArrayType:
-				sb.AppendByte('Y')
-			case mapType:
-				sb.AppendByte('M')
-			case rtMapType:
-				sb.AppendByte('Z')
-			case int64Type:
-				sb.AppendByte('I')
-			case uint64Type:
-				sb.AppendByte('U')
-			case boolType:
-				sb.AppendByte('B')
-			case float64Type:
-				sb.AppendByte('F')
-			case stringType:
-				sb.AppendByte('S')
-			default:
-				return "", fmt.Errorf(
-					"handler %s argument type %s is not supported",
-					ConvertOrdinalToString(1+uint(i)),
-					fn.Type().In(i),
-				)
-			}
-		}
-
-		return sb.String(), nil
-	}
-}
-
-func convertTypeToString(reflectType reflect.Type) string {
-	switch reflectType {
-	case nil:
-		return "<nil>"
-	case contextType:
-		return "rpc.Runtime"
-	case returnType:
-		return "rpc.Return"
-	case bytesType:
-		return "rpc.Bytes"
-	case arrayType:
-		return "rpc.Array"
-	case rtArrayType:
-		return "rpc.RTArray"
-	case mapType:
-		return "rpc.Map"
-	case rtMapType:
-		return "rpc.RTMap"
-	case boolType:
-		return "rpc.Bool"
-	case int64Type:
-		return "rpc.Int64"
-	case uint64Type:
-		return "rpc.Uint64"
-	case float64Type:
-		return "rpc.Float64"
-	case stringType:
-		return "rpc.String"
-	default:
-		return reflectType.String()
-	}
 }
 
 func runStoreTime() {
