@@ -1937,7 +1937,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 					}
 				}
 
-				if op > 128 && op < 191 {
+				if op>>6 == 2 {
 					ret.appendValue(key, makePosRecord(int64(itemPos), true))
 				} else {
 					ret.appendValue(key, makePosRecord(int64(itemPos), false))

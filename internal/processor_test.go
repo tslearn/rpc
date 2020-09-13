@@ -627,18 +627,37 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.ReportAllocs()
 	b.N = 50000000
 	b.SetParallelism(1024)
+
+	sendStr := ""
+	for i := 0; i < 500; i++ {
+		sendStr += "a"
+	}
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.WriteMap(Map{"name": "tianshuo"})
+			stream.WriteString(sendStr)
+			// stream.WriteMap(Map{"name": sendStr})
 			atomic.AddUint64(&total, 1)
-			processor.PutStream(stream)
+			//processor.PutStream(stream)
+			stream.Release()
 		}
 	})
 
 	fmt.Println(processor.Close())
 	fmt.Println(total, success, failed)
+}
+
+func BenchmarkRpcProcessor_Execute2(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		stream := NewStream()
+		stream.SetWritePos(513)
+		stream.Release()
+	}
+
 }
