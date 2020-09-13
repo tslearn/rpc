@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/util"
 	"net/url"
 	"runtime/debug"
@@ -28,7 +28,7 @@ type sendItem struct {
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &sendItem{
-			sendStream: internal.NewStream(),
+			sendStream: core.NewStream(),
 		}
 	},
 }
@@ -68,10 +68,10 @@ func (p *sendItem) Timeout() bool {
 		sendItemStatusFinish,
 	) {
 		// return timeout stream
-		stream := internal.NewStream()
+		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
-		stream.WriteUint64(uint64(internal.ErrorKindReply))
-		stream.WriteString(internal.ErrStringTimeout)
+		stream.WriteUint64(uint64(core.ErrorKindReply))
+		stream.WriteString(core.ErrStringTimeout)
 		stream.WriteString("")
 		p.returnCH <- stream
 		return true
@@ -90,7 +90,7 @@ func (p *sendItem) Release() {
 // Client ...
 type Client struct {
 	sessionString        string
-	conn                 internal.IStreamConn
+	conn                 core.IStreamConn
 	logWriter            LogWriter
 	preSendHead          *sendItem
 	preSendTail          *sendItem
@@ -104,7 +104,7 @@ type Client struct {
 	callbackSize         int64
 	lastControlSendTime  time.Time
 	lastTimeoutCheckTime time.Time
-	statusManager        internal.StatusManager
+	statusManager        core.StatusManager
 	mutex                *sync.Mutex
 }
 
@@ -113,19 +113,19 @@ func Dial(connectString string) (*Client, Error) {
 	urlInfo, err := url.Parse(connectString)
 
 	if err != nil {
-		return nil, internal.NewRuntimePanic(err.Error())
+		return nil, core.NewRuntimePanic(err.Error())
 	}
 
 	switch urlInfo.Scheme {
 	case "ws":
-		return newClient(internal.NewWebSocketClientAdapter(connectString)), nil
+		return newClient(core.NewWebSocketClientAdapter(connectString)), nil
 	default:
 		return nil,
-			internal.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))
+			core.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))
 	}
 }
 
-func newClient(adapter internal.IClientAdapter) *Client {
+func newClient(adapter core.IClientAdapter) *Client {
 	ret := &Client{
 		sessionString:        "",
 		conn:                 nil,
@@ -142,7 +142,7 @@ func newClient(adapter internal.IClientAdapter) *Client {
 		callbackSize:         0,
 		lastControlSendTime:  time.Now().Add(-10 * time.Second),
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
-		statusManager:        internal.StatusManager{},
+		statusManager:        core.StatusManager{},
 		mutex:                &sync.Mutex{},
 	}
 
@@ -181,7 +181,7 @@ func (p *Client) Close() bool {
 	if !p.statusManager.SetClosing(func(ch chan bool) {
 		waitCH = ch
 	}) {
-		p.onError(internal.NewRuntimePanic(
+		p.onError(core.NewRuntimePanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 		return false
@@ -191,22 +191,22 @@ func (p *Client) Close() bool {
 	case <-waitCH:
 		return true
 	case <-time.After(20 * time.Second):
-		p.onError(internal.NewRuntimePanic(
+		p.onError(core.NewRuntimePanic(
 			"can not close within 20 seconds",
 		).AddDebug(string(debug.Stack())))
 		return false
 	}
 }
 
-func (p *Client) initConn(conn internal.IStreamConn) Error {
+func (p *Client) initConn(conn core.IStreamConn) Error {
 	// get the sequence
 	p.mutex.Lock()
 	p.systemSeed++
 	sequence := p.systemSeed
 	p.mutex.Unlock()
 
-	sendStream := internal.NewStream()
-	backStream := (*internal.Stream)(nil)
+	sendStream := core.NewStream()
+	backStream := (*core.Stream)(nil)
 
 	defer func() {
 		sendStream.Release()
@@ -221,7 +221,7 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
-		return internal.NewKernelPanic(
+		return core.NewKernelPanic(
 			"Client: initConn: conn is nil",
 		).AddDebug(string(debug.Stack()))
 	} else if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
@@ -229,29 +229,29 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	} else if backStream, err = conn.ReadStream(3*time.Second, 0); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
 		kind != controlStreamKindInitBack {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if seq, ok := backStream.ReadUint64(); !ok || seq != sequence {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if readTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		readTimeoutMS <= 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if writeTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		writeTimeoutMS <= 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if readLimit, ok := backStream.ReadInt64(); !ok ||
 		readLimit <= 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if callBackSize, ok := backStream.ReadInt64(); !ok ||
 		callBackSize <= 0 {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else if !backStream.IsReadFinish() {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else {
 		p.sessionString = sessionString
 		p.readTimeout = time.Duration(readTimeoutMS) * time.Millisecond
@@ -262,7 +262,7 @@ func (p *Client) initConn(conn internal.IStreamConn) Error {
 	}
 }
 
-func (p *Client) onConnRun(conn internal.IStreamConn) {
+func (p *Client) onConnRun(conn core.IStreamConn) {
 	// init conn
 	if err := p.initConn(conn); err != nil {
 		p.onError(err)
@@ -294,7 +294,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 	// receive messages
 	for p.statusManager.IsRunning() {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
-			if e != internal.ErrTransportStreamConnIsClosed {
+			if e != core.ErrTransportStreamConnIsClosed {
 				err = e
 			}
 			return
@@ -308,13 +308,13 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			p.mutex.Unlock()
 		} else if kind, ok := stream.ReadInt64(); !ok ||
 			kind != controlStreamKindRequestIdsBack {
-			err = internal.NewProtocolError(internal.ErrStringBadStream)
+			err = core.NewProtocolError(core.ErrStringBadStream)
 			return
 		} else if maxCallbackID, ok := stream.ReadUint64(); !ok {
-			err = internal.NewProtocolError(internal.ErrStringBadStream)
+			err = core.NewProtocolError(core.ErrStringBadStream)
 			return
 		} else if !stream.IsReadFinish() {
-			err = internal.NewProtocolError(internal.ErrStringBadStream)
+			err = core.NewProtocolError(core.ErrStringBadStream)
 			return
 		} else {
 			p.mutex.Lock()
@@ -346,7 +346,7 @@ func (p *Client) tryToDeliverControlMessage(now time.Time) {
 		p.lastControlSendTime = now
 		p.systemSeed++
 
-		sendStream := internal.NewStream()
+		sendStream := core.NewStream()
 		sendStream.SetCallbackID(0)
 		sendStream.WriteInt64(controlStreamKindRequestIds)
 		sendStream.WriteUint64(p.systemSeed)
@@ -472,8 +472,8 @@ func (p *Client) SendMessage(
 	item.sendStream.WriteString("@")
 	// write args
 	for i := 0; i < len(args); i++ {
-		if item.sendStream.Write(args[i]) != internal.StreamWriteOK {
-			return nil, internal.NewRuntimePanic(
+		if item.sendStream.Write(args[i]) != core.StreamWriteOK {
+			return nil, core.NewRuntimePanic(
 				"Client: send: args not supported",
 			)
 		}
@@ -492,23 +492,23 @@ func (p *Client) SendMessage(
 
 	// wait for response
 	if stream := <-item.returnCH; stream == nil {
-		return nil, internal.NewKernelPanic("stream is nil").
+		return nil, core.NewKernelPanic("stream is nil").
 			AddDebug(string(debug.Stack()))
 	} else if errKind, ok := stream.ReadUint64(); !ok {
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
-	} else if errKind == uint64(internal.ErrorKindNone) {
+		return nil, core.NewProtocolError(core.ErrStringBadStream)
+	} else if errKind == uint64(core.ErrorKindNone) {
 		if ret, ok := stream.Read(); ok {
 			return ret, nil
 		}
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		return nil, core.NewProtocolError(core.ErrStringBadStream)
 	} else if message, ok := stream.ReadString(); !ok {
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		return nil, core.NewProtocolError(core.ErrStringBadStream)
 	} else if dbg, ok := stream.ReadString(); !ok {
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		return nil, core.NewProtocolError(core.ErrStringBadStream)
 	} else if !stream.IsReadFinish() {
-		return nil, internal.NewProtocolError(internal.ErrStringBadStream)
+		return nil, core.NewProtocolError(core.ErrStringBadStream)
 	} else {
-		return nil, internal.NewError(internal.ErrorKind(errKind), message, dbg)
+		return nil, core.NewError(core.ErrorKind(errKind), message, dbg)
 	}
 }
 

@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/util"
 	"net"
 	"runtime/debug"
@@ -67,7 +67,7 @@ type serverSession struct {
 	id           uint64
 	config       *sessionConfig
 	security     string
-	conn         internal.IStreamConn
+	conn         core.IStreamConn
 	dataSequence uint64
 	ctrlSequence uint64
 	callMap      map[uint64]*serverSessionRecord
@@ -92,7 +92,7 @@ func newServerSession(id uint64, config *sessionConfig) *serverSession {
 	return ret
 }
 
-func (p *serverSession) SetConn(conn internal.IStreamConn) {
+func (p *serverSession) SetConn(conn core.IStreamConn) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -100,20 +100,20 @@ func (p *serverSession) SetConn(conn internal.IStreamConn) {
 }
 
 func (p *serverSession) OnControlStream(
-	conn internal.IStreamConn,
+	conn core.IStreamConn,
 	stream *Stream,
 ) Error {
 	defer stream.Release()
 
 	if kind, ok := stream.ReadInt64(); !ok ||
 		kind != controlStreamKindRequestIds {
-		return internal.NewTransportError(internal.ErrStringBadStream)
+		return core.NewTransportError(core.ErrStringBadStream)
 	} else if seq, ok := stream.ReadUint64(); !ok {
-		return internal.NewTransportError(internal.ErrStringBadStream)
+		return core.NewTransportError(core.ErrStringBadStream)
 	} else if seq <= p.ctrlSequence {
 		return nil
 	} else if currClientCallbackID, ok := stream.ReadUint64(); !ok {
-		return internal.NewProtocolError(internal.ErrStringBadStream)
+		return core.NewProtocolError(core.ErrStringBadStream)
 	} else {
 		// update sequence
 		p.ctrlSequence = seq
@@ -124,11 +124,11 @@ func (p *serverSession) OnControlStream(
 					v.mark = true
 				}
 			} else {
-				return internal.NewProtocolError(internal.ErrStringBadStream)
+				return core.NewProtocolError(core.ErrStringBadStream)
 			}
 		}
 		if !stream.IsReadFinish() {
-			return internal.NewProtocolError(internal.ErrStringBadStream)
+			return core.NewProtocolError(core.ErrStringBadStream)
 		}
 		// do swipe and alloc with lock
 		func() {
@@ -161,14 +161,14 @@ func (p *serverSession) OnControlStream(
 }
 
 func (p *serverSession) OnDataStream(
-	conn internal.IStreamConn,
+	conn core.IStreamConn,
 	stream *Stream,
 	hub streamHub,
 ) Error {
 	if record, ok := p.callMap[stream.GetCallbackID()]; !ok {
 		// Cant find record by callbackID
 		stream.Release()
-		return internal.NewProtocolError("client callbackID error")
+		return core.NewProtocolError("client callbackID error")
 	} else if record.SetRunning() {
 		// Run the stream. Dont release stream because it will manage by processor
 		stream.SetSessionID(p.id)
@@ -188,25 +188,25 @@ func (p *serverSession) OnDataStream(
 func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 	if errKind, ok := stream.ReadUint64(); !ok {
 		stream.Release()
-		ret = internal.NewKernelPanic(
+		ret = core.NewKernelPanic(
 			"stream error",
 		).AddDebug(string(debug.Stack()))
 	} else {
 		// Transform panic message for client
-		switch internal.ErrorKind(errKind) {
-		case internal.ErrorKindReplyPanic:
+		switch core.ErrorKind(errKind) {
+		case core.ErrorKindReplyPanic:
 			fallthrough
-		case internal.ErrorKindRuntimePanic:
+		case core.ErrorKindRuntimePanic:
 			fallthrough
-		case internal.ErrorKindKernelPanic:
+		case core.ErrorKindKernelPanic:
 			if message, ok := stream.ReadString(); !ok {
 				stream.Release()
-				return internal.NewKernelPanic(
+				return core.NewKernelPanic(
 					"stream error",
 				).AddDebug(string(debug.Stack()))
 			} else if dbgMessage, ok := stream.ReadString(); !ok {
 				stream.Release()
-				return internal.NewKernelPanic(
+				return core.NewKernelPanic(
 					"stream error",
 				).AddDebug(string(debug.Stack()))
 			} else {
@@ -215,15 +215,15 @@ func (p *serverSession) OnReturnStream(stream *Stream) (ret Error) {
 				stream.WriteString("internal error")
 				stream.WriteString("")
 				// Report error
-				ret = internal.NewError(
-					internal.ErrorKind(errKind),
+				ret = core.NewError(
+					core.ErrorKind(errKind),
 					message,
 					dbgMessage,
 				)
 			}
 		}
 		// SetReturn and get conn with lock
-		conn, needRelease := func() (internal.IStreamConn, bool) {
+		conn, needRelease := func() (core.IStreamConn, bool) {
 			p.Lock()
 			defer p.Unlock()
 			if item, ok := p.callMap[stream.GetCallbackID()]; ok {
@@ -265,11 +265,11 @@ func (p *serverSession) Release() {
 }
 
 type serverCore struct {
-	adapters    []internal.IServerAdapter
+	adapters    []core.IServerAdapter
 	hub         streamHub
 	sessionMap  sync.Map
 	sessionSeed uint64
-	internal.StatusManager
+	core.StatusManager
 	sync.Mutex
 }
 
@@ -278,25 +278,25 @@ func (p *serverCore) listenWebSocket(addr string, dbg string) {
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
+		p.onError(0, core.NewRuntimePanic(
 			"ListenWebSocket must be called before Serve",
 		).AddDebug(dbg))
 	} else {
 		p.adapters = append(
 			p.adapters,
-			internal.NewWebSocketServerAdapter(addr),
+			core.NewWebSocketServerAdapter(addr),
 		)
 	}
 }
 
-func (p *serverCore) onReturnStream(stream *internal.Stream) {
+func (p *serverCore) onReturnStream(stream *core.Stream) {
 	if stream.GetSessionID() == 0 {
 		errKind, ok1 := stream.ReadUint64()
 		message, ok2 := stream.ReadString()
 		dbgMessage, ok3 := stream.ReadString()
 		if ok1 && ok2 && ok3 {
-			p.onError(0, internal.NewError(
-				internal.ErrorKind(errKind),
+			p.onError(0, core.NewError(
+				core.ErrorKind(errKind),
 				message,
 				dbgMessage,
 			))
@@ -306,7 +306,7 @@ func (p *serverCore) onReturnStream(stream *internal.Stream) {
 		stream.Release()
 	} else if session, ok := item.(*serverSession); !ok {
 		stream.Release()
-		p.onError(stream.GetSessionID(), internal.NewKernelPanic(
+		p.onError(stream.GetSessionID(), core.NewKernelPanic(
 			"serverSession is nil",
 		).AddDebug(string(debug.Stack())))
 	} else {
@@ -328,25 +328,25 @@ func (p *serverCore) serve(
 		defer p.Unlock()
 
 		if len(p.adapters) <= 0 {
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(0, core.NewRuntimePanic(
 				"no valid listener was found on the server",
 			))
 		} else if hub := onGetStreamHub(); hub == nil {
-			p.onError(0, internal.NewKernelPanic(
+			p.onError(0, core.NewKernelPanic(
 				"hub is nil",
 			).AddDebug(string(debug.Stack())))
 		} else if !p.SetRunning(func() {
 			p.hub = hub
 		}) {
 			hub.Close()
-			p.onError(0, internal.NewRuntimePanic("it is already running"))
+			p.onError(0, core.NewRuntimePanic("it is already running"))
 		} else {
 			for _, item := range p.adapters {
 				waitCount++
-				go func(adapter internal.IServerAdapter) {
+				go func(adapter core.IServerAdapter) {
 					for {
 						adapter.Open(
-							func(conn internal.IStreamConn, addr net.Addr) {
+							func(conn core.IStreamConn, addr net.Addr) {
 								p.onConnRun(conn, config, addr)
 							},
 							p.onError,
@@ -379,19 +379,19 @@ func (p *serverCore) Close() {
 		waitCH = ch
 		p.hub.Close()
 		for _, item := range p.adapters {
-			go func(adapter internal.IServerAdapter) {
+			go func(adapter core.IServerAdapter) {
 				adapter.Close(p.onError)
 			}(item)
 		}
 	}) {
-		p.onError(0, internal.NewRuntimePanic(
+		p.onError(0, core.NewRuntimePanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			p.onError(0, internal.NewRuntimePanic(
+			p.onError(0, core.NewRuntimePanic(
 				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}
@@ -399,7 +399,7 @@ func (p *serverCore) Close() {
 }
 
 func (p *serverCore) onConnRun(
-	conn internal.IStreamConn,
+	conn core.IStreamConn,
 	config *sessionConfig,
 	addr net.Addr,
 ) {
@@ -415,7 +415,7 @@ func (p *serverCore) onConnRun(
 		if session != nil {
 			sessionID = session.id
 		}
-		if runError != internal.ErrTransportStreamConnIsClosed {
+		if runError != core.ErrTransportStreamConnIsClosed {
 			p.onError(sessionID, runError)
 		}
 		if err := conn.Close(); err != nil {
@@ -430,16 +430,16 @@ func (p *serverCore) onConnRun(
 	if runError != nil {
 		return
 	} else if initStream.GetCallbackID() != 0 {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+		runError = core.NewProtocolError(core.ErrStringBadStream)
 	} else if kind, ok := initStream.ReadInt64(); !ok ||
 		kind != controlStreamKindInit {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+		runError = core.NewProtocolError(core.ErrStringBadStream)
 	} else if seq, ok := initStream.ReadUint64(); !ok {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+		runError = core.NewProtocolError(core.ErrStringBadStream)
 	} else if sessionString, ok := initStream.ReadString(); !ok {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+		runError = core.NewProtocolError(core.ErrStringBadStream)
 	} else if !initStream.IsReadFinish() {
-		runError = internal.NewProtocolError(internal.ErrStringBadStream)
+		runError = core.NewProtocolError(core.ErrStringBadStream)
 	} else {
 		// try to find session by session string
 		sessionArray := strings.Split(sessionString, "-")

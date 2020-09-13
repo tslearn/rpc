@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/util"
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	util2 "github.com/rpccloud/rpc/internal/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,7 +25,7 @@ var phoneService = rpc.NewServiceWithOnMount(onPhoneServiceMount).
 	Reply("Create", create).
 	Reply("GetCode", getCode)
 
-func onPhoneServiceMount(service *internal.Service, data interface{}) error {
+func onPhoneServiceMount(service *core.Service, data interface{}) error {
 	if cfg, ok := data.(*util.MongoDatabaseConfig); ok && cfg != nil {
 		return util.WithMongoClient(cfg, 3*time.Second,
 			func(client *mongo.Client, ctx context.Context) error {

@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/util"
 	"path"
 	"runtime"
@@ -10,7 +10,7 @@ import (
 
 // Server ...
 type Server struct {
-	services      []*internal.ServiceMeta
+	services      []*core.ServiceMeta
 	serverConfig  *serverConfig
 	sessionConfig *sessionConfig
 	serverCore
@@ -95,11 +95,11 @@ func (p *Server) AddService(
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(0, internal.NewRuntimePanic(
+		p.onError(0, core.NewRuntimePanic(
 			"AddService must be called before Serve",
 		).AddDebug(util.GetFileLine(1)))
 	} else {
-		p.services = append(p.services, internal.NewServiceMeta(
+		p.services = append(p.services, core.NewServiceMeta(
 			name,
 			service,
 			util.GetFileLine(1),
@@ -115,13 +115,13 @@ func (p *Server) BuildReplyCache() *Server {
 	_, file, _, _ := runtime.Caller(1)
 	buildDir := path.Join(path.Dir(file))
 
-	services := func() []*internal.ServiceMeta {
+	services := func() []*core.ServiceMeta {
 		p.Lock()
 		defer p.Unlock()
 		return p.services
 	}()
 
-	processor := internal.NewProcessor(
+	processor := core.NewProcessor(
 		false,
 		1,
 		64,
@@ -129,7 +129,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		services,
-		func(stream *internal.Stream) {},
+		func(stream *core.Stream) {},
 	)
 	defer processor.Close()
 
@@ -155,7 +155,7 @@ func (p *Server) Serve() {
 	p.serve(
 		p.sessionConfig.Clone(),
 		func() streamHub {
-			return internal.NewProcessor(
+			return core.NewProcessor(
 				p.serverConfig.isDebug,
 				p.serverConfig.numOfThreads,
 				64,

@@ -5,14 +5,14 @@ import (
 	"errors"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/util"
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
 var Service = rpc.NewServiceWithOnMount(
-	func(service *internal.Service, data interface{}) error {
+	func(service *core.Service, data interface{}) error {
 		if cfg, ok := data.(*util.MongoDatabaseConfig); !ok || cfg == nil {
 			return errors.New("config error")
 		} else if err := util.WithMongoClient(cfg, 3*time.Second,

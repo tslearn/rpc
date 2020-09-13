@@ -1,4 +1,4 @@
-package internal
+package core
 
 import (
 	"github.com/rpccloud/rpc/internal/util"

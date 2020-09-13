@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/util"
 )
 
@@ -16,58 +16,58 @@ type streamHub interface {
 }
 
 // Bool ...
-type Bool = internal.Bool
+type Bool = core.Bool
 
 // Int64 ...
-type Int64 = internal.Int64
+type Int64 = core.Int64
 
 // Uint64 ...
-type Uint64 = internal.Uint64
+type Uint64 = core.Uint64
 
 // Float64 ...
-type Float64 = internal.Float64
+type Float64 = core.Float64
 
 // String ...
-type String = internal.String
+type String = core.String
 
 // Bytes ...
-type Bytes = internal.Bytes
+type Bytes = core.Bytes
 
 // Any common Any type
-type Any = internal.Any
+type Any = core.Any
 
 // Array common Array type
-type Array = internal.Array
+type Array = core.Array
 
 // Map common Map type
-type Map = internal.Map
+type Map = core.Map
 
 // Return ...
-type Return = internal.Return
+type Return = core.Return
 
 // Runtime ...
-type Runtime = internal.Runtime
+type Runtime = core.Runtime
 
 // Service ...
-type Service = internal.Service
+type Service = core.Service
 
 // NewService ...
-var NewService = internal.NewService
+var NewService = core.NewService
 
 // NewServiceWithOnMount ...
-var NewServiceWithOnMount = internal.NewServiceWithOnMount
+var NewServiceWithOnMount = core.NewServiceWithOnMount
 
 // Error ...
-type Error = internal.Error
+type Error = core.Error
 
 // Stream ...
-type Stream = internal.Stream
+type Stream = core.Stream
 
 // ReplyCache ...
-type ReplyCache = internal.ReplyCache
+type ReplyCache = core.ReplyCache
 
 // ReplyCacheFunc ...
-type ReplyCacheFunc = internal.ReplyCacheFunc
+type ReplyCacheFunc = core.ReplyCacheFunc
 
 // GetRandString ...
 var GetRandString = util.GetRandString
