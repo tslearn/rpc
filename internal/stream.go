@@ -227,7 +227,7 @@ func (p *Stream) SetReadPos(pos int) bool {
 		readSeg := pos / streamBlockSize
 		readIndex := pos % streamBlockSize
 		if (readSeg == p.writeSeg && readIndex <= p.writeIndex) ||
-			(readSeg < p.writeSeg && readSeg >= 0) {
+			(readSeg < p.writeSeg) {
 			p.readIndex = readIndex
 			if p.readSeg != readSeg {
 				p.readSeg = readSeg
