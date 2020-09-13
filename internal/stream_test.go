@@ -1446,7 +1446,16 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.Write(testData[0])
-			assert(stream.ReadUnsafeString()).Equals(testData[0], true)
+
+			notSafe := true
+			if len(testData[0].(string)) == 0 {
+				notSafe = false
+			} else if len(testData[0].(string)) < 62 {
+				notSafe = stream.readIndex+len(testData[0].(string)) < streamBlockSize-2
+			} else {
+				notSafe = (stream.readIndex+5)%streamBlockSize+len(testData[0].(string)) < streamBlockSize-1
+			}
+			assert(stream.readUnsafeString()).Equals(testData[0], !notSafe, true)
 			assert(stream.GetWritePos()).Equals(len(testData[1].([]byte)) + i)
 			stream.Release()
 		}
@@ -1461,7 +1470,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 			for idx := i; idx < writePos-1; idx++ {
 				stream.SetReadPos(i)
 				stream.SetWritePos(idx)
-				assert(stream.ReadUnsafeString()).Equals("", false)
+				assert(stream.readUnsafeString()).Equals("", true, false)
 				assert(stream.GetReadPos()).Equals(i)
 			}
 			stream.Release()
@@ -1473,7 +1482,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
 			stream.PutBytes([]byte{13})
-			assert(stream.ReadUnsafeString()).Equals("", false)
+			assert(stream.readUnsafeString()).Equals("", true, false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1486,7 +1495,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 			stream.Write(testData[0])
 			stream.SetWritePos(stream.GetWritePos() - 1)
 			stream.PutBytes([]byte{1})
-			assert(stream.ReadUnsafeString()).Equals("", false)
+			assert(stream.readUnsafeString()).Equals("", true, false)
 			assert(stream.GetReadPos()).Equals(i)
 			stream.Release()
 		}
@@ -1500,7 +1509,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0xEF, 0xB8, 0x8F, 0xF0, 0x9F, 0x8C, 0x88, 0xF0, 0x9F, 0x8E,
 		0xA9, 0x00,
 	})
-	assert(stream1.ReadUnsafeString()).Equals("", false)
+	assert(stream1.readUnsafeString()).Equals("", true, false)
 	assert(stream1.GetReadPos()).Equals(streamPosBody)
 
 	// read string utf8 error
@@ -1519,7 +1528,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0x91, 0xB9, 0xF0, 0x9F, 0x91, 0xBA, 0xF0, 0x9F, 0x8C, 0xB3,
 		0xF0, 0x9F, 0x8D, 0x8A, 0x00,
 	})
-	assert(stream2.ReadUnsafeString()).Equals("", false)
+	assert(stream2.readUnsafeString()).Equals("", true, false)
 	assert(stream2.GetReadPos()).Equals(streamPosBody)
 
 	// read string length error
@@ -1533,7 +1542,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
 		0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x00,
 	})
-	assert(stream3.ReadUnsafeString()).Equals("", false)
+	assert(stream3.readUnsafeString()).Equals("", true, false)
 	assert(stream3.GetReadPos()).Equals(streamPosBody)
 }
 

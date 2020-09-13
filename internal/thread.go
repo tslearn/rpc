@@ -311,7 +311,7 @@ func (p *rpcThread) Eval(
 	}()
 
 	// set exec reply node
-	replyPath, ok := inStream.ReadUnsafeString()
+	replyPath, _, ok := inStream.readUnsafeString()
 	if !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
@@ -334,7 +334,7 @@ func (p *rpcThread) Eval(
 			)).AddDebug(p.GetExecReplyDebug()),
 			0,
 		)
-	} else if frame.from, ok = inStream.ReadUnsafeString(); !ok {
+	} else if frame.from, _, ok = inStream.readUnsafeString(); !ok {
 		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else {
 		// create context

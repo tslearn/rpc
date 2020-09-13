@@ -234,7 +234,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			rt:  rt,
 			pos: record.getPos(),
 		}
-		ret.cacheString, ret.cacheOK = thread.rtStream.ReadUnsafeString()
+		ret.cacheString, _, ret.cacheOK = thread.rtStream.readUnsafeString()
 		return ret
 	}
 }

@@ -1346,14 +1346,13 @@ func (p *Stream) ReadString() (string, bool) {
 	return "", false
 }
 
-// ReadUnsafeString read a string value unsafe
-func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
+func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return "", true
+			return "", true, true
 		}
 	} else if v > 128 && v < 191 {
 		strLen := int(v - 128)
@@ -1366,7 +1365,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 					pString.Len = strLen
 					pString.Data = pBytes.Data
 					p.readIndex += strLen + 2
-					return ret, true
+					return ret, false, true
 				}
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
@@ -1381,7 +1380,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 			}
 			if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
 				p.gotoNextReadByteUnsafe()
-				return string(b), true
+				return string(b), true, true
 			}
 			p.SetReadPos(readStart)
 		}
@@ -1414,7 +1413,7 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 						pString.Len = strLen
 						pString.Data = pBytes.Data
 						p.readIndex += strLen + 1
-						return ret, true
+						return ret, false, true
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
@@ -1430,14 +1429,14 @@ func (p *Stream) ReadUnsafeString() (ret string, ok bool) {
 				}
 				if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
 					p.gotoNextReadByteUnsafe()
-					return string(b), true
+					return string(b), true, true
 				}
 			}
 		}
 
 		p.SetReadPos(readStart)
 	}
-	return "", false
+	return "", true, false
 }
 
 // ReadBytes read a Bytes value
@@ -1916,7 +1915,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 			itemPos := 0
 
 			for i := 0; i < mapLen; i++ {
-				key, ok := cs.ReadUnsafeString()
+				key, _, ok := cs.readUnsafeString()
 				if !ok {
 					p.SetReadPos(readStart)
 					return RTMap{}, false
@@ -2156,7 +2155,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 	}
 
 	if op := cs.readFrame[cs.readIndex]; op > 128 && op < 191 {
-		cacheString, ok := cs.ReadUnsafeString()
+		cacheString, _, ok := cs.readUnsafeString()
 		return RTValue{
 			rt:          rt,
 			pos:         int64(cs.GetReadPos()),
