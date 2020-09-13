@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	zeroHeader  = make([]byte, streamPosBody)
+	initFrame   = make([]byte, streamBlockSize)
 	streamCache = sync.Pool{
 		New: func() interface{} {
 			ret := &Stream{
@@ -111,13 +111,15 @@ func NewStream() *Stream {
 }
 
 // Reset ...
+// Reset must initialize all frames to prevent cross-stream attack
 func (p *Stream) Reset() {
 	// reset header
-	copy(p.header, zeroHeader)
+	copy(p.frames[0], initFrame)
 
 	// reset frames
 	if len(p.frames) != 1 {
 		for i := 1; i < len(p.frames); i++ {
+			copy(p.frames[i], initFrame)
 			frameCache.Put(p.frames[i])
 			p.frames[i] = nil
 		}
