@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// rpcPerformanceIndicator ...
-type rpcPerformanceIndicator struct {
+// PerformanceIndicator ...
+type PerformanceIndicator struct {
 	failArray    [8]int64
 	successArray [8]int64
 	lastTotal    int64
@@ -15,9 +15,9 @@ type rpcPerformanceIndicator struct {
 	sync.Mutex
 }
 
-// newPerformanceIndicator ...
-func newPerformanceIndicator() *rpcPerformanceIndicator {
-	return &rpcPerformanceIndicator{
+// NewPerformanceIndicator ...
+func NewPerformanceIndicator() *PerformanceIndicator {
+	return &PerformanceIndicator{
 		failArray:    [8]int64{},
 		successArray: [8]int64{},
 		lastTotal:    0,
@@ -26,7 +26,7 @@ func newPerformanceIndicator() *rpcPerformanceIndicator {
 }
 
 // Calculate ...
-func (p *rpcPerformanceIndicator) Calculate(
+func (p *PerformanceIndicator) Calculate(
 	now time.Time,
 ) (int64, time.Duration) {
 	p.Lock()
@@ -55,7 +55,7 @@ func (p *rpcPerformanceIndicator) Calculate(
 }
 
 // Count ...
-func (p *rpcPerformanceIndicator) Count(duration time.Duration, success bool) {
+func (p *PerformanceIndicator) Count(duration time.Duration, success bool) {
 	idx := 0
 
 	if duration < 5*time.Millisecond {

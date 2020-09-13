@@ -9,7 +9,7 @@ func TestNewPerformanceIndicator(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	pi1 := newPerformanceIndicator()
+	pi1 := NewPerformanceIndicator()
 	assert(pi1).IsNotNil()
 	assert(pi1.lastTotal).Equals(int64(0))
 	assert(len(pi1.successArray)).Equals(8)
@@ -28,7 +28,7 @@ func TestRpcPerformanceIndicator_Count(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	pi := newPerformanceIndicator()
+	pi := NewPerformanceIndicator()
 	for i := 0; i < 2000; i++ {
 		pi.Count(time.Duration(i)*time.Millisecond, true)
 		pi.Count(time.Duration(i)*time.Millisecond, false)
@@ -43,7 +43,7 @@ func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
 	assert := NewAssert(t)
 
 	// Test(1)
-	pi1 := newPerformanceIndicator()
+	pi1 := NewPerformanceIndicator()
 	for i := 0; i < 100; i++ {
 		go func(idx int) {
 			for k := 0; k < 100; k++ {
@@ -58,13 +58,13 @@ func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
 		Equals(int64(20000), time.Second)
 
 	// Test(2)
-	pi2 := newPerformanceIndicator()
+	pi2 := NewPerformanceIndicator()
 	pi2.lastTotal = 3
 	assert(pi2.Calculate(pi2.lastTime.Add(time.Second))).
 		Equals(int64(0), time.Duration(0))
 
 	// Test(3)
-	pi3 := newPerformanceIndicator()
+	pi3 := NewPerformanceIndicator()
 	assert(pi3.Calculate(pi3.lastTime.Add(-time.Second))).
 		Equals(int64(0), time.Duration(0))
 }

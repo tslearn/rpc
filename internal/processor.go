@@ -27,7 +27,7 @@ type rpcReplyNode struct {
 	reflectFn  reflect.Value
 	callString string
 	argTypes   []reflect.Type
-	indicator  *rpcPerformanceIndicator
+	indicator  *PerformanceIndicator
 }
 
 type rpcServiceNode struct {
@@ -404,7 +404,7 @@ func (p *Processor) mountReply(
 				convertTypeToString(returnType),
 			),
 			argTypes:  argTypes,
-			indicator: newPerformanceIndicator(),
+			indicator: NewPerformanceIndicator(),
 		}
 
 		if fnCache != nil {
