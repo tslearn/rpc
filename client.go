@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/util"
 	"net/url"
 	"runtime/debug"
 	"sync"
@@ -156,7 +157,7 @@ func newClient(adapter internal.IClientAdapter) *Client {
 
 	go func() {
 		for ret.statusManager.IsRunning() {
-			now := internal.TimeNow()
+			now := util.TimeNow()
 			ret.tryToTimeout(now)
 			ret.tryToDeliverControlMessage(now)
 			for ret.tryToDeliverPreSendMessage() {
@@ -446,7 +447,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			return false
 		}
 
-		item.sendTime = internal.TimeNow()
+		item.sendTime = util.TimeNow()
 		return true
 	}
 }
@@ -460,7 +461,7 @@ func (p *Client) SendMessage(
 	item := newSendItem()
 	defer item.Release()
 
-	item.startTime = internal.TimeNow()
+	item.startTime = util.TimeNow()
 	item.timeout = timeout
 
 	// set depth

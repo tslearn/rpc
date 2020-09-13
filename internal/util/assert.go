@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"fmt"
@@ -68,7 +68,7 @@ func (p *rpcAssert) IsNil() {
 		p.fail("arguments is empty")
 	} else {
 		for i := 0; i < len(p.args); i++ {
-			if !isNil(p.args[i]) {
+			if !IsNil(p.args[i]) {
 				p.fail(fmt.Sprintf(
 					"%s argment is not nil",
 					ConvertOrdinalToString(uint(i+1)),
@@ -84,7 +84,7 @@ func (p *rpcAssert) IsNotNil() {
 		p.fail("arguments is empty")
 	} else {
 		for i := 0; i < len(p.args); i++ {
-			if isNil(p.args[i]) {
+			if IsNil(p.args[i]) {
 				p.fail(fmt.Sprintf(
 					"%s argment is nil",
 					ConvertOrdinalToString(uint(i+1)),

@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/util"
 	"net"
 	"runtime/debug"
 	"strconv"
@@ -83,7 +84,7 @@ func newServerSession(id uint64, config *sessionConfig) *serverSession {
 	ret := serverSessionCache.Get().(*serverSession)
 	ret.id = id
 	ret.config = config
-	ret.security = internal.GetRandString(32)
+	ret.security = util.GetRandString(32)
 	ret.conn = nil
 	ret.dataSequence = 0
 	ret.ctrlSequence = 0

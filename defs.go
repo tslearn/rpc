@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/util"
 )
 
 const controlStreamKindInit = int64(1)
@@ -69,7 +70,7 @@ type ReplyCache = internal.ReplyCache
 type ReplyCacheFunc = internal.ReplyCacheFunc
 
 // GetRandString ...
-var GetRandString = internal.GetRandString
+var GetRandString = util.GetRandString
 
 // TimeNow
-var TimeNow = internal.TimeNow
+var TimeNow = util.TimeNow

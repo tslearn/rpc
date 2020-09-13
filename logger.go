@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/util"
 	"strconv"
 )
 
@@ -23,9 +24,9 @@ func (p *StdoutLogWriter) Write(
 	sessionID uint64,
 	err internal.Error,
 ) {
-	sb := internal.NewStringBuilder()
+	sb := util.NewStringBuilder()
 	defer sb.Release()
-	sb.AppendString(internal.TimeNowISOString())
+	sb.AppendString(util.TimeNowISOString())
 	if sessionID > 0 {
 		sb.AppendByte('(')
 		sb.AppendString(strconv.FormatUint(sessionID, 10))

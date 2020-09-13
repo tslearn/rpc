@@ -1,6 +1,9 @@
 package internal
 
-import "sync"
+import (
+	"github.com/rpccloud/rpc/internal/util"
+	"sync"
+)
 
 // ErrorKind ...
 type ErrorKind uint64
@@ -67,7 +70,7 @@ func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
 	defer gPanicMutex.Unlock()
 
 	ret := &rpcPanicSubscription{
-		id:      GetSeed(),
+		id:      util.GetSeed(),
 		onPanic: onPanic,
 	}
 	gPanicSubscriptions = append(gPanicSubscriptions, ret)
@@ -191,7 +194,7 @@ func (p *rpcError) AddDebug(debug string) Error {
 }
 
 func (p *rpcError) Error() string {
-	sb := NewStringBuilder()
+	sb := util.NewStringBuilder()
 	defer sb.Release()
 
 	if p.message != "" {

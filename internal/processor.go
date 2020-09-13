@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/util"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -27,7 +28,7 @@ type rpcReplyNode struct {
 	reflectFn  reflect.Value
 	callString string
 	argTypes   []reflect.Type
-	indicator  *PerformanceIndicator
+	indicator  *util.PerformanceIndicator
 }
 
 type rpcServiceNode struct {
@@ -201,7 +202,7 @@ func (p *Processor) Close() bool {
 
 	if len(errList) > 0 {
 		p.fnError(
-			NewReplyPanic(ConcatString(
+			NewReplyPanic(util.ConcatString(
 				"the following replies can not close: \n\t",
 				strings.Join(errList, "\n\t"),
 			)),
@@ -292,8 +293,8 @@ func (p *Processor) mountNode(
 				nodeMeta.name,
 			)).AddDebug(fmt.Sprintf(
 				"current:\n%s\nconflict:\n%s",
-				AddPrefixPerLine(nodeMeta.fileLine, "\t"),
-				AddPrefixPerLine(item.addMeta.fileLine, "\t"),
+				util.AddPrefixPerLine(nodeMeta.fileLine, "\t"),
+				util.AddPrefixPerLine(item.addMeta.fileLine, "\t"),
 			))
 		} else {
 			// do onMount
@@ -377,8 +378,8 @@ func (p *Processor) mountReply(
 				meta.name,
 			)).AddDebug(fmt.Sprintf(
 				"current:\n%s\nconflict:\n%s",
-				AddPrefixPerLine(meta.fileLine, "\t"),
-				AddPrefixPerLine(item.meta.fileLine, "\t"),
+				util.AddPrefixPerLine(meta.fileLine, "\t"),
+				util.AddPrefixPerLine(item.meta.fileLine, "\t"),
 			))
 		}
 
@@ -404,7 +405,7 @@ func (p *Processor) mountReply(
 				convertTypeToString(returnType),
 			),
 			argTypes:  argTypes,
-			indicator: NewPerformanceIndicator(),
+			indicator: util.NewPerformanceIndicator(),
 		}
 
 		if fnCache != nil {

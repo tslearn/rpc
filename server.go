@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/util"
 	"path"
 	"runtime"
 	"time"
@@ -26,13 +27,13 @@ func NewServer() *Server {
 
 // SetDebug ...
 func (p *Server) SetDebug() *Server {
-	p.serverConfig.setDebug(true, internal.GetFileLine(1), p.onError)
+	p.serverConfig.setDebug(true, util.GetFileLine(1), p.onError)
 	return p
 }
 
 // SetRelease ...
 func (p *Server) SetRelease() *Server {
-	p.serverConfig.setDebug(false, internal.GetFileLine(1), p.onError)
+	p.serverConfig.setDebug(false, util.GetFileLine(1), p.onError)
 	return p
 }
 
@@ -40,7 +41,7 @@ func (p *Server) SetRelease() *Server {
 func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	p.serverConfig.setNumOfThreads(
 		numOfThreads,
-		internal.GetFileLine(1),
+		util.GetFileLine(1),
 		p.onError,
 	)
 
@@ -51,7 +52,7 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 func (p *Server) SetReplyCache(replyCache ReplyCache) *Server {
 	p.serverConfig.setReplyCache(
 		replyCache,
-		internal.GetFileLine(1),
+		util.GetFileLine(1),
 		p.onError,
 	)
 
@@ -62,7 +63,7 @@ func (p *Server) SetReplyCache(replyCache ReplyCache) *Server {
 func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
 	p.sessionConfig.setTransportLimit(
 		maxTransportBytes,
-		internal.GetFileLine(1),
+		util.GetFileLine(1),
 		p.onError,
 	)
 	return p
@@ -72,7 +73,7 @@ func (p *Server) SetTransportLimit(maxTransportBytes int) *Server {
 func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
 	p.sessionConfig.setConcurrency(
 		sessionConcurrency,
-		internal.GetFileLine(1),
+		util.GetFileLine(1),
 		p.onError,
 	)
 	return p
@@ -80,7 +81,7 @@ func (p *Server) SetSessionConcurrency(sessionConcurrency int) *Server {
 
 // ListenWebSocket ...
 func (p *Server) ListenWebSocket(addr string) *Server {
-	p.listenWebSocket(addr, internal.GetFileLine(1))
+	p.listenWebSocket(addr, util.GetFileLine(1))
 	return p
 }
 
@@ -96,12 +97,12 @@ func (p *Server) AddService(
 	if p.IsRunning() {
 		p.onError(0, internal.NewRuntimePanic(
 			"AddService must be called before Serve",
-		).AddDebug(internal.GetFileLine(1)))
+		).AddDebug(util.GetFileLine(1)))
 	} else {
 		p.services = append(p.services, internal.NewServiceMeta(
 			name,
 			service,
-			internal.GetFileLine(1),
+			util.GetFileLine(1),
 			data,
 		))
 	}

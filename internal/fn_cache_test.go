@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/rpccloud/rpc/internal/util"
 	"os"
 	"path"
 	"runtime"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestBuildFuncCache(t *testing.T) {
-	assert := NewAssert(t)
+	assert := util.NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 	defer func() {
 		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))

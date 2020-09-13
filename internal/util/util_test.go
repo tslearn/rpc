@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"strings"
@@ -10,26 +10,26 @@ import (
 
 func TestIsNil(t *testing.T) {
 	assert := NewAssert(t)
-	assert(isNil(nil)).IsTrue()
-	assert(isNil(t)).IsFalse()
-	assert(isNil(3)).IsFalse()
-	assert(isNil(0)).IsFalse()
-	assert(isNil(uintptr(0))).IsFalse()
-	assert(isNil(uintptr(1))).IsFalse()
-	assert(isNil(unsafe.Pointer(nil))).IsTrue()
-	assert(isNil(unsafe.Pointer(t))).IsFalse()
+	assert(IsNil(nil)).IsTrue()
+	assert(IsNil(t)).IsFalse()
+	assert(IsNil(3)).IsFalse()
+	assert(IsNil(0)).IsFalse()
+	assert(IsNil(uintptr(0))).IsFalse()
+	assert(IsNil(uintptr(1))).IsFalse()
+	assert(IsNil(unsafe.Pointer(nil))).IsTrue()
+	assert(IsNil(unsafe.Pointer(t))).IsFalse()
 }
 
 func TestIsUTF8Bytes(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(isUTF8Bytes(([]byte)("abc"))).IsTrue()
-	assert(isUTF8Bytes(([]byte)("abc！#@¥#%#%#¥%"))).IsTrue()
-	assert(isUTF8Bytes(([]byte)("中文"))).IsTrue()
-	assert(isUTF8Bytes(([]byte)("🀄️文👃d"))).IsTrue()
-	assert(isUTF8Bytes(([]byte)("🀄️文👃"))).IsTrue()
+	assert(IsUTF8Bytes(([]byte)("abc"))).IsTrue()
+	assert(IsUTF8Bytes(([]byte)("abc！#@¥#%#%#¥%"))).IsTrue()
+	assert(IsUTF8Bytes(([]byte)("中文"))).IsTrue()
+	assert(IsUTF8Bytes(([]byte)("🀄️文👃d"))).IsTrue()
+	assert(IsUTF8Bytes(([]byte)("🀄️文👃"))).IsTrue()
 
-	assert(isUTF8Bytes(([]byte)(`
+	assert(IsUTF8Bytes(([]byte)(`
     😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 🥰 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔 🤨
     🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁
     😤 😢 😭 😦 😧 😨 😩 🤯 😬 😰 😱 🥵 🥶 😳 🤪 😵 😡 😠 🤬 😷 🤒 🤕 🤢
@@ -46,19 +46,19 @@ func TestIsUTF8Bytes(t *testing.T) {
     💍 💄 💋 👄 👅 👂 👃 👣 👁 👀 🧠 🦴 🦷 🗣 👤 👥
   `))).IsTrue()
 
-	assert(isUTF8Bytes([]byte{0xC1})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xC1, 0x01})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xC1})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xC1, 0x01})).IsFalse()
 
-	assert(isUTF8Bytes([]byte{0xE1, 0x80})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xE1, 0x01, 0x81})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xE1, 0x80, 0x01})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xE1, 0x80})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xE1, 0x01, 0x81})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xE1, 0x80, 0x01})).IsFalse()
 
-	assert(isUTF8Bytes([]byte{0xF1, 0x80, 0x80})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xF1, 0x70, 0x80, 0x80})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xF1, 0x80, 0x70, 0x80})).IsFalse()
-	assert(isUTF8Bytes([]byte{0xF1, 0x80, 0x80, 0x70})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xF1, 0x80, 0x80})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xF1, 0x70, 0x80, 0x80})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xF1, 0x80, 0x70, 0x80})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xF1, 0x80, 0x80, 0x70})).IsFalse()
 
-	assert(isUTF8Bytes([]byte{0xFF, 0x80, 0x80, 0x70})).IsFalse()
+	assert(IsUTF8Bytes([]byte{0xFF, 0x80, 0x80, 0x70})).IsFalse()
 }
 
 func TestConvertToIsoDateString(t *testing.T) {

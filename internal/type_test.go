@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"github.com/rpccloud/rpc/internal/util"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestRTPosRecord(t *testing.T) {
-	assert := NewAssert(t)
+	assert := util.NewAssert(t)
 
 	posArray := []int64{
 		0,
@@ -46,7 +47,7 @@ func TestRTPosRecord(t *testing.T) {
 }
 
 func TestGetFuncKind(t *testing.T) {
-	assert := NewAssert(t)
+	assert := util.NewAssert(t)
 
 	fn1 := 3
 	assert(getFuncKind(reflect.ValueOf(fn1))).
@@ -154,7 +155,7 @@ func TestGetFuncKind(t *testing.T) {
 }
 
 func TestConvertTypeToString(t *testing.T) {
-	assert := NewAssert(t)
+	assert := util.NewAssert(t)
 	assert(convertTypeToString(nil)).Equals("<nil>")
 	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
 	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
@@ -191,14 +192,14 @@ func BenchmarkRTPosRecord(b *testing.B) {
 func BenchmarkAddPrefixPerLine(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		AddPrefixPerLine("a\nb\nc", "test")
+		util.AddPrefixPerLine("a\nb\nc", "test")
 	}
 }
 
 func BenchmarkConcatString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		ConcatString("a", "b")
+		util.ConcatString("a", "b")
 	}
 }
 
@@ -206,7 +207,7 @@ func BenchmarkGetCodePosition(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			AddFileLine("test", 0)
+			util.AddFileLine("test", 0)
 		}
 	})
 }
@@ -214,21 +215,21 @@ func BenchmarkGetCodePosition(b *testing.B) {
 func BenchmarkGetRandString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		GetRandString(128)
+		util.GetRandString(128)
 	}
 }
 
 func BenchmarkTimeNow(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		TimeNow()
+		util.TimeNow()
 	}
 }
 
 func BenchmarkTimeNowISOString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		TimeNowISOString()
+		util.TimeNowISOString()
 	}
 }
 

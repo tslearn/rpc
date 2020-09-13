@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/binary"
+	"github.com/rpccloud/rpc/internal/util"
 	"math"
 	"strconv"
 )
@@ -27,7 +28,7 @@ const (
 
 var (
 	initFrame   = make([]byte, streamBlockSize)
-	streamCache = &SyncPool{
+	streamCache = &util.SyncPool{
 		New: func() interface{} {
 			ret := &Stream{
 				readSeg:    0,
@@ -45,7 +46,7 @@ var (
 			return ret
 		},
 	}
-	frameCache = &SyncPool{
+	frameCache = &util.SyncPool{
 		New: func() interface{} {
 			ret := make([]byte, streamBlockSize)
 			return &ret
@@ -397,7 +398,7 @@ func (p *Stream) writeStreamNext(s *Stream) bool {
 		for skip > 0 {
 			n := copy(
 				p.writeFrame[p.writeIndex:],
-				s.readFrame[s.readIndex:minInt(s.readIndex+skip, streamBlockSize)],
+				s.readFrame[s.readIndex:util.MinInt(s.readIndex+skip, streamBlockSize)],
 			)
 			skip -= n
 			p.writeIndex += n
@@ -751,7 +752,7 @@ func (p *Stream) WriteString(v string) {
 			})
 		}
 		// write body
-		p.PutBytes(stringToBytesUnsafe(v))
+		p.PutBytes(util.StringToBytesUnsafe(v))
 		// write zero tail
 		p.writeFrame[p.writeIndex] = 0
 		p.writeIndex++
@@ -880,7 +881,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	for i := 0; i < length; i++ {
 		if reason := p.write(v[i], depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return ConcatString("[", strconv.Itoa(i), "]", reason)
+			return util.ConcatString("[", strconv.Itoa(i), "]", reason)
 		}
 	}
 
@@ -965,7 +966,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 		p.WriteString(name)
 		if reason := p.write(value, depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return ConcatString("[\"", name, "\"]", reason)
+			return util.ConcatString("[\"", name, "\"]", reason)
 		}
 	}
 
@@ -1053,7 +1054,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 	case Map:
 		return p.writeMap(v.(Map), depth)
 	default:
-		return ConcatString(
+		return util.ConcatString(
 			" type is not supported",
 		)
 	}
@@ -1273,7 +1274,7 @@ func (p *Stream) ReadString() (string, bool) {
 		if p.isSafetyReadNBytesInCurrentFrame(strLen + 2) {
 			if p.readFrame[p.readIndex+strLen+1] == 0 {
 				b := p.readFrame[p.readIndex+1 : p.readIndex+strLen+1]
-				if isUTF8Bytes(b) {
+				if util.IsUTF8Bytes(b) {
 					p.readIndex += strLen + 2
 					return string(b), true
 				}
@@ -1288,7 +1289,7 @@ func (p *Stream) ReadString() (string, bool) {
 				p.readFrame = *(p.frames[p.readSeg])
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
 			}
-			if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
+			if p.readFrame[p.readIndex] == 0 && util.IsUTF8Bytes(b) {
 				p.gotoNextReadByteUnsafe()
 				return string(b), true
 			}
@@ -1317,7 +1318,7 @@ func (p *Stream) ReadString() (string, bool) {
 			if p.isSafetyReadNBytesInCurrentFrame(strLen + 1) {
 				if p.readFrame[p.readIndex+strLen] == 0 {
 					b := p.readFrame[p.readIndex : p.readIndex+strLen]
-					if isUTF8Bytes(b) {
+					if util.IsUTF8Bytes(b) {
 						p.readIndex += strLen + 1
 						return string(b), true
 					}
@@ -1333,7 +1334,7 @@ func (p *Stream) ReadString() (string, bool) {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
-				if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
+				if p.readFrame[p.readIndex] == 0 && util.IsUTF8Bytes(b) {
 					p.gotoNextReadByteUnsafe()
 					return string(b), true
 				}
@@ -1358,9 +1359,9 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 		if p.isSafetyReadNBytesInCurrentFrame(strLen + 2) {
 			if p.readFrame[p.readIndex+strLen+1] == 0 {
 				b := p.readFrame[p.readIndex+1 : p.readIndex+strLen+1]
-				if isUTF8Bytes(b) {
+				if util.IsUTF8Bytes(b) {
 					p.readIndex += strLen + 2
-					return bytesToStringUnsafe(b), false, true
+					return util.BytesToStringUnsafe(b), false, true
 				}
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
@@ -1373,9 +1374,9 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 				p.readFrame = *(p.frames[p.readSeg])
 				p.readIndex = copy(b[copyBytes:], p.readFrame)
 			}
-			if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
+			if p.readFrame[p.readIndex] == 0 && util.IsUTF8Bytes(b) {
 				p.gotoNextReadByteUnsafe()
-				return bytesToStringUnsafe(b), true, true
+				return util.BytesToStringUnsafe(b), true, true
 			}
 			p.SetReadPos(readStart)
 		}
@@ -1402,9 +1403,9 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 			if p.isSafetyReadNBytesInCurrentFrame(strLen + 1) {
 				if p.readFrame[p.readIndex+strLen] == 0 {
 					b := p.readFrame[p.readIndex : p.readIndex+strLen]
-					if isUTF8Bytes(b) {
+					if util.IsUTF8Bytes(b) {
 						p.readIndex += strLen + 1
-						return bytesToStringUnsafe(b), false, true
+						return util.BytesToStringUnsafe(b), false, true
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
@@ -1418,9 +1419,9 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
-				if p.readFrame[p.readIndex] == 0 && isUTF8Bytes(b) {
+				if p.readFrame[p.readIndex] == 0 && util.IsUTF8Bytes(b) {
 					p.gotoNextReadByteUnsafe()
-					return bytesToStringUnsafe(b), true, true
+					return util.BytesToStringUnsafe(b), true, true
 				}
 			}
 		}

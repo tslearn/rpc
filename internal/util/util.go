@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"math/rand"
@@ -35,12 +35,6 @@ type timeInfo struct {
 	timeISOString string
 }
 
-type rpcFuncMeta struct {
-	name       string
-	body       string
-	identifier string
-}
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	charToASCII := [10]byte{
@@ -69,7 +63,7 @@ func init() {
 	}
 }
 
-func isNil(val interface{}) (ret bool) {
+func IsNil(val interface{}) (ret bool) {
 	defer func() {
 		if e := recover(); e != nil {
 			ret = false
@@ -83,7 +77,7 @@ func isNil(val interface{}) (ret bool) {
 	return reflect.ValueOf(val).IsNil()
 }
 
-func minInt(v1 int, v2 int) int {
+func MinInt(v1 int, v2 int) int {
 	if v1 < v2 {
 		return v1
 	}
@@ -91,7 +85,7 @@ func minInt(v1 int, v2 int) int {
 	return v2
 }
 
-func maxInt(v1 int, v2 int) int {
+func MaxInt(v1 int, v2 int) int {
 	if v1 < v2 {
 		return v2
 	}
@@ -99,7 +93,7 @@ func maxInt(v1 int, v2 int) int {
 	return v1
 }
 
-func stringToBytesUnsafe(s string) (ret []byte) {
+func StringToBytesUnsafe(s string) (ret []byte) {
 	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret))
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
 	bytesHeader.Len = stringHeader.Len
@@ -108,7 +102,7 @@ func stringToBytesUnsafe(s string) (ret []byte) {
 	return
 }
 
-func bytesToStringUnsafe(bytes []byte) (ret string) {
+func BytesToStringUnsafe(bytes []byte) (ret string) {
 	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&ret))
 	stringHeader.Len = bytesHeader.Len
@@ -116,7 +110,7 @@ func bytesToStringUnsafe(bytes []byte) (ret string) {
 	return
 }
 
-func isUTF8Bytes(bytes []byte) bool {
+func IsUTF8Bytes(bytes []byte) bool {
 	idx := 0
 	length := len(bytes)
 

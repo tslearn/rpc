@@ -1,6 +1,9 @@
 package internal
 
-import "sync"
+import (
+	"github.com/rpccloud/rpc/internal/util"
+	"sync"
+)
 
 type rpcReplyMeta struct {
 	name     string      // the name of reply
@@ -45,7 +48,7 @@ func NewService() *Service {
 	return &Service{
 		children: nil,
 		replies:  nil,
-		fileLine: GetFileLine(1),
+		fileLine: util.GetFileLine(1),
 		onMount:  nil,
 	}
 }
@@ -57,7 +60,7 @@ func NewServiceWithOnMount(
 	return &Service{
 		children: nil,
 		replies:  nil,
-		fileLine: GetFileLine(1),
+		fileLine: util.GetFileLine(1),
 		onMount:  onMount,
 	}
 }
@@ -74,7 +77,7 @@ func (p *Service) AddChildService(
 	p.children = append(p.children, &ServiceMeta{
 		name:     name,
 		service:  service,
-		fileLine: GetFileLine(1),
+		fileLine: util.GetFileLine(1),
 		data:     data,
 	})
 
@@ -93,7 +96,7 @@ func (p *Service) Reply(
 	p.replies = append(p.replies, &rpcReplyMeta{
 		name:     name,
 		handler:  handler,
-		fileLine: GetFileLine(1),
+		fileLine: util.GetFileLine(1),
 	})
 	return p
 }

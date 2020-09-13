@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/util"
 	"math/rand"
 	"reflect"
 	"runtime/debug"
@@ -190,7 +191,7 @@ func (p *rpcThread) GetExecReplyNodePath() string {
 
 func (p *rpcThread) GetExecReplyDebug() string {
 	if node := p.GetReplyNode(); node != nil && node.meta != nil {
-		return ConcatString(node.path, " ", node.meta.fileLine)
+		return util.ConcatString(node.path, " ", node.meta.fileLine)
 	}
 	return ""
 }
@@ -202,8 +203,8 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		stream.WriteUint64(uint64(ErrorKindNone))
 		if reason := stream.Write(value); reason != StreamWriteOK {
 			return p.WriteError(
-				NewReplyPanic(ConcatString("value", reason)).
-					AddDebug(AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+				NewReplyPanic(util.ConcatString("value", reason)).
+					AddDebug(util.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
 				skip+1,
 			)
 		}
@@ -225,11 +226,11 @@ func (p *rpcThread) WriteError(err Error, skip uint) Return {
 	} else if p.top.retStatus == 1 {
 		stream.WriteUint64(uint64(ErrorKindReplyPanic))
 		stream.WriteString("Runtime.OK has been called before")
-		stream.WriteString(AddFileLine(p.GetExecReplyNodePath(), skip+1))
+		stream.WriteString(util.AddFileLine(p.GetExecReplyNodePath(), skip+1))
 	} else {
 		stream.WriteUint64(uint64(ErrorKindReplyPanic))
 		stream.WriteString("Runtime.Error has been called before")
-		stream.WriteString(AddFileLine(p.GetExecReplyNodePath(), skip+1))
+		stream.WriteString(util.AddFileLine(p.GetExecReplyNodePath(), skip+1))
 	}
 
 	p.top.retStatus = 2
@@ -253,7 +254,7 @@ func (p *rpcThread) Eval(
 	inStream *Stream,
 	onEvalBack func(*Stream),
 ) Return {
-	timeStart := TimeNow()
+	timeStart := util.TimeNow()
 	frame := p.top
 	frame.stream = inStream
 	p.sequence += 2
@@ -299,7 +300,7 @@ func (p *rpcThread) Eval(
 			// count
 			if execReplyNode != nil {
 				execReplyNode.indicator.Count(
-					TimeNow().Sub(timeStart),
+					util.TimeNow().Sub(timeStart),
 					frame.retStatus == 1,
 				)
 			}
@@ -316,7 +317,7 @@ func (p *rpcThread) Eval(
 		return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
-			NewReplyError(ConcatString("target ", replyPath, " does not exist")),
+			NewReplyError(util.ConcatString("target ", replyPath, " does not exist")),
 			0,
 		)
 	} else {
@@ -325,7 +326,7 @@ func (p *rpcThread) Eval(
 
 	if frame.depth > p.processor.maxCallDepth {
 		return p.WriteError(
-			NewReplyError(ConcatString(
+			NewReplyError(util.ConcatString(
 				"call ",
 				replyPath,
 				" level(",
@@ -440,7 +441,7 @@ func (p *rpcThread) Eval(
 			return p.WriteError(NewProtocolError(ErrStringBadStream), 0)
 		} else if !p.processor.isDebug {
 			return p.WriteError(
-				NewReplyError(ConcatString(
+				NewReplyError(util.ConcatString(
 					replyPath,
 					" reply arguments does not match",
 				)),
@@ -478,7 +479,7 @@ func (p *rpcThread) Eval(
 			}
 
 			return p.WriteError(
-				NewReplyError(ConcatString(
+				NewReplyError(util.ConcatString(
 					replyPath,
 					" reply arguments does not match\nwant: ",
 					execReplyNode.callString,

@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"github.com/rpccloud/rpc/internal/util"
 	"net"
 	"reflect"
 	"sync/atomic"
@@ -41,7 +42,7 @@ func getFuncKind(fn reflect.Value) (string, error) {
 			convertTypeToString(returnType),
 		)
 	} else {
-		sb := NewStringBuilder()
+		sb := util.NewStringBuilder()
 		defer sb.Release()
 
 		for i := 1; i < fn.Type().NumIn(); i++ {
@@ -69,7 +70,7 @@ func getFuncKind(fn reflect.Value) (string, error) {
 			default:
 				return "", fmt.Errorf(
 					"handler %s argument type %s is not supported",
-					ConvertOrdinalToString(1+uint(i)),
+					util.ConvertOrdinalToString(1+uint(i)),
 					fn.Type().In(i),
 				)
 			}
@@ -386,7 +387,7 @@ func (p RTValue) ToFloat64() (Float64, bool) {
 
 func (p RTValue) ToString() (ret String, ok bool) {
 	if !p.cacheSafe {
-		ret = string(stringToBytesUnsafe(p.cacheString))
+		ret = string(util.StringToBytesUnsafe(p.cacheString))
 	} else {
 		ret = p.cacheString
 	}

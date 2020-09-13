@@ -1,5 +1,7 @@
 package internal
 
+import "github.com/rpccloud/rpc/internal/util"
+
 // Runtime ...
 type Runtime struct {
 	id     uint64
@@ -30,7 +32,7 @@ func (p Runtime) OK(value interface{}) Return {
 	reportPanic(
 		NewReplyPanic(
 			"Runtime is illegal in current goroutine",
-		).AddDebug(GetFileLine(1)),
+		).AddDebug(util.GetFileLine(1)),
 	)
 	return emptyReturn
 }
@@ -42,21 +44,21 @@ func (p Runtime) Error(value error) Return {
 
 		if err, ok := value.(Error); ok && err != nil {
 			return p.thread.WriteError(
-				err.AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				err.AddDebug(util.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
 				NewReplyError(
 					value.Error(),
-				).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				).AddDebug(util.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		} else {
 			return p.thread.WriteError(
 				NewReplyError(
 					"argument should not nil",
-				).AddDebug(AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				).AddDebug(util.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		}
@@ -65,7 +67,7 @@ func (p Runtime) Error(value error) Return {
 	reportPanic(
 		NewReplyPanic(
 			"Runtime is illegal in current goroutine",
-		).AddDebug(GetFileLine(1)),
+		).AddDebug(util.GetFileLine(1)),
 	)
 	return emptyReturn
 }
@@ -86,8 +88,8 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, Error) {
 		// write args
 		for i := 0; i < len(args); i++ {
 			if stream.Write(args[i]) != StreamWriteOK {
-				return nil, NewReplyPanic(ConcatString(
-					ConvertOrdinalToString(uint(i+1)),
+				return nil, NewReplyPanic(util.ConcatString(
+					util.ConvertOrdinalToString(uint(i+1)),
 					" argument not supported",
 				))
 			}
@@ -130,14 +132,14 @@ func (p Runtime) GetServiceData() interface{} {
 		reportPanic(
 			NewReplyPanic(
 				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
+			).AddDebug(util.GetFileLine(1)),
 		)
 		return nil
 	} else if node := thread.GetReplyNode(); node == nil {
 		reportPanic(
 			NewReplyPanic(
 				"Runtime is illegal in current goroutine",
-			).AddDebug(GetFileLine(1)),
+			).AddDebug(util.GetFileLine(1)),
 		)
 		return nil
 	} else {
