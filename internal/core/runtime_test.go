@@ -2,17 +2,17 @@ package core
 
 import (
 	"errors"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 )
 
 func TestContextObject_OK(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		_, source1 = Runtime{}.OK(true), util.GetFileLine(0)
+		_, source1 = Runtime{}.OK(true), base.GetFileLine(0)
 	})).Equals(
 		NewReplyPanic("Runtime is illegal in current goroutine").AddDebug(source1),
 	)
@@ -21,7 +21,7 @@ func TestContextObject_OK(t *testing.T) {
 	source2 := ""
 	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// return value type error
-		ret, source := rt.OK(make(chan bool)), util.GetFileLine(0)
+		ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
 		source2 = source
 		return ret
 	})).Equals(
@@ -41,7 +41,7 @@ func TestContextObject_OK(t *testing.T) {
 	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// OK called twice
 		rt.OK(true)
-		ret, source := rt.OK(make(chan bool)), util.GetFileLine(0)
+		ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
 		source4 = source
 		return ret
 	})).Equals(
@@ -53,12 +53,12 @@ func TestContextObject_OK(t *testing.T) {
 }
 
 func TestContextObject_Error(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	source1 := ""
 	assert(testRunWithSubscribePanic(func() {
-		ret, source := Runtime{}.Error(errors.New("error")), util.GetFileLine(0)
+		ret, source := Runtime{}.Error(errors.New("error")), base.GetFileLine(0)
 		source1 = source
 		assert(ret).Equals(emptyReturn)
 	})).Equals(NewReplyPanic(
@@ -69,7 +69,7 @@ func TestContextObject_Error(t *testing.T) {
 	source2 := ""
 	assert(testRunWithSubscribePanic(func() {
 		err := NewReplyError("error")
-		ret, source := (&Runtime{thread: nil}).Error(err), util.GetFileLine(0)
+		ret, source := (&Runtime{thread: nil}).Error(err), base.GetFileLine(0)
 		source2 = source
 		assert(ret).Equals(emptyReturn)
 	})).Equals(
@@ -79,7 +79,7 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(3)
 	source3 := ""
 	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
-		ret, source := rt.Error(NewReplyError("error")), util.GetFileLine(0)
+		ret, source := rt.Error(NewReplyError("error")), base.GetFileLine(0)
 		source3 = rt.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
 		return ret
@@ -92,7 +92,7 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(4)
 	source4 := ""
 	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
-		ret, source := rt.Error(errors.New("error")), util.GetFileLine(0)
+		ret, source := rt.Error(errors.New("error")), base.GetFileLine(0)
 		source4 = rt.thread.GetReplyNode().path + " " + source
 		assert(ret).Equals(emptyReturn)
 		return ret
@@ -105,7 +105,7 @@ func TestContextObject_Error(t *testing.T) {
 	// Test(5)
 	source5 := ""
 	assert(testRunOnContext(false, func(_ *Processor, rt Runtime) Return {
-		ret, source := rt.Error(nil), util.GetFileLine(0)
+		ret, source := rt.Error(nil), base.GetFileLine(0)
 		source5 = source
 		assert(ret).Equals(emptyReturn)
 		return ret
@@ -121,7 +121,7 @@ func TestContextObject_Error(t *testing.T) {
 	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
 		// OK called twice
 		rt.Error(errors.New("error"))
-		ret, source := rt.Error(errors.New("error")), util.GetFileLine(0)
+		ret, source := rt.Error(errors.New("error")), base.GetFileLine(0)
 		source6 = source
 		return ret
 	})).Equals(

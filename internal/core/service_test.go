@@ -1,12 +1,12 @@
 package core
 
 import (
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 )
 
 func TestNewServiceMeta(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	service := NewService()
 
 	assert(NewServiceMeta("test", service, "debug", nil)).Equals(&ServiceMeta{
@@ -17,10 +17,10 @@ func TestNewServiceMeta(t *testing.T) {
 }
 
 func TestNewService(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
-	service, fileLine := NewService(), util.GetFileLine(0)
+	service, fileLine := NewService(), base.GetFileLine(0)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(0)
 	assert(len(service.replies)).Equals(0)
@@ -28,12 +28,12 @@ func TestNewService(t *testing.T) {
 }
 
 func TestService_AddChildService(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	child := NewService()
 	service, fileLine := NewService().
-		AddChildService("ch", child, nil), util.GetFileLine(0)
+		AddChildService("ch", child, nil), base.GetFileLine(0)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(1)
 	assert(len(service.replies)).Equals(0)
@@ -43,10 +43,10 @@ func TestService_AddChildService(t *testing.T) {
 }
 
 func TestService_Reply(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
-	service, fileLine := NewService().Reply("sayHello", 2345), util.GetFileLine(0)
+	service, fileLine := NewService().Reply("sayHello", 2345), base.GetFileLine(0)
 	assert(service).IsNotNil()
 	assert(len(service.children)).Equals(0)
 	assert(len(service.replies)).Equals(1)

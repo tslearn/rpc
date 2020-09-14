@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 )
 
@@ -287,7 +287,7 @@ var streamTestCollections = map[string][][2]interface{}{
 }
 
 func TestStream_basic(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// test streamCache
 	stream := streamCache.Get().(*Stream)
@@ -308,7 +308,7 @@ func TestStream_basic(t *testing.T) {
 }
 
 func TestStream_newRPCStream_Release_Reset(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// test streamCache
 	for i := 0; i < 5000; i++ {
@@ -330,7 +330,7 @@ func TestStream_newRPCStream_Release_Reset(t *testing.T) {
 }
 
 func TestStream_GetHeader(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
 		bytes := make([]byte, i)
@@ -346,7 +346,7 @@ func TestStream_GetHeader(t *testing.T) {
 }
 
 func TestStream_GetBuffer(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
 		bytes := make([]byte, i)
@@ -362,7 +362,7 @@ func TestStream_GetBuffer(t *testing.T) {
 }
 
 func TestStream_GetBufferUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := 0; i < 5000; i++ {
 		bytes := make([]byte, i)
@@ -379,7 +379,7 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 }
 
 func TestStream_GetReadPos(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 5000; i++ {
 		stream := NewStream()
@@ -391,7 +391,7 @@ func TestStream_GetReadPos(t *testing.T) {
 }
 
 func TestStream_SetReadPos(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody + 1; i < 5000; i++ {
 		stream := NewStream()
@@ -405,7 +405,7 @@ func TestStream_SetReadPos(t *testing.T) {
 }
 
 func TestStream_SetReadPosToBodyStart(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < streamPosBody+5000; i++ {
 		stream := NewStream()
@@ -418,7 +418,7 @@ func TestStream_SetReadPosToBodyStart(t *testing.T) {
 }
 
 func TestStream_GetWritePos(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
 
@@ -429,7 +429,7 @@ func TestStream_GetWritePos(t *testing.T) {
 }
 
 func TestStream_SetWritePos(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 10000; i++ {
 		stream := NewStream()
@@ -440,7 +440,7 @@ func TestStream_SetWritePos(t *testing.T) {
 }
 
 func TestStream_SetWritePosToBodyStart(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 5000; i++ {
 		stream := NewStream()
@@ -452,7 +452,7 @@ func TestStream_SetWritePosToBodyStart(t *testing.T) {
 }
 
 func TestStream_CanRead(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody + 1; i < 10000; i++ {
 		stream := NewStream()
@@ -472,7 +472,7 @@ func TestStream_CanRead(t *testing.T) {
 }
 
 func TestStream_IsReadFinish(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody + 1; i < 10000; i++ {
 		stream := NewStream()
@@ -492,7 +492,7 @@ func TestStream_IsReadFinish(t *testing.T) {
 }
 
 func TestStream_gotoNextReadFrameUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
 
@@ -504,7 +504,7 @@ func TestStream_gotoNextReadFrameUnsafe(t *testing.T) {
 }
 
 func TestStream_gotoNextReadByteUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(10000)
 
@@ -516,7 +516,7 @@ func TestStream_gotoNextReadByteUnsafe(t *testing.T) {
 }
 
 func TestStream_hasOneByteToRead(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 2000; i++ {
 		stream := NewStream()
@@ -534,7 +534,7 @@ func TestStream_hasOneByteToRead(t *testing.T) {
 }
 
 func TestStream_hasNBytesToRead(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
@@ -547,7 +547,7 @@ func TestStream_hasNBytesToRead(t *testing.T) {
 }
 
 func TestStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
@@ -561,7 +561,7 @@ func TestStream_isSafetyReadNBytesInCurrentFrame(t *testing.T) {
 }
 
 func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
@@ -575,7 +575,7 @@ func TestStream_isSafetyRead3BytesInCurrentFrame(t *testing.T) {
 }
 
 func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
@@ -589,7 +589,7 @@ func TestStream_isSafetyRead5BytesInCurrentFrame(t *testing.T) {
 }
 
 func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	stream.SetWritePos(1100)
 
@@ -603,7 +603,7 @@ func TestStream_isSafetyRead9BytesInCurrentFrame(t *testing.T) {
 }
 
 func TestStream_putBytes(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 600; i++ {
 		for n := 0; n < 600; n++ {
@@ -621,7 +621,7 @@ func TestStream_putBytes(t *testing.T) {
 }
 
 func TestStream_putString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 600; i++ {
 		for n := 0; n < 600; n++ {
@@ -640,7 +640,7 @@ func TestStream_putString(t *testing.T) {
 }
 
 func TestStream_read3BytesCrossFrameUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	stream0 := NewStream()
 	stream0.SetWritePos(streamBlockSize - 4)
@@ -657,7 +657,7 @@ func TestStream_read3BytesCrossFrameUnsafe(t *testing.T) {
 }
 
 func TestStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	stream0 := NewStream()
 	stream0.SetWritePos(streamBlockSize - 6)
@@ -680,7 +680,7 @@ func TestStream_peek5BytesCrossFrameUnsafe(t *testing.T) {
 }
 
 func TestStream_read5BytesCrossFrameUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	stream0 := NewStream()
 	stream0.SetWritePos(streamBlockSize - 6)
@@ -703,7 +703,7 @@ func TestStream_read5BytesCrossFrameUnsafe(t *testing.T) {
 }
 
 func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	stream0 := NewStream()
 	stream0.SetWritePos(streamBlockSize - 10)
@@ -749,7 +749,7 @@ func TestStream_read9BytesCrossFrameUnsafe(t *testing.T) {
 }
 
 func TestRpcStream_readSkipItem(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < 600; i++ {
 		for j := 0; j < 600; j++ {
@@ -779,7 +779,7 @@ func TestRpcStream_readSkipItem(t *testing.T) {
 }
 
 func TestRpcStream_peekSkip(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	testCollection := Array{
 		Array{[]byte{0}, 0, byte(0)},
@@ -877,7 +877,7 @@ func TestRpcStream_peekSkip(t *testing.T) {
 //}
 
 func TestRpcStream_writeStreamNext(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for i := streamPosBody; i < streamBlockSize+20; i++ {
 		bytes := make([]byte, i, i)
@@ -922,7 +922,7 @@ func TestRpcStream_writeStreamNext(t *testing.T) {
 }
 
 func TestStream_WriteNil(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
@@ -938,7 +938,7 @@ func TestStream_WriteNil(t *testing.T) {
 }
 
 func TestStream_WriteBool(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["bool"] {
 		// ok
@@ -954,7 +954,7 @@ func TestStream_WriteBool(t *testing.T) {
 }
 
 func TestStream_WriteFloat64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["float64"] {
 		// ok
@@ -970,7 +970,7 @@ func TestStream_WriteFloat64(t *testing.T) {
 }
 
 func TestStream_WriteInt64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["int64"] {
 		// ok
@@ -986,7 +986,7 @@ func TestStream_WriteInt64(t *testing.T) {
 }
 
 func TestStream_WriteUInt64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["uint64"] {
 		// ok
@@ -1002,7 +1002,7 @@ func TestStream_WriteUInt64(t *testing.T) {
 }
 
 func TestStream_WriteString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
@@ -1018,7 +1018,7 @@ func TestStream_WriteString(t *testing.T) {
 }
 
 func TestStream_WriteBytes(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
@@ -1034,7 +1034,7 @@ func TestStream_WriteBytes(t *testing.T) {
 }
 
 func TestStream_WriteArray(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["array"] {
 		// ok
@@ -1061,7 +1061,7 @@ func TestStream_WriteArray(t *testing.T) {
 }
 
 func TestStream_WriteMap(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["map"] {
 		// ok
@@ -1090,7 +1090,7 @@ func TestStream_WriteMap(t *testing.T) {
 }
 
 func TestStream_Write(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	stream := NewStream()
 	assert(stream.Write(nil)).Equals(StreamWriteOK)
 	assert(stream.Write(true)).Equals(StreamWriteOK)
@@ -1116,7 +1116,7 @@ func TestStream_Write(t *testing.T) {
 }
 
 func TestStream_ReadNil(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["nil"] {
 		// ok
@@ -1161,7 +1161,7 @@ func TestStream_ReadNil(t *testing.T) {
 }
 
 func TestStream_ReadBool(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["bool"] {
 		// ok
@@ -1205,7 +1205,7 @@ func TestStream_ReadBool(t *testing.T) {
 }
 
 func TestStream_ReadFloat64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["float64"] {
 		// ok
@@ -1249,7 +1249,7 @@ func TestStream_ReadFloat64(t *testing.T) {
 }
 
 func TestStream_ReadInt64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["int64"] {
 		// ok
@@ -1293,7 +1293,7 @@ func TestStream_ReadInt64(t *testing.T) {
 }
 
 func TestStream_ReadUint64(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["uint64"] {
 		// ok
@@ -1337,7 +1337,7 @@ func TestStream_ReadUint64(t *testing.T) {
 }
 
 func TestStream_ReadString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
@@ -1438,7 +1438,7 @@ func TestStream_ReadString(t *testing.T) {
 }
 
 func TestStream_ReadUnsafeString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["string"] {
 		// ok
@@ -1548,7 +1548,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 }
 
 func TestStream_ReadBytes(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["bytes"] {
 		// ok
@@ -1606,7 +1606,7 @@ func TestStream_ReadBytes(t *testing.T) {
 }
 
 func TestStream_ReadArray(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["array"] {
 		// ok
@@ -1683,7 +1683,7 @@ func TestStream_ReadArray(t *testing.T) {
 }
 
 func TestStream_ReadMap(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	for _, testData := range streamTestCollections["map"] {
 		// ok
@@ -1786,7 +1786,7 @@ func TestStream_ReadMap(t *testing.T) {
 }
 
 func TestStream_Read(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	testCollections := make([][2]interface{}, 0)
 
@@ -1797,7 +1797,7 @@ func TestStream_Read(t *testing.T) {
 	for _, item := range testCollections {
 		stream := NewStream()
 		stream.PutBytes(item[1].([]byte))
-		if util.IsNil(item[0]) {
+		if base.IsNil(item[0]) {
 			assert(stream.Read()).Equals(nil, true)
 		} else {
 			assert(stream.Read()).Equals(item[0], true)

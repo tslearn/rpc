@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"os"
 	"path"
 	"reflect"
@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewProcessor(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) onReturnStream is nil
 	assert(NewProcessor(true, 1, 1, 1, nil, 5*time.Second, nil, nil)).IsNil()
@@ -118,7 +118,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestProcessor_Close(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) p.panicSubscription == nil
 	processor1 := getFakeProcessor(true)
@@ -210,7 +210,7 @@ func TestProcessor_Close(t *testing.T) {
 }
 
 func TestProcessor_PutStream(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	processor1 := NewProcessor(
@@ -234,7 +234,7 @@ func TestProcessor_PutStream(t *testing.T) {
 }
 
 func TestProcessor_fnError(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	err1 := NewRuntimePanic("message").AddDebug("debug")
@@ -255,7 +255,7 @@ func TestProcessor_fnError(t *testing.T) {
 }
 
 func TestProcessor_BuildCache(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 	currDir := path.Dir(file)
 	defer func() {
@@ -329,7 +329,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 }
 
 func TestProcessor_mountNode(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	fnTestMount := func(
 		services []*ServiceMeta,
@@ -387,7 +387,7 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	// Test(4)
 	s4, source1 := NewService().
-		AddChildService("s", NewService(), nil), util.GetFileLine(0)
+		AddChildService("s", NewService(), nil), base.GetFileLine(0)
 	fnTestMount(
 		[]*ServiceMeta{{
 			name:     "s",
@@ -558,7 +558,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		service: &Service{
 			children: []*ServiceMeta{},
 			replies:  []*rpcReplyMeta{replyMeta12Eval1, replyMeta12Eval2},
-			fileLine: util.GetFileLine(1),
+			fileLine: base.GetFileLine(1),
 		},
 		fileLine: "serviceDebug",
 	}

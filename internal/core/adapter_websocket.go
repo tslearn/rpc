@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -58,7 +58,7 @@ func (p *webSocketStreamConn) writeMessage(
 ) Error {
 	p.Lock()
 	defer p.Unlock()
-	_ = p.conn.SetWriteDeadline(util.TimeNow().Add(timeout))
+	_ = p.conn.SetWriteDeadline(base.TimeNow().Add(timeout))
 	return toTransportError(p.conn.WriteMessage(messageType, data))
 }
 
@@ -100,7 +100,7 @@ func (p *webSocketStreamConn) ReadStream(
 		webSocketStreamConnRunning,
 	) {
 		return nil, ErrTransportStreamConnIsClosed
-	} else if e := p.conn.SetReadDeadline(util.TimeNow().Add(timeout)); e != nil {
+	} else if e := p.conn.SetReadDeadline(base.TimeNow().Add(timeout)); e != nil {
 		return nil, toTransportError(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
 		return nil, toTransportError(e)

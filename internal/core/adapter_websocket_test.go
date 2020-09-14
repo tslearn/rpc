@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"net/http"
 	"reflect"
@@ -76,7 +76,7 @@ func makeConnSetReadDeadlineError(conn *websocket.Conn) {
 }
 
 func TestToTransportError(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	assert(toTransportError(nil)).IsNil()
@@ -93,7 +93,7 @@ func TestToTransportError(t *testing.T) {
 }
 
 func TestNewWebSocketStreamConn(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	wsConn := &websocket.Conn{}
@@ -109,7 +109,7 @@ func TestNewWebSocketStreamConn(t *testing.T) {
 }
 
 func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	assert(testWithStreamConn(
@@ -205,7 +205,7 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 }
 
 func TestWebSocketStreamConn_ReadStream(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) status is not webSocketStreamConnRunning
 	assert(testWithStreamConn(
@@ -317,7 +317,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 }
 
 func TestWebSocketStreamConn_WriteStream(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) stream is nil
 	assert(testWithStreamConn(
@@ -389,7 +389,7 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 }
 
 func TestWebSocketStreamConn_Close(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	// Test(1) webSocketStreamConnRunning => webSocketStreamConnClosing no wait
 	assert(testWithStreamConn(
 		func(server IServerAdapter, conn IStreamConn) {
@@ -472,7 +472,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 }
 
 func TestNewWebSocketServerAdapter(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	assert(NewWebSocketServerAdapter("addrString")).Equals(&wsServerAdapter{
@@ -482,7 +482,7 @@ func TestNewWebSocketServerAdapter(t *testing.T) {
 }
 
 func TestWsServerAdapter_Open(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	assert(testRunWithCatchPanic(func() {
@@ -637,7 +637,7 @@ func (p fakeNetListener) Addr() net.Addr {
 }
 
 func TestWsServerAdapter_Close(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) onError is nil
 	assert(testRunWithCatchPanic(func() {
@@ -727,7 +727,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 }
 
 func TestNewWebSocketClientAdapter(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	assert(NewWebSocketClientAdapter("addrString").(*wsClientAdapter)).
@@ -738,7 +738,7 @@ func TestNewWebSocketClientAdapter(t *testing.T) {
 }
 
 func TestWsClientAdapter_Open(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	// Test(1)
 	assert(testRunWithCatchPanic(func() {
 		NewWebSocketClientAdapter("test").Open(func(conn IStreamConn) {}, nil)
@@ -854,7 +854,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 }
 
 func TestWsClientAdapter_Close(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) onError is nil
 	assert(testRunWithCatchPanic(func() {

@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestRTPosRecord(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	posArray := []int64{
 		0,
@@ -47,7 +47,7 @@ func TestRTPosRecord(t *testing.T) {
 }
 
 func TestGetFuncKind(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	fn1 := 3
 	assert(getFuncKind(reflect.ValueOf(fn1))).
@@ -155,7 +155,7 @@ func TestGetFuncKind(t *testing.T) {
 }
 
 func TestConvertTypeToString(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	assert(convertTypeToString(nil)).Equals("<nil>")
 	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
 	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
@@ -192,14 +192,14 @@ func BenchmarkRTPosRecord(b *testing.B) {
 func BenchmarkAddPrefixPerLine(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		util.AddPrefixPerLine("a\nb\nc", "test")
+		base.AddPrefixPerLine("a\nb\nc", "test")
 	}
 }
 
 func BenchmarkConcatString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		util.ConcatString("a", "b")
+		base.ConcatString("a", "b")
 	}
 }
 
@@ -207,7 +207,7 @@ func BenchmarkGetCodePosition(b *testing.B) {
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			util.AddFileLine("test", 0)
+			base.AddFileLine("test", 0)
 		}
 	})
 }
@@ -215,21 +215,21 @@ func BenchmarkGetCodePosition(b *testing.B) {
 func BenchmarkGetRandString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		util.GetRandString(128)
+		base.GetRandString(128)
 	}
 }
 
 func BenchmarkTimeNow(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		util.TimeNow()
+		base.TimeNow()
 	}
 }
 
 func BenchmarkTimeNowISOString(b *testing.B) {
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		util.TimeNowISOString()
+		base.TimeNowISOString()
 	}
 }
 

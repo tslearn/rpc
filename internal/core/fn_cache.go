@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"io/ioutil"
 	"os"
 	"path"
@@ -18,7 +18,7 @@ type rpcFuncMeta struct {
 }
 
 func getFuncBodyByKind(name string, kind string) (string, Error) {
-	sb := util.NewStringBuilder()
+	sb := base.NewStringBuilder()
 	defer sb.Release()
 
 	sb.AppendString(fmt.Sprintf(
@@ -136,7 +136,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, Error) {
 }
 
 func buildFuncCache(pkgName string, output string, kinds []string) Error {
-	sb := util.NewStringBuilder()
+	sb := base.NewStringBuilder()
 	defer sb.Release()
 	if metas, err := getFuncMetas(kinds); err == nil {
 		sb.AppendString(fmt.Sprintf("package %s\n\n", pkgName))

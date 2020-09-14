@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"sync"
 )
 
@@ -48,7 +48,7 @@ func NewService() *Service {
 	return &Service{
 		children: nil,
 		replies:  nil,
-		fileLine: util.GetFileLine(1),
+		fileLine: base.GetFileLine(1),
 		onMount:  nil,
 	}
 }
@@ -60,7 +60,7 @@ func NewServiceWithOnMount(
 	return &Service{
 		children: nil,
 		replies:  nil,
-		fileLine: util.GetFileLine(1),
+		fileLine: base.GetFileLine(1),
 		onMount:  onMount,
 	}
 }
@@ -77,7 +77,7 @@ func (p *Service) AddChildService(
 	p.children = append(p.children, &ServiceMeta{
 		name:     name,
 		service:  service,
-		fileLine: util.GetFileLine(1),
+		fileLine: base.GetFileLine(1),
 		data:     data,
 	})
 
@@ -96,7 +96,7 @@ func (p *Service) Reply(
 	p.replies = append(p.replies, &rpcReplyMeta{
 		name:     name,
 		handler:  handler,
-		fileLine: util.GetFileLine(1),
+		fileLine: base.GetFileLine(1),
 	})
 	return p
 }

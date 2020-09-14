@@ -2,7 +2,7 @@ package core
 
 import (
 	"errors"
-	"github.com/rpccloud/rpc/internal/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewThread(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 	fakeEvalBack := getFakeOnEvalBack()
 	fakeEvalFinish := getFakeOnEvalFinish()
 
@@ -58,7 +58,7 @@ func TestNewThread(t *testing.T) {
 }
 
 func TestRpcThread_Close(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
@@ -95,7 +95,7 @@ func TestRpcThread_Close(t *testing.T) {
 }
 
 func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
@@ -110,7 +110,7 @@ func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
 }
 
 func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
@@ -128,13 +128,13 @@ func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
 }
 
 func TestRpcThread_WriteError(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) ok
 	source1 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(rt Runtime, name string) Return {
-			ret, source := rt.Error(errors.New("error")), util.GetFileLine(0)
+			ret, source := rt.Error(errors.New("error")), base.GetFileLine(0)
 			source1 = source
 			return ret
 		},
@@ -151,7 +151,7 @@ func TestRpcThread_WriteError(t *testing.T) {
 }
 
 func TestRpcThread_WriteOK(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) value is endless loop
 	source1 := ""
@@ -159,7 +159,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 		func(rt Runtime, name string) Return {
 			v := make(Map)
 			v["v"] = v
-			ret, source := rt.OK(v), util.GetFileLine(0)
+			ret, source := rt.OK(v), base.GetFileLine(0)
 			source1 = source
 			return ret
 		},
@@ -189,7 +189,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 	source2 := ""
 	assert(testRunWithProcessor(true, nil,
 		func(rt Runtime, name string) Return {
-			ret, source := rt.OK(make(chan bool)), util.GetFileLine(0)
+			ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
 			source2 = source
 			return ret
 		},
@@ -227,7 +227,7 @@ func TestRpcThread_WriteOK(t *testing.T) {
 }
 
 func TestRpcThread_PutStream(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1)
 	thread1 := getFakeThread(true)
@@ -247,7 +247,7 @@ func TestRpcThread_PutStream(t *testing.T) {
 }
 
 func TestRpcThread_Eval1(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(1) read reply path error
 	assert(testRunWithProcessor(true, nil,
@@ -268,7 +268,7 @@ func TestRpcThread_Eval1(t *testing.T) {
 }
 
 func TestRpcThread_Eval(t *testing.T) {
-	assert := util.NewAssert(t)
+	assert := base.NewAssert(t)
 
 	// Test(0) basic
 	assert(testRunWithProcessor(true, nil,
