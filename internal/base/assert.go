@@ -2,8 +2,12 @@ package base
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"reflect"
 )
+
+var logWriter io.Writer = os.Stdout
 
 // Assert ...
 type Assert interface {
@@ -32,8 +36,7 @@ type rpcAssert struct {
 }
 
 func (p *rpcAssert) fail(reason string) {
-	fmt.Println(reason)
-	fmt.Println(GetFileLine(2))
+	fmt.Fprintf(logWriter, "\t%s\n\t%s\n", reason, GetFileLine(2))
 	p.t.Fail()
 }
 
@@ -54,8 +57,8 @@ func (p *rpcAssert) Equals(args ...interface{}) {
 				p.fail(fmt.Sprintf(
 					"%s argment is not equal\n\twant: \n%s\n\tgot: \n%s",
 					ConvertOrdinalToString(uint(i+1)),
-					AddPrefixPerLine(fmt.Sprintf("%v", args[i]), "\t\t"),
-					AddPrefixPerLine(fmt.Sprintf("%v", p.args[i]), "\t\t"),
+					AddPrefixPerLine(fmt.Sprintf("%v", args[i]), "\t"),
+					AddPrefixPerLine(fmt.Sprintf("%v", p.args[i]), "\t"),
 				))
 			}
 		}

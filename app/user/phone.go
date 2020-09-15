@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/app/util"
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	util2 "github.com/rpccloud/rpc/internal/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -48,7 +48,7 @@ func onPhoneServiceMount(service *core.Service, data interface{}) error {
 }
 
 func getGlobalPhone(zone string, phone string) string {
-	return util2.ConcatString(zone, " ", phone)
+	return base.ConcatString(zone, " ", phone)
 }
 
 func getCode(ctx rpc.Runtime, zone string, phone string) rpc.Return {
