@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net/url"
@@ -118,7 +119,7 @@ func Dial(connectString string) (*Client, Error) {
 
 	switch urlInfo.Scheme {
 	case "ws":
-		return newClient(core.NewWebSocketClientAdapter(connectString)), nil
+		return newClient(adapter.NewWebSocketClientAdapter(connectString)), nil
 	default:
 		return nil,
 			base.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))

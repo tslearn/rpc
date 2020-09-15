@@ -1,8 +1,9 @@
-package core
+package adapter
 
 import (
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/core"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -89,7 +90,7 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 func (p *webSocketStreamConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
-) (stream *Stream, err base.Error) {
+) (stream *core.Stream, err base.Error) {
 	atomic.StoreInt32(&p.reading, 1)
 	defer atomic.StoreInt32(&p.reading, 0)
 
@@ -107,14 +108,14 @@ func (p *webSocketStreamConn) ReadStream(
 	} else if mt != websocket.BinaryMessage {
 		return nil, base.NewTransportError("unsupported websocket protocol")
 	} else {
-		stream := NewStream()
+		stream := core.NewStream()
 		stream.PutBytesTo(message, 0)
 		return stream, nil
 	}
 }
 
 func (p *webSocketStreamConn) WriteStream(
-	stream *Stream,
+	stream *core.Stream,
 	timeout time.Duration,
 ) (err base.Error) {
 	atomic.StoreInt32(&p.writing, 1)
@@ -195,7 +196,7 @@ type wsServerAdapter struct {
 }
 
 // NewWebSocketServerAdapter ...
-func NewWebSocketServerAdapter(addr string) IServerAdapter {
+func NewWebSocketServerAdapter(addr string) core.IServerAdapter {
 	return &wsServerAdapter{
 		addr:     addr,
 		wsServer: nil,
@@ -204,7 +205,7 @@ func NewWebSocketServerAdapter(addr string) IServerAdapter {
 
 // Open ...
 func (p *wsServerAdapter) Open(
-	onConnRun func(IStreamConn, net.Addr),
+	onConnRun func(core.IStreamConn, net.Addr),
 	onError func(uint64, base.Error),
 ) {
 	if onError == nil {
@@ -266,13 +267,13 @@ func (p *wsServerAdapter) Close(onError func(uint64, base.Error)) {
 }
 
 type wsClientAdapter struct {
-	conn          IStreamConn
+	conn          core.IStreamConn
 	connectString string
 	base.StatusManager
 }
 
 // NewWebSocketClientAdapter ...
-func NewWebSocketClientAdapter(connectString string) IClientAdapter {
+func NewWebSocketClientAdapter(connectString string) core.IClientAdapter {
 	return &wsClientAdapter{
 		conn:          nil,
 		connectString: connectString,
@@ -280,7 +281,7 @@ func NewWebSocketClientAdapter(connectString string) IClientAdapter {
 }
 
 func (p *wsClientAdapter) Open(
-	onConnRun func(IStreamConn),
+	onConnRun func(core.IStreamConn),
 	onError func(base.Error),
 ) {
 	if onError == nil {
