@@ -397,7 +397,7 @@ func getFakeThread(debug bool) *rpcThread {
 
 func testRunWithSubscribePanic(fn func()) Error {
 	ch := make(chan Error, 1)
-	sub := subscribePanic(func(err Error) {
+	sub := SubscribePanic(func(err Error) {
 		ch <- err
 	})
 	defer sub.Close()

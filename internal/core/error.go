@@ -41,11 +41,11 @@ const (
 
 var (
 	gPanicMutex         = &sync.Mutex{}
-	gPanicSubscriptions = make([]*rpcPanicSubscription, 0)
+	gPanicSubscriptions = make([]*PanicSubscription, 0)
 )
 
-// reportPanic ...
-func reportPanic(err Error) {
+// ReportPanic ...
+func ReportPanic(err Error) {
 	defer func() {
 		_ = recover()
 	}()
@@ -60,8 +60,8 @@ func reportPanic(err Error) {
 	}
 }
 
-// subscribePanic ...
-func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
+// SubscribePanic ...
+func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	if onPanic == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
 	gPanicMutex.Lock()
 	defer gPanicMutex.Unlock()
 
-	ret := &rpcPanicSubscription{
+	ret := &PanicSubscription{
 		id:      base.GetSeed(),
 		onPanic: onPanic,
 	}
@@ -77,12 +77,12 @@ func subscribePanic(onPanic func(Error)) *rpcPanicSubscription {
 	return ret
 }
 
-type rpcPanicSubscription struct {
+type PanicSubscription struct {
 	id      int64
 	onPanic func(err Error)
 }
 
-func (p *rpcPanicSubscription) Close() bool {
+func (p *PanicSubscription) Close() bool {
 	if p == nil {
 		return false
 	}

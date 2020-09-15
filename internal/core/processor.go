@@ -48,7 +48,7 @@ type Processor struct {
 	freeCHArray       []chan *rpcThread
 	readThreadPos     uint64
 	writeThreadPos    uint64
-	panicSubscription *rpcPanicSubscription
+	panicSubscription *PanicSubscription
 	fnError           func(err Error)
 	sync.Mutex
 }
@@ -127,7 +127,7 @@ func NewProcessor(
 		}
 
 		// subscribe panic
-		ret.panicSubscription = subscribePanic(fnError)
+		ret.panicSubscription = SubscribePanic(fnError)
 
 		// start threads
 		freeCHArray := make([]chan *rpcThread, freeGroups)
