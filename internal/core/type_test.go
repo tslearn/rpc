@@ -353,10 +353,10 @@ func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
 	}
 }
 
-func testReadFromFile(filePath string) (string, Error) {
+func testReadFromFile(filePath string) (string, base.Error) {
 	ret, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return "", NewKernelPanic(err.Error())
+		return "", base.NewKernelPanic(err.Error())
 	}
 
 	// for windows, remove \r
@@ -395,9 +395,9 @@ func getFakeThread(debug bool) *rpcThread {
 	)
 }
 
-func testRunWithSubscribePanic(fn func()) Error {
-	ch := make(chan Error, 1)
-	sub := SubscribePanic(func(err Error) {
+func testRunWithSubscribePanic(fn func()) base.Error {
+	ch := make(chan base.Error, 1)
+	sub := base.SubscribePanic(func(err base.Error) {
 		ch <- err
 	})
 	defer sub.Close()
@@ -427,7 +427,7 @@ func testRunWithProcessor(
 	handler interface{},
 	getStream func(processor *Processor) *Stream,
 	onTest func(processor *Processor),
-) (ret interface{}, retError Error, retPanic Error) {
+) (ret interface{}, retError base.Error, retPanic base.Error) {
 	helper := newTestProcessorReturnHelper()
 	service := NewService().Reply("Eval", handler)
 
@@ -485,7 +485,7 @@ func testRunWithProcessor(
 func testRunOnContext(
 	isDebug bool,
 	fn func(processor *Processor, rt Runtime) Return,
-) (interface{}, Error, Error) {
+) (interface{}, base.Error, base.Error) {
 	processorCH := make(chan *Processor)
 	return testRunWithProcessor(
 		isDebug,
@@ -528,7 +528,7 @@ func (p *testProcessorReturnHelper) GetFunction() func(stream *Stream) {
 
 		stream.SetReadPosToBodyStart()
 		if kind, ok := stream.ReadUint64(); ok {
-			if kind == uint64(ErrorKindTransport) {
+			if kind == uint64(base.ErrorKindTransport) {
 				panic("it makes onEvalFinish panic")
 			}
 		}
@@ -549,10 +549,10 @@ func (p *testProcessorReturnHelper) WaitForFirstStream() {
 	<-p.firstReceiveCH
 }
 
-func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
+func (p *testProcessorReturnHelper) GetReturn() ([]Any, []base.Error, []base.Error) {
 	retArray := make([]Any, 0)
-	errorArray := make([]Error, 0)
-	panicArray := make([]Error, 0)
+	errorArray := make([]base.Error, 0)
+	panicArray := make([]base.Error, 0)
 	reportPanic := func(message string) {
 		go func() {
 			panic("message")
@@ -563,7 +563,7 @@ func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 		stream.SetReadPosToBodyStart()
 		if kind, ok := stream.ReadUint64(); !ok {
 			reportPanic("stream is bad")
-		} else if ErrorKind(kind) == ErrorKindNone {
+		} else if base.ErrorKind(kind) == base.ErrorKindNone {
 			if v, ok := stream.Read(); ok {
 				retArray = append(retArray, v)
 			} else {
@@ -575,20 +575,20 @@ func (p *testProcessorReturnHelper) GetReturn() ([]Any, []Error, []Error) {
 			} else if debug, ok := stream.ReadString(); !ok {
 				reportPanic("read debug error")
 			} else {
-				err := NewError(ErrorKind(kind), message, debug)
+				err := base.NewError(base.ErrorKind(kind), message, debug)
 
-				switch ErrorKind(kind) {
-				case ErrorKindProtocol:
+				switch base.ErrorKind(kind) {
+				case base.ErrorKindProtocol:
 					fallthrough
-				case ErrorKindTransport:
+				case base.ErrorKindTransport:
 					fallthrough
-				case ErrorKindReply:
+				case base.ErrorKindReply:
 					errorArray = append(errorArray, err)
-				case ErrorKindReplyPanic:
+				case base.ErrorKindReplyPanic:
 					fallthrough
-				case ErrorKindRuntimePanic:
+				case base.ErrorKindRuntimePanic:
 					fallthrough
-				case ErrorKindKernelPanic:
+				case base.ErrorKindKernelPanic:
 					panicArray = append(panicArray, err)
 				default:
 					reportPanic("kind error")

@@ -3,13 +3,12 @@ package rpc
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
 	"strconv"
 )
 
 // LogWriter ...
 type LogWriter interface {
-	Write(sessionID uint64, err core.Error)
+	Write(sessionID uint64, err base.Error)
 }
 
 // StdoutLogWriter ...
@@ -22,7 +21,7 @@ func NewStdoutLogWriter() LogWriter {
 
 func (p *StdoutLogWriter) Write(
 	sessionID uint64,
-	err core.Error,
+	err base.Error,
 ) {
 	sb := base.NewStringBuilder()
 	defer sb.Release()
@@ -40,12 +39,12 @@ func (p *StdoutLogWriter) Write(
 
 // CallbackLogWriter ...
 type CallbackLogWriter struct {
-	onWrite func(sessionId uint64, err core.Error)
+	onWrite func(sessionId uint64, err base.Error)
 }
 
 // NewCallbackLogWriter ...
 func NewCallbackLogWriter(
-	onWrite func(sessionId uint64, err core.Error),
+	onWrite func(sessionId uint64, err base.Error),
 ) LogWriter {
 	return &CallbackLogWriter{onWrite: onWrite}
 }
@@ -53,7 +52,7 @@ func NewCallbackLogWriter(
 // Write ...
 func (p *CallbackLogWriter) Write(
 	sessionID uint64,
-	err core.Error,
+	err base.Error,
 ) {
 	if p.onWrite != nil {
 		p.onWrite(sessionID, err)

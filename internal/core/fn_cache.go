@@ -17,7 +17,7 @@ type rpcFuncMeta struct {
 	identifier string
 }
 
-func getFuncBodyByKind(name string, kind string) (string, Error) {
+func getFuncBodyByKind(name string, kind string) (string, base.Error) {
 	sb := base.NewStringBuilder()
 	defer sb.Release()
 
@@ -69,7 +69,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 				callString = "stream.ReadRTMap(rt)"
 				typeArray = append(typeArray, "rpc.RTMap")
 			default:
-				return "nil", NewKernelPanic(fmt.Sprintf("error kind %s", kind))
+				return "nil", base.NewKernelPanic(fmt.Sprintf("error kind %s", kind))
 			}
 
 			condString := " else if"
@@ -100,7 +100,7 @@ func getFuncBodyByKind(name string, kind string) (string, Error) {
 	return sb.String(), nil
 }
 
-func getFuncMetas(kinds []string) ([]*rpcFuncMeta, Error) {
+func getFuncMetas(kinds []string) ([]*rpcFuncMeta, base.Error) {
 	sortKinds := make([]string, len(kinds))
 	copy(sortKinds, kinds)
 	sort.SliceStable(sortKinds, func(i, j int) bool {
@@ -119,7 +119,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, Error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, NewKernelPanic(fmt.Sprintf("duplicate kind %s", kind))
+			return nil, base.NewKernelPanic(fmt.Sprintf("duplicate kind %s", kind))
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
@@ -135,7 +135,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, Error) {
 	return ret, nil
 }
 
-func buildFuncCache(pkgName string, output string, kinds []string) Error {
+func buildFuncCache(pkgName string, output string, kinds []string) base.Error {
 	sb := base.NewStringBuilder()
 	defer sb.Release()
 	if metas, err := getFuncMetas(kinds); err == nil {
@@ -178,13 +178,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) Error {
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return NewRuntimePanic(err.Error())
+		return base.NewRuntimePanic(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return NewRuntimePanic(err.Error())
+		return base.NewRuntimePanic(err.Error())
 	} else {
 		return nil
 	}

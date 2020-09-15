@@ -70,8 +70,8 @@ func (p *sendItem) Timeout() bool {
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
-		stream.WriteUint64(uint64(core.ErrorKindReply))
-		stream.WriteString(core.ErrStringTimeout)
+		stream.WriteUint64(uint64(base.ErrorKindReply))
+		stream.WriteString(base.ErrStringTimeout)
 		stream.WriteString("")
 		p.returnCH <- stream
 		return true
@@ -113,7 +113,7 @@ func Dial(connectString string) (*Client, Error) {
 	urlInfo, err := url.Parse(connectString)
 
 	if err != nil {
-		return nil, core.NewRuntimePanic(err.Error())
+		return nil, base.NewRuntimePanic(err.Error())
 	}
 
 	switch urlInfo.Scheme {
@@ -121,7 +121,7 @@ func Dial(connectString string) (*Client, Error) {
 		return newClient(core.NewWebSocketClientAdapter(connectString)), nil
 	default:
 		return nil,
-			core.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))
+			base.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))
 	}
 }
 
@@ -181,7 +181,7 @@ func (p *Client) Close() bool {
 	if !p.statusManager.SetClosing(func(ch chan bool) {
 		waitCH = ch
 	}) {
-		p.onError(core.NewRuntimePanic(
+		p.onError(base.NewRuntimePanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 		return false
@@ -191,7 +191,7 @@ func (p *Client) Close() bool {
 	case <-waitCH:
 		return true
 	case <-time.After(20 * time.Second):
-		p.onError(core.NewRuntimePanic(
+		p.onError(base.NewRuntimePanic(
 			"can not close within 20 seconds",
 		).AddDebug(string(debug.Stack())))
 		return false
@@ -221,7 +221,7 @@ func (p *Client) initConn(conn core.IStreamConn) Error {
 	sendStream.WriteString(p.sessionString)
 
 	if conn == nil {
-		return core.NewKernelPanic(
+		return base.NewKernelPanic(
 			"Client: initConn: conn is nil",
 		).AddDebug(string(debug.Stack()))
 	} else if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
@@ -229,29 +229,29 @@ func (p *Client) initConn(conn core.IStreamConn) Error {
 	} else if backStream, err = conn.ReadStream(3*time.Second, 0); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if kind, ok := backStream.ReadInt64(); !ok ||
 		kind != controlStreamKindInitBack {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if seq, ok := backStream.ReadUint64(); !ok || seq != sequence {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if sessionString, ok := backStream.ReadString(); !ok ||
 		len(sessionString) < 34 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if readTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		readTimeoutMS <= 0 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if writeTimeoutMS, ok := backStream.ReadInt64(); !ok ||
 		writeTimeoutMS <= 0 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if readLimit, ok := backStream.ReadInt64(); !ok ||
 		readLimit <= 0 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if callBackSize, ok := backStream.ReadInt64(); !ok ||
 		callBackSize <= 0 {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else if !backStream.IsReadFinish() {
-		return core.NewProtocolError(core.ErrStringBadStream)
+		return base.NewProtocolError(base.ErrStringBadStream)
 	} else {
 		p.sessionString = sessionString
 		p.readTimeout = time.Duration(readTimeoutMS) * time.Millisecond
@@ -294,7 +294,7 @@ func (p *Client) onConnRun(conn core.IStreamConn) {
 	// receive messages
 	for p.statusManager.IsRunning() {
 		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
-			if e != core.ErrTransportStreamConnIsClosed {
+			if e != base.ErrTransportStreamConnIsClosed {
 				err = e
 			}
 			return
@@ -308,13 +308,13 @@ func (p *Client) onConnRun(conn core.IStreamConn) {
 			p.mutex.Unlock()
 		} else if kind, ok := stream.ReadInt64(); !ok ||
 			kind != controlStreamKindRequestIdsBack {
-			err = core.NewProtocolError(core.ErrStringBadStream)
+			err = base.NewProtocolError(base.ErrStringBadStream)
 			return
 		} else if maxCallbackID, ok := stream.ReadUint64(); !ok {
-			err = core.NewProtocolError(core.ErrStringBadStream)
+			err = base.NewProtocolError(base.ErrStringBadStream)
 			return
 		} else if !stream.IsReadFinish() {
-			err = core.NewProtocolError(core.ErrStringBadStream)
+			err = base.NewProtocolError(base.ErrStringBadStream)
 			return
 		} else {
 			p.mutex.Lock()
@@ -473,7 +473,7 @@ func (p *Client) SendMessage(
 	// write args
 	for i := 0; i < len(args); i++ {
 		if item.sendStream.Write(args[i]) != core.StreamWriteOK {
-			return nil, core.NewRuntimePanic(
+			return nil, base.NewRuntimePanic(
 				"Client: send: args not supported",
 			)
 		}
@@ -492,23 +492,23 @@ func (p *Client) SendMessage(
 
 	// wait for response
 	if stream := <-item.returnCH; stream == nil {
-		return nil, core.NewKernelPanic("stream is nil").
+		return nil, base.NewKernelPanic("stream is nil").
 			AddDebug(string(debug.Stack()))
 	} else if errKind, ok := stream.ReadUint64(); !ok {
-		return nil, core.NewProtocolError(core.ErrStringBadStream)
-	} else if errKind == uint64(core.ErrorKindNone) {
+		return nil, base.NewProtocolError(base.ErrStringBadStream)
+	} else if errKind == uint64(base.ErrorKindNone) {
 		if ret, ok := stream.Read(); ok {
 			return ret, nil
 		}
-		return nil, core.NewProtocolError(core.ErrStringBadStream)
+		return nil, base.NewProtocolError(base.ErrStringBadStream)
 	} else if message, ok := stream.ReadString(); !ok {
-		return nil, core.NewProtocolError(core.ErrStringBadStream)
+		return nil, base.NewProtocolError(base.ErrStringBadStream)
 	} else if dbg, ok := stream.ReadString(); !ok {
-		return nil, core.NewProtocolError(core.ErrStringBadStream)
+		return nil, base.NewProtocolError(base.ErrStringBadStream)
 	} else if !stream.IsReadFinish() {
-		return nil, core.NewProtocolError(core.ErrStringBadStream)
+		return nil, base.NewProtocolError(base.ErrStringBadStream)
 	} else {
-		return nil, core.NewError(core.ErrorKind(errKind), message, dbg)
+		return nil, base.NewError(base.ErrorKind(errKind), message, dbg)
 	}
 }
 

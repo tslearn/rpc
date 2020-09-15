@@ -58,7 +58,7 @@ var NewService = core.NewService
 var NewServiceWithOnMount = core.NewServiceWithOnMount
 
 // Error ...
-type Error = core.Error
+type Error = base.Error
 
 // Stream ...
 type Stream = core.Stream

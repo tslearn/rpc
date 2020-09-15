@@ -25,13 +25,13 @@ type webSocketStreamConn struct {
 	sync.Mutex
 }
 
-func toTransportError(err error) Error {
+func toTransportError(err error) base.Error {
 	if err == nil {
 		return nil
 	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		return ErrTransportStreamConnIsClosed
+		return base.ErrTransportStreamConnIsClosed
 	} else {
-		return NewTransportError(err.Error())
+		return base.NewTransportError(err.Error())
 	}
 }
 
@@ -55,7 +55,7 @@ func (p *webSocketStreamConn) writeMessage(
 	messageType int,
 	data []byte,
 	timeout time.Duration,
-) Error {
+) base.Error {
 	p.Lock()
 	defer p.Unlock()
 	_ = p.conn.SetWriteDeadline(base.TimeNow().Add(timeout))
@@ -89,7 +89,7 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 func (p *webSocketStreamConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
-) (stream *Stream, err Error) {
+) (stream *Stream, err base.Error) {
 	atomic.StoreInt32(&p.reading, 1)
 	defer atomic.StoreInt32(&p.reading, 0)
 
@@ -99,13 +99,13 @@ func (p *webSocketStreamConn) ReadStream(
 		webSocketStreamConnRunning,
 		webSocketStreamConnRunning,
 	) {
-		return nil, ErrTransportStreamConnIsClosed
+		return nil, base.ErrTransportStreamConnIsClosed
 	} else if e := p.conn.SetReadDeadline(base.TimeNow().Add(timeout)); e != nil {
 		return nil, toTransportError(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
 		return nil, toTransportError(e)
 	} else if mt != websocket.BinaryMessage {
-		return nil, NewTransportError("unsupported websocket protocol")
+		return nil, base.NewTransportError("unsupported websocket protocol")
 	} else {
 		stream := NewStream()
 		stream.PutBytesTo(message, 0)
@@ -116,18 +116,18 @@ func (p *webSocketStreamConn) ReadStream(
 func (p *webSocketStreamConn) WriteStream(
 	stream *Stream,
 	timeout time.Duration,
-) (err Error) {
+) (err base.Error) {
 	atomic.StoreInt32(&p.writing, 1)
 	defer atomic.StoreInt32(&p.writing, 0)
 
 	if stream == nil {
-		return NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
+		return base.NewKernelPanic("stream is nil").AddDebug(string(debug.Stack()))
 	} else if !atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
 		webSocketStreamConnRunning,
 	) {
-		return ErrTransportStreamConnIsClosed
+		return base.ErrTransportStreamConnIsClosed
 	} else {
 		return p.writeMessage(
 			websocket.BinaryMessage,
@@ -137,7 +137,7 @@ func (p *webSocketStreamConn) WriteStream(
 	}
 }
 
-func (p *webSocketStreamConn) Close() Error {
+func (p *webSocketStreamConn) Close() base.Error {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
@@ -205,7 +205,7 @@ func NewWebSocketServerAdapter(addr string) IServerAdapter {
 // Open ...
 func (p *wsServerAdapter) Open(
 	onConnRun func(IStreamConn, net.Addr),
-	onError func(uint64, Error),
+	onError func(uint64, base.Error),
 ) {
 	if onError == nil {
 		panic("onError is nil")
@@ -215,7 +215,7 @@ func (p *wsServerAdapter) Open(
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-				onError(0, NewTransportError(err.Error()))
+				onError(0, base.NewTransportError(err.Error()))
 			} else {
 				streamConn := newWebSocketStreamConn(conn)
 				onConnRun(streamConn, conn.RemoteAddr())
@@ -226,12 +226,12 @@ func (p *wsServerAdapter) Open(
 			Handler: mux,
 		}
 	}) {
-		onError(0, NewKernelPanic(
+		onError(0, base.NewKernelPanic(
 			"it is already running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		if e := p.wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
-			onError(0, NewRuntimePanic(e.Error()))
+			onError(0, base.NewRuntimePanic(e.Error()))
 		}
 		p.SetClosing(nil)
 		p.SetClosed(func() {
@@ -241,24 +241,24 @@ func (p *wsServerAdapter) Open(
 }
 
 // Close ...
-func (p *wsServerAdapter) Close(onError func(uint64, Error)) {
+func (p *wsServerAdapter) Close(onError func(uint64, base.Error)) {
 	waitCH := chan bool(nil)
 	if onError == nil {
 		panic("onError is nil")
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.wsServer.Close(); e != nil {
-			onError(0, NewRuntimePanic(e.Error()))
+			onError(0, base.NewRuntimePanic(e.Error()))
 		}
 	}) {
-		onError(0, NewKernelPanic(
+		onError(0, base.NewKernelPanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			onError(0, NewRuntimePanic(
+			onError(0, base.NewRuntimePanic(
 				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}
@@ -281,7 +281,7 @@ func NewWebSocketClientAdapter(connectString string) IClientAdapter {
 
 func (p *wsClientAdapter) Open(
 	onConnRun func(IStreamConn),
-	onError func(Error),
+	onError func(base.Error),
 ) {
 	if onError == nil {
 		panic("onError is nil")
@@ -291,14 +291,14 @@ func (p *wsClientAdapter) Open(
 		p.connectString,
 		nil,
 	); err != nil {
-		onError(NewRuntimePanic(err.Error()))
+		onError(base.NewRuntimePanic(err.Error()))
 	} else {
 		streamConn := newWebSocketStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn
 		}) {
 			_ = conn.Close()
-			onError(NewKernelPanic(
+			onError(base.NewKernelPanic(
 				"it is already running",
 			).AddDebug(string(debug.Stack())))
 		} else {
@@ -311,7 +311,7 @@ func (p *wsClientAdapter) Open(
 	}
 }
 
-func (p *wsClientAdapter) Close(onError func(Error)) {
+func (p *wsClientAdapter) Close(onError func(base.Error)) {
 	waitCH := chan bool(nil)
 
 	if onError == nil {
@@ -319,17 +319,17 @@ func (p *wsClientAdapter) Close(onError func(Error)) {
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.conn.Close(); e != nil {
-			onError(NewRuntimePanic(e.Error()))
+			onError(base.NewRuntimePanic(e.Error()))
 		}
 	}) {
-		onError(NewKernelPanic(
+		onError(base.NewKernelPanic(
 			"it is not running",
 		).AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			onError(NewRuntimePanic(
+			onError(base.NewRuntimePanic(
 				"it cannot be closed within 5 seconds",
 			).AddDebug(string(debug.Stack())))
 		}

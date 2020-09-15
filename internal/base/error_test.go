@@ -1,7 +1,6 @@
-package core
+package base
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 )
 
@@ -17,7 +16,7 @@ func TestReportPanic(t *testing.T) {
 }
 
 func TestSubscribePanic(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := SubscribePanic(nil)
@@ -34,7 +33,7 @@ func TestSubscribePanic(t *testing.T) {
 }
 
 func TestRpcPanicSubscription_Close(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := (*PanicSubscription)(nil)
@@ -51,7 +50,7 @@ func TestRpcPanicSubscription_Close(t *testing.T) {
 }
 
 func TestNewError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := NewError(ErrorKindRuntimePanic, "message", "fileLine")
@@ -61,7 +60,7 @@ func TestNewError(t *testing.T) {
 }
 
 func TestNewReplyError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewReplyError("message")).
@@ -69,7 +68,7 @@ func TestNewReplyError(t *testing.T) {
 }
 
 func TestNewReplyPanic(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewReplyPanic("message")).
@@ -77,7 +76,7 @@ func TestNewReplyPanic(t *testing.T) {
 }
 
 func TestNewRuntimeError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewRuntimePanic("message")).
@@ -85,7 +84,7 @@ func TestNewRuntimeError(t *testing.T) {
 }
 
 func TestNewProtocolError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewProtocolError("message")).
@@ -93,7 +92,7 @@ func TestNewProtocolError(t *testing.T) {
 }
 
 func TestNewTransportError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewTransportError("message")).
@@ -101,7 +100,7 @@ func TestNewTransportError(t *testing.T) {
 }
 
 func TestNewKernelError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewKernelPanic("message")).
@@ -109,7 +108,7 @@ func TestNewKernelError(t *testing.T) {
 }
 
 func TestNewSecurityLimitError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewSecurityLimitError("message")).
@@ -117,7 +116,7 @@ func TestNewSecurityLimitError(t *testing.T) {
 }
 
 func TestConvertToError(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(ConvertToError(0)).IsNil()
@@ -133,7 +132,7 @@ func TestConvertToError(t *testing.T) {
 }
 
 func TestRpcError_GetKind(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
@@ -141,7 +140,7 @@ func TestRpcError_GetKind(t *testing.T) {
 }
 
 func TestRpcError_GetMessage(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
@@ -149,7 +148,7 @@ func TestRpcError_GetMessage(t *testing.T) {
 }
 
 func TestRpcError_GetDebug(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
@@ -157,7 +156,7 @@ func TestRpcError_GetDebug(t *testing.T) {
 }
 
 func TestRpcError_AddDebug(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	o1 := NewError(ErrorKindKernelPanic, "message", "")
@@ -169,7 +168,7 @@ func TestRpcError_AddDebug(t *testing.T) {
 }
 
 func TestRpcError_Error(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	assert(NewError(ErrorKindKernelPanic, "", "").Error()).Equals("")

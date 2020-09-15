@@ -95,7 +95,7 @@ func (p *Server) AddService(
 	defer p.Unlock()
 
 	if p.IsRunning() {
-		p.onError(0, core.NewRuntimePanic(
+		p.onError(0, base.NewRuntimePanic(
 			"AddService must be called before Serve",
 		).AddDebug(base.GetFileLine(1)))
 	} else {

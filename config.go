@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/base"
 	"runtime"
 	"sync"
 	"time"
@@ -54,13 +54,13 @@ func (p *sessionConfig) setConcurrency(
 	defer p.Unlock()
 
 	if p.locked {
-		onError(0, core.NewRuntimePanic("config is locked").AddDebug(dbg))
+		onError(0, base.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if concurrency <= 0 {
-		onError(0, core.NewRuntimePanic(
+		onError(0, base.NewRuntimePanic(
 			"sessionConcurrency must be greater than 0",
 		).AddDebug(dbg))
 	} else if concurrency > sessionConfigMaxConcurrency {
-		onError(0, core.NewRuntimePanic(fmt.Sprintf(
+		onError(0, base.NewRuntimePanic(fmt.Sprintf(
 			"sessionConcurrency must be less than or equal to %d",
 			sessionConfigMaxConcurrency,
 		)).AddDebug(dbg))
@@ -78,9 +78,9 @@ func (p *sessionConfig) setTransportLimit(
 	defer p.Unlock()
 
 	if p.locked {
-		onError(0, core.NewRuntimePanic("config is locked").AddDebug(dbg))
+		onError(0, base.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if maxTransportBytes < sessionConfigMinTransportLimit {
-		onError(0, core.NewRuntimePanic(fmt.Sprintf(
+		onError(0, base.NewRuntimePanic(fmt.Sprintf(
 			"maxTransportBytes must be greater than or equal to %d",
 			sessionConfigMinTransportLimit,
 		)).AddDebug(dbg))
@@ -125,7 +125,7 @@ func (p *serverConfig) setDebug(
 	defer p.Unlock()
 
 	if p.locked {
-		onError(0, core.NewRuntimePanic("config is locked").AddDebug(dbg))
+		onError(0, base.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else {
 		p.isDebug = isDebug
 	}
@@ -140,9 +140,9 @@ func (p *serverConfig) setNumOfThreads(
 	defer p.Unlock()
 
 	if p.locked {
-		onError(0, core.NewRuntimePanic("config is locked").AddDebug(dbg))
+		onError(0, base.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else if numOfThreads <= 0 {
-		onError(0, core.NewRuntimePanic(
+		onError(0, base.NewRuntimePanic(
 			"numOfThreads must be greater than 0",
 		).AddDebug(dbg))
 	} else {
@@ -159,7 +159,7 @@ func (p *serverConfig) setReplyCache(
 	defer p.Unlock()
 
 	if p.locked {
-		onError(0, core.NewRuntimePanic("config is locked").AddDebug(dbg))
+		onError(0, base.NewRuntimePanic("config is locked").AddDebug(dbg))
 	} else {
 		p.replyCache = replyCache
 	}

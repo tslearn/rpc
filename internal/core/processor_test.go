@@ -28,7 +28,7 @@ func TestNewProcessor(t *testing.T) {
 	).IsNil()
 	_, _, panicArray2 := helper2.GetReturn()
 	assert(len(panicArray2)).Equals(1)
-	assert(panicArray2[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray2[0].GetKind()).Equals(base.ErrorKindKernelPanic)
 	assert(panicArray2[0].GetMessage()).Equals("numOfThreads is wrong")
 	assert(strings.Contains(panicArray2[0].GetDebug(), "NewProcessor")).IsTrue()
 
@@ -39,7 +39,7 @@ func TestNewProcessor(t *testing.T) {
 	).IsNil()
 	_, _, panicArray3 := helper3.GetReturn()
 	assert(len(panicArray3)).Equals(1)
-	assert(panicArray3[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray3[0].GetKind()).Equals(base.ErrorKindKernelPanic)
 	assert(panicArray3[0].GetMessage()).Equals("maxNodeDepth is wrong")
 	assert(strings.Contains(panicArray3[0].GetDebug(), "NewProcessor")).IsTrue()
 
@@ -50,7 +50,7 @@ func TestNewProcessor(t *testing.T) {
 	).IsNil()
 	_, _, panicArray4 := helper4.GetReturn()
 	assert(len(panicArray4)).Equals(1)
-	assert(panicArray4[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray4[0].GetKind()).Equals(base.ErrorKindKernelPanic)
 	assert(panicArray4[0].GetMessage()).Equals("maxCallDepth is wrong")
 	assert(strings.Contains(panicArray4[0].GetDebug(), "NewProcessor")).IsTrue()
 
@@ -68,7 +68,7 @@ func TestNewProcessor(t *testing.T) {
 	)).IsNil()
 	_, _, panicArray5 := helper5.GetReturn()
 	assert(len(panicArray5)).Equals(1)
-	assert(panicArray5[0].GetKind()).Equals(ErrorKindKernelPanic)
+	assert(panicArray5[0].GetKind()).Equals(base.ErrorKindKernelPanic)
 	assert(panicArray5[0].GetMessage()).Equals("nodeMeta is nil")
 	assert(strings.Contains(panicArray5[0].GetDebug(), "NewProcessor")).IsTrue()
 
@@ -157,8 +157,8 @@ func TestProcessor_Close(t *testing.T) {
 	}
 	assert(processor2.Close()).IsFalse()
 	lock2.Lock()
-	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{
-		NewReplyPanic(
+	assert(helper2.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{
+		base.NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine2 + " (1 goroutine)",
 		),
@@ -199,8 +199,8 @@ func TestProcessor_Close(t *testing.T) {
 	}
 	assert(processor3.Close()).IsFalse()
 	lock3.Lock()
-	assert(helper3.GetReturn()).Equals([]Any{}, []Error{}, []Error{
-		NewReplyPanic(
+	assert(helper3.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{
+		base.NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine3 + " (2 goroutines)",
 		),
@@ -237,7 +237,7 @@ func TestProcessor_fnError(t *testing.T) {
 	assert := base.NewAssert(t)
 
 	// Test(1)
-	err1 := NewRuntimePanic("message").AddDebug("debug")
+	err1 := base.NewRuntimePanic("message").AddDebug("debug")
 	helper1 := newTestProcessorReturnHelper()
 	processor1 := NewProcessor(
 		true,
@@ -251,7 +251,7 @@ func TestProcessor_fnError(t *testing.T) {
 	)
 	defer processor1.Close()
 	processor1.fnError(err1)
-	assert(helper1.GetReturn()).Equals([]Any{}, []Error{}, []Error{err1})
+	assert(helper1.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{err1})
 }
 
 func TestProcessor_BuildCache(t *testing.T) {
@@ -278,7 +278,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	)
 	defer processor1.Close()
 	assert(processor1.BuildCache("pkgName", tmpFile1)).IsNil()
-	assert(helper1.GetReturn()).Equals([]Any{}, []Error{}, []Error{})
+	assert(helper1.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{})
 	assert(testReadFromFile(tmpFile1)).Equals(testReadFromFile(snapshotFile3))
 
 	// Test(2)
@@ -303,7 +303,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	)
 	defer processor2.Close()
 	assert(processor2.BuildCache("pkgName", tmpFile2)).IsNil()
-	assert(helper2.GetReturn()).Equals([]Any{}, []Error{}, []Error{})
+	assert(helper2.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{})
 	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
 
 	// Test(3)
@@ -323,7 +323,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		"pkgName",
 		path.Join(currDir, "processor_test.go/err_dir.go"),
 	)
-	assert(err1.GetKind()).Equals(ErrorKindRuntimePanic)
+	assert(err1.GetKind()).Equals(base.ErrorKindRuntimePanic)
 	assert(strings.Contains(err1.GetMessage(), "processor_test.go")).
 		IsTrue()
 }
@@ -333,7 +333,7 @@ func TestProcessor_mountNode(t *testing.T) {
 
 	fnTestMount := func(
 		services []*ServiceMeta,
-		wantPanicKind ErrorKind,
+		wantPanicKind base.ErrorKind,
 		wantPanicMessage string,
 		wantPanicDebug string,
 	) {
@@ -349,13 +349,13 @@ func TestProcessor_mountNode(t *testing.T) {
 			helper.GetFunction(),
 		)).IsNil()
 		retArray, errArray, panicArray := helper.GetReturn()
-		assert(retArray, errArray).Equals([]Any{}, []Error{})
+		assert(retArray, errArray).Equals([]Any{}, []base.Error{})
 		assert(len(panicArray)).Equals(1)
 
 		assert(panicArray[0].GetKind()).Equals(wantPanicKind)
 		assert(panicArray[0].GetMessage()).Equals(wantPanicMessage)
 
-		if wantPanicKind == ErrorKindKernelPanic {
+		if wantPanicKind == base.ErrorKindKernelPanic {
 			assert(strings.Contains(panicArray[0].GetDebug(), "goroutine")).IsTrue()
 			assert(strings.Contains(panicArray[0].GetDebug(), "[running]")).IsTrue()
 			assert(strings.Contains(panicArray[0].GetDebug(), "mountNode")).IsTrue()
@@ -369,21 +369,21 @@ func TestProcessor_mountNode(t *testing.T) {
 	// Test(1)
 	fnTestMount([]*ServiceMeta{
 		nil,
-	}, ErrorKindKernelPanic, "nodeMeta is nil", "")
+	}, base.ErrorKindKernelPanic, "nodeMeta is nil", "")
 
 	// Test(2)
 	fnTestMount([]*ServiceMeta{{
 		name:     "+",
 		service:  NewService(),
 		fileLine: "DebugMessage",
-	}}, ErrorKindRuntimePanic, "service name + is illegal", "DebugMessage")
+	}}, base.ErrorKindRuntimePanic, "service name + is illegal", "DebugMessage")
 
 	// Test(3)
 	fnTestMount([]*ServiceMeta{{
 		name:     "abc",
 		service:  nil,
 		fileLine: "DebugMessage",
-	}}, ErrorKindRuntimePanic, "service is nil", "DebugMessage")
+	}}, base.ErrorKindRuntimePanic, "service is nil", "DebugMessage")
 
 	// Test(4)
 	s4, source1 := NewService().
@@ -394,7 +394,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			service:  NewService().AddChildService("s", s4, nil),
 			fileLine: "DebugMessage",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"service path #.s.s.s is too long",
 		source1,
 	)
@@ -410,7 +410,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			service:  NewService(),
 			fileLine: "Debug2",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"duplicated service name user",
 		"current:\n\tDebug2\nconflict:\n\tDebug1",
 	)
@@ -426,7 +426,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "DebugService",
 		}},
-		ErrorKindKernelPanic,
+		base.ErrorKindKernelPanic,
 		"meta is nil",
 		"DebugReply",
 	)
@@ -446,7 +446,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "Debug1",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"reply name - is illegal",
 		"DebugReply",
 	)
@@ -466,7 +466,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "Debug1",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"handler is nil",
 		"DebugReply",
 	)
@@ -486,7 +486,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "Debug1",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"handler must be func(rt rpc.Runtime, ...) rpc.Return",
 		"DebugReply",
 	)
@@ -506,7 +506,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "Debug1",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"handler 1st argument type must be rpc.Runtime",
 		"DebugReply",
 	)
@@ -530,7 +530,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			},
 			fileLine: "Debug1",
 		}},
-		ErrorKindRuntimePanic,
+		base.ErrorKindRuntimePanic,
 		"reply name Eval is duplicated",
 		"current:\n\tDebugReply2\nconflict:\n\tDebugReply1",
 	)

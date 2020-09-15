@@ -1,7 +1,6 @@
-package core
+package base
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"sync"
 )
 
@@ -70,7 +69,7 @@ func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	defer gPanicMutex.Unlock()
 
 	ret := &PanicSubscription{
-		id:      base.GetSeed(),
+		id:      GetSeed(),
 		onPanic: onPanic,
 	}
 	gPanicSubscriptions = append(gPanicSubscriptions, ret)
@@ -194,7 +193,7 @@ func (p *rpcError) AddDebug(debug string) Error {
 }
 
 func (p *rpcError) Error() string {
-	sb := base.NewStringBuilder()
+	sb := NewStringBuilder()
 	defer sb.Release()
 
 	if p.message != "" {

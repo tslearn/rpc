@@ -115,21 +115,21 @@ func convertTypeToString(reflectType reflect.Type) string {
 
 // IStreamConn ...
 type IStreamConn interface {
-	ReadStream(timeout time.Duration, readLimit int64) (*Stream, Error)
-	WriteStream(stream *Stream, timeout time.Duration) Error
-	Close() Error
+	ReadStream(timeout time.Duration, readLimit int64) (*Stream, base.Error)
+	WriteStream(stream *Stream, timeout time.Duration) base.Error
+	Close() base.Error
 }
 
 // IServerAdapter ...
 type IServerAdapter interface {
-	Open(onConnRun func(IStreamConn, net.Addr), onError func(uint64, Error))
-	Close(onError func(uint64, Error))
+	Open(onConnRun func(IStreamConn, net.Addr), onError func(uint64, base.Error))
+	Close(onError func(uint64, base.Error))
 }
 
 // IClientAdapter ...
 type IClientAdapter interface {
-	Open(onConnRun func(IStreamConn), onError func(Error))
-	Close(onError func(Error))
+	Open(onConnRun func(IStreamConn), onError func(base.Error))
+	Close(onError func(base.Error))
 }
 
 // ReplyCache ...
