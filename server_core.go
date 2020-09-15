@@ -269,7 +269,7 @@ type serverCore struct {
 	hub         streamHub
 	sessionMap  sync.Map
 	sessionSeed uint64
-	core.StatusManager
+	base.StatusManager
 	sync.Mutex
 }
 

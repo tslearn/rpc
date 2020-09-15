@@ -191,7 +191,7 @@ var (
 type wsServerAdapter struct {
 	addr     string
 	wsServer *http.Server
-	StatusManager
+	base.StatusManager
 }
 
 // NewWebSocketServerAdapter ...
@@ -268,7 +268,7 @@ func (p *wsServerAdapter) Close(onError func(uint64, Error)) {
 type wsClientAdapter struct {
 	conn          IStreamConn
 	connectString string
-	StatusManager
+	base.StatusManager
 }
 
 // NewWebSocketClientAdapter ...

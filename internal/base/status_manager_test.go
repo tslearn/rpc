@@ -1,13 +1,12 @@
-package core
+package base
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 	"time"
 )
 
 func TestStatusManager_SetRunning(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	assert(StatusManager{}.status).Equals(statusManagerClosed)
 	assert(StatusManager{}.closeCH).IsNil()
@@ -58,7 +57,7 @@ func TestStatusManager_SetRunning(t *testing.T) {
 }
 
 func TestStatusManager_SetClosing(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	mgr1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
@@ -123,7 +122,7 @@ func TestStatusManager_SetClosing(t *testing.T) {
 }
 
 func TestStatusManager_SetClosed(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	mgr1 := &StatusManager{
@@ -177,7 +176,7 @@ func TestStatusManager_SetClosed(t *testing.T) {
 }
 
 func TestStatusManager_IsRunning(t *testing.T) {
-	assert := base.NewAssert(t)
+	assert := NewAssert(t)
 
 	// Test(1)
 	mgr1 := &StatusManager{status: statusManagerClosed, closeCH: nil}

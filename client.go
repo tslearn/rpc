@@ -104,7 +104,7 @@ type Client struct {
 	callbackSize         int64
 	lastControlSendTime  time.Time
 	lastTimeoutCheckTime time.Time
-	statusManager        core.StatusManager
+	statusManager        base.StatusManager
 	mutex                *sync.Mutex
 }
 
@@ -142,7 +142,7 @@ func newClient(adapter core.IClientAdapter) *Client {
 		callbackSize:         0,
 		lastControlSendTime:  time.Now().Add(-10 * time.Second),
 		lastTimeoutCheckTime: time.Now().Add(-10 * time.Second),
-		statusManager:        core.StatusManager{},
+		statusManager:        base.StatusManager{},
 		mutex:                &sync.Mutex{},
 	}
 

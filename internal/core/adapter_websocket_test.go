@@ -497,7 +497,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 	// Test(3) it is already running
 	_ = testRunWithSubscribePanic(func() {
 		serverAdapter := NewWebSocketServerAdapter("test").(*wsServerAdapter)
-		serverAdapter.status = statusManagerRunning
+		serverAdapter.SetRunning(func() {})
 		waitCH := make(chan Error, 1)
 
 		serverAdapter.Open(
@@ -693,7 +693,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 
 		time.Sleep(200 * time.Millisecond)
 
-		serverAdapter.(*wsServerAdapter).mutex.Lock()
+		// serverAdapter.(*wsServerAdapter).mutex.Lock()
 		// make fake error
 		wsServer := serverAdapter.(*wsServerAdapter).wsServer
 		httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
@@ -707,7 +707,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 			&fakeListener: {},
 		}
 		httpServerMuPointer.Unlock()
-		serverAdapter.(*wsServerAdapter).mutex.Unlock()
+		// serverAdapter.(*wsServerAdapter).mutex.Unlock()
 
 		errCount := 0
 		serverAdapter.Close(func(_ uint64, e Error) {
@@ -778,7 +778,10 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		clientAdapter := NewWebSocketClientAdapter(
 			"ws://127.0.0.1:12345",
 		).(*wsClientAdapter)
-		clientAdapter.status = statusManagerClosing
+
+		clientAdapter.SetRunning(func() {})
+		clientAdapter.SetClosing(func(ch chan bool) {})
+
 		waitCH := make(chan Error, 1)
 
 		clientAdapter.Open(
