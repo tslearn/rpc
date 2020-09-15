@@ -68,20 +68,11 @@ func TestRpcAssert_Fail(t *testing.T) {
 	t.Run("Report reason and source", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
-
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
 			func() { o().Fail("error"); source = GetFileLine(0) }()
-		})).Equals(true, "\terror\n\t"+source+"")
+		})).Equals(true, "\terror\n\t"+source+"\n")
 	})
 }
-
-//
-//func TestAssert_Fail(t *testing.T) {
-//  assert := NewAssert(t)
-//  assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//    assert(nil).Fail("test")
-//  })).IsTrue()
-//}
 
 //func TestAssert_Equals(t *testing.T) {
 //	assert := NewAssert(t)
