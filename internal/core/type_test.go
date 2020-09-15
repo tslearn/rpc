@@ -233,18 +233,6 @@ func BenchmarkTimeNowISOString(b *testing.B) {
 	}
 }
 
-func BenchmarkRunWithPanicCatch(b *testing.B) {
-	a := uint64(0)
-	b.ReportAllocs()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			testRunWithCatchPanic(func() {
-				a = a + 1
-			})
-		}
-	})
-}
-
 type testFuncCache struct{}
 
 func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
@@ -393,32 +381,6 @@ func getFakeThread(debug bool) *rpcThread {
 		getFakeOnEvalBack(),
 		getFakeOnEvalFinish(),
 	)
-}
-
-func testRunWithSubscribePanic(fn func()) base.Error {
-	ch := make(chan base.Error, 1)
-	sub := base.SubscribePanic(func(err base.Error) {
-		ch <- err
-	})
-	defer sub.Close()
-
-	fn()
-
-	select {
-	case err := <-ch:
-		return err
-	default:
-		return nil
-	}
-}
-
-func testRunWithCatchPanic(fn func()) (ret interface{}) {
-	defer func() {
-		ret = recover()
-	}()
-
-	fn()
-	return
 }
 
 func testRunWithProcessor(

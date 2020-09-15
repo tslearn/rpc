@@ -76,6 +76,32 @@ func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	return ret
 }
 
+func TestRunWithCatchPanic(fn func()) (ret interface{}) {
+	defer func() {
+		ret = recover()
+	}()
+
+	fn()
+	return
+}
+
+func TestRunWithSubscribePanic(fn func()) Error {
+	ch := make(chan Error, 1)
+	sub := SubscribePanic(func(err Error) {
+		ch <- err
+	})
+	defer sub.Close()
+
+	fn()
+
+	select {
+	case err := <-ch:
+		return err
+	default:
+		return nil
+	}
+}
+
 type PanicSubscription struct {
 	id      int64
 	onPanic func(err Error)
