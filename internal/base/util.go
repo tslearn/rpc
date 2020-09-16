@@ -326,8 +326,3 @@ func ConvertOrdinalToString(n uint) string {
 		return strconv.Itoa(int(n)) + "th"
 	}
 }
-
-func GetTypeString(v interface{}) string {
-	rv := reflect.ValueOf(&v)
-	return rv.Type().String()
-}
