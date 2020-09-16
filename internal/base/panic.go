@@ -8,7 +8,7 @@ var (
 )
 
 // ReportPanic ...
-func ReportPanic(v interface{}) {
+func ReportPanic(err Error) {
 	defer func() {
 		_ = recover()
 	}()
@@ -18,13 +18,13 @@ func ReportPanic(v interface{}) {
 
 	for _, sub := range gPanicSubscriptions {
 		if sub != nil && sub.onPanic != nil {
-			sub.onPanic(v)
+			sub.onPanic(err)
 		}
 	}
 }
 
 // SubscribePanic ...
-func SubscribePanic(onPanic func(interface{})) *PanicSubscription {
+func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	if onPanic == nil {
 		return nil
 	}
@@ -49,18 +49,18 @@ func TestRunWithCatchPanic(fn func()) (ret interface{}) {
 	return
 }
 
-func TestRunWithSubscribePanic(fn func()) interface{} {
-	ch := make(chan interface{}, 1)
-	sub := SubscribePanic(func(v interface{}) {
-		ch <- v
+func TestRunWithSubscribePanic(fn func()) Error {
+	ch := make(chan Error, 1)
+	sub := SubscribePanic(func(err Error) {
+		ch <- err
 	})
 	defer sub.Close()
 
 	fn()
 
 	select {
-	case v := <-ch:
-		return v
+	case err := <-ch:
+		return err
 	default:
 		return nil
 	}
@@ -68,7 +68,7 @@ func TestRunWithSubscribePanic(fn func()) interface{} {
 
 type PanicSubscription struct {
 	id      int64
-	onPanic func(v interface{})
+	onPanic func(err Error)
 }
 
 func (p *PanicSubscription) Close() bool {
