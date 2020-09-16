@@ -43,48 +43,58 @@ func TestSubscribePanic(t *testing.T) {
 	})
 }
 
-//
-//func TestReportPanic(t *testing.T) {
-//	//assert := base.NewAssert(t)
-//	//
-//	//// Test(1)
-//	//assert(testRunWithSubscribePanic(
-//	//	func() {
-//	//		PublishPanic(NewReplyPanic("reply panic error"))
-//	//	},
-//	//)).Equal(NewReplyPanic("reply panic error"))
-//}
-//
-//func TestSubscribePanic(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := SubscribePanic(nil)
-//	assert(o1).IsNil()
-//
-//	// Test(2)
-//	o2 := SubscribePanic(func(v Error) {})
-//	defer o2.Close()
-//	assert(o2).IsNotNil()
-//	assert(o2.id > 0).IsTrue()
-//	assert(o2.onPanic).IsNotNil()
-//	assert(len(gPanicSubscriptions)).Equal(1)
-//	assert(gPanicSubscriptions[0]).Equal(o2)
-//}
-//
-//func TestRpcPanicSubscription_Close(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := (*PanicSubscription)(nil)
-//	assert(o1.Close()).IsFalse()
-//
-//	// Test(2)
-//	o2 := SubscribePanic(func(e Error) {})
-//	assert(o2.Close()).IsTrue()
-//
-//	// Test(3)
-//	o3 := SubscribePanic(func(e Error) {})
-//	o3.Close()
-//	assert(o3.Close()).IsFalse()
-//}
+func TestPublishPanic(t *testing.T) {
+	t.Run("onPanic goes panic", func(t *testing.T) {
+		assert := NewAssert(t)
+		retCH := make(chan Error, 1)
+		err := NewError(ErrorKindKernelPanic, "message", "debug")
+		v1 := SubscribePanic(func(e Error) {
+			retCH <- e
+			panic("error")
+		})
+		defer v1.Close()
+		PublishPanic(err)
+		assert(<-retCH).Equal(err)
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		retCH := make(chan Error, 1)
+		err := NewError(ErrorKindKernelPanic, "message", "debug")
+		v1 := SubscribePanic(func(e Error) {
+			retCH <- e
+		})
+		defer v1.Close()
+		PublishPanic(err)
+		assert(<-retCH).Equal(err)
+	})
+}
+
+func TestRunWithCatchPanic(t *testing.T) {
+	t.Run("func with panic", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {
+			panic("error")
+		})).Equal("error")
+	})
+
+	t.Run("func without panic", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {})).IsNil()
+	})
+}
+
+func TestRunWithSubscribePanic(t *testing.T) {
+	t.Run("func with PublishPanic", func(t *testing.T) {
+		assert := NewAssert(t)
+		err := NewError(ErrorKindKernelPanic, "message", "debug")
+		assert(RunWithSubscribePanic(func() {
+			PublishPanic(err)
+		})).Equal(err)
+	})
+
+	t.Run("func without PublishPanic", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithSubscribePanic(func() {})).IsNil()
+	})
+}
