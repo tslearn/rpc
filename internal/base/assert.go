@@ -36,7 +36,7 @@ type rpcAssert struct {
 }
 
 func (p *rpcAssert) fail(reason string) {
-	fmt.Fprintf(logWriter, "\t%s\n\t%s\n", reason, GetFileLine(2))
+	_, _ = fmt.Fprintf(logWriter, "\t%s\n\t%s\n", reason, GetFileLine(2))
 	p.t.Fail()
 }
 
