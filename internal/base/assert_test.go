@@ -2,6 +2,7 @@ package base
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -65,7 +66,7 @@ func TestNewAssert(t *testing.T) {
 }
 
 func TestRpcAssert_Fail(t *testing.T) {
-	t.Run("Report reason and source", func(t *testing.T) {
+	t.Run("Fail ok", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -74,72 +75,143 @@ func TestRpcAssert_Fail(t *testing.T) {
 	})
 }
 
-//func TestAssert_Equals(t *testing.T) {
-//	assert := NewAssert(t)
-//	assert(nil).Equal(nil)
-//	assert(3).Equal(3)
-//	assert((interface{})(nil)).Equal(nil)
-//	assert((Assert)(nil)).Equal((Assert)(nil))
-//	assert(nil).Equal((interface{})(nil))
-//	assert((Assert)(nil)).Equal((Assert)(nil))
-//	assert([]int{1, 2, 3}).Equal([]int{1, 2, 3})
-//	assert(map[int]string{3: "OK", 4: "NO"}).
-//		Equal(map[int]string{4: "NO", 3: "OK"})
-//
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(nil).Equal(0)
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(3).Equal(uint(3))
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert((interface{})(nil)).Equal(0)
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert([]int{1, 2, 3}).Equal([]int64{1, 2, 3})
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert([]int{1, 2, 3}).Equal([]int32{1, 2, 3})
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(map[int]string{3: "OK", 4: "NO"}).
-//			Equal(map[int64]string{4: "NO", 3: "OK"})
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().Equal(3)
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(3, 3).Equal(3)
-//	})).IsTrue()
-//}
-//
-//func TestAssert_IsNil(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	assert(nil).IsNil()
-//	assert((Assert)(nil)).IsNil()
-//	assert((unsafe.Pointer)(nil)).IsNil()
-//
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(uintptr(0)).IsNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(NewAssert(t)).IsNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(32).IsNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(false).IsNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(0).IsNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().IsNil()
-//	})).IsTrue()
-//}
-//
+func TestAssert_Equals(t *testing.T) {
+	t.Run("Arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o().Equal(); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
+	})
+
+	t.Run("Arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(1).Equal(1, 2); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments length not match\n\t"+source+"\n")
+	})
+
+	t.Run("Arguments is not equal", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(1).Equal(2); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"int(2)",
+			"int(1)",
+			source,
+		))
+	})
+
+	t.Run("Arguments type is not equal", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(1).Equal(int64(1)); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"int64(1)",
+			"int(1)",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o([]interface{}(nil)).Equal(nil); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"<nil>(<nil>)",
+			"[]interface {}([])",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := map[string]interface{}(nil)
+			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"<nil>(<nil>)",
+			"map[string]interface {}(map[])",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := map[int]interface{}{3: "OK", 4: []byte(nil)}
+			v2 := map[int]interface{}{3: "OK", 4: nil}
+			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"map[int]interface {}(map[3:OK 4:<nil>])",
+			"map[int]interface {}(map[3:OK 4:[]])",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := []int{1, 2, 3}
+			v2 := []int64{1, 2, 3}
+			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"[]int64([1 2 3])",
+			"[]int([1 2 3])",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := []int{1, 2, 3}
+			v2 := []int{1, 3, 2}
+			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"[]int([1 3 2])",
+			"[]int([1 2 3])",
+			source,
+		))
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(3).Equal(3)
+		assert(nil).Equal(nil)
+		assert((interface{})(nil)).Equal(nil)
+		assert((Assert)(nil)).Equal(nil)
+		assert(nil).Equal((Assert)(nil))
+		assert(nil).Equal((interface{})(nil))
+		assert([]int{1, 2, 3}).Equal([]int{1, 2, 3})
+		assert(map[int]string{3: "OK", 4: "NO"}).
+			Equal(map[int]string{4: "NO", 3: "OK"})
+	})
+}
+
+func TestAssert_IsNil(t *testing.T) {
+	//assert := NewAssert(t)
+	//
+	//assert(nil).IsNil()
+	//assert((Assert)(nil)).IsNil()
+	//assert((unsafe.Pointer)(nil)).IsNil()
+	//
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert(uintptr(0)).IsNil()
+	//})).IsTrue()
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert(NewAssert(t)).IsNil()
+	//})).IsTrue()
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert(32).IsNil()
+	//})).IsTrue()
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert(false).IsNil()
+	//})).IsTrue()
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert(0).IsNil()
+	//})).IsTrue()
+	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
+	//	assert().IsNil()
+	//})).IsTrue()
+}
+
 //func TestAssert_IsNotNil(t *testing.T) {
 //	assert := NewAssert(t)
 //	assert(t).IsNotNil()
