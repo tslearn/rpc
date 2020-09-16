@@ -85,12 +85,12 @@ func TestToTransportError(t *testing.T) {
 	// Test(2)
 	assert(toTransportError(&websocket.CloseError{
 		Code: websocket.CloseNormalClosure,
-	})).Equals(base.ErrTransportStreamConnIsClosed)
+	})).Equal(base.ErrTransportStreamConnIsClosed)
 
 	// Test(3)
 	assert(toTransportError(&websocket.CloseError{
 		Code: websocket.CloseAbnormalClosure,
-	})).Equals(base.NewTransportError("websocket: close 1006 (abnormal closure)"))
+	})).Equal(base.NewTransportError("websocket: close 1006 (abnormal closure)"))
 }
 
 func TestNewWebSocketStreamConn(t *testing.T) {
@@ -100,10 +100,10 @@ func TestNewWebSocketStreamConn(t *testing.T) {
 	wsConn := &websocket.Conn{}
 	sc1 := newWebSocketStreamConn(wsConn)
 	assert(fmt.Sprintf("%p", wsConn.CloseHandler())).
-		Equals(fmt.Sprintf("%p", sc1.onCloseMessage))
-	assert(sc1.status).Equals(webSocketStreamConnRunning)
-	assert(sc1.conn).Equals(wsConn)
-	assert(cap(sc1.closeCH)).Equals(1)
+		Equal(fmt.Sprintf("%p", sc1.onCloseMessage))
+	assert(sc1.status).Equal(webSocketStreamConnRunning)
+	assert(sc1.conn).Equal(wsConn)
+	assert(cap(sc1.closeCH)).Equal(1)
 
 	// Test(2)
 	assert(newWebSocketStreamConn(nil)).IsNil()
@@ -131,9 +131,9 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 				"",
 			)).IsNil()
 			assert(atomic.LoadInt32(&testConn.status)).
-				Equals(webSocketStreamConnCanClose)
+				Equal(webSocketStreamConnCanClose)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(2)
 	assert(testWithStreamConn(
@@ -154,9 +154,9 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 				"",
 			)).IsNil()
 			assert(atomic.LoadInt32(&testConn.status)).
-				Equals(webSocketStreamConnCanClose)
+				Equal(webSocketStreamConnCanClose)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(3)
 	assert(testWithStreamConn(
@@ -177,9 +177,9 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 				"",
 			)).IsNil()
 			assert(atomic.LoadInt32(&testConn.status)).
-				Equals(webSocketStreamConnCanClose)
+				Equal(webSocketStreamConnCanClose)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(4)
 	assert(testWithStreamConn(
@@ -200,9 +200,9 @@ func TestWebSocketStreamConn_onCloseMessage(t *testing.T) {
 				"",
 			)).IsNil()
 			assert(atomic.LoadInt32(&testConn.status)).
-				Equals(webSocketStreamConnClosed)
+				Equal(webSocketStreamConnClosed)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 }
 
 func TestWebSocketStreamConn_ReadStream(t *testing.T) {
@@ -222,10 +222,10 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 			// status is not running
 			assert(conn.ReadStream(time.Second, 999999)).
-				Equals((*core.Stream)(nil), base.ErrTransportStreamConnIsClosed)
-			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
+				Equal((*core.Stream)(nil), base.ErrTransportStreamConnIsClosed)
+			assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(2) SetReadDeadline Error
 	testWithStreamConn(
@@ -241,7 +241,7 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 			// make error
 			makeConnSetReadDeadlineError(testConn.conn)
 			stream, err := testConn.ReadStream(time.Second, 999999)
-			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
+			assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			assert(stream).IsNil()
 			assert(err).IsNotNil()
 		},
@@ -260,13 +260,13 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage timeout
 			stream, err := testConn.ReadStream(-time.Second, 999999)
-			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
+			assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			assert(stream).IsNil()
 			if err != nil {
 				assert(strings.Contains(err.GetMessage(), "timeout")).IsTrue()
 			}
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(4) type is websocket.TextMessage
 	assert(testWithStreamConn(
@@ -282,13 +282,13 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 		func(client core.IClientAdapter, conn core.IStreamConn) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
-			assert(testConn.ReadStream(time.Second, 999999)).Equals(
+			assert(testConn.ReadStream(time.Second, 999999)).Equal(
 				(*core.Stream)(nil),
 				base.NewTransportError("unsupported websocket protocol"),
 			)
-			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
+			assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(5) OK
 	assert(testWithStreamConn(
@@ -307,14 +307,14 @@ func TestWebSocketStreamConn_ReadStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			// ReadMessage type is websocket.TextMessage
 			stream, err := testConn.ReadStream(time.Second, 999999)
-			assert(atomic.LoadInt32(&testConn.reading)).Equals(int32(0))
+			assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			assert(stream).IsNotNil()
 			assert(err).IsNil()
-			assert(string(stream.GetBufferUnsafe())).Equals(
+			assert(string(stream.GetBufferUnsafe())).Equal(
 				"hello-world-hello-world-hello-world-hello-world-",
 			)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 }
 
 func TestWebSocketStreamConn_WriteStream(t *testing.T) {
@@ -333,11 +333,11 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			err := testConn.WriteStream(nil, time.Second)
 			assert(err).IsNotNil()
-			assert(err.GetMessage()).Equals("stream is nil")
+			assert(err.GetMessage()).Equal("stream is nil")
 			assert(strings.Contains(err.GetDebug(), "websocket.go"))
 			assert(strings.Contains(err.GetDebug(), "WriteStream"))
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(2) status is not webSocketStreamConnRunning
 	assert(testWithStreamConn(
@@ -352,9 +352,9 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 			assert(testConn.WriteStream(core.NewStream(), time.Second)).
-				Equals(base.ErrTransportStreamConnIsClosed)
+				Equal(base.ErrTransportStreamConnIsClosed)
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(3) timeout
 	assert(testWithStreamConn(
@@ -371,7 +371,7 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 			assert(err).IsNotNil()
 			assert(strings.Contains(err.GetMessage(), "timeout")).IsTrue()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(4) OK
 	assert(testWithStreamConn(
@@ -386,7 +386,7 @@ func TestWebSocketStreamConn_WriteStream(t *testing.T) {
 			testConn := conn.(*webSocketStreamConn)
 			assert(testConn.WriteStream(core.NewStream(), time.Second)).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 }
 
 func TestWebSocketStreamConn_Close(t *testing.T) {
@@ -403,7 +403,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 		func(client core.IClientAdapter, conn core.IStreamConn) {
 			assert(conn.Close()).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(2) webSocketStreamConnRunning => webSocketStreamConnClosing wait ok
 	assert(testWithStreamConn(
@@ -421,7 +421,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			assert(conn.Close()).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(3) webSocketStreamConnRunning => webSocketStreamConnClosing
 	// wait failed
@@ -436,7 +436,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			assert(conn.Close()).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(4) webSocketStreamConnCanClose => webSocketStreamConnClosed
 	assert(testWithStreamConn(
@@ -453,7 +453,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 			testConn.closeCH <- true
 			assert(conn.Close()).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 
 	// Test(5) webSocketStreamConnClosed => webSocketStreamConnClosed
 	assert(testWithStreamConn(
@@ -469,14 +469,14 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 			atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 			assert(conn.Close()).IsNil()
 		},
-	)).Equals([]base.Error{})
+	)).Equal([]base.Error{})
 }
 
 func TestNewWebSocketServerAdapter(t *testing.T) {
 	assert := base.NewAssert(t)
 
 	// Test(1)
-	assert(NewWebSocketServerAdapter("addrString")).Equals(&wsServerAdapter{
+	assert(NewWebSocketServerAdapter("addrString")).Equal(&wsServerAdapter{
 		addr:     "addrString",
 		wsServer: nil,
 	})
@@ -488,12 +488,12 @@ func TestWsServerAdapter_Open(t *testing.T) {
 	// Test(1)
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketServerAdapter("test").Open(func(core.IStreamConn, net.Addr) {}, nil)
-	})).Equals("onError is nil")
+	})).Equal("onError is nil")
 
 	// Test(2)
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketServerAdapter("test").Open(nil, func(uint64, base.Error) {})
-	})).Equals("onConnRun is nil")
+	})).Equal("onConnRun is nil")
 
 	// Test(3) it is already running
 	_ = base.TestRunWithSubscribePanic(func() {
@@ -509,7 +509,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		)
 
 		err := <-waitCH
-		assert(err.GetMessage()).Equals("it is already running")
+		assert(err.GetMessage()).Equal("it is already running")
 		assert(strings.Contains(err.GetDebug(), "goroutine")).IsTrue()
 		assert(strings.Contains(err.GetDebug(), "[running]")).IsTrue()
 		assert(strings.Contains(err.GetDebug(), "Open")).IsTrue()
@@ -529,7 +529,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 
 		err := <-waitCH
 		assert(strings.Contains(err.GetMessage(), "error-addr")).IsTrue()
-		assert(err.GetDebug()).Equals("")
+		assert(err.GetDebug()).Equal("")
 	})
 
 	// Test(5) server OK, but conn upgrade error
@@ -559,7 +559,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 			err.GetMessage(),
 			"the client is not using the websocket protocol",
 		)).IsTrue()
-		assert(err.GetDebug()).Equals("")
+		assert(err.GetDebug()).Equal("")
 	})
 
 	// Test(6) OK
@@ -643,12 +643,12 @@ func TestWsServerAdapter_Close(t *testing.T) {
 	// Test(1) onError is nil
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketServerAdapter("test").Close(nil)
-	})).Equals("onError is nil")
+	})).Equal("onError is nil")
 
 	// Test(2) SetClosing is false
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketServerAdapter("test").Close(func(_ uint64, e base.Error) {
-			assert(e.GetMessage()).Equals("it is not running")
+			assert(e.GetMessage()).Equal("it is not running")
 			assert(strings.Contains(e.GetDebug(), "goroutine")).IsTrue()
 			assert(strings.Contains(e.GetDebug(), "[running]")).IsTrue()
 			assert(strings.Contains(e.GetDebug(), "Close")).IsTrue()
@@ -713,11 +713,11 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		errCount := 0
 		serverAdapter.Close(func(_ uint64, e base.Error) {
 			if errCount == 0 {
-				assert(e.GetKind()).Equals(base.ErrorKindRuntimePanic)
-				assert(e.GetMessage()).Equals("test error")
+				assert(e.GetKind()).Equal(base.ErrorKindRuntimePanic)
+				assert(e.GetMessage()).Equal("test error")
 			} else if errCount == 1 {
-				assert(e.GetKind()).Equals(base.ErrorKindRuntimePanic)
-				assert(e.GetMessage()).Equals("it cannot be closed within 5 seconds")
+				assert(e.GetKind()).Equal(base.ErrorKindRuntimePanic)
+				assert(e.GetMessage()).Equal("it cannot be closed within 5 seconds")
 			} else {
 				assert().Fail("error run here")
 			}
@@ -732,7 +732,7 @@ func TestNewWebSocketClientAdapter(t *testing.T) {
 
 	// Test(1)
 	assert(NewWebSocketClientAdapter("addrString").(*wsClientAdapter)).
-		Equals(&wsClientAdapter{
+		Equal(&wsClientAdapter{
 			connectString: "addrString",
 			conn:          nil,
 		})
@@ -743,12 +743,12 @@ func TestWsClientAdapter_Open(t *testing.T) {
 	// Test(1)
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketClientAdapter("test").Open(func(conn core.IStreamConn) {}, nil)
-	})).Equals("onError is nil")
+	})).Equal("onError is nil")
 
 	// Test(2)
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketClientAdapter("test").Open(nil, func(e base.Error) {})
-	})).Equals("onConnRun is nil")
+	})).Equal("onConnRun is nil")
 
 	// Test(3) dial error
 	_ = base.TestRunWithSubscribePanic(func() {
@@ -794,7 +794,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 
 		err := <-waitCH
 
-		assert(err.GetMessage()).Equals("it is already running")
+		assert(err.GetMessage()).Equal("it is already running")
 		assert(strings.Contains(err.GetDebug(), "goroutine")).IsTrue()
 		assert(strings.Contains(err.GetDebug(), "[running]")).IsTrue()
 		assert(strings.Contains(err.GetDebug(), "Open")).IsTrue()
@@ -863,12 +863,12 @@ func TestWsClientAdapter_Close(t *testing.T) {
 	// Test(1) onError is nil
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketClientAdapter("test").Close(nil)
-	})).Equals("onError is nil")
+	})).Equal("onError is nil")
 
 	// Test(2) SetClosing is false
 	assert(base.TestRunWithCatchPanic(func() {
 		NewWebSocketClientAdapter("test").Close(func(e base.Error) {
-			assert(e.GetMessage()).Equals("it is not running")
+			assert(e.GetMessage()).Equal("it is not running")
 			assert(strings.Contains(e.GetDebug(), "goroutine")).IsTrue()
 			assert(strings.Contains(e.GetDebug(), "[running]")).IsTrue()
 			assert(strings.Contains(e.GetDebug(), "Close")).IsTrue()

@@ -48,19 +48,19 @@ func TestNewAssert(t *testing.T) {
 	t.Run("NewAssert t is nil", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(nil)
-		assert(o(true)).Equals(&rpcAssert{t: nil, args: []interface{}{true}})
+		assert(o(true)).Equal(&rpcAssert{t: nil, args: []interface{}{true}})
 	})
 
 	t.Run("NewAssert args is nil", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(t)
-		assert(o()).Equals(&rpcAssert{t: t, args: nil})
+		assert(o()).Equal(&rpcAssert{t: t, args: nil})
 	})
 
 	t.Run("NewAssert ok", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(t)
-		assert(o(true, 1)).Equals(&rpcAssert{t: t, args: []interface{}{true, 1}})
+		assert(o(true, 1)).Equal(&rpcAssert{t: t, args: []interface{}{true, 1}})
 	})
 }
 
@@ -70,46 +70,46 @@ func TestRpcAssert_Fail(t *testing.T) {
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
 			func() { o().Fail("error"); source = GetFileLine(0) }()
-		})).Equals(true, "\terror\n\t"+source+"\n")
+		})).Equal(true, "\terror\n\t"+source+"\n")
 	})
 }
 
 //func TestAssert_Equals(t *testing.T) {
 //	assert := NewAssert(t)
-//	assert(nil).Equals(nil)
-//	assert(3).Equals(3)
-//	assert((interface{})(nil)).Equals(nil)
-//	assert((Assert)(nil)).Equals((Assert)(nil))
-//	assert(nil).Equals((interface{})(nil))
-//	assert((Assert)(nil)).Equals((Assert)(nil))
-//	assert([]int{1, 2, 3}).Equals([]int{1, 2, 3})
+//	assert(nil).Equal(nil)
+//	assert(3).Equal(3)
+//	assert((interface{})(nil)).Equal(nil)
+//	assert((Assert)(nil)).Equal((Assert)(nil))
+//	assert(nil).Equal((interface{})(nil))
+//	assert((Assert)(nil)).Equal((Assert)(nil))
+//	assert([]int{1, 2, 3}).Equal([]int{1, 2, 3})
 //	assert(map[int]string{3: "OK", 4: "NO"}).
-//		Equals(map[int]string{4: "NO", 3: "OK"})
+//		Equal(map[int]string{4: "NO", 3: "OK"})
 //
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(nil).Equals(0)
+//		assert(nil).Equal(0)
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(3).Equals(uint(3))
+//		assert(3).Equal(uint(3))
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert((interface{})(nil)).Equals(0)
+//		assert((interface{})(nil)).Equal(0)
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert([]int{1, 2, 3}).Equals([]int64{1, 2, 3})
+//		assert([]int{1, 2, 3}).Equal([]int64{1, 2, 3})
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert([]int{1, 2, 3}).Equals([]int32{1, 2, 3})
+//		assert([]int{1, 2, 3}).Equal([]int32{1, 2, 3})
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
 //		assert(map[int]string{3: "OK", 4: "NO"}).
-//			Equals(map[int64]string{4: "NO", 3: "OK"})
+//			Equal(map[int64]string{4: "NO", 3: "OK"})
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().Equals(3)
+//		assert().Equal(3)
 //	})).IsTrue()
 //	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(3, 3).Equals(3)
+//		assert(3, 3).Equal(3)
 //	})).IsTrue()
 //}
 //

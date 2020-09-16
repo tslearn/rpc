@@ -12,7 +12,7 @@ var logWriter io.Writer = os.Stdout
 // Assert ...
 type Assert interface {
 	Fail(reason string)
-	Equals(args ...interface{})
+	Equal(args ...interface{})
 	IsNil()
 	IsNotNil()
 	IsTrue()
@@ -46,7 +46,7 @@ func (p *rpcAssert) Fail(reason string) {
 }
 
 // Equals ...
-func (p *rpcAssert) Equals(args ...interface{}) {
+func (p *rpcAssert) Equal(args ...interface{}) {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else if len(p.args) != len(args) {

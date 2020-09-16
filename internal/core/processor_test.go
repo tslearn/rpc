@@ -27,9 +27,9 @@ func TestNewProcessor(t *testing.T) {
 		NewProcessor(true, 0, 1, 1, nil, 5*time.Second, nil, helper2.GetFunction()),
 	).IsNil()
 	_, _, panicArray2 := helper2.GetReturn()
-	assert(len(panicArray2)).Equals(1)
-	assert(panicArray2[0].GetKind()).Equals(base.ErrorKindKernelPanic)
-	assert(panicArray2[0].GetMessage()).Equals("numOfThreads is wrong")
+	assert(len(panicArray2)).Equal(1)
+	assert(panicArray2[0].GetKind()).Equal(base.ErrorKindKernelPanic)
+	assert(panicArray2[0].GetMessage()).Equal("numOfThreads is wrong")
 	assert(strings.Contains(panicArray2[0].GetDebug(), "NewProcessor")).IsTrue()
 
 	// Test(3) maxNodeDepth <= 0
@@ -38,9 +38,9 @@ func TestNewProcessor(t *testing.T) {
 		NewProcessor(true, 1, 0, 1, nil, 5*time.Second, nil, helper3.GetFunction()),
 	).IsNil()
 	_, _, panicArray3 := helper3.GetReturn()
-	assert(len(panicArray3)).Equals(1)
-	assert(panicArray3[0].GetKind()).Equals(base.ErrorKindKernelPanic)
-	assert(panicArray3[0].GetMessage()).Equals("maxNodeDepth is wrong")
+	assert(len(panicArray3)).Equal(1)
+	assert(panicArray3[0].GetKind()).Equal(base.ErrorKindKernelPanic)
+	assert(panicArray3[0].GetMessage()).Equal("maxNodeDepth is wrong")
 	assert(strings.Contains(panicArray3[0].GetDebug(), "NewProcessor")).IsTrue()
 
 	// Test(4) maxCallDepth <= 0
@@ -49,9 +49,9 @@ func TestNewProcessor(t *testing.T) {
 		NewProcessor(true, 1, 1, 0, nil, 5*time.Second, nil, helper4.GetFunction()),
 	).IsNil()
 	_, _, panicArray4 := helper4.GetReturn()
-	assert(len(panicArray4)).Equals(1)
-	assert(panicArray4[0].GetKind()).Equals(base.ErrorKindKernelPanic)
-	assert(panicArray4[0].GetMessage()).Equals("maxCallDepth is wrong")
+	assert(len(panicArray4)).Equal(1)
+	assert(panicArray4[0].GetKind()).Equal(base.ErrorKindKernelPanic)
+	assert(panicArray4[0].GetMessage()).Equal("maxCallDepth is wrong")
 	assert(strings.Contains(panicArray4[0].GetDebug(), "NewProcessor")).IsTrue()
 
 	// Test(5) mount service error
@@ -67,9 +67,9 @@ func TestNewProcessor(t *testing.T) {
 		helper5.GetFunction(),
 	)).IsNil()
 	_, _, panicArray5 := helper5.GetReturn()
-	assert(len(panicArray5)).Equals(1)
-	assert(panicArray5[0].GetKind()).Equals(base.ErrorKindKernelPanic)
-	assert(panicArray5[0].GetMessage()).Equals("nodeMeta is nil")
+	assert(len(panicArray5)).Equal(1)
+	assert(panicArray5[0].GetKind()).Equal(base.ErrorKindKernelPanic)
+	assert(panicArray5[0].GetMessage()).Equal("nodeMeta is nil")
 	assert(strings.Contains(panicArray5[0].GetDebug(), "NewProcessor")).IsTrue()
 
 	// Test(6) OK
@@ -100,21 +100,21 @@ func TestNewProcessor(t *testing.T) {
 	}
 	assert(processor6).IsNotNil()
 	assert(processor6.isDebug).IsTrue()
-	assert(len(processor6.repliesMap)).Equals(1)
-	assert(len(processor6.servicesMap)).Equals(2)
-	assert(processor6.maxNodeDepth).Equals(uint16(2))
-	assert(processor6.maxCallDepth).Equals(uint16(3))
-	assert(len(processor6.threads)).Equals(2048)
-	assert(len(processor6.freeCHArray)).Equals(freeGroups)
-	assert(processor6.readThreadPos).Equals(uint64(2048))
+	assert(len(processor6.repliesMap)).Equal(1)
+	assert(len(processor6.servicesMap)).Equal(2)
+	assert(processor6.maxNodeDepth).Equal(uint16(2))
+	assert(processor6.maxCallDepth).Equal(uint16(3))
+	assert(len(processor6.threads)).Equal(2048)
+	assert(len(processor6.freeCHArray)).Equal(freeGroups)
+	assert(processor6.readThreadPos).Equal(uint64(2048))
 	assert(processor6.fnError).IsNotNil()
 	processor6.Close()
-	assert(processor6.writeThreadPos).Equals(uint64(2048))
+	assert(processor6.writeThreadPos).Equal(uint64(2048))
 	sumFrees := 0
 	for _, freeCH := range processor6.freeCHArray {
 		sumFrees += len(freeCH)
 	}
-	assert(sumFrees).Equals(2048)
+	assert(sumFrees).Equal(2048)
 }
 
 func TestProcessor_Close(t *testing.T) {
@@ -157,7 +157,7 @@ func TestProcessor_Close(t *testing.T) {
 	}
 	assert(processor2.Close()).IsFalse()
 	lock2.Lock()
-	assert(helper2.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{
+	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 		base.NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine2 + " (1 goroutine)",
@@ -199,7 +199,7 @@ func TestProcessor_Close(t *testing.T) {
 	}
 	assert(processor3.Close()).IsFalse()
 	lock3.Lock()
-	assert(helper3.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{
+	assert(helper3.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 		base.NewReplyPanic(
 			"the following replies can not close: \n\t" +
 				replyFileLine3 + " (2 goroutines)",
@@ -251,7 +251,7 @@ func TestProcessor_fnError(t *testing.T) {
 	)
 	defer processor1.Close()
 	processor1.fnError(err1)
-	assert(helper1.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{err1})
+	assert(helper1.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{err1})
 }
 
 func TestProcessor_BuildCache(t *testing.T) {
@@ -278,8 +278,8 @@ func TestProcessor_BuildCache(t *testing.T) {
 	)
 	defer processor1.Close()
 	assert(processor1.BuildCache("pkgName", tmpFile1)).IsNil()
-	assert(helper1.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{})
-	assert(testReadFromFile(tmpFile1)).Equals(testReadFromFile(snapshotFile3))
+	assert(helper1.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{})
+	assert(testReadFromFile(tmpFile1)).Equal(testReadFromFile(snapshotFile3))
 
 	// Test(2)
 	tmpFile2 := path.Join(currDir, "_tmp_/test-processor-02.go")
@@ -303,8 +303,8 @@ func TestProcessor_BuildCache(t *testing.T) {
 	)
 	defer processor2.Close()
 	assert(processor2.BuildCache("pkgName", tmpFile2)).IsNil()
-	assert(helper2.GetReturn()).Equals([]Any{}, []base.Error{}, []base.Error{})
-	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
+	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{})
+	assert(testReadFromFile(tmpFile2)).Equal(testReadFromFile(snapshotFile2))
 
 	// Test(3)
 	helper3 := newTestProcessorReturnHelper()
@@ -323,7 +323,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		"pkgName",
 		path.Join(currDir, "processor_test.go/err_dir.go"),
 	)
-	assert(err1.GetKind()).Equals(base.ErrorKindRuntimePanic)
+	assert(err1.GetKind()).Equal(base.ErrorKindRuntimePanic)
 	assert(strings.Contains(err1.GetMessage(), "processor_test.go")).
 		IsTrue()
 }
@@ -349,11 +349,11 @@ func TestProcessor_mountNode(t *testing.T) {
 			helper.GetFunction(),
 		)).IsNil()
 		retArray, errArray, panicArray := helper.GetReturn()
-		assert(retArray, errArray).Equals([]Any{}, []base.Error{})
-		assert(len(panicArray)).Equals(1)
+		assert(retArray, errArray).Equal([]Any{}, []base.Error{})
+		assert(len(panicArray)).Equal(1)
 
-		assert(panicArray[0].GetKind()).Equals(wantPanicKind)
-		assert(panicArray[0].GetMessage()).Equals(wantPanicMessage)
+		assert(panicArray[0].GetKind()).Equal(wantPanicKind)
+		assert(panicArray[0].GetMessage()).Equal(wantPanicMessage)
 
 		if wantPanicKind == base.ErrorKindKernelPanic {
 			assert(strings.Contains(panicArray[0].GetDebug(), "goroutine")).IsTrue()
@@ -362,7 +362,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			assert(strings.Contains(panicArray[0].GetDebug(), "NewProcessor")).
 				IsTrue()
 		} else {
-			assert(panicArray[0].GetDebug()).Equals(wantPanicDebug)
+			assert(panicArray[0].GetDebug()).Equal(wantPanicDebug)
 		}
 	}
 
@@ -574,38 +574,38 @@ func TestProcessor_mountNode(t *testing.T) {
 	)
 	assert(processor12).IsNotNil()
 	defer processor12.Close()
-	assert(*processor12.servicesMap["#"]).Equals(rpcServiceNode{
+	assert(*processor12.servicesMap["#"]).Equal(rpcServiceNode{
 		path:    rootName,
 		addMeta: nil,
 		depth:   0,
 	})
-	assert(*processor12.servicesMap["#.test"]).Equals(rpcServiceNode{
+	assert(*processor12.servicesMap["#.test"]).Equal(rpcServiceNode{
 		path:    "#.test",
 		addMeta: addMeta12,
 		depth:   1,
 	})
-	assert(processor12.repliesMap["#.test:Eval1"].path).Equals("#.test:Eval1")
-	assert(processor12.repliesMap["#.test:Eval1"].meta).Equals(replyMeta12Eval1)
+	assert(processor12.repliesMap["#.test:Eval1"].path).Equal("#.test:Eval1")
+	assert(processor12.repliesMap["#.test:Eval1"].meta).Equal(replyMeta12Eval1)
 	assert(processor12.repliesMap["#.test:Eval1"].cacheFN).IsNil()
 	assert(getFuncKind(processor12.repliesMap["#.test:Eval1"].reflectFn)).
-		Equals("A", nil)
+		Equal("A", nil)
 	assert(processor12.repliesMap["#.test:Eval1"].callString).
-		Equals("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
+		Equal("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
 	assert(processor12.repliesMap["#.test:Eval1"].argTypes).
-		Equals([]reflect.Type{contextType, arrayType})
+		Equal([]reflect.Type{contextType, arrayType})
 	assert(processor12.repliesMap["#.test:Eval1"].indicator).IsNotNil()
 
-	assert(processor12.repliesMap["#.test:Eval2"].path).Equals("#.test:Eval2")
-	assert(processor12.repliesMap["#.test:Eval2"].meta).Equals(replyMeta12Eval2)
+	assert(processor12.repliesMap["#.test:Eval2"].path).Equal("#.test:Eval2")
+	assert(processor12.repliesMap["#.test:Eval2"].meta).Equal(replyMeta12Eval2)
 	assert(processor12.repliesMap["#.test:Eval2"].cacheFN).IsNotNil()
 	assert(getFuncKind(processor12.repliesMap["#.test:Eval2"].reflectFn)).
-		Equals("BIUFSXAM", nil)
-	assert(processor12.repliesMap["#.test:Eval2"].callString).Equals(
+		Equal("BIUFSXAM", nil)
+	assert(processor12.repliesMap["#.test:Eval2"].callString).Equal(
 		"#.test:Eval2(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 	)
 	assert(processor12.repliesMap["#.test:Eval2"].argTypes).
-		Equals([]reflect.Type{
+		Equal([]reflect.Type{
 			contextType, boolType, int64Type, uint64Type,
 			float64Type, stringType, bytesType, arrayType, mapType,
 		})

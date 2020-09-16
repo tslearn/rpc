@@ -38,8 +38,8 @@ func TestRTPosRecord(t *testing.T) {
 			record := makePosRecord(pos, flag)
 
 			fmt.Println("record", record)
-			assert(record.getPos()).Equals(pos)
-			assert(record.isString()).Equals(flag)
+			assert(record.getPos()).Equal(pos)
+			assert(record.isString()).Equal(flag)
 
 			fmt.Println(record)
 		}
@@ -51,27 +51,27 @@ func TestGetFuncKind(t *testing.T) {
 
 	fn1 := 3
 	assert(getFuncKind(reflect.ValueOf(fn1))).
-		Equals("", errors.New("handler must be a function"))
+		Equal("", errors.New("handler must be a function"))
 
 	fn2 := func() {}
 	assert(getFuncKind(reflect.ValueOf(fn2))).
-		Equals("", errors.New("handler 1st argument type must be rpc.Runtime"))
+		Equal("", errors.New("handler 1st argument type must be rpc.Runtime"))
 
 	fn3 := func(_ chan bool) {}
 	assert(getFuncKind(reflect.ValueOf(fn3))).
-		Equals("", errors.New("handler 1st argument type must be rpc.Runtime"))
+		Equal("", errors.New("handler 1st argument type must be rpc.Runtime"))
 
 	fn4 := func(rt Runtime, _ bool) {}
 	assert(getFuncKind(reflect.ValueOf(fn4))).
-		Equals("", errors.New("handler return type must be rpc.Return"))
+		Equal("", errors.New("handler return type must be rpc.Return"))
 
 	fn5 := func(rt Runtime, _ bool) (Return, bool) { return emptyReturn, true }
 	assert(getFuncKind(reflect.ValueOf(fn5))).
-		Equals("", errors.New("handler return type must be rpc.Return"))
+		Equal("", errors.New("handler return type must be rpc.Return"))
 
 	fn6 := func(rt Runtime, _ bool) bool { return true }
 	assert(getFuncKind(reflect.ValueOf(fn6))).
-		Equals("", errors.New("handler return type must be rpc.Return"))
+		Equal("", errors.New("handler return type must be rpc.Return"))
 
 	fn7 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
@@ -79,7 +79,7 @@ func TestGetFuncKind(t *testing.T) {
 	) Return {
 		return rt.OK(true)
 	}
-	assert(getFuncKind(reflect.ValueOf(fn7))).Equals("BIUFSXAM", nil)
+	assert(getFuncKind(reflect.ValueOf(fn7))).Equal("BIUFSXAM", nil)
 
 	fn8 := func(rt Runtime,
 		_ int32, _ int64, _ uint64, _ float64,
@@ -88,7 +88,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn8))).
-		Equals("", errors.New("handler 2nd argument type int32 is not supported"))
+		Equal("", errors.New("handler 2nd argument type int32 is not supported"))
 
 	fn9 := func(rt Runtime,
 		_ bool, _ int32, _ uint64, _ float64,
@@ -97,7 +97,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn9))).
-		Equals("", errors.New("handler 3rd argument type int32 is not supported"))
+		Equal("", errors.New("handler 3rd argument type int32 is not supported"))
 
 	fn10 := func(rt Runtime,
 		_ bool, _ int64, _ int32, _ float64,
@@ -106,7 +106,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn10))).
-		Equals("", errors.New("handler 4th argument type int32 is not supported"))
+		Equal("", errors.New("handler 4th argument type int32 is not supported"))
 
 	fn11 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ int32,
@@ -115,7 +115,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn11))).
-		Equals("", errors.New("handler 5th argument type int32 is not supported"))
+		Equal("", errors.New("handler 5th argument type int32 is not supported"))
 
 	fn12 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
@@ -124,7 +124,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn12))).
-		Equals("", errors.New("handler 6th argument type int32 is not supported"))
+		Equal("", errors.New("handler 6th argument type int32 is not supported"))
 
 	fn13 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
@@ -133,7 +133,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn13))).
-		Equals("", errors.New("handler 7th argument type int32 is not supported"))
+		Equal("", errors.New("handler 7th argument type int32 is not supported"))
 
 	fn14 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
@@ -142,7 +142,7 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn14))).
-		Equals("", errors.New("handler 8th argument type int32 is not supported"))
+		Equal("", errors.New("handler 8th argument type int32 is not supported"))
 
 	fn15 := func(rt Runtime,
 		_ bool, _ int64, _ uint64, _ float64,
@@ -151,26 +151,26 @@ func TestGetFuncKind(t *testing.T) {
 		return rt.OK(true)
 	}
 	assert(getFuncKind(reflect.ValueOf(fn15))).
-		Equals("", errors.New("handler 9th argument type int32 is not supported"))
+		Equal("", errors.New("handler 9th argument type int32 is not supported"))
 }
 
 func TestConvertTypeToString(t *testing.T) {
 	assert := base.NewAssert(t)
-	assert(convertTypeToString(nil)).Equals("<nil>")
-	assert(convertTypeToString(bytesType)).Equals("rpc.Bytes")
-	assert(convertTypeToString(arrayType)).Equals("rpc.Array")
-	assert(convertTypeToString(rtArrayType)).Equals("rpc.RTArray")
-	assert(convertTypeToString(mapType)).Equals("rpc.Map")
-	assert(convertTypeToString(rtMapType)).Equals("rpc.RTMap")
-	assert(convertTypeToString(boolType)).Equals("rpc.Bool")
-	assert(convertTypeToString(int64Type)).Equals("rpc.Int64")
-	assert(convertTypeToString(uint64Type)).Equals("rpc.Uint64")
-	assert(convertTypeToString(float64Type)).Equals("rpc.Float64")
-	assert(convertTypeToString(stringType)).Equals("rpc.String")
-	assert(convertTypeToString(contextType)).Equals("rpc.Runtime")
-	assert(convertTypeToString(returnType)).Equals("rpc.Return")
+	assert(convertTypeToString(nil)).Equal("<nil>")
+	assert(convertTypeToString(bytesType)).Equal("rpc.Bytes")
+	assert(convertTypeToString(arrayType)).Equal("rpc.Array")
+	assert(convertTypeToString(rtArrayType)).Equal("rpc.RTArray")
+	assert(convertTypeToString(mapType)).Equal("rpc.Map")
+	assert(convertTypeToString(rtMapType)).Equal("rpc.RTMap")
+	assert(convertTypeToString(boolType)).Equal("rpc.Bool")
+	assert(convertTypeToString(int64Type)).Equal("rpc.Int64")
+	assert(convertTypeToString(uint64Type)).Equal("rpc.Uint64")
+	assert(convertTypeToString(float64Type)).Equal("rpc.Float64")
+	assert(convertTypeToString(stringType)).Equal("rpc.String")
+	assert(convertTypeToString(contextType)).Equal("rpc.Runtime")
+	assert(convertTypeToString(returnType)).Equal("rpc.Return")
 	assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
-		Equals("chan bool")
+		Equal("chan bool")
 }
 
 func BenchmarkRTPosRecord(b *testing.B) {

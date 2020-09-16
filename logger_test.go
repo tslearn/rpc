@@ -80,11 +80,11 @@ package rpc
 //func TestNewLogger(t *testing.T) {
 //	assert := internal.NewAssert(t)
 //	logger1 := NewLogger(nil)
-//	assert(logger1.level).Equals(LogMaskAll)
+//	assert(logger1.level).Equal(LogMaskAll)
 //	assert(logger1.writer).IsNotNil()
 //
 //	logger2 := NewLogger(NewStdoutLogWriter())
-//	assert(logger2.level).Equals(LogMaskAll)
+//	assert(logger2.level).Equal(LogMaskAll)
 //	assert(logger2.writer).IsNotNil()
 //}
 //
@@ -93,16 +93,16 @@ package rpc
 //	logger := NewLogger(nil)
 //
 //	assert(logger.SetLevel(LogMaskNone - 1)).IsFalse()
-//	assert(logger.level).Equals(LogMaskAll)
+//	assert(logger.level).Equal(LogMaskAll)
 //
 //	assert(logger.SetLevel(LogMaskAll + 1)).IsFalse()
-//	assert(logger.level).Equals(LogMaskAll)
+//	assert(logger.level).Equal(LogMaskAll)
 //
 //	assert(logger.SetLevel(LogMaskNone)).IsTrue()
-//	assert(logger.level).Equals(LogMaskNone)
+//	assert(logger.level).Equal(LogMaskNone)
 //
 //	assert(logger.SetLevel(LogMaskAll)).IsTrue()
-//	assert(logger.level).Equals(LogMaskAll)
+//	assert(logger.level).Equal(LogMaskAll)
 //
 //	// test all level and logs
 //	fnTestLogLevel := func(level int32) int32 {
@@ -136,11 +136,11 @@ package rpc
 //		return atomic.LoadInt32(&ret)
 //	}
 //
-//	assert(fnTestLogLevel(LogMaskNone - 1)).Equals(LogMaskAll)
+//	assert(fnTestLogLevel(LogMaskNone - 1)).Equal(LogMaskAll)
 //	for i := int32(0); i < 32; i++ {
-//		assert(fnTestLogLevel(i)).Equals(i)
+//		assert(fnTestLogLevel(i)).Equal(i)
 //	}
-//	assert(fnTestLogLevel(LogMaskAll + 1)).Equals(LogMaskAll)
+//	assert(fnTestLogLevel(LogMaskAll + 1)).Equal(LogMaskAll)
 //}
 //
 //func TestLogger_Debug(t *testing.T) {
@@ -151,9 +151,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Debug")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("")
+//	assert(tag).Equal("Debug")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("")
 //}
 //
 //func TestLogger_DebugExtra(t *testing.T) {
@@ -164,9 +164,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Debug")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("extra")
+//	assert(tag).Equal("Debug")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("extra")
 //}
 //
 //func TestLogger_Info(t *testing.T) {
@@ -177,9 +177,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Info")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("")
+//	assert(tag).Equal("Info")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("")
 //}
 //
 //func TestLogger_InfoExtra(t *testing.T) {
@@ -190,9 +190,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Info")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("extra")
+//	assert(tag).Equal("Info")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("extra")
 //}
 //
 //func TestLogger_Warn(t *testing.T) {
@@ -203,9 +203,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Warn")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("")
+//	assert(tag).Equal("Warn")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("")
 //}
 //
 //func TestLogger_WarnExtra(t *testing.T) {
@@ -216,9 +216,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Warn")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("extra")
+//	assert(tag).Equal("Warn")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("extra")
 //}
 //
 //func TestLogger_Error(t *testing.T) {
@@ -229,9 +229,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Error")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("")
+//	assert(tag).Equal("Error")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("")
 //}
 //
 //func TestLogger_ErrorExtra(t *testing.T) {
@@ -242,9 +242,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Error")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("extra")
+//	assert(tag).Equal("Error")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("extra")
 //}
 //
 //func TestLogger_Fatal(t *testing.T) {
@@ -255,9 +255,9 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Fatal")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("")
+//	assert(tag).Equal("Fatal")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("")
 //}
 //
 //func TestLogger_FatalExtra(t *testing.T) {
@@ -268,7 +268,7 @@ package rpc
 //	})
 //
 //	assert(len(isoTime) > 0).IsTrue()
-//	assert(tag).Equals("Fatal")
-//	assert(msg).Equals("message")
-//	assert(extra).Equals("extra")
+//	assert(tag).Equal("Fatal")
+//	assert(msg).Equal("message")
+//	assert(extra).Equal("extra")
 //}

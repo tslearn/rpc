@@ -74,7 +74,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 			ConvertToIsoDateString(start),
 		)
 		assert(err).IsNil()
-		assert(parseTime.UnixNano()).Equals(start.UnixNano())
+		assert(parseTime.UnixNano()).Equal(start.UnixNano())
 		start = start.Add(271099197000000)
 	}
 
@@ -83,7 +83,7 @@ func TestConvertToIsoDateString(t *testing.T) {
 		"0000-01-01T00:00:00+00:00",
 	)
 	assert(ConvertToIsoDateString(smallTime)).
-		Equals("0000-01-01T00:00:00.000+00:00")
+		Equal("0000-01-01T00:00:00.000+00:00")
 
 	largeTime, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
@@ -91,35 +91,35 @@ func TestConvertToIsoDateString(t *testing.T) {
 	)
 	largeTime = largeTime.Add(1000000 * time.Hour)
 	assert(ConvertToIsoDateString(largeTime)).
-		Equals("9999-01-30T16:00:00.000+00:00")
+		Equal("9999-01-30T16:00:00.000+00:00")
 
 	time1, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"2222-12-22T11:11:11.333-11:59",
 	)
 	assert(ConvertToIsoDateString(time1)).
-		Equals("2222-12-22T11:11:11.333-11:59")
+		Equal("2222-12-22T11:11:11.333-11:59")
 
 	time2, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"2222-12-22T11:11:11.333+11:59",
 	)
 	assert(ConvertToIsoDateString(time2)).
-		Equals("2222-12-22T11:11:11.333+11:59")
+		Equal("2222-12-22T11:11:11.333+11:59")
 
 	time3, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"2222-12-22T11:11:11.333+00:00",
 	)
 	assert(ConvertToIsoDateString(time3)).
-		Equals("2222-12-22T11:11:11.333+00:00")
+		Equal("2222-12-22T11:11:11.333+00:00")
 
 	time4, _ := time.Parse(
 		"2006-01-02T15:04:05.999Z07:00",
 		"2222-12-22T11:11:11.333-00:00",
 	)
 	assert(ConvertToIsoDateString(time4)).
-		Equals("2222-12-22T11:11:11.333+00:00")
+		Equal("2222-12-22T11:11:11.333+00:00")
 }
 
 func TestTimeNow(t *testing.T) {
@@ -170,9 +170,9 @@ func TestTimeNowISOString(t *testing.T) {
 
 func TestGetRandString(t *testing.T) {
 	assert := NewAssert(t)
-	assert(GetRandString(-1)).Equals("")
+	assert(GetRandString(-1)).Equal("")
 	for i := 0; i < 100; i++ {
-		assert(len(GetRandString(i))).Equals(i)
+		assert(len(GetRandString(i))).Equal(i)
 	}
 }
 func TestGetSeed(t *testing.T) {
@@ -181,46 +181,46 @@ func TestGetSeed(t *testing.T) {
 	assert(seed > 10000).IsTrue()
 
 	for i := int64(0); i < 1000; i++ {
-		assert(GetSeed()).Equals(seed + 1 + i)
+		assert(GetSeed()).Equal(seed + 1 + i)
 	}
 }
 
 func TestAddPrefixPerLine(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(AddPrefixPerLine("", "")).Equals("")
-	assert(AddPrefixPerLine("a", "")).Equals("a")
-	assert(AddPrefixPerLine("\n", "")).Equals("\n")
-	assert(AddPrefixPerLine("a\n", "")).Equals("a\n")
-	assert(AddPrefixPerLine("a\nb", "")).Equals("a\nb")
-	assert(AddPrefixPerLine("", "-")).Equals("-")
-	assert(AddPrefixPerLine("a", "-")).Equals("-a")
-	assert(AddPrefixPerLine("\n", "-")).Equals("-\n")
-	assert(AddPrefixPerLine("a\n", "-")).Equals("-a\n")
-	assert(AddPrefixPerLine("a\nb", "-")).Equals("-a\n-b")
+	assert(AddPrefixPerLine("", "")).Equal("")
+	assert(AddPrefixPerLine("a", "")).Equal("a")
+	assert(AddPrefixPerLine("\n", "")).Equal("\n")
+	assert(AddPrefixPerLine("a\n", "")).Equal("a\n")
+	assert(AddPrefixPerLine("a\nb", "")).Equal("a\nb")
+	assert(AddPrefixPerLine("", "-")).Equal("-")
+	assert(AddPrefixPerLine("a", "-")).Equal("-a")
+	assert(AddPrefixPerLine("\n", "-")).Equal("-\n")
+	assert(AddPrefixPerLine("a\n", "-")).Equal("-a\n")
+	assert(AddPrefixPerLine("a\nb", "-")).Equal("-a\n-b")
 }
 
 func TestConcatString(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(ConcatString("", "")).Equals("")
-	assert(ConcatString("a", "")).Equals("a")
-	assert(ConcatString("", "b")).Equals("b")
-	assert(ConcatString("a", "b")).Equals("ab")
-	assert(ConcatString("a", "b", "")).Equals("ab")
-	assert(ConcatString("a", "b", "c")).Equals("abc")
+	assert(ConcatString("", "")).Equal("")
+	assert(ConcatString("a", "")).Equal("a")
+	assert(ConcatString("", "b")).Equal("b")
+	assert(ConcatString("a", "b")).Equal("ab")
+	assert(ConcatString("a", "b", "")).Equal("ab")
+	assert(ConcatString("a", "b", "c")).Equal("abc")
 }
 
 func TestConvertOrdinalToString(t *testing.T) {
 	assert := NewAssert(t)
 
-	assert(ConvertOrdinalToString(0)).Equals("")
-	assert(ConvertOrdinalToString(1)).Equals("1st")
-	assert(ConvertOrdinalToString(2)).Equals("2nd")
-	assert(ConvertOrdinalToString(3)).Equals("3rd")
-	assert(ConvertOrdinalToString(4)).Equals("4th")
-	assert(ConvertOrdinalToString(10)).Equals("10th")
-	assert(ConvertOrdinalToString(100)).Equals("100th")
+	assert(ConvertOrdinalToString(0)).Equal("")
+	assert(ConvertOrdinalToString(1)).Equal("1st")
+	assert(ConvertOrdinalToString(2)).Equal("2nd")
+	assert(ConvertOrdinalToString(3)).Equal("3rd")
+	assert(ConvertOrdinalToString(4)).Equal("4th")
+	assert(ConvertOrdinalToString(10)).Equal("10th")
+	assert(ConvertOrdinalToString(100)).Equal("100th")
 }
 
 func TestAddFileLine(t *testing.T) {
@@ -237,7 +237,7 @@ func TestAddFileLine(t *testing.T) {
 	assert(strings.Contains(fileLine2, "util_test.go")).IsTrue()
 
 	// Test(3)
-	assert(AddFileLine("header", 1000)).Equals("header")
+	assert(AddFileLine("header", 1000)).Equal("header")
 }
 
 func TestGetFileLine(t *testing.T) {

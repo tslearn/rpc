@@ -19,7 +19,7 @@ func TestBuildFuncCache(t *testing.T) {
 	tmpFile1 := path.Join(path.Dir(file), "_tmp_/test-cache-01.go")
 	snapshotFile1 := path.Join(path.Dir(file), "_snapshot_/test-cache-01.snapshot")
 	assert(buildFuncCache("pkgName", tmpFile1, []string{})).IsNil()
-	assert(testReadFromFile(tmpFile1)).Equals(testReadFromFile(snapshotFile1))
+	assert(testReadFromFile(tmpFile1)).Equal(testReadFromFile(snapshotFile1))
 
 	// Test(2)
 	tmpFile2 := path.Join(path.Dir(file), "_tmp_/test-cache-02.go")
@@ -32,17 +32,17 @@ func TestBuildFuncCache(t *testing.T) {
 		"BUF", "ABM", "UFS", "XAA", "MMS", "MMM", "AAA", "MFF",
 		"BIUFSXAM", "AAAAAAAA", "MAXSFUIB",
 	})).IsNil()
-	assert(testReadFromFile(tmpFile2)).Equals(testReadFromFile(snapshotFile2))
+	assert(testReadFromFile(tmpFile2)).Equal(testReadFromFile(snapshotFile2))
 
 	// Test(3)
 	tmpFile3 := path.Join(path.Dir(file), "_tmp_/test-cache-03.go")
 	assert(buildFuncCache("pkgName", tmpFile3, []string{"A", "A"})).
-		Equals(base.NewKernelPanic("duplicate kind A"))
+		Equal(base.NewKernelPanic("duplicate kind A"))
 
 	// Test(4)
 	tmpFile4 := path.Join(path.Dir(file), "_tmp_/test-cache-04.go")
 	assert(buildFuncCache("pkgName", tmpFile4, []string{"T", "A"})).
-		Equals(base.NewKernelPanic("error kind T"))
+		Equal(base.NewKernelPanic("error kind T"))
 
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")

@@ -20,8 +20,8 @@ func TestNewStringBuilder(t *testing.T) {
 	// Test(1)
 	sb1 := NewStringBuilder()
 	defer sb1.Release()
-	assert(len(sb1.buffer)).Equals(0)
-	assert(cap(sb1.buffer)).Equals(stringBuilderBufferSize)
+	assert(len(sb1.buffer)).Equal(0)
+	assert(cap(sb1.buffer)).Equal(stringBuilderBufferSize)
 }
 
 func TestStringBuilder_Reset(t *testing.T) {
@@ -34,8 +34,8 @@ func TestStringBuilder_Reset(t *testing.T) {
 		sb1.AppendString("S")
 	}
 	sb1.Reset()
-	assert(len(sb1.buffer)).Equals(0)
-	assert(cap(sb1.buffer)).Equals(stringBuilderBufferSize)
+	assert(len(sb1.buffer)).Equal(0)
+	assert(cap(sb1.buffer)).Equal(stringBuilderBufferSize)
 
 	// Test(2)
 	sb2 := NewStringBuilder()
@@ -44,8 +44,8 @@ func TestStringBuilder_Reset(t *testing.T) {
 		sb2.AppendString("S")
 	}
 	sb2.Reset()
-	assert(len(sb2.buffer)).Equals(0)
-	assert(cap(sb2.buffer)).Equals(stringBuilderBufferSize)
+	assert(len(sb2.buffer)).Equal(0)
+	assert(cap(sb2.buffer)).Equal(stringBuilderBufferSize)
 }
 
 func TestStringBuilder_AppendByte(t *testing.T) {
@@ -55,7 +55,7 @@ func TestStringBuilder_AppendByte(t *testing.T) {
 	for i := 0; i < 2000; i++ {
 		sb1, str1 := getRandomTestBuilder()
 		sb1.AppendByte('a')
-		assert(sb1.String()).Equals(str1 + "a")
+		assert(sb1.String()).Equal(str1 + "a")
 		sb1.Release()
 	}
 }
@@ -68,7 +68,7 @@ func TestStringBuilder_AppendBytes(t *testing.T) {
 		sb1, str1 := getRandomTestBuilder()
 		add1 := GetRandString(rand.Int() % 10000)
 		sb1.AppendBytes(([]byte)(add1))
-		assert(sb1.String()).Equals(str1 + add1)
+		assert(sb1.String()).Equal(str1 + add1)
 		sb1.Release()
 	}
 }
@@ -81,7 +81,7 @@ func TestStringBuilder_AppendString(t *testing.T) {
 		sb1, str1 := getRandomTestBuilder()
 		add1 := GetRandString(rand.Int() % 10000)
 		sb1.AppendString(add1)
-		assert(sb1.String()).Equals(str1 + add1)
+		assert(sb1.String()).Equal(str1 + add1)
 		sb1.Release()
 	}
 }
@@ -94,7 +94,7 @@ func TestStringBuilder_Merge(t *testing.T) {
 		sb1, str1 := getRandomTestBuilder()
 		mergeSb1, mergeStr1 := getRandomTestBuilder()
 		sb1.Merge(mergeSb1)
-		assert(sb1.String()).Equals(str1 + mergeStr1)
+		assert(sb1.String()).Equal(str1 + mergeStr1)
 		sb1.Release()
 		mergeSb1.Release()
 	}
@@ -103,7 +103,7 @@ func TestStringBuilder_Merge(t *testing.T) {
 	for i := 0; i < 2000; i++ {
 		sb1, str1 := getRandomTestBuilder()
 		sb1.Merge(nil)
-		assert(sb1.String()).Equals(str1)
+		assert(sb1.String()).Equal(str1)
 		sb1.Release()
 	}
 }
@@ -124,5 +124,5 @@ func TestStringBuilder_String(t *testing.T) {
 	// Test(1)
 	sb1 := NewStringBuilder()
 	sb1.AppendString("a")
-	assert(sb1.String()).Equals("a")
+	assert(sb1.String()).Equal("a")
 }
