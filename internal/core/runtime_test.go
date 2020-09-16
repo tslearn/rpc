@@ -11,7 +11,7 @@ func TestContextObject_OK(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(base.TestRunWithSubscribePanic(func() {
+	assert(base.RunWithSubscribePanic(func() {
 		_, source1 = Runtime{}.OK(true), base.GetFileLine(0)
 	})).Equal(
 		base.NewReplyPanic("Runtime is illegal in current goroutine").AddDebug(source1),
@@ -57,7 +57,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(1)
 	source1 := ""
-	assert(base.TestRunWithSubscribePanic(func() {
+	assert(base.RunWithSubscribePanic(func() {
 		ret, source := Runtime{}.Error(errors.New("error")), base.GetFileLine(0)
 		source1 = source
 		assert(ret).Equal(emptyReturn)
@@ -67,7 +67,7 @@ func TestContextObject_Error(t *testing.T) {
 
 	// Test(2)
 	source2 := ""
-	assert(base.TestRunWithSubscribePanic(func() {
+	assert(base.RunWithSubscribePanic(func() {
 		err := base.NewReplyError("error")
 		ret, source := (&Runtime{thread: nil}).Error(err), base.GetFileLine(0)
 		source2 = source

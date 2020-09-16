@@ -7,6 +7,31 @@ var (
 	gPanicSubscriptions = make([]*PanicSubscription, 0)
 )
 
+type PanicSubscription struct {
+	id      int64
+	onPanic func(err Error)
+}
+
+func (p *PanicSubscription) Close() bool {
+	if p == nil {
+		return false
+	}
+
+	gPanicMutex.Lock()
+	defer gPanicMutex.Unlock()
+
+	for i := 0; i < len(gPanicSubscriptions); i++ {
+		if gPanicSubscriptions[i].id == p.id {
+			gPanicSubscriptions = append(
+				gPanicSubscriptions[:i],
+				gPanicSubscriptions[i+1:]...,
+			)
+			return true
+		}
+	}
+	return false
+}
+
 // ReportPanic ...
 func ReportPanic(err Error) {
 	defer func() {
@@ -40,7 +65,7 @@ func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	return ret
 }
 
-func TestRunWithCatchPanic(fn func()) (ret interface{}) {
+func RunWithCatchPanic(fn func()) (ret interface{}) {
 	defer func() {
 		ret = recover()
 	}()
@@ -49,7 +74,7 @@ func TestRunWithCatchPanic(fn func()) (ret interface{}) {
 	return
 }
 
-func TestRunWithSubscribePanic(fn func()) Error {
+func RunWithSubscribePanic(fn func()) Error {
 	ch := make(chan Error, 1)
 	sub := SubscribePanic(func(err Error) {
 		ch <- err
@@ -64,29 +89,4 @@ func TestRunWithSubscribePanic(fn func()) Error {
 	default:
 		return nil
 	}
-}
-
-type PanicSubscription struct {
-	id      int64
-	onPanic func(err Error)
-}
-
-func (p *PanicSubscription) Close() bool {
-	if p == nil {
-		return false
-	}
-
-	gPanicMutex.Lock()
-	defer gPanicMutex.Unlock()
-
-	for i := 0; i < len(gPanicSubscriptions); i++ {
-		if gPanicSubscriptions[i].id == p.id {
-			gPanicSubscriptions = append(
-				gPanicSubscriptions[:i],
-				gPanicSubscriptions[i+1:]...,
-			)
-			return true
-		}
-	}
-	return false
 }
