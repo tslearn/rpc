@@ -54,12 +54,14 @@ func (p *rpcAssert) Equal(args ...interface{}) {
 	} else {
 		for i := 0; i < len(p.args); i++ {
 			if !reflect.DeepEqual(p.args[i], args[i]) {
-				p.fail(fmt.Sprintf(
-					"%s argment is not equal\n\twant:\n%s\n\tgot:\n%s",
-					ConvertOrdinalToString(uint(i+1)),
-					AddPrefixPerLine(fmt.Sprintf("%T(%v)", args[i], args[i]), "\t"),
-					AddPrefixPerLine(fmt.Sprintf("%T(%v)", p.args[i], p.args[i]), "\t"),
-				))
+				if !IsNil(p.args[i]) || !IsNil(args[i]) {
+					p.fail(fmt.Sprintf(
+						"%s argment is not equal\n\twant:\n%s\n\tgot:\n%s",
+						ConvertOrdinalToString(uint(i+1)),
+						AddPrefixPerLine(fmt.Sprintf("%T(%v)", args[i], args[i]), "\t"),
+						AddPrefixPerLine(fmt.Sprintf("%T(%v)", p.args[i], p.args[i]), "\t"),
+					))
+				}
 			}
 		}
 	}
@@ -73,7 +75,7 @@ func (p *rpcAssert) IsNil() {
 		for i := 0; i < len(p.args); i++ {
 			if !IsNil(p.args[i]) {
 				p.fail(fmt.Sprintf(
-					"%s argment is not nil",
+					"%s argument is not nil",
 					ConvertOrdinalToString(uint(i+1)),
 				))
 			}
@@ -89,7 +91,7 @@ func (p *rpcAssert) IsNotNil() {
 		for i := 0; i < len(p.args); i++ {
 			if IsNil(p.args[i]) {
 				p.fail(fmt.Sprintf(
-					"%s argment is nil",
+					"%s argument is nil",
 					ConvertOrdinalToString(uint(i+1)),
 				))
 			}
@@ -105,7 +107,7 @@ func (p *rpcAssert) IsTrue() {
 		for i := 0; i < len(p.args); i++ {
 			if p.args[i] != true {
 				p.fail(fmt.Sprintf(
-					"%s argment is not true",
+					"%s argument is not true",
 					ConvertOrdinalToString(uint(i+1)),
 				))
 			}
@@ -121,7 +123,7 @@ func (p *rpcAssert) IsFalse() {
 		for i := 0; i < len(p.args); i++ {
 			if p.args[i] != false {
 				p.fail(fmt.Sprintf(
-					"%s argment is not false",
+					"%s argument is not false",
 					ConvertOrdinalToString(uint(i+1)),
 				))
 			}

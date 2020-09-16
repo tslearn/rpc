@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"unsafe"
 )
 
 type fakeTesting struct {
@@ -46,19 +47,19 @@ func testFailHelper(fn func(_ func(_ ...interface{}) Assert)) (bool, string) {
 }
 
 func TestNewAssert(t *testing.T) {
-	t.Run("NewAssert t is nil", func(t *testing.T) {
+	t.Run("t is nil", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(nil)
 		assert(o(true)).Equal(&rpcAssert{t: nil, args: []interface{}{true}})
 	})
 
-	t.Run("NewAssert args is nil", func(t *testing.T) {
+	t.Run("args is nil", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(t)
 		assert(o()).Equal(&rpcAssert{t: t, args: nil})
 	})
 
-	t.Run("NewAssert ok", func(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(t)
 		assert(o(true, 1)).Equal(&rpcAssert{t: t, args: []interface{}{true, 1}})
@@ -66,7 +67,7 @@ func TestNewAssert(t *testing.T) {
 }
 
 func TestRpcAssert_Fail(t *testing.T) {
-	t.Run("Fail ok", func(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -75,8 +76,8 @@ func TestRpcAssert_Fail(t *testing.T) {
 	})
 }
 
-func TestAssert_Equals(t *testing.T) {
-	t.Run("Arguments is empty", func(t *testing.T) {
+func TestRpcAssert_Equals(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -84,7 +85,7 @@ func TestAssert_Equals(t *testing.T) {
 		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
 	})
 
-	t.Run("Arguments is empty", func(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -92,7 +93,7 @@ func TestAssert_Equals(t *testing.T) {
 		})).Equal(true, "\targuments length not match\n\t"+source+"\n")
 	})
 
-	t.Run("Arguments is not equal", func(t *testing.T) {
+	t.Run("arguments is not equal", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -105,7 +106,7 @@ func TestAssert_Equals(t *testing.T) {
 		))
 	})
 
-	t.Run("Arguments type is not equal", func(t *testing.T) {
+	t.Run("arguments type is not equal", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 
@@ -115,25 +116,6 @@ func TestAssert_Equals(t *testing.T) {
 			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"int64(1)",
 			"int(1)",
-			source,
-		))
-
-		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
-			func() { o([]interface{}(nil)).Equal(nil); source = GetFileLine(0) }()
-		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
-			"<nil>(<nil>)",
-			"[]interface {}([])",
-			source,
-		))
-
-		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
-			v1 := map[string]interface{}(nil)
-			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
-		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
-			"<nil>(<nil>)",
-			"map[string]interface {}(map[])",
 			source,
 		))
 
@@ -169,6 +151,26 @@ func TestAssert_Equals(t *testing.T) {
 			"[]int([1 2 3])",
 			source,
 		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := make([]interface{}, 0)
+			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"<nil>(<nil>)",
+			"[]interface {}([])",
+			source,
+		))
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := map[string]interface{}{}
+			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
+		})).Equal(true, fmt.Sprintf(
+			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"<nil>(<nil>)",
+			"map[string]interface {}(map[])",
+			source,
+		))
 	})
 
 	t.Run("ok", func(t *testing.T) {
@@ -176,92 +178,155 @@ func TestAssert_Equals(t *testing.T) {
 		assert(3).Equal(3)
 		assert(nil).Equal(nil)
 		assert((interface{})(nil)).Equal(nil)
+		assert([]interface{}(nil)).Equal(nil)
+		assert(map[string]interface{}(nil)).Equal(nil)
 		assert((Assert)(nil)).Equal(nil)
 		assert(nil).Equal((Assert)(nil))
 		assert(nil).Equal((interface{})(nil))
 		assert([]int{1, 2, 3}).Equal([]int{1, 2, 3})
 		assert(map[int]string{3: "OK", 4: "NO"}).
 			Equal(map[int]string{4: "NO", 3: "OK"})
+		assert(1, 2, 3).Equal(1, 2, 3)
 	})
 }
 
-func TestAssert_IsNil(t *testing.T) {
-	//assert := NewAssert(t)
-	//
-	//assert(nil).IsNil()
-	//assert((Assert)(nil)).IsNil()
-	//assert((unsafe.Pointer)(nil)).IsNil()
-	//
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert(uintptr(0)).IsNil()
-	//})).IsTrue()
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert(NewAssert(t)).IsNil()
-	//})).IsTrue()
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert(32).IsNil()
-	//})).IsTrue()
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert(false).IsNil()
-	//})).IsTrue()
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert(0).IsNil()
-	//})).IsTrue()
-	//assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-	//	assert().IsNil()
-	//})).IsTrue()
+func TestRpcAssert_IsNil(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o().IsNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
+	})
+
+	t.Run("arguments is not nil", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o([]interface{}{}).IsNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(map[string]interface{}{}).IsNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(uintptr(0)).IsNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(nil, 0).IsNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t2nd argument is not nil\n\t"+source+"\n")
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(nil).IsNil()
+		assert(([]interface{})(nil)).IsNil()
+		assert((map[string]interface{})(nil)).IsNil()
+		assert((interface{})(nil)).IsNil()
+		assert((Assert)(nil)).IsNil()
+		assert((unsafe.Pointer)(nil)).IsNil()
+		assert(nil, (interface{})(nil)).IsNil()
+	})
 }
 
-//func TestAssert_IsNotNil(t *testing.T) {
-//	assert := NewAssert(t)
-//	assert(t).IsNotNil()
-//
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(nil).IsNotNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert((Assert)(nil)).IsNotNil()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().IsNotNil()
-//	})).IsTrue()
-//}
-//
-//func TestAssert_IsTrue(t *testing.T) {
-//	assert := NewAssert(t)
-//	assert(true).IsTrue()
-//
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert((Assert)(nil)).IsTrue()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(32).IsTrue()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(false).IsTrue()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(0).IsTrue()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().IsTrue()
-//	})).IsTrue()
-//}
-//
-//func TestAssert_IsFalse(t *testing.T) {
-//	assert := NewAssert(t)
-//	assert(false).IsFalse()
-//
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(32).IsFalse()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(true).IsFalse()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert(0).IsFalse()
-//	})).IsTrue()
-//	assert(runWithFail(func(assert func(args ...interface{}) Assert) {
-//		assert().IsFalse()
-//	})).IsTrue()
-//}
+func TestRpcAssert_IsNotNil(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o().IsNotNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
+	})
+
+	t.Run("arguments is nil", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o([]interface{}(nil)).IsNotNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			v1 := map[string]interface{}(nil)
+			func() { o(v1).IsNotNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(nil).IsNotNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is nil\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(0, nil).IsNotNil(); source = GetFileLine(0) }()
+		})).Equal(true, "\t2nd argument is nil\n\t"+source+"\n")
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(0).IsNotNil()
+		assert([]interface{}{}).IsNotNil()
+		assert(map[string]interface{}{}).IsNotNil()
+		assert(uintptr(0)).IsNotNil()
+		assert(0, []interface{}{}).IsNotNil()
+	})
+}
+
+func TestRpcAssert_IsTrue(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o().IsTrue(); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
+	})
+
+	t.Run("arguments is not true", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(nil).IsTrue(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is not true\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(true, nil).IsTrue(); source = GetFileLine(0) }()
+		})).Equal(true, "\t2nd argument is not true\n\t"+source+"\n")
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(true).IsTrue()
+		assert(true, true).IsTrue()
+	})
+}
+
+func TestRpcAssert_IsFalse(t *testing.T) {
+	t.Run("arguments is empty", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o().IsFalse(); source = GetFileLine(0) }()
+		})).Equal(true, "\targuments is empty\n\t"+source+"\n")
+	})
+
+	t.Run("arguments is not false", func(t *testing.T) {
+		assert := NewAssert(t)
+		source := ""
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(nil).IsFalse(); source = GetFileLine(0) }()
+		})).Equal(true, "\t1st argument is not false\n\t"+source+"\n")
+
+		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
+			func() { o(false, nil).IsFalse(); source = GetFileLine(0) }()
+		})).Equal(true, "\t2nd argument is not false\n\t"+source+"\n")
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(false).IsFalse()
+		assert(false, false).IsFalse()
+	})
+}
