@@ -1,144 +1,145 @@
 package base
 
-// ErrorKind ...
-type ErrorKind uint64
-
-// ErrStringRunOutOfReplyScope ...
-const ErrStringRunOutOfReplyScope = "run out of reply goroutine"
-
-// ErrStringBadStream ...
-const ErrStringBadStream = "bad stream"
-
-// ErrStringTimeout ...
-const ErrStringTimeout = "timeout"
-
-// ErrTransportStreamConnIsClosed ...
-var ErrTransportStreamConnIsClosed = NewTransportError("stream conn is closed")
+type ErrorType uint8
 
 const (
-	// ErrorKindNone ...
-	ErrorKindNone = ErrorKind(0)
-	// ErrorKindProtocol ...
-	ErrorKindProtocol = ErrorKind(1)
-	// ErrorKindTransport ...
-	ErrorKindTransport = ErrorKind(2)
-	// ErrorKindReply ...
-	ErrorKindReply = ErrorKind(3)
-	// ErrorKindReplyPanic ...
-	ErrorKindReplyPanic = ErrorKind(4)
-	// ErrorKindRuntimePanic ...
-	ErrorKindRuntimePanic = ErrorKind(5)
-	// ErrorKindKernelPanic ...
-	ErrorKindKernelPanic = ErrorKind(6)
-	// ErrorKindSecurityLimit ...
-	ErrorKindSecurityLimit = ErrorKind(7)
+	ErrorTypeProtocol  = ErrorType(1)
+	ErrorTypeTransport = ErrorType(2)
+	ErrorTypeReply     = ErrorType(3)
+	ErrorTypeRuntime   = ErrorType(4)
+	ErrorTypeKernel    = ErrorType(5)
+	ErrorTypeSecurity  = ErrorType(6)
 )
 
-// Error ...
-type Error interface {
-	GetKind() ErrorKind
-	GetMessage() string
-	GetDebug() string
-	AddDebug(debug string) Error
-	Error() string
-}
+type ErrorLevel uint8
 
-// NewError ...
-func NewError(kind ErrorKind, message string, debug string) Error {
-	return &rpcError{
-		kind:    kind,
-		message: message,
-		debug:   debug,
-	}
-}
+const (
+	ErrorLevelWarn  = ErrorLevel(1)
+	ErrorLevelError = ErrorLevel(2)
+	ErrorLevelFatal = ErrorLevel(3)
+)
 
-// NewProtocolError ...
-func NewProtocolError(message string) Error {
-	return NewError(ErrorKindProtocol, message, "")
-}
+type ErrorCode uint32
 
-// NewTransportError ...
-func NewTransportError(message string) Error {
-	return NewError(ErrorKindTransport, message, "")
-}
-
-// NewReplyError ...
-func NewReplyError(message string) Error {
-	return NewError(ErrorKindReply, message, "")
-}
-
-// NewReplyPanic ...
-func NewReplyPanic(message string) Error {
-	return NewError(ErrorKindReplyPanic, message, "")
-}
-
-// NewRuntimePanic ...
-func NewRuntimePanic(message string) Error {
-	return NewError(ErrorKindRuntimePanic, message, "")
-}
-
-// NewKernelPanic ...
-func NewKernelPanic(message string) Error {
-	return NewError(ErrorKindKernelPanic, message, "")
-}
-
-// NewSecurityLimitError ...
-func NewSecurityLimitError(message string) Error {
-	return NewError(ErrorKindSecurityLimit, message, "")
-}
-
-// ConvertToError convert interface{} to Error if type matches
-func ConvertToError(v interface{}) Error {
-	if ret, ok := v.(Error); ok {
-		return ret
-	}
-
-	return nil
-}
-
-type rpcError struct {
-	kind    ErrorKind
+type Error struct {
+	code    uint64
 	message string
-	debug   string
 }
 
-func (p *rpcError) GetKind() ErrorKind {
-	return p.kind
+func defineError(
+	kind ErrorType,
+	code ErrorCode,
+	level ErrorLevel,
+	message string,
+) *Error {
+	errCode := (uint64(kind) << 56) & (uint64(level) << 48) & (uint64(code) << 16)
+	return &Error{
+		code:    errCode,
+		message: message,
+	}
 }
 
-func (p *rpcError) GetMessage() string {
+// DefineProtocolError ...
+func DefineProtocolError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeProtocol, code, level, msg)
+}
+
+// DefineTransportError ...
+func DefineTransportError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeTransport, code, level, msg)
+}
+
+// DefineReplyError ...
+func DefineReplyError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeReply, code, level, msg)
+}
+
+// DefineRuntimeError ...
+func DefineRuntimeError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeRuntime, code, level, msg)
+}
+
+// DefineKernelError ...
+func DefineKernelError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeKernel, code, level, msg)
+}
+
+// DefineSecurityError ...
+func DefineSecurityError(code ErrorCode, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeSecurity, code, level, msg)
+}
+
+func (p *Error) GetType() ErrorType {
+	return ErrorType(p.code >> 56)
+}
+
+func (p *Error) GetLevel() ErrorLevel {
+	return ErrorLevel((p.code >> 48) & 0xFF)
+}
+
+func (p *Error) GetCode() ErrorCode {
+	return ErrorCode((p.code >> 16) & 0xFFFFFFFF)
+}
+
+func (p *Error) GetMessage() string {
 	return p.message
 }
 
-func (p *rpcError) GetDebug() string {
-	return p.debug
-}
+func (p *Error) AddDebug(debug string) *Error {
+	ret := &Error{}
 
-func (p *rpcError) AddDebug(debug string) Error {
-	if p.debug == "" {
-		p.debug = debug
+	if p.code%2 == 0 {
+		ret.code = p.code + 1
 	} else {
-		p.debug += "\n"
-		p.debug += debug
+		ret.code = p.code
 	}
 
-	return p
+	if p.message == "" {
+		ret.message = debug
+	} else {
+		ret.message = ConcatString(p.message, "\n", debug)
+	}
+
+	return ret
 }
 
-func (p *rpcError) Error() string {
-	sb := NewStringBuilder()
-	defer sb.Release()
-
-	if p.message != "" {
-		sb.AppendString(p.message)
+func (p *Error) getErrorTypeString() string {
+	switch p.GetType() {
+	case ErrorTypeProtocol:
+		return "Protocol"
+	case ErrorTypeTransport:
+		return "Transport"
+	case ErrorTypeReply:
+		return "Reply"
+	case ErrorTypeRuntime:
+		return "Runtime"
+	case ErrorTypeKernel:
+		return "Kernel"
+	case ErrorTypeSecurity:
+		return "Security"
+	default:
+		return ""
 	}
+}
 
-	if p.debug != "" {
-		if !sb.IsEmpty() {
-			sb.AppendByte('\n')
-		}
-		sb.AppendString(p.debug)
+func (p *Error) getErrorLevelString() string {
+	switch p.GetLevel() {
+	case ErrorLevelWarn:
+		return "Warn"
+	case ErrorLevelError:
+		return "Error"
+	case ErrorLevelFatal:
+		return "Fatal"
+	default:
+		return ""
 	}
+}
 
-	return sb.String()
+func (p *Error) Error() string {
+	return ConcatString(
+		p.getErrorTypeString(),
+		p.getErrorLevelString(),
+		":",
+		p.message,
+	)
 }

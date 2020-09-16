@@ -12,16 +12,16 @@ func TestPanicSubscription_Close(t *testing.T) {
 
 	t.Run("id not found", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := SubscribePanic(func(e Error) {})
+		v1 := SubscribePanic(func(e *Error) {})
 		defer v1.Close()
-		v2 := SubscribePanic(func(e Error) {})
+		v2 := SubscribePanic(func(e *Error) {})
 		defer v2.Close()
 		assert((&PanicSubscription{id: 8273}).Close()).IsFalse()
 	})
 
 	t.Run("ok", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := SubscribePanic(func(e Error) {})
+		v1 := SubscribePanic(func(e *Error) {})
 		assert(v1.Close()).IsTrue()
 	})
 }
@@ -34,7 +34,7 @@ func TestSubscribePanic(t *testing.T) {
 
 	t.Run("ok", func(t *testing.T) {
 		assert := NewAssert(t)
-		onPanic := func(e Error) {}
+		onPanic := func(e *Error) {}
 		v1 := SubscribePanic(onPanic)
 		defer v1.Close()
 		assert(v1).IsNotNil()
@@ -46,9 +46,9 @@ func TestSubscribePanic(t *testing.T) {
 func TestPublishPanic(t *testing.T) {
 	t.Run("onPanic goes panic", func(t *testing.T) {
 		assert := NewAssert(t)
-		retCH := make(chan Error, 1)
-		err := NewError(ErrorKindKernelPanic, "message", "debug")
-		v1 := SubscribePanic(func(e Error) {
+		retCH := make(chan *Error, 1)
+		err := defineError(ErrorTypeKernel, 1, ErrorLevelWarn, "message")
+		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 			panic("error")
 		})
@@ -59,9 +59,9 @@ func TestPublishPanic(t *testing.T) {
 
 	t.Run("ok", func(t *testing.T) {
 		assert := NewAssert(t)
-		retCH := make(chan Error, 1)
-		err := NewError(ErrorKindKernelPanic, "message", "debug")
-		v1 := SubscribePanic(func(e Error) {
+		retCH := make(chan *Error, 1)
+		err := defineError(ErrorTypeKernel, 1, ErrorLevelWarn, "message")
+		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 		})
 		defer v1.Close()
@@ -87,7 +87,7 @@ func TestRunWithCatchPanic(t *testing.T) {
 func TestRunWithSubscribePanic(t *testing.T) {
 	t.Run("func with PublishPanic", func(t *testing.T) {
 		assert := NewAssert(t)
-		err := NewError(ErrorKindKernelPanic, "message", "debug")
+		err := defineError(ErrorTypeKernel, 1, ErrorLevelWarn, "message")
 		assert(RunWithSubscribePanic(func() {
 			PublishPanic(err)
 		})).Equal(err)

@@ -9,7 +9,7 @@ var (
 
 type PanicSubscription struct {
 	id      int64
-	onPanic func(err Error)
+	onPanic func(err *Error)
 }
 
 func (p *PanicSubscription) Close() bool {
@@ -33,7 +33,7 @@ func (p *PanicSubscription) Close() bool {
 }
 
 // SubscribePanic ...
-func SubscribePanic(onPanic func(Error)) *PanicSubscription {
+func SubscribePanic(onPanic func(*Error)) *PanicSubscription {
 	if onPanic == nil {
 		return nil
 	}
@@ -50,7 +50,7 @@ func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 }
 
 // PublishPanic ...
-func PublishPanic(err Error) {
+func PublishPanic(err *Error) {
 	defer func() {
 		_ = recover()
 	}()
@@ -74,9 +74,9 @@ func RunWithCatchPanic(fn func()) (ret interface{}) {
 	return
 }
 
-func RunWithSubscribePanic(fn func()) Error {
-	ch := make(chan Error, 1)
-	sub := SubscribePanic(func(err Error) {
+func RunWithSubscribePanic(fn func()) *Error {
+	ch := make(chan *Error, 1)
+	sub := SubscribePanic(func(err *Error) {
 		ch <- err
 	})
 	defer sub.Close()
