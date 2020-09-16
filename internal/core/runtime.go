@@ -31,7 +31,7 @@ func (p Runtime) OK(value interface{}) Return {
 		return thread.WriteOK(value, 1)
 	}
 
-	base.ReportPanic(
+	base.PublishPanic(
 		base.NewReplyPanic(
 			"Runtime is illegal in current goroutine",
 		).AddDebug(base.GetFileLine(1)),
@@ -66,7 +66,7 @@ func (p Runtime) Error(value error) Return {
 		}
 	}
 
-	base.ReportPanic(
+	base.PublishPanic(
 		base.NewReplyPanic(
 			"Runtime is illegal in current goroutine",
 		).AddDebug(base.GetFileLine(1)),
@@ -131,14 +131,14 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, base.Err
 
 func (p Runtime) GetServiceData() interface{} {
 	if thread := p.thread; thread == nil {
-		base.ReportPanic(
+		base.PublishPanic(
 			base.NewReplyPanic(
 				"Runtime is illegal in current goroutine",
 			).AddDebug(base.GetFileLine(1)),
 		)
 		return nil
 	} else if node := thread.GetReplyNode(); node == nil {
-		base.ReportPanic(
+		base.PublishPanic(
 			base.NewReplyPanic(
 				"Runtime is illegal in current goroutine",
 			).AddDebug(base.GetFileLine(1)),

@@ -278,7 +278,7 @@ func (p *rpcThread) Eval(
 		defer func() {
 			if v := recover(); v != nil {
 				// kernel error
-				base.ReportPanic(
+				base.PublishPanic(
 					base.NewKernelPanic(fmt.Sprintf("kernel error: %v", v)).
 						AddDebug(string(debug.Stack())),
 				)

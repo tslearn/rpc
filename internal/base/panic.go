@@ -32,22 +32,6 @@ func (p *PanicSubscription) Close() bool {
 	return false
 }
 
-// ReportPanic ...
-func ReportPanic(err Error) {
-	defer func() {
-		_ = recover()
-	}()
-
-	gPanicMutex.Lock()
-	defer gPanicMutex.Unlock()
-
-	for _, sub := range gPanicSubscriptions {
-		if sub != nil && sub.onPanic != nil {
-			sub.onPanic(err)
-		}
-	}
-}
-
 // SubscribePanic ...
 func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	if onPanic == nil {
@@ -63,6 +47,22 @@ func SubscribePanic(onPanic func(Error)) *PanicSubscription {
 	}
 	gPanicSubscriptions = append(gPanicSubscriptions, ret)
 	return ret
+}
+
+// PublishPanic ...
+func PublishPanic(err Error) {
+	defer func() {
+		_ = recover()
+	}()
+
+	gPanicMutex.Lock()
+	defer gPanicMutex.Unlock()
+
+	for _, sub := range gPanicSubscriptions {
+		if sub != nil && sub.onPanic != nil {
+			sub.onPanic(err)
+		}
+	}
 }
 
 func RunWithCatchPanic(fn func()) (ret interface{}) {
