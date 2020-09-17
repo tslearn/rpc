@@ -1,5 +1,10 @@
 package base
 
+import (
+	"fmt"
+	"sync"
+)
+
 type ErrorType uint8
 
 const (
@@ -21,6 +26,11 @@ const (
 
 type ErrorCode uint32
 
+var (
+	errorDefineMutex = &sync.Mutex{}
+	errorDefineMap   = map[uint64]string{}
+)
+
 type Error struct {
 	code    uint64
 	message string
@@ -31,8 +41,17 @@ func defineError(
 	code ErrorCode,
 	level ErrorLevel,
 	message string,
+	source string,
 ) *Error {
-	errCode := (uint64(kind) << 56) & (uint64(level) << 48) & (uint64(code) << 16)
+	errorDefineMutex.Lock()
+	defer errorDefineMutex.Unlock()
+	errCode := (uint64(kind) << 56) | (uint64(level) << 48) | (uint64(code) << 16)
+	fmt.Println(errCode, errorDefineMap)
+	if prevSource, ok := errorDefineMap[errCode]; ok {
+		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", prevSource, source))
+	} else {
+		errorDefineMap[errCode] = source
+	}
 	return &Error{
 		code:    errCode,
 		message: message,
@@ -41,32 +60,40 @@ func defineError(
 
 // DefineProtocolError ...
 func DefineProtocolError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeProtocol, code, level, msg)
+	return defineError(ErrorTypeProtocol, code, level, msg, GetFileLine(1))
 }
 
 // DefineTransportError ...
 func DefineTransportError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeTransport, code, level, msg)
+	return defineError(ErrorTypeTransport, code, level, msg, GetFileLine(1))
 }
 
 // DefineReplyError ...
 func DefineReplyError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeReply, code, level, msg)
+	return defineError(ErrorTypeReply, code, level, msg, GetFileLine(1))
 }
 
 // DefineRuntimeError ...
 func DefineRuntimeError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeRuntime, code, level, msg)
+	return defineError(ErrorTypeRuntime, code, level, msg, GetFileLine(1))
 }
 
 // DefineKernelError ...
 func DefineKernelError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeKernel, code, level, msg)
+	return defineError(ErrorTypeKernel, code, level, msg, GetFileLine(1))
 }
 
 // DefineSecurityError ...
 func DefineSecurityError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeSecurity, code, level, msg)
+	return defineError(ErrorTypeSecurity, code, level, msg, GetFileLine(1))
+}
+
+// NewReplyError ...
+func NewReplyError(level ErrorLevel, msg string) *Error {
+	return &Error{
+		code:    (uint64(ErrorTypeReply) << 56) & (uint64(level) << 48) & 1,
+		message: msg,
+	}
 }
 
 func (p *Error) GetType() ErrorType {
@@ -86,21 +113,22 @@ func (p *Error) GetMessage() string {
 }
 
 func (p *Error) AddDebug(debug string) *Error {
-	ret := &Error{}
-
 	if p.code%2 == 0 {
-		ret.code = p.code + 1
-	} else {
-		ret.code = p.code
+		ret := &Error{code: p.code + 1}
+		if p.message == "" {
+			ret.message = debug
+		} else {
+			ret.message = ConcatString(p.message, "\n>>> ", debug)
+		}
+		return ret
 	}
 
 	if p.message == "" {
-		ret.message = debug
+		p.message = debug
 	} else {
-		ret.message = ConcatString(p.message, "\n", debug)
+		p.message = ConcatString(p.message, "\n>>> ", debug)
 	}
-
-	return ret
+	return p
 }
 
 func (p *Error) getErrorTypeString() string {
