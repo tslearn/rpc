@@ -1,192 +1,192 @@
 package base
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
 
+func TestStatusManager(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(statusManagerClosed).Equal(int32(0))
+		assert(statusManagerRunning).Equal(int32(1))
+		assert(statusManagerClosing).Equal(int32(2))
+
+		assert(StatusManager{}.status).Equal(statusManagerClosed)
+		assert(StatusManager{}.closeCH).Equal(nil)
+		assert(StatusManager{}.mutex).Equal(sync.Mutex{})
+	})
+}
+
 func TestStatusManager_SetRunning(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("statusManagerClosed to statusManagerRunning", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	assert(StatusManager{}.status).Equal(statusManagerClosed)
-	assert(StatusManager{}.closeCH).IsNil()
+		v1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v1.SetRunning(nil)).IsTrue()
+		assert(v1.status, v1.closeCH).Equal(statusManagerRunning, nil)
 
-	// Test(1)
-	mgr1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr1.SetRunning(nil)).IsTrue()
-	assert(mgr1.status).Equal(statusManagerRunning)
-	assert(mgr1.closeCH).IsNil()
+		v2 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		r2 := make(chan bool, 1)
+		assert(v2.SetRunning(func() { r2 <- true })).IsTrue()
+		assert(v2.status, v2.closeCH).Equal(statusManagerRunning, nil)
+		assert(<-r2).IsTrue()
+	})
 
-	// Test(2)
-	mgr2 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	ret2 := make(chan bool, 1)
-	assert(mgr2.SetRunning(func() {
-		ret2 <- true
-	})).IsTrue()
-	assert(mgr2.status).Equal(statusManagerRunning)
-	assert(mgr2.closeCH).IsNil()
-	assert(<-ret2).IsTrue()
+	t.Run("statusManagerRunning to statusManagerRunning", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	// Test(3)
-	mgr3 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr3.SetRunning(nil)).IsFalse()
-	assert(mgr3.status).Equal(statusManagerRunning)
-	assert(mgr3.closeCH).IsNil()
+		v1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v1.SetRunning(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerRunning, nil)
 
-	// Test(4)
-	mgr4 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr4.SetRunning(func() {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr4.status).Equal(statusManagerRunning)
-	assert(mgr4.closeCH).IsNil()
+		v2 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v2.SetRunning(func() { panic("error") })).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerRunning, nil)
+	})
 
-	// Test(5)
-	mgr5 := &StatusManager{status: statusManagerClosing, closeCH: nil}
-	assert(mgr5.SetRunning(nil)).IsFalse()
-	assert(mgr5.status).Equal(statusManagerClosing)
-	assert(mgr5.closeCH).IsNil()
+	t.Run("statusManagerClosing to statusManagerRunning", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := &StatusManager{status: statusManagerClosing, closeCH: nil}
+		assert(v1.SetRunning(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerClosing, nil)
 
-	// Test(6)
-	mgr6 := &StatusManager{status: statusManagerClosing, closeCH: nil}
-	assert(mgr6.SetRunning(func() {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr6.status).Equal(statusManagerClosing)
-	assert(mgr6.closeCH).IsNil()
+		v2 := &StatusManager{status: statusManagerClosing, closeCH: nil}
+		assert(v2.SetRunning(func() { panic("error") })).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerClosing, nil)
+	})
 }
 
 func TestStatusManager_SetClosing(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("statusManagerRunning to statusManagerClosing", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	// Test(1)
-	mgr1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr1.SetClosing(nil)).IsTrue()
-	assert(mgr1.status).Equal(statusManagerClosing)
-	assert(mgr1.closeCH).IsNotNil()
+		v1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v1.SetClosing(nil)).IsTrue()
+		assert(v1.status).Equal(statusManagerClosing)
+		assert(v1.closeCH).IsNotNil()
 
-	// Test(2)
-	mgr2 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	ret2 := make(chan bool, 1)
-	assert(mgr2.SetClosing(func(closeCH chan bool) {
-		select {
-		case <-closeCH:
-			assert().Fail("this code should not eval")
-		case <-time.After(time.Second):
-			ret2 <- true
-		}
-	})).IsTrue()
-	assert(mgr2.status).Equal(statusManagerClosing)
-	assert(mgr2.closeCH).IsNotNil()
-	assert(<-ret2).IsTrue()
+		v2 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		r2 := make(chan bool, 1)
+		assert(v2.SetClosing(func(closeCH chan bool) {
+			select {
+			case <-closeCH:
+				panic("error")
+			case <-time.After(50 * time.Millisecond):
+				r2 <- true
+			}
+		})).IsTrue()
+		assert(v2.status).Equal(statusManagerClosing)
+		assert(v2.closeCH).IsNotNil()
+		assert(<-r2).IsTrue()
 
-	// Test(3)
-	mgr3 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	ret3 := chan bool(nil)
-	assert(mgr3.SetClosing(func(closeCH chan bool) {
-		ret3 = closeCH
-	})).IsTrue()
-	assert(mgr3.status).Equal(statusManagerClosing)
-	assert(mgr3.closeCH).IsNotNil()
-	assert(mgr3.SetClosed(nil)).IsTrue()
-	assert(mgr3.closeCH).IsNil()
-	assert(<-ret3).IsTrue()
+		v3 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		r3 := make(chan bool, 1)
+		assert(v3.SetClosing(func(closeCH chan bool) {
+			go func() {
+				select {
+				case <-closeCH:
+					r3 <- true
+				}
+			}()
+		})).IsTrue()
+		v3.SetClosed(nil)
+		assert(<-r3).IsTrue()
+	})
 
-	// Test(4)
-	mgr4 := &StatusManager{status: statusManagerClosing, closeCH: nil}
-	assert(mgr4.SetClosing(nil)).IsFalse()
-	assert(mgr4.status).Equal(statusManagerClosing)
-	assert(mgr4.closeCH).IsNil()
+	t.Run("statusManagerClosing to statusManagerClosing", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	// Test(5)
-	mgr5 := &StatusManager{status: statusManagerClosing, closeCH: nil}
-	assert(mgr5.SetClosing(func(_ chan bool) {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr5.status).Equal(statusManagerClosing)
-	assert(mgr5.closeCH).IsNil()
+		v1 := &StatusManager{status: statusManagerClosing, closeCH: nil}
+		assert(v1.SetClosing(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerClosing, nil)
 
-	// Test(6)
-	mgr6 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr6.SetClosing(nil)).IsFalse()
-	assert(mgr6.status).Equal(statusManagerClosed)
-	assert(mgr6.closeCH).IsNil()
+		v2 := &StatusManager{status: statusManagerClosing, closeCH: nil}
+		assert(v2.SetClosing(func(_ chan bool) { panic("error") })).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerClosing, nil)
+	})
 
-	// Test(7)
-	mgr7 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr7.SetClosing(func(_ chan bool) {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr7.status).Equal(statusManagerClosed)
-	assert(mgr7.closeCH).IsNil()
+	t.Run("statusManagerClosed to statusManagerClosing", func(t *testing.T) {
+		assert := NewAssert(t)
+
+		v1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v1.SetClosing(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerClosed, nil)
+
+		// Test(7)
+		v2 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v2.SetClosing(func(_ chan bool) { panic("error") })).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerClosed, nil)
+	})
 }
 
 func TestStatusManager_SetClosed(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("statusManagerClosing to statusManagerClosed", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	// Test(1)
-	mgr1 := &StatusManager{
-		status:  statusManagerClosing,
-		closeCH: make(chan bool, 1),
-	}
-	assert(mgr1.SetClosed(nil)).IsTrue()
-	assert(mgr1.status).Equal(statusManagerClosed)
-	assert(mgr1.closeCH).IsNil()
+		v1 := &StatusManager{
+			status:  statusManagerClosing,
+			closeCH: make(chan bool, 1),
+		}
+		assert(v1.SetClosed(nil)).IsTrue()
+		assert(v1.status, v1.closeCH).Equal(statusManagerClosed, nil)
 
-	// Test(2)
-	mgr2 := &StatusManager{
-		status:  statusManagerClosing,
-		closeCH: make(chan bool, 1),
-	}
-	ret2 := make(chan bool, 1)
-	assert(mgr2.SetClosed(func() {
-		ret2 <- true
-	})).IsTrue()
-	assert(mgr2.status).Equal(statusManagerClosed)
-	assert(mgr2.closeCH).IsNil()
-	assert(<-ret2).IsTrue()
+		v2 := &StatusManager{
+			status:  statusManagerClosing,
+			closeCH: make(chan bool, 1),
+		}
+		r2 := make(chan bool, 1)
+		assert(v2.SetClosed(func() { r2 <- true })).IsTrue()
+		assert(v2.status, v2.closeCH).Equal(statusManagerClosed, nil)
+		assert(<-r2).IsTrue()
+	})
 
-	// Test(3)
-	mgr3 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr3.SetClosed(nil)).IsFalse()
-	assert(mgr3.status).Equal(statusManagerClosed)
-	assert(mgr3.closeCH).IsNil()
+	t.Run("statusManagerClosed to statusManagerClosed", func(t *testing.T) {
+		assert := NewAssert(t)
 
-	// Test(4)
-	mgr4 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr4.SetClosed(func() {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr4.status).Equal(statusManagerClosed)
-	assert(mgr4.closeCH).IsNil()
+		v1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v1.SetClosed(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerClosed, nil)
 
-	// Test(5)
-	mgr5 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr5.SetClosed(nil)).IsFalse()
-	assert(mgr5.status).Equal(statusManagerRunning)
-	assert(mgr5.closeCH).IsNil()
+		v2 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v2.SetClosed(func() { panic("error") })).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerClosed, nil)
+	})
 
-	// Test(6)
-	mgr6 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr6.SetClosed(func() {
-		assert().Fail("this code should not eval")
-	})).IsFalse()
-	assert(mgr6.status).Equal(statusManagerRunning)
-	assert(mgr6.closeCH).IsNil()
+	t.Run("statusManagerRunning to statusManagerClosed", func(t *testing.T) {
+		assert := NewAssert(t)
+
+		// Test(5)
+		v1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v1.SetClosed(nil)).IsFalse()
+		assert(v1.status, v1.closeCH).Equal(statusManagerRunning, nil)
+
+		// Test(6)
+		v2 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v2.SetClosed(func() {
+			assert().Fail("this code should not eval")
+		})).IsFalse()
+		assert(v2.status, v2.closeCH).Equal(statusManagerRunning, nil)
+	})
 }
 
 func TestStatusManager_IsRunning(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("test status statusManagerClosed", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
+		assert(v1.IsRunning()).IsFalse()
+	})
 
-	// Test(1)
-	mgr1 := &StatusManager{status: statusManagerClosed, closeCH: nil}
-	assert(mgr1.IsRunning()).IsFalse()
+	t.Run("test status statusManagerRunning", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := &StatusManager{status: statusManagerRunning, closeCH: nil}
+		assert(v1.IsRunning()).IsTrue()
+	})
 
-	// Test(2)
-	mgr2 := &StatusManager{status: statusManagerRunning, closeCH: nil}
-	assert(mgr2.IsRunning()).IsTrue()
-
-	// Test(3)
-	mgr3 := &StatusManager{status: statusManagerClosing, closeCH: nil}
-	assert(mgr3.IsRunning()).IsFalse()
+	t.Run("test status statusManagerClosing", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := &StatusManager{status: statusManagerClosing, closeCH: nil}
+		assert(v1.IsRunning()).IsFalse()
+	})
 }
