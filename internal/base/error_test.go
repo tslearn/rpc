@@ -1,5 +1,30 @@
 package base
 
+import "testing"
+
+func TestErrorType(t *testing.T) {
+	assert := NewAssert(t)
+
+	t.Run("check constant", func(t *testing.T) {
+		assert(ErrorTypeProtocol).Equal(ErrorType(1))
+		assert(ErrorTypeTransport).Equal(ErrorType(2))
+		assert(ErrorTypeReply).Equal(ErrorType(3))
+		assert(ErrorTypeRuntime).Equal(ErrorType(4))
+		assert(ErrorTypeKernel).Equal(ErrorType(5))
+		assert(ErrorTypeSecurity).Equal(ErrorType(6))
+	})
+}
+
+func TestErrorLevel(t *testing.T) {
+	assert := NewAssert(t)
+
+	t.Run("check constant", func(t *testing.T) {
+		assert(ErrorLevelWarn).Equal(ErrorLevel(1))
+		assert(ErrorLevelError).Equal(ErrorLevel(2))
+		assert(ErrorLevelFatal).Equal(ErrorLevel(3))
+	})
+}
+
 //
 //func TestNewError(t *testing.T) {
 //	assert := NewAssert(t)

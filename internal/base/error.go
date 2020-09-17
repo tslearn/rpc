@@ -45,13 +45,15 @@ func defineError(
 ) *Error {
 	errorDefineMutex.Lock()
 	defer errorDefineMutex.Unlock()
-	errCode := (uint64(kind) << 56) | (uint64(level) << 48) | (uint64(code) << 16)
-	fmt.Println(errCode, errorDefineMap)
-	if prevSource, ok := errorDefineMap[errCode]; ok {
-		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", prevSource, source))
+
+	errCode := (uint64(kind) << 42) | (uint64(level) << 34) | (uint64(code) << 2)
+
+	if value, ok := errorDefineMap[errCode]; ok {
+		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", value, source))
 	} else {
 		errorDefineMap[errCode] = source
 	}
+
 	return &Error{
 		code:    errCode,
 		message: message,
@@ -91,21 +93,21 @@ func DefineSecurityError(code ErrorCode, level ErrorLevel, msg string) *Error {
 // NewReplyError ...
 func NewReplyError(level ErrorLevel, msg string) *Error {
 	return &Error{
-		code:    (uint64(ErrorTypeReply) << 56) & (uint64(level) << 48) & 1,
+		code:    (uint64(ErrorTypeReply) << 42) & (uint64(level) << 34) & 1,
 		message: msg,
 	}
 }
 
 func (p *Error) GetType() ErrorType {
-	return ErrorType(p.code >> 56)
+	return ErrorType(p.code >> 42)
 }
 
 func (p *Error) GetLevel() ErrorLevel {
-	return ErrorLevel((p.code >> 48) & 0xFF)
+	return ErrorLevel((p.code >> 34) & 0xFF)
 }
 
 func (p *Error) GetCode() ErrorCode {
-	return ErrorCode((p.code >> 16) & 0xFFFFFFFF)
+	return ErrorCode((p.code >> 2) & 0xFFFFFFFF)
 }
 
 func (p *Error) GetMessage() string {
