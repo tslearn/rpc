@@ -34,9 +34,9 @@ func TestRpcPerformanceIndicator_Count(t *testing.T) {
 		pi.Count(time.Duration(i)*time.Millisecond, false)
 	}
 	assert(pi.successArray).
-		Equal([8]int64{5, 15, 30, 50, 100, 300, 500, 1000})
+		Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
 	assert(pi.failArray).
-		Equal([8]int64{5, 15, 30, 50, 100, 300, 500, 1000})
+		Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
 }
 
 func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
