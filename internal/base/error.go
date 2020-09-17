@@ -93,7 +93,7 @@ func DefineSecurityError(code ErrorCode, level ErrorLevel, msg string) *Error {
 // NewReplyError ...
 func NewReplyError(level ErrorLevel, msg string) *Error {
 	return &Error{
-		code:    (uint64(ErrorTypeReply) << 42) & (uint64(level) << 34) & 1,
+		code:    (uint64(ErrorTypeReply) << 42) | (uint64(level) << 34) | 1,
 		message: msg,
 	}
 }
