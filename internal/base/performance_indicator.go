@@ -26,9 +26,7 @@ func NewPerformanceIndicator() *PerformanceIndicator {
 }
 
 // Calculate ...
-func (p *PerformanceIndicator) Calculate(
-	now time.Time,
-) (int64, time.Duration) {
+func (p *PerformanceIndicator) Calculate(now time.Time) (int64, time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -58,7 +56,7 @@ func (p *PerformanceIndicator) Calculate(
 func (p *PerformanceIndicator) Count(duration time.Duration, success bool) {
 	idx := 0
 
-	if duration < 5*time.Millisecond {
+	if duration < 10*time.Millisecond {
 		idx = 0
 	} else if duration < 20*time.Millisecond {
 		idx = 1
