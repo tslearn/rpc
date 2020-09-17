@@ -59,7 +59,7 @@ func TestNewAssert(t *testing.T) {
 		assert(o()).Equal(&rpcAssert{t: t, args: nil})
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewAssert(t)
 		assert(o(true, 1)).Equal(&rpcAssert{t: t, args: []interface{}{true, 1}})
@@ -67,7 +67,7 @@ func TestNewAssert(t *testing.T) {
 }
 
 func TestRpcAssert_Fail(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
@@ -173,7 +173,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 		))
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(3).Equal(3)
 		assert(nil).Equal(nil)
@@ -220,7 +220,7 @@ func TestRpcAssert_IsNil(t *testing.T) {
 		})).Equal(true, "\t2nd argument is not nil\n\t"+source+"\n")
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(nil).IsNil()
 		assert(([]interface{})(nil)).IsNil()
@@ -263,7 +263,7 @@ func TestRpcAssert_IsNotNil(t *testing.T) {
 		})).Equal(true, "\t2nd argument is nil\n\t"+source+"\n")
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(0).IsNotNil()
 		assert([]interface{}{}).IsNotNil()
@@ -295,7 +295,7 @@ func TestRpcAssert_IsTrue(t *testing.T) {
 		})).Equal(true, "\t2nd argument is not true\n\t"+source+"\n")
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(true).IsTrue()
 		assert(true, true).IsTrue()
@@ -324,7 +324,7 @@ func TestRpcAssert_IsFalse(t *testing.T) {
 		})).Equal(true, "\t2nd argument is not false\n\t"+source+"\n")
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(false).IsFalse()
 		assert(false, false).IsFalse()

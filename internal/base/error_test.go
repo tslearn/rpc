@@ -43,7 +43,7 @@ func TestDefineError(t *testing.T) {
 		})).Equal("Error redefined :\n>>> source\n>>> source\n")
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := defineError(ErrorTypeReply, 321, ErrorLevelWarn, "msg", "source")
 		defer func() {
@@ -58,7 +58,7 @@ func TestDefineError(t *testing.T) {
 }
 
 func TestDefineProtocolError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineProtocolError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -73,7 +73,7 @@ func TestDefineProtocolError(t *testing.T) {
 }
 
 func TestDefineTransportError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineTransportError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -88,7 +88,7 @@ func TestDefineTransportError(t *testing.T) {
 }
 
 func TestDefineReplyError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineReplyError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -103,7 +103,7 @@ func TestDefineReplyError(t *testing.T) {
 }
 
 func TestDefineRuntimeError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineRuntimeError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -118,7 +118,7 @@ func TestDefineRuntimeError(t *testing.T) {
 }
 
 func TestDefineKernelError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineKernelError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -133,7 +133,7 @@ func TestDefineKernelError(t *testing.T) {
 }
 
 func TestDefineSecurityError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1, s1 := DefineSecurityError(321, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
@@ -148,7 +148,7 @@ func TestDefineSecurityError(t *testing.T) {
 }
 
 func TestNewReplyError(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := NewReplyError(ErrorLevelWarn, "msg")
 		assert(v1.GetType(), v1.GetCode(), v1.GetLevel(), v1.GetMessage()).
@@ -159,7 +159,7 @@ func TestNewReplyError(t *testing.T) {
 }
 
 func TestError_GetType(t *testing.T) {
-	t.Run("ok ErrorTypeProtocol", func(t *testing.T) {
+	t.Run("test ErrorTypeProtocol", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineProtocolError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -170,7 +170,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeProtocol)
 	})
 
-	t.Run("ok ErrorTypeTransport", func(t *testing.T) {
+	t.Run("test ErrorTypeTransport", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineTransportError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -181,7 +181,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeTransport)
 	})
 
-	t.Run("ok ErrorTypeReply", func(t *testing.T) {
+	t.Run("test ErrorTypeReply", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineReplyError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -192,7 +192,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeReply)
 	})
 
-	t.Run("ok ErrorTypeRuntime", func(t *testing.T) {
+	t.Run("test ErrorTypeRuntime", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineRuntimeError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -203,7 +203,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeRuntime)
 	})
 
-	t.Run("ok ErrorTypeKernel", func(t *testing.T) {
+	t.Run("test ErrorTypeKernel", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineKernelError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -214,7 +214,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeKernel)
 	})
 
-	t.Run("ok ErrorTypeSecurity", func(t *testing.T) {
+	t.Run("test ErrorTypeSecurity", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(321, ErrorLevelWarn, "msg")
 		defer func() {
@@ -225,7 +225,7 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeSecurity)
 	})
 
-	t.Run("ok ErrorTypeSecurity", func(t *testing.T) {
+	t.Run("test ErrorTypeSecurity", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := NewReplyError(ErrorLevelWarn, "msg")
 		assert(v1.GetType()).Equal(ErrorTypeReply)
@@ -233,7 +233,7 @@ func TestError_GetType(t *testing.T) {
 }
 
 func TestError_GetLevel(t *testing.T) {
-	t.Run("ok ErrorLevelWarn", func(t *testing.T) {
+	t.Run("test ErrorLevelWarn", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(321, ErrorLevelWarn, "msg")
 		v2 := NewReplyError(ErrorLevelWarn, "msg")
@@ -246,7 +246,7 @@ func TestError_GetLevel(t *testing.T) {
 		assert(v2.GetLevel()).Equal(ErrorLevelWarn)
 	})
 
-	t.Run("ok ErrorLevelError", func(t *testing.T) {
+	t.Run("test ErrorLevelError", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(321, ErrorLevelError, "msg")
 		v2 := NewReplyError(ErrorLevelError, "msg")
@@ -259,7 +259,7 @@ func TestError_GetLevel(t *testing.T) {
 		assert(v2.GetLevel()).Equal(ErrorLevelError)
 	})
 
-	t.Run("ok ErrorLevelFatal", func(t *testing.T) {
+	t.Run("test ErrorLevelFatal", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(321, ErrorLevelFatal, "msg")
 		v2 := NewReplyError(ErrorLevelFatal, "msg")
@@ -274,7 +274,7 @@ func TestError_GetLevel(t *testing.T) {
 }
 
 func TestError_GetCode(t *testing.T) {
-	t.Run("ok with uint32 min", func(t *testing.T) {
+	t.Run("test with uint32 min", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(0, ErrorLevelFatal, "msg")
 		v2 := NewReplyError(ErrorLevelFatal, "msg")
@@ -287,7 +287,7 @@ func TestError_GetCode(t *testing.T) {
 		assert(v2.GetCode()).Equal(ErrorCode(0))
 	})
 
-	t.Run("ok with uint32 max", func(t *testing.T) {
+	t.Run("test with uint32 max", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(math.MaxUint32, ErrorLevelFatal, "msg")
 		v2 := NewReplyError(ErrorLevelFatal, "msg")
@@ -302,7 +302,7 @@ func TestError_GetCode(t *testing.T) {
 }
 
 func TestError_GetMessage(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(math.MaxUint32, ErrorLevelFatal, "msg1")
 		v2 := NewReplyError(ErrorLevelFatal, "msg2")
@@ -317,7 +317,7 @@ func TestError_GetMessage(t *testing.T) {
 }
 
 func TestError_AddDebug(t *testing.T) {
-	t.Run("ok from origin error", func(t *testing.T) {
+	t.Run("test from origin error", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(1, ErrorLevelFatal, "")
 		v2 := DefineSecurityError(2, ErrorLevelFatal, "msg")
@@ -335,7 +335,7 @@ func TestError_AddDebug(t *testing.T) {
 		assert(v4.GetMessage()).Equal("msg\n>>> dbg")
 	})
 
-	t.Run("ok from derived error", func(t *testing.T) {
+	t.Run("test from derived error", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := NewReplyError(ErrorLevelFatal, "")
 		v2 := NewReplyError(ErrorLevelFatal, "msg")

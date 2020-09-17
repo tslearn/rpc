@@ -19,7 +19,7 @@ func TestPanicSubscription_Close(t *testing.T) {
 		assert((&PanicSubscription{id: 8273}).Close()).IsFalse()
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := SubscribePanic(func(e *Error) {})
 		assert(v1.Close()).IsTrue()
@@ -32,7 +32,7 @@ func TestSubscribePanic(t *testing.T) {
 		assert(SubscribePanic(nil)).IsNil()
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		onPanic := func(e *Error) {}
 		v1 := SubscribePanic(onPanic)
@@ -57,7 +57,7 @@ func TestPublishPanic(t *testing.T) {
 		assert(<-retCH).Equal(err)
 	})
 
-	t.Run("ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
 		err := NewReplyError(ErrorLevelWarn, "message")
