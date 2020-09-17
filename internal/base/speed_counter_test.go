@@ -1,85 +1,96 @@
 package base
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestNewSpeedCounter(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sc1 := NewSpeedCounter()
-	assert(sc1).IsNotNil()
-	assert(sc1.total).Equal(int64(0))
-	assert(sc1.lastCount).Equal(int64(0))
-	assert(time.Since(sc1.lastTime) < 10*time.Millisecond).IsTrue()
-	assert(time.Since(sc1.lastTime) > -10*time.Millisecond).IsTrue()
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
+		assert(v1).IsNotNil()
+		assert(v1.total).Equal(int64(0))
+		assert(v1.lastCount).Equal(int64(0))
+		assert(IsTimeApproximatelyEqual(TimeNow(), v1.lastTime)).IsTrue()
+	})
 }
 
 func TestSpeedCounter_Count(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sc1 := NewSpeedCounter()
-	waitCH := make(chan bool)
-	for i := 0; i < 100; i++ {
-		go func() {
-			sc1.Count()
-			waitCH <- true
-		}()
-	}
-	for i := 0; i < 100; i++ {
-		<-waitCH
-	}
-	assert(sc1.Total()).Equal(int64(100))
-}
-
-func TestSpeedCounter_Total(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sc1 := NewSpeedCounter()
-	waitCH := make(chan bool)
-	for i := 0; i < 100; i++ {
-		go func() {
-			sc1.Count()
-			waitCH <- true
-		}()
-	}
-	for i := 0; i < 100; i++ {
-		<-waitCH
-	}
-	assert(sc1.Total()).Equal(int64(100))
-}
-
-func TestSpeedCounter_CalculateSpeed(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sc1 := NewSpeedCounter()
-
-	for n := 0; n < 100; n++ {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
 		waitCH := make(chan bool)
 		for i := 0; i < 100; i++ {
 			go func() {
-				sc1.Count()
+				for j := 0; j < 10; j++ {
+					v1.Count()
+					time.Sleep(time.Millisecond)
+				}
 				waitCH <- true
 			}()
 		}
 		for i := 0; i < 100; i++ {
 			<-waitCH
 		}
-		assert(sc1.Calculate(sc1.lastTime)).
-			Equal(int64(0), time.Duration(0))
-		assert(sc1.Calculate(sc1.lastTime.Add(time.Second))).
-			Equal(int64(100), time.Second)
-	}
+		assert(v1.Total()).Equal(int64(1000))
+	})
+}
 
-	// Test(1)
-	sc2 := NewSpeedCounter()
-	atomic.StoreInt64(&sc2.lastCount, 10)
-	assert(sc2.Calculate(sc2.lastTime.Add(time.Second))).
-		Equal(int64(0), time.Duration(0))
+func TestSpeedCounter_Total(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
+		waitCH := make(chan bool)
+		for i := 0; i < 100; i++ {
+			go func() {
+				for j := 0; j < 10; j++ {
+					v1.Count()
+					time.Sleep(time.Millisecond)
+				}
+				waitCH <- true
+			}()
+		}
+		for i := 0; i < 100; i++ {
+			<-waitCH
+		}
+		assert(v1.Total()).Equal(int64(1000))
+	})
+}
+
+func TestSpeedCounter_Calculate(t *testing.T) {
+	t.Run("delta time equal zero", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
+		assert(v1.Calculate(v1.lastTime)).Equal(int64(0), time.Duration(0))
+	})
+
+	t.Run("lastCount less than zero", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
+		v1.lastCount = 1
+		assert(v1.Calculate(v1.lastTime.Add(time.Second))).
+			Equal(int64(0), time.Duration(0))
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewSpeedCounter()
+		waitCH := make(chan bool)
+		for i := 0; i < 100; i++ {
+			go func(idx int) {
+				for k := 0; k < 10; k++ {
+					v1.Count()
+					v1.Count()
+					time.Sleep(time.Millisecond)
+				}
+				waitCH <- true
+			}(i)
+		}
+		for i := 0; i < 100; i++ {
+			<-waitCH
+		}
+		assert(v1.Calculate(v1.lastTime.Add(time.Second))).
+			Equal(int64(2000), time.Second)
+	})
 }
