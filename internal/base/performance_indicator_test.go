@@ -6,65 +6,70 @@ import (
 )
 
 func TestNewPerformanceIndicator(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	pi1 := NewPerformanceIndicator()
-	assert(pi1).IsNotNil()
-	assert(pi1.lastTotal).Equal(int64(0))
-	assert(len(pi1.successArray)).Equal(8)
-	for i := 0; i < len(pi1.successArray); i++ {
-		assert(pi1.successArray[i]).Equal(int64(0))
-	}
-	assert(len(pi1.failArray)).Equal(8)
-	for i := 0; i < len(pi1.failArray); i++ {
-		assert(pi1.failArray[i]).Equal(int64(0))
-	}
-	assert(TimeNow().Sub(pi1.lastTime) < 20*time.Millisecond).IsTrue()
-	assert(TimeNow().Sub(pi1.lastTime) > -20*time.Millisecond).IsTrue()
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewPerformanceIndicator()
+		assert(len(v1.successArray)).Equal(8)
+		for i := 0; i < len(v1.successArray); i++ {
+			assert(v1.successArray[i]).Equal(int64(0))
+		}
+		assert(len(v1.failArray)).Equal(8)
+		for i := 0; i < len(v1.failArray); i++ {
+			assert(v1.failArray[i]).Equal(int64(0))
+		}
+		assert(v1.lastTotal).Equal(int64(0))
+		assert(IsTimeApproximatelyEqual(TimeNow(), v1.lastTime)).IsTrue()
+	})
 }
 
-func TestRpcPerformanceIndicator_Count(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	pi := NewPerformanceIndicator()
-	for i := 0; i < 2000; i++ {
-		pi.Count(time.Duration(i)*time.Millisecond, true)
-		pi.Count(time.Duration(i)*time.Millisecond, false)
-	}
-	assert(pi.successArray).
-		Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
-	assert(pi.failArray).
-		Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
+func TestPerformanceIndicator_Count(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewPerformanceIndicator()
+		for i := 0; i < 2000; i++ {
+			v1.Count(time.Duration(i)*time.Millisecond, true)
+			v1.Count(time.Duration(i)*time.Millisecond, false)
+		}
+		assert(v1.successArray).
+			Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
+		assert(v1.failArray).
+			Equal([8]int64{10, 10, 30, 50, 100, 300, 500, 1000})
+	})
 }
 
-func TestRpcPerformanceIndicator_Calculate(t *testing.T) {
-	assert := NewAssert(t)
+func TestPerformanceIndicator_Calculate(t *testing.T) {
+	t.Run("delta time equal zero", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewPerformanceIndicator()
+		assert(v1.Calculate(v1.lastTime)).Equal(int64(0), time.Duration(0))
+	})
 
-	// Test(1)
-	pi1 := NewPerformanceIndicator()
-	for i := 0; i < 100; i++ {
-		go func(idx int) {
-			for k := 0; k < 100; k++ {
-				pi1.Count(time.Duration(idx)*time.Millisecond, true)
-				pi1.Count(time.Duration(idx)*time.Millisecond, false)
-				time.Sleep(time.Millisecond)
-			}
-		}(i)
-	}
-	time.Sleep(time.Second)
-	assert(pi1.Calculate(pi1.lastTime.Add(time.Second))).
-		Equal(int64(20000), time.Second)
+	t.Run("deltaCount less than zero", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewPerformanceIndicator()
+		v1.lastTotal = 1
+		assert(v1.Calculate(v1.lastTime.Add(time.Second))).
+			Equal(int64(0), time.Duration(0))
+	})
 
-	// Test(2)
-	pi2 := NewPerformanceIndicator()
-	pi2.lastTotal = 3
-	assert(pi2.Calculate(pi2.lastTime.Add(time.Second))).
-		Equal(int64(0), time.Duration(0))
-
-	// Test(3)
-	pi3 := NewPerformanceIndicator()
-	assert(pi3.Calculate(pi3.lastTime.Add(-time.Second))).
-		Equal(int64(0), time.Duration(0))
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewPerformanceIndicator()
+		waitCH := make(chan bool)
+		for i := 0; i < 100; i++ {
+			go func(idx int) {
+				for k := 0; k < 10; k++ {
+					v1.Count(time.Duration(idx)*time.Millisecond, true)
+					v1.Count(time.Duration(idx)*time.Millisecond, false)
+					time.Sleep(time.Millisecond)
+				}
+				waitCH <- true
+			}(i)
+		}
+		for i := 0; i < 100; i++ {
+			<-waitCH
+		}
+		assert(v1.Calculate(v1.lastTime.Add(time.Second))).
+			Equal(int64(2000), time.Second)
+	})
 }

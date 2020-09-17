@@ -230,6 +230,11 @@ func TimeNowISOString() string {
 	return ConvertToIsoDateString(time.Now())
 }
 
+func IsTimeApproximatelyEqual(t1 time.Time, t2 time.Time) bool {
+	delta := t1.Sub(t2)
+	return delta < 50*time.Millisecond && delta > -50*time.Millisecond
+}
+
 // GetSeed get int64 seed, it is goroutine safety
 func GetSeed() int64 {
 	return atomic.AddInt64(&seedInt64, 1)
