@@ -1,6 +1,10 @@
 package base
 
-import "testing"
+import (
+	"fmt"
+	"math"
+	"testing"
+)
 
 func TestErrorType(t *testing.T) {
 	t.Run("check constant", func(t *testing.T) {
@@ -154,138 +158,261 @@ func TestNewReplyError(t *testing.T) {
 	})
 }
 
-//
-//func TestNewError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := NewError(ErrorKindRuntimePanic, "message", "fileLine")
-//	assert(o1.GetKind()).Equal(ErrorKindRuntimePanic)
-//	assert(o1.GetMessage()).Equal("message")
-//	assert(o1.GetDebug()).Equal("fileLine")
-//}
-//
-//func TestNewReplyError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewReplyError("message")).
-//		Equal(NewError(ErrorKindReply, "message", ""))
-//}
-//
-//func TestNewReplyPanic(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewReplyPanic("message")).
-//		Equal(NewError(ErrorKindReplyPanic, "message", ""))
-//}
-//
-//func TestNewRuntimeError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewRuntimePanic("message")).
-//		Equal(NewError(ErrorKindRuntimePanic, "message", ""))
-//}
-//
-//func TestNewProtocolError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewProtocolError("message")).
-//		Equal(NewError(ErrorKindProtocol, "message", ""))
-//}
-//
-//func TestNewTransportError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewTransportError("message")).
-//		Equal(NewError(ErrorKindTransport, "message", ""))
-//}
-//
-//func TestNewKernelError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewKernelPanic("message")).
-//		Equal(NewError(ErrorKindKernelPanic, "message", ""))
-//}
-//
-//func TestNewSecurityLimitError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewSecurityLimitError("message")).
-//		Equal(NewError(ErrorKindSecurityLimit, "message", ""))
-//}
-//
-//func TestConvertToError(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(ConvertToError(0)).IsNil()
-//
-//	// Test(2)
-//	assert(ConvertToError(make(chan bool))).IsNil()
-//
-//	// Test(3)
-//	assert(ConvertToError(nil)).IsNil()
-//
-//	// Test(4)
-//	assert(ConvertToError(NewKernelPanic("test"))).IsNotNil()
-//}
-//
-//func TestRpcError_GetKind(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
-//	assert(o1.GetKind()).Equal(ErrorKindKernelPanic)
-//}
-//
-//func TestRpcError_GetMessage(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
-//	assert(o1.GetMessage()).Equal("message")
-//}
-//
-//func TestRpcError_GetDebug(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := NewError(ErrorKindKernelPanic, "message", "fileLine")
-//	assert(o1.GetDebug()).Equal("fileLine")
-//}
-//
-//func TestRpcError_AddDebug(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	o1 := NewError(ErrorKindKernelPanic, "message", "")
-//	assert(o1.AddDebug("fileLine").GetDebug()).Equal("fileLine")
-//
-//	// Test(2)
-//	o2 := NewError(ErrorKindKernelPanic, "message", "fileLine")
-//	assert(o2.AddDebug("fileLine").GetDebug()).Equal("fileLine\nfileLine")
-//}
-//
-//func TestRpcError_Error(t *testing.T) {
-//	assert := NewAssert(t)
-//
-//	// Test(1)
-//	assert(NewError(ErrorKindKernelPanic, "", "").Error()).Equal("")
-//
-//	// Test(2)
-//	assert(NewError(ErrorKindKernelPanic, "message", "").Error()).Equal("message")
-//
-//	// Test(3)
-//	assert(NewError(ErrorKindKernelPanic, "", "fileLine").Error()).Equal("fileLine")
-//
-//	// Test(4)
-//	assert(NewError(ErrorKindKernelPanic, "message", "fileLine").Error()).
-//		Equal("message\nfileLine")
-//}
+func TestError_GetType(t *testing.T) {
+	t.Run("ok ErrorTypeProtocol", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineProtocolError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeProtocol)
+	})
+
+	t.Run("ok ErrorTypeTransport", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineTransportError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeTransport)
+	})
+
+	t.Run("ok ErrorTypeReply", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineReplyError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeReply)
+	})
+
+	t.Run("ok ErrorTypeRuntime", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineRuntimeError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeRuntime)
+	})
+
+	t.Run("ok ErrorTypeKernel", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineKernelError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeKernel)
+	})
+
+	t.Run("ok ErrorTypeSecurity", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(321, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType()).Equal(ErrorTypeSecurity)
+	})
+
+	t.Run("ok ErrorTypeSecurity", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewReplyError(ErrorLevelWarn, "msg")
+		assert(v1.GetType()).Equal(ErrorTypeReply)
+	})
+}
+
+func TestError_GetLevel(t *testing.T) {
+	t.Run("ok ErrorLevelWarn", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(321, ErrorLevelWarn, "msg")
+		v2 := NewReplyError(ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetLevel()).Equal(ErrorLevelWarn)
+		assert(v2.GetLevel()).Equal(ErrorLevelWarn)
+	})
+
+	t.Run("ok ErrorLevelError", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(321, ErrorLevelError, "msg")
+		v2 := NewReplyError(ErrorLevelError, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetLevel()).Equal(ErrorLevelError)
+		assert(v2.GetLevel()).Equal(ErrorLevelError)
+	})
+
+	t.Run("ok ErrorLevelFatal", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(321, ErrorLevelFatal, "msg")
+		v2 := NewReplyError(ErrorLevelFatal, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetLevel()).Equal(ErrorLevelFatal)
+		assert(v2.GetLevel()).Equal(ErrorLevelFatal)
+	})
+}
+
+func TestError_GetCode(t *testing.T) {
+	t.Run("ok with uint32 min", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(0, ErrorLevelFatal, "msg")
+		v2 := NewReplyError(ErrorLevelFatal, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetCode()).Equal(ErrorCode(0))
+		assert(v2.GetCode()).Equal(ErrorCode(0))
+	})
+
+	t.Run("ok with uint32 max", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(math.MaxUint32, ErrorLevelFatal, "msg")
+		v2 := NewReplyError(ErrorLevelFatal, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetCode()).Equal(ErrorCode(math.MaxUint32))
+		assert(v2.GetCode()).Equal(ErrorCode(0))
+	})
+}
+
+func TestError_GetMessage(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(math.MaxUint32, ErrorLevelFatal, "msg1")
+		v2 := NewReplyError(ErrorLevelFatal, "msg2")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetMessage()).Equal("msg1")
+		assert(v2.GetMessage()).Equal("msg2")
+	})
+}
+
+func TestError_AddDebug(t *testing.T) {
+	t.Run("ok from origin error", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineSecurityError(1, ErrorLevelFatal, "")
+		v2 := DefineSecurityError(2, ErrorLevelFatal, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			delete(errorDefineMap, v2.code)
+			errorDefineMutex.Unlock()
+		}()
+		v3 := v1.AddDebug("dbg")
+		v4 := v2.AddDebug("dbg")
+		assert(fmt.Sprintf("%p", v3) == fmt.Sprintf("%p", v1)).IsFalse()
+		assert(fmt.Sprintf("%p", v4) == fmt.Sprintf("%p", v2)).IsFalse()
+		assert(v3.GetMessage()).Equal(">>> dbg")
+		assert(v4.GetMessage()).Equal("msg\n>>> dbg")
+	})
+
+	t.Run("ok from derived error", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewReplyError(ErrorLevelFatal, "")
+		v2 := NewReplyError(ErrorLevelFatal, "msg")
+		v3 := v1.AddDebug("dbg")
+		v4 := v2.AddDebug("dbg")
+		assert(fmt.Sprintf("%p", v3) == fmt.Sprintf("%p", v1)).IsTrue()
+		assert(fmt.Sprintf("%p", v4) == fmt.Sprintf("%p", v2)).IsTrue()
+		assert(v3.GetMessage()).Equal(">>> dbg")
+		assert(v4.GetMessage()).Equal("msg\n>>> dbg")
+	})
+}
+
+func TestError_getErrorTypeString(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineProtocolError(2, ErrorLevelFatal, "msg")
+		v2 := DefineTransportError(2, ErrorLevelFatal, "msg")
+		v3 := DefineReplyError(2, ErrorLevelFatal, "msg")
+		v4 := DefineRuntimeError(2, ErrorLevelFatal, "msg")
+		v5 := DefineKernelError(2, ErrorLevelFatal, "msg")
+		v6 := DefineSecurityError(2, ErrorLevelFatal, "msg")
+		v7 := &Error{}
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			delete(errorDefineMap, v2.code)
+			delete(errorDefineMap, v3.code)
+			delete(errorDefineMap, v4.code)
+			delete(errorDefineMap, v5.code)
+			delete(errorDefineMap, v6.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.getErrorTypeString()).Equal("Protocol")
+		assert(v2.getErrorTypeString()).Equal("Transport")
+		assert(v3.getErrorTypeString()).Equal("Reply")
+		assert(v4.getErrorTypeString()).Equal("Runtime")
+		assert(v5.getErrorTypeString()).Equal("Kernel")
+		assert(v6.getErrorTypeString()).Equal("Security")
+		assert(v7.getErrorTypeString()).Equal("")
+	})
+}
+
+func TestError_getErrorLevelString(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineProtocolError(2, ErrorLevelWarn, "msg")
+		v2 := DefineProtocolError(2, ErrorLevelError, "msg")
+		v3 := DefineProtocolError(2, ErrorLevelFatal, "msg")
+		v4 := DefineRuntimeError(2, 0, "msg")
+		v5 := DefineRuntimeError(2, 255, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			delete(errorDefineMap, v2.code)
+			delete(errorDefineMap, v3.code)
+			delete(errorDefineMap, v4.code)
+			delete(errorDefineMap, v5.code)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.getErrorLevelString()).Equal("Warn")
+		assert(v2.getErrorLevelString()).Equal("Error")
+		assert(v3.getErrorLevelString()).Equal("Fatal")
+		assert(v4.getErrorLevelString()).Equal("")
+		assert(v5.getErrorLevelString()).Equal("")
+	})
+}
+
+func TestError_Error(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := DefineProtocolError(2, ErrorLevelWarn, "msg")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, v1.code)
+			errorDefineMutex.Unlock()
+		}()
+		v2 := v1.AddDebug("dbg")
+		assert(v2.Error()).Equal("ProtocolWarn: msg\n>>> dbg")
+	})
+}

@@ -118,7 +118,7 @@ func (p *Error) AddDebug(debug string) *Error {
 	if p.code%2 == 0 {
 		ret := &Error{code: p.code + 1}
 		if p.message == "" {
-			ret.message = debug
+			ret.message = ConcatString(">>> " + debug)
 		} else {
 			ret.message = ConcatString(p.message, "\n>>> ", debug)
 		}
@@ -126,7 +126,7 @@ func (p *Error) AddDebug(debug string) *Error {
 	}
 
 	if p.message == "" {
-		p.message = debug
+		p.message = ConcatString(">>> " + debug)
 	} else {
 		p.message = ConcatString(p.message, "\n>>> ", debug)
 	}
@@ -169,7 +169,7 @@ func (p *Error) Error() string {
 	return ConcatString(
 		p.getErrorTypeString(),
 		p.getErrorLevelString(),
-		":",
+		": ",
 		p.message,
 	)
 }
