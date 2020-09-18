@@ -22,10 +22,8 @@ func testFailHelper(fn func(_ func(_ ...interface{}) Assert)) (bool, string) {
 	var buf bytes.Buffer
 	retCH := make(chan bool, 1)
 
-	logWriter = &buf
-	defer func() {
-		logWriter = os.Stdout
-	}()
+	SetLogWriter(&buf)
+	defer SetLogWriter(os.Stdout)
 
 	fn(func(args ...interface{}) Assert {
 		return &rpcAssert{

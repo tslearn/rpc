@@ -2,12 +2,8 @@ package base
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"reflect"
 )
-
-var logWriter io.Writer = os.Stdout
 
 // Assert ...
 type Assert interface {
@@ -36,7 +32,7 @@ type rpcAssert struct {
 }
 
 func (p *rpcAssert) fail(reason string) {
-	_, _ = fmt.Fprintf(logWriter, "\t%s\n\t%s\n", reason, GetFileLine(2))
+	Log(fmt.Sprintf("\t%s\n\t%s\n", reason, GetFileLine(2)))
 	p.t.Fail()
 }
 

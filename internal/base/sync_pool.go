@@ -24,7 +24,7 @@ func (p *SyncPoolDebug) Put(x interface{}) {
 		safePoolDebugMap.Delete(x)
 		p.pool.Put(x)
 	} else {
-		panic("Put unmanaged object in pool, or may be put twice")
+		panic("SyncPoolDebug Put check failed")
 	}
 }
 
@@ -39,7 +39,7 @@ func (p *SyncPoolDebug) Get() interface{} {
 	x := p.pool.Get()
 
 	if _, loaded := safePoolDebugMap.LoadOrStore(x, true); loaded {
-		panic("Get allocated object in pool")
+		panic("SyncPoolDebug Get check failed")
 	}
 
 	return x
