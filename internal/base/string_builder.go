@@ -1,12 +1,8 @@
 package base
 
-import (
-	"sync"
-)
+const stringBuilderBufferSize = 512
 
-const stringBuilderBufferSize = 1024
-
-var stringBuilderCache = &sync.Pool{
+var stringBuilderCache = &SyncPool{
 	New: func() interface{} {
 		return &StringBuilder{
 			buffer: make([]byte, 0, stringBuilderBufferSize),
@@ -24,7 +20,7 @@ func NewStringBuilder() *StringBuilder {
 	return stringBuilderCache.Get().(*StringBuilder)
 }
 
-// Reset Reset the builder
+// Reset reset the builder
 func (p *StringBuilder) Reset() {
 	if cap(p.buffer) == stringBuilderBufferSize {
 		p.buffer = p.buffer[:0]
@@ -33,7 +29,7 @@ func (p *StringBuilder) Reset() {
 	}
 }
 
-// Release Release the builder
+// Release release the builder
 func (p *StringBuilder) Release() {
 	p.Reset()
 	stringBuilderCache.Put(p)

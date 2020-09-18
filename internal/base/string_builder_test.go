@@ -2,127 +2,152 @@ package base
 
 import (
 	"math/rand"
+	"runtime"
+	"runtime/debug"
 	"testing"
 	"time"
 )
 
 func getRandomTestBuilder() (*StringBuilder, string) {
 	rand.Seed(time.Now().UnixNano())
-	str := GetRandString(rand.Int() % 10000)
+	str := GetRandString(rand.Int() % 5000)
 	sb := NewStringBuilder()
 	sb.AppendString(str)
 	return sb, str
 }
 
 func TestNewStringBuilder(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sb1 := NewStringBuilder()
-	defer sb1.Release()
-	assert(len(sb1.buffer)).Equal(0)
-	assert(cap(sb1.buffer)).Equal(stringBuilderBufferSize)
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		defer v1.Release()
+		assert(len(v1.buffer)).Equal(0)
+		assert(cap(v1.buffer)).Equal(512)
+	})
 }
 
 func TestStringBuilder_Reset(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("buffer is enlarged", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		defer v1.Release()
+		v1.AppendString(GetRandString(2 * stringBuilderBufferSize))
+		v1.Reset()
+		assert(len(v1.buffer)).Equal(0)
+		assert(cap(v1.buffer)).Equal(stringBuilderBufferSize)
+	})
 
-	// Test(1)
-	sb1 := NewStringBuilder()
-	defer sb1.Release()
-	for i := 0; i < stringBuilderBufferSize; i++ {
-		sb1.AppendString("S")
-	}
-	sb1.Reset()
-	assert(len(sb1.buffer)).Equal(0)
-	assert(cap(sb1.buffer)).Equal(stringBuilderBufferSize)
+	t.Run("buffer is not enlarged", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		defer v1.Release()
+		v1.AppendString(GetRandString(stringBuilderBufferSize))
+		v1.Reset()
+		assert(len(v1.buffer)).Equal(0)
+		assert(cap(v1.buffer)).Equal(stringBuilderBufferSize)
+	})
+}
 
-	// Test(2)
-	sb2 := NewStringBuilder()
-	defer sb2.Release()
-	for i := 0; i < 2*stringBuilderBufferSize; i++ {
-		sb2.AppendString("S")
-	}
-	sb2.Reset()
-	assert(len(sb2.buffer)).Equal(0)
-	assert(cap(sb2.buffer)).Equal(stringBuilderBufferSize)
+func TestStringBuilder_Release(t *testing.T) {
+	t.Run("gc without release", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		r1 := make(chan bool)
+		runtime.SetFinalizer(v1, func(f *StringBuilder) {
+			r1 <- true
+		})
+		debug.SetGCPercent(1)
+		runtime.GC()
+		assert(<-r1).IsTrue()
+	})
+
+	t.Run("gc with release", func(t *testing.T) {
+		v1 := NewStringBuilder()
+		runtime.SetFinalizer(v1, func(f *StringBuilder) { panic("error") })
+		v1.Release()
+		debug.SetGCPercent(1)
+		runtime.GC()
+	})
 }
 
 func TestStringBuilder_AppendByte(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	for i := 0; i < 2000; i++ {
-		sb1, str1 := getRandomTestBuilder()
-		sb1.AppendByte('a')
-		assert(sb1.String()).Equal(str1 + "a")
-		sb1.Release()
-	}
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v1, s1 := getRandomTestBuilder()
+			v1.AppendByte('a')
+			assert(v1.String()).Equal(s1 + "a")
+			v1.Release()
+		}
+	})
 }
 
 func TestStringBuilder_AppendBytes(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v1, s1 := getRandomTestBuilder()
+			add1 := GetRandString(rand.Int() % 5000)
+			v1.AppendBytes(([]byte)(add1))
+			assert(v1.String()).Equal(s1 + add1)
+			v1.Release()
+		}
+	})
 
-	// Test(1)
-	for i := 0; i < 2000; i++ {
-		sb1, str1 := getRandomTestBuilder()
-		add1 := GetRandString(rand.Int() % 10000)
-		sb1.AppendBytes(([]byte)(add1))
-		assert(sb1.String()).Equal(str1 + add1)
-		sb1.Release()
-	}
 }
 
 func TestStringBuilder_AppendString(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	for i := 0; i < 2000; i++ {
-		sb1, str1 := getRandomTestBuilder()
-		add1 := GetRandString(rand.Int() % 10000)
-		sb1.AppendString(add1)
-		assert(sb1.String()).Equal(str1 + add1)
-		sb1.Release()
-	}
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v1, s1 := getRandomTestBuilder()
+			add1 := GetRandString(rand.Int() % 5000)
+			v1.AppendString(add1)
+			assert(v1.String()).Equal(s1 + add1)
+			v1.Release()
+		}
+	})
 }
 
 func TestStringBuilder_Merge(t *testing.T) {
-	assert := NewAssert(t)
+	t.Run("merge nil", func(t *testing.T) {
+		assert := NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v1, s1 := getRandomTestBuilder()
+			v1.Merge(nil)
+			assert(v1.String()).Equal(s1)
+			v1.Release()
+		}
+	})
 
-	// Test(1)
-	for i := 0; i < 2000; i++ {
-		sb1, str1 := getRandomTestBuilder()
-		mergeSb1, mergeStr1 := getRandomTestBuilder()
-		sb1.Merge(mergeSb1)
-		assert(sb1.String()).Equal(str1 + mergeStr1)
-		sb1.Release()
-		mergeSb1.Release()
-	}
-
-	// Test(2)
-	for i := 0; i < 2000; i++ {
-		sb1, str1 := getRandomTestBuilder()
-		sb1.Merge(nil)
-		assert(sb1.String()).Equal(str1)
-		sb1.Release()
-	}
+	t.Run("merge not nil", func(t *testing.T) {
+		assert := NewAssert(t)
+		for i := 0; i < 2000; i++ {
+			v1, s1 := getRandomTestBuilder()
+			v2, s2 := getRandomTestBuilder()
+			v1.Merge(v2)
+			assert(v1.String()).Equal(s1 + s2)
+			v1.Release()
+			v2.Release()
+		}
+	})
 }
 
 func TestStringBuilder_IsEmpty(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sb1 := NewStringBuilder()
-	assert(sb1.IsEmpty()).IsTrue()
-	sb1.AppendString("a")
-	assert(sb1.IsEmpty()).IsFalse()
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		assert(v1.IsEmpty()).IsTrue()
+		v1.AppendString("a")
+		assert(v1.IsEmpty()).IsFalse()
+	})
 }
 
 func TestStringBuilder_String(t *testing.T) {
-	assert := NewAssert(t)
-
-	// Test(1)
-	sb1 := NewStringBuilder()
-	sb1.AppendString("a")
-	assert(sb1.String()).Equal("a")
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1 := NewStringBuilder()
+		v1.AppendString("a")
+		assert(v1.String()).Equal("a")
+	})
 }
