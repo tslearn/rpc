@@ -19,6 +19,43 @@ var (
 	intToStringCache4 = make([][]byte, 10000)
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+	charToASCII := [10]byte{
+		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
+	}
+	for i := 0; i < 100; i++ {
+		intToStringCache2[i] = []byte{
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
+		}
+	}
+	for i := 0; i < 1000; i++ {
+		intToStringCache3[i] = []byte{
+			charToASCII[(i/100)%10],
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
+		}
+	}
+	for i := 0; i < 10000; i++ {
+		intToStringCache4[i] = []byte{
+			charToASCII[(i/1000)%10],
+			charToASCII[(i/100)%10],
+			charToASCII[(i/10)%10],
+			charToASCII[i%10],
+		}
+	}
+
+	go func() {
+		gTimeMaster.Run()
+	}()
+}
+
+type timeInfo struct {
+	time          time.Time
+	timeISOString string
+}
+
 type timeMaster struct {
 	timeNowPointer   unsafe.Pointer
 	timeSpeedCounter *SpeedCounter
@@ -72,44 +109,6 @@ func (p *timeMaster) TimeNowISOString() string {
 	}
 
 	return ConvertToIsoDateString(time.Now())
-}
-
-type timeInfo struct {
-	time          time.Time
-	timeISOString string
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-	charToASCII := [10]byte{
-		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-	}
-	for i := 0; i < 100; i++ {
-		intToStringCache2[i] = []byte{
-			charToASCII[(i/10)%10],
-			charToASCII[i%10],
-		}
-	}
-	for i := 0; i < 1000; i++ {
-		intToStringCache3[i] = []byte{
-			charToASCII[(i/100)%10],
-			charToASCII[(i/10)%10],
-			charToASCII[i%10],
-		}
-	}
-	for i := 0; i < 10000; i++ {
-		intToStringCache4[i] = []byte{
-			charToASCII[(i/1000)%10],
-			charToASCII[(i/100)%10],
-			charToASCII[(i/10)%10],
-			charToASCII[i%10],
-		}
-	}
-
-	// check timer
-	go func() {
-		gTimeMaster.Run()
-	}()
 }
 
 // ConvertToIsoDateString convert time.Time to iso string
