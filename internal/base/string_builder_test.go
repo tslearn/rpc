@@ -1,9 +1,8 @@
 package base
 
 import (
+	"fmt"
 	"math/rand"
-	"runtime"
-	"runtime/debug"
 	"testing"
 	"time"
 )
@@ -49,24 +48,15 @@ func TestStringBuilder_Reset(t *testing.T) {
 }
 
 func TestStringBuilder_Release(t *testing.T) {
-	t.Run("gc without release", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := NewStringBuilder()
-		r1 := make(chan bool)
-		runtime.SetFinalizer(v1, func(f *StringBuilder) {
-			r1 <- true
-		})
-		debug.SetGCPercent(1)
-		runtime.GC()
-		assert(<-r1).IsTrue()
-	})
-
-	t.Run("gc with release", func(t *testing.T) {
-		v1 := NewStringBuilder()
-		runtime.SetFinalizer(v1, func(f *StringBuilder) { panic("error") })
-		v1.Release()
-		debug.SetGCPercent(1)
-		runtime.GC()
+		mp := map[string]bool{}
+		for i := 0; i < 1000; i++ {
+			v := NewStringBuilder()
+			mp[fmt.Sprintf("%p", v)] = true
+			v.Release()
+		}
+		assert(len(mp) < 1000).IsTrue()
 	})
 }
 
