@@ -48,11 +48,10 @@ func TestSyncPoolDebug_Get(t *testing.T) {
 			defer SetLogWriter(os.Stdout)
 			v1 := &SyncPoolDebug{
 				New: func() interface{} {
-					ret := make([]byte, 512)
-					return &ret
+					return &buf
 				},
 			}
-			v1.pool.Put(v1.Get())
+			v1.Get()
 			v1.Get()
 		})).Equal("SyncPoolDebug Get check failed")
 		assert(buf.String()).Equal(
