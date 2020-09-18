@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	timeNowPointer         = (unsafe.Pointer)(nil)
-	timeCacheFailedCounter = NewSpeedCounter()
-	defaultISODateBuffer   = []byte{
+	gTimeMaster          = newTimeMaster()
+	defaultISODateBuffer = []byte{
 		0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x2D, 0x30, 0x30,
 		0x54, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x3A, 0x30, 0x30, 0x2E,
 		0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30,
@@ -19,6 +18,61 @@ var (
 	intToStringCache3 = make([][]byte, 1000)
 	intToStringCache4 = make([][]byte, 10000)
 )
+
+type timeMaster struct {
+	timeNowPointer   unsafe.Pointer
+	timeSpeedCounter *SpeedCounter
+}
+
+func newTimeMaster() *timeMaster {
+	return &timeMaster{
+		timeNowPointer:   nil,
+		timeSpeedCounter: NewSpeedCounter(),
+	}
+}
+
+func (p *timeMaster) Run() {
+	for {
+		speed, _ := p.timeSpeedCounter.Calculate(time.Now())
+		if speed > 10000 {
+			for i := 0; i < 100; i++ {
+				now := time.Now()
+				atomic.StorePointer(&p.timeNowPointer, unsafe.Pointer(&timeInfo{
+					time:          now,
+					timeISOString: ConvertToIsoDateString(now),
+				}))
+				time.Sleep(time.Millisecond)
+			}
+		} else {
+			atomic.StorePointer(&p.timeNowPointer, nil)
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
+func (p *timeMaster) Count() {
+	p.timeSpeedCounter.Count()
+}
+
+func (p *timeMaster) TimeNow() time.Time {
+	p.Count()
+
+	if item := (*timeInfo)(atomic.LoadPointer(&p.timeNowPointer)); item != nil {
+		return item.time
+	}
+
+	return time.Now()
+}
+
+func (p *timeMaster) TimeNowISOString() string {
+	p.Count()
+
+	if item := (*timeInfo)(atomic.LoadPointer(&p.timeNowPointer)); item != nil {
+		return item.timeISOString
+	}
+
+	return ConvertToIsoDateString(time.Now())
+}
 
 type timeInfo struct {
 	time          time.Time
@@ -51,31 +105,11 @@ func init() {
 			charToASCII[i%10],
 		}
 	}
-}
 
-func runStoreTime() {
-	defer atomic.StorePointer(&timeNowPointer, nil)
-
-	for i := 0; i < 800; i++ {
-		now := time.Now()
-		atomic.StorePointer(&timeNowPointer, unsafe.Pointer(&timeInfo{
-			time:          now,
-			timeISOString: ConvertToIsoDateString(now),
-		}))
-		time.Sleep(1 * time.Millisecond)
-	}
-}
-
-func onTimeCacheFailed() {
-	if timeCacheFailedCounter.Count()%10000 == 0 {
-		if speed, _ := timeCacheFailedCounter.Calculate(
-			TimeNow(),
-		); speed > 10000 {
-			if atomic.LoadPointer(&timeNowPointer) == nil {
-				go runStoreTime()
-			}
-		}
-	}
+	// check timer
+	go func() {
+		gTimeMaster.Run()
+	}()
 }
 
 // ConvertToIsoDateString convert time.Time to iso string
@@ -118,22 +152,12 @@ func ConvertToIsoDateString(date time.Time) string {
 
 // TimeNow get now nanoseconds from 1970-01-01
 func TimeNow() time.Time {
-	if item := (*timeInfo)(atomic.LoadPointer(&timeNowPointer)); item != nil {
-		return item.time
-	}
-
-	onTimeCacheFailed()
-	return time.Now()
+	return gTimeMaster.TimeNow()
 }
 
 // TimeNowISOString get now iso string like this: 2019-09-09T09:47:16.180+08:00
 func TimeNowISOString() string {
-	if item := (*timeInfo)(atomic.LoadPointer(&timeNowPointer)); item != nil {
-		return item.timeISOString
-	}
-
-	onTimeCacheFailed()
-	return ConvertToIsoDateString(time.Now())
+	return gTimeMaster.TimeNowISOString()
 }
 
 func IsTimeApproximatelyEqual(t1 time.Time, t2 time.Time) bool {

@@ -100,7 +100,7 @@ func TestTimeNowISOString(t *testing.T) {
 	}
 
 	for i := 0; i < 100000; i++ {
-		atomic.StorePointer(&timeNowPointer, nil)
+		atomic.StorePointer(&gTimeMaster.timeNowPointer, nil)
 		if now, err := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			TimeNowISOString(),
