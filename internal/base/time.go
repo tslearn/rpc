@@ -56,7 +56,12 @@ type timeInfo struct {
 	timeISOString string
 }
 
+const timeMasterStatusNone = int32(0)
+const timeMasterStatusRunning = int32(1)
+const timeMasterStatusClosed = int32(2)
+
 type timeMaster struct {
+	status           int32
 	timeNowPointer   unsafe.Pointer
 	timeSpeedCounter *SpeedCounter
 }
@@ -68,23 +73,44 @@ func newTimeMaster() *timeMaster {
 	}
 }
 
-func (p *timeMaster) Run() {
-	for {
-		speed, _ := p.timeSpeedCounter.Calculate(time.Now())
-		if speed > 10000 {
-			for i := 0; i < 100; i++ {
-				now := time.Now()
-				atomic.StorePointer(&p.timeNowPointer, unsafe.Pointer(&timeInfo{
-					time:          now,
-					timeISOString: ConvertToIsoDateString(now),
-				}))
-				time.Sleep(time.Millisecond)
+func (p *timeMaster) Run() bool {
+	if atomic.CompareAndSwapInt32(
+		&p.status,
+		timeMasterStatusNone,
+		timeMasterStatusRunning,
+	) {
+		for atomic.CompareAndSwapInt32(
+			&p.status,
+			timeMasterStatusRunning,
+			timeMasterStatusRunning,
+		) {
+			speed, _ := p.timeSpeedCounter.Calculate(time.Now())
+			if speed > 10000 {
+				for i := 0; i < 100; i++ {
+					now := time.Now()
+					atomic.StorePointer(&p.timeNowPointer, unsafe.Pointer(&timeInfo{
+						time:          now,
+						timeISOString: ConvertToIsoDateString(now),
+					}))
+					time.Sleep(time.Millisecond)
+				}
+			} else {
+				atomic.StorePointer(&p.timeNowPointer, nil)
+				time.Sleep(100 * time.Millisecond)
 			}
-		} else {
-			atomic.StorePointer(&p.timeNowPointer, nil)
-			time.Sleep(100 * time.Millisecond)
 		}
+		return true
+	} else {
+		return false
 	}
+}
+
+func (p *timeMaster) Close() bool {
+	return atomic.CompareAndSwapInt32(
+		&p.status,
+		timeMasterStatusRunning,
+		timeMasterStatusClosed,
+	)
 }
 
 func (p *timeMaster) Count() {
