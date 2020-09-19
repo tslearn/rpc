@@ -172,6 +172,13 @@ func TestNewReplyError(t *testing.T) {
 	})
 }
 
+func TestError_GetCode(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert((&Error{code: 123}).GetCode()).Equal(uint64(123))
+	})
+}
+
 func TestError_GetType(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
@@ -291,7 +298,7 @@ func TestError_GetLevel(t *testing.T) {
 	})
 }
 
-func TestError_GetCode(t *testing.T) {
+func TestError_GetNumber(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
 	t.Run("test with uint32 min", func(t *testing.T) {

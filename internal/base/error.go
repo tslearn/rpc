@@ -98,6 +98,10 @@ func NewReplyError(level ErrorLevel, msg string) *Error {
 	}
 }
 
+func (p *Error) GetCode() uint64 {
+	return p.code
+}
+
 func (p *Error) GetType() ErrorType {
 	return ErrorType(p.code >> 42)
 }
