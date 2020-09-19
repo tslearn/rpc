@@ -161,17 +161,6 @@ func TestDefineSecurityError(t *testing.T) {
 	})
 }
 
-func TestNewReplyError(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := NewAssert(t)
-		v1 := NewReplyError(ErrorLevelWarn, "msg")
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
-			Equal(ErrorTypeReply, ErrorNumber(0), ErrorLevelWarn, "msg")
-		s1, ok1 := errorDefineMap[v1.code]
-		assert(s1, ok1).Equal("", false)
-	})
-}
-
 func TestError_GetCode(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -247,12 +236,6 @@ func TestError_GetType(t *testing.T) {
 		}()
 		assert(v1.GetType()).Equal(ErrorTypeSecurity)
 	})
-
-	t.Run("test ErrorTypeSecurity", func(t *testing.T) {
-		assert := NewAssert(t)
-		v1 := NewReplyError(ErrorLevelWarn, "msg")
-		assert(v1.GetType()).Equal(ErrorTypeReply)
-	})
 }
 
 func TestError_GetLevel(t *testing.T) {
@@ -261,40 +244,34 @@ func TestError_GetLevel(t *testing.T) {
 	t.Run("test ErrorLevelWarn", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelWarn, "msg")
-		v2 := NewReplyError(ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetLevel()).Equal(ErrorLevelWarn)
-		assert(v2.GetLevel()).Equal(ErrorLevelWarn)
 	})
 
 	t.Run("test ErrorLevelError", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelError, "msg")
-		v2 := NewReplyError(ErrorLevelError, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetLevel()).Equal(ErrorLevelError)
-		assert(v2.GetLevel()).Equal(ErrorLevelError)
 	})
 
 	t.Run("test ErrorLevelFatal", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelFatal, "msg")
-		v2 := NewReplyError(ErrorLevelFatal, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetLevel()).Equal(ErrorLevelFatal)
-		assert(v2.GetLevel()).Equal(ErrorLevelFatal)
 	})
 }
 
@@ -304,27 +281,23 @@ func TestError_GetNumber(t *testing.T) {
 	t.Run("test with uint32 min", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelFatal, "msg")
-		v2 := NewReplyError(ErrorLevelFatal, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetNumber()).Equal(num)
-		assert(v2.GetNumber()).Equal(ErrorNumber(0))
 	})
 
 	t.Run("test with uint32 max", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelFatal, "msg")
-		v2 := NewReplyError(ErrorLevelFatal, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetNumber()).Equal(num)
-		assert(v2.GetNumber()).Equal(ErrorNumber(0))
 	})
 }
 
@@ -334,14 +307,12 @@ func TestError_GetMessage(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineSecurityError(num, ErrorLevelFatal, "msg1")
-		v2 := NewReplyError(ErrorLevelFatal, "msg2")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, v1.code)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetMessage()).Equal("msg1")
-		assert(v2.GetMessage()).Equal("msg2")
 	})
 }
 
@@ -368,8 +339,8 @@ func TestError_AddDebug(t *testing.T) {
 
 	t.Run("test from derived error", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := NewReplyError(ErrorLevelFatal, "")
-		v2 := NewReplyError(ErrorLevelFatal, "msg")
+		v1 := ReplyFatal.AddDebug("")
+		v2 := ReplyFatal.AddDebug("msg")
 		v3 := v1.AddDebug("dbg")
 		v4 := v2.AddDebug("dbg")
 		assert(fmt.Sprintf("%p", v3) == fmt.Sprintf("%p", v1)).IsTrue()

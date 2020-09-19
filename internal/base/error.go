@@ -90,14 +90,6 @@ func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
 }
 
-// NewReplyError ...
-func NewReplyError(level ErrorLevel, msg string) *Error {
-	return &Error{
-		code:    (uint64(ErrorTypeReply) << 42) | (uint64(level) << 34) | 1,
-		message: msg,
-	}
-}
-
 func (p *Error) GetCode() uint64 {
 	return p.code
 }
@@ -179,37 +171,27 @@ func (p *Error) Error() string {
 }
 
 var (
-	TransportWarn = DefineTransportError(
-		0, ErrorLevelWarn, "",
-	)
+	ProtocolWarn   = DefineProtocolError(0, ErrorLevelWarn, "")
+	ProtocolError  = DefineProtocolError(0, ErrorLevelError, "")
+	ProtocolFatal  = DefineProtocolError(0, ErrorLevelFatal, "")
+	TransportWarn  = DefineTransportError(0, ErrorLevelWarn, "")
+	TransportError = DefineTransportError(0, ErrorLevelError, "")
+	TransportFatal = DefineTransportError(0, ErrorLevelFatal, "")
+	ReplyWarn      = DefineReplyError(0, ErrorLevelWarn, "")
+	ReplyError     = DefineReplyError(0, ErrorLevelError, "")
+	ReplyFatal     = DefineReplyError(0, ErrorLevelFatal, "")
+	RuntimeWarn    = DefineRuntimeError(0, ErrorLevelWarn, "")
+	RuntimeError   = DefineRuntimeError(0, ErrorLevelError, "")
+	RuntimeFatal   = DefineRuntimeError(0, ErrorLevelFatal, "")
+	KernelWarn     = DefineKernelError(0, ErrorLevelWarn, "")
+	KernelError    = DefineKernelError(0, ErrorLevelError, "")
+	KernelFatal    = DefineKernelError(0, ErrorLevelFatal, "")
+	SecurityWarn   = DefineSecurityError(0, ErrorLevelWarn, "")
+	SecurityError  = DefineSecurityError(0, ErrorLevelError, "")
+	SecurityFatal  = DefineSecurityError(0, ErrorLevelFatal, "")
+
 	TransportWarnStreamConnIsClosed = DefineTransportError(
 		1, ErrorLevelWarn, "stream conn is closed",
-	)
-
-	//ProtocolErrorWarn = DefineProtocolError(
-	//  0, ErrorLevelWarn, "",
-	//)
-	//ProtocolErrorError = DefineProtocolError(
-	//  0, ErrorLevelError, "",
-	//)
-	//ProtocolErrorFatal = DefineProtocolError(
-	//  0, ErrorLevelFatal, "",
-	//)
-
-	//RuntimeWarn = DefineRuntimeError(
-	//	0, ErrorLevelWarn, "",
-	//)
-
-	RuntimeError = DefineRuntimeError(
-		0, ErrorLevelError, "",
-	)
-
-	RuntimeFatal = DefineRuntimeError(
-		0, ErrorLevelFatal, "",
-	)
-
-	KernelFatal = DefineKernelError(
-		0, ErrorLevelFatal, "",
 	)
 
 	SecurityWarnWebsocketUpgradeError = DefineSecurityError(
