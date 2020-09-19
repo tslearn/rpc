@@ -1,7 +1,9 @@
 package base
 
 import (
+	"fmt"
 	"math/rand"
+	"net"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -197,4 +199,15 @@ func ConvertOrdinalToString(n uint) string {
 	default:
 		return strconv.Itoa(int(n)) + "th"
 	}
+}
+
+// IsTCPPortOccupied ...
+func IsTCPPortOccupied(port uint16) bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 0)
+	defer func() {
+		if conn != nil {
+			_ = conn.Close()
+		}
+	}()
+	return err == nil
 }

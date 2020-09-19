@@ -24,7 +24,7 @@ const (
 	ErrorLevelFatal = ErrorLevel(3)
 )
 
-type ErrorCode uint32
+type ErrorNumber uint32
 
 var (
 	errorDefineMutex = &sync.Mutex{}
@@ -38,7 +38,7 @@ type Error struct {
 
 func defineError(
 	kind ErrorType,
-	code ErrorCode,
+	num ErrorNumber,
 	level ErrorLevel,
 	message string,
 	source string,
@@ -46,48 +46,48 @@ func defineError(
 	errorDefineMutex.Lock()
 	defer errorDefineMutex.Unlock()
 
-	errCode := (uint64(kind) << 42) | (uint64(level) << 34) | (uint64(code) << 2)
+	code := (uint64(kind) << 42) | (uint64(level) << 34) | (uint64(num) << 2)
 
-	if value, ok := errorDefineMap[errCode]; ok {
+	if value, ok := errorDefineMap[code]; ok {
 		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", value, source))
 	} else {
-		errorDefineMap[errCode] = source
+		errorDefineMap[code] = source
 	}
 
 	return &Error{
-		code:    errCode,
+		code:    code,
 		message: message,
 	}
 }
 
 // DefineProtocolError ...
-func DefineProtocolError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeProtocol, code, level, msg, GetFileLine(1))
+func DefineProtocolError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeProtocol, num, level, msg, GetFileLine(1))
 }
 
 // DefineTransportError ...
-func DefineTransportError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeTransport, code, level, msg, GetFileLine(1))
+func DefineTransportError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeTransport, num, level, msg, GetFileLine(1))
 }
 
 // DefineReplyError ...
-func DefineReplyError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeReply, code, level, msg, GetFileLine(1))
+func DefineReplyError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeReply, num, level, msg, GetFileLine(1))
 }
 
 // DefineRuntimeError ...
-func DefineRuntimeError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeRuntime, code, level, msg, GetFileLine(1))
+func DefineRuntimeError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeRuntime, num, level, msg, GetFileLine(1))
 }
 
 // DefineKernelError ...
-func DefineKernelError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeKernel, code, level, msg, GetFileLine(1))
+func DefineKernelError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeKernel, num, level, msg, GetFileLine(1))
 }
 
 // DefineSecurityError ...
-func DefineSecurityError(code ErrorCode, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeSecurity, code, level, msg, GetFileLine(1))
+func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
 }
 
 // NewReplyError ...
@@ -106,8 +106,8 @@ func (p *Error) GetLevel() ErrorLevel {
 	return ErrorLevel((p.code >> 34) & 0xFF)
 }
 
-func (p *Error) GetCode() ErrorCode {
-	return ErrorCode((p.code >> 2) & 0xFFFFFFFF)
+func (p *Error) GetNumber() ErrorNumber {
+	return ErrorNumber((p.code >> 2) & 0xFFFFFFFF)
 }
 
 func (p *Error) GetMessage() string {
@@ -118,17 +118,17 @@ func (p *Error) AddDebug(debug string) *Error {
 	if p.code%2 == 0 {
 		ret := &Error{code: p.code + 1}
 		if p.message == "" {
-			ret.message = ConcatString(">>> " + debug)
+			ret.message = ConcatString(debug)
 		} else {
-			ret.message = ConcatString(p.message, "\n>>> ", debug)
+			ret.message = ConcatString(p.message, "\n", debug)
 		}
 		return ret
 	}
 
 	if p.message == "" {
-		p.message = ConcatString(">>> " + debug)
+		p.message = ConcatString(debug)
 	} else {
-		p.message = ConcatString(p.message, "\n>>> ", debug)
+		p.message = ConcatString(p.message, "\n", debug)
 	}
 	return p
 }
@@ -173,3 +173,45 @@ func (p *Error) Error() string {
 		p.message,
 	)
 }
+
+var (
+	TransportWarn = DefineTransportError(
+		0, ErrorLevelWarn, "",
+	)
+	TransportWarnStreamConnIsClosed = DefineTransportError(
+		1, ErrorLevelWarn, "stream conn is closed",
+	)
+
+	//ProtocolErrorWarn = DefineProtocolError(
+	//  0, ErrorLevelWarn, "",
+	//)
+	//ProtocolErrorError = DefineProtocolError(
+	//  0, ErrorLevelError, "",
+	//)
+	//ProtocolErrorFatal = DefineProtocolError(
+	//  0, ErrorLevelFatal, "",
+	//)
+
+	//RuntimeWarn = DefineRuntimeError(
+	//	0, ErrorLevelWarn, "",
+	//)
+
+	RuntimeError = DefineRuntimeError(
+		0, ErrorLevelError, "",
+	)
+
+	RuntimeFatal = DefineRuntimeError(
+		0, ErrorLevelFatal, "",
+	)
+
+	KernelFatal = DefineKernelError(
+		0, ErrorLevelFatal, "",
+	)
+
+	SecurityWarnWebsocketUpgradeError = DefineSecurityError(
+		1, ErrorLevelWarn, "websocket upgrade error",
+	)
+	SecurityWarnWebsocketDataNotBinary = DefineSecurityError(
+		2, ErrorLevelWarn, "websocket data is not binary",
+	)
+)

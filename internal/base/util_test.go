@@ -1,6 +1,7 @@
 package base
 
 import (
+	"net"
 	"strings"
 	"testing"
 	"unsafe"
@@ -182,5 +183,19 @@ func TestConvertOrdinalToString(t *testing.T) {
 		assert(ConvertOrdinalToString(4)).Equal("4th")
 		assert(ConvertOrdinalToString(10)).Equal("10th")
 		assert(ConvertOrdinalToString(100)).Equal("100th")
+	})
+}
+
+func TestIsTCPPortOccupied(t *testing.T) {
+	t.Run("not occupied", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(IsTCPPortOccupied(65535)).Equal(false)
+	})
+
+	t.Run("occupied", func(t *testing.T) {
+		assert := NewAssert(t)
+		Listener, _ := net.Listen("tcp", "127.0.0.1:65535")
+		assert(IsTCPPortOccupied(65535)).Equal(true)
+		_ = Listener.Close()
 	})
 }
