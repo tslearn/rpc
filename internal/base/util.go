@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net"
 	"reflect"
@@ -210,4 +211,14 @@ func IsTCPPortOccupied(port uint16) bool {
 		}
 	}()
 	return err == nil
+}
+
+func ReadFromFile(filePath string) (string, *Error) {
+	ret, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return "", KernelFatal.AddDebug(err.Error())
+	}
+
+	// for windows, remove \r
+	return strings.Replace(string(ret), "\r", "", -1), nil
 }
