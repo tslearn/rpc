@@ -29,6 +29,13 @@ func TestErrorLevel(t *testing.T) {
 	})
 }
 
+func TestNewError(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(NewError(123, "msg")).Equal(&Error{code: 123, message: "msg"})
+	})
+}
+
 func TestDefineError(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 

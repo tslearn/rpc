@@ -1,7 +1,9 @@
 package base
 
 import (
+	"io/ioutil"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"unsafe"
@@ -197,5 +199,23 @@ func TestIsTCPPortOccupied(t *testing.T) {
 		Listener, _ := net.Listen("tcp", "127.0.0.1:65535")
 		assert(IsTCPPortOccupied(65535)).Equal(true)
 		_ = Listener.Close()
+	})
+}
+
+func TestReadFromFile(t *testing.T) {
+	t.Run("file not exist", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1, err1 := ReadFromFile("./no_file")
+		assert(v1).Equal("")
+		assert(err1).IsNotNil()
+		assert(strings.HasPrefix(err1.Error(), "KernelFatal:")).IsTrue()
+		assert(strings.Contains(err1.Error(), "no_file")).IsTrue()
+	})
+
+	t.Run("file exist", func(t *testing.T) {
+		assert := NewAssert(t)
+		_ = ioutil.WriteFile("./tmp_file", []byte("hello"), 0666)
+		assert(ReadFromFile("./tmp_file")).Equal("hello", nil)
+		_ = os.Remove("./tmp_file")
 	})
 }
