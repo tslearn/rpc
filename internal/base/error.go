@@ -36,6 +36,13 @@ type Error struct {
 	message string
 }
 
+func NewError(code uint64, message string) *Error {
+	return &Error{
+		code:    code,
+		message: message,
+	}
+}
+
 func defineError(
 	kind ErrorType,
 	num ErrorNumber,
@@ -189,6 +196,10 @@ var (
 	SecurityWarn   = DefineSecurityError(0, ErrorLevelWarn, "")
 	SecurityError  = DefineSecurityError(0, ErrorLevelError, "")
 	SecurityFatal  = DefineSecurityError(0, ErrorLevelFatal, "")
+
+	ProtocolErrorBadStream = DefineProtocolError(
+		1, ErrorLevelWarn, "bad stream",
+	)
 
 	TransportWarnStreamConnIsClosed = DefineTransportError(
 		1, ErrorLevelWarn, "stream conn is closed",

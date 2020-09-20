@@ -17,7 +17,7 @@ type rpcFuncMeta struct {
 	identifier string
 }
 
-func getFuncBodyByKind(name string, kind string) (string, base.Error) {
+func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 	sb := base.NewStringBuilder()
 	defer sb.Release()
 
@@ -69,7 +69,7 @@ func getFuncBodyByKind(name string, kind string) (string, base.Error) {
 				callString = "stream.ReadRTMap(rt)"
 				typeArray = append(typeArray, "rpc.RTMap")
 			default:
-				return "nil", base.NewKernelPanic(fmt.Sprintf("error kind %s", kind))
+				return "nil", base.KernelFatal.AddDebug(fmt.Sprintf("error kind %s", kind))
 			}
 
 			condString := " else if"
@@ -100,7 +100,7 @@ func getFuncBodyByKind(name string, kind string) (string, base.Error) {
 	return sb.String(), nil
 }
 
-func getFuncMetas(kinds []string) ([]*rpcFuncMeta, base.Error) {
+func getFuncMetas(kinds []string) ([]*rpcFuncMeta, *base.Error) {
 	sortKinds := make([]string, len(kinds))
 	copy(sortKinds, kinds)
 	sort.SliceStable(sortKinds, func(i, j int) bool {
@@ -119,7 +119,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, base.Error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, base.NewKernelPanic(fmt.Sprintf("duplicate kind %s", kind))
+			return nil, base.KernelFatal.AddDebug(fmt.Sprintf("duplicate kind %s", kind))
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
@@ -135,7 +135,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, base.Error) {
 	return ret, nil
 }
 
-func buildFuncCache(pkgName string, output string, kinds []string) base.Error {
+func buildFuncCache(pkgName string, output string, kinds []string) *base.Error {
 	sb := base.NewStringBuilder()
 	defer sb.Release()
 	if metas, err := getFuncMetas(kinds); err == nil {
@@ -178,13 +178,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) base.Error {
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return base.NewRuntimePanic(err.Error())
+		return base.RuntimeFatal.AddDebug(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return base.NewRuntimePanic(err.Error())
+		return base.RuntimeFatal.AddDebug(err.Error())
 	} else {
 		return nil
 	}
