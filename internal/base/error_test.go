@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestErrorBasic(t *testing.T) {
+func TestError(t *testing.T) {
 	t.Run("check constant", func(t *testing.T) {
 		assert := NewAssert(t)
 

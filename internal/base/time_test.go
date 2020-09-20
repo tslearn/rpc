@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestTimeBasic(t *testing.T) {
+func TestTime(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(gTimeMaster).IsNotNil()
