@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestErrorType(t *testing.T) {
+func TestErrorBasic(t *testing.T) {
 	t.Run("check constant", func(t *testing.T) {
 		assert := NewAssert(t)
 
@@ -16,12 +16,6 @@ func TestErrorType(t *testing.T) {
 		assert(ErrorTypeRuntime).Equal(ErrorType(4))
 		assert(ErrorTypeKernel).Equal(ErrorType(5))
 		assert(ErrorTypeSecurity).Equal(ErrorType(6))
-	})
-}
-
-func TestErrorLevel(t *testing.T) {
-	t.Run("check constant", func(t *testing.T) {
-		assert := NewAssert(t)
 
 		assert(ErrorLevelWarn).Equal(ErrorLevel(1))
 		assert(ErrorLevelError).Equal(ErrorLevel(2))
