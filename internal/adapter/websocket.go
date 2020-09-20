@@ -49,6 +49,7 @@ func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
 		conn:    conn,
 	}
 	conn.SetCloseHandler(ret.onCloseMessage)
+
 	return ret
 }
 
@@ -162,7 +163,7 @@ func (p *webSocketStreamConn) Close() *base.Error {
 			case <-p.closeCH:
 				// p.conn has already been closed gracefully. do not close it again!
 				return nil
-			case <-time.After(2 * time.Second):
+			case <-time.After(time.Second):
 			}
 		}
 
