@@ -32,7 +32,7 @@ func (p Runtime) OK(value interface{}) Return {
 	}
 
 	base.PublishPanic(
-		base.NewReplyPanic(
+		base.ReplyFatal.AddDebug(
 			"Runtime is illegal in current goroutine",
 		).AddDebug(base.GetFileLine(1)),
 	)
@@ -44,21 +44,21 @@ func (p Runtime) Error(value error) Return {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 
-		if err, ok := value.(base.Error); ok && err != nil {
+		if err, ok := value.(*base.Error); ok && err != nil {
 			return p.thread.WriteError(
 				err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
-				base.NewReplyError(
+				base.ReplyError.AddDebug(
 					value.Error(),
 				).AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		} else {
 			return p.thread.WriteError(
-				base.NewReplyError(
+				base.ReplyError.AddDebug(
 					"argument should not nil",
 				).AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
@@ -67,14 +67,14 @@ func (p Runtime) Error(value error) Return {
 	}
 
 	base.PublishPanic(
-		base.NewReplyPanic(
+		base.ReplyFatal.AddDebug(
 			"Runtime is illegal in current goroutine",
 		).AddDebug(base.GetFileLine(1)),
 	)
 	return emptyReturn
 }
 
-func (p Runtime) Call(target string, args ...interface{}) (interface{}, base.Error) {
+func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Error) {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 
@@ -90,7 +90,7 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, base.Err
 		// write args
 		for i := 0; i < len(args); i++ {
 			if stream.Write(args[i]) != StreamWriteOK {
-				return nil, base.NewReplyPanic(base.ConcatString(
+				return nil, base.ReplyFatal.AddDebug(base.ConcatString(
 					base.ConvertOrdinalToString(uint(i+1)),
 					" argument not supported",
 				))
@@ -106,25 +106,23 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, base.Err
 		)
 
 		// parse the stream
-		if errKind, ok := stream.ReadUint64(); !ok {
-			return nil, base.NewProtocolError(base.ErrStringBadStream)
-		} else if errKind == uint64(base.ErrorKindNone) {
+		if errCode, ok := stream.ReadUint64(); !ok {
+			return nil, base.ProtocolErrorBadStream
+		} else if errCode == 0 {
 			if ret, ok := stream.Read(); ok {
 				return ret, nil
 			}
-			return nil, base.NewProtocolError(base.ErrStringBadStream)
+			return nil, base.ProtocolErrorBadStream
 		} else if message, ok := stream.ReadString(); !ok {
-			return nil, base.NewProtocolError(base.ErrStringBadStream)
-		} else if dbg, ok := stream.ReadString(); !ok {
-			return nil, base.NewProtocolError(base.ErrStringBadStream)
+			return nil, base.ProtocolErrorBadStream
 		} else if !stream.IsReadFinish() {
-			return nil, base.NewProtocolError(base.ErrStringBadStream)
+			return nil, base.ProtocolErrorBadStream
 		} else {
-			return nil, base.NewError(base.ErrorKind(errKind), message, dbg)
+			return nil, base.NewError(errCode, message)
 		}
 	}
 
-	return nil, base.NewReplyPanic(
+	return nil, base.ReplyFatal.AddDebug(
 		"Runtime is illegal in current goroutine",
 	)
 }
@@ -132,14 +130,14 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, base.Err
 func (p Runtime) GetServiceData() interface{} {
 	if thread := p.thread; thread == nil {
 		base.PublishPanic(
-			base.NewReplyPanic(
+			base.ReplyFatal.AddDebug(
 				"Runtime is illegal in current goroutine",
 			).AddDebug(base.GetFileLine(1)),
 		)
 		return nil
 	} else if node := thread.GetReplyNode(); node == nil {
 		base.PublishPanic(
-			base.NewReplyPanic(
+			base.ReplyFatal.AddDebug(
 				"Runtime is illegal in current goroutine",
 			).AddDebug(base.GetFileLine(1)),
 		)

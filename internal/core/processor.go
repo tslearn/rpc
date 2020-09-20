@@ -49,7 +49,7 @@ type Processor struct {
 	readThreadPos     uint64
 	writeThreadPos    uint64
 	panicSubscription *base.PanicSubscription
-	fnError           func(err base.Error)
+	fnError           func(err *base.Error)
 	sync.Mutex
 }
 
@@ -68,32 +68,31 @@ func NewProcessor(
 		return nil
 	}
 
-	fnError := func(err base.Error) {
+	fnError := func(err *base.Error) {
 		defer func() {
 			_ = recover()
 		}()
 		stream := NewStream()
-		stream.WriteUint64(uint64(err.GetKind()))
+		stream.WriteUint64(err.GetCode())
 		stream.WriteString(err.GetMessage())
-		stream.WriteString(err.GetDebug())
 		onReturnStream(stream)
 	}
 
 	if numOfThreads <= 0 {
 		fnError(
-			base.NewKernelPanic("numOfThreads is wrong").
+			base.KernelFatal.AddDebug("numOfThreads is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
 	} else if maxNodeDepth <= 0 {
 		fnError(
-			base.NewKernelPanic("maxNodeDepth is wrong").
+			base.KernelFatal.AddDebug("maxNodeDepth is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
 	} else if maxCallDepth <= 0 {
 		fnError(
-			base.NewKernelPanic("maxCallDepth is wrong").
+			base.KernelFatal.AddDebug("maxCallDepth is wrong").
 				AddDebug(string(debug.Stack())),
 		)
 		return nil
@@ -202,7 +201,7 @@ func (p *Processor) Close() bool {
 
 	if len(errList) > 0 {
 		p.fnError(
-			base.NewReplyPanic(base.ConcatString(
+			base.ReplyFatal.AddDebug(base.ConcatString(
 				"the following replies can not close: \n\t",
 				strings.Join(errList, "\n\t"),
 			)),
@@ -244,7 +243,7 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 }
 
 // BuildCache ...
-func (p *Processor) BuildCache(pkgName string, path string) base.Error {
+func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 	retMap := make(map[string]bool)
 	for _, reply := range p.repliesMap {
 		if fnTypeString, err := getFuncKind(reply.reflectFn); err == nil {
@@ -264,31 +263,31 @@ func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *ServiceMeta,
 	fnCache ReplyCache,
-) base.Error {
+) *base.Error {
 	if nodeMeta == nil {
 		// check nodeMeta is not nil
-		return base.NewKernelPanic("nodeMeta is nil").
+		return base.KernelFatal.AddDebug("nodeMeta is nil").
 			AddDebug(string(debug.Stack()))
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
 		// check nodeMeta.name is valid
-		return base.NewRuntimePanic(
+		return base.RuntimeFatal.AddDebug(
 			fmt.Sprintf("service name %s is illegal", nodeMeta.name),
 		).AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
 		// check nodeMeta.service is not nil
-		return base.NewRuntimePanic("service is nil").AddDebug(nodeMeta.fileLine)
+		return base.RuntimeFatal.AddDebug("service is nil").AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if parentNode.depth+1 > p.maxNodeDepth {
 			// check max node depth overflow
-			return base.NewRuntimePanic(fmt.Sprintf(
+			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
 				"service path %s is too long",
 				servicePath,
 			)).AddDebug(nodeMeta.fileLine)
 		} else if item, ok := p.servicesMap[servicePath]; ok {
 			// check the mount path is not occupied
-			return base.NewRuntimePanic(fmt.Sprintf(
+			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
 				"duplicated service name %s",
 				nodeMeta.name,
 			)).AddDebug(fmt.Sprintf(
@@ -303,7 +302,7 @@ func (p *Processor) mountNode(
 					nodeMeta.service,
 					nodeMeta.data,
 				); err != nil {
-					return base.NewRuntimePanic(fmt.Sprintf(
+					return base.RuntimeFatal.AddDebug(fmt.Sprintf(
 						"onMount error: %s",
 						err.Error(),
 					)).AddDebug(nodeMeta.fileLine)
@@ -346,34 +345,34 @@ func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
 	meta *rpcReplyMeta,
 	fnCache ReplyCache,
-) base.Error {
+) *base.Error {
 	if meta == nil {
 		// check the rpcReplyMeta is nil
-		return base.NewKernelPanic("meta is nil").
+		return base.KernelFatal.AddDebug("meta is nil").
 			AddDebug(string(debug.Stack()))
 	} else if !replyNameRegex.MatchString(meta.name) {
 		// check the name
-		return base.NewRuntimePanic(
+		return base.RuntimeFatal.AddDebug(
 			fmt.Sprintf("reply name %s is illegal", meta.name),
 		).AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		// check the reply handler is nil
-		return base.NewRuntimePanic("handler is nil").AddDebug(meta.fileLine)
+		return base.RuntimeFatal.AddDebug("handler is nil").AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
-		return base.NewRuntimePanic(fmt.Sprintf(
+		return base.RuntimeFatal.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)
 	} else if fnTypeString, err := getFuncKind(fn); err != nil {
 		// Check reply handler is right
-		return base.NewRuntimePanic(err.Error()).AddDebug(meta.fileLine)
+		return base.RuntimeFatal.AddDebug(err.Error()).AddDebug(meta.fileLine)
 	} else {
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
 			// check the reply path is not occupied
-			return base.NewRuntimePanic(fmt.Sprintf(
+			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
 				"reply name %s is duplicated",
 				meta.name,
 			)).AddDebug(fmt.Sprintf(
