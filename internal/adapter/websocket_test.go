@@ -697,7 +697,8 @@ func TestWsServerAdapter_Close(t *testing.T) {
 
 			time.Sleep(20 * time.Millisecond)
 
-			// serverAdapter.(*wsServerAdapter).mutex.Lock()
+			mutex := (*sync.Mutex)(fnGetField(serverAdapter, "mutex"))
+			mutex.Lock()
 			// make fake error
 			wsServer := serverAdapter.(*wsServerAdapter).wsServer
 			httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
@@ -711,7 +712,7 @@ func TestWsServerAdapter_Close(t *testing.T) {
 				&fakeListener: {},
 			}
 			httpServerMuPointer.Unlock()
-			// serverAdapter.(*wsServerAdapter).mutex.Unlock()
+			mutex.Unlock()
 
 			errCount := 0
 			serverAdapter.Close(func(_ uint64, err *base.Error) {
