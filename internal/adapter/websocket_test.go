@@ -446,7 +446,7 @@ func TestWebSocketStreamConn_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testHelperStreamConn(
 			func(server core.IServerAdapter, conn core.IStreamConn) {
-				time.Sleep(1500 * time.Millisecond)
+				time.Sleep(2500 * time.Millisecond)
 			},
 			func(client core.IClientAdapter, conn core.IStreamConn) {
 				go func() {
