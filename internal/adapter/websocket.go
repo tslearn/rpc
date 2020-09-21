@@ -17,7 +17,7 @@ const webSocketStreamConnRunning = int32(1)
 const webSocketStreamConnClosing = int32(2)
 const webSocketStreamConnCanClose = int32(3)
 
-func toTransportError(err error) *base.Error {
+func toTransportWarn(err error) *base.Error {
 	if err == nil {
 		return nil
 	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -61,7 +61,7 @@ func (p *webSocketStreamConn) writeMessage(
 	p.Lock()
 	defer p.Unlock()
 	_ = p.conn.SetWriteDeadline(base.TimeNow().Add(timeout))
-	return toTransportError(p.conn.WriteMessage(messageType, data))
+	return toTransportWarn(p.conn.WriteMessage(messageType, data))
 }
 
 func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
@@ -103,9 +103,9 @@ func (p *webSocketStreamConn) ReadStream(
 	) {
 		return nil, base.TransportWarnStreamConnIsClosed
 	} else if e := p.conn.SetReadDeadline(base.TimeNow().Add(timeout)); e != nil {
-		return nil, toTransportError(e)
+		return nil, toTransportWarn(e)
 	} else if mt, message, e := p.conn.ReadMessage(); e != nil {
-		return nil, toTransportError(e)
+		return nil, toTransportWarn(e)
 	} else if mt != websocket.BinaryMessage {
 		return nil, base.SecurityWarnWebsocketDataNotBinary
 	} else {
@@ -168,14 +168,14 @@ func (p *webSocketStreamConn) Close() *base.Error {
 		}
 
 		// 3. close and return
-		return toTransportError(p.conn.Close())
+		return toTransportWarn(p.conn.Close())
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnCanClose,
 		webSocketStreamConnClosed,
 	) {
 		// 1. close and return
-		return toTransportError(p.conn.Close())
+		return toTransportWarn(p.conn.Close())
 	} else {
 		return nil
 	}

@@ -104,15 +104,15 @@ func makeConnSetReadDeadlineError(conn *websocket.Conn) {
 	*fdPointer = nil
 }
 
-func TestToTransportError(t *testing.T) {
+func TestToTransportWarn(t *testing.T) {
 	t.Run("err is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(toTransportError(nil)).IsNil()
+		assert(toTransportWarn(nil)).IsNil()
 	})
 
 	t.Run("err is websocket CloseNormalClosure", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(toTransportError(&websocket.CloseError{
+		assert(toTransportWarn(&websocket.CloseError{
 			Code: websocket.CloseNormalClosure,
 		})).Equal(base.TransportWarnStreamConnIsClosed)
 	})
@@ -120,9 +120,9 @@ func TestToTransportError(t *testing.T) {
 	t.Run("err is others", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		assert(toTransportError(errors.New("error"))).
+		assert(toTransportWarn(errors.New("error"))).
 			Equal(base.TransportWarn.AddDebug("error"))
-		assert(toTransportError(&websocket.CloseError{
+		assert(toTransportWarn(&websocket.CloseError{
 			Code: websocket.CloseAbnormalClosure,
 		})).Equal(
 			base.TransportWarn.AddDebug("websocket: close 1006 (abnormal closure)"),
