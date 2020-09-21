@@ -119,7 +119,7 @@ func Dial(connectString string) (*Client, Error) {
 
 	switch urlInfo.Scheme {
 	case "ws":
-		return newClient(adapter.NewWebSocketClientAdapter(connectString)), nil
+		return newClient(adapter.NewWebsocketClientAdapter(connectString)), nil
 	default:
 		return nil,
 			base.NewRuntimePanic(fmt.Sprintf("unknown scheme %s", urlInfo.Scheme))

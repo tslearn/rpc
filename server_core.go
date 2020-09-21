@@ -285,7 +285,7 @@ func (p *serverCore) listenWebSocket(addr string, dbg string) {
 	} else {
 		p.adapters = append(
 			p.adapters,
-			adapter.NewWebSocketServerAdapter(addr),
+			adapter.NewWebsocketServerAdapter(addr),
 		)
 	}
 }

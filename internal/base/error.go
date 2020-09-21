@@ -197,6 +197,7 @@ var (
 	SecurityError  = DefineSecurityError(0, ErrorLevelError, "")
 	SecurityFatal  = DefineSecurityError(0, ErrorLevelFatal, "")
 
+	// General
 	ProtocolErrorBadStream = DefineProtocolError(
 		1, ErrorLevelWarn, "bad stream",
 	)
@@ -210,5 +211,18 @@ var (
 	)
 	SecurityWarnWebsocketDataNotBinary = DefineSecurityError(
 		2, ErrorLevelWarn, "websocket data is not binary",
+	)
+
+	KernelFatalObjectIsNil = DefineKernelError(
+		1, ErrorLevelFatal, "object is nil",
+	)
+
+	KernelFatalAlreadyRunning = DefineKernelError(
+		2, ErrorLevelFatal, "it is already running",
+	)
+
+	//
+	KernelFatalNotRunning = DefineKernelError(
+		3, ErrorLevelFatal, "it is not running",
 	)
 )

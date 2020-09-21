@@ -27,7 +27,7 @@ func toTransportWarn(err error) *base.Error {
 	}
 }
 
-type webSocketStreamConn struct {
+type websocketStreamConn struct {
 	status  int32
 	reading int32
 	writing int32
@@ -36,12 +36,12 @@ type webSocketStreamConn struct {
 	sync.Mutex
 }
 
-func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
+func newWebsocketStreamConn(conn *websocket.Conn) *websocketStreamConn {
 	if conn == nil {
 		return nil
 	}
 
-	ret := &webSocketStreamConn{
+	ret := &websocketStreamConn{
 		status:  webSocketStreamConnRunning,
 		reading: 0,
 		writing: 0,
@@ -53,7 +53,7 @@ func newWebSocketStreamConn(conn *websocket.Conn) *webSocketStreamConn {
 	return ret
 }
 
-func (p *webSocketStreamConn) writeMessage(
+func (p *websocketStreamConn) writeMessage(
 	messageType int,
 	data []byte,
 	timeout time.Duration,
@@ -64,7 +64,7 @@ func (p *webSocketStreamConn) writeMessage(
 	return toTransportWarn(p.conn.WriteMessage(messageType, data))
 }
 
-func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
+func (p *websocketStreamConn) onCloseMessage(code int, _ string) error {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
@@ -88,7 +88,7 @@ func (p *webSocketStreamConn) onCloseMessage(code int, _ string) error {
 	}
 }
 
-func (p *webSocketStreamConn) ReadStream(
+func (p *websocketStreamConn) ReadStream(
 	timeout time.Duration,
 	readLimit int64,
 ) (*core.Stream, *base.Error) {
@@ -115,7 +115,7 @@ func (p *webSocketStreamConn) ReadStream(
 	}
 }
 
-func (p *webSocketStreamConn) WriteStream(
+func (p *websocketStreamConn) WriteStream(
 	stream *core.Stream,
 	timeout time.Duration,
 ) *base.Error {
@@ -123,9 +123,7 @@ func (p *webSocketStreamConn) WriteStream(
 	defer atomic.StoreInt32(&p.writing, 0)
 
 	if stream == nil {
-		return base.KernelFatal.
-			AddDebug("stream is nil").
-			AddDebug(string(debug.Stack()))
+		return base.KernelFatalObjectIsNil.AddDebug(string(debug.Stack()))
 	} else if !atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
@@ -141,7 +139,7 @@ func (p *webSocketStreamConn) WriteStream(
 	}
 }
 
-func (p *webSocketStreamConn) Close() *base.Error {
+func (p *websocketStreamConn) Close() *base.Error {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
@@ -192,22 +190,22 @@ var (
 	}
 )
 
-type wsServerAdapter struct {
+type websocketServerAdapter struct {
 	addr     string
 	wsServer *http.Server
 	base.StatusManager
 }
 
-// NewWebSocketServerAdapter ...
-func NewWebSocketServerAdapter(addr string) core.IServerAdapter {
-	return &wsServerAdapter{
+// NewWebsocketServerAdapter ...
+func NewWebsocketServerAdapter(addr string) core.IServerAdapter {
+	return &websocketServerAdapter{
 		addr:     addr,
 		wsServer: nil,
 	}
 }
 
 // Open ...
-func (p *wsServerAdapter) Open(
+func (p *websocketServerAdapter) Open(
 	onConnRun func(core.IStreamConn, net.Addr),
 	onError func(uint64, *base.Error),
 ) {
@@ -221,8 +219,7 @@ func (p *wsServerAdapter) Open(
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
 				onError(0, base.SecurityWarnWebsocketUpgradeError)
 			} else {
-				streamConn := newWebSocketStreamConn(conn)
-				onConnRun(streamConn, conn.RemoteAddr())
+				onConnRun(newWebsocketStreamConn(conn), conn.RemoteAddr())
 			}
 		})
 		p.wsServer = &http.Server{
@@ -248,7 +245,7 @@ func (p *wsServerAdapter) Open(
 }
 
 // Close ...
-func (p *wsServerAdapter) Close(onError func(uint64, *base.Error)) {
+func (p *websocketServerAdapter) Close(onError func(uint64, *base.Error)) {
 	waitCH := chan bool(nil)
 	if onError == nil {
 		panic("onError is nil")
@@ -258,12 +255,7 @@ func (p *wsServerAdapter) Close(onError func(uint64, *base.Error)) {
 			onError(0, base.RuntimeError.AddDebug(e.Error()))
 		}
 	}) {
-		onError(
-			0,
-			base.KernelFatal.
-				AddDebug("it is not running").
-				AddDebug(string(debug.Stack())),
-		)
+		onError(0, base.KernelFatalAlreadyRunning.AddDebug(string(debug.Stack())))
 	} else {
 		select {
 		case <-waitCH:
@@ -278,21 +270,21 @@ func (p *wsServerAdapter) Close(onError func(uint64, *base.Error)) {
 	}
 }
 
-type wsClientAdapter struct {
+type websocketClientAdapter struct {
 	conn          core.IStreamConn
 	connectString string
 	base.StatusManager
 }
 
-// NewWebSocketClientAdapter ...
-func NewWebSocketClientAdapter(connectString string) core.IClientAdapter {
-	return &wsClientAdapter{
+// NewWebsocketClientAdapter ...
+func NewWebsocketClientAdapter(connectString string) core.IClientAdapter {
+	return &websocketClientAdapter{
 		conn:          nil,
 		connectString: connectString,
 	}
 }
 
-func (p *wsClientAdapter) Open(
+func (p *websocketClientAdapter) Open(
 	onConnRun func(core.IStreamConn),
 	onError func(*base.Error),
 ) {
@@ -306,7 +298,7 @@ func (p *wsClientAdapter) Open(
 	); err != nil {
 		onError(base.RuntimeError.AddDebug(err.Error()))
 	} else {
-		streamConn := newWebSocketStreamConn(conn)
+		streamConn := newWebsocketStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn
 		}) {
@@ -326,7 +318,7 @@ func (p *wsClientAdapter) Open(
 	}
 }
 
-func (p *wsClientAdapter) Close(onError func(*base.Error)) {
+func (p *websocketClientAdapter) Close(onError func(*base.Error)) {
 	waitCH := chan bool(nil)
 
 	if onError == nil {
