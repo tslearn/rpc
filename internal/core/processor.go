@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"reflect"
 	"regexp"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -79,22 +78,13 @@ func NewProcessor(
 	}
 
 	if numOfThreads <= 0 {
-		fnError(
-			base.KernelFatal.AddDebug("numOfThreads is wrong").
-				AddDebug(string(debug.Stack())),
-		)
+		fnError(ErrProcessorNumOfThreadsIsWrong)
 		return nil
 	} else if maxNodeDepth <= 0 {
-		fnError(
-			base.KernelFatal.AddDebug("maxNodeDepth is wrong").
-				AddDebug(string(debug.Stack())),
-		)
+		fnError(ErrProcessorMaxNodeDepthIsWrong)
 		return nil
 	} else if maxCallDepth <= 0 {
-		fnError(
-			base.KernelFatal.AddDebug("maxCallDepth is wrong").
-				AddDebug(string(debug.Stack())),
-		)
+		fnError(ErrProcessorMaxCallDepthIsWrong)
 		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
@@ -201,7 +191,7 @@ func (p *Processor) Close() bool {
 
 	if len(errList) > 0 {
 		p.fnError(
-			base.ReplyFatal.AddDebug(base.ConcatString(
+			ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
 				"the following replies can not close: \n\t",
 				strings.Join(errList, "\n\t"),
 			)),
@@ -266,35 +256,31 @@ func (p *Processor) mountNode(
 ) *base.Error {
 	if nodeMeta == nil {
 		// check nodeMeta is not nil
-		return base.KernelFatal.AddDebug("nodeMeta is nil").
-			AddDebug(string(debug.Stack()))
+		return ErrProcessorNodeMetaIsNil
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
 		// check nodeMeta.name is valid
-		return base.RuntimeFatal.AddDebug(
-			fmt.Sprintf("service name %s is illegal", nodeMeta.name),
-		).AddDebug(nodeMeta.fileLine)
+		return ErrProcessorServiceNameIsIllegal.AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
 		// check nodeMeta.service is not nil
-		return base.RuntimeFatal.AddDebug("service is nil").AddDebug(nodeMeta.fileLine)
+		return ErrProcessorNodeMetaServiceIsNil.AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if parentNode.depth+1 > p.maxNodeDepth {
 			// check max node depth overflow
-			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
-				"service path %s is too long",
-				servicePath,
-			)).AddDebug(nodeMeta.fileLine)
+			return ErrProcessorServicePathOverflow.AddDebug(nodeMeta.fileLine)
 		} else if item, ok := p.servicesMap[servicePath]; ok {
 			// check the mount path is not occupied
-			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
-				"duplicated service name %s",
-				nodeMeta.name,
-			)).AddDebug(fmt.Sprintf(
-				"current:\n%s\nconflict:\n%s",
-				base.AddPrefixPerLine(nodeMeta.fileLine, "\t"),
-				base.AddPrefixPerLine(item.addMeta.fileLine, "\t"),
-			))
+			return ErrProcessorDuplicatedServiceName.
+				AddDebug(fmt.Sprintf(
+					"duplicated service name %s",
+					nodeMeta.name,
+				)).
+				AddDebug(fmt.Sprintf(
+					"current:\n%s\nconflict:\n%s",
+					base.AddPrefixPerLine(nodeMeta.fileLine, "\t"),
+					base.AddPrefixPerLine(item.addMeta.fileLine, "\t"),
+				))
 		} else {
 			// do onMount
 			if nodeMeta.service.onMount != nil {
@@ -302,10 +288,9 @@ func (p *Processor) mountNode(
 					nodeMeta.service,
 					nodeMeta.data,
 				); err != nil {
-					return base.RuntimeFatal.AddDebug(fmt.Sprintf(
-						"onMount error: %s",
-						err.Error(),
-					)).AddDebug(nodeMeta.fileLine)
+					return ErrProcessorOnMount.
+						AddDebug(base.ConcatString("onMount error: ", err.Error())).
+						AddDebug(nodeMeta.fileLine)
 				}
 			}
 
@@ -348,38 +333,36 @@ func (p *Processor) mountReply(
 ) *base.Error {
 	if meta == nil {
 		// check the rpcReplyMeta is nil
-		return base.KernelFatal.AddDebug("meta is nil").
-			AddDebug(string(debug.Stack()))
+		return ErrProcessorMetaIsNil
 	} else if !replyNameRegex.MatchString(meta.name) {
 		// check the name
-		return base.RuntimeFatal.AddDebug(
-			fmt.Sprintf("reply name %s is illegal", meta.name),
-		).AddDebug(meta.fileLine)
+		return ErrProcessReplyNameIsIllegal.
+			AddDebug(base.ConcatString("reply name ", meta.name, " is illegal")).
+			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		// check the reply handler is nil
-		return base.RuntimeFatal.AddDebug("handler is nil").AddDebug(meta.fileLine)
+		return ErrProcessHandlerIsNil.AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
-		return base.RuntimeFatal.AddDebug(fmt.Sprintf(
+		return ErrProcessIllegalHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)
 	} else if fnTypeString, err := getFuncKind(fn); err != nil {
 		// Check reply handler is right
-		return base.RuntimeFatal.AddDebug(err.Error()).AddDebug(meta.fileLine)
+		return err
 	} else {
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
 			// check the reply path is not occupied
-			return base.RuntimeFatal.AddDebug(fmt.Sprintf(
-				"reply name %s is duplicated",
-				meta.name,
-			)).AddDebug(fmt.Sprintf(
-				"current:\n%s\nconflict:\n%s",
-				base.AddPrefixPerLine(meta.fileLine, "\t"),
-				base.AddPrefixPerLine(item.meta.fileLine, "\t"),
-			))
+			return ErrProcessDuplicatedReplyName.
+				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
+				AddDebug(fmt.Sprintf(
+					"current:\n%s\nconflict:\n%s",
+					base.AddPrefixPerLine(meta.fileLine, "\t"),
+					base.AddPrefixPerLine(item.meta.fileLine, "\t"),
+				))
 		}
 
 		// mount the replyRecord

@@ -216,7 +216,7 @@ func IsTCPPortOccupied(port uint16) bool {
 func ReadFromFile(filePath string) (string, *Error) {
 	ret, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return "", KernelFatal.AddDebug(err.Error())
+		return "", ErrReadFile.AddDebug(err.Error())
 	}
 
 	// for windows, remove \r

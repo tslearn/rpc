@@ -47,7 +47,7 @@ func TestPublishPanic(t *testing.T) {
 	t.Run("onPanic goes panic", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
-		err := ReplyWarn.AddDebug("message")
+		err := ErrRuntimeGeneral.AddDebug("message")
 		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 			panic("error")
@@ -60,7 +60,7 @@ func TestPublishPanic(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
-		err := ReplyWarn.AddDebug("message")
+		err := ErrRuntimeGeneral.AddDebug("message")
 		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 		})
@@ -87,7 +87,7 @@ func TestRunWithCatchPanic(t *testing.T) {
 func TestRunWithSubscribePanic(t *testing.T) {
 	t.Run("func with PublishPanic", func(t *testing.T) {
 		assert := NewAssert(t)
-		err := ReplyWarn.AddDebug("message")
+		err := ErrRuntimeGeneral.AddDebug("message")
 		assert(RunWithSubscribePanic(func() {
 			PublishPanic(err)
 		})).Equal(err)

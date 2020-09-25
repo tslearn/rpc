@@ -1,6 +1,8 @@
 package base
 
-import "sync"
+import (
+	"sync"
+)
 
 var (
 	gPanicMutex         = &sync.Mutex{}

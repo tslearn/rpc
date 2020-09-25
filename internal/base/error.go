@@ -14,6 +14,7 @@ const (
 	ErrorTypeRuntime   = ErrorType(4)
 	ErrorTypeKernel    = ErrorType(5)
 	ErrorTypeSecurity  = ErrorType(6)
+	ErrorTypeCustom    = ErrorType(7)
 )
 
 type ErrorLevel uint8
@@ -28,7 +29,7 @@ type ErrorNumber uint32
 
 var (
 	errorDefineMutex = &sync.Mutex{}
-	errorDefineMap   = map[uint64]string{}
+	errorDefineMap   = map[ErrorNumber]string{}
 )
 
 type Error struct {
@@ -55,10 +56,10 @@ func defineError(
 
 	code := (uint64(kind) << 42) | (uint64(level) << 34) | (uint64(num) << 2)
 
-	if value, ok := errorDefineMap[code]; ok {
+	if value, ok := errorDefineMap[num]; ok {
 		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", value, source))
 	} else {
-		errorDefineMap[code] = source
+		errorDefineMap[num] = source
 	}
 
 	return &Error{
@@ -95,6 +96,11 @@ func DefineKernelError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 // DefineSecurityError ...
 func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
+}
+
+// DefineCustomError ...
+func DefineCustomError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeCustom, num, level, msg, GetFileLine(1))
 }
 
 func (p *Error) GetCode() uint64 {
@@ -176,53 +182,3 @@ func (p *Error) Error() string {
 		p.message,
 	)
 }
-
-var (
-	ProtocolWarn   = DefineProtocolError(0, ErrorLevelWarn, "")
-	ProtocolError  = DefineProtocolError(0, ErrorLevelError, "")
-	ProtocolFatal  = DefineProtocolError(0, ErrorLevelFatal, "")
-	TransportWarn  = DefineTransportError(0, ErrorLevelWarn, "")
-	TransportError = DefineTransportError(0, ErrorLevelError, "")
-	TransportFatal = DefineTransportError(0, ErrorLevelFatal, "")
-	ReplyWarn      = DefineReplyError(0, ErrorLevelWarn, "")
-	ReplyError     = DefineReplyError(0, ErrorLevelError, "")
-	ReplyFatal     = DefineReplyError(0, ErrorLevelFatal, "")
-	RuntimeWarn    = DefineRuntimeError(0, ErrorLevelWarn, "")
-	RuntimeError   = DefineRuntimeError(0, ErrorLevelError, "")
-	RuntimeFatal   = DefineRuntimeError(0, ErrorLevelFatal, "")
-	KernelWarn     = DefineKernelError(0, ErrorLevelWarn, "")
-	KernelError    = DefineKernelError(0, ErrorLevelError, "")
-	KernelFatal    = DefineKernelError(0, ErrorLevelFatal, "")
-	SecurityWarn   = DefineSecurityError(0, ErrorLevelWarn, "")
-	SecurityError  = DefineSecurityError(0, ErrorLevelError, "")
-	SecurityFatal  = DefineSecurityError(0, ErrorLevelFatal, "")
-
-	// General
-	ProtocolErrorBadStream = DefineProtocolError(
-		1, ErrorLevelWarn, "bad stream",
-	)
-
-	TransportWarnStreamConnIsClosed = DefineTransportError(
-		1, ErrorLevelWarn, "stream conn is closed",
-	)
-
-	SecurityWarnWebsocketUpgradeError = DefineSecurityError(
-		1, ErrorLevelWarn, "websocket upgrade error",
-	)
-	SecurityWarnWebsocketDataNotBinary = DefineSecurityError(
-		2, ErrorLevelWarn, "websocket data is not binary",
-	)
-
-	KernelFatalObjectIsNil = DefineKernelError(
-		1, ErrorLevelFatal, "object is nil",
-	)
-
-	KernelFatalAlreadyRunning = DefineKernelError(
-		2, ErrorLevelFatal, "it is already running",
-	)
-
-	//
-	KernelFatalNotRunning = DefineKernelError(
-		3, ErrorLevelFatal, "it is not running",
-	)
-)

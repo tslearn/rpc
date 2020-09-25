@@ -1,8 +1,6 @@
 package core
 
 import (
-	"errors"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"reflect"
@@ -26,21 +24,21 @@ var (
 	rtMapType   = reflect.ValueOf(RTMap{}).Type()
 )
 
-func getFuncKind(fn reflect.Value) (string, error) {
+func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
-		return "", errors.New("handler must be a function")
+		return "", ErrProcessIllegalHandler.AddDebug("handler must be a function")
 	} else if fn.Type().NumIn() < 1 ||
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
-		return "", fmt.Errorf(
-			"handler 1st argument type must be %s",
-			convertTypeToString(contextType),
+		return "", ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+			"handler 1st argument type must be ",
+			convertTypeToString(contextType)),
 		)
 	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
-		return "", fmt.Errorf(
-			"handler return type must be %s",
+		return "", ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+			"handler return type must be ",
 			convertTypeToString(returnType),
-		)
+		))
 	} else {
 		sb := base.NewStringBuilder()
 		defer sb.Release()
@@ -68,11 +66,14 @@ func getFuncKind(fn reflect.Value) (string, error) {
 			case stringType:
 				sb.AppendByte('S')
 			default:
-				return "", fmt.Errorf(
-					"handler %s argument type %s is not supported",
-					base.ConvertOrdinalToString(1+uint(i)),
-					fn.Type().In(i),
-				)
+				return "", ErrProcessIllegalHandler.AddDebug(
+					base.ConcatString(
+						"handler ",
+						base.ConvertOrdinalToString(1+uint(i)),
+						" argument type ",
+						fn.Type().In(i).String(),
+						" is not supported",
+					))
 			}
 		}
 

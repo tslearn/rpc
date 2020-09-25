@@ -1,0 +1,119 @@
+package websocket
+
+import (
+	"github.com/rpccloud/rpc/internal/base"
+)
+
+const websocketStreamConnErrorSeg = 2001
+
+var (
+	ErrWebsocketStreamConnStreamIsNil = base.DefineKernelError(
+		(websocketStreamConnErrorSeg<<16)|1,
+		base.ErrorLevelFatal,
+		"stream is nil",
+	)
+
+	ErrWebsocketStreamConnDataIsNotBinary = base.DefineSecurityError(
+		(websocketStreamConnErrorSeg<<16)|2,
+		base.ErrorLevelWarn,
+		"websocket data is not binary",
+	)
+
+	ErrWebsocketStreamConnWSConnWriteMessage = base.DefineTransportError(
+		(websocketStreamConnErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrWebsocketStreamConnWSConnSetReadDeadline = base.DefineTransportError(
+		(websocketStreamConnErrorSeg<<16)|4,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrWebsocketStreamConnWSConnReadMessage = base.DefineTransportError(
+		(websocketStreamConnErrorSeg<<16)|5,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrWebsocketStreamConnWSConnClose = base.DefineTransportError(
+		(websocketStreamConnErrorSeg<<16)|6,
+		base.ErrorLevelWarn,
+		"",
+	)
+)
+
+const websocketServerAdapterErrorSeg = 2002
+
+var (
+	ErrWebsocketServerAdapterUpgrade = base.DefineSecurityError(
+		(websocketServerAdapterErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"websocket upgrade error",
+	)
+
+	ErrWebsocketServerAdapterAlreadyRunning = base.DefineKernelError(
+		(websocketServerAdapterErrorSeg<<16)|2,
+		base.ErrorLevelFatal,
+		"it is already running",
+	)
+
+	ErrWebsocketServerAdapterNotRunning = base.DefineKernelError(
+		(websocketServerAdapterErrorSeg<<16)|3,
+		base.ErrorLevelFatal,
+		"it is not running",
+	)
+
+	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineRuntimeError(
+		(websocketServerAdapterErrorSeg<<16)|4,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrWebsocketServerAdapterWSServerClose = base.DefineRuntimeError(
+		(websocketServerAdapterErrorSeg<<16)|5,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrWebsocketServerAdapterCloseTimeout = base.DefineRuntimeError(
+		(websocketServerAdapterErrorSeg<<16)|6,
+		base.ErrorLevelError,
+		"close timeout",
+	)
+)
+
+const websocketClientAdapterErrorSeg = 2003
+
+var (
+	ErrWebsocketClientAdapterDial = base.DefineRuntimeError(
+		(websocketClientAdapterErrorSeg<<16)|1,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrWebsocketClientAdapterAlreadyRunning = base.DefineKernelError(
+		(websocketClientAdapterErrorSeg<<16)|2,
+		base.ErrorLevelFatal,
+		"it is already running",
+	)
+
+	ErrWebsocketClientAdapterNotRunning = base.DefineKernelError(
+		(websocketClientAdapterErrorSeg<<16)|3,
+		base.ErrorLevelFatal,
+		"it is not running",
+	)
+
+	ErrWebsocketClientAdapterCloseTimeout = base.DefineRuntimeError(
+		(websocketClientAdapterErrorSeg<<16)|4,
+		base.ErrorLevelError,
+		"close timeout",
+	)
+
+	ErrWebsocketClientAdapterConnClose = base.DefineRuntimeError(
+		(websocketClientAdapterErrorSeg<<16)|5,
+		base.ErrorLevelError,
+		"",
+	)
+)

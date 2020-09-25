@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
@@ -285,7 +285,7 @@ func (p *serverCore) listenWebSocket(addr string, dbg string) {
 	} else {
 		p.adapters = append(
 			p.adapters,
-			adapter.NewWebsocketServerAdapter(addr),
+			websocket.NewWebsocketServerAdapter(addr),
 		)
 	}
 }
