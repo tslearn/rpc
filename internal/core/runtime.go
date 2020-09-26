@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // Runtime ...
@@ -103,16 +104,16 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 
 		// parse the stream
 		if errCode, ok := stream.ReadUint64(); !ok {
-			return nil, base.ErrBadStream
+			return nil, errors.ErrBadStream
 		} else if errCode == 0 {
 			if ret, ok := stream.Read(); ok {
 				return ret, nil
 			}
-			return nil, base.ErrBadStream
+			return nil, errors.ErrBadStream
 		} else if message, ok := stream.ReadString(); !ok {
-			return nil, base.ErrBadStream
+			return nil, errors.ErrBadStream
 		} else if !stream.IsReadFinish() {
-			return nil, base.ErrBadStream
+			return nil, errors.ErrBadStream
 		} else {
 			return nil, base.NewError(errCode, message)
 		}

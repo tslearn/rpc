@@ -213,10 +213,10 @@ func IsTCPPortOccupied(port uint16) bool {
 	return err == nil
 }
 
-func ReadFromFile(filePath string) (string, *Error) {
+func ReadFromFile(filePath string) (string, error) {
 	ret, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return "", ErrReadFile.AddDebug(err.Error())
+		return "", err
 	}
 
 	// for windows, remove \r

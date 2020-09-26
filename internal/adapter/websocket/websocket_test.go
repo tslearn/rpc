@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	errors2 "github.com/rpccloud/rpc/internal/errors"
 	"math"
 	"net"
 	"net/http"
@@ -107,26 +108,26 @@ func makeConnSetReadDeadlineError(conn *websocket.Conn) {
 func TestConvertToError(t *testing.T) {
 	t.Run("err is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(convertToError(nil, base.ErrStreamConnIsClosed)).IsNil()
+		assert(convertToError(nil, errors2.ErrStreamConnIsClosed)).IsNil()
 	})
 
 	t.Run("err is websocket CloseNormalClosure", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseNormalClosure},
-			base.ErrStreamConnIsClosed,
-		)).Equal(base.ErrStreamConnIsClosed)
+			errors2.ErrStreamConnIsClosed,
+		)).Equal(errors2.ErrStreamConnIsClosed)
 	})
 
 	t.Run("err is others", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		assert(convertToError(errors.New("error"), base.ErrStreamConnIsClosed)).
-			Equal(base.ErrStreamConnIsClosed.AddDebug("error"))
+		assert(convertToError(errors.New("error"), errors2.ErrStreamConnIsClosed)).
+			Equal(errors2.ErrStreamConnIsClosed.AddDebug("error"))
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseAbnormalClosure},
-			base.ErrStreamConnIsClosed,
-		)).Equal(base.ErrStreamConnIsClosed.AddDebug(
+			errors2.ErrStreamConnIsClosed,
+		)).Equal(errors2.ErrStreamConnIsClosed.AddDebug(
 			"websocket: close 1006 (abnormal closure)",
 		))
 	})
@@ -279,7 +280,7 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 				testConn := conn.(*websocketStreamConn)
 				atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 				assert(conn.ReadStream(time.Second, 999999)).
-					Equal(nil, base.ErrStreamConnIsClosed)
+					Equal(nil, errors2.ErrStreamConnIsClosed)
 				assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			},
 		)).Equal([]*base.Error{})
@@ -396,7 +397,7 @@ func TestWebsocketStreamConn_WriteStream(t *testing.T) {
 				testConn := conn.(*websocketStreamConn)
 				atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 				assert(testConn.WriteStream(core.NewStream(), time.Second)).
-					Equal(base.ErrStreamConnIsClosed)
+					Equal(errors2.ErrStreamConnIsClosed)
 			},
 		)).Equal([]*base.Error{})
 	})

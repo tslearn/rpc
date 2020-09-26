@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"reflect"
 	"runtime/debug"
@@ -310,7 +311,7 @@ func (p *rpcThread) Eval(
 	// set exec reply node
 	replyPath, _, ok := inStream.readUnsafeString()
 	if !ok {
-		return p.WriteError(base.ErrBadStream, 0)
+		return p.WriteError(errors.ErrBadStream, 0)
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
 			ErrThreadTargetNotExist.
@@ -335,7 +336,7 @@ func (p *rpcThread) Eval(
 			0,
 		)
 	} else if frame.from, _, ok = inStream.readUnsafeString(); !ok {
-		return p.WriteError(base.ErrBadStream, 0)
+		return p.WriteError(errors.ErrBadStream, 0)
 	} else {
 		// create context
 		rt := Runtime{id: rtID, thread: p}
@@ -437,7 +438,7 @@ func (p *rpcThread) Eval(
 		}
 
 		if _, ok := inStream.Read(); !ok {
-			return p.WriteError(base.ErrBadStream, 0)
+			return p.WriteError(errors.ErrBadStream, 0)
 		} else if !p.processor.isDebug {
 			return p.WriteError(
 				ErrThreadArgumentsNotMatch.
@@ -453,7 +454,7 @@ func (p *rpcThread) Eval(
 			inStream.SetReadPos(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {
-					return p.WriteError(base.ErrBadStream, 0)
+					return p.WriteError(errors.ErrBadStream, 0)
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,

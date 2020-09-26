@@ -1,6 +1,7 @@
 package base
 
 import (
+	"math"
 	"testing"
 )
 
@@ -44,10 +45,18 @@ func TestSubscribePanic(t *testing.T) {
 }
 
 func TestPublishPanic(t *testing.T) {
+	num := ErrorNumber(math.MaxUint32)
 	t.Run("onPanic goes panic", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
-		err := ErrRuntimeGeneral.AddDebug("message")
+
+		err := DefineSecurityError(num, ErrorLevelWarn, "error")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, num)
+			errorDefineMutex.Unlock()
+		}()
+
 		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 			panic("error")
@@ -60,7 +69,14 @@ func TestPublishPanic(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
-		err := ErrRuntimeGeneral.AddDebug("message")
+
+		err := DefineRuntimeError(num, ErrorLevelWarn, "message")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, num)
+			errorDefineMutex.Unlock()
+		}()
+
 		v1 := SubscribePanic(func(e *Error) {
 			retCH <- e
 		})
@@ -85,9 +101,17 @@ func TestRunWithCatchPanic(t *testing.T) {
 }
 
 func TestRunWithSubscribePanic(t *testing.T) {
+	num := ErrorNumber(math.MaxUint32)
 	t.Run("func with PublishPanic", func(t *testing.T) {
 		assert := NewAssert(t)
-		err := ErrRuntimeGeneral.AddDebug("message")
+
+		err := DefineSecurityError(num, ErrorLevelWarn, "message")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, num)
+			errorDefineMutex.Unlock()
+		}()
+
 		assert(RunWithSubscribePanic(func() {
 			PublishPanic(err)
 		})).Equal(err)

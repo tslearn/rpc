@@ -1,6 +1,7 @@
 package base
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -208,7 +209,7 @@ func TestReadFromFile(t *testing.T) {
 		v1, err1 := ReadFromFile("./no_file")
 		assert(v1).Equal("")
 		assert(err1).IsNotNil()
-		assert(strings.HasPrefix(err1.Error(), "KernelFatal:")).IsTrue()
+		fmt.Println(err1)
 		assert(strings.Contains(err1.Error(), "no_file")).IsTrue()
 	})
 

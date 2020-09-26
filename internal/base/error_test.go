@@ -35,7 +35,7 @@ func TestDefineError(t *testing.T) {
 
 	t.Run("error redefined", func(t *testing.T) {
 		assert := NewAssert(t)
-		defineError(ErrorTypeReply, num, ErrorLevelWarn, "msg", "source")
+		_ = defineError(ErrorTypeReply, num, ErrorLevelWarn, "msg", "source")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
@@ -340,8 +340,15 @@ func TestError_AddDebug(t *testing.T) {
 
 	t.Run("test from derived error", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := ErrRuntimeGeneral.AddDebug("")
-		v2 := ErrRuntimeGeneral.AddDebug("msg")
+		v := DefineSecurityError(num, ErrorLevelWarn, "")
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, num)
+			errorDefineMutex.Unlock()
+		}()
+
+		v1 := v.AddDebug("")
+		v2 := v.AddDebug("msg")
 		v3 := v1.AddDebug("dbg")
 		v4 := v2.AddDebug("dbg")
 		assert(fmt.Sprintf("%p", v3) == fmt.Sprintf("%p", v1)).IsTrue()

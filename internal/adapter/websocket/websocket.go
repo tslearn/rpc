@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"net/http"
 	"sync"
@@ -20,7 +21,7 @@ func convertToError(err error, template *base.Error) *base.Error {
 	if err == nil {
 		return nil
 	} else if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		return base.ErrStreamConnIsClosed
+		return errors.ErrStreamConnIsClosed
 	} else {
 		return template.AddDebug(err.Error())
 	}
@@ -103,7 +104,7 @@ func (p *websocketStreamConn) ReadStream(
 		webSocketStreamConnRunning,
 		webSocketStreamConnRunning,
 	) {
-		return nil, base.ErrStreamConnIsClosed
+		return nil, errors.ErrStreamConnIsClosed
 	} else if e := p.wsConn.SetReadDeadline(
 		base.TimeNow().Add(timeout),
 	); e != nil {
@@ -133,7 +134,7 @@ func (p *websocketStreamConn) WriteStream(
 		webSocketStreamConnRunning,
 		webSocketStreamConnRunning,
 	) {
-		return base.ErrStreamConnIsClosed
+		return errors.ErrStreamConnIsClosed
 	} else {
 		return p.writeMessage(
 			websocket.BinaryMessage,
