@@ -92,16 +92,16 @@ func testHelperStreamConn(
 	return ret
 }
 
-func makeConnFDError(conn *websocket.Conn) {
-	fnGetField := func(objPointer interface{}, fileName string) unsafe.Pointer {
-		val := reflect.Indirect(reflect.ValueOf(objPointer))
-		return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
-	}
+func getFieldByPointer(ptr interface{}, fileName string) unsafe.Pointer {
+	val := reflect.Indirect(reflect.ValueOf(ptr))
+	return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
+}
 
+func makeConnFDError(conn *websocket.Conn) {
 	// Network file descriptor.
 	type netFD struct{}
-	netConnPtr := (*net.Conn)(fnGetField(conn, "conn"))
-	fdPointer := (**netFD)(fnGetField(*netConnPtr, "fd"))
+	netConnPtr := (*net.Conn)(getFieldByPointer(conn, "conn"))
+	fdPointer := (**netFD)(getFieldByPointer(*netConnPtr, "fd"))
 	*fdPointer = nil
 }
 
@@ -683,11 +683,6 @@ func TestWsServerAdapter_Close(t *testing.T) {
 	t.Run("server Close error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(base.RunWithCatchPanic(func() {
-			fnGetField := func(ptr interface{}, fileName string) unsafe.Pointer {
-				val := reflect.Indirect(reflect.ValueOf(ptr))
-				return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
-			}
-
 			serverAdapter := NewWebsocketServerAdapter("127.0.0.1:12345")
 			go func() {
 				serverAdapter.Open(
@@ -700,12 +695,12 @@ func TestWsServerAdapter_Close(t *testing.T) {
 
 			time.Sleep(20 * time.Millisecond)
 
-			mutex := (*sync.Mutex)(fnGetField(serverAdapter, "mutex"))
+			mutex := (*sync.Mutex)(getFieldByPointer(serverAdapter, "mutex"))
 			mutex.Lock()
 			// make fake error
 			wsServer := serverAdapter.(*websocketServerAdapter).wsServer
-			httpServerMuPointer := (*sync.Mutex)(fnGetField(wsServer, "mu"))
-			listenersPtr := (*map[*net.Listener]struct{})(fnGetField(
+			httpServerMuPointer := (*sync.Mutex)(getFieldByPointer(wsServer, "mu"))
+			listenersPtr := (*map[*net.Listener]struct{})(getFieldByPointer(
 				wsServer,
 				"listeners",
 			))
@@ -900,10 +895,14 @@ func TestWsClientAdapter_Close(t *testing.T) {
 		}()
 
 		time.Sleep(20 * time.Millisecond)
+
+		mutex := (*sync.Mutex)(getFieldByPointer(clientAdapter, "mutex"))
+		mutex.Lock()
 		makeConnFDError(
 			clientAdapter.(*websocketClientAdapter).
 				conn.(*websocketStreamConn).wsConn,
 		)
+		mutex.Unlock()
 		clientAdapter.Close(func(err *base.Error) {
 			assert(err).Equal(
 				errors.ErrWebsocketStreamConnWSConnClose.AddDebug("invalid argument"),
