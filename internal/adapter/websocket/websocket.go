@@ -108,9 +108,15 @@ func (p *websocketStreamConn) ReadStream(
 	} else if e := p.wsConn.SetReadDeadline(
 		base.TimeNow().Add(timeout),
 	); e != nil {
-		return nil, convertToError(e, errors.ErrWebsocketStreamConnWSConnSetReadDeadline)
+		return nil, convertToError(
+			e,
+			errors.ErrWebsocketStreamConnWSConnSetReadDeadline,
+		)
 	} else if mt, message, e := p.wsConn.ReadMessage(); e != nil {
-		return nil, convertToError(e, errors.ErrWebsocketStreamConnWSConnReadMessage)
+		return nil, convertToError(
+			e,
+			errors.ErrWebsocketStreamConnWSConnReadMessage,
+		)
 	} else if mt != websocket.BinaryMessage {
 		return nil, errors.ErrWebsocketStreamConnDataIsNotBinary
 	} else {

@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -178,7 +179,9 @@ func (p *Error) Error() string {
 	return ConcatString(
 		p.getErrorTypeString(),
 		p.getErrorLevelString(),
-		": ",
+		"[",
+		strconv.FormatUint(uint64(p.GetNumber()), 10),
+		"]: ",
 		p.message,
 	)
 }
