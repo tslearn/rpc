@@ -177,14 +177,20 @@ func (p *websocketStreamConn) Close() *base.Error {
 		}
 
 		// 3. close and return
-		return convertToError(p.wsConn.Close(), errors.ErrWebsocketStreamConnWSConnClose)
+		return convertToError(
+			p.wsConn.Close(),
+			errors.ErrWebsocketStreamConnWSConnClose,
+		)
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnCanClose,
 		webSocketStreamConnClosed,
 	) {
 		// 1. close and return
-		return convertToError(p.wsConn.Close(), errors.ErrWebsocketStreamConnWSConnClose)
+		return convertToError(
+			p.wsConn.Close(),
+			errors.ErrWebsocketStreamConnWSConnClose,
+		)
 	} else {
 		return nil
 	}

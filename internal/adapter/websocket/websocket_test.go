@@ -381,16 +381,7 @@ func TestWebsocketStreamConn_WriteStream(t *testing.T) {
 			func(client core.IClientAdapter, conn core.IStreamConn) {
 				testConn := conn.(*websocketStreamConn)
 				err := testConn.WriteStream(nil, time.Second)
-				assert(err).IsNotNil()
-				assert(strings.HasPrefix(
-					err.Error(),
-					errors.ErrWebsocketStreamConnStreamIsNil.Error(),
-				)).IsTrue()
-				assert(strings.Contains(err.GetMessage(), "[running]:"))
-				assert(strings.Contains(
-					err.GetMessage(),
-					"TestWebsocketStreamConn_WriteStream",
-				))
+				assert(err).Equal(errors.ErrWebsocketStreamConnStreamIsNil)
 			},
 		)).Equal([]*base.Error{})
 	})

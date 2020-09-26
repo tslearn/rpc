@@ -89,7 +89,7 @@ const websocketClientAdapterErrorSeg = 2003
 var (
 	ErrWebsocketClientAdapterDial = base.DefineRuntimeError(
 		(websocketClientAdapterErrorSeg<<16)|1,
-		base.ErrorLevelError,
+		base.ErrorLevelFatal,
 		"",
 	)
 
