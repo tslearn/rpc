@@ -478,6 +478,19 @@ func TestWebsocketStreamConn_Close(t *testing.T) {
 		)).Equal([]*base.Error{})
 	})
 
+	t.Run("Running => Closing Error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testHelperStreamConn(
+			nil,
+			func(client core.IClientAdapter, conn core.IStreamConn) {
+				makeConnFDError(conn.(*websocketStreamConn).wsConn)
+				assert(conn.Close()).Equal(
+					errors.ErrWebsocketStreamConnWSConnClose.AddDebug("invalid argument"),
+				)
+			},
+		)).Equal([]*base.Error{})
+	})
+
 	t.Run("CanClose => Closed", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testHelperStreamConn(
@@ -487,6 +500,22 @@ func TestWebsocketStreamConn_Close(t *testing.T) {
 				atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 				testConn.closeCH <- true
 				assert(conn.Close()).IsNil()
+			},
+		)).Equal([]*base.Error{})
+	})
+
+	t.Run("CanClose => Closed Error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testHelperStreamConn(
+			nil,
+			func(client core.IClientAdapter, conn core.IStreamConn) {
+				testConn := conn.(*websocketStreamConn)
+				atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
+				testConn.closeCH <- true
+				makeConnFDError(conn.(*websocketStreamConn).wsConn)
+				assert(conn.Close()).Equal(
+					errors.ErrWebsocketStreamConnWSConnClose.AddDebug("invalid argument"),
+				)
 			},
 		)).Equal([]*base.Error{})
 	})
