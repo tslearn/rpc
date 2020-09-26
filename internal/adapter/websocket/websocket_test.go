@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	syserror "errors"
+	sysError "errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal/base"
@@ -25,7 +25,7 @@ func (p fakeNetListener) Accept() (net.Conn, error) {
 	return nil, nil
 }
 func (p fakeNetListener) Close() error {
-	return syserror.New("test error")
+	return sysError.New("test error")
 }
 func (p fakeNetListener) Addr() net.Addr {
 	return nil
@@ -122,7 +122,7 @@ func TestConvertToError(t *testing.T) {
 	t.Run("err is others", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		assert(convertToError(syserror.New("error"), errors.ErrStreamConnIsClosed)).
+		assert(convertToError(sysError.New("error"), errors.ErrStreamConnIsClosed)).
 			Equal(errors.ErrStreamConnIsClosed.AddDebug("error"))
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseAbnormalClosure},
