@@ -574,17 +574,12 @@ func TestWsServerAdapter_Open(t *testing.T) {
 				waitCH <- e
 			},
 		)
-		err := <-waitCH
-		assert(strings.HasPrefix(err.GetMessage(), "it is already running")).
-			IsTrue()
-		assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
-		assert(strings.Contains(err.GetMessage(), "TestWsServerAdapter_Open")).
-			IsTrue()
+		assert(<-waitCH).Equal(errors.ErrWebsocketServerAdapterAlreadyRunning)
 	})
 
 	t.Run("error addr", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		serverAdapter := NewWebsocketServerAdapter("error-addr").(*websocketServerAdapter)
+		serverAdapter := NewWebsocketServerAdapter("error-addr")
 		waitCH := make(chan *base.Error, 1)
 		serverAdapter.Open(
 			func(conn core.IStreamConn, _ net.Addr) {},
@@ -593,8 +588,11 @@ func TestWsServerAdapter_Open(t *testing.T) {
 			},
 		)
 		err := <-waitCH
+		assert(strings.HasPrefix(
+			err.Error(),
+			errors.ErrWebsocketServerAdapterWSServerListenAndServe.Error(),
+		))
 		assert(strings.Contains(err.GetMessage(), "error-addr")).IsTrue()
-		assert(strings.Contains(err.GetMessage(), "[running]:")).IsFalse()
 	})
 
 	t.Run("conn upgrade error", func(t *testing.T) {
@@ -620,38 +618,6 @@ func TestWsServerAdapter_Open(t *testing.T) {
 		)
 
 		assert(<-retCH).Equal(errors.ErrWebsocketServerAdapterUpgrade)
-	})
-
-	t.Run("stream conn Close error", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		serverAdapter := NewWebsocketServerAdapter(
-			"127.0.0.1:12345",
-		).(*websocketServerAdapter)
-
-		go func() {
-			time.Sleep(10 * time.Millisecond)
-			NewWebsocketClientAdapter("ws://127.0.0.1:12345").Open(
-				func(conn core.IStreamConn) {
-					// empty
-				}, func(e *base.Error) {
-					assert().Fail("error run here")
-				},
-			)
-			time.Sleep(50 * time.Millisecond)
-			serverAdapter.Close(func(_ uint64, e *base.Error) {
-				assert().Fail("error run here")
-			})
-		}()
-
-		serverAdapter.Open(
-			func(conn core.IStreamConn, _ net.Addr) {
-				time.Sleep(30 * time.Millisecond)
-				makeConnFDError(conn.(*websocketStreamConn).wsConn)
-			},
-			func(_ uint64, e *base.Error) {
-				assert(e).IsNotNil()
-			},
-		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -699,11 +665,8 @@ func TestWsServerAdapter_Close(t *testing.T) {
 		NewWebsocketServerAdapter("test").Close(func(_ uint64, err *base.Error) {
 			assert(strings.HasPrefix(
 				err.Error(),
-				"KernelFatal: it is not running",
+				errors.ErrWebsocketServerAdapterNotRunning.Error(),
 			)).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "TestWsServerAdapter_Close")).
-				IsTrue()
 		})
 	})
 
@@ -715,14 +678,12 @@ func TestWsServerAdapter_Close(t *testing.T) {
 				serverAdapter.Open(
 					func(conn core.IStreamConn, _ net.Addr) {},
 					func(_ uint64, err *base.Error) {
-						fmt.Println(err)
 						assert().Fail("error run here")
 					},
 				)
 			}()
 			time.Sleep(10 * time.Millisecond)
 			serverAdapter.Close(func(_ uint64, err *base.Error) {
-				fmt.Println(err)
 				assert().Fail("error run here")
 			})
 		})).IsNil()
@@ -731,8 +692,8 @@ func TestWsServerAdapter_Close(t *testing.T) {
 	t.Run("server Close error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(base.RunWithCatchPanic(func() {
-			fnGetField := func(objPointer interface{}, fileName string) unsafe.Pointer {
-				val := reflect.Indirect(reflect.ValueOf(objPointer))
+			fnGetField := func(ptr interface{}, fileName string) unsafe.Pointer {
+				val := reflect.Indirect(reflect.ValueOf(ptr))
 				return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
 			}
 
@@ -768,17 +729,12 @@ func TestWsServerAdapter_Close(t *testing.T) {
 			errCount := 0
 			serverAdapter.Close(func(_ uint64, err *base.Error) {
 				if errCount == 0 {
-					assert(err.Error()).Equal("RuntimeError: test error")
+					assert(err).Equal(
+						errors.ErrWebsocketServerAdapterWSServerClose.
+							AddDebug("test error"),
+					)
 				} else if errCount == 1 {
-					assert(strings.HasPrefix(
-						err.Error(),
-						"RuntimeError: it cannot be closed within 5 seconds",
-					)).IsTrue()
-					assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
-					assert(strings.Contains(
-						err.GetMessage(),
-						"TestWsServerAdapter_Close",
-					)).IsTrue()
+					assert(err).Equal(errors.ErrWebsocketServerAdapterCloseTimeout)
 				} else {
 					assert().Fail("error run here")
 				}
@@ -819,7 +775,7 @@ func TestWsClientAdapter_Open(t *testing.T) {
 
 	t.Run("dial addr error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		clientAdapter := NewWebsocketClientAdapter("ws://test").(*websocketClientAdapter)
+		clientAdapter := NewWebsocketClientAdapter("ws://test")
 		retCH := make(chan *base.Error, 1)
 		clientAdapter.Open(
 			func(conn core.IStreamConn) {},
@@ -828,11 +784,14 @@ func TestWsClientAdapter_Open(t *testing.T) {
 			},
 		)
 		err := <-retCH
-		assert(strings.HasPrefix(err.Error(), "RuntimeError:")).IsTrue()
+		assert(strings.HasPrefix(
+			err.Error(),
+			errors.ErrWebsocketClientAdapterDial.Error(),
+		)).IsTrue()
 		assert(strings.Contains(err.Error(), "dial tcp")).IsTrue()
 	})
 
-	t.Run("dial protocol error", func(t *testing.T) {
+	t.Run("client already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		_ = base.RunWithSubscribePanic(func() {
 			serverAdapter := NewWebsocketServerAdapter("127.0.0.1:12345")
@@ -846,29 +805,16 @@ func TestWsClientAdapter_Open(t *testing.T) {
 			clientAdapter := NewWebsocketClientAdapter(
 				"ws://127.0.0.1:12345",
 			).(*websocketClientAdapter)
-
 			clientAdapter.SetRunning(func() {})
 			clientAdapter.SetClosing(func(ch chan bool) {})
-
 			waitCH := make(chan *base.Error, 1)
-
 			clientAdapter.Open(
 				func(conn core.IStreamConn) {},
 				func(e *base.Error) {
 					waitCH <- e
 				},
 			)
-
-			err := <-waitCH
-
-			assert(strings.HasPrefix(
-				err.Error(),
-				"KernelFatal: it is already running",
-			)).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "[running]")).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "TestWsClientAdapter_Open")).
-				IsTrue()
-
+			assert(<-waitCH).Equal(errors.ErrWebsocketClientAdapterAlreadyRunning)
 			serverAdapter.Close(func(_ uint64, e *base.Error) {})
 		})
 	})
@@ -886,14 +832,12 @@ func TestWsClientAdapter_Open(t *testing.T) {
 		clientAdapter := NewWebsocketClientAdapter(
 			"ws://127.0.0.1:12345",
 		).(*websocketClientAdapter)
-
 		clientAdapter.Open(
 			func(conn core.IStreamConn) {},
 			func(e *base.Error) {
 				assert().Fail("error run here")
 			},
 		)
-
 		clientAdapter.Close(func(e *base.Error) {})
 		serverAdapter.Close(func(_ uint64, e *base.Error) {})
 	})
@@ -910,13 +854,7 @@ func TestWsClientAdapter_Close(t *testing.T) {
 	t.Run("SetClosing is false", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		NewWebsocketClientAdapter("test").Close(func(err *base.Error) {
-			assert(strings.HasPrefix(
-				err.Error(),
-				"KernelFatal: it is not running",
-			)).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
-			assert(strings.Contains(err.GetMessage(), "TestWsClientAdapter_Close")).
-				IsTrue()
+			assert(err).Equal(errors.ErrWebsocketClientAdapterNotRunning)
 		})
 	})
 
@@ -964,9 +902,41 @@ func TestWsClientAdapter_Close(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 			clientAdapter.Open(
 				func(conn core.IStreamConn) {
-					conn.(*websocketStreamConn).Lock()
-					makeConnFDError(conn.(*websocketStreamConn).wsConn)
-					conn.(*websocketStreamConn).Unlock()
+					time.Sleep(time.Second)
+				},
+				func(e *base.Error) {},
+			)
+		}()
+
+		time.Sleep(20 * time.Millisecond)
+		makeConnFDError(
+			clientAdapter.(*websocketClientAdapter).
+				conn.(*websocketStreamConn).wsConn,
+		)
+		clientAdapter.Close(func(err *base.Error) {
+			assert(err).Equal(
+				errors.ErrWebsocketStreamConnWSConnClose.AddDebug("invalid argument"),
+			)
+		})
+
+		serverAdapter.Close(func(_ uint64, e *base.Error) {})
+	})
+
+	t.Run("conn Close timeout", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		serverAdapter := NewWebsocketServerAdapter("127.0.0.1:12345")
+		go func() {
+			serverAdapter.Open(
+				func(conn core.IStreamConn, _ net.Addr) {},
+				func(_ uint64, e *base.Error) {},
+			)
+		}()
+
+		clientAdapter := NewWebsocketClientAdapter("ws://127.0.0.1:12345")
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			clientAdapter.Open(
+				func(conn core.IStreamConn) {
 					time.Sleep(6 * time.Second)
 				},
 				func(e *base.Error) {},
@@ -974,11 +944,10 @@ func TestWsClientAdapter_Close(t *testing.T) {
 		}()
 
 		time.Sleep(20 * time.Millisecond)
-		clientAdapter.Close(func(e *base.Error) {
-			assert(e).IsNotNil()
+		clientAdapter.Close(func(err *base.Error) {
+			assert(err).Equal(errors.ErrWebsocketClientAdapterCloseTimeout)
 		})
 
 		serverAdapter.Close(func(_ uint64, e *base.Error) {})
 	})
-
 }

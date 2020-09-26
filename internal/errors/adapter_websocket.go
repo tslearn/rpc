@@ -67,7 +67,7 @@ var (
 
 	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineRuntimeError(
 		(websocketServerAdapterErrorSeg<<16)|4,
-		base.ErrorLevelError,
+		base.ErrorLevelFatal,
 		"",
 	)
 
@@ -109,11 +109,5 @@ var (
 		(websocketClientAdapterErrorSeg<<16)|4,
 		base.ErrorLevelError,
 		"close timeout",
-	)
-
-	ErrWebsocketClientAdapterConnClose = base.DefineRuntimeError(
-		(websocketClientAdapterErrorSeg<<16)|5,
-		base.ErrorLevelError,
-		"",
 	)
 )

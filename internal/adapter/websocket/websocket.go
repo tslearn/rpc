@@ -243,7 +243,8 @@ func (p *websocketServerAdapter) Open(
 		if e := p.wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 			onError(
 				0,
-				errors.ErrWebsocketServerAdapterWSServerListenAndServe.AddDebug(e.Error()),
+				errors.ErrWebsocketServerAdapterWSServerListenAndServe.
+					AddDebug(e.Error()),
 			)
 		}
 		p.SetClosing(nil)
@@ -261,7 +262,11 @@ func (p *websocketServerAdapter) Close(onError func(uint64, *base.Error)) {
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.wsServer.Close(); e != nil {
-			onError(0, errors.ErrWebsocketServerAdapterWSServerClose.AddDebug(e.Error()))
+			onError(
+				0,
+				errors.ErrWebsocketServerAdapterWSServerClose.
+					AddDebug(e.Error()),
+			)
 		}
 	}) {
 		onError(0, errors.ErrWebsocketServerAdapterNotRunning)
@@ -326,7 +331,7 @@ func (p *websocketClientAdapter) Close(onError func(*base.Error)) {
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.conn.Close(); e != nil {
-			onError(errors.ErrWebsocketClientAdapterConnClose.AddDebug(e.Error()))
+			onError(e)
 		}
 	}) {
 		onError(errors.ErrWebsocketClientAdapterNotRunning)
