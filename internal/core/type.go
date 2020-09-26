@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"reflect"
 	"sync/atomic"
@@ -26,16 +27,16 @@ var (
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
-		return "", ErrProcessIllegalHandler.AddDebug("handler must be a function")
+		return "", errors.ErrProcessIllegalHandler.AddDebug("handler must be a function")
 	} else if fn.Type().NumIn() < 1 ||
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
-		return "", ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
 			"handler 1st argument type must be ",
 			convertTypeToString(contextType)),
 		)
 	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
-		return "", ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
 			"handler return type must be ",
 			convertTypeToString(returnType),
 		))
@@ -66,7 +67,7 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 			case stringType:
 				sb.AppendByte('S')
 			default:
-				return "", ErrProcessIllegalHandler.AddDebug(
+				return "", errors.ErrProcessIllegalHandler.AddDebug(
 					base.ConcatString(
 						"handler ",
 						base.ConvertOrdinalToString(1+uint(i)),

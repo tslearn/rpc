@@ -1,4 +1,4 @@
-package websocket
+package errors
 
 import (
 	"github.com/rpccloud/rpc/internal/base"

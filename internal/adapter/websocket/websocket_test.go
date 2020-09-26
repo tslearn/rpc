@@ -176,7 +176,7 @@ func TestWebsocketStreamConn_writeMessage(t *testing.T) {
 					[]byte("hello"),
 					10*time.Millisecond,
 				)).Equal(
-					ErrWebsocketStreamConnWSConnWriteMessage.AddDebug("invalid argument"),
+					errors2.ErrWebsocketStreamConnWSConnWriteMessage.AddDebug("invalid argument"),
 				)
 			},
 		)).Equal([]*base.Error{})
@@ -332,7 +332,7 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 			func(client core.IClientAdapter, conn core.IStreamConn) {
 				testConn := conn.(*websocketStreamConn)
 				assert(testConn.ReadStream(time.Second, 999999)).Equal(
-					nil, ErrWebsocketStreamConnDataIsNotBinary,
+					nil, errors2.ErrWebsocketStreamConnDataIsNotBinary,
 				)
 				assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			},
@@ -378,7 +378,7 @@ func TestWebsocketStreamConn_WriteStream(t *testing.T) {
 				assert(err).IsNotNil()
 				assert(strings.HasPrefix(
 					err.Error(),
-					ErrWebsocketStreamConnStreamIsNil.Error(),
+					errors2.ErrWebsocketStreamConnStreamIsNil.Error(),
 				)).IsTrue()
 				assert(strings.Contains(err.GetMessage(), "[running]:"))
 				assert(strings.Contains(
@@ -580,7 +580,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 			},
 		)
 
-		assert(<-retCH).Equal(ErrWebsocketServerAdapterUpgrade)
+		assert(<-retCH).Equal(errors2.ErrWebsocketServerAdapterUpgrade)
 	})
 
 	t.Run("stream conn Close error", func(t *testing.T) {

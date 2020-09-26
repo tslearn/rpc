@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
 	"regexp"
 	"strings"
@@ -78,13 +79,13 @@ func NewProcessor(
 	}
 
 	if numOfThreads <= 0 {
-		fnError(ErrProcessorNumOfThreadsIsWrong)
+		fnError(errors.ErrProcessorNumOfThreadsIsWrong)
 		return nil
 	} else if maxNodeDepth <= 0 {
-		fnError(ErrProcessorMaxNodeDepthIsWrong)
+		fnError(errors.ErrProcessorMaxNodeDepthIsWrong)
 		return nil
 	} else if maxCallDepth <= 0 {
-		fnError(ErrProcessorMaxCallDepthIsWrong)
+		fnError(errors.ErrProcessorMaxCallDepthIsWrong)
 		return nil
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
@@ -191,7 +192,7 @@ func (p *Processor) Close() bool {
 
 	if len(errList) > 0 {
 		p.fnError(
-			ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
+			errors.ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
 				"the following replies can not close: \n\t",
 				strings.Join(errList, "\n\t"),
 			)),
@@ -256,22 +257,22 @@ func (p *Processor) mountNode(
 ) *base.Error {
 	if nodeMeta == nil {
 		// check nodeMeta is not nil
-		return ErrProcessorNodeMetaIsNil
+		return errors.ErrProcessorNodeMetaIsNil
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
 		// check nodeMeta.name is valid
-		return ErrProcessorServiceNameIsIllegal.AddDebug(nodeMeta.fileLine)
+		return errors.ErrProcessorServiceNameIsIllegal.AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
 		// check nodeMeta.service is not nil
-		return ErrProcessorNodeMetaServiceIsNil.AddDebug(nodeMeta.fileLine)
+		return errors.ErrProcessorNodeMetaServiceIsNil.AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if parentNode.depth+1 > p.maxNodeDepth {
 			// check max node depth overflow
-			return ErrProcessorServicePathOverflow.AddDebug(nodeMeta.fileLine)
+			return errors.ErrProcessorServicePathOverflow.AddDebug(nodeMeta.fileLine)
 		} else if item, ok := p.servicesMap[servicePath]; ok {
 			// check the mount path is not occupied
-			return ErrProcessorDuplicatedServiceName.
+			return errors.ErrProcessorDuplicatedServiceName.
 				AddDebug(fmt.Sprintf(
 					"duplicated service name %s",
 					nodeMeta.name,
@@ -288,7 +289,7 @@ func (p *Processor) mountNode(
 					nodeMeta.service,
 					nodeMeta.data,
 				); err != nil {
-					return ErrProcessorOnMount.
+					return errors.ErrProcessorOnMount.
 						AddDebug(base.ConcatString("onMount error: ", err.Error())).
 						AddDebug(nodeMeta.fileLine)
 				}
@@ -333,18 +334,18 @@ func (p *Processor) mountReply(
 ) *base.Error {
 	if meta == nil {
 		// check the rpcReplyMeta is nil
-		return ErrProcessorMetaIsNil
+		return errors.ErrProcessorMetaIsNil
 	} else if !replyNameRegex.MatchString(meta.name) {
 		// check the name
-		return ErrProcessReplyNameIsIllegal.
+		return errors.ErrProcessReplyNameIsIllegal.
 			AddDebug(base.ConcatString("reply name ", meta.name, " is illegal")).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		// check the reply handler is nil
-		return ErrProcessHandlerIsNil.AddDebug(meta.fileLine)
+		return errors.ErrProcessHandlerIsNil.AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
-		return ErrProcessIllegalHandler.AddDebug(fmt.Sprintf(
+		return errors.ErrProcessIllegalHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(contextType),
 			convertTypeToString(returnType),
@@ -356,7 +357,7 @@ func (p *Processor) mountReply(
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
 			// check the reply path is not occupied
-			return ErrProcessDuplicatedReplyName.
+			return errors.ErrProcessDuplicatedReplyName.
 				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",

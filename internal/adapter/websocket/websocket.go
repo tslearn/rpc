@@ -63,7 +63,7 @@ func (p *websocketStreamConn) writeMessage(
 	_ = p.wsConn.SetWriteDeadline(base.TimeNow().Add(timeout))
 	return convertToError(
 		p.wsConn.WriteMessage(messageType, data),
-		ErrWebsocketStreamConnWSConnWriteMessage,
+		errors.ErrWebsocketStreamConnWSConnWriteMessage,
 	)
 }
 
@@ -108,11 +108,11 @@ func (p *websocketStreamConn) ReadStream(
 	} else if e := p.wsConn.SetReadDeadline(
 		base.TimeNow().Add(timeout),
 	); e != nil {
-		return nil, convertToError(e, ErrWebsocketStreamConnWSConnSetReadDeadline)
+		return nil, convertToError(e, errors.ErrWebsocketStreamConnWSConnSetReadDeadline)
 	} else if mt, message, e := p.wsConn.ReadMessage(); e != nil {
-		return nil, convertToError(e, ErrWebsocketStreamConnWSConnReadMessage)
+		return nil, convertToError(e, errors.ErrWebsocketStreamConnWSConnReadMessage)
 	} else if mt != websocket.BinaryMessage {
-		return nil, ErrWebsocketStreamConnDataIsNotBinary
+		return nil, errors.ErrWebsocketStreamConnDataIsNotBinary
 	} else {
 		stream := core.NewStream()
 		stream.PutBytesTo(message, 0)
@@ -128,7 +128,7 @@ func (p *websocketStreamConn) WriteStream(
 	defer atomic.StoreInt32(&p.writing, 0)
 
 	if stream == nil {
-		return ErrWebsocketStreamConnStreamIsNil
+		return errors.ErrWebsocketStreamConnStreamIsNil
 	} else if !atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnRunning,
@@ -171,14 +171,14 @@ func (p *websocketStreamConn) Close() *base.Error {
 		}
 
 		// 3. close and return
-		return convertToError(p.wsConn.Close(), ErrWebsocketStreamConnWSConnClose)
+		return convertToError(p.wsConn.Close(), errors.ErrWebsocketStreamConnWSConnClose)
 	} else if atomic.CompareAndSwapInt32(
 		&p.status,
 		webSocketStreamConnCanClose,
 		webSocketStreamConnClosed,
 	) {
 		// 1. close and return
-		return convertToError(p.wsConn.Close(), ErrWebsocketStreamConnWSConnClose)
+		return convertToError(p.wsConn.Close(), errors.ErrWebsocketStreamConnWSConnClose)
 	} else {
 		return nil
 	}
@@ -222,7 +222,7 @@ func (p *websocketServerAdapter) Open(
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			if conn, err := wsUpgradeManager.Upgrade(w, req, nil); err != nil {
-				onError(0, ErrWebsocketServerAdapterUpgrade)
+				onError(0, errors.ErrWebsocketServerAdapterUpgrade)
 			} else {
 				onConnRun(newWebsocketStreamConn(conn), conn.RemoteAddr())
 			}
@@ -232,12 +232,12 @@ func (p *websocketServerAdapter) Open(
 			Handler: mux,
 		}
 	}) {
-		onError(0, ErrWebsocketServerAdapterAlreadyRunning)
+		onError(0, errors.ErrWebsocketServerAdapterAlreadyRunning)
 	} else {
 		if e := p.wsServer.ListenAndServe(); e != nil && e != http.ErrServerClosed {
 			onError(
 				0,
-				ErrWebsocketServerAdapterWSServerListenAndServe.AddDebug(e.Error()),
+				errors.ErrWebsocketServerAdapterWSServerListenAndServe.AddDebug(e.Error()),
 			)
 		}
 		p.SetClosing(nil)
@@ -255,15 +255,15 @@ func (p *websocketServerAdapter) Close(onError func(uint64, *base.Error)) {
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.wsServer.Close(); e != nil {
-			onError(0, ErrWebsocketServerAdapterWSServerClose.AddDebug(e.Error()))
+			onError(0, errors.ErrWebsocketServerAdapterWSServerClose.AddDebug(e.Error()))
 		}
 	}) {
-		onError(0, ErrWebsocketServerAdapterNotRunning)
+		onError(0, errors.ErrWebsocketServerAdapterNotRunning)
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			onError(0, ErrWebsocketServerAdapterCloseTimeout)
+			onError(0, errors.ErrWebsocketServerAdapterCloseTimeout)
 		}
 	}
 }
@@ -294,14 +294,14 @@ func (p *websocketClientAdapter) Open(
 		p.connectString,
 		nil,
 	); err != nil {
-		onError(ErrWebsocketClientAdapterDial.AddDebug(err.Error()))
+		onError(errors.ErrWebsocketClientAdapterDial.AddDebug(err.Error()))
 	} else {
 		streamConn := newWebsocketStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn
 		}) {
 			_ = conn.Close()
-			onError(ErrWebsocketClientAdapterAlreadyRunning)
+			onError(errors.ErrWebsocketClientAdapterAlreadyRunning)
 		} else {
 			onConnRun(streamConn)
 			p.SetClosing(nil)
@@ -320,15 +320,15 @@ func (p *websocketClientAdapter) Close(onError func(*base.Error)) {
 	} else if !p.SetClosing(func(ch chan bool) {
 		waitCH = ch
 		if e := p.conn.Close(); e != nil {
-			onError(ErrWebsocketClientAdapterConnClose.AddDebug(e.Error()))
+			onError(errors.ErrWebsocketClientAdapterConnClose.AddDebug(e.Error()))
 		}
 	}) {
-		onError(ErrWebsocketClientAdapterNotRunning)
+		onError(errors.ErrWebsocketClientAdapterNotRunning)
 	} else {
 		select {
 		case <-waitCH:
 		case <-time.After(5 * time.Second):
-			onError(ErrWebsocketClientAdapterCloseTimeout)
+			onError(errors.ErrWebsocketClientAdapterCloseTimeout)
 		}
 	}
 }

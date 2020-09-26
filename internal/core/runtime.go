@@ -33,7 +33,7 @@ func (p Runtime) OK(value interface{}) Return {
 	}
 
 	base.PublishPanic(
-		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+		errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 	)
 	return emptyReturn
 }
@@ -50,14 +50,14 @@ func (p Runtime) Error(value error) Return {
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
-				ErrGeneralCustomError.
+				errors.ErrGeneralCustomError.
 					AddDebug(value.Error()).
 					AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
 			)
 		} else {
 			return p.thread.WriteError(
-				ErrRuntimeErrorArgumentIsNil.AddDebug(
+				errors.ErrRuntimeErrorArgumentIsNil.AddDebug(
 					base.AddFileLine(thread.GetExecReplyNodePath(), 1),
 				),
 				1,
@@ -66,7 +66,7 @@ func (p Runtime) Error(value error) Return {
 	}
 
 	base.PublishPanic(
-		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+		errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 	)
 
 	return emptyReturn
@@ -88,7 +88,7 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 		// write args
 		for i := 0; i < len(args); i++ {
 			if reason := stream.Write(args[i]); reason != StreamWriteOK {
-				return nil, ErrRuntimeArgumentNotSupported.
+				return nil, errors.ErrRuntimeArgumentNotSupported.
 					AddDebug(base.ConcatString("value", reason)).
 					AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
 			}
@@ -119,18 +119,18 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 		}
 	}
 
-	return nil, ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
+	return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
 }
 
 func (p Runtime) GetServiceData() interface{} {
 	if thread := p.thread; thread == nil {
 		base.PublishPanic(
-			ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 		)
 		return nil
 	} else if node := thread.GetReplyNode(); node == nil {
 		base.PublishPanic(
-			ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 		)
 		return nil
 	} else {

@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -69,7 +70,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 				callString = "stream.ReadRTMap(rt)"
 				typeArray = append(typeArray, "rpc.RTMap")
 			default:
-				return "nil", ErrFnCacheIllegalKindString.AddDebug(fmt.Sprintf("illegal kind %s", kind))
+				return "nil", errors.ErrFnCacheIllegalKindString.AddDebug(fmt.Sprintf("illegal kind %s", kind))
 			}
 
 			condString := " else if"
@@ -119,7 +120,7 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, *base.Error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, ErrFnCacheDuplicateKindString.AddDebug(fmt.Sprintf("duplicate kind %s", kind))
+			return nil, errors.ErrFnCacheDuplicateKindString.AddDebug(fmt.Sprintf("duplicate kind %s", kind))
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
@@ -178,13 +179,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) *base.Error {
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return ErrFnCacheMkdirAll.AddDebug(err.Error())
+		return errors.ErrFnCacheMkdirAll.AddDebug(err.Error())
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return ErrFnCacheWriteFile.AddDebug(err.Error())
+		return errors.ErrFnCacheWriteFile.AddDebug(err.Error())
 	} else {
 		return nil
 	}

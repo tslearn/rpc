@@ -16,6 +16,7 @@ func TestError(t *testing.T) {
 		assert(ErrorTypeRuntime).Equal(ErrorType(4))
 		assert(ErrorTypeKernel).Equal(ErrorType(5))
 		assert(ErrorTypeSecurity).Equal(ErrorType(6))
+		assert(ErrorTypeCustom).Equal(ErrorType(7))
 
 		assert(ErrorLevelWarn).Equal(ErrorLevel(1))
 		assert(ErrorLevelError).Equal(ErrorLevel(2))
@@ -158,6 +159,23 @@ func TestDefineSecurityError(t *testing.T) {
 		}()
 		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeSecurity, num, ErrorLevelWarn, "msg")
+		assert(errorDefineMap[num]).Equal(s1)
+	})
+}
+
+func TestDefineCustomError(t *testing.T) {
+	num := ErrorNumber(math.MaxUint32)
+
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		v1, s1 := DefineCustomError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		defer func() {
+			errorDefineMutex.Lock()
+			delete(errorDefineMap, num)
+			errorDefineMutex.Unlock()
+		}()
+		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+			Equal(ErrorTypeCustom, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
