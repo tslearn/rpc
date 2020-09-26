@@ -17,8 +17,4 @@ var (
 	ErrStreamConnIsClosed = base.DefineTransportError(
 		3, base.ErrorLevelWarn, "stream conn is closed",
 	)
-
-	ErrReadFile = base.DefineKernelError(
-		4, base.ErrorLevelFatal, "",
-	)
 )
