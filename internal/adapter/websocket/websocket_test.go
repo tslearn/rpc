@@ -1,12 +1,12 @@
 package websocket
 
 import (
-	"errors"
+	syserror "errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	errors2 "github.com/rpccloud/rpc/internal/errors"
+	"github.com/rpccloud/rpc/internal/errors"
 	"math"
 	"net"
 	"net/http"
@@ -25,7 +25,7 @@ func (p fakeNetListener) Accept() (net.Conn, error) {
 	return nil, nil
 }
 func (p fakeNetListener) Close() error {
-	return errors.New("test error")
+	return syserror.New("test error")
 }
 func (p fakeNetListener) Addr() net.Addr {
 	return nil
@@ -108,26 +108,26 @@ func makeConnSetReadDeadlineError(conn *websocket.Conn) {
 func TestConvertToError(t *testing.T) {
 	t.Run("err is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(convertToError(nil, errors2.ErrStreamConnIsClosed)).IsNil()
+		assert(convertToError(nil, errors.ErrStreamConnIsClosed)).IsNil()
 	})
 
 	t.Run("err is websocket CloseNormalClosure", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseNormalClosure},
-			errors2.ErrStreamConnIsClosed,
-		)).Equal(errors2.ErrStreamConnIsClosed)
+			errors.ErrStreamConnIsClosed,
+		)).Equal(errors.ErrStreamConnIsClosed)
 	})
 
 	t.Run("err is others", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		assert(convertToError(errors.New("error"), errors2.ErrStreamConnIsClosed)).
-			Equal(errors2.ErrStreamConnIsClosed.AddDebug("error"))
+		assert(convertToError(syserror.New("error"), errors.ErrStreamConnIsClosed)).
+			Equal(errors.ErrStreamConnIsClosed.AddDebug("error"))
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseAbnormalClosure},
-			errors2.ErrStreamConnIsClosed,
-		)).Equal(errors2.ErrStreamConnIsClosed.AddDebug(
+			errors.ErrStreamConnIsClosed,
+		)).Equal(errors.ErrStreamConnIsClosed.AddDebug(
 			"websocket: close 1006 (abnormal closure)",
 		))
 	})
@@ -176,7 +176,7 @@ func TestWebsocketStreamConn_writeMessage(t *testing.T) {
 					[]byte("hello"),
 					10*time.Millisecond,
 				)).Equal(
-					errors2.ErrWebsocketStreamConnWSConnWriteMessage.AddDebug("invalid argument"),
+					errors.ErrWebsocketStreamConnWSConnWriteMessage.AddDebug("invalid argument"),
 				)
 			},
 		)).Equal([]*base.Error{})
@@ -280,7 +280,7 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 				testConn := conn.(*websocketStreamConn)
 				atomic.StoreInt32(&testConn.status, webSocketStreamConnCanClose)
 				assert(conn.ReadStream(time.Second, 999999)).
-					Equal(nil, errors2.ErrStreamConnIsClosed)
+					Equal(nil, errors.ErrStreamConnIsClosed)
 				assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			},
 		)).Equal([]*base.Error{})
@@ -332,7 +332,7 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 			func(client core.IClientAdapter, conn core.IStreamConn) {
 				testConn := conn.(*websocketStreamConn)
 				assert(testConn.ReadStream(time.Second, 999999)).Equal(
-					nil, errors2.ErrWebsocketStreamConnDataIsNotBinary,
+					nil, errors.ErrWebsocketStreamConnDataIsNotBinary,
 				)
 				assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 			},
@@ -378,7 +378,7 @@ func TestWebsocketStreamConn_WriteStream(t *testing.T) {
 				assert(err).IsNotNil()
 				assert(strings.HasPrefix(
 					err.Error(),
-					errors2.ErrWebsocketStreamConnStreamIsNil.Error(),
+					errors.ErrWebsocketStreamConnStreamIsNil.Error(),
 				)).IsTrue()
 				assert(strings.Contains(err.GetMessage(), "[running]:"))
 				assert(strings.Contains(
@@ -397,7 +397,7 @@ func TestWebsocketStreamConn_WriteStream(t *testing.T) {
 				testConn := conn.(*websocketStreamConn)
 				atomic.StoreInt32(&testConn.status, webSocketStreamConnClosed)
 				assert(testConn.WriteStream(core.NewStream(), time.Second)).
-					Equal(errors2.ErrStreamConnIsClosed)
+					Equal(errors.ErrStreamConnIsClosed)
 			},
 		)).Equal([]*base.Error{})
 	})
@@ -580,7 +580,7 @@ func TestWsServerAdapter_Open(t *testing.T) {
 			},
 		)
 
-		assert(<-retCH).Equal(errors2.ErrWebsocketServerAdapterUpgrade)
+		assert(<-retCH).Equal(errors.ErrWebsocketServerAdapterUpgrade)
 	})
 
 	t.Run("stream conn Close error", func(t *testing.T) {
