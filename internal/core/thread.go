@@ -356,62 +356,68 @@ func (p *rpcThread) Eval(
 
 				switch execReplyNode.argTypes[i] {
 				case int64Type:
-					if iVar, success := inStream.ReadInt64(); success {
-						rv = reflect.ValueOf(iVar)
+					if v, success := inStream.ReadInt64(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case uint64Type:
-					if uVar, success := inStream.ReadUint64(); success {
-						rv = reflect.ValueOf(uVar)
+					if v, success := inStream.ReadUint64(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case float64Type:
-					if fVar, success := inStream.ReadFloat64(); success {
-						rv = reflect.ValueOf(fVar)
+					if v, success := inStream.ReadFloat64(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case boolType:
-					if bVar, success := inStream.ReadBool(); success {
-						rv = reflect.ValueOf(bVar)
+					if v, success := inStream.ReadBool(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case stringType:
-					if sVar, success := inStream.ReadString(); success {
-						rv = reflect.ValueOf(sVar)
+					if v, success := inStream.ReadString(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case bytesType:
-					if xVar, success := inStream.ReadBytes(); success {
-						rv = reflect.ValueOf(xVar)
+					if v, success := inStream.ReadBytes(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case arrayType:
-					if aVar, success := inStream.ReadArray(); success {
-						rv = reflect.ValueOf(aVar)
+					if v, success := inStream.ReadArray(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case rtArrayType:
-					if yVar, success := inStream.ReadRTArray(rt); success {
-						rv = reflect.ValueOf(yVar)
+					if v, success := inStream.ReadRTArray(rt); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case mapType:
-					if mVar, success := inStream.ReadMap(); success {
-						rv = reflect.ValueOf(mVar)
+					if v, success := inStream.ReadMap(); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case rtMapType:
-					if zVar, success := inStream.ReadRTMap(rt); success {
-						rv = reflect.ValueOf(zVar)
+					if v, success := inStream.ReadRTMap(rt); success {
+						rv = reflect.ValueOf(v)
+					} else {
+						ok = false
+					}
+				case rtValueType:
+					if v, success := inStream.ReadRTValue(rt); success {
+						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}

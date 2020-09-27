@@ -37,6 +37,7 @@ var (
 	mapType     = reflect.ValueOf(Map{}).Type()
 	rtArrayType = reflect.ValueOf(RTArray{}).Type()
 	rtMapType   = reflect.ValueOf(RTMap{}).Type()
+	rtValueType = reflect.ValueOf(RTValue{}).Type()
 )
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
@@ -104,16 +105,6 @@ func convertTypeToString(reflectType reflect.Type) string {
 		return "rpc.Runtime"
 	case returnType:
 		return "rpc.Return"
-	case bytesType:
-		return "rpc.Bytes"
-	case arrayType:
-		return "rpc.Array"
-	case rtArrayType:
-		return "rpc.RTArray"
-	case mapType:
-		return "rpc.Map"
-	case rtMapType:
-		return "rpc.RTMap"
 	case boolType:
 		return "rpc.Bool"
 	case int64Type:
@@ -124,6 +115,18 @@ func convertTypeToString(reflectType reflect.Type) string {
 		return "rpc.Float64"
 	case stringType:
 		return "rpc.String"
+	case bytesType:
+		return "rpc.Bytes"
+	case arrayType:
+		return "rpc.Array"
+	case mapType:
+		return "rpc.Map"
+	case rtValueType:
+		return "rpc.RTValue"
+	case rtArrayType:
+		return "rpc.RTArray"
+	case rtMapType:
+		return "rpc.RTMap"
 	default:
 		return reflectType.String()
 	}
