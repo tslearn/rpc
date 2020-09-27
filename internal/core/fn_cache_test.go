@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"os"
 	"path"
 	"runtime"
@@ -37,12 +38,12 @@ func TestBuildFuncCache(t *testing.T) {
 	// Test(3)
 	tmpFile3 := path.Join(path.Dir(file), "_tmp_/test-cache-03.go")
 	assert(buildFuncCache("pkgName", tmpFile3, []string{"A", "A"})).
-		Equal(base.KernelFatal.AddDebug("duplicate kind A"))
+		Equal(errors.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
 
 	// Test(4)
 	tmpFile4 := path.Join(path.Dir(file), "_tmp_/test-cache-04.go")
 	assert(buildFuncCache("pkgName", tmpFile4, []string{"T", "A"})).
-		Equal(base.KernelFatal.AddDebug("error kind T"))
+		Equal(errors.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
 
 	// Test(5)
 	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")

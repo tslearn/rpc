@@ -70,7 +70,8 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 				callString = "stream.ReadRTMap(rt)"
 				typeArray = append(typeArray, "rpc.RTMap")
 			default:
-				return "nil", errors.ErrFnCacheIllegalKindString.AddDebug(fmt.Sprintf("illegal kind %s", kind))
+				return "nil", errors.ErrFnCacheIllegalKindString.
+					AddDebug(fmt.Sprintf("illegal kind %s", kind))
 			}
 
 			condString := " else if"

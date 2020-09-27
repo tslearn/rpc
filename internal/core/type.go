@@ -10,6 +10,20 @@ import (
 	"unsafe"
 )
 
+const (
+	VKBool    = 'B'
+	VKInt64   = 'I'
+	VKUint64  = 'U'
+	VKFloat64 = 'F'
+	VKString  = 'S'
+	VKBytes   = 'X'
+	VKArray   = 'A'
+	VKMap     = 'M'
+	VKRtValue = 'V'
+	VKRtArray = 'Y'
+	VKRtMap   = 'Z'
+)
+
 var (
 	contextType = reflect.ValueOf(Runtime{}).Type()
 	returnType  = reflect.ValueOf(emptyReturn).Type()
