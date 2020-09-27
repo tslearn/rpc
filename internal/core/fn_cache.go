@@ -39,35 +39,38 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 			callString := ""
 
 			switch c {
-			case 'B':
+			case vkBool:
 				callString = "stream.ReadBool()"
 				typeArray = append(typeArray, "rpc.Bool")
-			case 'I':
+			case vkInt64:
 				callString = "stream.ReadInt64()"
 				typeArray = append(typeArray, "rpc.Int64")
-			case 'U':
+			case vkUint64:
 				callString = "stream.ReadUint64()"
 				typeArray = append(typeArray, "rpc.Uint64")
-			case 'F':
+			case vkFloat64:
 				callString = "stream.ReadFloat64()"
 				typeArray = append(typeArray, "rpc.Float64")
-			case 'S':
+			case vkString:
 				callString = "stream.ReadString()"
 				typeArray = append(typeArray, "rpc.String")
-			case 'X':
+			case vkBytes:
 				callString = "stream.ReadBytes()"
 				typeArray = append(typeArray, "rpc.Bytes")
-			case 'A':
+			case vkArray:
 				callString = "stream.ReadArray()"
 				typeArray = append(typeArray, "rpc.Array")
-			case 'Y':
+			case vkRTArray:
 				callString = "stream.ReadRTArray(rt)"
 				typeArray = append(typeArray, "rpc.RTArray")
-			case 'M':
+			case vkMap:
 				callString = "stream.ReadMap()"
 				typeArray = append(typeArray, "rpc.Map")
-			case 'Z':
+			case vkRTMap:
 				callString = "stream.ReadRTMap(rt)"
+				typeArray = append(typeArray, "rpc.RTMap")
+			case vkRTValue:
+				callString = "stream.ReadRTValue(rt)"
 				typeArray = append(typeArray, "rpc.RTMap")
 			default:
 				return "nil", errors.ErrFnCacheIllegalKindString.

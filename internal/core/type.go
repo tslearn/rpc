@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	VKBool    = 'B'
-	VKInt64   = 'I'
-	VKUint64  = 'U'
-	VKFloat64 = 'F'
-	VKString  = 'S'
-	VKBytes   = 'X'
-	VKArray   = 'A'
-	VKMap     = 'M'
-	VKRtValue = 'V'
-	VKRtArray = 'Y'
-	VKRtMap   = 'Z'
+	vkBool    = 'B'
+	vkInt64   = 'I'
+	vkUint64  = 'U'
+	vkFloat64 = 'F'
+	vkString  = 'S'
+	vkBytes   = 'X'
+	vkArray   = 'A'
+	vkMap     = 'M'
+	vkRTValue = 'V'
+	vkRTArray = 'Y'
+	vkRTMap   = 'Z'
 )
 
 var (
