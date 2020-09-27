@@ -10,13 +10,13 @@ var (
 	ErrFnCacheMkdirAll = base.DefineRuntimeError(
 		(fnCacheErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
-		"",
+		"create directory error",
 	)
 
 	ErrFnCacheWriteFile = base.DefineRuntimeError(
 		(fnCacheErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
-		"",
+		"write to file error",
 	)
 
 	ErrFnCacheIllegalKindString = base.DefineKernelError(

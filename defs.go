@@ -42,6 +42,15 @@ type Array = core.Array
 // Map common Map type
 type Map = core.Map
 
+// RTValue ...
+type RTValue = core.RTValue
+
+// RTArray ...
+type RTArray = core.RTArray
+
+// RTMap ...
+type RTMap = core.RTMap
+
 // Return ...
 type Return = core.Return
 

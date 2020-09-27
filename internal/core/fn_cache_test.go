@@ -6,63 +6,65 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strings"
 	"testing"
 )
 
 func TestBuildFuncCache(t *testing.T) {
-	assert := base.NewAssert(t)
-	_, file, _, _ := runtime.Caller(0)
+	_, currFile, _, _ := runtime.Caller(0)
+	currDir := path.Dir(currFile)
 	defer func() {
-		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+		_ = os.RemoveAll(path.Join(path.Dir(currFile), "_tmp_"))
 	}()
-	// Test(1)
-	tmpFile1 := path.Join(path.Dir(file), "_tmp_/test-cache-01.go")
-	snapshotFile1 := path.Join(path.Dir(file), "_snapshot_/test-cache-01.snapshot")
-	assert(buildFuncCache("pkgName", tmpFile1, []string{})).IsNil()
-	assert(base.ReadFromFile(tmpFile1)).Equal(base.ReadFromFile(snapshotFile1))
 
-	// Test(2)
-	tmpFile2 := path.Join(path.Dir(file), "_tmp_/test-cache-02.go")
-	snapshotFile2 := path.Join(path.Dir(file), "_snapshot_/test-cache-02.snapshot")
-	assert(buildFuncCache("pkgName", tmpFile2, []string{
-		"BMUF", "UUIB", "MSXA", "FFFFF",
-		"",
-		"B", "I", "U", "F", "S", "X", "A", "M",
-		"BU", "FI", "AU", "FM", "SX", "BX", "MA", "MI",
-		"BUF", "ABM", "UFS", "XAA", "MMS", "MMM", "AAA", "MFF",
-		"BIUFSXAM", "AAAAAAAA", "MAXSFUIB",
-	})).IsNil()
-	assert(base.ReadFromFile(tmpFile2)).Equal(base.ReadFromFile(snapshotFile2))
+	t.Run("duplicate kind", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "_tmp_/duplicate-kind.go")
+		assert(buildFuncCache("pkgName", filePath, []string{"A", "A"})).
+			Equal(errors.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
+	})
 
-	// Test(3)
-	tmpFile3 := path.Join(path.Dir(file), "_tmp_/test-cache-03.go")
-	assert(buildFuncCache("pkgName", tmpFile3, []string{"A", "A"})).
-		Equal(errors.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
+	t.Run("illegal kind", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "_tmp_/illegal-kind.go")
+		assert(buildFuncCache("pkgName", filePath, []string{"T", "A"})).
+			Equal(errors.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
+	})
 
-	// Test(4)
-	tmpFile4 := path.Join(path.Dir(file), "_tmp_/test-cache-04.go")
-	assert(buildFuncCache("pkgName", tmpFile4, []string{"T", "A"})).
-		Equal(errors.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
+	t.Run("mkdir error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "fn_cache_test.go", "error.go")
+		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
+			Equal(errors.ErrFnCacheMkdirAll)
+	})
 
-	// Test(5)
-	tmpFile5 := path.Join(path.Dir(file), "fn_cache_test.go", "test-cache-05.go")
-	if runtime.GOOS == "windows" {
-		assert(strings.Contains(
-			buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
-			"The system cannot find the path specified",
-		)).IsTrue()
-	} else {
-		assert(strings.Contains(
-			buildFuncCache("pkgName", tmpFile5, []string{"A"}).Error(),
-			"fn_cache_test.go: not a directory",
-		)).IsTrue()
-	}
+	t.Run("write to file error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "_snapshot_")
+		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
+			Equal(errors.ErrFnCacheWriteFile)
+	})
 
-	// Test(6)
-	tmpFile6 := path.Join(path.Dir(file), "_tmp_")
-	assert(strings.Contains(
-		buildFuncCache("pkgName", tmpFile6, []string{"A"}).Error(),
-		"_tmp_: is a directory",
-	)).IsTrue()
+	t.Run("kinds is empty", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "_tmp_/test-cache-01.go")
+		snapPath := path.Join(currDir, "_snapshot_/test-cache-01.snapshot")
+		assert(buildFuncCache("pkgName", filePath, []string{})).IsNil()
+		assert(base.ReadFromFile(filePath)).Equal(base.ReadFromFile(snapPath))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		filePath := path.Join(currDir, "_tmp_/test-cache-02.go")
+		snapPath := path.Join(currDir, "_snapshot_/test-cache-02.snapshot")
+		assert(buildFuncCache("pkgName", filePath, []string{
+			"",
+			"BIUFSXAMVYZ",
+			"B", "I", "U", "F", "S", "X", "A", "M", "V", "Y", "Z",
+			"BY", "IY", "UY", "FY", "SY", "XY", "AY", "MY", "VY", "YY", "ZY",
+			"BUF", "ABM", "UFS", "XAA", "MMS", "MMM", "AAA", "MFF",
+			"BIUFSXAM", "AAAAAAAA", "MAXSFUIB",
+			"BIUFSXAMYZ", "BIUSXAMVYZ", "BIUFXAMVYZ",
+		})).IsNil()
+		assert(base.ReadFromFile(filePath)).Equal(base.ReadFromFile(snapPath))
+	})
 }

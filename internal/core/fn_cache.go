@@ -71,7 +71,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 				typeArray = append(typeArray, "rpc.RTMap")
 			case vkRTValue:
 				callString = "stream.ReadRTValue(rt)"
-				typeArray = append(typeArray, "rpc.RTMap")
+				typeArray = append(typeArray, "rpc.RTValue")
 			default:
 				return "nil", errors.ErrFnCacheIllegalKindString.
 					AddDebug(fmt.Sprintf("illegal kind %s", kind))
@@ -183,13 +183,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) *base.Error {
 	}
 
 	if err := os.MkdirAll(path.Dir(output), os.ModePerm); err != nil {
-		return errors.ErrFnCacheMkdirAll.AddDebug(err.Error())
+		return errors.ErrFnCacheMkdirAll
 	} else if err := ioutil.WriteFile(
 		output,
 		[]byte(sb.String()),
 		0666,
 	); err != nil {
-		return errors.ErrFnCacheWriteFile.AddDebug(err.Error())
+		return errors.ErrFnCacheWriteFile
 	} else {
 		return nil
 	}

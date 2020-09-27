@@ -2130,11 +2130,11 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 	}
 }
 
-// ReadRTValue read a RPCArray value
-func (p *Stream) ReadRTValue(rt Runtime) RTValue {
+// ReadRTValue read a RTValue value
+func (p *Stream) ReadRTValue(rt Runtime) (RTValue, bool) {
 	thread := rt.lock()
 	if thread == nil {
-		return RTValue{}
+		return RTValue{}, false
 	}
 	defer rt.unlock()
 
@@ -2142,7 +2142,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 	if p != cs {
 		cs.SetReadPos(cs.GetWritePos())
 		if !cs.writeStreamNext(p) {
-			return RTValue{}
+			return RTValue{}, false
 		}
 	}
 
@@ -2153,13 +2153,13 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 			pos:         int64(cs.GetReadPos()),
 			cacheString: cacheString,
 			cacheOK:     ok,
-		}
+		}, false
 	} else {
 		return RTValue{
 			rt:          rt,
 			pos:         int64(cs.GetReadPos()),
 			cacheString: "",
 			cacheOK:     false,
-		}
+		}, false
 	}
 }
