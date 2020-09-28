@@ -447,6 +447,6 @@ func TestError_Error(t *testing.T) {
 			errorDefineMutex.Unlock()
 		}()
 		v2 := v1.AddDebug("dbg")
-		assert(v2.Error()).Equal("ProtocolWarn: msg\ndbg")
+		assert(v2.Error()).Equal(fmt.Sprintf("ProtocolWarn[%d]: msg\ndbg", num))
 	})
 }
