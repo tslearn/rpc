@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -214,7 +215,7 @@ type websocketServerAdapter struct {
 }
 
 // NewWebsocketServerAdapter ...
-func NewWebsocketServerAdapter(addr string) core.IServerAdapter {
+func NewWebsocketServerAdapter(addr string) adapter.IServerAdapter {
 	return &websocketServerAdapter{
 		addr:     addr,
 		wsServer: nil,
@@ -223,7 +224,7 @@ func NewWebsocketServerAdapter(addr string) core.IServerAdapter {
 
 // Open ...
 func (p *websocketServerAdapter) Open(
-	onConnRun func(core.IStreamConn, net.Addr),
+	onConnRun func(adapter.IStreamConn, net.Addr),
 	onError func(uint64, *base.Error),
 ) {
 	if onError == nil {
@@ -286,13 +287,13 @@ func (p *websocketServerAdapter) Close(onError func(uint64, *base.Error)) {
 }
 
 type websocketClientAdapter struct {
-	conn          core.IStreamConn
+	conn          adapter.IStreamConn
 	connectString string
 	base.StatusManager
 }
 
 // NewWebsocketClientAdapter ...
-func NewWebsocketClientAdapter(connectString string) core.IClientAdapter {
+func NewWebsocketClientAdapter(connectString string) adapter.IClientAdapter {
 	return &websocketClientAdapter{
 		conn:          nil,
 		connectString: connectString,
@@ -300,7 +301,7 @@ func NewWebsocketClientAdapter(connectString string) core.IClientAdapter {
 }
 
 func (p *websocketClientAdapter) Open(
-	onConnRun func(core.IStreamConn),
+	onConnRun func(adapter.IStreamConn),
 	onError func(*base.Error),
 ) {
 	if onError == nil {
