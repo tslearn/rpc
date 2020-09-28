@@ -35,14 +35,15 @@ var (
 	bytesType   = reflect.ValueOf(Bytes{}).Type()
 	arrayType   = reflect.ValueOf(Array{}).Type()
 	mapType     = reflect.ValueOf(Map{}).Type()
+	rtValueType = reflect.ValueOf(RTValue{}).Type()
 	rtArrayType = reflect.ValueOf(RTArray{}).Type()
 	rtMapType   = reflect.ValueOf(RTMap{}).Type()
-	rtValueType = reflect.ValueOf(RTValue{}).Type()
 )
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
-		return "", errors.ErrProcessIllegalHandler.AddDebug("handler must be a function")
+		return "", errors.ErrProcessIllegalHandler.
+			AddDebug("handler must be a function")
 	} else if fn.Type().NumIn() < 1 ||
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
 		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
@@ -62,7 +63,7 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 		for i := 1; i < fn.Type().NumIn(); i++ {
 			switch fn.Type().In(i) {
 			case bytesType:
-				sb.AppendByte('X')
+				sb.AppendByte(vkBytes)
 			case arrayType:
 				sb.AppendByte('A')
 			case rtArrayType:
