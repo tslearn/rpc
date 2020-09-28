@@ -16,7 +16,7 @@ type ServiceMeta struct {
 	name     string      // the name of child service
 	service  *Service    // the real service
 	fileLine string      // where the service add in source file
-	data     interface{} // data
+	config   interface{} // data
 }
 
 // NewServiceMeta ...
@@ -24,13 +24,13 @@ func NewServiceMeta(
 	name string,
 	service *Service,
 	fileLine string,
-	data interface{},
+	config interface{},
 ) *ServiceMeta {
 	return &ServiceMeta{
 		name:     name,
 		service:  service,
 		fileLine: fileLine,
-		data:     data,
+		config:   config,
 	}
 }
 
@@ -39,7 +39,11 @@ type Service struct {
 	children []*ServiceMeta  // all the children node meta pointer
 	replies  []*rpcReplyMeta // all the replies meta pointer
 	fileLine string          // where the service define in source file
-	onMount  func(service *Service, data interface{}) error
+
+	//OnDataUpdate
+	//OnMount
+	//OnUnmount
+	onMount func(service *Service, data interface{}) error
 	sync.Mutex
 }
 
@@ -69,7 +73,7 @@ func NewServiceWithOnMount(
 func (p *Service) AddChildService(
 	name string,
 	service *Service,
-	data interface{},
+	config interface{},
 ) *Service {
 	p.Lock()
 	defer p.Unlock()
@@ -78,7 +82,7 @@ func (p *Service) AddChildService(
 		name:     name,
 		service:  service,
 		fileLine: base.GetFileLine(1),
-		data:     data,
+		config:   config,
 	})
 
 	return p

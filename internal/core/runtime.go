@@ -122,7 +122,7 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 	return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
 }
 
-func (p Runtime) GetServiceData() interface{} {
+func (p Runtime) GetServiceConfig() interface{} {
 	if thread := p.thread; thread == nil {
 		base.PublishPanic(
 			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
@@ -134,6 +134,6 @@ func (p Runtime) GetServiceData() interface{} {
 		)
 		return nil
 	} else {
-		return node.service.addMeta.data
+		return node.service.addMeta.config
 	}
 }

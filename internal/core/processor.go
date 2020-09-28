@@ -287,7 +287,7 @@ func (p *Processor) mountNode(
 			if nodeMeta.service.onMount != nil {
 				if err := nodeMeta.service.onMount(
 					nodeMeta.service,
-					nodeMeta.data,
+					nodeMeta.config,
 				); err != nil {
 					return errors.ErrProcessorOnMount.
 						AddDebug(base.ConcatString("onMount error: ", err.Error())).
