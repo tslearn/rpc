@@ -456,7 +456,7 @@ func (p *rpcThread) Eval(
 			)
 		} else {
 			remoteArgsType := make([]string, 0)
-			remoteArgsType = append(remoteArgsType, convertTypeToString(contextType))
+			remoteArgsType = append(remoteArgsType, convertTypeToString(runtimeType))
 			inStream.SetReadPos(argsStreamPos)
 			for inStream.CanRead() {
 				if val, ok := inStream.Read(); !ok {

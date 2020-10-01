@@ -422,7 +422,7 @@ func (p *Processor) mountReply(
 		// Check reply handler is Func
 		return errors.ErrProcessIllegalHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
-			convertTypeToString(contextType),
+			convertTypeToString(runtimeType),
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)
 	} else if fnTypeString, err := getFuncKind(fn); err != nil {

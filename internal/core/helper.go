@@ -14,7 +14,7 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
 		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
 			"handler 1st argument type must be ",
-			convertTypeToString(contextType)),
+			convertTypeToString(runtimeType)),
 		)
 	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
@@ -28,26 +28,28 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 
 		for i := 1; i < fn.Type().NumIn(); i++ {
 			switch fn.Type().In(i) {
+			case boolType:
+				sb.AppendByte(vkBool)
+			case int64Type:
+				sb.AppendByte(vkInt64)
+			case uint64Type:
+				sb.AppendByte(vkUint64)
+			case float64Type:
+				sb.AppendByte(vkFloat64)
+			case stringType:
+				sb.AppendByte(vkString)
 			case bytesType:
 				sb.AppendByte(vkBytes)
 			case arrayType:
-				sb.AppendByte('A')
-			case rtArrayType:
-				sb.AppendByte('Y')
+				sb.AppendByte(vkArray)
 			case mapType:
-				sb.AppendByte('M')
+				sb.AppendByte(vkMap)
+			case rtValueType:
+				sb.AppendByte(vkRTValue)
+			case rtArrayType:
+				sb.AppendByte(vkRTArray)
 			case rtMapType:
-				sb.AppendByte('Z')
-			case int64Type:
-				sb.AppendByte('I')
-			case uint64Type:
-				sb.AppendByte('U')
-			case boolType:
-				sb.AppendByte('B')
-			case float64Type:
-				sb.AppendByte('F')
-			case stringType:
-				sb.AppendByte('S')
+				sb.AppendByte(vkRTMap)
 			default:
 				return "", errors.ErrProcessIllegalHandler.AddDebug(
 					base.ConcatString(
@@ -68,7 +70,7 @@ func convertTypeToString(reflectType reflect.Type) string {
 	switch reflectType {
 	case nil:
 		return "<nil>"
-	case contextType:
+	case runtimeType:
 		return "rpc.Runtime"
 	case returnType:
 		return "rpc.Return"
@@ -99,7 +101,10 @@ func convertTypeToString(reflectType reflect.Type) string {
 	}
 }
 
-func MakeRequestStream(target string, args ...interface{}) (*Stream, *base.Error) {
+func MakeRequestStream(
+	target string,
+	args ...interface{},
+) (*Stream, *base.Error) {
 	stream := NewStream()
 	stream.SetDepth(0)
 	// write target
@@ -117,20 +122,20 @@ func MakeRequestStream(target string, args ...interface{}) (*Stream, *base.Error
 	return stream, nil
 }
 
-func ReadResponseStream(stream *Stream) (interface{}, *base.Error) {
-	// parse the stream
-	if errCode, ok := stream.ReadUint64(); !ok {
-		return nil, errors.ErrBadStream
-	} else if errCode == 0 {
-		if ret, ok := stream.Read(); ok {
-			return ret, nil
-		}
-		return nil, errors.ErrBadStream
-	} else if message, ok := stream.ReadString(); !ok {
-		return nil, errors.ErrBadStream
-	} else if !stream.IsReadFinish() {
-		return nil, errors.ErrBadStream
-	} else {
-		return nil, base.NewError(errCode, message)
-	}
-}
+//func ReadResponseStream(stream *Stream) (interface{}, *base.Error) {
+//	// parse the stream
+//	if errCode, ok := stream.ReadUint64(); !ok {
+//		return nil, errors.ErrBadStream
+//	} else if errCode == 0 {
+//		if ret, ok := stream.Read(); ok {
+//			return ret, nil
+//		}
+//		return nil, errors.ErrBadStream
+//	} else if message, ok := stream.ReadString(); !ok {
+//		return nil, errors.ErrBadStream
+//	} else if !stream.IsReadFinish() {
+//		return nil, errors.ErrBadStream
+//	} else {
+//		return nil, base.NewError(errCode, message)
+//	}
+//}

@@ -607,7 +607,7 @@ func TestNewProcessor(t *testing.T) {
 //	assert(processor12.repliesMap["#.test:Eval1"].callString).
 //		Equal("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
 //	assert(processor12.repliesMap["#.test:Eval1"].argTypes).
-//		Equal([]reflect.Type{contextType, arrayType})
+//		Equal([]reflect.Type{runtimeType, arrayType})
 //	assert(processor12.repliesMap["#.test:Eval1"].indicator).IsNotNil()
 //
 //	assert(processor12.repliesMap["#.test:Eval2"].path).Equal("#.test:Eval2")
@@ -621,7 +621,7 @@ func TestNewProcessor(t *testing.T) {
 //	)
 //	assert(processor12.repliesMap["#.test:Eval2"].argTypes).
 //		Equal([]reflect.Type{
-//			contextType, boolType, int64Type, uint64Type,
+//			runtimeType, boolType, int64Type, uint64Type,
 //			float64Type, stringType, bytesType, arrayType, mapType,
 //		})
 //	assert(processor12.repliesMap["#.test:Eval2"].indicator).IsNotNil()

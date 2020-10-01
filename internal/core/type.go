@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	contextType = reflect.ValueOf(Runtime{}).Type()
+	runtimeType = reflect.ValueOf(Runtime{}).Type()
 	returnType  = reflect.ValueOf(emptyReturn).Type()
 	boolType    = reflect.ValueOf(true).Type()
 	int64Type   = reflect.ValueOf(int64(0)).Type()
