@@ -124,6 +124,12 @@ var (
 		base.ErrorLevelFatal,
 		"",
 	)
+
+	ErrProcessServiceNotFound = base.DefineKernelError(
+		(processorErrorSeg<<16)|16,
+		base.ErrorLevelFatal,
+		"",
+	)
 )
 
 const replyRuntimeSeg = 1003

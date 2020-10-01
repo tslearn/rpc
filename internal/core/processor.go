@@ -17,7 +17,9 @@ const freeGroups = 1024
 
 var (
 	nodeNameRegex  = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
-	replyNameRegex = regexp.MustCompile(`^[_a-zA-Z][_0-9a-zA-Z]*$`)
+	replyNameRegex = regexp.MustCompile(
+		`^([_a-zA-Z][_0-9a-zA-Z]*)|(\$onMount)|(\$onUnmount)|(\$onUpdateConfig)$`,
+	)
 )
 
 type rpcReplyNode struct {
@@ -35,6 +37,7 @@ type rpcServiceNode struct {
 	path    string
 	addMeta *ServiceMeta
 	depth   uint16
+	isMount bool
 }
 
 // Processor ...
@@ -45,6 +48,7 @@ type Processor struct {
 	maxNodeDepth      uint16
 	maxCallDepth      uint16
 	threads           []*rpcThread
+	systemThread      *rpcThread
 	freeCHArray       []chan *rpcThread
 	readThreadPos     uint64
 	writeThreadPos    uint64
@@ -102,6 +106,14 @@ func NewProcessor(
 			fnError:        fnError,
 		}
 
+		// init system thread
+		ret.systemThread = newThread(
+			ret,
+			closeTimeout,
+			func(stream *Stream) {},
+			func(thread *rpcThread) {},
+		)
+
 		// mount nodes
 		ret.servicesMap[rootName] = &rpcServiceNode{
 			path:    rootName,
@@ -111,7 +123,7 @@ func NewProcessor(
 
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
-				ret.fnError(err)
+				fnError(err)
 				return nil
 			}
 		}
@@ -250,6 +262,17 @@ func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 	return buildFuncCache(pkgName, path, fnKinds)
 }
 
+func (p *Processor) invokeSystemReply(name string, path string) {
+	unmountPath := path + ":$" + name
+	if _, ok := p.repliesMap[unmountPath]; ok {
+		stream, _ := MakeRequestStream(unmountPath)
+		defer func() {
+			stream.Release()
+		}()
+		p.systemThread.Eval(stream, func(_ *Stream) {})
+	}
+}
+
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *ServiceMeta,
@@ -283,22 +306,11 @@ func (p *Processor) mountNode(
 					base.AddPrefixPerLine(item.addMeta.fileLine, "\t"),
 				))
 		} else {
-			// do onMount
-			if nodeMeta.service.onMount != nil {
-				if err := nodeMeta.service.onMount(
-					nodeMeta.service,
-					nodeMeta.config,
-				); err != nil {
-					return errors.ErrProcessorOnMount.
-						AddDebug(base.ConcatString("onMount error: ", err.Error())).
-						AddDebug(nodeMeta.fileLine)
-				}
-			}
-
 			node := &rpcServiceNode{
 				path:    servicePath,
 				addMeta: nodeMeta,
 				depth:   parentNode.depth + 1,
+				isMount: false,
 			}
 
 			// mount the node
@@ -306,16 +318,22 @@ func (p *Processor) mountNode(
 
 			// mount the replies
 			for _, replyMeta := range nodeMeta.service.replies {
-				err := p.mountReply(node, replyMeta, fnCache)
-				if err != nil {
-					delete(p.servicesMap, servicePath)
+				if err := p.mountReply(node, replyMeta, fnCache); err != nil {
+					p.unmount(servicePath)
 					return err
 				}
 			}
 
+			// invoke onUpdateConfig
+			p.invokeSystemReply("onUpdateConfig", servicePath)
+
+			// invoke onMount
+			p.invokeSystemReply("onMount", servicePath)
+			node.isMount = true
+
 			// mount children
 			for _, v := range nodeMeta.service.children {
-				err := p.mountNode(node.path, v, fnCache)
+				err := p.mountNode(servicePath, v, fnCache)
 				if err != nil {
 					delete(p.servicesMap, servicePath)
 					return err
@@ -323,6 +341,32 @@ func (p *Processor) mountNode(
 			}
 
 			return nil
+		}
+	}
+}
+
+func (p *Processor) unmount(path string) {
+	// clean sub nodes
+	subPath := path + "."
+	if _, ok := p.servicesMap[subPath]; ok {
+		p.unmount(subPath + ".")
+	}
+
+	// clean node or sibling nodes
+	for key, v := range p.servicesMap {
+		if strings.HasPrefix(key, path) {
+			if v.isMount {
+				p.invokeSystemReply("onUnmount", key)
+				v.isMount = false
+			}
+			delete(p.servicesMap, key)
+		}
+	}
+
+	// clean replies
+	for key := range p.repliesMap {
+		if strings.HasPrefix(key, path) {
+			delete(p.repliesMap, key)
 		}
 	}
 }

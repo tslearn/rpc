@@ -1,5 +1,19 @@
 package core
 
+import (
+	"fmt"
+	"testing"
+)
+
+func TestNewProcessor(t *testing.T) {
+	fmt.Println(replyNameRegex.MatchString("$onMount"))
+	fmt.Println(replyNameRegex.MatchString("$onUnmount"))
+	fmt.Println(replyNameRegex.MatchString("$onUpdateConfig"))
+	fmt.Println(replyNameRegex.MatchString("onMount"))
+	fmt.Println(replyNameRegex.MatchString("sayHello"))
+	fmt.Println(replyNameRegex.MatchString("$sayHello"))
+}
+
 //
 //import (
 //	"errors"
