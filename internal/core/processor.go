@@ -335,7 +335,7 @@ func (p *Processor) mountNode(
 			for _, v := range nodeMeta.service.children {
 				err := p.mountNode(servicePath, v, fnCache)
 				if err != nil {
-					delete(p.servicesMap, servicePath)
+					p.unmount(servicePath)
 					return err
 				}
 			}
