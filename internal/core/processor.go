@@ -7,13 +7,16 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
 
-const rootName = "#"
-const freeGroups = 1024
+const (
+	rootName               = "#"
+	freeGroups             = 1024
+	processorStatusClosed  = 0
+	processorStatusRunning = 1
+)
 
 var (
 	nodeNameRegex  = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
@@ -43,6 +46,7 @@ type rpcServiceNode struct {
 // Processor ...
 type Processor struct {
 	isDebug           bool
+	status            int32
 	repliesMap        map[string]*rpcReplyNode
 	servicesMap       map[string]*rpcServiceNode
 	maxNodeDepth      uint16
@@ -54,7 +58,7 @@ type Processor struct {
 	writeThreadPos    uint64
 	panicSubscription *base.PanicSubscription
 	fnError           func(err *base.Error)
-	sync.Mutex
+	closeCH           chan string
 }
 
 // NewProcessor ...
@@ -95,6 +99,7 @@ func NewProcessor(
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
 			isDebug:        isDebug,
+			status:         processorStatusRunning,
 			repliesMap:     make(map[string]*rpcReplyNode),
 			servicesMap:    make(map[string]*rpcServiceNode),
 			maxNodeDepth:   uint16(maxNodeDepth),
@@ -104,7 +109,11 @@ func NewProcessor(
 			readThreadPos:  0,
 			writeThreadPos: 0,
 			fnError:        fnError,
+			closeCH:        make(chan string),
 		}
+
+		// subscribe panic
+		ret.panicSubscription = base.SubscribePanic(fnError)
 
 		// init system thread
 		ret.systemThread = newThread(
@@ -128,8 +137,18 @@ func NewProcessor(
 			}
 		}
 
-		// subscribe panic
-		ret.panicSubscription = base.SubscribePanic(fnError)
+		// start config update
+		go func() {
+			counter := uint64(0)
+			for atomic.LoadInt32(&ret.status) == processorStatusRunning {
+				time.Sleep(300 * time.Millisecond)
+				counter++
+				if counter%10 == 0 {
+					ret.onUpdateConfig()
+				}
+			}
+			ret.closeCH <- ""
+		}()
 
 		// start threads
 		freeCHArray := make([]chan *rpcThread, freeGroups)
@@ -162,62 +181,68 @@ func NewProcessor(
 
 // Close ...
 func (p *Processor) Close() bool {
-	p.Lock()
-	defer p.Unlock()
+	if atomic.CompareAndSwapInt32(
+		&p.status,
+		processorStatusRunning,
+		processorStatusClosed,
+	) {
+		// wait for config update thread finish
+		<-p.closeCH
 
-	if p.panicSubscription == nil {
-		return false
-	}
+		// close worker threads
+		for i := 0; i < len(p.threads); i++ {
+			go func(idx int) {
+				if p.threads[idx].Close() {
+					p.closeCH <- ""
+				} else {
+					p.closeCH <- p.threads[idx].GetExecReplyDebug()
+				}
+			}(i)
+		}
 
-	closeCH := make(chan string)
-
-	for i := 0; i < len(p.threads); i++ {
-		go func(idx int) {
-			if p.threads[idx].Close() {
-				closeCH <- ""
-			} else {
-				closeCH <- p.threads[idx].GetExecReplyDebug()
-			}
-		}(i)
-	}
-
-	// wait all rpcThread close
-	errMap := make(map[string]int)
-	for i := 0; i < len(p.threads); i++ {
-		if errString := <-closeCH; errString != "" {
-			if v, ok := errMap[errString]; ok {
-				errMap[errString] = v + 1
-			} else {
-				errMap[errString] = 1
+		// wait all rpcThread close
+		errMap := make(map[string]int)
+		for i := 0; i < len(p.threads); i++ {
+			if errString := <-p.closeCH; errString != "" {
+				if v, ok := errMap[errString]; ok {
+					errMap[errString] = v + 1
+				} else {
+					errMap[errString] = 1
+				}
 			}
 		}
-	}
 
-	errList := make([]string, 0)
-	for k, v := range errMap {
-		if v > 1 {
-			errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
-		} else {
-			errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
+		errList := make([]string, 0)
+		for k, v := range errMap {
+			if v > 1 {
+				errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
+			} else {
+				errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
+			}
 		}
+
+		if len(errList) > 0 {
+			p.fnError(
+				errors.ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
+					"the following replies can not close: \n\t",
+					strings.Join(errList, "\n\t"),
+				)),
+			)
+		}
+
+		for _, freeCH := range p.freeCHArray {
+			close(freeCH)
+		}
+
+		if p.panicSubscription != nil {
+			p.panicSubscription.Close()
+			p.panicSubscription = nil
+		}
+
+		return len(errList) == 0
 	}
 
-	if len(errList) > 0 {
-		p.fnError(
-			errors.ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
-				"the following replies can not close: \n\t",
-				strings.Join(errList, "\n\t"),
-			)),
-		)
-	}
-
-	for _, freeCH := range p.freeCHArray {
-		close(freeCH)
-	}
-
-	p.panicSubscription.Close()
-	p.panicSubscription = nil
-	return len(errList) == 0
+	return false
 }
 
 // PutStream ...
@@ -260,6 +285,12 @@ func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 	}
 
 	return buildFuncCache(pkgName, path, fnKinds)
+}
+
+func (p *Processor) onUpdateConfig() {
+	for key := range p.servicesMap {
+		p.invokeSystemReply("onUpdateConfig", key)
+	}
 }
 
 func (p *Processor) invokeSystemReply(name string, path string) {

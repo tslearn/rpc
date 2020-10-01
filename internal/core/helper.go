@@ -3,7 +3,101 @@ package core
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"reflect"
 )
+
+func getFuncKind(fn reflect.Value) (string, *base.Error) {
+	if fn.Kind() != reflect.Func {
+		return "", errors.ErrProcessIllegalHandler.
+			AddDebug("handler must be a function")
+	} else if fn.Type().NumIn() < 1 ||
+		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
+		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+			"handler 1st argument type must be ",
+			convertTypeToString(contextType)),
+		)
+	} else if fn.Type().NumOut() != 1 ||
+		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
+		return "", errors.ErrProcessIllegalHandler.AddDebug(base.ConcatString(
+			"handler return type must be ",
+			convertTypeToString(returnType),
+		))
+	} else {
+		sb := base.NewStringBuilder()
+		defer sb.Release()
+
+		for i := 1; i < fn.Type().NumIn(); i++ {
+			switch fn.Type().In(i) {
+			case bytesType:
+				sb.AppendByte(vkBytes)
+			case arrayType:
+				sb.AppendByte('A')
+			case rtArrayType:
+				sb.AppendByte('Y')
+			case mapType:
+				sb.AppendByte('M')
+			case rtMapType:
+				sb.AppendByte('Z')
+			case int64Type:
+				sb.AppendByte('I')
+			case uint64Type:
+				sb.AppendByte('U')
+			case boolType:
+				sb.AppendByte('B')
+			case float64Type:
+				sb.AppendByte('F')
+			case stringType:
+				sb.AppendByte('S')
+			default:
+				return "", errors.ErrProcessIllegalHandler.AddDebug(
+					base.ConcatString(
+						"handler ",
+						base.ConvertOrdinalToString(1+uint(i)),
+						" argument type ",
+						fn.Type().In(i).String(),
+						" is not supported",
+					))
+			}
+		}
+
+		return sb.String(), nil
+	}
+}
+
+func convertTypeToString(reflectType reflect.Type) string {
+	switch reflectType {
+	case nil:
+		return "<nil>"
+	case contextType:
+		return "rpc.Runtime"
+	case returnType:
+		return "rpc.Return"
+	case boolType:
+		return "rpc.Bool"
+	case int64Type:
+		return "rpc.Int64"
+	case uint64Type:
+		return "rpc.Uint64"
+	case float64Type:
+		return "rpc.Float64"
+	case stringType:
+		return "rpc.String"
+	case bytesType:
+		return "rpc.Bytes"
+	case arrayType:
+		return "rpc.Array"
+	case mapType:
+		return "rpc.Map"
+	case rtValueType:
+		return "rpc.RTValue"
+	case rtArrayType:
+		return "rpc.RTArray"
+	case rtMapType:
+		return "rpc.RTMap"
+	default:
+		return reflectType.String()
+	}
+}
 
 func MakeRequestStream(target string, args ...interface{}) (*Stream, *base.Error) {
 	stream := NewStream()
