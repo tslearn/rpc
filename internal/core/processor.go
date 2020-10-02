@@ -296,7 +296,7 @@ func (p *Processor) onUpdateConfig() {
 func (p *Processor) invokeSystemReply(name string, path string) {
 	unmountPath := path + ":$" + name
 	if _, ok := p.repliesMap[unmountPath]; ok {
-		stream, _ := MakeRequestStream(unmountPath)
+		stream, _ := MakeRequestStream(unmountPath, "")
 		defer func() {
 			stream.Release()
 		}()

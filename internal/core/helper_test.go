@@ -28,101 +28,205 @@ func TestGetFuncKind(t *testing.T) {
 			))
 	})
 
-	//fn3 := func(_ chan bool) {}
-	//assert(getFuncKind(reflect.ValueOf(fn3))).
-	//	Equal("", errors.New("handler 1st argument type must be rpc.Runtime"))
-	//
-	//fn4 := func(rt Runtime, _ bool) {}
-	//assert(getFuncKind(reflect.ValueOf(fn4))).
-	//	Equal("", errors.New("handler return type must be rpc.Return"))
-	//
-	//fn5 := func(rt Runtime, _ bool) (Return, bool) { return emptyReturn, true }
-	//assert(getFuncKind(reflect.ValueOf(fn5))).
-	//	Equal("", errors.New("handler return type must be rpc.Return"))
-	//
-	//fn6 := func(rt Runtime, _ bool) bool { return true }
-	//assert(getFuncKind(reflect.ValueOf(fn6))).
-	//	Equal("", errors.New("handler return type must be rpc.Return"))
-	//
-	//fn7 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ float64,
-	//	_ string, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn7))).Equal("BIUFSXAM", nil)
-	//
-	//fn8 := func(rt Runtime,
-	//	_ int32, _ int64, _ uint64, _ float64,
-	//	_ string, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn8))).
-	//	Equal("", errors.New("handler 2nd argument type int32 is not supported"))
-	//
-	//fn9 := func(rt Runtime,
-	//	_ bool, _ int32, _ uint64, _ float64,
-	//	_ string, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn9))).
-	//	Equal("", errors.New("handler 3rd argument type int32 is not supported"))
-	//
-	//fn10 := func(rt Runtime,
-	//	_ bool, _ int64, _ int32, _ float64,
-	//	_ string, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn10))).
-	//	Equal("", errors.New("handler 4th argument type int32 is not supported"))
-	//
-	//fn11 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ int32,
-	//	_ string, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn11))).
-	//	Equal("", errors.New("handler 5th argument type int32 is not supported"))
-	//
-	//fn12 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ float64,
-	//	_ int32, _ Bytes, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn12))).
-	//	Equal("", errors.New("handler 6th argument type int32 is not supported"))
-	//
-	//fn13 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ float64,
-	//	_ string, _ int32, _ Array, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn13))).
-	//	Equal("", errors.New("handler 7th argument type int32 is not supported"))
-	//
-	//fn14 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ float64,
-	//	_ string, _ Bytes, _ int32, _ Map,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn14))).
-	//	Equal("", errors.New("handler 8th argument type int32 is not supported"))
-	//
-	//fn15 := func(rt Runtime,
-	//	_ bool, _ int64, _ uint64, _ float64,
-	//	_ string, _ Bytes, _ Array, _ int32,
-	//) Return {
-	//	return rt.OK(true)
-	//}
-	//assert(getFuncKind(reflect.ValueOf(fn15))).
-	//	Equal("", errors.New("handler 9th argument type int32 is not supported"))
+	t.Run("fn 1st argument is not rpc.Runtime", func(t *testing.T) {
+		v := func(_ chan bool) {}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 1st argument type must be rpc.Runtime",
+			))
+	})
+
+	t.Run("fn without return", func(t *testing.T) {
+		v := func(rt Runtime) {}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler return type must be rpc.Return",
+			))
+	})
+
+	t.Run("fn return multiply value", func(t *testing.T) {
+		v := func(rt Runtime) (Return, bool) { return emptyReturn, true }
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler return type must be rpc.Return",
+			))
+	})
+
+	t.Run("fn return type not supported", func(t *testing.T) {
+		v := func(rt Runtime, _ bool) bool { return true }
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler return type must be rpc.Return",
+			))
+	})
+
+	t.Run("2nd argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ int32, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 2nd argument type int32 is not supported",
+			))
+	})
+
+	t.Run("3rd argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int32, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 3rd argument type int32 is not supported",
+			))
+	})
+
+	t.Run("4th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ int32, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 4th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("5th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ int32, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 5th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("6th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ int32, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 6th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("7th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ int32,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 7th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("8th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ int32, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 8th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("9th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ int32, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 9th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("10th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ int32, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 10th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("11th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ int32, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 11th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("12th argument unsupported", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ int32,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal(
+			"",
+			errors.ErrProcessIllegalHandler.AddDebug(
+				"handler 12th argument type int32 is not supported",
+			))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		v := func(rt Runtime,
+			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
+			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
+		) Return {
+			return rt.OK(true)
+		}
+		assert(getFuncKind(reflect.ValueOf(v))).Equal("BIUFSXAMVYZ", nil)
+	})
 }
 
 func TestConvertTypeToString(t *testing.T) {
@@ -144,5 +248,40 @@ func TestConvertTypeToString(t *testing.T) {
 		assert(convertTypeToString(rtMapType)).Equal("rpc.RTMap")
 		assert(convertTypeToString(reflect.ValueOf(make(chan bool)).Type())).
 			Equal("chan bool")
+	})
+}
+
+func TestMakeRequestStream(t *testing.T) {
+	t.Run("write error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(MakeRequestStream("#", "", make(chan bool))).Equal(
+			nil,
+			errors.ErrRuntimeArgumentNotSupported.AddDebug(
+				"2nd argument type(chan bool) is not supported",
+			),
+		)
+	})
+
+	t.Run("arguments is empty", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v, err := MakeRequestStream("#", "from")
+		assert(v).IsNotNil()
+		assert(err).IsNil()
+		assert(v.ReadString()).Equal("#", true)
+		assert(v.ReadString()).Equal("from", true)
+		assert(v.IsReadFinish()).IsTrue()
+		v.Release()
+	})
+
+	t.Run("arguments is not empty", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v, err := MakeRequestStream("#", "from", false)
+		assert(v).IsNotNil()
+		assert(err).IsNil()
+		assert(v.ReadString()).Equal("#", true)
+		assert(v.ReadString()).Equal("from", true)
+		assert(v.ReadBool()).Equal(false, true)
+		assert(v.IsReadFinish()).IsTrue()
+		v.Release()
 	})
 }

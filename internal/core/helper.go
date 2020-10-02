@@ -103,22 +103,26 @@ func convertTypeToString(reflectType reflect.Type) string {
 
 func MakeRequestStream(
 	target string,
+	from string,
 	args ...interface{},
 ) (*Stream, *base.Error) {
 	stream := NewStream()
-	stream.SetDepth(0)
 	// write target
 	stream.WriteString(target)
 	// write from
-	stream.WriteString("")
+	stream.WriteString(from)
 	// write args
 	for i := 0; i < len(args); i++ {
 		if reason := stream.Write(args[i]); reason != StreamWriteOK {
-			return nil, errors.ErrRuntimeArgumentNotSupported.
-				AddDebug(base.ConcatString("value", reason))
+			stream.Release()
+			return nil, errors.ErrRuntimeArgumentNotSupported.AddDebug(
+				base.ConcatString(
+					base.ConvertOrdinalToString(uint(i)+2),
+					" argument",
+					reason,
+				))
 		}
 	}
-
 	return stream, nil
 }
 

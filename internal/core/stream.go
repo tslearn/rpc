@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/rpccloud/rpc/internal/base"
 	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -1055,7 +1056,9 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return p.writeMap(v.(Map), depth)
 	default:
 		return base.ConcatString(
-			" type is not supported",
+			" type(",
+			convertTypeToString(reflect.ValueOf(v).Type()),
+			") is not supported",
 		)
 	}
 }
