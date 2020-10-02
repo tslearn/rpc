@@ -65,19 +65,19 @@ var (
 		"it is not running",
 	)
 
-	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineRuntimeError(
+	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineDevelopError(
 		(websocketServerAdapterErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrWebsocketServerAdapterWSServerClose = base.DefineRuntimeError(
+	ErrWebsocketServerAdapterWSServerClose = base.DefineDevelopError(
 		(websocketServerAdapterErrorSeg<<16)|5,
 		base.ErrorLevelError,
 		"",
 	)
 
-	ErrWebsocketServerAdapterCloseTimeout = base.DefineRuntimeError(
+	ErrWebsocketServerAdapterCloseTimeout = base.DefineDevelopError(
 		(websocketServerAdapterErrorSeg<<16)|6,
 		base.ErrorLevelError,
 		"close timeout",
@@ -87,7 +87,7 @@ var (
 const websocketClientAdapterErrorSeg = 2003
 
 var (
-	ErrWebsocketClientAdapterDial = base.DefineRuntimeError(
+	ErrWebsocketClientAdapterDial = base.DefineDevelopError(
 		(websocketClientAdapterErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"",
@@ -105,7 +105,7 @@ var (
 		"it is not running",
 	)
 
-	ErrWebsocketClientAdapterCloseTimeout = base.DefineRuntimeError(
+	ErrWebsocketClientAdapterCloseTimeout = base.DefineDevelopError(
 		(websocketClientAdapterErrorSeg<<16)|4,
 		base.ErrorLevelError,
 		"close timeout",

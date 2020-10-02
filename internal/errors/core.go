@@ -7,13 +7,13 @@ import (
 const fnCacheErrorSeg = 1001
 
 var (
-	ErrFnCacheMkdirAll = base.DefineRuntimeError(
+	ErrFnCacheMkdirAll = base.DefineDevelopError(
 		(fnCacheErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
-	ErrFnCacheWriteFile = base.DefineRuntimeError(
+	ErrFnCacheWriteFile = base.DefineDevelopError(
 		(fnCacheErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"write to file error",
@@ -53,7 +53,7 @@ var (
 		"maxCallDepth is wrong",
 	)
 
-	ErrProcessorCloseTimeout = base.DefineRuntimeError(
+	ErrProcessorCloseTimeout = base.DefineDevelopError(
 		(processorErrorSeg<<16)|4,
 		base.ErrorLevelError,
 		"",
@@ -71,25 +71,25 @@ var (
 		"",
 	)
 
-	ErrProcessorNodeMetaServiceIsNil = base.DefineRuntimeError(
+	ErrProcessorNodeMetaServiceIsNil = base.DefineDevelopError(
 		(processorErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrProcessorServicePathOverflow = base.DefineRuntimeError(
+	ErrProcessorServicePathOverflow = base.DefineDevelopError(
 		(processorErrorSeg<<16)|8,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrProcessorDuplicatedServiceName = base.DefineRuntimeError(
+	ErrProcessorDuplicatedServiceName = base.DefineDevelopError(
 		(processorErrorSeg<<16)|9,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrProcessorOnMount = base.DefineRuntimeError(
+	ErrProcessorOnMount = base.DefineDevelopError(
 		(processorErrorSeg<<16)|10,
 		base.ErrorLevelFatal,
 		"",
@@ -101,25 +101,25 @@ var (
 		"meta is nil",
 	)
 
-	ErrProcessReplyNameIsIllegal = base.DefineRuntimeError(
+	ErrProcessReplyNameIsIllegal = base.DefineDevelopError(
 		(processorErrorSeg<<16)|12,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrProcessHandlerIsNil = base.DefineRuntimeError(
+	ErrProcessHandlerIsNil = base.DefineDevelopError(
 		(processorErrorSeg<<16)|13,
 		base.ErrorLevelFatal,
 		"handler is nil",
 	)
 
-	ErrProcessIllegalHandler = base.DefineRuntimeError(
+	ErrProcessIllegalHandler = base.DefineDevelopError(
 		(processorErrorSeg<<16)|14,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrProcessDuplicatedReplyName = base.DefineRuntimeError(
+	ErrProcessDuplicatedReplyName = base.DefineDevelopError(
 		(processorErrorSeg<<16)|15,
 		base.ErrorLevelFatal,
 		"",

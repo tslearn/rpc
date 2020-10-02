@@ -13,7 +13,7 @@ func TestError(t *testing.T) {
 		assert(ErrorTypeProtocol).Equal(ErrorType(1))
 		assert(ErrorTypeTransport).Equal(ErrorType(2))
 		assert(ErrorTypeReply).Equal(ErrorType(3))
-		assert(ErrorTypeRuntime).Equal(ErrorType(4))
+		assert(ErrorTypeDevelop).Equal(ErrorType(4))
 		assert(ErrorTypeKernel).Equal(ErrorType(5))
 		assert(ErrorTypeSecurity).Equal(ErrorType(6))
 		assert(ErrorTypeCustom).Equal(ErrorType(7))
@@ -112,19 +112,19 @@ func TestDefineReplyError(t *testing.T) {
 	})
 }
 
-func TestDefineRuntimeError(t *testing.T) {
+func TestDefineDevelopError(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1, s1 := DefineRuntimeError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		v1, s1 := DefineDevelopError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
-			Equal(ErrorTypeRuntime, num, ErrorLevelWarn, "msg")
+			Equal(ErrorTypeDevelop, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
@@ -223,15 +223,15 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeReply)
 	})
 
-	t.Run("test ErrorTypeRuntime", func(t *testing.T) {
+	t.Run("test ErrorTypeDevelop", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineRuntimeError(num, ErrorLevelWarn, "msg")
+		v1 := DefineDevelopError(num, ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType()).Equal(ErrorTypeRuntime)
+		assert(v1.GetType()).Equal(ErrorTypeDevelop)
 	})
 
 	t.Run("test ErrorTypeKernel", func(t *testing.T) {
@@ -384,7 +384,7 @@ func TestError_getErrorTypeString(t *testing.T) {
 		v1 := DefineProtocolError(num, ErrorLevelFatal, "msg")
 		v2 := DefineTransportError(num-1, ErrorLevelFatal, "msg")
 		v3 := DefineReplyError(num-2, ErrorLevelFatal, "msg")
-		v4 := DefineRuntimeError(num-3, ErrorLevelFatal, "msg")
+		v4 := DefineDevelopError(num-3, ErrorLevelFatal, "msg")
 		v5 := DefineKernelError(num-4, ErrorLevelFatal, "msg")
 		v6 := DefineSecurityError(num-5, ErrorLevelFatal, "msg")
 		v7 := &Error{}
@@ -401,7 +401,7 @@ func TestError_getErrorTypeString(t *testing.T) {
 		assert(v1.getErrorTypeString()).Equal("Protocol")
 		assert(v2.getErrorTypeString()).Equal("Transport")
 		assert(v3.getErrorTypeString()).Equal("Reply")
-		assert(v4.getErrorTypeString()).Equal("Runtime")
+		assert(v4.getErrorTypeString()).Equal("Develop")
 		assert(v5.getErrorTypeString()).Equal("Kernel")
 		assert(v6.getErrorTypeString()).Equal("Security")
 		assert(v7.getErrorTypeString()).Equal("")
@@ -416,8 +416,8 @@ func TestError_getErrorLevelString(t *testing.T) {
 		v1 := DefineProtocolError(num, ErrorLevelWarn, "msg")
 		v2 := DefineProtocolError(num-1, ErrorLevelError, "msg")
 		v3 := DefineProtocolError(num-2, ErrorLevelFatal, "msg")
-		v4 := DefineRuntimeError(num-3, 0, "msg")
-		v5 := DefineRuntimeError(num-4, 255, "msg")
+		v4 := DefineDevelopError(num-3, 0, "msg")
+		v5 := DefineDevelopError(num-4, 255, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)

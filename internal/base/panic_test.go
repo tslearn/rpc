@@ -70,7 +70,7 @@ func TestPublishPanic(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
 
-		err := DefineRuntimeError(num, ErrorLevelWarn, "message")
+		err := DefineDevelopError(num, ErrorLevelWarn, "message")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)

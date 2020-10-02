@@ -12,7 +12,7 @@ const (
 	ErrorTypeProtocol  = ErrorType(1)
 	ErrorTypeTransport = ErrorType(2)
 	ErrorTypeReply     = ErrorType(3)
-	ErrorTypeRuntime   = ErrorType(4)
+	ErrorTypeDevelop   = ErrorType(4)
 	ErrorTypeKernel    = ErrorType(5)
 	ErrorTypeSecurity  = ErrorType(6)
 	ErrorTypeCustom    = ErrorType(7)
@@ -84,9 +84,9 @@ func DefineReplyError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeReply, num, level, msg, GetFileLine(1))
 }
 
-// DefineRuntimeError ...
-func DefineRuntimeError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeRuntime, num, level, msg, GetFileLine(1))
+// DefineDevelopError ...
+func DefineDevelopError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeDevelop, num, level, msg, GetFileLine(1))
 }
 
 // DefineKernelError ...
@@ -151,8 +151,8 @@ func (p *Error) getErrorTypeString() string {
 		return "Transport"
 	case ErrorTypeReply:
 		return "Reply"
-	case ErrorTypeRuntime:
-		return "Runtime"
+	case ErrorTypeDevelop:
+		return "Develop"
 	case ErrorTypeKernel:
 		return "Kernel"
 	case ErrorTypeSecurity:

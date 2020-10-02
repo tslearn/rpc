@@ -4,7 +4,7 @@ import "github.com/rpccloud/rpc/internal/base"
 
 var (
 	// ErrRuntimeGeneral ...
-	ErrRuntimeGeneral = base.DefineRuntimeError(
+	ErrRuntimeGeneral = base.DefineDevelopError(
 		1, base.ErrorLevelError, "",
 	)
 
