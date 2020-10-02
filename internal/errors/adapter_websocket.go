@@ -65,7 +65,7 @@ var (
 		"it is not running",
 	)
 
-	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineDevelopError(
+	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineTransportError(
 		(websocketServerAdapterErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",
@@ -87,7 +87,7 @@ var (
 const websocketClientAdapterErrorSeg = 2003
 
 var (
-	ErrWebsocketClientAdapterDial = base.DefineDevelopError(
+	ErrWebsocketClientAdapterDial = base.DefineTransportError(
 		(websocketClientAdapterErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"",

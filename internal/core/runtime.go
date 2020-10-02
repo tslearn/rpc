@@ -72,7 +72,10 @@ func (p Runtime) Error(value error) Return {
 	return emptyReturn
 }
 
-func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Error) {
+func (p Runtime) Call(
+	target string,
+	args ...interface{},
+) (RTValue, *base.Error) {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 		frame := thread.top
@@ -80,7 +83,7 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 		// make stream
 		stream, err := MakeRequestStream(target, frame.from, args...)
 		if err != nil {
-			return nil, err.
+			return RTValue{}, err.
 				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
 		}
 		defer stream.Release()
@@ -97,7 +100,7 @@ func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Er
 		return p.ParseResponseStream(stream)
 	}
 
-	return nil, errors.
+	return RTValue{}, errors.
 		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
 }
 
