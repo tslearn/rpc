@@ -126,20 +126,19 @@ func MakeRequestStream(
 	return stream, nil
 }
 
-//func ReadResponseStream(stream *Stream) (interface{}, *base.Error) {
-//	// parse the stream
-//	if errCode, ok := stream.ReadUint64(); !ok {
-//		return nil, errors.ErrBadStream
-//	} else if errCode == 0 {
-//		if ret, ok := stream.Read(); ok {
-//			return ret, nil
-//		}
-//		return nil, errors.ErrBadStream
-//	} else if message, ok := stream.ReadString(); !ok {
-//		return nil, errors.ErrBadStream
-//	} else if !stream.IsReadFinish() {
-//		return nil, errors.ErrBadStream
-//	} else {
-//		return nil, base.NewError(errCode, message)
-//	}
-//}
+func ParseResponseStream(stream *Stream) (Any, *base.Error) {
+	if errCode, ok := stream.ReadUint64(); !ok {
+		return nil, errors.ErrBadStream
+	} else if errCode == 0 {
+		if ret, ok := stream.Read(); ok {
+			return ret, nil
+		}
+		return nil, errors.ErrBadStream
+	} else if message, ok := stream.ReadString(); !ok {
+		return nil, errors.ErrBadStream
+	} else if !stream.IsReadFinish() {
+		return nil, errors.ErrBadStream
+	} else {
+		return nil, base.NewError(errCode, message)
+	}
+}

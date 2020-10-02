@@ -75,51 +75,30 @@ func (p Runtime) Error(value error) Return {
 func (p Runtime) Call(target string, args ...interface{}) (interface{}, *base.Error) {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
-
-		stream := NewStream()
-		defer stream.Release()
 		frame := thread.top
 
-		stream.SetDepth(frame.depth + 1)
-		// write target
-		stream.WriteString(target)
-		// write from
-		stream.WriteString(frame.from)
-		// write args
-		for i := 0; i < len(args); i++ {
-			if reason := stream.Write(args[i]); reason != StreamWriteOK {
-				return nil, errors.ErrRuntimeArgumentNotSupported.
-					AddDebug(base.ConcatString("value", reason)).
-					AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
-			}
+		// make stream
+		stream, err := MakeRequestStream(target, frame.from, args...)
+		if err != nil {
+			return nil, err.
+				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
 		}
+		defer stream.Release()
+		stream.SetDepth(frame.depth + 1)
 
+		// switch thread frame
 		thread.pushFrame()
 		defer thread.popFrame()
 
-		thread.Eval(
-			stream,
-			func(stream *Stream) {},
-		)
+		// eval
+		thread.Eval(stream, func(stream *Stream) {})
 
-		// parse the stream
-		if errCode, ok := stream.ReadUint64(); !ok {
-			return nil, errors.ErrBadStream
-		} else if errCode == 0 {
-			if ret, ok := stream.Read(); ok {
-				return ret, nil
-			}
-			return nil, errors.ErrBadStream
-		} else if message, ok := stream.ReadString(); !ok {
-			return nil, errors.ErrBadStream
-		} else if !stream.IsReadFinish() {
-			return nil, errors.ErrBadStream
-		} else {
-			return nil, base.NewError(errCode, message)
-		}
+		// return
+		return p.ParseResponseStream(stream)
 	}
 
-	return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
+	return nil, errors.
+		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
 }
 
 func (p Runtime) GetServiceConfig() interface{} {
@@ -135,5 +114,22 @@ func (p Runtime) GetServiceConfig() interface{} {
 		return nil
 	} else {
 		return node.service.addMeta.config
+	}
+}
+
+func (p Runtime) ParseResponseStream(stream *Stream) (RTValue, *base.Error) {
+	if errCode, ok := stream.ReadUint64(); !ok {
+		return RTValue{}, errors.ErrBadStream
+	} else if errCode == 0 {
+		if ret, ok := stream.ReadRTValue(p); ok {
+			return ret, nil
+		}
+		return RTValue{}, errors.ErrBadStream
+	} else if message, ok := stream.ReadString(); !ok {
+		return RTValue{}, errors.ErrBadStream
+	} else if !stream.IsReadFinish() {
+		return RTValue{}, errors.ErrBadStream
+	} else {
+		return RTValue{}, base.NewError(errCode, message)
 	}
 }
