@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestGetFuncKind(t *testing.T) {
@@ -333,4 +334,112 @@ func TestParseResponseStream(t *testing.T) {
 		v.WriteString(errors.ErrBadStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
 	})
+}
+
+func getFakeProcessor(debug bool) *Processor {
+	processor := NewProcessor(
+		debug,
+		1024,
+		32,
+		32,
+		nil,
+		5*time.Second,
+		nil,
+		func(stream *Stream) {},
+	)
+	processor.Close()
+	return processor
+}
+
+func getFakeThread(debug bool) *rpcThread {
+	return newThread(
+		getFakeProcessor(debug),
+		5*time.Second,
+		func(stream *Stream) {},
+		func(thread *rpcThread) {},
+	)
+}
+
+type testProcessorHelper struct {
+	streamCH  chan *Stream
+	processor *Processor
+}
+
+func newTestProcessorHelper(
+	isDebug bool,
+	numOfThreads int,
+	maxNodeDepth int16,
+	maxCallDepth int16,
+	fnCache ReplyCache,
+	closeTimeout time.Duration,
+	mountServices []*ServiceMeta,
+) *testProcessorHelper {
+	streamCH := make(chan *Stream, 102400)
+	fnOnReturnStream := func(stream *Stream) {
+		select {
+		case streamCH <- stream:
+			return
+		case <-time.After(time.Second):
+			// prevent capture
+			go func() {
+				panic("streamCH is full")
+			}()
+		}
+	}
+
+	return &testProcessorHelper{
+		streamCH: streamCH,
+		processor: NewProcessor(
+			isDebug,
+			numOfThreads,
+			maxNodeDepth,
+			maxCallDepth,
+			fnCache,
+			closeTimeout,
+			mountServices,
+			fnOnReturnStream,
+		),
+	}
+}
+
+func (p *testProcessorHelper) GetStream() *Stream {
+	return <-p.streamCH
+}
+
+func (p *testProcessorHelper) GetProcessor() *Processor {
+	return p.processor
+}
+
+func (p *testProcessorHelper) Close() {
+	if p.processor != nil {
+		p.processor.Close()
+		p.processor = nil
+	}
+}
+
+func testWithProcessorAndRuntime(
+	isDebug bool,
+	fn func(processor *Processor, rt Runtime) Return,
+) *Stream {
+	helper := (*testProcessorHelper)(nil)
+	helper = newTestProcessorHelper(
+		isDebug,
+		1024,
+		16,
+		16,
+		nil,
+		5*time.Second,
+		[]*ServiceMeta{{
+			name: "test",
+			service: NewService().Reply("Eval", func(rt Runtime) Return {
+				return fn(helper.processor, rt)
+			}),
+			fileLine: "",
+		}},
+	)
+	defer helper.Close()
+
+	stream, _ := MakeRequestStream("#.test:Eval", "")
+	helper.GetProcessor().PutStream(stream)
+	return <-helper.streamCH
 }

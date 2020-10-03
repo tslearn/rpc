@@ -15,7 +15,6 @@ func (p Runtime) lock() *rpcThread {
 	if thread := p.thread; thread != nil {
 		return thread.lock(p.id)
 	}
-
 	return nil
 }
 

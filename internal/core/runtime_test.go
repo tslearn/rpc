@@ -1,58 +1,93 @@
 package core
 
-//
-//import (
-//	"errors"
-//	"github.com/rpccloud/rpc/internal/base"
-//	"testing"
-//)
-//
-//func TestContextObject_OK(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1)
-//	source1 := ""
-//	assert(base.RunWithSubscribePanic(func() {
-//		_, source1 = Runtime{}.OK(true), base.GetFileLine(0)
-//	})).Equal(
-//		base.NewReplyPanic("Runtime is illegal in current goroutine").AddDebug(source1),
-//	)
-//
-//	// Test(2) return value type error
-//	source2 := ""
-//	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
-//		// return value type error
-//		ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
-//		source2 = source
-//		return ret
-//	})).Equal(
-//		nil,
-//		nil,
-//		base.NewReplyPanic("value type is not supported").
-//			AddDebug("#.test:Eval "+source2),
-//	)
-//
-//	// Test(3) OK
-//	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
-//		return rt.OK(true)
-//	})).Equal(true, nil, nil)
-//
-//	// Test(4) rpcThreadReturnStatusAlreadyCalled
-//	source4 := ""
-//	assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
-//		// OK called twice
-//		rt.OK(true)
-//		ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
-//		source4 = source
-//		return ret
-//	})).Equal(
-//		nil,
-//		nil,
-//		base.NewReplyPanic("Runtime.OK has been called before").
-//			AddDebug("#.test:Eval "+source4),
-//	)
-//}
-//
+import (
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
+	"testing"
+)
+
+func TestRuntime_lock(t *testing.T) {
+	t.Run("thread is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(Runtime{}.lock()).IsNil()
+	})
+
+	t.Run("thread is not nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		thread := getFakeThread(false)
+		assert(Runtime{id: thread.top.lockStatus, thread: thread}.lock()).
+			Equal(thread)
+	})
+}
+
+func TestRuntime_unlock(t *testing.T) {
+	t.Run("thread is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(base.RunWithCatchPanic(func() {
+			Runtime{}.unlock()
+		})).IsNil()
+	})
+
+	t.Run("thread is not nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		thread := getFakeThread(false)
+		rt := Runtime{id: thread.top.lockStatus, thread: thread}
+		assert(base.RunWithCatchPanic(func() {
+			rt.lock()
+			rt.unlock()
+		})).IsNil()
+		// if unlock is success, the thread can lock again
+		assert(rt.lock()).Equal(thread)
+	})
+}
+
+func TestContextObject_OK(t *testing.T) {
+	t.Run("thread lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(base.RunWithSubscribePanic(func() {
+			_, source = Runtime{}.OK(true), base.GetFileLine(0)
+		})).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
+		)
+	})
+
+	//
+	//// Test(2) return value type error
+	//source2 := ""
+	//assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+	//	// return value type error
+	//	ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
+	//	source2 = source
+	//	return ret
+	//})).Equal(
+	//	nil,
+	//	nil,
+	//	base.NewReplyPanic("value type is not supported").
+	//		AddDebug("#.test:Eval "+source2),
+	//)
+	//
+	//// Test(3) OK
+	//assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+	//	return rt.OK(true)
+	//})).Equal(true, nil, nil)
+	//
+	//// Test(4) rpcThreadReturnStatusAlreadyCalled
+	//source4 := ""
+	//assert(testRunOnContext(true, func(_ *Processor, rt Runtime) Return {
+	//	// OK called twice
+	//	rt.OK(true)
+	//	ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
+	//	source4 = source
+	//	return ret
+	//})).Equal(
+	//	nil,
+	//	nil,
+	//	base.NewReplyPanic("Runtime.OK has been called before").
+	//		AddDebug("#.test:Eval "+source4),
+	//)
+}
+
 //func TestContextObject_Error(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
