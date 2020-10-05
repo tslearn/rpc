@@ -225,16 +225,15 @@ var (
 const streamErrorSeg = 1006
 
 var (
-	ErrBadStream = base.DefineProtocolError(
+	ErrStreamIsBroken = base.DefineProtocolError(
 		(streamErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"stream is broken",
 	)
+
 	ErrStreamRead = base.DefineDevelopError(
 		(streamErrorSeg<<16)|2,
 		base.ErrorLevelError,
 		"bad stream",
 	)
 )
-
-// ErrBadStream ...

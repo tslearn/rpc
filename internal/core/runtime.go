@@ -134,16 +134,16 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 
 func (p Runtime) ParseResponseStream(stream *Stream) (RTValue, *base.Error) {
 	if errCode, ok := stream.ReadUint64(); !ok {
-		return RTValue{}, errors.ErrBadStream
+		return RTValue{}, errors.ErrStreamIsBroken
 	} else if errCode == 0 {
 		if ret, ok := stream.ReadRTValue(p); ok {
 			return ret, nil
 		}
-		return RTValue{}, errors.ErrBadStream
+		return RTValue{}, errors.ErrStreamIsBroken
 	} else if message, ok := stream.ReadString(); !ok {
-		return RTValue{}, errors.ErrBadStream
+		return RTValue{}, errors.ErrStreamIsBroken
 	} else if !stream.IsReadFinish() {
-		return RTValue{}, errors.ErrBadStream
+		return RTValue{}, errors.ErrStreamIsBroken
 	} else {
 		return RTValue{}, base.NewError(errCode, message)
 	}

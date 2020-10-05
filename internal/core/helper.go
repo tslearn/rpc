@@ -128,16 +128,16 @@ func MakeRequestStream(
 
 func ParseResponseStream(stream *Stream) (Any, *base.Error) {
 	if errCode, ok := stream.ReadUint64(); !ok {
-		return nil, errors.ErrBadStream
+		return nil, errors.ErrStreamIsBroken
 	} else if errCode == 0 {
 		if ret, ok := stream.Read(); ok {
 			return ret, nil
 		}
-		return nil, errors.ErrBadStream
+		return nil, errors.ErrStreamIsBroken
 	} else if message, ok := stream.ReadString(); !ok {
-		return nil, errors.ErrBadStream
+		return nil, errors.ErrStreamIsBroken
 	} else if !stream.IsReadFinish() {
-		return nil, errors.ErrBadStream
+		return nil, errors.ErrStreamIsBroken
 	} else {
 		return nil, base.NewError(errCode, message)
 	}

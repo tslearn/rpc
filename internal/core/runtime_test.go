@@ -81,13 +81,13 @@ func TestContextObject_Error(t *testing.T) {
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
-				err := errors.ErrBadStream.AddDebug("error")
+				err := errors.ErrStreamIsBroken.AddDebug("error")
 				ret, s := rt.Error(err), base.GetFileLine(0)
 				source = rt.thread.GetReplyNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
-		)).Equal(nil, errors.ErrBadStream.AddDebug("error").AddDebug(source))
+		)).Equal(nil, errors.ErrStreamIsBroken.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("test ok (error)", func(t *testing.T) {

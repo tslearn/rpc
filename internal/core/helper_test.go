@@ -292,14 +292,14 @@ func TestParseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
 		v.WriteInt64(3)
-		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})
 
 	t.Run("Read ret error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
 		v.WriteUint64(0)
-		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})
 
 	t.Run("Read ret ok", func(t *testing.T) {
@@ -315,24 +315,24 @@ func TestParseResponseStream(t *testing.T) {
 		v := NewStream()
 		v.WriteUint64(uint64(base.ErrorTypeProtocol))
 		v.WriteBool(true)
-		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})
 
 	t.Run("error stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(errors.ErrBadStream.GetCode())
-		v.WriteString(errors.ErrBadStream.GetMessage())
+		v.WriteUint64(errors.ErrStreamIsBroken.GetCode())
+		v.WriteString(errors.ErrStreamIsBroken.GetMessage())
 		v.WriteBool(true)
-		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})
 
 	t.Run("error stream ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(errors.ErrBadStream.GetCode())
-		v.WriteString(errors.ErrBadStream.GetMessage())
-		assert(ParseResponseStream(v)).Equal(nil, errors.ErrBadStream)
+		v.WriteUint64(errors.ErrStreamIsBroken.GetCode())
+		v.WriteString(errors.ErrStreamIsBroken.GetMessage())
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})
 }
 
