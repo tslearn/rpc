@@ -13,10 +13,10 @@ type rpcReplyMeta struct {
 
 // ServiceMeta ...
 type ServiceMeta struct {
-	name     string      // the name of child service
-	service  *Service    // the real service
-	fileLine string      // where the service add in source file
-	config   interface{} // data
+	name     string   // the name of child service
+	service  *Service // the real service
+	fileLine string   // where the service add in source file
+	config   Map
 }
 
 // NewServiceMeta ...
@@ -24,7 +24,7 @@ func NewServiceMeta(
 	name string,
 	service *Service,
 	fileLine string,
-	config interface{},
+	config Map,
 ) *ServiceMeta {
 	return &ServiceMeta{
 		name:     name,
@@ -55,7 +55,7 @@ func NewService() *Service {
 func (p *Service) AddChildService(
 	name string,
 	service *Service,
-	config interface{},
+	config Map,
 ) *Service {
 	p.Lock()
 	defer p.Unlock()

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -41,6 +42,8 @@ type rpcServiceNode struct {
 	addMeta *ServiceMeta
 	depth   uint16
 	isMount bool
+	config  Map
+	sync.Mutex
 }
 
 // Processor ...
@@ -128,6 +131,7 @@ func NewProcessor(
 			path:    rootName,
 			addMeta: nil,
 			depth:   0,
+			config:  Map{},
 		}
 
 		for _, meta := range mountServices {
@@ -341,7 +345,12 @@ func (p *Processor) mountNode(
 				path:    servicePath,
 				addMeta: nodeMeta,
 				depth:   parentNode.depth + 1,
+				config:  Map{},
 				isMount: false,
+			}
+
+			for k, v := range nodeMeta.config {
+				node.config[k] = v
 			}
 
 			// mount the node

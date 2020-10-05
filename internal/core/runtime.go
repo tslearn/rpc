@@ -103,7 +103,7 @@ func (p Runtime) Call(
 		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
 }
 
-func (p Runtime) GetServiceConfig() interface{} {
+func (p Runtime) GetServiceConfig(key string) interface{} {
 	if thread := p.thread; thread == nil {
 		base.PublishPanic(
 			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
@@ -115,7 +115,9 @@ func (p Runtime) GetServiceConfig() interface{} {
 		)
 		return nil
 	} else {
-		return node.service.addMeta.config
+		node.service.Lock()
+		defer node.service.Unlock()
+		return node.service.config[key]
 	}
 }
 
