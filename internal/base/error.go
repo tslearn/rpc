@@ -15,7 +15,6 @@ const (
 	ErrorTypeDevelop   = ErrorType(4)
 	ErrorTypeKernel    = ErrorType(5)
 	ErrorTypeSecurity  = ErrorType(6)
-	ErrorTypeCustom    = ErrorType(7)
 )
 
 type ErrorLevel uint8
@@ -152,8 +151,6 @@ func (p *Error) getErrorTypeString() string {
 		return "Kernel"
 	case ErrorTypeSecurity:
 		return "Security"
-	case ErrorTypeCustom:
-		return "Custom"
 	default:
 		return ""
 	}

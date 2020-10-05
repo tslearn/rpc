@@ -16,7 +16,6 @@ func TestError(t *testing.T) {
 		assert(ErrorTypeDevelop).Equal(ErrorType(4))
 		assert(ErrorTypeKernel).Equal(ErrorType(5))
 		assert(ErrorTypeSecurity).Equal(ErrorType(6))
-		assert(ErrorTypeCustom).Equal(ErrorType(7))
 
 		assert(ErrorLevelWarn).Equal(ErrorLevel(1))
 		assert(ErrorLevelError).Equal(ErrorLevel(2))
