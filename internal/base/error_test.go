@@ -163,23 +163,6 @@ func TestDefineSecurityError(t *testing.T) {
 	})
 }
 
-func TestDefineCustomError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
-
-	t.Run("test", func(t *testing.T) {
-		assert := NewAssert(t)
-		v1, s1 := DefineCustomError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
-		defer func() {
-			errorDefineMutex.Lock()
-			delete(errorDefineMap, num)
-			errorDefineMutex.Unlock()
-		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
-			Equal(ErrorTypeCustom, num, ErrorLevelWarn, "msg")
-		assert(errorDefineMap[num]).Equal(s1)
-	})
-}
-
 func TestError_GetCode(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)

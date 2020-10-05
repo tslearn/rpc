@@ -270,7 +270,7 @@ func (p *rpcThread) Eval(
 		if v := recover(); v != nil {
 			// write runtime error
 			p.WriteError(
-				errors.ErrThreadReplyFatal.
+				errors.ErrThreadRunReplyFatal.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
 					AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 				0,
@@ -292,7 +292,7 @@ func (p *rpcThread) Eval(
 		}
 
 		if frame.retStatus == 0 {
-			p.WriteError(errors.ErrRuntimeExternelReturn.AddDebug(p.GetExecReplyDebug()), 0)
+			p.WriteError(errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecReplyDebug()), 0)
 		} else {
 			// count
 			if execReplyNode != nil {

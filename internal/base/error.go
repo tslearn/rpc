@@ -99,11 +99,6 @@ func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
 }
 
-// DefineCustomError ...
-func DefineCustomError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeCustom, num, level, msg, GetFileLine(1))
-}
-
 func (p *Error) GetCode() uint64 {
 	return p.code
 }
@@ -157,6 +152,8 @@ func (p *Error) getErrorTypeString() string {
 		return "Kernel"
 	case ErrorTypeSecurity:
 		return "Security"
+	case ErrorTypeCustom:
+		return "Custom"
 	default:
 		return ""
 	}

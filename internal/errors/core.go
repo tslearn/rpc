@@ -135,40 +135,40 @@ var (
 const replyRuntimeSeg = 1003
 
 var (
-	ErrRuntimeIllegalInCurrentGoroutine = base.DefineReplyError(
+	ErrRuntimeIllegalInCurrentGoroutine = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"Runtime is illegal in current goroutine",
 	)
 
-	ErrRuntimeErrorArgumentIsNil = base.DefineReplyError(
+	ErrRuntimeErrorArgumentIsNil = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|2,
 		base.ErrorLevelError,
 		"Runtime.Error argument is nil",
 	)
 
-	ErrRuntimeArgumentNotSupported = base.DefineReplyError(
+	ErrRuntimeArgumentNotSupported = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|3,
 		base.ErrorLevelError,
 		"",
 	)
 
-	ErrRuntimeOKHasBeenCalled = base.DefineReplyError(
+	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|4,
 		base.ErrorLevelError,
 		"Runtime.OK has been called before",
 	)
 
-	ErrRuntimeErrorHasBeenCalled = base.DefineReplyError(
+	ErrRuntimeErrorHasBeenCalled = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|5,
 		base.ErrorLevelError,
 		"Runtime.Error has been called before",
 	)
 
-	ErrRuntimeExternelReturn = base.DefineReplyError(
+	ErrRuntimeExternalReturn = base.DefineDevelopError(
 		(replyRuntimeSeg<<16)|6,
 		base.ErrorLevelError,
-		"reply must return through Runtime.OK or Runtime.Error",
+		"reply must be return through Runtime.OK or Runtime.Error",
 	)
 )
 
@@ -181,7 +181,7 @@ var (
 		"",
 	)
 
-	ErrThreadReplyFatal = base.DefineReplyError(
+	ErrThreadRunReplyFatal = base.DefineDevelopError(
 		(threadErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"",
@@ -209,7 +209,7 @@ var (
 const customErrorSeg = 1005
 
 var (
-	ErrGeneralCustomError = base.DefineCustomError(
+	ErrGeneralReplyError = base.DefineReplyError(
 		(customErrorSeg<<16)|1,
 		base.ErrorLevelError,
 		"",
