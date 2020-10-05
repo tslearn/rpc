@@ -170,6 +170,12 @@ var (
 		base.ErrorLevelError,
 		"reply must be return through Runtime.OK or Runtime.Error",
 	)
+
+	ErrRuntimeServiceNodeIsNil = base.DefineKernelError(
+		(replyRuntimeSeg<<16)|7,
+		base.ErrorLevelFatal,
+		"serviceNode is nil",
+	)
 )
 
 const threadErrorSeg = 1004

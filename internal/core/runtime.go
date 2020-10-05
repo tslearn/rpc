@@ -107,11 +107,13 @@ func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	if thread := p.thread; thread == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if node := thread.GetReplyNode(); node == nil {
+	} else if replyNode := thread.GetReplyNode(); replyNode == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
+	} else if serviceNode := replyNode.service; serviceNode == nil {
+		return nil, errors.ErrRuntimeServiceNodeIsNil.AddDebug(base.GetFileLine(1))
 	} else {
-		return node.service.GetData(key), nil
+		return serviceNode.GetData(key), nil
 	}
 }
 
@@ -119,11 +121,13 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	if thread := p.thread; thread == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if node := thread.GetReplyNode(); node == nil {
+	} else if replyNode := thread.GetReplyNode(); replyNode == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
+	} else if serviceNode := replyNode.service; serviceNode == nil {
+		return errors.ErrRuntimeServiceNodeIsNil.AddDebug(base.GetFileLine(1))
 	} else {
-		node.service.SetData(key, value)
+		serviceNode.SetData(key, value)
 		return nil
 	}
 }
