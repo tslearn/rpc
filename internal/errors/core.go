@@ -212,12 +212,29 @@ var (
 	)
 )
 
-const customErrorSeg = 1005
+const replyErrorSeg = 1005
 
 var (
 	ErrGeneralReplyError = base.DefineReplyError(
-		(customErrorSeg<<16)|1,
+		(replyErrorSeg<<16)|1,
 		base.ErrorLevelError,
 		"",
 	)
 )
+
+const streamErrorSeg = 1006
+
+var (
+	ErrBadStream = base.DefineProtocolError(
+		(streamErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"stream is broken",
+	)
+	ErrStreamRead = base.DefineDevelopError(
+		(streamErrorSeg<<16)|2,
+		base.ErrorLevelError,
+		"bad stream",
+	)
+)
+
+// ErrBadStream ...
