@@ -42,8 +42,20 @@ type rpcServiceNode struct {
 	addMeta *ServiceMeta
 	depth   uint16
 	isMount bool
-	config  Map
+	data    Map
 	sync.Mutex
+}
+
+func (p *rpcServiceNode) GetData(key string) Any {
+	p.Lock()
+	defer p.Unlock()
+	return p.data[key]
+}
+
+func (p *rpcServiceNode) SetData(key string, value Any) {
+	p.Lock()
+	defer p.Unlock()
+	p.data[key] = value
 }
 
 // Processor ...
@@ -131,7 +143,7 @@ func NewProcessor(
 			path:    rootName,
 			addMeta: nil,
 			depth:   0,
-			config:  Map{},
+			data:    Map{},
 		}
 
 		for _, meta := range mountServices {
@@ -345,12 +357,12 @@ func (p *Processor) mountNode(
 				path:    servicePath,
 				addMeta: nodeMeta,
 				depth:   parentNode.depth + 1,
-				config:  Map{},
+				data:    Map{},
 				isMount: false,
 			}
 
-			for k, v := range nodeMeta.config {
-				node.config[k] = v
+			for k, v := range nodeMeta.data {
+				node.data[k] = v
 			}
 
 			// mount the node

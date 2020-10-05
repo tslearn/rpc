@@ -16,7 +16,7 @@ type ServiceMeta struct {
 	name     string   // the name of child service
 	service  *Service // the real service
 	fileLine string   // where the service add in source file
-	config   Map
+	data     Map
 }
 
 // NewServiceMeta ...
@@ -24,13 +24,13 @@ func NewServiceMeta(
 	name string,
 	service *Service,
 	fileLine string,
-	config Map,
+	data Map,
 ) *ServiceMeta {
 	return &ServiceMeta{
 		name:     name,
 		service:  service,
 		fileLine: fileLine,
-		config:   config,
+		data:     data,
 	}
 }
 
@@ -55,7 +55,7 @@ func NewService() *Service {
 func (p *Service) AddChildService(
 	name string,
 	service *Service,
-	config Map,
+	data Map,
 ) *Service {
 	p.Lock()
 	defer p.Unlock()
@@ -64,9 +64,8 @@ func (p *Service) AddChildService(
 		name:     name,
 		service:  service,
 		fileLine: base.GetFileLine(1),
-		config:   config,
+		data:     data,
 	})
-
 	return p
 }
 
