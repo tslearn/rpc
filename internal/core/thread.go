@@ -265,6 +265,7 @@ func (p *rpcThread) Eval(
 	frame.retStatus = 0
 	frame.depth = inStream.GetDepth()
 	execReplyNode := (*rpcReplyNode)(nil)
+	ok := true
 
 	defer func() {
 		if v := recover(); v != nil {
@@ -312,7 +313,7 @@ func (p *rpcThread) Eval(
 	replyPath, _, err := inStream.readUnsafeString()
 	if err != nil {
 		return p.WriteError(err, 0)
-	} else if execReplyNode, ok := p.processor.repliesMap[replyPath]; !ok {
+	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
 			errors.ErrThreadTargetNotExist.
 				AddDebug(base.ConcatString("target ", replyPath, " does not exist")),
@@ -343,7 +344,6 @@ func (p *rpcThread) Eval(
 		// save argsPos
 		argsStreamPos := inStream.GetReadPos()
 
-		ok := false
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(rt, inStream, execReplyNode.meta.handler)
 			if ok {
