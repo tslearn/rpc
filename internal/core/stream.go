@@ -1675,7 +1675,13 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 }
 
 // Read read a generic value
-func (p *Stream) Read() (Any, *base.Error) {
+func (p *Stream) Read() (ret Any, err *base.Error) {
+	defer func() {
+		if err != nil {
+			ret = nil
+		}
+	}()
+
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
