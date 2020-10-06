@@ -71,10 +71,7 @@ func (p Runtime) Error(value error) Return {
 	return emptyReturn
 }
 
-func (p Runtime) Call(
-	target string,
-	args ...interface{},
-) (RTValue, *base.Error) {
+func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 		frame := thread.top
@@ -82,8 +79,9 @@ func (p Runtime) Call(
 		// make stream
 		stream, err := MakeRequestStream(target, frame.from, args...)
 		if err != nil {
-			return RTValue{}, err.
-				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
+			return RTValue{
+				err: err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			}
 		}
 		defer stream.Release()
 		stream.SetDepth(frame.depth + 1)
@@ -99,8 +97,10 @@ func (p Runtime) Call(
 		return p.ParseResponseStream(stream)
 	}
 
-	return RTValue{}, errors.
-		ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1))
+	return RTValue{
+		err: errors.ErrRuntimeIllegalInCurrentGoroutine.
+			AddDebug(base.GetFileLine(1)),
+	}
 }
 
 func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
@@ -132,19 +132,16 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	}
 }
 
-func (p Runtime) ParseResponseStream(stream *Stream) (RTValue, *base.Error) {
-	if errCode, ok := stream.ReadUint64(); !ok {
-		return RTValue{}, errors.ErrStreamIsBroken
+func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
+	if errCode, err := stream.ReadUint64(); err != nil {
+		return RTValue{err: err}
 	} else if errCode == 0 {
-		if ret, ok := stream.ReadRTValue(p); ok {
-			return ret, nil
-		}
-		return RTValue{}, errors.ErrStreamIsBroken
-	} else if message, ok := stream.ReadString(); !ok {
-		return RTValue{}, errors.ErrStreamIsBroken
+		return stream.ReadRTValue(p)
+	} else if message, err := stream.ReadString(); err != nil {
+		return RTValue{err: err}
 	} else if !stream.IsReadFinish() {
-		return RTValue{}, errors.ErrStreamIsBroken
+		return RTValue{err: errors.ErrStreamIsBroken}
 	} else {
-		return RTValue{}, base.NewError(errCode, message)
+		return RTValue{err: base.NewError(errCode, message)}
 	}
 }

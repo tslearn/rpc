@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
 	"sync/atomic"
 	"unsafe"
@@ -218,8 +219,9 @@ type RTValue struct {
 	rt          Runtime
 	pos         int64
 	cacheString string
-	cacheOK     bool
+	cacheError  *base.Error
 	cacheSafe   bool
+	err         *base.Error
 }
 
 func makeRTValue(rt Runtime, record posRecord) RTValue {
@@ -228,14 +230,14 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			rt:          rt,
 			pos:         record.getPos(),
 			cacheString: "",
-			cacheOK:     false,
+			err:         nil,
 		}
 	} else if thread := rt.lock(); thread == nil {
 		return RTValue{
 			rt:          rt,
 			pos:         record.getPos(),
 			cacheString: "",
-			cacheOK:     false,
+			err:         nil,
 		}
 	} else {
 		defer rt.unlock()
@@ -245,112 +247,127 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			rt:  rt,
 			pos: record.getPos(),
 		}
-		ret.cacheString, ret.cacheSafe, ret.cacheOK = thread.rtStream.readUnsafeString()
+		ret.cacheString, ret.cacheSafe, ret.err = thread.rtStream.readUnsafeString()
 		return ret
 	}
 }
 
-func (p RTValue) ToBool() (Bool, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToBool() (Bool, *base.Error) {
+	if p.err != nil {
+		return false, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBool()
+	} else {
+		return false, errors.ErrStreamIsBroken
 	}
-
-	return false, false
 }
 
-func (p RTValue) ToInt64() (Int64, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToInt64() (Int64, *base.Error) {
+	if p.err != nil {
+		return 0, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadInt64()
+	} else {
+		return 0, errors.ErrStreamIsBroken
 	}
-
-	return 0, false
 }
 
-func (p RTValue) ToUint64() (Uint64, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToUint64() (Uint64, *base.Error) {
+	if p.err != nil {
+		return 0, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadUint64()
+	} else {
+		return 0, errors.ErrStreamIsBroken
 	}
-
-	return 0, false
 }
 
-func (p RTValue) ToFloat64() (Float64, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToFloat64() (Float64, *base.Error) {
+	if p.err != nil {
+		return 0, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadFloat64()
-	}
-
-	return 0, false
-}
-
-func (p RTValue) ToString() (ret String, ok bool) {
-	if !p.cacheSafe {
-		ret = string(base.StringToBytesUnsafe(p.cacheString))
 	} else {
-		ret = p.cacheString
-	}
-
-	if p.cacheOK &&
-		atomic.LoadUint64(&p.rt.thread.top.lockStatus) == p.rt.id {
-		return ret, true
-	} else {
-		return "", false
+		return 0, errors.ErrStreamIsBroken
 	}
 }
 
-func (p RTValue) ToBytes() (Bytes, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToString() (ret String, err *base.Error) {
+	if p.err != nil {
+		return "", p.err
+	} else if atomic.LoadUint64(&p.rt.thread.top.lockStatus) != p.rt.id {
+		return "", errors.ErrRuntimeIllegalInCurrentGoroutine
+	} else if !p.cacheSafe {
+		return string(base.StringToBytesUnsafe(p.cacheString)), p.cacheError
+	} else {
+		return p.cacheString, p.cacheError
+	}
+}
+
+func (p RTValue) ToBytes() (Bytes, *base.Error) {
+	if p.err != nil {
+		return Bytes(nil), p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBytes()
+	} else {
+		return Bytes(nil), errors.ErrStreamIsBroken
 	}
-
-	return Bytes(nil), false
 }
 
-func (p RTValue) ToArray() (Array, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToArray() (Array, *base.Error) {
+	if p.err != nil {
+		return Array(nil), p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadArray()
+	} else {
+		return Array(nil), errors.ErrStreamIsBroken
 	}
-
-	return Array(nil), false
 }
 
-func (p RTValue) ToRTArray() (RTArray, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToRTArray() (RTArray, *base.Error) {
+	if p.err != nil {
+		return RTArray{}, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTArray(p.rt)
+	} else {
+		return RTArray{}, errors.ErrStreamIsBroken
 	}
-
-	return RTArray{}, false
 }
 
-func (p RTValue) ToMap() (Map, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToMap() (Map, *base.Error) {
+	if p.err != nil {
+		return Map{}, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadMap()
+	} else {
+		return Map{}, errors.ErrStreamIsBroken
 	}
-
-	return Map(nil), false
 }
 
-func (p RTValue) ToRTMap() (RTMap, bool) {
-	if thread := p.rt.lock(); thread != nil {
+func (p RTValue) ToRTMap() (RTMap, *base.Error) {
+	if p.err != nil {
+		return RTMap{}, p.err
+	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTMap(p.rt)
+	} else {
+		return RTMap{}, errors.ErrStreamIsBroken
 	}
-
-	return RTMap{}, false
 }

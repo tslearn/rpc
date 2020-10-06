@@ -309,10 +309,10 @@ func (p *rpcThread) Eval(
 	}()
 
 	// set exec reply node
-	replyPath, _, ok := inStream.readUnsafeString()
-	if !ok {
-		return p.WriteError(errors.ErrStreamIsBroken, 0)
-	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
+	replyPath, _, err := inStream.readUnsafeString()
+	if err != nil {
+		return p.WriteError(err, 0)
+	} else if execReplyNode, ok := p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
 			errors.ErrThreadTargetNotExist.
 				AddDebug(base.ConcatString("target ", replyPath, " does not exist")),
@@ -335,14 +335,15 @@ func (p *rpcThread) Eval(
 				AddDebug(p.GetExecReplyDebug()),
 			0,
 		)
-	} else if frame.from, _, ok = inStream.readUnsafeString(); !ok {
-		return p.WriteError(errors.ErrStreamIsBroken, 0)
+	} else if frame.from, _, err = inStream.readUnsafeString(); err != nil {
+		return p.WriteError(err, 0)
 	} else {
 		// create context
 		rt := Runtime{id: rtID, thread: p}
 		// save argsPos
 		argsStreamPos := inStream.GetReadPos()
 
+		ok := false
 		if fnCache := execReplyNode.cacheFN; fnCache != nil {
 			ok = fnCache(rt, inStream, execReplyNode.meta.handler)
 			if ok {
@@ -356,71 +357,67 @@ func (p *rpcThread) Eval(
 
 				switch execReplyNode.argTypes[i] {
 				case int64Type:
-					if v, success := inStream.ReadInt64(); success {
+					if v, err := inStream.ReadInt64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case uint64Type:
-					if v, success := inStream.ReadUint64(); success {
+					if v, err := inStream.ReadUint64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case float64Type:
-					if v, success := inStream.ReadFloat64(); success {
+					if v, err := inStream.ReadFloat64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case boolType:
-					if v, success := inStream.ReadBool(); success {
+					if v, err := inStream.ReadBool(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case stringType:
-					if v, success := inStream.ReadString(); success {
+					if v, err := inStream.ReadString(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case bytesType:
-					if v, success := inStream.ReadBytes(); success {
+					if v, err := inStream.ReadBytes(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case arrayType:
-					if v, success := inStream.ReadArray(); success {
+					if v, err := inStream.ReadArray(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case rtArrayType:
-					if v, success := inStream.ReadRTArray(rt); success {
+					if v, err := inStream.ReadRTArray(rt); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case mapType:
-					if v, success := inStream.ReadMap(); success {
+					if v, err := inStream.ReadMap(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case rtMapType:
-					if v, success := inStream.ReadRTMap(rt); success {
+					if v, err := inStream.ReadRTMap(rt); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
 						ok = false
 					}
 				case rtValueType:
-					if v, success := inStream.ReadRTValue(rt); success {
-						rv = reflect.ValueOf(v)
-					} else {
-						ok = false
-					}
+					rv = reflect.ValueOf(inStream.ReadRTValue(rt))
 				default:
 					ok = false
 				}
@@ -443,8 +440,8 @@ func (p *rpcThread) Eval(
 			}
 		}
 
-		if _, ok := inStream.Read(); !ok {
-			return p.WriteError(errors.ErrStreamIsBroken, 0)
+		if _, err := inStream.Read(); err != nil {
+			return p.WriteError(err, 0)
 		} else if !p.processor.isDebug {
 			return p.WriteError(
 				errors.ErrThreadArgumentsNotMatch.
@@ -459,8 +456,8 @@ func (p *rpcThread) Eval(
 			remoteArgsType = append(remoteArgsType, convertTypeToString(runtimeType))
 			inStream.SetReadPos(argsStreamPos)
 			for inStream.CanRead() {
-				if val, ok := inStream.Read(); !ok {
-					return p.WriteError(errors.ErrStreamIsBroken, 0)
+				if val, err := inStream.Read(); err != nil {
+					return p.WriteError(err, 0)
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,

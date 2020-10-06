@@ -230,10 +230,4 @@ var (
 		base.ErrorLevelWarn,
 		"stream is broken",
 	)
-
-	ErrStreamRead = base.DefineDevelopError(
-		(streamErrorSeg<<16)|2,
-		base.ErrorLevelError,
-		"bad stream",
-	)
 )

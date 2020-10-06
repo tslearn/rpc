@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/binary"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"math"
 	"reflect"
 	"strconv"
@@ -1064,36 +1065,36 @@ func (p *Stream) write(v interface{}, depth int) string {
 }
 
 // ReadNil read a nil
-func (p *Stream) ReadNil() bool {
+func (p *Stream) ReadNil() *base.Error {
 	if p.CanRead() && p.readFrame[p.readIndex] == 1 {
 		p.gotoNextReadByteUnsafe()
-		return true
+		return nil
 	}
-	return false
+	return errors.ErrStreamIsBroken
 }
 
 // ReadBool read a bool
-func (p *Stream) ReadBool() (bool, bool) {
+func (p *Stream) ReadBool() (bool, *base.Error) {
 	if p.CanRead() {
 		switch p.readFrame[p.readIndex] {
 		case 2:
 			p.gotoNextReadByteUnsafe()
-			return true, true
+			return true, nil
 		case 3:
 			p.gotoNextReadByteUnsafe()
-			return false, true
+			return false, nil
 		}
 	}
-	return false, false
+	return false, errors.ErrStreamIsBroken
 }
 
 // ReadFloat64 read a float64
-func (p *Stream) ReadFloat64() (float64, bool) {
+func (p *Stream) ReadFloat64() (float64, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v == 4 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return 0, true
+			return 0, nil
 		}
 	} else if v == 5 {
 		if p.isSafetyReadNBytesInCurrentFrame(9) {
@@ -1108,7 +1109,7 @@ func (p *Stream) ReadFloat64() (float64, bool) {
 					(uint64(b[6]) << 40) |
 					(uint64(b[7]) << 48) |
 					(uint64(b[8]) << 56),
-			), true
+			), nil
 		}
 		if p.hasNBytesToRead(9) {
 			b := p.readNBytesCrossFrameUnsafe(9)
@@ -1121,19 +1122,19 @@ func (p *Stream) ReadFloat64() (float64, bool) {
 					(uint64(b[6]) << 40) |
 					(uint64(b[7]) << 48) |
 					(uint64(b[8]) << 56),
-			), true
+			), nil
 		}
 	}
-	return 0, false
+	return 0, errors.ErrStreamIsBroken
 }
 
 // ReadInt64 read a int64
-func (p *Stream) ReadInt64() (int64, bool) {
+func (p *Stream) ReadInt64() (int64, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v > 13 && v < 54 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return int64(v) - 21, true
+			return int64(v) - 21, nil
 		}
 	} else if v == 6 {
 		if p.isSafetyReadNBytesInCurrentFrame(3) {
@@ -1141,13 +1142,13 @@ func (p *Stream) ReadInt64() (int64, bool) {
 			p.readIndex += 3
 			return int64(uint16(b[1])|
 				(uint16(b[2])<<8),
-			) - 32768, true
+			) - 32768, nil
 		}
 		if p.hasNBytesToRead(3) {
 			b := p.readNBytesCrossFrameUnsafe(3)
 			return int64(uint16(b[1])|
 				(uint16(b[2])<<8),
-			) - 32768, true
+			) - 32768, nil
 		}
 	} else if v == 7 {
 		if p.isSafetyReadNBytesInCurrentFrame(5) {
@@ -1157,7 +1158,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
 				(uint32(b[4])<<24),
-			) - 2147483648, true
+			) - 2147483648, nil
 		}
 		if p.hasNBytesToRead(5) {
 			b := p.readNBytesCrossFrameUnsafe(5)
@@ -1165,7 +1166,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 				(uint32(b[2])<<8)|
 				(uint32(b[3])<<16)|
 				(uint32(b[4])<<24),
-			) - 2147483648, true
+			) - 2147483648, nil
 		}
 	} else if v == 8 {
 		if p.isSafetyReadNBytesInCurrentFrame(9) {
@@ -1180,7 +1181,7 @@ func (p *Stream) ReadInt64() (int64, bool) {
 					(uint64(b[6]) << 40) |
 					(uint64(b[7]) << 48) |
 					(uint64(b[8]) << 56) -
-					9223372036854775808), true
+					9223372036854775808), nil
 		}
 		if p.hasNBytesToRead(9) {
 			b := p.readNBytesCrossFrameUnsafe(9)
@@ -1193,31 +1194,31 @@ func (p *Stream) ReadInt64() (int64, bool) {
 					(uint64(b[6]) << 40) |
 					(uint64(b[7]) << 48) |
 					(uint64(b[8]) << 56) -
-					9223372036854775808), true
+					9223372036854775808), nil
 		}
 	}
-	return 0, false
+	return 0, errors.ErrStreamIsBroken
 }
 
 // ReadUint64 read a uint64
-func (p *Stream) ReadUint64() (uint64, bool) {
+func (p *Stream) ReadUint64() (uint64, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v > 53 && v < 64 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return uint64(v) - 54, true
+			return uint64(v) - 54, nil
 		}
 	} else if v == 9 {
 		if p.isSafetyReadNBytesInCurrentFrame(3) {
 			b := p.readFrame[p.readIndex:]
 			p.readIndex += 3
 			return uint64(b[1]) |
-				(uint64(b[2]) << 8), true
+				(uint64(b[2]) << 8), nil
 		}
 		if p.hasNBytesToRead(3) {
 			b := p.readNBytesCrossFrameUnsafe(3)
 			return uint64(b[1]) |
-				(uint64(b[2]) << 8), true
+				(uint64(b[2]) << 8), nil
 		}
 	} else if v == 10 {
 		if p.isSafetyReadNBytesInCurrentFrame(5) {
@@ -1226,14 +1227,14 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8) |
 				(uint64(b[3]) << 16) |
-				(uint64(b[4]) << 24), true
+				(uint64(b[4]) << 24), nil
 		}
 		if p.hasNBytesToRead(5) {
 			b := p.readNBytesCrossFrameUnsafe(5)
 			return uint64(b[1]) |
 				(uint64(b[2]) << 8) |
 				(uint64(b[3]) << 16) |
-				(uint64(b[4]) << 24), true
+				(uint64(b[4]) << 24), nil
 		}
 	} else if v == 11 {
 		if p.isSafetyReadNBytesInCurrentFrame(9) {
@@ -1246,7 +1247,7 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 				(uint64(b[5]) << 32) |
 				(uint64(b[6]) << 40) |
 				(uint64(b[7]) << 48) |
-				(uint64(b[8]) << 56), true
+				(uint64(b[8]) << 56), nil
 		}
 		if p.hasNBytesToRead(9) {
 			b := p.readNBytesCrossFrameUnsafe(9)
@@ -1257,20 +1258,20 @@ func (p *Stream) ReadUint64() (uint64, bool) {
 				(uint64(b[5]) << 32) |
 				(uint64(b[6]) << 40) |
 				(uint64(b[7]) << 48) |
-				(uint64(b[8]) << 56), true
+				(uint64(b[8]) << 56), nil
 		}
 	}
-	return 0, false
+	return 0, errors.ErrStreamIsBroken
 }
 
 // ReadString read a string value
-func (p *Stream) ReadString() (string, bool) {
+func (p *Stream) ReadString() (string, *base.Error) {
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return "", true
+			return "", nil
 		}
 	} else if v > 128 && v < 191 {
 		strLen := int(v - 128)
@@ -1279,7 +1280,7 @@ func (p *Stream) ReadString() (string, bool) {
 				b := p.readFrame[p.readIndex+1 : p.readIndex+strLen+1]
 				if base.IsUTF8Bytes(b) {
 					p.readIndex += strLen + 2
-					return string(b), true
+					return string(b), nil
 				}
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
@@ -1294,7 +1295,7 @@ func (p *Stream) ReadString() (string, bool) {
 			}
 			if p.readFrame[p.readIndex] == 0 && base.IsUTF8Bytes(b) {
 				p.gotoNextReadByteUnsafe()
-				return string(b), true
+				return string(b), nil
 			}
 			p.SetReadPos(readStart)
 		}
@@ -1323,7 +1324,7 @@ func (p *Stream) ReadString() (string, bool) {
 					b := p.readFrame[p.readIndex : p.readIndex+strLen]
 					if base.IsUTF8Bytes(b) {
 						p.readIndex += strLen + 1
-						return string(b), true
+						return string(b), nil
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
@@ -1339,23 +1340,23 @@ func (p *Stream) ReadString() (string, bool) {
 				}
 				if p.readFrame[p.readIndex] == 0 && base.IsUTF8Bytes(b) {
 					p.gotoNextReadByteUnsafe()
-					return string(b), true
+					return string(b), nil
 				}
 			}
 		}
 		p.SetReadPos(readStart)
 	}
 
-	return "", false
+	return "", errors.ErrStreamIsBroken
 }
 
-func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
+func (p *Stream) readUnsafeString() (ret string, safe bool, err *base.Error) {
 	// empty string
 	v := p.readFrame[p.readIndex]
 	if v == 128 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return "", true, true
+			return "", true, nil
 		}
 	} else if v > 128 && v < 191 {
 		strLen := int(v - 128)
@@ -1364,7 +1365,7 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 				b := p.readFrame[p.readIndex+1 : p.readIndex+strLen+1]
 				if base.IsUTF8Bytes(b) {
 					p.readIndex += strLen + 2
-					return base.BytesToStringUnsafe(b), false, true
+					return base.BytesToStringUnsafe(b), false, nil
 				}
 			}
 		} else if p.hasNBytesToRead(strLen + 2) {
@@ -1379,7 +1380,7 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 			}
 			if p.readFrame[p.readIndex] == 0 && base.IsUTF8Bytes(b) {
 				p.gotoNextReadByteUnsafe()
-				return base.BytesToStringUnsafe(b), true, true
+				return base.BytesToStringUnsafe(b), true, nil
 			}
 			p.SetReadPos(readStart)
 		}
@@ -1408,7 +1409,7 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 					b := p.readFrame[p.readIndex : p.readIndex+strLen]
 					if base.IsUTF8Bytes(b) {
 						p.readIndex += strLen + 1
-						return base.BytesToStringUnsafe(b), false, true
+						return base.BytesToStringUnsafe(b), false, nil
 					}
 				}
 			} else if p.hasNBytesToRead(strLen + 1) {
@@ -1424,30 +1425,30 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, ok bool) {
 				}
 				if p.readFrame[p.readIndex] == 0 && base.IsUTF8Bytes(b) {
 					p.gotoNextReadByteUnsafe()
-					return base.BytesToStringUnsafe(b), true, true
+					return base.BytesToStringUnsafe(b), true, nil
 				}
 			}
 		}
 
 		p.SetReadPos(readStart)
 	}
-	return "", true, false
+	return "", true, errors.ErrStreamIsBroken
 }
 
 // ReadBytes read a Bytes value
-func (p *Stream) ReadBytes() (Bytes, bool) {
+func (p *Stream) ReadBytes() (Bytes, *base.Error) {
 	// empty bytes
 	v := p.readFrame[p.readIndex]
 
 	if v == 1 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return Bytes(nil), true
+			return Bytes(nil), nil
 		}
 	} else if v == 192 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return Bytes{}, true
+			return Bytes{}, nil
 		}
 	} else if v > 192 && v < 255 {
 		bytesLen := int(v - 192)
@@ -1455,7 +1456,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 		if p.isSafetyReadNBytesInCurrentFrame(bytesLen + 1) {
 			copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += bytesLen + 1
-			return ret, true
+			return ret, nil
 		} else if p.hasNBytesToRead(bytesLen + 1) {
 			copyBytes := copy(ret, p.readFrame[p.readIndex+1:])
 			p.readIndex += copyBytes + 1
@@ -1464,7 +1465,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 				p.readFrame = *(p.frames[p.readSeg])
 				p.readIndex = copy(ret[copyBytes:], p.readFrame)
 			}
-			return ret, true
+			return ret, nil
 		}
 	} else if v == 255 {
 		readStart := p.GetReadPos()
@@ -1489,7 +1490,7 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 				ret := make(Bytes, bytesLen)
 				copy(ret, p.readFrame[p.readIndex:])
 				p.readIndex += bytesLen
-				return ret, true
+				return ret, nil
 			} else if p.hasNBytesToRead(bytesLen) {
 				ret := make(Bytes, bytesLen)
 				reads := 0
@@ -1501,21 +1502,21 @@ func (p *Stream) ReadBytes() (Bytes, bool) {
 						p.gotoNextReadFrameUnsafe()
 					}
 				}
-				return ret, true
+				return ret, nil
 			}
 		}
 		p.SetReadPos(readStart)
 	}
-	return Bytes(nil), false
+	return Bytes(nil), errors.ErrStreamIsBroken
 }
 
 // ReadArray ...
-func (p *Stream) ReadArray() (Array, bool) {
+func (p *Stream) ReadArray() (Array, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v == 1 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return Array(nil), true
+			return Array(nil), nil
 		}
 	} else if v >= 64 && v < 96 {
 		arrLen := 0
@@ -1525,7 +1526,7 @@ func (p *Stream) ReadArray() (Array, bool) {
 		if v == 64 {
 			if p.CanRead() {
 				p.gotoNextReadByteUnsafe()
-				return Array{}, true
+				return Array{}, nil
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
@@ -1571,30 +1572,30 @@ func (p *Stream) ReadArray() (Array, bool) {
 		if arrLen > 0 && totalLen > 4 {
 			ret := make(Array, arrLen)
 			for i := 0; i < arrLen; i++ {
-				if rv, ok := p.Read(); ok {
+				if rv, err := p.Read(); err == nil {
 					ret[i] = rv
 				} else {
 					p.SetReadPos(readStart)
-					return Array(nil), false
+					return Array(nil), err
 				}
 			}
 			if p.GetReadPos() == readStart+totalLen {
-				return ret, true
+				return ret, nil
 			}
 		}
 		p.SetReadPos(readStart)
 	}
 
-	return Array(nil), false
+	return Array(nil), errors.ErrStreamIsBroken
 }
 
 // ReadMap read a Map value
-func (p *Stream) ReadMap() (Map, bool) {
+func (p *Stream) ReadMap() (Map, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v == 1 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
-			return Map(nil), true
+			return Map(nil), nil
 		}
 	} else if v >= 96 && v < 128 {
 		mapLen := 0
@@ -1604,7 +1605,7 @@ func (p *Stream) ReadMap() (Map, bool) {
 		if v == 96 {
 			if p.CanRead() {
 				p.gotoNextReadByteUnsafe()
-				return Map{}, true
+				return Map{}, nil
 			}
 		} else if v < 127 {
 			mapLen = int(v - 96)
@@ -1651,30 +1652,30 @@ func (p *Stream) ReadMap() (Map, bool) {
 		if mapLen > 0 && totalLen > 4 {
 			ret := Map{}
 			for i := 0; i < mapLen; i++ {
-				name, ok := p.ReadString()
-				if !ok {
+				name, err := p.ReadString()
+				if err != nil {
 					p.SetReadPos(readStart)
-					return Map(nil), false
+					return Map(nil), err
 				}
-				if rv, ok := p.Read(); ok {
+				if rv, err := p.Read(); err != nil {
 					ret[name] = rv
 				} else {
 					p.SetReadPos(readStart)
-					return Map(nil), false
+					return Map(nil), err
 				}
 			}
 			if p.GetReadPos() == end {
-				return ret, true
+				return ret, nil
 			}
 		}
 		p.SetReadPos(readStart)
 	}
 
-	return Map(nil), false
+	return Map(nil), errors.ErrStreamIsBroken
 }
 
 // Read read a generic value
-func (p *Stream) Read() (Any, bool) {
+func (p *Stream) Read() (Any, *base.Error) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
@@ -1700,9 +1701,9 @@ func (p *Stream) Read() (Any, bool) {
 	case byte(11):
 		return p.ReadUint64()
 	case byte(12):
-		return nil, false
+		return nil, errors.ErrStreamIsBroken
 	case byte(13):
-		return nil, false
+		return nil, errors.ErrStreamIsBroken
 	}
 
 	switch op >> 6 {
@@ -1724,12 +1725,12 @@ func (p *Stream) Read() (Any, bool) {
 }
 
 // ReadRTArray read a RPCArray value
-func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
+func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 	v := p.readFrame[p.readIndex]
 	if v >= 64 && v < 96 {
 		thread := rt.lock()
 		if thread == nil {
-			return RTArray{}, false
+			return RTArray{}, errors.ErrStreamIsBroken
 		}
 		defer rt.unlock()
 		cs := thread.rtStream
@@ -1740,7 +1741,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
-				return RTArray{}, false
+				return RTArray{}, errors.ErrStreamIsBroken
 			}
 		}
 
@@ -1749,7 +1750,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 		if v == 64 {
 			if cs.CanRead() {
 				cs.gotoNextReadByteUnsafe()
-				return newRTArray(rt, 0), true
+				return newRTArray(rt, 0), nil
 			}
 		} else if v < 95 {
 			arrLen = int(v - 64)
@@ -1804,14 +1805,14 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 					itemPos = cs.GetReadPos()
 					if itemPos < start || itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTArray{}, false
+						return RTArray{}, errors.ErrStreamIsBroken
 					}
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start {
 						p.SetReadPos(readStart)
-						return RTArray{}, false
+						return RTArray{}, errors.ErrStreamIsBroken
 					}
 				}
 
@@ -1822,24 +1823,24 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, bool) {
 				}
 			}
 			if cs.GetReadPos() == end {
-				return ret, true
+				return ret, nil
 			}
 		}
 
 		p.SetReadPos(readStart)
 	}
 
-	return RTArray{}, false
+	return RTArray{}, errors.ErrStreamIsBroken
 }
 
 // ReadRPCMap read a RPCMap value
-func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
+func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 	v := p.readFrame[p.readIndex]
 
 	if v >= 96 && v < 128 {
 		thread := rt.lock()
 		if thread == nil {
-			return RTMap{}, false
+			return RTMap{}, errors.ErrStreamIsBroken
 		}
 		defer rt.unlock()
 		cs := thread.rtStream
@@ -1851,7 +1852,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
-				return RTMap{}, false
+				return RTMap{}, errors.ErrStreamIsBroken
 			}
 		}
 
@@ -1860,7 +1861,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 		if v == 96 {
 			if cs.CanRead() {
 				cs.gotoNextReadByteUnsafe()
-				return newRTMap(rt, 0), true
+				return newRTMap(rt, 0), nil
 			}
 		} else if v < 127 {
 			mapLen = int(v - 96)
@@ -1910,10 +1911,10 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 			itemPos := 0
 
 			for i := 0; i < mapLen; i++ {
-				key, _, ok := cs.readUnsafeString()
-				if !ok {
+				key, _, err := cs.readUnsafeString()
+				if err != nil {
 					p.SetReadPos(readStart)
-					return RTMap{}, false
+					return RTMap{}, err
 				}
 				op := cs.readFrame[cs.readIndex]
 				skip := readSkipArray[op]
@@ -1921,14 +1922,14 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 					itemPos = cs.GetReadPos()
 					if itemPos < start || itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTMap{}, false
+						return RTMap{}, errors.ErrStreamIsBroken
 					}
 					cs.readIndex += skip
 				} else {
 					itemPos = cs.readSkipItem(end)
 					if itemPos < start {
 						p.SetReadPos(readStart)
-						return RTMap{}, false
+						return RTMap{}, errors.ErrStreamIsBroken
 					}
 				}
 
@@ -1939,14 +1940,14 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, bool) {
 				}
 			}
 			if cs.GetReadPos() == end {
-				return ret, true
+				return ret, nil
 			}
 		}
 
 		p.SetReadPos(readStart)
 	}
 
-	return RTMap{}, false
+	return RTMap{}, errors.ErrStreamIsBroken
 }
 
 // WriteRTArray write RTArray to stream
@@ -2134,10 +2135,11 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 }
 
 // ReadRTValue read a RTValue value
-func (p *Stream) ReadRTValue(rt Runtime) (RTValue, bool) {
+func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 	thread := rt.lock()
 	if thread == nil {
-		return RTValue{}, false
+		return RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine.
+			AddDebug(base.GetFileLine(1))}
 	}
 	defer rt.unlock()
 
@@ -2145,24 +2147,28 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, bool) {
 	if p != cs {
 		cs.SetReadPos(cs.GetWritePos())
 		if !cs.writeStreamNext(p) {
-			return RTValue{}, false
+			return RTValue{err: errors.ErrStreamIsBroken}
 		}
 	}
 
-	if op := cs.readFrame[cs.readIndex]; op > 128 && op < 191 {
-		cacheString, _, ok := cs.readUnsafeString()
+	if op := cs.readFrame[cs.readIndex]; op >= 128 && op <= 191 {
+		cacheString, cacheSafe, err := cs.readUnsafeString()
 		return RTValue{
 			rt:          rt,
 			pos:         int64(cs.GetReadPos()),
 			cacheString: cacheString,
-			cacheOK:     ok,
-		}, false
+			cacheError:  err,
+			cacheSafe:   cacheSafe,
+			err:         nil,
+		}
 	} else {
 		return RTValue{
 			rt:          rt,
 			pos:         int64(cs.GetReadPos()),
 			cacheString: "",
-			cacheOK:     false,
-		}, false
+			cacheError:  errors.ErrStreamIsBroken,
+			cacheSafe:   false,
+			err:         nil,
+		}
 	}
 }
