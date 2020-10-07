@@ -121,16 +121,27 @@ func TestContextObject_Error(t *testing.T) {
 	})
 }
 
-//func TestRuntime_Call(t *testing.T) {
-//  t.Run("thread lock error", func(t *testing.T) {
-//    assert := base.NewAssert(t)
-//    source := ""
-//    assert(base.RunWithSubscribePanic(func() {
-//      ret, s := Runtime{}.Call("#"), base.GetFileLine(0)
-//      source = s
-//      assert(ret).Equal(emptyReturn)
-//    })).Equal(
-//      errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
-//    )
-//  })
-//}
+func TestRuntime_Call(t *testing.T) {
+	t.Run("thread lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		ret, source := Runtime{}.Call("#"), base.GetFileLine(0)
+		assert(ret).Equal(RTValue{
+			err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
+		})
+	})
+
+	t.Run("make stream error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(ParseResponseStream(
+			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+				errArg := make(chan bool)
+				ret, s := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
+				source = rt.thread.GetReplyNode().path + " " + s
+				_, err := ret.ToString()
+				return rt.Error(err)
+			}),
+		)).Equal(nil, errors.ErrRuntimeArgumentNotSupported.
+			AddDebug("2nd argument type(chan bool) is not supported").AddDebug(source))
+	})
+}

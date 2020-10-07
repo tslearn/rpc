@@ -220,3 +220,13 @@ func TestReadFromFile(t *testing.T) {
 		_ = os.Remove("./tmp_file")
 	})
 }
+
+func BenchmarkGetFileLine(b *testing.B) {
+	b.ReportAllocs()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			AddFileLine("hello", 1)
+		}
+	})
+}
