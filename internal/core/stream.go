@@ -12,17 +12,17 @@ import (
 const (
 	streamBlockSize = 512
 
-	streamPosTargetID   = 0
-	streamPosSourceID   = 8
-	streamPosZoneID     = 16
-	streamPosIPMap      = 18
-	streamPosSessionID  = 26
-	streamPosCallbackID = 34
-	streamPosDepth      = 42
-
-	streamPosServerHead = 0
-	streamPosClientHead = 34
-	streamPosBody       = 44
+	streamPosVersion    = 0
+	streamPosBitStatus  = 1
+	streamPosTargetID   = 2
+	streamPosSourceID   = 10
+	streamPosZoneID     = 18
+	streamPosIPMap      = 20
+	streamPosSessionID  = 28
+	streamPosCallbackID = 36
+	streamPosDepth      = 44
+	streamPosCheck      = 46
+	streamPosBody       = 54
 
 	// StreamWriteOK ...
 	StreamWriteOK = ""
