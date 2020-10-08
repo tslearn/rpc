@@ -19,13 +19,17 @@ type SyncPoolDebug struct {
 	New  func() interface{}
 }
 
-func (p *SyncPoolDebug) Put(x interface{}) {
+func (p *SyncPoolDebug) Put(value interface{}) {
 	safePoolDebugMutex.Lock()
 	defer safePoolDebugMutex.Unlock()
 
-	if _, ok := safePoolDebugMap[x]; ok {
-		delete(safePoolDebugMap, x)
-		p.pool.Put(x)
+	if value == nil {
+		panic("value is nil")
+	}
+
+	if _, ok := safePoolDebugMap[value]; ok {
+		delete(safePoolDebugMap, value)
+		p.pool.Put(value)
 	} else {
 		panic("SyncPoolDebug Put check failed")
 	}

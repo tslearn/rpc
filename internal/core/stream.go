@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	streamVersion            = 1
 	streamBlockSize          = 512
 	streamFrameArrayInitSize = 8
 
@@ -32,8 +33,11 @@ const (
 )
 
 var (
-	zeroFrame   = make([]byte, streamBlockSize)
-	streamCache = &base.SyncPool{
+	constStreamFrame0 = [streamBlockSize]byte{streamVersion}
+	constStreamFrameN = [streamBlockSize]byte{0}
+	initStreamFrame0  = constStreamFrame0[0:]
+	initStreamFrameN  = constStreamFrameN[0:]
+	streamCache       = &base.SyncPool{
 		New: func() interface{} {
 			ret := &Stream{
 				readSeg:    0,
@@ -43,6 +47,7 @@ var (
 			}
 
 			zeroFrame := ret.bufferBytes[0:]
+			copy(zeroFrame, initStreamFrame0)
 			ret.frames = ret.bufferFrames[0:1]
 			ret.frames[0] = &zeroFrame
 			ret.readFrame = zeroFrame
@@ -115,12 +120,12 @@ func NewStream() *Stream {
 
 // Reset ...
 func (p *Stream) Reset() {
-	copy(*p.frames[0], zeroFrame)
+	copy(*p.frames[0], initStreamFrame0)
 
 	// reset frames
 	if len(p.frames) != 1 {
 		for i := 1; i < len(p.frames); i++ {
-			copy(*(p.frames[i]), zeroFrame)
+			copy(*(p.frames[i]), initStreamFrameN)
 			frameCache.Put(p.frames[i])
 			p.frames[i] = nil
 		}

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"math/rand"
 	"testing"
 )
 
@@ -289,6 +291,7 @@ var streamTestCollections = map[string][][2]interface{}{
 func TestStream(t *testing.T) {
 	t.Run("test constant", func(t *testing.T) {
 		assert := base.NewAssert(t)
+		assert(streamVersion).Equal(1)
 		assert(streamBlockSize).Equal(512)
 		assert(streamFrameArrayInitSize).Equal(4)
 		assert(streamPosVersion).Equal(0)
@@ -306,12 +309,22 @@ func TestStream(t *testing.T) {
 		assert(StreamWriteOK).Equal("")
 	})
 
-	t.Run("test zeroFrame", func(t *testing.T) {
+	t.Run("test initStreamFrame0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(len(zeroFrame)).Equal(streamBlockSize)
-		assert(cap(zeroFrame)).Equal(streamBlockSize)
+		assert(len(initStreamFrame0)).Equal(streamBlockSize)
+		assert(cap(initStreamFrame0)).Equal(streamBlockSize)
+		assert(initStreamFrame0[0]).Equal(byte(streamVersion))
+		for i := 1; i < streamBlockSize; i++ {
+			assert(initStreamFrame0[i]).Equal(uint8(0))
+		}
+	})
+
+	t.Run("test initStreamFrameN", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(len(initStreamFrameN)).Equal(streamBlockSize)
+		assert(cap(initStreamFrameN)).Equal(streamBlockSize)
 		for i := 0; i < streamBlockSize; i++ {
-			assert(zeroFrame[0]).Equal(uint8(0))
+			assert(initStreamFrameN[i]).Equal(uint8(0))
 		}
 	})
 
@@ -393,12 +406,12 @@ func TestStream_Reset(t *testing.T) {
 			assert(stream.writeSeg).Equal(0)
 			assert(stream.writeIndex).Equal(streamPosBody)
 			assert(stream.writeFrame).Equal(*stream.frames[0])
-			assert(*stream.frames[0]).Equal(zeroFrame)
+			assert(*stream.frames[0]).Equal(initStreamFrame0)
 
 			for j := 0; j < i; j++ {
 				stream.PutBytes([]byte{12})
 				if stream.writeIndex == 0 {
-					assert(stream.writeFrame).Equal(zeroFrame)
+					assert(stream.writeFrame).Equal(initStreamFrameN)
 				}
 			}
 
@@ -407,97 +420,319 @@ func TestStream_Reset(t *testing.T) {
 	})
 }
 
-func TestStream_newRPCStream_Release_Reset(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	// test streamCache
-	for i := 0; i < 5000; i++ {
-		stream := NewStream()
-		assert(len(stream.frames)).Equal(1)
-		assert(cap(stream.frames)).Equal(4)
-		assert(stream.readSeg).Equal(0)
-		assert(stream.readIndex).Equal(streamPosBody)
-		assert(stream.readFrame).Equal(*(stream.frames[0]))
-		assert(stream.writeSeg).Equal(0)
-		assert(stream.writeIndex).Equal(streamPosBody)
-		assert(stream.writeFrame).Equal(*(stream.frames[0]))
-
-		for n := 0; n < i; n++ {
-			stream.PutBytes([]byte{9})
+func TestStream_Release(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		mp := map[string]bool{}
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			mp[fmt.Sprintf("%p", v)] = true
+			v.Release()
 		}
-		stream.Release()
-	}
+		assert(len(mp) < 1000).IsTrue()
+	})
 }
 
-func TestStream_GetBuffer(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	for i := 0; i < 5000; i++ {
-		bytes := make([]byte, i)
-		for n := 0; n < i; n++ {
-			bytes[n] = byte(n)
-		}
-
-		stream := NewStream()
-		stream.PutBytes(bytes)
-		assert(stream.GetBuffer()[streamPosBody:]).Equal(bytes)
-		stream.Release()
-	}
+func TestStream_GetVersion(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewStream().GetVersion()).Equal(uint8(1))
+	})
 }
 
-func TestStream_GetBufferUnsafe(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	for i := 0; i < 5000; i++ {
-		bytes := make([]byte, i)
-		for n := 0; n < i; n++ {
-			bytes[n] = byte(n)
+func TestStream_SetVersion(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			v.SetVersion(uint8(i))
+			assert(v.GetVersion()).Equal(uint8(i))
 		}
+	})
+}
 
-		stream := NewStream()
-		stream.PutBytes(bytes)
-		assert(stream.GetBufferUnsafe()[streamPosBody:]).Equal(bytes)
-		stream.Release()
-	}
+func TestStream_HasStatusBitDebug(t *testing.T) {
+	t.Run("test bit set", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+			v.SetStatusBitDebug()
+			assert(v.HasStatusBitDebug()).IsTrue()
+		}
+	})
+
+	t.Run("test bit unset", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+			v.ClearStatusBitDebug()
+			assert(v.HasStatusBitDebug()).IsFalse()
+		}
+	})
+}
+
+func TestStream_SetStatusBitDebug(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+
+			if !v.HasStatusBitDebug() {
+				v.SetStatusBitDebug()
+				assert(v.HasStatusBitDebug()).IsTrue()
+				v.ClearStatusBitDebug()
+			}
+
+			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
+		}
+	})
+}
+
+func TestStream_ClearStatusBitDebug(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+
+			if v.HasStatusBitDebug() {
+				v.ClearStatusBitDebug()
+				assert(v.HasStatusBitDebug()).IsFalse()
+				v.SetStatusBitDebug()
+			}
+
+			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
+		}
+	})
+}
+
+func TestStream_GetTargetID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetTargetID(id)
+			assert(v.GetTargetID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_SetTargetID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetTargetID(id)
+			assert(v.GetTargetID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_GetSourceID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetSourceID(id)
+			assert(v.GetSourceID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_SetSourceID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetSourceID(id)
+			assert(v.GetSourceID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_GetZoneID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := uint16(i)
+			v.SetZoneID(id)
+			assert(v.GetZoneID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_SetZoneID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := uint16(i)
+			v.SetZoneID(id)
+			assert(v.GetZoneID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_GetIPMap(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			ipMap := rand.Uint64()
+			v.SetIPMap(ipMap)
+			assert(v.GetIPMap()).Equal(ipMap)
+		}
+	})
+}
+
+func TestStream_SetIPMap(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			ipMap := rand.Uint64()
+			v.SetIPMap(ipMap)
+			assert(v.GetIPMap()).Equal(ipMap)
+		}
+	})
+}
+
+func TestStream_GetSessionID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetSessionID(id)
+			assert(v.GetSessionID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_SetSessionID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetSessionID(id)
+			assert(v.GetSessionID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_SetCallbackID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetCallbackID(id)
+			assert(v.GetCallbackID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_GetCallbackID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint64()
+			v.SetCallbackID(id)
+			assert(v.GetCallbackID()).Equal(id)
+		}
+	})
+}
+
+func TestStream_GetDepth(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			depth := uint16(i)
+			v.SetDepth(depth)
+			assert(v.GetDepth()).Equal(depth)
+		}
+	})
+}
+
+func TestStream_SetDepth(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			depth := uint16(i)
+			v.SetDepth(depth)
+			assert(v.GetDepth()).Equal(depth)
+		}
+	})
 }
 
 func TestStream_GetReadPos(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	for i := streamPosBody; i < 5000; i++ {
-		stream := NewStream()
-		stream.SetWritePos(i)
-		stream.SetReadPos(i)
-		assert(stream.GetReadPos()).Equal(i)
-		stream.Release()
-	}
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i <= 3*streamBlockSize; i++ {
+			stream := NewStream()
+			if i < streamPosBody {
+				assert(stream.GetReadPos()).Equal(streamPosBody)
+			} else {
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				assert(stream.GetReadPos()).Equal(i)
+			}
+			stream.Release()
+		}
+	})
 }
 
 func TestStream_SetReadPos(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	for i := streamPosBody + 1; i < 5000; i++ {
-		stream := NewStream()
-		stream.SetWritePos(i)
-		assert(stream.SetReadPos(-1)).IsFalse()
-		assert(stream.SetReadPos(i - 1)).IsTrue()
-		assert(stream.SetReadPos(i)).IsTrue()
-		assert(stream.SetReadPos(i + 1)).IsFalse()
-		stream.Release()
-	}
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 3*streamBlockSize; i++ {
+			stream := NewStream()
+			if i < streamPosBody {
+				assert(stream.SetReadPos(i)).IsFalse()
+				assert(stream.GetReadPos()).Equal(streamPosBody)
+			} else if i == streamPosBody {
+				stream.SetWritePos(i)
+				assert(stream.SetReadPos(i)).IsTrue()
+				assert(stream.GetReadPos()).Equal(i)
+				assert(stream.SetReadPos(i + 1)).IsFalse()
+				assert(stream.GetReadPos()).Equal(i)
+			} else {
+				stream.SetWritePos(i)
+				assert(stream.SetReadPos(i - 1)).IsTrue()
+				assert(stream.GetReadPos()).Equal(i - 1)
+				assert(stream.SetReadPos(i)).IsTrue()
+				assert(stream.GetReadPos()).Equal(i)
+				assert(stream.SetReadPos(i + 1)).IsFalse()
+				assert(stream.GetReadPos()).Equal(i)
+			}
+		}
+	})
 }
 
 func TestStream_SetReadPosToBodyStart(t *testing.T) {
-	assert := base.NewAssert(t)
-
-	for i := streamPosBody; i < streamPosBody+5000; i++ {
-		stream := NewStream()
-		stream.SetWritePos(i + 1)
-		stream.SetReadPos(i)
-		assert(stream.GetReadPos()).Equal(i)
-		stream.SetReadPosToBodyStart()
-		assert(stream.GetReadPos()).Equal(streamPosBody)
-	}
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := streamPosBody; i < 3*streamBlockSize; i++ {
+			stream := NewStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			assert(stream.GetReadPos()).Equal(i)
+			stream.SetReadPosToBodyStart()
+			assert(stream.GetReadPos()).Equal(streamPosBody)
+		}
+	})
 }
 
 func TestStream_GetWritePos(t *testing.T) {
@@ -531,6 +766,38 @@ func TestStream_SetWritePosToBodyStart(t *testing.T) {
 		assert(stream.GetWritePos()).Equal(i)
 		stream.SetWritePosToBodyStart()
 		assert(stream.GetWritePos()).Equal(streamPosBody)
+	}
+}
+
+func TestStream_GetBuffer(t *testing.T) {
+	assert := base.NewAssert(t)
+
+	for i := 0; i < 5000; i++ {
+		bytes := make([]byte, i)
+		for n := 0; n < i; n++ {
+			bytes[n] = byte(n)
+		}
+
+		stream := NewStream()
+		stream.PutBytes(bytes)
+		assert(stream.GetBuffer()[streamPosBody:]).Equal(bytes)
+		stream.Release()
+	}
+}
+
+func TestStream_GetBufferUnsafe(t *testing.T) {
+	assert := base.NewAssert(t)
+
+	for i := 0; i < 5000; i++ {
+		bytes := make([]byte, i)
+		for n := 0; n < i; n++ {
+			bytes[n] = byte(n)
+		}
+
+		stream := NewStream()
+		stream.PutBytes(bytes)
+		assert(stream.GetBufferUnsafe()[streamPosBody:]).Equal(bytes)
+		stream.Release()
 	}
 }
 
