@@ -30,8 +30,8 @@ const (
 
 	// StreamWriteOK ...
 	StreamWriteOK          = ""
-	StreamWriteOverflow    = "write overflow"
-	StreamWriteValueBroken = "value is broken"
+	StreamWriteOverflow    = " write overflow"
+	StreamWriteValueBroken = " value is broken"
 )
 
 var (
@@ -843,7 +843,11 @@ func (p *Stream) WriteBytes(v Bytes) {
 
 // WriteArray ...
 func (p *Stream) WriteArray(v Array) string {
-	return p.writeArray(v, 64)
+	if reason := p.writeArray(v, 64); reason != StreamWriteOK {
+		return "Array" + reason
+	} else {
+		return StreamWriteOK
+	}
 }
 
 func (p *Stream) writeArray(v Array, depth int) string {
@@ -899,7 +903,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	for i := 0; i < length; i++ {
 		if reason := p.write(v[i], depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return base.ConcatString("[", strconv.Itoa(i), "] ", reason)
+			return base.ConcatString("[", strconv.Itoa(i), "]", reason)
 		}
 	}
 
@@ -926,7 +930,11 @@ func (p *Stream) writeArray(v Array, depth int) string {
 
 // WriteMap write Map value to stream
 func (p *Stream) WriteMap(v Map) string {
-	return p.writeMap(v, 64)
+	if reason := p.writeMap(v, 64); reason != StreamWriteOK {
+		return "Map" + reason
+	} else {
+		return StreamWriteOK
+	}
 }
 
 func (p *Stream) writeMap(v Map, depth int) string {
@@ -984,7 +992,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 		p.WriteString(name)
 		if reason := p.write(value, depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return base.ConcatString("[\"", name, "\"] ", reason)
+			return base.ConcatString("[\"", name, "\"]", reason)
 		}
 	}
 
@@ -1273,7 +1281,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return p.writeMap(v.(Map), depth)
 	default:
 		return base.ConcatString(
-			"type(",
+			" type(",
 			convertTypeToString(reflect.ValueOf(v).Type()),
 			") is not supported",
 		)
@@ -1868,16 +1876,14 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 		if mapLen > 0 && totalLen > 4 {
 			ret := Map{}
 			for i := 0; i < mapLen; i++ {
-				name, err := p.ReadString()
-				if err != nil {
+				if name, err := p.ReadString(); err != nil {
 					p.SetReadPos(readStart)
 					return Map(nil), err
-				}
-				if rv, err := p.Read(); err != nil {
-					ret[name] = rv
+				} else if rv, err := p.Read(); err != nil {
+					p.SetReadPos(readStart)
+					return Map(nil), err
 				} else {
-					p.SetReadPos(readStart)
-					return Map(nil), err
+					ret[name] = rv
 				}
 			}
 			if p.GetReadPos() == end {

@@ -1,179 +1,311 @@
 package core
 
-//
-//import (
-//  "github.com/rpccloud/rpc/internal/base"
-//  "testing"
-//)
+import (
+	"github.com/rpccloud/rpc/internal/base"
+	"testing"
+)
 
-//func TestStream_WriteNil(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["nil"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteNil()
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(i + 1)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteBool(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["bool"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteBool(testData[0].(bool))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteFloat64(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["float64"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteFloat64(testData[0].(float64))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteInt64(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["int64"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteInt64(testData[0].(int64))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteUInt64(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["uint64"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteUint64(testData[0].(uint64))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteString(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["string"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteString(testData[0].(string))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteBytes(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["bytes"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      stream.WriteBytes(testData[0].([]byte))
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteArray(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["array"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      assert(stream.WriteArray(testData[0].(Array))).Equal(StreamWriteOK)
-//      assert(stream.GetBuffer()[i:]).Equal(testData[1])
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//      stream.Release()
-//    }
-//
-//    // error type
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      assert(
-//        stream.WriteArray(Array{true, true, true, make(chan bool), true}),
-//      ).Equal("[3] type(chan bool) is not supported")
-//      assert(stream.GetWritePos()).Equal(i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
-//func TestStream_WriteMap(t *testing.T) {
-//  assert := base.NewAssert(t)
-//
-//  for _, testData := range streamTestCollections["map"] {
-//    // ok
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      assert(stream.WriteMap(testData[0].(Map))).Equal(StreamWriteOK)
-//      assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-//
-//      stream.SetReadPos(i)
-//      assert(stream.ReadMap()).Equal(testData[0].(Map), true)
-//
-//      stream.Release()
-//    }
-//
-//    // error type
-//    for i := streamPosBody; i < 2*streamBlockSize+40; i++ {
-//      stream := NewStream()
-//      stream.SetWritePos(i)
-//      assert(stream.WriteMap(Map{"0": 0, "1": make(chan bool)})).
-//        Equal("[\"1\"] type(chan bool) is not supported")
-//      assert(stream.GetWritePos()).Equal(i)
-//      stream.Release()
-//    }
-//  }
-//}
-//
+func getTestDepthArray(depth int) [2]interface{} {
+	if depth <= 1 {
+		return [2]interface{}{nil, ""}
+	} else {
+		ret := getTestDepthArray(depth - 1)
+		return [2]interface{}{Array{ret[0]}, "[0]" + ret[1].(string)}
+	}
+}
+
+func getTestDepthMap(depth int) [2]interface{} {
+	if depth <= 1 {
+		return [2]interface{}{nil, ""}
+	} else {
+		ret := getTestDepthMap(depth - 1)
+		return [2]interface{}{Map{"a": ret[0]}, "[\"a\"]" + ret[1].(string)}
+	}
+}
+
+var streamTestWriteCollections = map[string][][2]interface{}{
+	"array": {
+		{
+			Array{true, true, true, make(chan bool), true},
+			"Array[3] type(chan bool) is not supported",
+		},
+		{
+			getTestDepthArray(65)[0],
+			"Array" + getTestDepthArray(65)[1].(string) + " write overflow",
+		},
+		{
+			getTestDepthArray(64)[0],
+			StreamWriteOK,
+		},
+	},
+	"map": {
+		{
+			Map{"0": 0, "1": make(chan bool)},
+			"Map[\"1\"] type(chan bool) is not supported",
+		},
+		{
+			getTestDepthMap(65)[0],
+			"Map" + getTestDepthMap(65)[1].(string) + " write overflow",
+		},
+		{
+			getTestDepthMap(64)[0],
+			StreamWriteOK,
+		},
+	},
+}
+
+func TestStream_WriteNil(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["nil"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteNil()
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(i + 1)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteBool(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["bool"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteBool(testData[0].(bool))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteFloat64(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["float64"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteFloat64(testData[0].(float64))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteInt64(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["int64"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteInt64(testData[0].(int64))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteUInt64(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["uint64"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteUint64(testData[0].(uint64))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteString(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["string"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteString(testData[0].(string))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteBytes(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["bytes"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.WriteBytes(testData[0].([]byte))
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteArray(t *testing.T) {
+	t.Run("test write failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestWriteCollections["array"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.WriteArray(testData[0].(Array))).Equal(testData[1])
+				if testData[1].(string) != StreamWriteOK {
+					assert(stream.GetWritePos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
+
+	t.Run("test write ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["array"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.WriteArray(testData[0].(Array))).Equal(StreamWriteOK)
+				assert(stream.GetBuffer()[i:]).Equal(testData[1])
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.Release()
+			}
+		}
+	})
+}
+
+func TestStream_WriteMap(t *testing.T) {
+	t.Run("test write failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestWriteCollections["map"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.WriteMap(testData[0].(Map))).Equal(testData[1])
+				if testData[1].(string) != StreamWriteOK {
+					assert(stream.GetWritePos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
+
+	t.Run("test write ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestSuccessCollections["map"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.WriteMap(testData[0].(Map))).Equal(StreamWriteOK)
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.SetReadPos(i)
+				assert(stream.ReadMap()).Equal(testData[0].(Map), nil)
+				stream.Release()
+			}
+		}
+	})
+}
+
 //func TestStream_Write(t *testing.T) {
 //  assert := base.NewAssert(t)
 //  stream := NewStream()
@@ -902,7 +1034,6 @@ package core
 //  stream := NewStream()
 //  stream.WriteString("#.user.login:isUserARight")
 //
-//  b.ReportAllocs()
 //  for i := 0; i < b.N; i++ {
 //    stream.SetReadPos(streamPosBody)
 //    stream.ReadString()
