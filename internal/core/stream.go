@@ -29,7 +29,9 @@ const (
 	streamStatusBitDebug = 0
 
 	// StreamWriteOK ...
-	StreamWriteOK = ""
+	StreamWriteOK          = ""
+	StreamWriteOverflow    = "write overflow"
+	StreamWriteValueBroken = "value is broken"
 )
 
 var (
@@ -897,7 +899,7 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	for i := 0; i < length; i++ {
 		if reason := p.write(v[i], depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return base.ConcatString("[", strconv.Itoa(i), "]", reason)
+			return base.ConcatString("[", strconv.Itoa(i), "] ", reason)
 		}
 	}
 
@@ -982,7 +984,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 		p.WriteString(name)
 		if reason := p.write(value, depth-1); reason != StreamWriteOK {
 			p.SetWritePos(startPos)
-			return base.ConcatString("[\"", name, "\"]", reason)
+			return base.ConcatString("[\"", name, "\"] ", reason)
 		}
 	}
 
@@ -1015,7 +1017,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 
 		length := v.Size()
 		if length == -1 {
-			return "WriteRTArray: parameter is not available"
+			return StreamWriteValueBroken
 		}
 
 		if length == 0 {
@@ -1065,7 +1067,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 			readStream.SetReadPos(int(v.items[i].getPos()))
 			if !p.writeStreamNext(readStream) {
 				p.SetWritePos(startPos)
-				return "WriteRTArray: parameter is broken"
+				return StreamWriteValueBroken
 			}
 		}
 
@@ -1087,9 +1089,9 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 			p.SetWritePos(endPos)
 		}
 
-		return ""
+		return StreamWriteOK
 	} else {
-		return "WriteRTArray: parameter is not available"
+		return StreamWriteValueBroken
 	}
 }
 
@@ -1101,7 +1103,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 
 		length := v.Size()
 		if length == -1 {
-			return "WriteRTMap: parameter is not available"
+			return StreamWriteValueBroken
 		}
 
 		if length == 0 {
@@ -1110,7 +1112,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
-			return ""
+			return StreamWriteOK
 		}
 
 		startPos := p.GetWritePos()
@@ -1153,7 +1155,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 				readStream.SetReadPos(int(v.items[i].pos.getPos()))
 				if !p.writeStreamNext(readStream) {
 					p.SetWritePos(startPos)
-					return "WriteRTMap: parameter is broken"
+					return StreamWriteValueBroken
 				}
 			}
 		} else if v.largeMap != nil {
@@ -1162,7 +1164,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 				readStream.SetReadPos(int(pos.getPos()))
 				if !p.writeStreamNext(readStream) {
 					p.SetWritePos(startPos)
-					return "WriteRTMap: parameter is broken"
+					return StreamWriteValueBroken
 				}
 			}
 		}
@@ -1185,9 +1187,25 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 			p.SetWritePos(endPos)
 		}
 
-		return ""
+		return StreamWriteOK
 	} else {
-		return "WriteRTMap: parameter is not available"
+		return StreamWriteValueBroken
+	}
+}
+
+func (p *Stream) WriteRTValue(v RTValue) string {
+	if thread := v.rt.lock(); thread != nil {
+		defer v.rt.unlock()
+		readStream := thread.rtStream
+		if !readStream.SetReadPos(int(v.pos)) {
+			return StreamWriteValueBroken
+		}
+		if !p.writeStreamNext(readStream) {
+			return StreamWriteValueBroken
+		}
+		return StreamWriteOK
+	} else {
+		return StreamWriteValueBroken
 	}
 }
 
@@ -1197,7 +1215,7 @@ func (p *Stream) Write(v interface{}) string {
 
 func (p *Stream) write(v interface{}, depth int) string {
 	if depth <= 0 {
-		return " write overflow"
+		return StreamWriteOverflow
 	}
 
 	switch v.(type) {
@@ -1255,7 +1273,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return p.writeMap(v.(Map), depth)
 	default:
 		return base.ConcatString(
-			" type(",
+			"type(",
 			convertTypeToString(reflect.ValueOf(v).Type()),
 			") is not supported",
 		)
