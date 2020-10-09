@@ -435,6 +435,7 @@ func TestStream_Reset(t *testing.T) {
 					assert(stream.writeFrame).Equal(initStreamFrameN)
 				}
 			}
+			stream.SetReadPos(i)
 			stream.Reset()
 		}
 
@@ -664,7 +665,7 @@ func TestStream_SetSessionID(t *testing.T) {
 	})
 }
 
-func TestStream_SetCallbackID(t *testing.T) {
+func TestStream_GetCallbackID(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
@@ -677,7 +678,7 @@ func TestStream_SetCallbackID(t *testing.T) {
 	})
 }
 
-func TestStream_GetCallbackID(t *testing.T) {
+func TestStream_SetCallbackID(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
