@@ -12,7 +12,7 @@ import (
 const (
 	streamVersion            = 1
 	streamBlockSize          = 512
-	streamFrameArrayInitSize = 8
+	streamFrameArrayInitSize = 4
 
 	streamPosVersion    = 0
 	streamPosStatusBit  = 1
@@ -483,26 +483,18 @@ func (p *Stream) PutBytes(v []byte) {
 func (p *Stream) PutBytesTo(v []byte, pos int) bool {
 	if pos+len(v) < streamPosBody {
 		return false
-	} else if pos+len(v) < streamBlockSize {
-		p.writeIndex = pos
-		if p.writeSeg != 0 {
-			p.writeSeg = 0
-			p.writeFrame = *(p.frames[0])
-		}
-		p.writeIndex += copy(p.writeFrame[p.writeIndex:], v)
-		return true
-	} else {
-		p.SetWritePos(pos)
-		for len(v) > 0 {
-			n := copy(p.writeFrame[p.writeIndex:], v)
-			p.writeIndex += n
-			if p.writeIndex == streamBlockSize {
-				p.gotoNextWriteFrame()
-			}
-			v = v[n:]
-		}
-		return true
 	}
+
+	if pos >= streamPosBody {
+		p.SetWritePos(pos)
+	} else {
+		p.writeIndex = pos
+		p.writeSeg = 0
+		p.writeFrame = *(p.frames[0])
+	}
+
+	p.PutBytes(v)
+	return true
 }
 
 // WriteNil put nil value to stream
