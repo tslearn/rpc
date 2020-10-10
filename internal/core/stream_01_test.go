@@ -31,7 +31,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		},
 		{
 			getTestDepthArray(65)[0],
-			"Array" + getTestDepthArray(65)[1].(string) + " write overflow",
+			"Array" + getTestDepthArray(65)[1].(string) + " overflows",
 		},
 		{
 			getTestDepthArray(64)[0],
@@ -45,7 +45,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		},
 		{
 			getTestDepthMap(65)[0],
-			"Map" + getTestDepthMap(65)[1].(string) + " write overflow",
+			"Map" + getTestDepthMap(65)[1].(string) + " overflows",
 		},
 		{
 			getTestDepthMap(64)[0],
@@ -304,6 +304,10 @@ func TestStream_WriteMap(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestStream_WriteRTArray(t *testing.T) {
+
 }
 
 //func TestStream_Write(t *testing.T) {

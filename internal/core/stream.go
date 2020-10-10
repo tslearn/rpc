@@ -30,8 +30,8 @@ const (
 
 	// StreamWriteOK ...
 	StreamWriteOK          = ""
-	StreamWriteOverflow    = " write overflow"
-	StreamWriteValueBroken = " value is broken"
+	StreamWriteOverflow    = " overflows"
+	StreamWriteValueBroken = " is broken"
 )
 
 var (
@@ -1018,7 +1018,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 }
 
 // WriteRTArray write RTArray to stream
-func (p *Stream) WriteRTArray(v RTArray) string {
+func (p *Stream) writeRTArray(v RTArray) string {
 	if thread := v.rt.lock(); thread != nil {
 		defer v.rt.unlock()
 		readStream := thread.rtStream
@@ -1104,7 +1104,7 @@ func (p *Stream) WriteRTArray(v RTArray) string {
 }
 
 // WriteRPCMap write RPCMap value to stream
-func (p *Stream) WriteRTMap(v RTMap) string {
+func (p *Stream) writeRTMap(v RTMap) string {
 	if thread := v.rt.lock(); thread != nil {
 		defer v.rt.unlock()
 		readStream := thread.rtStream
@@ -1201,7 +1201,7 @@ func (p *Stream) WriteRTMap(v RTMap) string {
 	}
 }
 
-func (p *Stream) WriteRTValue(v RTValue) string {
+func (p *Stream) writeRTValue(v RTValue) string {
 	if thread := v.rt.lock(); thread != nil {
 		defer v.rt.unlock()
 		readStream := thread.rtStream
