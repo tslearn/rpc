@@ -1003,7 +1003,9 @@ func (p *Stream) writeRTArray(v RTArray) string {
 		readStream := thread.rtStream
 		length := v.Size()
 
-		if length == 0 {
+		if length < 0 {
+			return StreamWriteIsNotAvailable
+		} else if length == 0 {
 			p.writeFrame[p.writeIndex] = 64
 			p.writeIndex++
 			if p.writeIndex == streamBlockSize {
@@ -1085,92 +1087,91 @@ func (p *Stream) writeRTMap(v RTMap) string {
 		readStream := thread.rtStream
 
 		length := v.Size()
-		if length == -1 {
+		if length < 0 {
 			return StreamWriteIsNotAvailable
-		}
-
-		if length == 0 {
+		} else if length == 0 {
 			p.writeFrame[p.writeIndex] = 96
 			p.writeIndex++
 			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
 			return StreamWriteOK
-		}
-
-		startPos := p.GetWritePos()
-
-		b := p.writeFrame[p.writeIndex:]
-		if p.writeIndex < streamBlockSize-5 {
-			p.writeIndex += 5
 		} else {
-			b = b[0:1]
-			p.SetWritePos(startPos + 5)
-		}
 
-		if length < 31 {
-			b[0] = byte(96 + length)
-		} else {
-			b[0] = 127
-		}
+			startPos := p.GetWritePos()
 
-		if length > 30 {
-			if p.writeIndex < streamBlockSize-4 {
-				l := p.writeFrame[p.writeIndex:]
-				l[0] = byte(uint32(length))
-				l[1] = byte(uint32(length) >> 8)
-				l[2] = byte(uint32(length) >> 16)
-				l[3] = byte(uint32(length) >> 24)
-				p.writeIndex += 4
+			b := p.writeFrame[p.writeIndex:]
+			if p.writeIndex < streamBlockSize-5 {
+				p.writeIndex += 5
 			} else {
+				b = b[0:1]
+				p.SetWritePos(startPos + 5)
+			}
+
+			if length < 31 {
+				b[0] = byte(96 + length)
+			} else {
+				b[0] = 127
+			}
+
+			if length > 30 {
+				if p.writeIndex < streamBlockSize-4 {
+					l := p.writeFrame[p.writeIndex:]
+					l[0] = byte(uint32(length))
+					l[1] = byte(uint32(length) >> 8)
+					l[2] = byte(uint32(length) >> 16)
+					l[3] = byte(uint32(length) >> 24)
+					p.writeIndex += 4
+				} else {
+					p.PutBytes([]byte{
+						byte(uint32(length)),
+						byte(uint32(length) >> 8),
+						byte(uint32(length) >> 16),
+						byte(uint32(length) >> 24),
+					})
+				}
+			}
+
+			if v.items != nil {
+				for i := 0; i < length; i++ {
+					p.WriteString(v.items[i].key)
+					readStream.SetReadPos(int(v.items[i].pos.getPos()))
+					if !p.writeStreamNext(readStream) {
+						p.SetWritePos(startPos)
+						return StreamWriteIsNotAvailable
+					}
+				}
+			} else if v.largeMap != nil {
+				for name, pos := range v.largeMap {
+					p.WriteString(name)
+					readStream.SetReadPos(int(pos.getPos()))
+					if !p.writeStreamNext(readStream) {
+						p.SetWritePos(startPos)
+						return StreamWriteIsNotAvailable
+					}
+				}
+			}
+
+			totalLength := uint32(p.GetWritePos() - startPos)
+			if len(b) > 1 {
+				b[1] = byte(totalLength)
+				b[2] = byte(totalLength >> 8)
+				b[3] = byte(totalLength >> 16)
+				b[4] = byte(totalLength >> 24)
+			} else {
+				endPos := p.GetWritePos()
+				p.SetWritePos(startPos + 1)
 				p.PutBytes([]byte{
-					byte(uint32(length)),
-					byte(uint32(length) >> 8),
-					byte(uint32(length) >> 16),
-					byte(uint32(length) >> 24),
+					byte(totalLength),
+					byte(totalLength >> 8),
+					byte(totalLength >> 16),
+					byte(totalLength >> 24),
 				})
+				p.SetWritePos(endPos)
 			}
-		}
 
-		if v.items != nil {
-			for i := 0; i < length; i++ {
-				p.WriteString(v.items[i].key)
-				readStream.SetReadPos(int(v.items[i].pos.getPos()))
-				if !p.writeStreamNext(readStream) {
-					p.SetWritePos(startPos)
-					return StreamWriteIsNotAvailable
-				}
-			}
-		} else if v.largeMap != nil {
-			for name, pos := range v.largeMap {
-				p.WriteString(name)
-				readStream.SetReadPos(int(pos.getPos()))
-				if !p.writeStreamNext(readStream) {
-					p.SetWritePos(startPos)
-					return StreamWriteIsNotAvailable
-				}
-			}
+			return StreamWriteOK
 		}
-
-		totalLength := uint32(p.GetWritePos() - startPos)
-		if len(b) > 1 {
-			b[1] = byte(totalLength)
-			b[2] = byte(totalLength >> 8)
-			b[3] = byte(totalLength >> 16)
-			b[4] = byte(totalLength >> 24)
-		} else {
-			endPos := p.GetWritePos()
-			p.SetWritePos(startPos + 1)
-			p.PutBytes([]byte{
-				byte(totalLength),
-				byte(totalLength >> 8),
-				byte(totalLength >> 16),
-				byte(totalLength >> 24),
-			})
-			p.SetWritePos(endPos)
-		}
-
-		return StreamWriteOK
 	} else {
 		return StreamWriteIsNotAvailable
 	}
