@@ -29,9 +29,9 @@ const (
 	streamStatusBitDebug = 0
 
 	// StreamWriteOK ...
-	StreamWriteOK          = ""
-	StreamWriteOverflow    = " overflows"
-	StreamWriteValueBroken = " is broken"
+	StreamWriteOK             = ""
+	StreamWriteOverflow       = " overflows"
+	StreamWriteIsNotAvailable = " is not available"
 )
 
 var (
@@ -1025,7 +1025,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 
 		length := v.Size()
 		if length == -1 {
-			return StreamWriteValueBroken
+			return StreamWriteIsNotAvailable
 		}
 
 		if length == 0 {
@@ -1075,7 +1075,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 			readStream.SetReadPos(int(v.items[i].getPos()))
 			if !p.writeStreamNext(readStream) {
 				p.SetWritePos(startPos)
-				return StreamWriteValueBroken
+				return StreamWriteIsNotAvailable
 			}
 		}
 
@@ -1099,7 +1099,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 
 		return StreamWriteOK
 	} else {
-		return StreamWriteValueBroken
+		return StreamWriteIsNotAvailable
 	}
 }
 
@@ -1111,7 +1111,7 @@ func (p *Stream) writeRTMap(v RTMap) string {
 
 		length := v.Size()
 		if length == -1 {
-			return StreamWriteValueBroken
+			return StreamWriteIsNotAvailable
 		}
 
 		if length == 0 {
@@ -1163,7 +1163,7 @@ func (p *Stream) writeRTMap(v RTMap) string {
 				readStream.SetReadPos(int(v.items[i].pos.getPos()))
 				if !p.writeStreamNext(readStream) {
 					p.SetWritePos(startPos)
-					return StreamWriteValueBroken
+					return StreamWriteIsNotAvailable
 				}
 			}
 		} else if v.largeMap != nil {
@@ -1172,7 +1172,7 @@ func (p *Stream) writeRTMap(v RTMap) string {
 				readStream.SetReadPos(int(pos.getPos()))
 				if !p.writeStreamNext(readStream) {
 					p.SetWritePos(startPos)
-					return StreamWriteValueBroken
+					return StreamWriteIsNotAvailable
 				}
 			}
 		}
@@ -1197,7 +1197,7 @@ func (p *Stream) writeRTMap(v RTMap) string {
 
 		return StreamWriteOK
 	} else {
-		return StreamWriteValueBroken
+		return StreamWriteIsNotAvailable
 	}
 }
 
@@ -1206,14 +1206,14 @@ func (p *Stream) writeRTValue(v RTValue) string {
 		defer v.rt.unlock()
 		readStream := thread.rtStream
 		if !readStream.SetReadPos(int(v.pos)) {
-			return StreamWriteValueBroken
+			return StreamWriteIsNotAvailable
 		}
 		if !p.writeStreamNext(readStream) {
-			return StreamWriteValueBroken
+			return StreamWriteIsNotAvailable
 		}
 		return StreamWriteOK
 	} else {
-		return StreamWriteValueBroken
+		return StreamWriteIsNotAvailable
 	}
 }
 
