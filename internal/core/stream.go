@@ -1017,7 +1017,6 @@ func (p *Stream) writeMap(v Map, depth int) string {
 	return StreamWriteOK
 }
 
-// WriteRTArray write RTArray to stream
 func (p *Stream) writeRTArray(v RTArray) string {
 	if thread := v.rt.lock(); thread != nil {
 		defer v.rt.unlock()
@@ -1034,7 +1033,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 			if p.writeIndex == streamBlockSize {
 				p.gotoNextWriteFrame()
 			}
-			return ""
+			return StreamWriteOK
 		}
 
 		startPos := p.GetWritePos()
