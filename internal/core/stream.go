@@ -29,9 +29,10 @@ const (
 	streamStatusBitDebug = 0
 
 	// StreamWriteOK ...
-	StreamWriteOK             = ""
-	StreamWriteOverflow       = " overflows"
-	StreamWriteIsNotAvailable = " is not available"
+	StreamWriteOK                = ""
+	StreamWriteOverflow          = " overflows"
+	StreamWriteIsNotAvailable    = " is not available"
+	StreamWriteNilIsNotSupported = " value nil is not supported"
 )
 
 var (
@@ -499,15 +500,6 @@ func (p *Stream) PutBytesTo(v []byte, pos int) bool {
 	return true
 }
 
-// WriteNil put nil value to stream
-func (p *Stream) WriteNil() {
-	p.writeFrame[p.writeIndex] = 1
-	p.writeIndex++
-	if p.writeIndex == streamBlockSize {
-		p.gotoNextWriteFrame()
-	}
-}
-
 // WriteBool write bool value to stream
 func (p *Stream) WriteBool(v bool) {
 	switch v {
@@ -781,11 +773,7 @@ func (p *Stream) WriteString(v string) {
 }
 
 // WriteBytes write Bytes value to stream
-func (p *Stream) WriteBytes(v Bytes) {
-	if v == nil {
-		p.WriteNil()
-		return
-	}
+func (p *Stream) WriteBytes(v Bytes) string {
 	length := len(v)
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 192
@@ -798,7 +786,7 @@ func (p *Stream) WriteBytes(v Bytes) {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = byte(length + 192)
 			p.writeIndex += copy(b[1:], v) + 1
-			return
+			return StreamWriteOK
 		}
 		// write header
 		p.writeFrame[p.writeIndex] = byte(length + 192)
@@ -818,7 +806,7 @@ func (p *Stream) WriteBytes(v Bytes) {
 			b[3] = byte(uint32(totalLength) >> 16)
 			b[4] = byte(uint32(totalLength) >> 24)
 			p.writeIndex += copy(b[5:], v) + 5
-			return
+			return StreamWriteOK
 		} else if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 255
@@ -839,6 +827,8 @@ func (p *Stream) WriteBytes(v Bytes) {
 		// write body
 		p.PutBytes(v)
 	}
+
+	return StreamWriteOK
 }
 
 // WriteArray ...
@@ -851,11 +841,6 @@ func (p *Stream) WriteArray(v Array) string {
 }
 
 func (p *Stream) writeArray(v Array, depth int) string {
-	if v == nil {
-		p.WriteNil()
-		return StreamWriteOK
-	}
-
 	length := len(v)
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 64
@@ -938,11 +923,6 @@ func (p *Stream) WriteMap(v Map) string {
 }
 
 func (p *Stream) writeMap(v Map, depth int) string {
-	if v == nil {
-		p.WriteNil()
-		return StreamWriteOK
-	}
-
 	length := len(v)
 
 	if length == 0 {
@@ -1021,11 +1001,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 	if thread := v.rt.lock(); thread != nil {
 		defer v.rt.unlock()
 		readStream := thread.rtStream
-
 		length := v.Size()
-		if length == -1 {
-			return StreamWriteIsNotAvailable
-		}
 
 		if length == 0 {
 			p.writeFrame[p.writeIndex] = 64
@@ -1034,69 +1010,69 @@ func (p *Stream) writeRTArray(v RTArray) string {
 				p.gotoNextWriteFrame()
 			}
 			return StreamWriteOK
-		}
-
-		startPos := p.GetWritePos()
-
-		b := p.writeFrame[p.writeIndex:]
-		if p.writeIndex < streamBlockSize-5 {
-			p.writeIndex += 5
 		} else {
-			b = b[0:1]
-			p.SetWritePos(startPos + 5)
-		}
+			startPos := p.GetWritePos()
 
-		if length < 31 {
-			b[0] = byte(64 + length)
-		} else {
-			b[0] = 95
-		}
-
-		if length > 30 {
-			if p.writeIndex < streamBlockSize-4 {
-				l := p.writeFrame[p.writeIndex:]
-				l[0] = byte(uint32(length))
-				l[1] = byte(uint32(length) >> 8)
-				l[2] = byte(uint32(length) >> 16)
-				l[3] = byte(uint32(length) >> 24)
-				p.writeIndex += 4
+			b := p.writeFrame[p.writeIndex:]
+			if p.writeIndex < streamBlockSize-5 {
+				p.writeIndex += 5
 			} else {
+				b = b[0:1]
+				p.SetWritePos(startPos + 5)
+			}
+
+			if length < 31 {
+				b[0] = byte(64 + length)
+			} else {
+				b[0] = 95
+			}
+
+			if length > 30 {
+				if p.writeIndex < streamBlockSize-4 {
+					l := p.writeFrame[p.writeIndex:]
+					l[0] = byte(uint32(length))
+					l[1] = byte(uint32(length) >> 8)
+					l[2] = byte(uint32(length) >> 16)
+					l[3] = byte(uint32(length) >> 24)
+					p.writeIndex += 4
+				} else {
+					p.PutBytes([]byte{
+						byte(uint32(length)),
+						byte(uint32(length) >> 8),
+						byte(uint32(length) >> 16),
+						byte(uint32(length) >> 24),
+					})
+				}
+			}
+
+			for i := 0; i < length; i++ {
+				readStream.SetReadPos(int(v.items[i].getPos()))
+				if !p.writeStreamNext(readStream) {
+					p.SetWritePos(startPos)
+					return StreamWriteIsNotAvailable
+				}
+			}
+
+			totalLength := uint32(p.GetWritePos() - startPos)
+			if len(b) > 1 {
+				b[1] = byte(totalLength)
+				b[2] = byte(totalLength >> 8)
+				b[3] = byte(totalLength >> 16)
+				b[4] = byte(totalLength >> 24)
+			} else {
+				endPos := p.GetWritePos()
+				p.SetWritePos(startPos + 1)
 				p.PutBytes([]byte{
-					byte(uint32(length)),
-					byte(uint32(length) >> 8),
-					byte(uint32(length) >> 16),
-					byte(uint32(length) >> 24),
+					byte(totalLength),
+					byte(totalLength >> 8),
+					byte(totalLength >> 16),
+					byte(totalLength >> 24),
 				})
+				p.SetWritePos(endPos)
 			}
-		}
 
-		for i := 0; i < length; i++ {
-			readStream.SetReadPos(int(v.items[i].getPos()))
-			if !p.writeStreamNext(readStream) {
-				p.SetWritePos(startPos)
-				return StreamWriteIsNotAvailable
-			}
+			return StreamWriteOK
 		}
-
-		totalLength := uint32(p.GetWritePos() - startPos)
-		if len(b) > 1 {
-			b[1] = byte(totalLength)
-			b[2] = byte(totalLength >> 8)
-			b[3] = byte(totalLength >> 16)
-			b[4] = byte(totalLength >> 24)
-		} else {
-			endPos := p.GetWritePos()
-			p.SetWritePos(startPos + 1)
-			p.PutBytes([]byte{
-				byte(totalLength),
-				byte(totalLength >> 8),
-				byte(totalLength >> 16),
-				byte(totalLength >> 24),
-			})
-			p.SetWritePos(endPos)
-		}
-
-		return StreamWriteOK
 	} else {
 		return StreamWriteIsNotAvailable
 	}
@@ -1225,10 +1201,11 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return StreamWriteOverflow
 	}
 
+	if v == nil {
+		return StreamWriteNilIsNotSupported
+	}
+
 	switch v.(type) {
-	case nil:
-		p.WriteNil()
-		return StreamWriteOK
 	case bool:
 		p.WriteBool(v.(bool))
 		return StreamWriteOK
@@ -1285,15 +1262,6 @@ func (p *Stream) write(v interface{}, depth int) string {
 			") is not supported",
 		)
 	}
-}
-
-// ReadNil read a nil
-func (p *Stream) ReadNil() *base.Error {
-	if p.CanRead() && p.readFrame[p.readIndex] == 1 {
-		p.gotoNextReadByteUnsafe()
-		return nil
-	}
-	return errors.ErrStreamIsBroken
 }
 
 // ReadBool read a bool
@@ -1906,7 +1874,7 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
-		return nil, p.ReadNil()
+		return nil, errors.ErrStreamIsBroken
 	case byte(2):
 		fallthrough
 	case byte(3):
@@ -1953,111 +1921,117 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 
 // ReadRTArray read a RPCArray value
 func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
-	v := p.readFrame[p.readIndex]
-	if v >= 64 && v < 96 {
-		thread := rt.lock()
-		if thread == nil {
-			return RTArray{}, errors.ErrStreamIsBroken
-		}
+	if thread := rt.lock(); thread != nil {
 		defer rt.unlock()
-		cs := thread.rtStream
-		arrLen := 0
-		totalLen := 0
-		readStart := p.GetReadPos()
 
-		if p != cs {
-			cs.SetReadPos(cs.GetWritePos())
-			if !cs.writeStreamNext(p) {
-				return RTArray{}, errors.ErrStreamIsBroken
+		v := p.readFrame[p.readIndex]
+		if v == 1 {
+			if p.CanRead() {
+				p.gotoNextReadByteUnsafe()
+				return RTArray{rt: rt, items: nil}, nil
 			}
-		}
+		} else if v >= 64 && v < 96 {
+			cs := thread.rtStream
+			arrLen := 0
+			totalLen := 0
+			readStart := p.GetReadPos()
 
-		start := cs.GetReadPos()
-
-		if v == 64 {
-			if cs.CanRead() {
-				cs.gotoNextReadByteUnsafe()
-				return newRTArray(rt, 0), nil
-			}
-		} else if v < 95 {
-			arrLen = int(v - 64)
-			if cs.isSafetyReadNBytesInCurrentFrame(5) {
-				b := cs.readFrame[cs.readIndex:]
-				totalLen = int(uint32(b[1]) |
-					(uint32(b[2]) << 8) |
-					(uint32(b[3]) << 16) |
-					(uint32(b[4]) << 24))
-				cs.readIndex += 5
-			} else if cs.hasNBytesToRead(5) {
-				bytes4 := cs.readNBytesCrossFrameUnsafe(5)
-				totalLen = int(uint32(bytes4[1]) |
-					(uint32(bytes4[2]) << 8) |
-					(uint32(bytes4[3]) << 16) |
-					(uint32(bytes4[4]) << 24))
-			}
-		} else {
-			if cs.isSafetyReadNBytesInCurrentFrame(9) {
-				b := cs.readFrame[cs.readIndex:]
-				totalLen = int(uint32(b[1]) |
-					(uint32(b[2]) << 8) |
-					(uint32(b[3]) << 16) |
-					(uint32(b[4]) << 24))
-				arrLen = int(uint32(b[5]) |
-					(uint32(b[6]) << 8) |
-					(uint32(b[7]) << 16) |
-					(uint32(b[8]) << 24))
-				cs.readIndex += 9
-			} else if cs.hasNBytesToRead(9) {
-				bytes8 := cs.readNBytesCrossFrameUnsafe(9)
-				totalLen = int(uint32(bytes8[1]) |
-					(uint32(bytes8[2]) << 8) |
-					(uint32(bytes8[3]) << 16) |
-					(uint32(bytes8[4]) << 24))
-				arrLen = int(uint32(bytes8[5]) |
-					(uint32(bytes8[6]) << 8) |
-					(uint32(bytes8[7]) << 16) |
-					(uint32(bytes8[8]) << 24))
-			}
-		}
-
-		end := start + totalLen
-		if arrLen > 0 && totalLen > 4 {
-			ret := newRTArray(rt, arrLen)
-
-			itemPos := 0
-			for i := 0; i < arrLen; i++ {
-				op := cs.readFrame[cs.readIndex]
-				skip := readSkipArray[op]
-				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
-					itemPos = cs.GetReadPos()
-					if itemPos < start || itemPos+skip > end {
-						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStreamIsBroken
-					}
-					cs.readIndex += skip
-				} else {
-					itemPos = cs.readSkipItem(end)
-					if itemPos < start {
-						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStreamIsBroken
-					}
-				}
-
-				if op > 128 && op < 191 {
-					ret.items = append(ret.items, makePosRecord(int64(itemPos), true))
-				} else {
-					ret.items = append(ret.items, makePosRecord(int64(itemPos), false))
+			if p != cs {
+				cs.SetReadPos(cs.GetWritePos())
+				if !cs.writeStreamNext(p) {
+					return RTArray{}, errors.ErrStreamIsBroken
 				}
 			}
-			if cs.GetReadPos() == end {
-				return ret, nil
+
+			start := cs.GetReadPos()
+
+			if v == 64 {
+				if cs.CanRead() {
+					cs.gotoNextReadByteUnsafe()
+					return newRTArray(rt, 0), nil
+				}
+			} else if v < 95 {
+				arrLen = int(v - 64)
+				if cs.isSafetyReadNBytesInCurrentFrame(5) {
+					b := cs.readFrame[cs.readIndex:]
+					totalLen = int(uint32(b[1]) |
+						(uint32(b[2]) << 8) |
+						(uint32(b[3]) << 16) |
+						(uint32(b[4]) << 24))
+					cs.readIndex += 5
+				} else if cs.hasNBytesToRead(5) {
+					bytes4 := cs.readNBytesCrossFrameUnsafe(5)
+					totalLen = int(uint32(bytes4[1]) |
+						(uint32(bytes4[2]) << 8) |
+						(uint32(bytes4[3]) << 16) |
+						(uint32(bytes4[4]) << 24))
+				}
+			} else {
+				if cs.isSafetyReadNBytesInCurrentFrame(9) {
+					b := cs.readFrame[cs.readIndex:]
+					totalLen = int(uint32(b[1]) |
+						(uint32(b[2]) << 8) |
+						(uint32(b[3]) << 16) |
+						(uint32(b[4]) << 24))
+					arrLen = int(uint32(b[5]) |
+						(uint32(b[6]) << 8) |
+						(uint32(b[7]) << 16) |
+						(uint32(b[8]) << 24))
+					cs.readIndex += 9
+				} else if cs.hasNBytesToRead(9) {
+					bytes8 := cs.readNBytesCrossFrameUnsafe(9)
+					totalLen = int(uint32(bytes8[1]) |
+						(uint32(bytes8[2]) << 8) |
+						(uint32(bytes8[3]) << 16) |
+						(uint32(bytes8[4]) << 24))
+					arrLen = int(uint32(bytes8[5]) |
+						(uint32(bytes8[6]) << 8) |
+						(uint32(bytes8[7]) << 16) |
+						(uint32(bytes8[8]) << 24))
+				}
 			}
+
+			end := start + totalLen
+			if arrLen > 0 && totalLen > 4 {
+				ret := newRTArray(rt, arrLen)
+
+				itemPos := 0
+				for i := 0; i < arrLen; i++ {
+					op := cs.readFrame[cs.readIndex]
+					skip := readSkipArray[op]
+					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+						itemPos = cs.GetReadPos()
+						if itemPos < start || itemPos+skip > end {
+							p.SetReadPos(readStart)
+							return RTArray{}, errors.ErrStreamIsBroken
+						}
+						cs.readIndex += skip
+					} else {
+						itemPos = cs.readSkipItem(end)
+						if itemPos < start {
+							p.SetReadPos(readStart)
+							return RTArray{}, errors.ErrStreamIsBroken
+						}
+					}
+
+					if op > 128 && op < 191 {
+						ret.items = append(ret.items, makePosRecord(int64(itemPos), true))
+					} else {
+						ret.items = append(ret.items, makePosRecord(int64(itemPos), false))
+					}
+				}
+				if cs.GetReadPos() == end {
+					return ret, nil
+				}
+			}
+
+			p.SetReadPos(readStart)
 		}
 
-		p.SetReadPos(readStart)
+		return RTArray{}, errors.ErrStreamIsBroken
+	} else {
+		return RTArray{}, errors.ErrStreamIsBroken
 	}
-
-	return RTArray{}, errors.ErrStreamIsBroken
 }
 
 // ReadRPCMap read a RPCMap value

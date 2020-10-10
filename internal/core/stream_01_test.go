@@ -7,7 +7,7 @@ import (
 
 func getTestDepthArray(depth int) [2]interface{} {
 	if depth <= 1 {
-		return [2]interface{}{nil, ""}
+		return [2]interface{}{true, ""}
 	} else {
 		ret := getTestDepthArray(depth - 1)
 		return [2]interface{}{Array{ret[0]}, "[0]" + ret[1].(string)}
@@ -16,7 +16,7 @@ func getTestDepthArray(depth int) [2]interface{} {
 
 func getTestDepthMap(depth int) [2]interface{} {
 	if depth <= 1 {
-		return [2]interface{}{nil, ""}
+		return [2]interface{}{true, ""}
 	} else {
 		ret := getTestDepthMap(depth - 1)
 		return [2]interface{}{Map{"a": ret[0]}, "[\"a\"]" + ret[1].(string)}
@@ -52,29 +52,23 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			StreamWriteOK,
 		},
 	},
-}
-
-func TestStream_WriteNil(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		testRange := getTestRange(
-			streamPosBody,
-			3*streamBlockSize,
-			streamPosBody+20,
-			streamPosBody+20,
-			61,
-		)
-		for _, testData := range streamTestSuccessCollections["nil"] {
-			for _, i := range testRange {
-				stream := NewStream()
-				stream.SetWritePos(i)
-				stream.WriteNil()
-				assert(stream.GetBuffer()[i:]).Equal(testData[1])
-				assert(stream.GetWritePos()).Equal(i + 1)
-				stream.Release()
-			}
-		}
-	})
+	"rtArray": {
+		{
+			RTArray{},
+			" is not available",
+		},
+		{
+			RTArray{rt: Runtime{id: 0, thread: getFakeThread(true)}, items: nil},
+			" is not available",
+		},
+		{
+			RTArray{
+				rt:    Runtime{id: 0, thread: getFakeThread(true)},
+				items: []posRecord{0},
+			},
+			" is not available",
+		},
+	},
 }
 
 func TestStream_WriteBool(t *testing.T) {
@@ -307,7 +301,55 @@ func TestStream_WriteMap(t *testing.T) {
 }
 
 func TestStream_writeRTArray(t *testing.T) {
+	t.Run("test write failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		for _, testData := range streamTestWriteCollections["rtArray"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.writeRTArray(testData[0].(RTArray))).Equal(testData[1])
+				if testData[1].(string) != StreamWriteOK {
+					assert(stream.GetWritePos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
 
+	t.Run("test write ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(
+			streamPosBody,
+			3*streamBlockSize,
+			streamPosBody+20,
+			streamPosBody+20,
+			61,
+		)
+		rt := Runtime{id: 0, thread: getFakeThread(false)}
+		for _, testData := range streamTestSuccessCollections["array"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				assert(stream.WriteArray(testData[0].(Array))).Equal(StreamWriteOK)
+				rtArray, err := stream.ReadRTArray(rt)
+				assert(err).IsNil()
+				stream.SetWritePos(i)
+				assert(stream.writeRTArray(rtArray)).Equal(StreamWriteOK)
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.SetReadPos(i)
+				assert(stream.ReadArray()).Equal(testData[0].(Array), nil)
+				stream.Release()
+			}
+		}
+	})
 }
 
 func TestStream_writeRTMap(t *testing.T) {

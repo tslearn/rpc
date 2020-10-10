@@ -8,9 +8,6 @@ import (
 )
 
 var streamTestSuccessCollections = map[string][][2]interface{}{
-	"nil": {
-		{nil, []byte{0x01}},
-	},
 	"bool": {
 		{true, []byte{0x02}},
 		{false, []byte{0x03}},
@@ -139,7 +136,6 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		}},
 	},
 	"bytes": {
-		{([]byte)(nil), []byte{0x01}},
 		{[]byte{}, []byte{0xC0}},
 		{[]byte{0xDA}, []byte{0xC1, 0xDA}},
 		{[]byte{
@@ -161,7 +157,6 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		}},
 	},
 	"array": {
-		{Array(nil), []byte{0x01}},
 		{Array{}, []byte{64}},
 		{Array{true}, []byte{
 			65, 6, 0, 0, 0, 2,
@@ -206,7 +201,6 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		}},
 	},
 	"map": {
-		{Map(nil), []byte{0x01}},
 		{Map{}, []byte{0x60}},
 		{Map{"1": true}, []byte{
 			0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02,
