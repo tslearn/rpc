@@ -306,7 +306,15 @@ func TestStream_WriteMap(t *testing.T) {
 	})
 }
 
-func TestStream_WriteRTArray(t *testing.T) {
+func TestStream_writeRTArray(t *testing.T) {
+
+}
+
+func TestStream_writeRTMap(t *testing.T) {
+
+}
+
+func TestStream_writeRTValue(t *testing.T) {
 
 }
 
