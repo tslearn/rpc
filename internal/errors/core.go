@@ -230,4 +230,10 @@ var (
 		base.ErrorLevelWarn,
 		"stream is broken",
 	)
+
+	ErrStreamRuntimeIsNotAvailable = base.DefineDevelopError(
+		(streamErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"read runtime is not available",
+	)
 )

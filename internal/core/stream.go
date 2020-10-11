@@ -1897,14 +1897,8 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 	if thread := rt.lock(); thread != nil {
 		defer rt.unlock()
-
 		v := p.readFrame[p.readIndex]
-		if v == 1 {
-			if p.CanRead() {
-				p.gotoNextReadByteUnsafe()
-				return RTArray{rt: rt, items: nil}, nil
-			}
-		} else if v >= 64 && v < 96 {
+		if v >= 64 && v < 96 {
 			cs := thread.rtStream
 			arrLen := 0
 			totalLen := 0
@@ -2004,163 +1998,160 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 
 		return RTArray{}, errors.ErrStreamIsBroken
 	} else {
-		return RTArray{}, errors.ErrStreamIsBroken
+		return RTArray{}, errors.ErrStreamRuntimeIsNotAvailable.
+			AddDebug(base.GetFileLine(1))
 	}
 }
 
 // ReadRPCMap read a RPCMap value
 func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
-	v := p.readFrame[p.readIndex]
-
-	if v >= 96 && v < 128 {
-		thread := rt.lock()
-		if thread == nil {
-			return RTMap{}, errors.ErrStreamIsBroken
-		}
+	if thread := rt.lock(); thread != nil {
 		defer rt.unlock()
-		cs := thread.rtStream
-
-		mapLen := 0
-		totalLen := 0
-		readStart := p.GetReadPos()
-
-		if p != cs {
-			cs.SetReadPos(cs.GetWritePos())
-			if !cs.writeStreamNext(p) {
-				return RTMap{}, errors.ErrStreamIsBroken
-			}
-		}
-
-		start := cs.GetReadPos()
-
-		if v == 96 {
-			if cs.CanRead() {
-				cs.gotoNextReadByteUnsafe()
-				return newRTMap(rt, 0), nil
-			}
-		} else if v < 127 {
-			mapLen = int(v - 96)
-			if cs.isSafetyReadNBytesInCurrentFrame(5) {
-				b := cs.readFrame[cs.readIndex:]
-				totalLen = int(uint32(b[1]) |
-					(uint32(b[2]) << 8) |
-					(uint32(b[3]) << 16) |
-					(uint32(b[4]) << 24))
-				cs.readIndex += 5
-			} else if cs.hasNBytesToRead(5) {
-				bytes4 := cs.readNBytesCrossFrameUnsafe(5)
-				totalLen = int(uint32(bytes4[1]) |
-					(uint32(bytes4[2]) << 8) |
-					(uint32(bytes4[3]) << 16) |
-					(uint32(bytes4[4]) << 24))
-			}
-		} else {
-			if cs.isSafetyReadNBytesInCurrentFrame(9) {
-				b := cs.readFrame[cs.readIndex:]
-				totalLen = int(uint32(b[1]) |
-					(uint32(b[2]) << 8) |
-					(uint32(b[3]) << 16) |
-					(uint32(b[4]) << 24))
-				mapLen = int(uint32(b[5]) |
-					(uint32(b[6]) << 8) |
-					(uint32(b[7]) << 16) |
-					(uint32(b[8]) << 24))
-				cs.readIndex += 9
-			} else if cs.hasNBytesToRead(9) {
-				bytes8 := cs.readNBytesCrossFrameUnsafe(9)
-				totalLen = int(uint32(bytes8[1]) |
-					(uint32(bytes8[2]) << 8) |
-					(uint32(bytes8[3]) << 16) |
-					(uint32(bytes8[4]) << 24))
-				mapLen = int(uint32(bytes8[5]) |
-					(uint32(bytes8[6]) << 8) |
-					(uint32(bytes8[7]) << 16) |
-					(uint32(bytes8[8]) << 24))
-			}
-		}
-
-		end := start + totalLen
-		if mapLen > 0 && totalLen > 4 {
-			ret := newRTMap(rt, mapLen)
-
-			itemPos := 0
-
-			for i := 0; i < mapLen; i++ {
-				key, _, err := cs.readUnsafeString()
-				if err != nil {
-					p.SetReadPos(readStart)
-					return RTMap{}, err
+		v := p.readFrame[p.readIndex]
+		if v >= 96 && v < 128 {
+			cs := thread.rtStream
+			mapLen := 0
+			totalLen := 0
+			readStart := p.GetReadPos()
+			if p != cs {
+				cs.SetReadPos(cs.GetWritePos())
+				if !cs.writeStreamNext(p) {
+					return RTMap{}, errors.ErrStreamIsBroken
 				}
-				op := cs.readFrame[cs.readIndex]
-				skip := readSkipArray[op]
-				if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
-					itemPos = cs.GetReadPos()
-					if itemPos < start || itemPos+skip > end {
+			}
+			start := cs.GetReadPos()
+			if v == 96 {
+				if cs.CanRead() {
+					cs.gotoNextReadByteUnsafe()
+					return newRTMap(rt, 0), nil
+				}
+			} else if v < 127 {
+				mapLen = int(v - 96)
+				if cs.isSafetyReadNBytesInCurrentFrame(5) {
+					b := cs.readFrame[cs.readIndex:]
+					totalLen = int(uint32(b[1]) |
+						(uint32(b[2]) << 8) |
+						(uint32(b[3]) << 16) |
+						(uint32(b[4]) << 24))
+					cs.readIndex += 5
+				} else if cs.hasNBytesToRead(5) {
+					bytes4 := cs.readNBytesCrossFrameUnsafe(5)
+					totalLen = int(uint32(bytes4[1]) |
+						(uint32(bytes4[2]) << 8) |
+						(uint32(bytes4[3]) << 16) |
+						(uint32(bytes4[4]) << 24))
+				}
+			} else {
+				if cs.isSafetyReadNBytesInCurrentFrame(9) {
+					b := cs.readFrame[cs.readIndex:]
+					totalLen = int(uint32(b[1]) |
+						(uint32(b[2]) << 8) |
+						(uint32(b[3]) << 16) |
+						(uint32(b[4]) << 24))
+					mapLen = int(uint32(b[5]) |
+						(uint32(b[6]) << 8) |
+						(uint32(b[7]) << 16) |
+						(uint32(b[8]) << 24))
+					cs.readIndex += 9
+				} else if cs.hasNBytesToRead(9) {
+					bytes8 := cs.readNBytesCrossFrameUnsafe(9)
+					totalLen = int(uint32(bytes8[1]) |
+						(uint32(bytes8[2]) << 8) |
+						(uint32(bytes8[3]) << 16) |
+						(uint32(bytes8[4]) << 24))
+					mapLen = int(uint32(bytes8[5]) |
+						(uint32(bytes8[6]) << 8) |
+						(uint32(bytes8[7]) << 16) |
+						(uint32(bytes8[8]) << 24))
+				}
+			}
+
+			end := start + totalLen
+			if mapLen > 0 && totalLen > 4 {
+				ret := newRTMap(rt, mapLen)
+
+				itemPos := 0
+
+				for i := 0; i < mapLen; i++ {
+					key, _, err := cs.readUnsafeString()
+					if err != nil {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStreamIsBroken
+						return RTMap{}, err
 					}
-					cs.readIndex += skip
-				} else {
-					itemPos = cs.readSkipItem(end)
-					if itemPos < start {
-						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStreamIsBroken
+					op := cs.readFrame[cs.readIndex]
+					skip := readSkipArray[op]
+					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
+						itemPos = cs.GetReadPos()
+						if itemPos < start || itemPos+skip > end {
+							p.SetReadPos(readStart)
+							return RTMap{}, errors.ErrStreamIsBroken
+						}
+						cs.readIndex += skip
+					} else {
+						itemPos = cs.readSkipItem(end)
+						if itemPos < start {
+							p.SetReadPos(readStart)
+							return RTMap{}, errors.ErrStreamIsBroken
+						}
 					}
-				}
 
-				if op>>6 == 2 {
-					ret.appendValue(key, makePosRecord(int64(itemPos), true))
-				} else {
-					ret.appendValue(key, makePosRecord(int64(itemPos), false))
+					if op>>6 == 2 {
+						ret.appendValue(key, makePosRecord(int64(itemPos), true))
+					} else {
+						ret.appendValue(key, makePosRecord(int64(itemPos), false))
+					}
+				}
+				if cs.GetReadPos() == end {
+					return ret, nil
 				}
 			}
-			if cs.GetReadPos() == end {
-				return ret, nil
-			}
+
+			p.SetReadPos(readStart)
 		}
 
-		p.SetReadPos(readStart)
+		return RTMap{}, errors.ErrStreamIsBroken
+	} else {
+		return RTMap{}, errors.ErrStreamRuntimeIsNotAvailable.
+			AddDebug(base.GetFileLine(1))
 	}
-
-	return RTMap{}, errors.ErrStreamIsBroken
 }
 
 // ReadRTValue read a RTValue value
 func (p *Stream) ReadRTValue(rt Runtime) RTValue {
-	thread := rt.lock()
-	if thread == nil {
-		return RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))}
-	}
-	defer rt.unlock()
-
-	cs := thread.rtStream
-	if p != cs {
-		cs.SetReadPos(cs.GetWritePos())
-		if !cs.writeStreamNext(p) {
-			return RTValue{err: errors.ErrStreamIsBroken}
+	if thread := rt.lock(); thread != nil {
+		defer rt.unlock()
+		cs := thread.rtStream
+		if p != cs {
+			cs.SetReadPos(cs.GetWritePos())
+			if !cs.writeStreamNext(p) {
+				return RTValue{err: errors.ErrStreamIsBroken}
+			}
 		}
-	}
 
-	if op := cs.readFrame[cs.readIndex]; op >= 128 && op <= 191 {
-		pos := int64(cs.GetReadPos())
-		cacheString, cacheSafe, err := cs.readUnsafeString()
-		return RTValue{
-			rt:          rt,
-			pos:         pos,
-			cacheString: cacheString,
-			cacheError:  err,
-			cacheSafe:   cacheSafe,
-			err:         nil,
+		if op := cs.readFrame[cs.readIndex]; op >= 128 && op <= 191 {
+			pos := int64(cs.GetReadPos())
+			cacheString, cacheSafe, err := cs.readUnsafeString()
+			return RTValue{
+				rt:          rt,
+				pos:         pos,
+				cacheString: cacheString,
+				cacheError:  err,
+				cacheSafe:   cacheSafe,
+				err:         nil,
+			}
+		} else {
+			return RTValue{
+				rt:          rt,
+				pos:         int64(cs.GetReadPos()),
+				cacheString: "",
+				cacheError:  errors.ErrStreamIsBroken,
+				cacheSafe:   false,
+				err:         nil,
+			}
 		}
 	} else {
 		return RTValue{
-			rt:          rt,
-			pos:         int64(cs.GetReadPos()),
-			cacheString: "",
-			cacheError:  errors.ErrStreamIsBroken,
-			cacheSafe:   false,
-			err:         nil,
+			err: errors.ErrStreamRuntimeIsNotAvailable.AddDebug(base.GetFileLine(1)),
 		}
 	}
 }
