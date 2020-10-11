@@ -7,7 +7,7 @@ import (
 )
 
 func TestStream_ReadRTArray(t *testing.T) {
-	t.Run("test ok", func(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
@@ -53,9 +53,9 @@ func TestStream_ReadRTArray(t *testing.T) {
 
 	t.Run("test readIndex overflow (runtime stream)", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		//testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
-			for _, i := range []int{streamPosBody} {
+			for _, i := range testRange {
 				stream := streamTestRuntime.thread.rtStream
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
