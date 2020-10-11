@@ -701,7 +701,6 @@ func (p *Stream) WriteUint64(v uint64) {
 	}
 }
 
-// WriteString write string value to stream
 func (p *Stream) WriteString(v string) {
 	length := len(v)
 	if length == 0 {
@@ -772,8 +771,7 @@ func (p *Stream) WriteString(v string) {
 	}
 }
 
-// WriteBytes write Bytes value to stream
-func (p *Stream) WriteBytes(v Bytes) string {
+func (p *Stream) WriteBytes(v Bytes) {
 	length := len(v)
 	if length == 0 {
 		p.writeFrame[p.writeIndex] = 192
@@ -786,7 +784,7 @@ func (p *Stream) WriteBytes(v Bytes) string {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = byte(length + 192)
 			p.writeIndex += copy(b[1:], v) + 1
-			return StreamWriteOK
+			return
 		}
 		// write header
 		p.writeFrame[p.writeIndex] = byte(length + 192)
@@ -806,7 +804,7 @@ func (p *Stream) WriteBytes(v Bytes) string {
 			b[3] = byte(uint32(totalLength) >> 16)
 			b[4] = byte(uint32(totalLength) >> 24)
 			p.writeIndex += copy(b[5:], v) + 5
-			return StreamWriteOK
+			return
 		} else if p.writeIndex < streamBlockSize-5 {
 			b := p.writeFrame[p.writeIndex:]
 			b[0] = 255
@@ -827,8 +825,6 @@ func (p *Stream) WriteBytes(v Bytes) string {
 		// write body
 		p.PutBytes(v)
 	}
-
-	return StreamWriteOK
 }
 
 func (p *Stream) writeArray(v Array, depth int) string {
