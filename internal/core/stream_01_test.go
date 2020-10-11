@@ -91,21 +91,15 @@ func TestStream_ReadRTArray(t *testing.T) {
 	t.Run("error in stream", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
-		for _, testData := range streamTestSuccessCollections["array"] {
-			for _, i := range testRange {
-				stream := NewStream()
-				stream.SetWritePos(i)
-				stream.SetReadPos(i)
-				stream.Write(testData[0])
-				if len(testData[0].(Array)) > 0 {
-					stream.SetWritePos(stream.GetWritePos() - 1)
-					stream.PutBytes([]byte{13})
-					assert(stream.ReadRTArray(streamTestRuntime)).
-						Equal(RTArray{}, errors.ErrStreamIsBroken)
-					assert(stream.GetReadPos()).Equal(i)
-				}
-				stream.Release()
-			}
+		for _, i := range testRange {
+			stream := NewStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.PutBytes([]byte{0x41, 0x07, 0x00, 0x00, 0x00, 0x02, 0x02})
+			assert(stream.ReadRTArray(streamTestRuntime)).
+				Equal(RTArray{}, errors.ErrStreamIsBroken)
+			assert(stream.GetReadPos()).Equal(i)
+			stream.Release()
 		}
 	})
 
@@ -116,7 +110,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
-			stream.PutBytes([]byte{0x41, 0x07, 0x00, 0x00, 0x00, 0x02, 0x02})
+			stream.PutBytes([]byte{0x41, 0x06, 0x00, 0x00, 0x00, 0x01, 0x02})
 			assert(stream.ReadRTArray(streamTestRuntime)).
 				Equal(RTArray{}, errors.ErrStreamIsBroken)
 			assert(stream.GetReadPos()).Equal(i)
@@ -133,7 +127,6 @@ func TestStream_ReadRTArray(t *testing.T) {
 		assert(stream.ReadRTArray((func() R { s = f(0); return R{} })())).
 			Equal(RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(s))
 	})
-
 }
 
 func TestStream_ReadRTMap(t *testing.T) {

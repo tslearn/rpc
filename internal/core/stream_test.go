@@ -178,51 +178,51 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		}},
 	},
 	"array": {
-		//{Array{}, []byte{64}},
-		//{Array{true}, []byte{
-		//	65, 6, 0, 0, 0, 2,
-		//}},
-		{Array{"a"}, []byte{
-			65, 8, 0, 0, 0, 0x81, 0x61, 0x00,
+		{Array{}, []byte{64}},
+		{Array{true}, []byte{
+			65, 6, 0, 0, 0, 2,
 		}},
-		//{Array{
-		//	true, false,
-		//}, []byte{
-		//	66, 7, 0, 0, 0, 2, 3,
-		//}},
-		//{Array{
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//}, []byte{
-		//	94, 35, 0, 0, 0, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2,
-		//}},
-		//{Array{
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true,
-		//}, []byte{
-		//	95, 40, 0, 0, 0, 31, 0, 0, 0, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//}},
-		//{Array{
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true, true, true, true, true, true, true, true, true,
-		//	true, true,
-		//}, []byte{
-		//	95, 41, 0, 0, 0, 32, 0, 0, 0, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		//	2,
-		//}},
+		{Array{"a", true}, []byte{
+			66, 9, 0, 0, 0, 0x81, 0x61, 0x00, 0x02,
+		}},
+		{Array{
+			true, false,
+		}, []byte{
+			66, 7, 0, 0, 0, 2, 3,
+		}},
+		{Array{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+		}, []byte{
+			94, 35, 0, 0, 0, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2,
+		}},
+		{Array{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true,
+		}, []byte{
+			95, 40, 0, 0, 0, 31, 0, 0, 0, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		}},
+		{Array{
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true, true, true, true, true, true, true, true, true,
+			true, true,
+		}, []byte{
+			95, 41, 0, 0, 0, 32, 0, 0, 0, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+			2,
+		}},
 	},
 	"map": {
 		{Map{}, []byte{0x60}},
@@ -513,7 +513,7 @@ func TestStream(t *testing.T) {
 	t.Run("test readSkipArray", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(readSkipArray).Equal([256]int{
-			-0x01, +0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
+			-0x01, -0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
 			+0x09, +0x03, +0x05, +0x09, -0x01, -0x01, +0x01, +0x01,
 			+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
 			+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
@@ -1186,7 +1186,7 @@ func TestRpcStream_peekSkip(t *testing.T) {
 
 		testCollection := Array{
 			Array{[]byte{0}, 0, byte(0)},
-			Array{[]byte{1}, 1, byte(1)},
+			Array{[]byte{1}, 0, byte(1)},
 			Array{[]byte{2}, 1, byte(2)},
 			Array{[]byte{3}, 1, byte(3)},
 			Array{[]byte{4}, 1, byte(4)},
@@ -1197,8 +1197,8 @@ func TestRpcStream_peekSkip(t *testing.T) {
 			Array{[]byte{9}, 3, byte(9)},
 			Array{[]byte{10}, 5, byte(10)},
 			Array{[]byte{11}, 9, byte(11)},
-			Array{[]byte{12}, 0, byte(0)},
-			Array{[]byte{13}, 0, byte(0)},
+			Array{[]byte{12}, 0, byte(12)},
+			Array{[]byte{13}, 0, byte(13)},
 			Array{[]byte{14}, 1, byte(14)},
 			Array{[]byte{63}, 1, byte(63)},
 			Array{[]byte{64}, 1, byte(64)},
@@ -1217,7 +1217,7 @@ func TestRpcStream_peekSkip(t *testing.T) {
 			Array{[]byte{193, 6, 0, 0, 0}, 2, byte(193)},
 			Array{[]byte{254, 6, 0, 0, 0}, 63, byte(254)},
 			Array{[]byte{255, 80, 0, 0, 0}, 80, byte(255)},
-			Array{[]byte{255, 80, 0}, 0, byte(0)},
+			Array{[]byte{255, 80, 0}, 0, byte(255)},
 		}
 
 		for i := streamPosBody; i < 2*streamBlockSize; i++ {

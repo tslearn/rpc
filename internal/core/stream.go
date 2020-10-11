@@ -65,7 +65,7 @@ var (
 		},
 	}
 	readSkipArray = [256]int{
-		-0x01, +0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
+		-0x01, -0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
 		+0x09, +0x03, +0x05, +0x09, -0x01, -0x01, +0x01, +0x01,
 		+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
 		+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
@@ -378,7 +378,7 @@ func (p *Stream) peekSkip() (int, byte) {
 	if skip := readSkipArray[op]; skip > 0 && p.CanRead() {
 		return skip, op
 	} else if skip < 0 {
-		return 0, 0
+		return 0, op
 	} else if p.isSafetyReadNBytesInCurrentFrame(5) {
 		b := p.readFrame[p.readIndex:]
 		return int(uint32(b[1]) |
@@ -392,7 +392,7 @@ func (p *Stream) peekSkip() (int, byte) {
 			(uint32(b[3]) << 16) |
 			(uint32(b[4]) << 24)), op
 	} else {
-		return 0, 0
+		return 0, op
 	}
 }
 
@@ -1960,27 +1960,21 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			}
 
 			end := start + totalLen
-			if arrLen > 0 && totalLen > 4 {
+			if arrLen > 0 && totalLen > 4 && end <= cs.GetWritePos() {
 				ret := newRTArray(rt, arrLen)
 
-				itemPos := 0
 				for i := 0; i < arrLen; i++ {
 					op := cs.readFrame[cs.readIndex]
-					if skip := readSkipArray[op]; skip <= 0 {
+					skip, _ := cs.peekSkip()
+					itemPos := cs.GetReadPos()
+
+					if skip <= 0 || itemPos+skip > end {
+						p.SetReadPos(readStart)
 						return RTArray{}, errors.ErrStreamIsBroken
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
-						itemPos = cs.GetReadPos()
-						if itemPos+skip > end {
-							p.SetReadPos(readStart)
-							return RTArray{}, errors.ErrStreamIsBroken
-						}
 						cs.readIndex += skip
 					} else {
-						itemPos = cs.readSkipItem(end)
-						if itemPos < 0 {
-							p.SetReadPos(readStart)
-							return RTArray{}, errors.ErrStreamIsBroken
-						}
+						p.SetReadPos(itemPos + skip)
 					}
 
 					if op > 128 && op < 191 {
@@ -1993,10 +1987,8 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 					return ret, nil
 				}
 			}
-
 			p.SetReadPos(readStart)
 		}
-
 		return RTArray{}, errors.ErrStreamIsBroken
 	} else {
 		return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
