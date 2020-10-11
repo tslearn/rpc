@@ -1998,7 +1998,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 
 		return RTArray{}, errors.ErrStreamIsBroken
 	} else {
-		return RTArray{}, errors.ErrStreamRuntimeIsNotAvailable.
+		return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	}
 }
@@ -2111,7 +2111,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 
 		return RTMap{}, errors.ErrStreamIsBroken
 	} else {
-		return RTMap{}, errors.ErrStreamRuntimeIsNotAvailable.
+		return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	}
 }
@@ -2151,7 +2151,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 		}
 	} else {
 		return RTValue{
-			err: errors.ErrStreamRuntimeIsNotAvailable.AddDebug(base.GetFileLine(1)),
+			err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 		}
 	}
 }

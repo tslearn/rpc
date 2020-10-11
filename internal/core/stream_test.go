@@ -546,6 +546,23 @@ func TestStream(t *testing.T) {
 	})
 }
 
+func TestNewStream(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := NewStream()
+		assert(len(stream.frames)).Equal(1)
+		assert(cap(stream.frames)).Equal(streamFrameArrayInitSize)
+		assert(stream.readSeg).Equal(0)
+		assert(stream.readIndex).Equal(streamPosBody)
+		assert(stream.readFrame).Equal(*stream.frames[0])
+		assert(stream.writeSeg).Equal(0)
+		assert(stream.writeIndex).Equal(streamPosBody)
+		assert(stream.writeFrame).Equal(*stream.frames[0])
+		assert(*stream.frames[0]).Equal(initStreamFrame0)
+		stream.Release()
+	})
+}
+
 func TestStream_Reset(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -1426,7 +1443,7 @@ func TestStream_WriteInt64(t *testing.T) {
 	})
 }
 
-func TestStream_WriteUInt64(t *testing.T) {
+func TestStream_WriteUint64(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
