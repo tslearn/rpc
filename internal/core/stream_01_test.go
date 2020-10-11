@@ -29,11 +29,11 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 	"array": {
 		{
 			Array{true, true, true, make(chan bool), true},
-			"Array[3] type(chan bool) is not supported",
+			"[3] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthArray(65)[0],
-			"Array" + getTestDepthArray(65)[1].(string) + " overflows",
+			getTestDepthArray(65)[1].(string) + " overflows",
 		},
 		{
 			getTestDepthArray(64)[0],
@@ -43,11 +43,11 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 	"map": {
 		{
 			Map{"0": 0, "1": make(chan bool)},
-			"Map[\"1\"] type(chan bool) is not supported",
+			"[\"1\"] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthMap(65)[0],
-			"Map" + getTestDepthMap(65)[1].(string) + " overflows",
+			getTestDepthMap(65)[1].(string) + " overflows",
 		},
 		{
 			getTestDepthMap(64)[0],
@@ -74,7 +74,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			" is not available",
 		},
 		{
-			RTMap{rt: Runtime{id: 0, thread: getFakeThread(true)}, items: nil},
+			RTMap{rt: streamTestRuntime, items: nil},
 			" is not available",
 		},
 		{
@@ -84,6 +84,61 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		{
 			RTMap{rt: streamTestRuntime, largeMap: map[string]posRecord{"key": 0}},
 			" is not available",
+		},
+	},
+	"rtValue": {
+		{
+			RTValue{},
+			" is not available",
+		},
+		{
+			RTValue{rt: streamTestRuntime, pos: 0},
+			" is not available",
+		},
+		{
+			RTValue{rt: streamTestRuntime, pos: streamPosBody},
+			" is not available",
+		},
+	},
+	"value": {
+		{nil, "value is nil"},
+		{true, StreamWriteOK},
+		{0, StreamWriteOK},
+		{int8(0), StreamWriteOK},
+		{int16(0), StreamWriteOK},
+		{int32(0), StreamWriteOK},
+		{int64(0), StreamWriteOK},
+		{uint(0), StreamWriteOK},
+		{uint8(0), StreamWriteOK},
+		{uint16(0), StreamWriteOK},
+		{uint32(0), StreamWriteOK},
+		{uint64(0), StreamWriteOK},
+		{float32(0), StreamWriteOK},
+		{float64(0), StreamWriteOK},
+		{"", StreamWriteOK},
+		{[]byte{}, StreamWriteOK},
+		{Array{}, StreamWriteOK},
+		{Map{}, StreamWriteOK},
+		{RTArray{rt: streamTestRuntime, items: []posRecord{}}, StreamWriteOK},
+		{RTMap{rt: streamTestRuntime, items: []mapItem{}}, StreamWriteOK},
+		{RTValue{}, "value is not available"},
+		{RTArray{}, "value is not available"},
+		{RTMap{}, "value is not available"},
+		{
+			Array{true, true, true, make(chan bool), true},
+			"value[3] type(chan bool) is not supported",
+		},
+		{
+			getTestDepthArray(65)[0],
+			"value" + getTestDepthArray(65)[1].(string) + " overflows",
+		},
+		{
+			Map{"0": 0, "1": make(chan bool)},
+			"value[\"1\"] type(chan bool) is not supported",
+		},
+		{
+			getTestDepthMap(65)[0],
+			"value" + getTestDepthMap(65)[1].(string) + " overflows",
 		},
 	},
 }
@@ -190,7 +245,7 @@ func TestStream_WriteBytes(t *testing.T) {
 	})
 }
 
-func TestStream_WriteArray(t *testing.T) {
+func TestStream_writeArray(t *testing.T) {
 	t.Run("test write failed", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
@@ -198,7 +253,7 @@ func TestStream_WriteArray(t *testing.T) {
 			for _, i := range testRange {
 				stream := NewStream()
 				stream.SetWritePos(i)
-				assert(stream.WriteArray(testData[0].(Array))).Equal(testData[1])
+				assert(stream.writeArray(testData[0].(Array), 64)).Equal(testData[1])
 				if testData[1].(string) != StreamWriteOK {
 					assert(stream.GetWritePos()).Equal(i)
 				}
@@ -214,7 +269,7 @@ func TestStream_WriteArray(t *testing.T) {
 			for _, i := range testRange {
 				stream := NewStream()
 				stream.SetWritePos(i)
-				assert(stream.WriteArray(testData[0].(Array))).Equal(StreamWriteOK)
+				assert(stream.writeArray(testData[0].(Array), 64)).Equal(StreamWriteOK)
 				assert(stream.GetBuffer()[i:]).Equal(testData[1])
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 				stream.Release()
@@ -223,7 +278,7 @@ func TestStream_WriteArray(t *testing.T) {
 	})
 }
 
-func TestStream_WriteMap(t *testing.T) {
+func TestStream_writeMap(t *testing.T) {
 	t.Run("test write failed", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
@@ -231,7 +286,7 @@ func TestStream_WriteMap(t *testing.T) {
 			for _, i := range testRange {
 				stream := NewStream()
 				stream.SetWritePos(i)
-				assert(stream.WriteMap(testData[0].(Map))).Equal(testData[1])
+				assert(stream.writeMap(testData[0].(Map), 64)).Equal(testData[1])
 				if testData[1].(string) != StreamWriteOK {
 					assert(stream.GetWritePos()).Equal(i)
 				}
@@ -247,7 +302,7 @@ func TestStream_WriteMap(t *testing.T) {
 			for _, i := range testRange {
 				stream := NewStream()
 				stream.SetWritePos(i)
-				assert(stream.WriteMap(testData[0].(Map))).Equal(StreamWriteOK)
+				assert(stream.writeMap(testData[0].(Map), 64)).Equal(StreamWriteOK)
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 				stream.SetReadPos(i)
 				assert(stream.ReadMap()).Equal(testData[0].(Map), nil)
@@ -282,13 +337,14 @@ func TestStream_writeRTArray(t *testing.T) {
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
-				assert(stream.WriteArray(testData[0].(Array))).Equal(StreamWriteOK)
+				assert(stream.writeArray(testData[0].(Array), 64)).Equal(StreamWriteOK)
 				rtArray, err := stream.ReadRTArray(streamTestRuntime)
 				assert(err).IsNil()
 				stream.SetWritePos(i)
 				assert(stream.writeRTArray(rtArray)).Equal(StreamWriteOK)
 				assert(stream.GetBuffer()[i:]).Equal(testData[1])
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				streamTestRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -320,7 +376,7 @@ func TestStream_writeRTMap(t *testing.T) {
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
-				assert(stream.WriteMap(testData[0].(Map))).Equal(StreamWriteOK)
+				assert(stream.writeMap(testData[0].(Map), 64)).Equal(StreamWriteOK)
 				rtMap, err := stream.ReadRTMap(streamTestRuntime)
 				assert(err).IsNil()
 				stream.SetWritePos(i)
@@ -328,6 +384,7 @@ func TestStream_writeRTMap(t *testing.T) {
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 				stream.SetReadPos(i)
 				assert(stream.ReadMap()).Equal(testData[0].(Map), nil)
+				streamTestRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -335,6 +392,22 @@ func TestStream_writeRTMap(t *testing.T) {
 }
 
 func TestStream_writeRTValue(t *testing.T) {
+	t.Run("test write failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, testData := range streamTestWriteCollections["rtValue"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.writeRTValue(testData[0].(RTValue))).Equal(testData[1])
+				if testData[1].(string) != StreamWriteOK {
+					assert(stream.GetWritePos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
+
 	t.Run("test write ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
@@ -351,6 +424,7 @@ func TestStream_writeRTValue(t *testing.T) {
 					assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 					stream.SetReadPos(i)
 					assert(stream.Read()).Equal(testData[0], nil)
+					streamTestRuntime.thread.rtStream.SetWritePosToBodyStart()
 					stream.Release()
 				}
 			}
@@ -358,32 +432,24 @@ func TestStream_writeRTValue(t *testing.T) {
 	})
 }
 
-//func TestStream_Write(t *testing.T) {
-//  assert := base.NewAssert(t)
-//  stream := NewStream()
-//  assert(stream.Write(nil)).Equal(StreamWriteOK)
-//  assert(stream.Write(true)).Equal(StreamWriteOK)
-//  assert(stream.Write(0)).Equal(StreamWriteOK)
-//  assert(stream.Write(int8(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(int16(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(int32(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(int64(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(uint(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(uint8(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(uint16(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(uint32(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(uint64(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(float32(0))).Equal(StreamWriteOK)
-//  assert(stream.Write(float64(0))).Equal(StreamWriteOK)
-//  assert(stream.Write("")).Equal(StreamWriteOK)
-//  assert(stream.Write([]byte{})).Equal(StreamWriteOK)
-//  assert(stream.Write(Array{})).Equal(StreamWriteOK)
-//  assert(stream.Write(Map{})).Equal(StreamWriteOK)
-//  assert(stream.Write(make(chan bool))).
-//    Equal(" type(chan bool) is not supported")
-//  stream.Release()
-//}
-//
+func TestStream_Write(t *testing.T) {
+	t.Run("test write", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, testData := range streamTestWriteCollections["value"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				assert(stream.Write(testData[0])).Equal(testData[1])
+				if testData[1].(string) != StreamWriteOK {
+					assert(stream.GetWritePos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
+}
+
 //func TestStream_ReadNil(t *testing.T) {
 //  assert := base.NewAssert(t)
 //

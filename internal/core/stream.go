@@ -32,7 +32,7 @@ const (
 	StreamWriteOK                = ""
 	StreamWriteOverflow          = " overflows"
 	StreamWriteIsNotAvailable    = " is not available"
-	StreamWriteNilIsNotSupported = " value nil is not supported"
+	StreamWriteNilIsNotSupported = " is nil"
 )
 
 var (
@@ -831,15 +831,6 @@ func (p *Stream) WriteBytes(v Bytes) string {
 	return StreamWriteOK
 }
 
-// WriteArray ...
-func (p *Stream) WriteArray(v Array) string {
-	if reason := p.writeArray(v, 64); reason != StreamWriteOK {
-		return "Array" + reason
-	} else {
-		return StreamWriteOK
-	}
-}
-
 func (p *Stream) writeArray(v Array, depth int) string {
 	length := len(v)
 	if length == 0 {
@@ -911,15 +902,6 @@ func (p *Stream) writeArray(v Array, depth int) string {
 	}
 
 	return StreamWriteOK
-}
-
-// WriteMap write Map value to stream
-func (p *Stream) WriteMap(v Map) string {
-	if reason := p.writeMap(v, 64); reason != StreamWriteOK {
-		return "Map" + reason
-	} else {
-		return StreamWriteOK
-	}
 }
 
 func (p *Stream) writeMap(v Map, depth int) string {
@@ -1194,7 +1176,11 @@ func (p *Stream) writeRTValue(v RTValue) string {
 }
 
 func (p *Stream) Write(v interface{}) string {
-	return p.write(v, 64)
+	if reason := p.write(v, 64); reason != StreamWriteOK {
+		return "value" + reason
+	} else {
+		return StreamWriteOK
+	}
 }
 
 func (p *Stream) write(v interface{}, depth int) string {
@@ -1256,6 +1242,12 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return p.writeArray(v.(Array), depth)
 	case Map:
 		return p.writeMap(v.(Map), depth)
+	case RTArray:
+		return p.writeRTArray(v.(RTArray))
+	case RTMap:
+		return p.writeRTMap(v.(RTMap))
+	case RTValue:
+		return p.writeRTValue(v.(RTValue))
 	default:
 		return base.ConcatString(
 			" type(",
