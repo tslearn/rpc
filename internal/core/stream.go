@@ -1620,12 +1620,7 @@ func (p *Stream) ReadBytes() (Bytes, *base.Error) {
 	// empty bytes
 	v := p.readFrame[p.readIndex]
 
-	if v == 1 {
-		if p.CanRead() {
-			p.gotoNextReadByteUnsafe()
-			return Bytes(nil), nil
-		}
-	} else if v == 192 {
+	if v == 192 {
 		if p.CanRead() {
 			p.gotoNextReadByteUnsafe()
 			return Bytes{}, nil
@@ -1687,18 +1682,13 @@ func (p *Stream) ReadBytes() (Bytes, *base.Error) {
 		}
 		p.SetReadPos(readStart)
 	}
-	return Bytes(nil), errors.ErrStreamIsBroken
+	return Bytes{}, errors.ErrStreamIsBroken
 }
 
 // ReadArray ...
 func (p *Stream) ReadArray() (Array, *base.Error) {
 	v := p.readFrame[p.readIndex]
-	if v == 1 {
-		if p.CanRead() {
-			p.gotoNextReadByteUnsafe()
-			return Array(nil), nil
-		}
-	} else if v >= 64 && v < 96 {
+	if v >= 64 && v < 96 {
 		arrLen := 0
 		totalLen := 0
 		readStart := p.GetReadPos()
@@ -1756,7 +1746,7 @@ func (p *Stream) ReadArray() (Array, *base.Error) {
 					ret[i] = rv
 				} else {
 					p.SetReadPos(readStart)
-					return Array(nil), err
+					return Array{}, err
 				}
 			}
 			if p.GetReadPos() == readStart+totalLen {
@@ -1766,18 +1756,13 @@ func (p *Stream) ReadArray() (Array, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Array(nil), errors.ErrStreamIsBroken
+	return Array{}, errors.ErrStreamIsBroken
 }
 
 // ReadMap read a Map value
 func (p *Stream) ReadMap() (Map, *base.Error) {
 	v := p.readFrame[p.readIndex]
-	if v == 1 {
-		if p.CanRead() {
-			p.gotoNextReadByteUnsafe()
-			return Map(nil), nil
-		}
-	} else if v >= 96 && v < 128 {
+	if v >= 96 && v < 128 {
 		mapLen := 0
 		totalLen := 0
 		readStart := p.GetReadPos()
@@ -1834,10 +1819,10 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 			for i := 0; i < mapLen; i++ {
 				if name, err := p.ReadString(); err != nil {
 					p.SetReadPos(readStart)
-					return Map(nil), err
+					return Map{}, err
 				} else if rv, err := p.Read(); err != nil {
 					p.SetReadPos(readStart)
-					return Map(nil), err
+					return Map{}, err
 				} else {
 					ret[name] = rv
 				}
@@ -1849,7 +1834,7 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Map(nil), errors.ErrStreamIsBroken
+	return Map{}, errors.ErrStreamIsBroken
 }
 
 // Read read a generic value
