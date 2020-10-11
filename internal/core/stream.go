@@ -1841,7 +1841,7 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 func (p *Stream) Read() (ret Any, err *base.Error) {
 	defer func() {
 		if err != nil {
-			ret = nil
+			ret = false
 		}
 	}()
 
