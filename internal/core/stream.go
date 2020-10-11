@@ -1969,7 +1969,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 					skip := readSkipArray[op]
 					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						itemPos = cs.GetReadPos()
-						if itemPos < start || itemPos+skip > end {
+						if itemPos+skip > end {
 							p.SetReadPos(readStart)
 							return RTArray{}, errors.ErrStreamIsBroken
 						}

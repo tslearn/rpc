@@ -178,48 +178,51 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		}},
 	},
 	"array": {
-		{Array{}, []byte{64}},
-		{Array{true}, []byte{
-			65, 6, 0, 0, 0, 2,
+		//{Array{}, []byte{64}},
+		//{Array{true}, []byte{
+		//	65, 6, 0, 0, 0, 2,
+		//}},
+		{Array{"a"}, []byte{
+			65, 8, 0, 0, 0, 0x81, 0x61, 0x00,
 		}},
-		{Array{
-			true, false,
-		}, []byte{
-			66, 7, 0, 0, 0, 2, 3,
-		}},
-		{Array{
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-		}, []byte{
-			94, 35, 0, 0, 0, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2,
-		}},
-		{Array{
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-			true,
-		}, []byte{
-			95, 40, 0, 0, 0, 31, 0, 0, 0, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-		}},
-		{Array{
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-			true, true, true, true, true, true, true, true, true, true,
-			true, true,
-		}, []byte{
-			95, 41, 0, 0, 0, 32, 0, 0, 0, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-			2,
-		}},
+		//{Array{
+		//	true, false,
+		//}, []byte{
+		//	66, 7, 0, 0, 0, 2, 3,
+		//}},
+		//{Array{
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//}, []byte{
+		//	94, 35, 0, 0, 0, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2,
+		//}},
+		//{Array{
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true,
+		//}, []byte{
+		//	95, 40, 0, 0, 0, 31, 0, 0, 0, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//}},
+		//{Array{
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true, true, true, true, true, true, true, true, true,
+		//	true, true,
+		//}, []byte{
+		//	95, 41, 0, 0, 0, 32, 0, 0, 0, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+		//	2,
+		//}},
 	},
 	"map": {
 		{Map{}, []byte{0x60}},
