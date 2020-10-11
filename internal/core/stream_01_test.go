@@ -335,7 +335,27 @@ func TestStream_writeRTMap(t *testing.T) {
 }
 
 func TestStream_writeRTValue(t *testing.T) {
-
+	t.Run("test write ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for key := range streamTestSuccessCollections {
+			for _, testData := range streamTestSuccessCollections[key] {
+				for _, i := range testRange {
+					stream := NewStream()
+					stream.SetWritePos(i)
+					stream.SetReadPos(i)
+					assert(stream.Write(testData[0])).Equal(StreamWriteOK)
+					rtValue := stream.ReadRTValue(streamTestRuntime)
+					stream.SetWritePos(i)
+					assert(stream.writeRTValue(rtValue)).Equal(StreamWriteOK)
+					assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+					stream.SetReadPos(i)
+					assert(stream.Read()).Equal(testData[0], nil)
+					stream.Release()
+				}
+			}
+		}
+	})
 }
 
 //func TestStream_Write(t *testing.T) {

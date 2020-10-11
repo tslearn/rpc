@@ -2170,10 +2170,11 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 	}
 
 	if op := cs.readFrame[cs.readIndex]; op >= 128 && op <= 191 {
+		pos := int64(cs.GetReadPos())
 		cacheString, cacheSafe, err := cs.readUnsafeString()
 		return RTValue{
 			rt:          rt,
-			pos:         int64(cs.GetReadPos()),
+			pos:         pos,
 			cacheString: cacheString,
 			cacheError:  err,
 			cacheSafe:   cacheSafe,
