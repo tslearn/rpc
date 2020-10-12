@@ -258,7 +258,7 @@ func TestMakeRequestStream(t *testing.T) {
 		assert(MakeRequestStream("#", "", make(chan bool))).Equal(
 			nil,
 			errors.ErrRuntimeArgumentNotSupported.AddDebug(
-				"2nd argument type(chan bool) is not supported",
+				"2nd argument: value type(chan bool) is not supported",
 			),
 		)
 	})

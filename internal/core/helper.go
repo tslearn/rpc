@@ -118,7 +118,7 @@ func MakeRequestStream(
 			return nil, errors.ErrRuntimeArgumentNotSupported.AddDebug(
 				base.ConcatString(
 					base.ConvertOrdinalToString(uint(i)+2),
-					" argument",
+					" argument: ",
 					reason,
 				))
 		}

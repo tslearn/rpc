@@ -145,6 +145,133 @@ func TestStream_ReadRTArray(t *testing.T) {
 }
 
 func TestStream_ReadRTMap(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, testData := range streamTestSuccessCollections["map"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.Write(testData[0])
+				rtMap, err := stream.ReadRTMap(streamTestRuntime)
+				assert(err).IsNil()
+				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.writeRTMap(rtMap)
+				assert(stream.ReadMap()).Equal(testData[0], nil)
+				streamTestRuntime.thread.rtStream.SetWritePosToBodyStart()
+				stream.Release()
+			}
+		}
+	})
+
+	t.Run("test readIndex overflow (outer stream)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, testData := range streamTestSuccessCollections["map"] {
+			for _, i := range testRange {
+				stream := NewStream()
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.Write(testData[0])
+				writePos := stream.GetWritePos()
+				for idx := i; idx < writePos-1; idx++ {
+					stream.SetReadPos(i)
+					stream.SetWritePos(idx)
+					assert(stream.ReadRTMap(streamTestRuntime)).
+						Equal(RTMap{}, errors.ErrStreamIsBroken)
+					assert(stream.GetReadPos()).Equal(i)
+				}
+				stream.Release()
+			}
+		}
+	})
+
+	t.Run("test readIndex overflow (runtime stream)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, testData := range streamTestSuccessCollections["map"] {
+			for _, i := range testRange {
+				stream := streamTestRuntime.thread.rtStream
+				stream.SetWritePos(i)
+				stream.SetReadPos(i)
+				stream.Write(testData[0])
+				writePos := stream.GetWritePos()
+				for idx := i; idx < writePos-1; idx++ {
+					stream.SetReadPos(i)
+					stream.SetWritePos(idx)
+					assert(stream.ReadRTMap(streamTestRuntime)).
+						Equal(RTMap{}, errors.ErrStreamIsBroken)
+					assert(stream.GetReadPos()).Equal(i)
+				}
+				stream.Reset()
+			}
+		}
+	})
+
+	t.Run("test type not match", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, i := range testRange {
+			stream := NewStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.PutBytes([]byte{13})
+			assert(stream.ReadRTMap(streamTestRuntime)).
+				Equal(RTMap{}, errors.ErrStreamIsBroken)
+			assert(stream.GetReadPos()).Equal(i)
+			stream.Release()
+		}
+	})
+
+	//
+	//t.Run("error in stream", func(t *testing.T) {
+	//  assert := base.NewAssert(t)
+	//  testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+	//  for _, i := range testRange {
+	//    stream := NewStream()
+	//    stream.SetWritePos(i)
+	//    stream.SetReadPos(i)
+	//    stream.PutBytes([]byte{0x41, 0x07, 0x00, 0x00, 0x00, 0x02, 0x02})
+	//    assert(stream.ReadRTArray(streamTestRuntime)).
+	//      Equal(RTArray{}, errors.ErrStreamIsBroken)
+	//    assert(stream.GetReadPos()).Equal(i)
+	//    stream.Release()
+	//  }
+	//})
+	//
+	//t.Run("error in stream", func(t *testing.T) {
+	//  assert := base.NewAssert(t)
+	//  testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+	//  for _, i := range testRange {
+	//    stream := NewStream()
+	//    stream.SetWritePos(i)
+	//    stream.SetReadPos(i)
+	//    stream.PutBytes([]byte{0x41, 0x06, 0x00, 0x00, 0x00, 0x01})
+	//    assert(stream.ReadRTArray(streamTestRuntime)).
+	//      Equal(RTArray{}, errors.ErrStreamIsBroken)
+	//    assert(stream.GetReadPos()).Equal(i)
+	//    stream.Release()
+	//  }
+	//})
+	//
+	//t.Run("error in stream", func(t *testing.T) {
+	//  assert := base.NewAssert(t)
+	//  testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+	//  for _, i := range testRange {
+	//    stream := NewStream()
+	//    stream.SetWritePos(i)
+	//    stream.SetReadPos(i)
+	//    stream.PutBytes([]byte{0x41, 0x08, 0x00, 0x00, 0x00, 0x82, 0x61, 0x00})
+	//    assert(stream.ReadRTArray(streamTestRuntime)).
+	//      Equal(RTArray{}, errors.ErrStreamIsBroken)
+	//    assert(stream.GetReadPos()).Equal(i)
+	//    stream.Release()
+	//  }
+	//})
+
 	t.Run("runtime is not available", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()

@@ -182,6 +182,9 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		{Array{true}, []byte{
 			65, 6, 0, 0, 0, 2,
 		}},
+		{Array{"", true}, []byte{
+			66, 7, 0, 0, 0, 0x80, 0x02,
+		}},
 		{Array{"a", true}, []byte{
 			66, 9, 0, 0, 0, 0x81, 0x61, 0x00, 0x02,
 		}},
@@ -228,6 +231,12 @@ var streamTestSuccessCollections = map[string][][2]interface{}{
 		{Map{}, []byte{0x60}},
 		{Map{"1": true}, []byte{
 			0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x02,
+		}},
+		{Map{"1": ""}, []byte{
+			0x61, 0x09, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x80,
+		}},
+		{Map{"1": "a"}, []byte{
+			0x61, 0x0B, 0x00, 0x00, 0x00, 0x81, 0x31, 0x00, 0x81, 0x61, 0x00,
 		}},
 		{Map{
 			"1": true, "2": true, "3": true, "4": true,

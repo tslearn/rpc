@@ -1979,7 +1979,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 						p.SetReadPos(itemPos + skip)
 					}
 
-					if op > 128 && op < 191 {
+					if op>>6 == 2 {
 						ret.items = append(ret.items, makePosRecord(int64(itemPos), true))
 					} else {
 						ret.items = append(ret.items, makePosRecord(int64(itemPos), false))
@@ -2064,9 +2064,6 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			end := start + totalLen
 			if mapLen > 0 && totalLen > 4 {
 				ret := newRTMap(rt, mapLen)
-
-				itemPos := 0
-
 				for i := 0; i < mapLen; i++ {
 					key, _, err := cs.readUnsafeString()
 					if err != nil {
@@ -2074,20 +2071,19 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 						return RTMap{}, err
 					}
 					op := cs.readFrame[cs.readIndex]
-					skip := readSkipArray[op]
-					if skip > 0 && cs.isSafetyReadNBytesInCurrentFrame(skip) {
-						itemPos = cs.GetReadPos()
-						if itemPos < start || itemPos+skip > end {
-							p.SetReadPos(readStart)
-							return RTMap{}, errors.ErrStreamIsBroken
-						}
+					skip, _ := cs.peekSkip()
+					itemPos := cs.GetReadPos()
+
+					if skip <= 0 {
+						p.SetReadPos(readStart)
+						return RTMap{}, errors.ErrStreamIsBroken
+					} else if itemPos+skip > end {
+						p.SetReadPos(readStart)
+						return RTMap{}, errors.ErrStreamIsBroken
+					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
 					} else {
-						itemPos = cs.readSkipItem(end)
-						if itemPos < start {
-							p.SetReadPos(readStart)
-							return RTMap{}, errors.ErrStreamIsBroken
-						}
+						p.SetReadPos(itemPos + skip)
 					}
 
 					if op>>6 == 2 {
@@ -2123,7 +2119,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 			}
 		}
 
-		if op := cs.readFrame[cs.readIndex]; op >= 128 && op <= 191 {
+		if op := cs.readFrame[cs.readIndex]; op>>6 == 2 {
 			pos := int64(cs.GetReadPos())
 			cacheString, cacheSafe, err := cs.readUnsafeString()
 			return RTValue{
