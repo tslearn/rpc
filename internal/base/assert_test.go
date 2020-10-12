@@ -65,6 +65,9 @@ func TestNewAssert(t *testing.T) {
 }
 
 func TestRpcAssert_Fail(t *testing.T) {
+	// this may print SyncPool debug msg first
+	NewStringBuilder().Release()
+
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
