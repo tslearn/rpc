@@ -89,12 +89,6 @@ var (
 		"",
 	)
 
-	ErrProcessorOnMount = base.DefineDevelopError(
-		(processorErrorSeg<<16)|10,
-		base.ErrorLevelFatal,
-		"",
-	)
-
 	ErrProcessorMetaIsNil = base.DefineKernelError(
 		(processorErrorSeg<<16)|11,
 		base.ErrorLevelFatal,
@@ -121,12 +115,6 @@ var (
 
 	ErrProcessDuplicatedReplyName = base.DefineDevelopError(
 		(processorErrorSeg<<16)|15,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessServiceNotFound = base.DefineKernelError(
-		(processorErrorSeg<<16)|16,
 		base.ErrorLevelFatal,
 		"",
 	)
