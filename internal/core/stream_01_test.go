@@ -110,7 +110,22 @@ func TestStream_ReadRTArray(t *testing.T) {
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
-			stream.PutBytes([]byte{0x41, 0x06, 0x00, 0x00, 0x00, 0x01, 0x02})
+			stream.PutBytes([]byte{0x41, 0x06, 0x00, 0x00, 0x00, 0x01})
+			assert(stream.ReadRTArray(streamTestRuntime)).
+				Equal(RTArray{}, errors.ErrStreamIsBroken)
+			assert(stream.GetReadPos()).Equal(i)
+			stream.Release()
+		}
+	})
+
+	t.Run("error in stream", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
+		for _, i := range testRange {
+			stream := NewStream()
+			stream.SetWritePos(i)
+			stream.SetReadPos(i)
+			stream.PutBytes([]byte{0x41, 0x08, 0x00, 0x00, 0x00, 0x82, 0x61, 0x00})
 			assert(stream.ReadRTArray(streamTestRuntime)).
 				Equal(RTArray{}, errors.ErrStreamIsBroken)
 			assert(stream.GetReadPos()).Equal(i)

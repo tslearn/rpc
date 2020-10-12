@@ -1962,13 +1962,15 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			end := start + totalLen
 			if arrLen > 0 && totalLen > 4 && end <= cs.GetWritePos() {
 				ret := newRTArray(rt, arrLen)
-
 				for i := 0; i < arrLen; i++ {
 					op := cs.readFrame[cs.readIndex]
 					skip, _ := cs.peekSkip()
 					itemPos := cs.GetReadPos()
 
-					if skip <= 0 || itemPos+skip > end {
+					if skip <= 0 {
+						p.SetReadPos(readStart)
+						return RTArray{}, errors.ErrStreamIsBroken
+					} else if itemPos+skip > end {
 						p.SetReadPos(readStart)
 						return RTArray{}, errors.ErrStreamIsBroken
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
