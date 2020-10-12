@@ -355,7 +355,7 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 			func(server adapter.IServerAdapter, conn adapter.IStreamConn) {
 				testConn := conn.(*websocketStreamConn)
 				_ = testConn.wsConn.WriteMessage(websocket.BinaryMessage, []byte(
-					"hello-world-hello-world-hello-world-hello-world-",
+					"hello-world-hello-world-hello-world-hello-world-hello-world",
 				))
 				for {
 					if _, e := conn.ReadStream(20*time.Millisecond, 999999); e != nil {
@@ -365,12 +365,12 @@ func TestWebsocketStreamConn_ReadStream(t *testing.T) {
 			},
 			func(client adapter.IClientAdapter, conn adapter.IStreamConn) {
 				testConn := conn.(*websocketStreamConn)
-				stream, err := testConn.ReadStream(20*time.Millisecond, 999999)
+				stream, err := testConn.ReadStream(200*time.Millisecond, 999999)
 				assert(atomic.LoadInt32(&testConn.reading)).Equal(int32(0))
 				assert(stream).IsNotNil()
 				assert(err).IsNil()
 				assert(string(stream.GetBufferUnsafe())).Equal(
-					"hello-world-hello-world-hello-world-hello-world-",
+					"hello-world-hello-world-hello-world-hello-world-hello-world",
 				)
 			},
 		)).Equal([]*base.Error{})
