@@ -31,7 +31,7 @@ func (p *SyncPoolDebug) Put(value interface{}) {
 		delete(safePoolDebugMap, value)
 		p.pool.Put(value)
 	} else {
-		panic("SyncPoolDebug Put check failed")
+		panic("check failed")
 	}
 }
 
@@ -49,7 +49,7 @@ func (p *SyncPoolDebug) Get() interface{} {
 	if _, ok := safePoolDebugMap[x]; !ok {
 		safePoolDebugMap[x] = true
 	} else {
-		panic("SyncPoolDebug Get check failed")
+		panic("check failed")
 	}
 
 	return x
