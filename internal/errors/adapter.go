@@ -4,6 +4,17 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+const streamConnErrorSeg = 2000
+
+var (
+	// ErrStreamConnIsClosed ...
+	ErrStreamConnIsClosed = base.DefineTransportError(
+		(streamConnErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"stream conn is closed",
+	)
+)
+
 const websocketStreamConnErrorSeg = 2001
 
 var (

@@ -132,16 +132,21 @@ func TestRuntime_Call(t *testing.T) {
 
 	t.Run("make stream error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		source := ""
+		source1 := ""
+		source2 := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				errArg := make(chan bool)
-				ret, s := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
-				source = rt.thread.GetReplyNode().path + " " + s
-				_, err := ret.ToString()
-				return rt.Error(err)
+				rtValue, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
+				source1 = rt.thread.GetReplyNode().path + " " + s1
+				_, err := rtValue.ToString()
+				ret, s2 := rt.Error(err), base.GetFileLine(0)
+				source2 = rt.thread.GetReplyNode().path + " " + s2
+				return ret
 			}),
 		)).Equal(nil, errors.ErrRuntimeArgumentNotSupported.
-			AddDebug("2nd argument type(chan bool) is not supported").AddDebug(source))
+			AddDebug("2nd argument: value type(chan bool) is not supported").
+			AddDebug(source1).AddDebug(source2),
+		)
 	})
 }
