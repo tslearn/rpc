@@ -6,8 +6,9 @@ import (
 
 // SyncPoolDebug should only works on debug mode, when release it,
 // please replace it with sync.Pool
-// type SyncPool = SyncPoolDebug
-type SyncPool = sync.Pool
+type SyncPool = SyncPoolDebug
+
+//type SyncPool = sync.Pool
 
 var (
 	safePoolDebugMutex = sync.Mutex{}
