@@ -216,12 +216,12 @@ func makePosRecord(pos int64, isString bool) posRecord {
 }
 
 type RTValue struct {
+	err         *base.Error
 	rt          Runtime
 	pos         int64
 	cacheString string
-	cacheError  *base.Error
 	cacheSafe   bool
-	err         *base.Error
+	cacheError  *base.Error
 }
 
 func makeRTValue(rt Runtime, record posRecord) RTValue {

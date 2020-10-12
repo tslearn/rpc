@@ -396,24 +396,6 @@ func (p *Stream) peekSkip() (int, byte) {
 	}
 }
 
-// return the item read pos, and skip it
-// end must be a valid pos
-func (p *Stream) readSkipItem(end int) int {
-	ret := p.GetReadPos()
-	skip, _ := p.peekSkip()
-
-	if skip > 0 && ret+skip <= end {
-		if p.readIndex+skip < streamBlockSize {
-			p.readIndex += skip
-		} else {
-			p.SetReadPos(ret + skip)
-		}
-		return ret
-	} else {
-		return -1
-	}
-}
-
 func (p *Stream) writeStreamNext(s *Stream) bool {
 	if skip, _ := s.peekSkip(); skip <= 0 {
 		return false
@@ -1975,8 +1957,9 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 						return RTArray{}, errors.ErrStreamIsBroken
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
-					} else {
-						p.SetReadPos(itemPos + skip)
+					} else if !p.SetReadPos(itemPos + skip) {
+						p.SetReadPos(readStart)
+						return RTArray{}, errors.ErrStreamIsBroken
 					}
 
 					if op>>6 == 2 {
@@ -2082,8 +2065,9 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 						return RTMap{}, errors.ErrStreamIsBroken
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
-					} else {
-						p.SetReadPos(itemPos + skip)
+					} else if !p.SetReadPos(itemPos + skip) {
+						p.SetReadPos(readStart)
+						return RTMap{}, errors.ErrStreamIsBroken
 					}
 
 					if op>>6 == 2 {
@@ -2096,10 +2080,8 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 					return ret, nil
 				}
 			}
-
 			p.SetReadPos(readStart)
 		}
-
 		return RTMap{}, errors.ErrStreamIsBroken
 	} else {
 		return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
@@ -2121,23 +2103,34 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 
 		if op := cs.readFrame[cs.readIndex]; op>>6 == 2 {
 			pos := int64(cs.GetReadPos())
-			cacheString, cacheSafe, err := cs.readUnsafeString()
+			cacheString, cacheSafe, cacheError := cs.readUnsafeString()
 			return RTValue{
+				err:         nil,
 				rt:          rt,
 				pos:         pos,
 				cacheString: cacheString,
-				cacheError:  err,
 				cacheSafe:   cacheSafe,
-				err:         nil,
+				cacheError:  cacheError,
 			}
 		} else {
+			startPos := cs.GetReadPos()
+			skip, _ := cs.peekSkip()
+
+			if skip <= 0 {
+				return RTValue{err: errors.ErrStreamIsBroken}
+			} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
+				cs.readIndex += skip
+			} else if !cs.SetReadPos(startPos + skip) {
+				return RTValue{err: errors.ErrStreamIsBroken}
+			}
+
 			return RTValue{
+				err:         nil,
 				rt:          rt,
-				pos:         int64(cs.GetReadPos()),
+				pos:         int64(startPos),
 				cacheString: "",
 				cacheError:  errors.ErrStreamIsBroken,
 				cacheSafe:   false,
-				err:         nil,
 			}
 		}
 	} else {
