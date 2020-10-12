@@ -2135,7 +2135,8 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 		}
 	} else {
 		return RTValue{
-			err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+			err: errors.ErrRuntimeIllegalInCurrentGoroutine.
+				AddDebug(base.GetFileLine(1)),
 		}
 	}
 }
