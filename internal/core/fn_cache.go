@@ -124,7 +124,9 @@ func getFuncMetas(kinds []string) ([]*rpcFuncMeta, *base.Error) {
 	for idx, kind := range sortKinds {
 		fnName := "fnCache" + strconv.Itoa(idx)
 		if _, ok := funcMap[kind]; ok {
-			return nil, errors.ErrFnCacheDuplicateKindString.AddDebug(fmt.Sprintf("duplicate kind %s", kind))
+			return nil, errors.ErrFnCacheDuplicateKindString.AddDebug(
+				fmt.Sprintf("duplicate kind %s", kind),
+			)
 		} else if fnBody, err := getFuncBodyByKind(fnName, kind); err != nil {
 			return nil, err
 		} else {
