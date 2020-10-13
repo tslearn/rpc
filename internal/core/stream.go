@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"unsafe"
 )
 
 const (
@@ -16,15 +17,15 @@ const (
 
 	streamPosVersion    = 0
 	streamPosStatusBit  = 1
-	streamPosTargetID   = 2
-	streamPosSourceID   = 10
-	streamPosZoneID     = 18
-	streamPosIPMap      = 20
-	streamPosSessionID  = 28
-	streamPosCallbackID = 36
-	streamPosDepth      = 44
-	streamPosCheck      = 46
-	streamPosBody       = 54
+	streamPosTargetID   = 4
+	streamPosSourceID   = 12
+	streamPosZoneID     = 20
+	streamPosIPMap      = 22
+	streamPosSessionID  = 30
+	streamPosCallbackID = 38
+	streamPosDepth      = 46
+	streamPosCheck      = 48
+	streamPosBody       = 56
 
 	streamStatusBitDebug = 0
 
@@ -246,6 +247,42 @@ func (p *Stream) GetDepth() uint16 {
 // SetDepth ...
 func (p *Stream) SetDepth(v uint16) {
 	binary.LittleEndian.PutUint16((*p.frames[0])[streamPosDepth:], v)
+}
+
+func (p *Stream) getCheckSum() uint64 {
+	checksum := uint64(0)
+	//pos := 0
+	if p.writeSeg > 0 {
+		for i := 0; i < p.writeSeg; i++ {
+			byteHeader := (*reflect.SliceHeader)(unsafe.Pointer(p.frames[i]))
+			for j := uintptr(0); j < streamBlockSize; j += 8 {
+				checksum ^= *(*uint64)(unsafe.Pointer(byteHeader.Data + j))
+			}
+		}
+	}
+
+	sumEnd := ((p.writeIndex + 7) / 8) * 8
+
+	for i := p.writeIndex; i < sumEnd; i++ {
+		p.writeFrame[i] = 0
+	}
+
+	byteHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.writeFrame))
+	for j := uintptr(0); j < uintptr(sumEnd); j += 8 {
+		checksum ^= *(*uint64)(unsafe.Pointer(byteHeader.Data + j))
+	}
+
+	return checksum
+}
+
+func (p *Stream) BuildStreamCheck() {
+	buf := (*p.frames[0])[streamPosCheck:]
+	binary.LittleEndian.PutUint64(buf, 0)
+	binary.LittleEndian.PutUint64(buf, p.getCheckSum())
+}
+
+func (p *Stream) CheckStream() bool {
+	return p.getCheckSum() == 0
 }
 
 // GetReadPos get the current read pos of the stream

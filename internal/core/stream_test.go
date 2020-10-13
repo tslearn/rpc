@@ -457,18 +457,20 @@ func TestStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(streamVersion).Equal(1)
 		assert(streamBlockSize).Equal(512)
+		assert(streamBlockSize % 8).Equal(0)
 		assert(streamFrameArrayInitSize).Equal(4)
 		assert(streamPosVersion).Equal(0)
 		assert(streamPosStatusBit).Equal(1)
-		assert(streamPosTargetID).Equal(2)
-		assert(streamPosSourceID).Equal(10)
-		assert(streamPosZoneID).Equal(18)
-		assert(streamPosIPMap).Equal(20)
-		assert(streamPosSessionID).Equal(28)
-		assert(streamPosCallbackID).Equal(36)
-		assert(streamPosDepth).Equal(44)
-		assert(streamPosCheck).Equal(46)
-		assert(streamPosBody).Equal(54)
+		assert(streamPosTargetID).Equal(4)
+		assert(streamPosSourceID).Equal(12)
+		assert(streamPosZoneID).Equal(20)
+		assert(streamPosIPMap).Equal(22)
+		assert(streamPosSessionID).Equal(30)
+		assert(streamPosCallbackID).Equal(38)
+		assert(streamPosDepth).Equal(46)
+		assert(streamPosCheck).Equal(48)
+		assert(streamPosCheck % 8).Equal(0)
+		assert(streamPosBody).Equal(56)
 		assert(streamStatusBitDebug).Equal(0)
 		assert(StreamWriteOK).Equal("")
 	})
@@ -875,6 +877,71 @@ func TestStream_SetDepth(t *testing.T) {
 			v.SetDepth(depth)
 			assert(v.GetDepth()).Equal(depth)
 			v.Release()
+		}
+	})
+}
+
+func TestStream_getCheckSum(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			randLen := rand.Int() % 10000
+			stream := NewStream()
+			bytes := []byte(base.GetRandString(randLen))
+			stream.PutBytes(bytes)
+			copy(stream.writeFrame[stream.writeIndex:], bytes)
+			stream.BuildStreamCheck()
+			copy(stream.writeFrame[stream.writeIndex:], bytes)
+			assert(stream.getCheckSum()).Equal(uint64(0))
+			stream.Release()
+		}
+	})
+}
+
+func TestStream_BuildStreamCheck(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			randLen := rand.Int() % 10000
+			stream := NewStream()
+			bytes := []byte(base.GetRandString(randLen))
+			stream.PutBytes(bytes)
+			stream.BuildStreamCheck()
+			assert(stream.getCheckSum()).Equal(uint64(0))
+			stream.Release()
+		}
+	})
+}
+
+func TestStream_CheckStream(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			randLen := rand.Int() % 10000
+			stream := NewStream()
+			bytes := []byte(base.GetRandString(randLen))
+			stream.PutBytes(bytes)
+			stream.BuildStreamCheck()
+			assert(stream.CheckStream()).IsTrue()
+			stream.Release()
+		}
+	})
+
+	t.Run("bytes is change", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			randLen := rand.Int() % 10000
+			stream := NewStream()
+			bytes := []byte(base.GetRandString(randLen))
+			stream.PutBytes(bytes)
+			stream.BuildStreamCheck()
+			// rand change
+			changePos := rand.Int() % stream.GetWritePos()
+			changeSeg := changePos / streamBlockSize
+			changeIndex := changePos % streamBlockSize
+			(*stream.frames[changeSeg])[changeIndex] += 1
+			assert(stream.CheckStream()).IsFalse()
+			stream.Release()
 		}
 	})
 }
