@@ -9,7 +9,7 @@ import (
 type ErrorType uint8
 
 const (
-	ErrorTypeProtocol  = ErrorType(1)
+	ErrorTypeConfig    = ErrorType(1)
 	ErrorTypeTransport = ErrorType(2)
 	ErrorTypeReply     = ErrorType(3)
 	ErrorTypeDevelop   = ErrorType(4)
@@ -68,9 +68,9 @@ func defineError(
 	}
 }
 
-// DefineProtocolError ...
-func DefineProtocolError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeProtocol, num, level, msg, GetFileLine(1))
+// DefineConfigError ...
+func DefineConfigError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeConfig, num, level, msg, GetFileLine(1))
 }
 
 // DefineTransportError ...
@@ -139,8 +139,8 @@ func (p *Error) AddDebug(debug string) *Error {
 
 func (p *Error) getErrorTypeString() string {
 	switch p.GetType() {
-	case ErrorTypeProtocol:
-		return "Protocol"
+	case ErrorTypeConfig:
+		return "Config"
 	case ErrorTypeTransport:
 		return "Transport"
 	case ErrorTypeReply:

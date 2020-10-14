@@ -313,7 +313,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error message Read error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(uint64(base.ErrorTypeProtocol))
+		v.WriteUint64(uint64(base.ErrorTypeSecurity))
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStreamIsBroken)
 	})

@@ -64,37 +64,43 @@ var (
 const websocketServerAdapterErrorSeg = 2002
 
 var (
+	// ErrWebsocketServerAdapterUpgrade ... *
 	ErrWebsocketServerAdapterUpgrade = base.DefineSecurityError(
 		(websocketServerAdapterErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"websocket upgrade error",
 	)
 
-	ErrWebsocketServerAdapterAlreadyRunning = base.DefineKernelError(
+	// ErrWebsocketServerAdapterWSServerListenAndServe ... *
+	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineConfigError(
 		(websocketServerAdapterErrorSeg<<16)|2,
-		base.ErrorLevelFatal,
-		"it is already running",
-	)
-
-	ErrWebsocketServerAdapterNotRunning = base.DefineKernelError(
-		(websocketServerAdapterErrorSeg<<16)|3,
-		base.ErrorLevelFatal,
-		"it is not running",
-	)
-
-	ErrWebsocketServerAdapterWSServerListenAndServe = base.DefineTransportError(
-		(websocketServerAdapterErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrWebsocketServerAdapterWSServerClose = base.DefineDevelopError(
+	// ErrWebsocketServerAdapterAlreadyRunning ... *
+	ErrWebsocketServerAdapterAlreadyRunning = base.DefineKernelError(
+		(websocketServerAdapterErrorSeg<<16)|3,
+		base.ErrorLevelFatal,
+		"it is already running",
+	)
+
+	// ErrWebsocketServerAdapterNotRunning ... *
+	ErrWebsocketServerAdapterNotRunning = base.DefineKernelError(
+		(websocketServerAdapterErrorSeg<<16)|4,
+		base.ErrorLevelFatal,
+		"it is not running",
+	)
+
+	// ErrWebsocketServerAdapterWSServerClose ... *
+	ErrWebsocketServerAdapterWSServerClose = base.DefineTransportError(
 		(websocketServerAdapterErrorSeg<<16)|5,
 		base.ErrorLevelError,
 		"",
 	)
 
-	ErrWebsocketServerAdapterCloseTimeout = base.DefineDevelopError(
+	// ErrWebsocketServerAdapterCloseTimeout ... *
+	ErrWebsocketServerAdapterCloseTimeout = base.DefineKernelError(
 		(websocketServerAdapterErrorSeg<<16)|6,
 		base.ErrorLevelError,
 		"close timeout",
@@ -104,25 +110,29 @@ var (
 const websocketClientAdapterErrorSeg = 2003
 
 var (
-	ErrWebsocketClientAdapterDial = base.DefineTransportError(
+	// ErrWebsocketClientAdapterDial ... *
+	ErrWebsocketClientAdapterDial = base.DefineConfigError(
 		(websocketClientAdapterErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"",
 	)
 
+	// ErrWebsocketClientAdapterAlreadyRunning ... *
 	ErrWebsocketClientAdapterAlreadyRunning = base.DefineKernelError(
 		(websocketClientAdapterErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"it is already running",
 	)
 
+	// ErrWebsocketClientAdapterNotRunning ... *
 	ErrWebsocketClientAdapterNotRunning = base.DefineKernelError(
 		(websocketClientAdapterErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"it is not running",
 	)
 
-	ErrWebsocketClientAdapterCloseTimeout = base.DefineDevelopError(
+	// ErrWebsocketClientAdapterCloseTimeout ... *
+	ErrWebsocketClientAdapterCloseTimeout = base.DefineKernelError(
 		(websocketClientAdapterErrorSeg<<16)|4,
 		base.ErrorLevelError,
 		"close timeout",

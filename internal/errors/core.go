@@ -181,19 +181,19 @@ var (
 		"",
 	)
 
-	ErrThreadTargetNotExist = base.DefineProtocolError(
+	ErrThreadTargetNotExist = base.DefineSecurityError(
 		(threadErrorSeg<<16)|3,
 		base.ErrorLevelError,
 		"",
 	)
 
-	ErrThreadCallDepthOverflow = base.DefineProtocolError(
+	ErrThreadCallDepthOverflow = base.DefineSecurityError(
 		(threadErrorSeg<<16)|4,
 		base.ErrorLevelError,
 		"",
 	)
 
-	ErrThreadArgumentsNotMatch = base.DefineProtocolError(
+	ErrThreadArgumentsNotMatch = base.DefineSecurityError(
 		(threadErrorSeg<<16)|5,
 		base.ErrorLevelError,
 		"",
@@ -213,7 +213,7 @@ var (
 const streamErrorSeg = 1006
 
 var (
-	ErrStreamIsBroken = base.DefineProtocolError(
+	ErrStreamIsBroken = base.DefineSecurityError(
 		(streamErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"stream is broken",

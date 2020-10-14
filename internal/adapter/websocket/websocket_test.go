@@ -931,7 +931,7 @@ func TestWsClientAdapter_Close(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 			clientAdapter.Open(
 				func(conn adapter.IStreamConn) {
-					time.Sleep(6 * time.Second)
+					time.Sleep(3300 * time.Millisecond)
 				},
 				func(e *base.Error) {},
 			)

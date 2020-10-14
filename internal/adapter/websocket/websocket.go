@@ -280,7 +280,7 @@ func (p *websocketServerAdapter) Close(onError func(uint64, *base.Error)) {
 	} else {
 		select {
 		case <-waitCH:
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			onError(0, errors.ErrWebsocketServerAdapterCloseTimeout)
 		}
 	}
@@ -345,7 +345,7 @@ func (p *websocketClientAdapter) Close(onError func(*base.Error)) {
 	} else {
 		select {
 		case <-waitCH:
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			onError(errors.ErrWebsocketClientAdapterCloseTimeout)
 		}
 	}

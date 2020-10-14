@@ -10,7 +10,7 @@ func TestError(t *testing.T) {
 	t.Run("check constant", func(t *testing.T) {
 		assert := NewAssert(t)
 
-		assert(ErrorTypeProtocol).Equal(ErrorType(1))
+		assert(ErrorTypeConfig).Equal(ErrorType(1))
 		assert(ErrorTypeTransport).Equal(ErrorType(2))
 		assert(ErrorTypeReply).Equal(ErrorType(3))
 		assert(ErrorTypeDevelop).Equal(ErrorType(4))
@@ -60,19 +60,19 @@ func TestDefineError(t *testing.T) {
 	})
 }
 
-func TestDefineProtocolError(t *testing.T) {
+func TestDefineConfigError(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1, s1 := DefineProtocolError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		v1, s1 := DefineConfigError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
-			Equal(ErrorTypeProtocol, num, ErrorLevelWarn, "msg")
+			Equal(ErrorTypeConfig, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
@@ -172,15 +172,15 @@ func TestError_GetCode(t *testing.T) {
 func TestError_GetType(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
-	t.Run("test ErrorTypeProtocol", func(t *testing.T) {
+	t.Run("test ErrorTypeConfig", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineProtocolError(num, ErrorLevelWarn, "msg")
+		v1 := DefineConfigError(num, ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType()).Equal(ErrorTypeProtocol)
+		assert(v1.GetType()).Equal(ErrorTypeConfig)
 	})
 
 	t.Run("test ErrorTypeTransport", func(t *testing.T) {
@@ -363,7 +363,7 @@ func TestError_getErrorTypeString(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineProtocolError(num, ErrorLevelFatal, "msg")
+		v1 := DefineConfigError(num, ErrorLevelFatal, "msg")
 		v2 := DefineTransportError(num-1, ErrorLevelFatal, "msg")
 		v3 := DefineReplyError(num-2, ErrorLevelFatal, "msg")
 		v4 := DefineDevelopError(num-3, ErrorLevelFatal, "msg")
@@ -380,7 +380,7 @@ func TestError_getErrorTypeString(t *testing.T) {
 			delete(errorDefineMap, num-5)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.getErrorTypeString()).Equal("Protocol")
+		assert(v1.getErrorTypeString()).Equal("Config")
 		assert(v2.getErrorTypeString()).Equal("Transport")
 		assert(v3.getErrorTypeString()).Equal("Reply")
 		assert(v4.getErrorTypeString()).Equal("Develop")
@@ -395,9 +395,9 @@ func TestError_getErrorLevelString(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineProtocolError(num, ErrorLevelWarn, "msg")
-		v2 := DefineProtocolError(num-1, ErrorLevelError, "msg")
-		v3 := DefineProtocolError(num-2, ErrorLevelFatal, "msg")
+		v1 := DefineConfigError(num, ErrorLevelWarn, "msg")
+		v2 := DefineConfigError(num-1, ErrorLevelError, "msg")
+		v3 := DefineConfigError(num-2, ErrorLevelFatal, "msg")
 		v4 := DefineDevelopError(num-3, 0, "msg")
 		v5 := DefineDevelopError(num-4, 255, "msg")
 		defer func() {
@@ -422,13 +422,13 @@ func TestError_Error(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineProtocolError(num, ErrorLevelWarn, "msg")
+		v1 := DefineConfigError(num, ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
 		v2 := v1.AddDebug("dbg")
-		assert(v2.Error()).Equal(fmt.Sprintf("ProtocolWarn[%d]: msg\ndbg", num))
+		assert(v2.Error()).Equal(fmt.Sprintf("ConfigWarn[%d]: msg\ndbg", num))
 	})
 }
