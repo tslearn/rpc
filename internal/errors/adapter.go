@@ -7,7 +7,7 @@ import (
 const streamConnErrorSeg = 2000
 
 var (
-	// ErrStreamConnIsClosed ...
+	// ErrStreamConnIsClosed ... *
 	ErrStreamConnIsClosed = base.DefineTransportError(
 		(streamConnErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
@@ -18,36 +18,42 @@ var (
 const websocketStreamConnErrorSeg = 2001
 
 var (
-	ErrWebsocketStreamConnStreamIsNil = base.DefineKernelError(
+	// ErrWebsocketStreamConnWSConnWriteMessage ... *
+	ErrWebsocketStreamConnWSConnWriteMessage = base.DefineTransportError(
 		(websocketStreamConnErrorSeg<<16)|1,
-		base.ErrorLevelFatal,
-		"stream is nil",
+		base.ErrorLevelWarn,
+		"",
 	)
 
-	ErrWebsocketStreamConnDataIsNotBinary = base.DefineSecurityError(
+	// ErrWebsocketStreamConnWSConnSetReadDeadline ... *
+	ErrWebsocketStreamConnWSConnSetReadDeadline = base.DefineTransportError(
 		(websocketStreamConnErrorSeg<<16)|2,
 		base.ErrorLevelWarn,
-		"websocket data is not binary",
+		"",
 	)
 
-	ErrWebsocketStreamConnWSConnWriteMessage = base.DefineTransportError(
+	// ErrWebsocketStreamConnWSConnReadMessage ... *
+	ErrWebsocketStreamConnWSConnReadMessage = base.DefineTransportError(
 		(websocketStreamConnErrorSeg<<16)|3,
 		base.ErrorLevelWarn,
 		"",
 	)
 
-	ErrWebsocketStreamConnWSConnSetReadDeadline = base.DefineTransportError(
+	// ErrWebsocketStreamConnDataIsNotBinary ... *
+	ErrWebsocketStreamConnDataIsNotBinary = base.DefineSecurityError(
 		(websocketStreamConnErrorSeg<<16)|4,
 		base.ErrorLevelWarn,
-		"",
+		"websocket data is not binary",
 	)
 
-	ErrWebsocketStreamConnWSConnReadMessage = base.DefineTransportError(
+	// ErrWebsocketStreamConnStreamIsNil ... *
+	ErrWebsocketStreamConnStreamIsNil = base.DefineKernelError(
 		(websocketStreamConnErrorSeg<<16)|5,
-		base.ErrorLevelWarn,
-		"",
+		base.ErrorLevelFatal,
+		"stream is nil",
 	)
 
+	// ErrWebsocketStreamConnWSConnClose ... *
 	ErrWebsocketStreamConnWSConnClose = base.DefineTransportError(
 		(websocketStreamConnErrorSeg<<16)|6,
 		base.ErrorLevelWarn,
