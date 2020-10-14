@@ -7,24 +7,28 @@ import (
 const fnCacheErrorSeg = 1001
 
 var (
-	ErrFnCacheMkdirAll = base.DefineDevelopError(
+	// ErrFnCacheMkdirAll ... *
+	ErrFnCacheMkdirAll = base.DefineConfigError(
 		(fnCacheErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
-	ErrFnCacheWriteFile = base.DefineDevelopError(
+	// ErrFnCacheWriteFile ... *
+	ErrFnCacheWriteFile = base.DefineConfigError(
 		(fnCacheErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"write to file error",
 	)
 
+	// ErrFnCacheIllegalKindString ... *
 	ErrFnCacheIllegalKindString = base.DefineKernelError(
 		(fnCacheErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"",
 	)
 
+	// ErrFnCacheDuplicateKindString ... *
 	ErrFnCacheDuplicateKindString = base.DefineKernelError(
 		(fnCacheErrorSeg<<16)|4,
 		base.ErrorLevelFatal,

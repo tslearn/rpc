@@ -73,7 +73,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 				callString = "stream.ReadRTValue(rt)"
 				typeArray = append(typeArray, "rpc.RTValue")
 			default:
-				return "nil", errors.ErrFnCacheIllegalKindString.
+				return "", errors.ErrFnCacheIllegalKindString.
 					AddDebug(fmt.Sprintf("illegal kind %s", kind))
 			}
 
