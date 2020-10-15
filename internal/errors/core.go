@@ -13,6 +13,12 @@ var (
 		"stream is broken",
 	)
 
+	ErrUnsupportedValue = base.DefineDevelopError(
+		(replyRuntimeSeg<<16)|3,
+		base.ErrorLevelError,
+		"",
+	)
+
 	ErrServiceName = base.DefineDevelopError(
 		(generalErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
@@ -141,12 +147,6 @@ var (
 		(replyRuntimeSeg<<16)|2,
 		base.ErrorLevelError,
 		"Runtime.Error argument is nil",
-	)
-
-	ErrRuntimeArgumentNotSupported = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|3,
-		base.ErrorLevelError,
-		"",
 	)
 
 	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(

@@ -144,7 +144,7 @@ func TestRuntime_Call(t *testing.T) {
 				source2 = rt.thread.GetReplyNode().path + " " + s2
 				return ret
 			}),
-		)).Equal(nil, errors.ErrRuntimeArgumentNotSupported.
+		)).Equal(nil, errors.ErrUnsupportedValue.
 			AddDebug("2nd argument: value type(chan bool) is not supported").
 			AddDebug(source1).AddDebug(source2),
 		)

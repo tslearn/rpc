@@ -115,7 +115,7 @@ func MakeRequestStream(
 	for i := 0; i < len(args); i++ {
 		if reason := stream.Write(args[i]); reason != StreamWriteOK {
 			stream.Release()
-			return nil, errors.ErrRuntimeArgumentNotSupported.AddDebug(
+			return nil, errors.ErrUnsupportedValue.AddDebug(
 				base.ConcatString(
 					base.ConvertOrdinalToString(uint(i)+2),
 					" argument: ",
