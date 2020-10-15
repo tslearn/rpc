@@ -184,13 +184,13 @@ var (
 	)
 
 	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
-		(kernelErrorSeg<<16)|6,
+		(kernelErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",
 	)
 
 	ErrThreadEvalFatal = base.DefineKernelError(
-		(kernelErrorSeg<<16)|7,
+		(kernelErrorSeg<<16)|8,
 		base.ErrorLevelFatal,
 		"",
 	)
