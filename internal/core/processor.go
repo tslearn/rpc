@@ -452,7 +452,7 @@ func (p *Processor) mountReply(
 		)).AddDebug(meta.fileLine)
 	} else if fnTypeString, err := getFuncKind(fn); err != nil {
 		// Check reply handler is right
-		return err
+		return err.AddDebug(meta.fileLine)
 	} else {
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
