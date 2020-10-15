@@ -102,10 +102,10 @@ func NewProcessor(
 	}
 
 	if numOfThreads <= 0 {
-		fnError(errors.ErrProcessorNumOfThreadsIsWrong)
+		fnError(errors.ErrNumOfThreadsIsWrong)
 		return nil
 	} else if maxNodeDepth <= 0 {
-		fnError(errors.ErrProcessorMaxNodeDepthIsWrong)
+		fnError(errors.ErrMaxNodeDepthIsWrong)
 		return nil
 	} else if maxCallDepth <= 0 {
 		fnError(errors.ErrProcessorMaxCallDepthIsWrong)

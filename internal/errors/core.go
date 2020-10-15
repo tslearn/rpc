@@ -66,25 +66,55 @@ var (
 		base.ErrorLevelError,
 		"",
 	)
-)
 
-const fnCacheErrorSeg = 1001
+	ErrRPCTargetNotExist = base.DefineSecurityError(
+		(threadErrorSeg<<16)|3,
+		base.ErrorLevelError,
+		"",
+	)
 
-var (
+	ErrRPCCallOverflow = base.DefineSecurityError(
+		(threadErrorSeg<<16)|4,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrRPCArgumentsNotMatch = base.DefineSecurityError(
+		(threadErrorSeg<<16)|5,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrNumOfThreadsIsWrong = base.DefineConfigError(
+		(generalErrorSeg<<16)|10,
+		base.ErrorLevelFatal,
+		"numOfThreads is wrong",
+	)
+
+	ErrMaxNodeDepthIsWrong = base.DefineConfigError(
+		(generalErrorSeg<<16)|11,
+		base.ErrorLevelFatal,
+		"maxNodeDepth is wrong",
+	)
+
 	// ErrFnCacheMkdirAll ... *
-	ErrFnCacheMkdirAll = base.DefineConfigError(
-		(fnCacheErrorSeg<<16)|1,
+	ErrCacheMkdirAll = base.DefineConfigError(
+		(generalErrorSeg<<16)|12,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
 	// ErrFnCacheWriteFile ... *
-	ErrFnCacheWriteFile = base.DefineConfigError(
-		(fnCacheErrorSeg<<16)|2,
+	ErrCacheWriteFile = base.DefineConfigError(
+		(generalErrorSeg<<16)|13,
 		base.ErrorLevelFatal,
 		"write to file error",
 	)
+)
 
+const fnCacheErrorSeg = 1001
+
+var (
 	// ErrFnCacheIllegalKindString ... *
 	ErrFnCacheIllegalKindString = base.DefineKernelError(
 		(fnCacheErrorSeg<<16)|3,
@@ -103,18 +133,6 @@ var (
 const processorErrorSeg = 1002
 
 var (
-	ErrProcessorNumOfThreadsIsWrong = base.DefineConfigError(
-		(processorErrorSeg<<16)|1,
-		base.ErrorLevelFatal,
-		"numOfThreads is wrong",
-	)
-
-	ErrProcessorMaxNodeDepthIsWrong = base.DefineConfigError(
-		(processorErrorSeg<<16)|2,
-		base.ErrorLevelFatal,
-		"maxNodeDepth is wrong",
-	)
-
 	ErrProcessorMaxCallDepthIsWrong = base.DefineKernelError(
 		(processorErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
@@ -180,24 +198,6 @@ var (
 	ErrThreadEvalFatal = base.DefineKernelError(
 		(threadErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrThreadTargetNotExist = base.DefineSecurityError(
-		(threadErrorSeg<<16)|3,
-		base.ErrorLevelError,
-		"",
-	)
-
-	ErrThreadCallDepthOverflow = base.DefineSecurityError(
-		(threadErrorSeg<<16)|4,
-		base.ErrorLevelError,
-		"",
-	)
-
-	ErrThreadArgumentsNotMatch = base.DefineSecurityError(
-		(threadErrorSeg<<16)|5,
-		base.ErrorLevelError,
 		"",
 	)
 )

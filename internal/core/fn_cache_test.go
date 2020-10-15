@@ -34,14 +34,14 @@ func TestBuildFuncCache(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(currDir, "fn_cache_test.go", "error.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
-			Equal(errors.ErrFnCacheMkdirAll)
+			Equal(errors.ErrCacheMkdirAll)
 	})
 
 	t.Run("write to file error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(currDir, "_snapshot_")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
-			Equal(errors.ErrFnCacheWriteFile)
+			Equal(errors.ErrCacheWriteFile)
 	})
 
 	t.Run("kinds is empty", func(t *testing.T) {
