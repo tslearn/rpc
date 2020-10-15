@@ -339,7 +339,7 @@ func TestParseResponseStream(t *testing.T) {
 func getFakeProcessor(debug bool) *Processor {
 	processor := NewProcessor(
 		debug,
-		1024,
+		1,
 		32,
 		32,
 		nil,
@@ -424,7 +424,7 @@ func testWithProcessorAndRuntime(
 	helper := (*testProcessorHelper)(nil)
 	helper = newTestProcessorHelper(
 		isDebug,
-		1024,
+		1,
 		16,
 		16,
 		nil,
