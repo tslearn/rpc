@@ -260,7 +260,7 @@ func (p RTValue) ToBool() (Bool, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBool()
 	} else {
-		return false, errors.ErrStreamIsBroken
+		return false, errors.ErrStream
 	}
 }
 
@@ -272,7 +272,7 @@ func (p RTValue) ToInt64() (Int64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadInt64()
 	} else {
-		return 0, errors.ErrStreamIsBroken
+		return 0, errors.ErrStream
 	}
 }
 
@@ -284,7 +284,7 @@ func (p RTValue) ToUint64() (Uint64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadUint64()
 	} else {
-		return 0, errors.ErrStreamIsBroken
+		return 0, errors.ErrStream
 	}
 }
 
@@ -296,7 +296,7 @@ func (p RTValue) ToFloat64() (Float64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadFloat64()
 	} else {
-		return 0, errors.ErrStreamIsBroken
+		return 0, errors.ErrStream
 	}
 }
 
@@ -320,7 +320,7 @@ func (p RTValue) ToBytes() (Bytes, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBytes()
 	} else {
-		return Bytes(nil), errors.ErrStreamIsBroken
+		return Bytes(nil), errors.ErrStream
 	}
 }
 
@@ -332,7 +332,7 @@ func (p RTValue) ToArray() (Array, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadArray()
 	} else {
-		return Array(nil), errors.ErrStreamIsBroken
+		return Array(nil), errors.ErrStream
 	}
 }
 
@@ -344,7 +344,7 @@ func (p RTValue) ToRTArray() (RTArray, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTArray(p.rt)
 	} else {
-		return RTArray{}, errors.ErrStreamIsBroken
+		return RTArray{}, errors.ErrStream
 	}
 }
 
@@ -356,7 +356,7 @@ func (p RTValue) ToMap() (Map, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadMap()
 	} else {
-		return Map{}, errors.ErrStreamIsBroken
+		return Map{}, errors.ErrStream
 	}
 }
 
@@ -368,6 +368,6 @@ func (p RTValue) ToRTMap() (RTMap, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTMap(p.rt)
 	} else {
-		return RTMap{}, errors.ErrStreamIsBroken
+		return RTMap{}, errors.ErrStream
 	}
 }

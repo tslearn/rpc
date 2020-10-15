@@ -271,7 +271,7 @@ func (p *rpcThread) Eval(
 		if v := recover(); v != nil {
 			// write runtime error
 			p.WriteError(
-				errors.ErrThreadRunReplyFatal.
+				errors.ErrReplyPanic.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
 					AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
 				0,

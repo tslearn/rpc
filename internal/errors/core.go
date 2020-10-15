@@ -4,6 +4,64 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+const generalErrorSeg = 1000
+
+var (
+	ErrStream = base.DefineSecurityError(
+		(generalErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"stream is broken",
+	)
+
+	ErrServiceName = base.DefineDevelopError(
+		(generalErrorSeg<<16)|2,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrReplyName = base.DefineDevelopError(
+		(generalErrorSeg<<16)|3,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrReplyHandler = base.DefineDevelopError(
+		(generalErrorSeg<<16)|4,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrServiceIsNil = base.DefineDevelopError(
+		(generalErrorSeg<<16)|5,
+		base.ErrorLevelFatal,
+		"service is nil",
+	)
+
+	ErrServiceOverflow = base.DefineDevelopError(
+		(generalErrorSeg<<16)|6,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrReplyCloseTimeout = base.DefineDevelopError(
+		(generalErrorSeg<<16)|7,
+		base.ErrorLevelError,
+		"",
+	)
+
+	ErrReplyPanic = base.DefineDevelopError(
+		(generalErrorSeg<<16)|8,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrReplyReturn = base.DefineReplyError(
+		(generalErrorSeg<<16)|9,
+		base.ErrorLevelError,
+		"",
+	)
+)
+
 const fnCacheErrorSeg = 1001
 
 var (
@@ -39,13 +97,13 @@ var (
 const processorErrorSeg = 1002
 
 var (
-	ErrProcessorNumOfThreadsIsWrong = base.DefineKernelError(
+	ErrProcessorNumOfThreadsIsWrong = base.DefineConfigError(
 		(processorErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"numOfThreads is wrong",
 	)
 
-	ErrProcessorMaxNodeDepthIsWrong = base.DefineKernelError(
+	ErrProcessorMaxNodeDepthIsWrong = base.DefineConfigError(
 		(processorErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"maxNodeDepth is wrong",
@@ -57,70 +115,16 @@ var (
 		"maxCallDepth is wrong",
 	)
 
-	ErrProcessorCloseTimeout = base.DefineDevelopError(
-		(processorErrorSeg<<16)|4,
-		base.ErrorLevelError,
-		"",
-	)
-
 	ErrProcessorNodeMetaIsNil = base.DefineKernelError(
 		(processorErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
 		"nodeMeta is nil",
 	)
 
-	ErrProcessorServiceNameIsIllegal = base.DefineKernelError(
-		(processorErrorSeg<<16)|6,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessorNodeMetaServiceIsNil = base.DefineDevelopError(
-		(processorErrorSeg<<16)|7,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessorServicePathOverflow = base.DefineDevelopError(
-		(processorErrorSeg<<16)|8,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessorDuplicatedServiceName = base.DefineDevelopError(
-		(processorErrorSeg<<16)|9,
-		base.ErrorLevelFatal,
-		"",
-	)
-
 	ErrProcessorMetaIsNil = base.DefineKernelError(
 		(processorErrorSeg<<16)|11,
 		base.ErrorLevelFatal,
 		"meta is nil",
-	)
-
-	ErrProcessReplyNameIsIllegal = base.DefineDevelopError(
-		(processorErrorSeg<<16)|12,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessHandlerIsNil = base.DefineDevelopError(
-		(processorErrorSeg<<16)|13,
-		base.ErrorLevelFatal,
-		"handler is nil",
-	)
-
-	ErrProcessIllegalHandler = base.DefineDevelopError(
-		(processorErrorSeg<<16)|14,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrProcessDuplicatedReplyName = base.DefineDevelopError(
-		(processorErrorSeg<<16)|15,
-		base.ErrorLevelFatal,
-		"",
 	)
 )
 
@@ -179,12 +183,6 @@ var (
 		"",
 	)
 
-	ErrThreadRunReplyFatal = base.DefineDevelopError(
-		(threadErrorSeg<<16)|2,
-		base.ErrorLevelFatal,
-		"",
-	)
-
 	ErrThreadTargetNotExist = base.DefineSecurityError(
 		(threadErrorSeg<<16)|3,
 		base.ErrorLevelError,
@@ -201,25 +199,5 @@ var (
 		(threadErrorSeg<<16)|5,
 		base.ErrorLevelError,
 		"",
-	)
-)
-
-const replyErrorSeg = 1005
-
-var (
-	ErrGeneralReplyError = base.DefineReplyError(
-		(replyErrorSeg<<16)|1,
-		base.ErrorLevelError,
-		"",
-	)
-)
-
-const streamErrorSeg = 1006
-
-var (
-	ErrStreamIsBroken = base.DefineSecurityError(
-		(streamErrorSeg<<16)|1,
-		base.ErrorLevelWarn,
-		"stream is broken",
 	)
 )

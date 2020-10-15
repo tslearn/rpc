@@ -49,7 +49,7 @@ func (p Runtime) Error(value error) Return {
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
-				errors.ErrGeneralReplyError.
+				errors.ErrReplyReturn.
 					AddDebug(value.Error()).
 					AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
@@ -140,7 +140,7 @@ func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
 	} else if message, err := stream.ReadString(); err != nil {
 		return RTValue{err: err}
 	} else if !stream.IsReadFinish() {
-		return RTValue{err: errors.ErrStreamIsBroken}
+		return RTValue{err: errors.ErrStream}
 	} else {
 		return RTValue{err: base.NewError(errCode, message)}
 	}

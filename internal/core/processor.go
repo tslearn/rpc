@@ -239,7 +239,7 @@ func (p *Processor) Close() bool {
 
 		if len(errList) > 0 {
 			p.fnError(
-				errors.ErrProcessorCloseTimeout.AddDebug(base.ConcatString(
+				errors.ErrReplyCloseTimeout.AddDebug(base.ConcatString(
 					"the following replies can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
@@ -330,19 +330,21 @@ func (p *Processor) mountNode(
 		return errors.ErrProcessorNodeMetaIsNil
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
 		// check nodeMeta.name is valid
-		return errors.ErrProcessorServiceNameIsIllegal.AddDebug(nodeMeta.fileLine)
+		return errors.ErrServiceName.AddDebug(base.ConcatString(
+			"name ", nodeMeta.name, " is illegal",
+		)).AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
 		// check nodeMeta.service is not nil
-		return errors.ErrProcessorNodeMetaServiceIsNil.AddDebug(nodeMeta.fileLine)
+		return errors.ErrServiceIsNil.AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if parentNode.depth+1 > p.maxNodeDepth {
 			// check max node depth overflow
-			return errors.ErrProcessorServicePathOverflow.AddDebug(nodeMeta.fileLine)
+			return errors.ErrServiceOverflow.AddDebug(nodeMeta.fileLine)
 		} else if item, ok := p.servicesMap[servicePath]; ok {
 			// check the mount path is not occupied
-			return errors.ErrProcessorDuplicatedServiceName.
+			return errors.ErrServiceName.
 				AddDebug(fmt.Sprintf(
 					"duplicated service name %s",
 					nodeMeta.name,
@@ -433,15 +435,17 @@ func (p *Processor) mountReply(
 		return errors.ErrProcessorMetaIsNil
 	} else if !replyNameRegex.MatchString(meta.name) {
 		// check the name
-		return errors.ErrProcessReplyNameIsIllegal.
+		return errors.ErrReplyName.
 			AddDebug(base.ConcatString("reply name ", meta.name, " is illegal")).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		// check the reply handler is nil
-		return errors.ErrProcessHandlerIsNil.AddDebug(meta.fileLine)
+		return errors.ErrReplyHandler.
+			AddDebug("handler is nil").
+			AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
 		// Check reply handler is Func
-		return errors.ErrProcessIllegalHandler.AddDebug(fmt.Sprintf(
+		return errors.ErrReplyHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(runtimeType),
 			convertTypeToString(returnType),
@@ -453,7 +457,7 @@ func (p *Processor) mountReply(
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.repliesMap[replyPath]; ok {
 			// check the reply path is not occupied
-			return errors.ErrProcessDuplicatedReplyName.
+			return errors.ErrReplyName.
 				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",

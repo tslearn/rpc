@@ -112,14 +112,14 @@ func makeConnFDError(conn *websocket.Conn) {
 func TestConvertToError(t *testing.T) {
 	t.Run("err is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(convertToError(nil, errors.ErrStreamIsBroken)).IsNil()
+		assert(convertToError(nil, errors.ErrStream)).IsNil()
 	})
 
 	t.Run("err is websocket CloseNormalClosure", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseNormalClosure},
-			errors.ErrStreamIsBroken,
+			errors.ErrStream,
 		)).Equal(errors.ErrStreamConnIsClosed)
 	})
 
@@ -129,8 +129,8 @@ func TestConvertToError(t *testing.T) {
 			Equal(errors.ErrStreamConnIsClosed.AddDebug("error"))
 		assert(convertToError(
 			&websocket.CloseError{Code: websocket.CloseAbnormalClosure},
-			errors.ErrStreamIsBroken,
-		)).Equal(errors.ErrStreamIsBroken.AddDebug(
+			errors.ErrStream,
+		)).Equal(errors.ErrStream.AddDebug(
 			"websocket: close 1006 (abnormal closure)",
 		))
 	})

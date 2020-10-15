@@ -1284,7 +1284,7 @@ func (p *Stream) ReadBool() (bool, *base.Error) {
 			return false, nil
 		}
 	}
-	return false, errors.ErrStreamIsBroken
+	return false, errors.ErrStream
 }
 
 // ReadFloat64 read a float64
@@ -1324,7 +1324,7 @@ func (p *Stream) ReadFloat64() (float64, *base.Error) {
 			), nil
 		}
 	}
-	return 0, errors.ErrStreamIsBroken
+	return 0, errors.ErrStream
 }
 
 // ReadInt64 read a int64
@@ -1396,7 +1396,7 @@ func (p *Stream) ReadInt64() (int64, *base.Error) {
 					9223372036854775808), nil
 		}
 	}
-	return 0, errors.ErrStreamIsBroken
+	return 0, errors.ErrStream
 }
 
 // ReadUint64 read a uint64
@@ -1460,7 +1460,7 @@ func (p *Stream) ReadUint64() (uint64, *base.Error) {
 				(uint64(b[8]) << 56), nil
 		}
 	}
-	return 0, errors.ErrStreamIsBroken
+	return 0, errors.ErrStream
 }
 
 // ReadString read a string value
@@ -1546,7 +1546,7 @@ func (p *Stream) ReadString() (string, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return "", errors.ErrStreamIsBroken
+	return "", errors.ErrStream
 }
 
 func (p *Stream) readUnsafeString() (ret string, safe bool, err *base.Error) {
@@ -1631,7 +1631,7 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, err *base.Error) {
 
 		p.SetReadPos(readStart)
 	}
-	return "", true, errors.ErrStreamIsBroken
+	return "", true, errors.ErrStream
 }
 
 // ReadBytes read a Bytes value
@@ -1701,7 +1701,7 @@ func (p *Stream) ReadBytes() (Bytes, *base.Error) {
 		}
 		p.SetReadPos(readStart)
 	}
-	return Bytes{}, errors.ErrStreamIsBroken
+	return Bytes{}, errors.ErrStream
 }
 
 // ReadArray ...
@@ -1775,7 +1775,7 @@ func (p *Stream) ReadArray() (Array, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Array{}, errors.ErrStreamIsBroken
+	return Array{}, errors.ErrStream
 }
 
 // ReadMap read a Map value
@@ -1853,7 +1853,7 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Map{}, errors.ErrStreamIsBroken
+	return Map{}, errors.ErrStream
 }
 
 // Read read a generic value
@@ -1867,7 +1867,7 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
-		return nil, errors.ErrStreamIsBroken
+		return nil, errors.ErrStream
 	case byte(2):
 		fallthrough
 	case byte(3):
@@ -1889,9 +1889,9 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	case byte(11):
 		return p.ReadUint64()
 	case byte(12):
-		return nil, errors.ErrStreamIsBroken
+		return nil, errors.ErrStream
 	case byte(13):
-		return nil, errors.ErrStreamIsBroken
+		return nil, errors.ErrStream
 	}
 
 	switch op >> 6 {
@@ -1926,7 +1926,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			if p != cs {
 				cs.SetReadPos(cs.GetWritePos())
 				if !cs.writeStreamNext(p) {
-					return RTArray{}, errors.ErrStreamIsBroken
+					return RTArray{}, errors.ErrStream
 				}
 			}
 
@@ -1988,15 +1988,15 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 
 					if skip <= 0 {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStreamIsBroken
+						return RTArray{}, errors.ErrStream
 					} else if itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStreamIsBroken
+						return RTArray{}, errors.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
 					} else if !p.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStreamIsBroken
+						return RTArray{}, errors.ErrStream
 					}
 
 					if op>>6 == 2 {
@@ -2011,7 +2011,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			}
 			p.SetReadPos(readStart)
 		}
-		return RTArray{}, errors.ErrStreamIsBroken
+		return RTArray{}, errors.ErrStream
 	} else {
 		return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
@@ -2031,7 +2031,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			if p != cs {
 				cs.SetReadPos(cs.GetWritePos())
 				if !cs.writeStreamNext(p) {
-					return RTMap{}, errors.ErrStreamIsBroken
+					return RTMap{}, errors.ErrStream
 				}
 			}
 			start := cs.GetReadPos()
@@ -2096,15 +2096,15 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 
 					if skip <= 0 {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStreamIsBroken
+						return RTMap{}, errors.ErrStream
 					} else if itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStreamIsBroken
+						return RTMap{}, errors.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
 					} else if !p.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStreamIsBroken
+						return RTMap{}, errors.ErrStream
 					}
 
 					if op>>6 == 2 {
@@ -2119,7 +2119,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			}
 			p.SetReadPos(readStart)
 		}
-		return RTMap{}, errors.ErrStreamIsBroken
+		return RTMap{}, errors.ErrStream
 	} else {
 		return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
@@ -2134,7 +2134,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
-				return RTValue{err: errors.ErrStreamIsBroken}
+				return RTValue{err: errors.ErrStream}
 			}
 		}
 
@@ -2154,11 +2154,11 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 			skip, _ := cs.peekSkip()
 
 			if skip <= 0 {
-				return RTValue{err: errors.ErrStreamIsBroken}
+				return RTValue{err: errors.ErrStream}
 			} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 				cs.readIndex += skip
 			} else if !cs.SetReadPos(startPos + skip) {
-				return RTValue{err: errors.ErrStreamIsBroken}
+				return RTValue{err: errors.ErrStream}
 			}
 
 			return RTValue{
@@ -2166,7 +2166,7 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 				rt:          rt,
 				pos:         int64(startPos),
 				cacheString: "",
-				cacheError:  errors.ErrStreamIsBroken,
+				cacheError:  errors.ErrStream,
 				cacheSafe:   false,
 			}
 		}
