@@ -177,7 +177,13 @@ var (
 		"meta is nil",
 	)
 
-	ErrRuntimeServiceNodeIsNil = base.DefineKernelError(
+	ErrGetServiceDataServiceNodeIsNil = base.DefineKernelError(
+		(kernelErrorSeg<<16)|6,
+		base.ErrorLevelFatal,
+		"serviceNode is nil",
+	)
+
+	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",

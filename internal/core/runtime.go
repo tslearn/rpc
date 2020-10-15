@@ -111,7 +111,7 @@ func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	} else if serviceNode := replyNode.service; serviceNode == nil {
-		return nil, errors.ErrRuntimeServiceNodeIsNil.AddDebug(base.GetFileLine(1))
+		return nil, errors.ErrGetServiceDataServiceNodeIsNil
 	} else {
 		return serviceNode.GetData(key), nil
 	}
@@ -125,7 +125,7 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	} else if serviceNode := replyNode.service; serviceNode == nil {
-		return errors.ErrRuntimeServiceNodeIsNil.AddDebug(base.GetFileLine(1))
+		return errors.ErrSetServiceDataServiceNodeIsNil
 	} else {
 		serviceNode.SetData(key, value)
 		return nil
