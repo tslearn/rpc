@@ -4,7 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-const generalErrorSeg = 1000
+const generalErrorSeg = 0
 
 var (
 	ErrStream = base.DefineSecurityError(
@@ -14,189 +14,177 @@ var (
 	)
 
 	ErrUnsupportedValue = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|3,
+		(generalErrorSeg<<16)|2,
 		base.ErrorLevelError,
 		"",
 	)
 
 	ErrServiceName = base.DefineDevelopError(
-		(generalErrorSeg<<16)|2,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrReplyName = base.DefineDevelopError(
 		(generalErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrReplyHandler = base.DefineDevelopError(
+	ErrReplyName = base.DefineDevelopError(
 		(generalErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrServiceIsNil = base.DefineDevelopError(
+	ErrReplyHandler = base.DefineDevelopError(
 		(generalErrorSeg<<16)|5,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrServiceIsNil = base.DefineDevelopError(
+		(generalErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
 		"service is nil",
 	)
 
 	ErrServiceOverflow = base.DefineDevelopError(
-		(generalErrorSeg<<16)|6,
+		(generalErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	ErrReplyCloseTimeout = base.DefineDevelopError(
-		(generalErrorSeg<<16)|7,
+		(generalErrorSeg<<16)|8,
 		base.ErrorLevelError,
 		"",
 	)
 
 	ErrReplyPanic = base.DefineDevelopError(
-		(generalErrorSeg<<16)|8,
+		(generalErrorSeg<<16)|9,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	ErrReplyReturn = base.DefineReplyError(
-		(generalErrorSeg<<16)|9,
+		(generalErrorSeg<<16)|10,
 		base.ErrorLevelError,
 		"",
 	)
 
 	ErrRPCTargetNotExist = base.DefineSecurityError(
-		(threadErrorSeg<<16)|3,
+		(generalErrorSeg<<16)|11,
 		base.ErrorLevelError,
 		"",
 	)
 
 	ErrRPCCallOverflow = base.DefineSecurityError(
-		(threadErrorSeg<<16)|4,
+		(generalErrorSeg<<16)|12,
 		base.ErrorLevelError,
 		"",
 	)
 
 	ErrRPCArgumentsNotMatch = base.DefineSecurityError(
-		(threadErrorSeg<<16)|5,
+		(generalErrorSeg<<16)|13,
 		base.ErrorLevelError,
 		"",
 	)
 
+	ErrRuntimeIllegalInCurrentGoroutine = base.DefineDevelopError(
+		(generalErrorSeg<<16)|14,
+		base.ErrorLevelFatal,
+		"Runtime is illegal in current goroutine",
+	)
+
+	ErrRuntimeErrorArgumentIsNil = base.DefineDevelopError(
+		(generalErrorSeg<<16)|15,
+		base.ErrorLevelError,
+		"Runtime.Error argument is nil",
+	)
+
+	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
+		(generalErrorSeg<<16)|16,
+		base.ErrorLevelError,
+		"Runtime.OK has been called before",
+	)
+
+	ErrRuntimeErrorHasBeenCalled = base.DefineDevelopError(
+		(generalErrorSeg<<16)|17,
+		base.ErrorLevelError,
+		"Runtime.Error has been called before",
+	)
+
+	ErrRuntimeExternalReturn = base.DefineDevelopError(
+		(generalErrorSeg<<16)|18,
+		base.ErrorLevelError,
+		"reply must be return through Runtime.OK or Runtime.Error",
+	)
+
 	ErrNumOfThreadsIsWrong = base.DefineConfigError(
-		(generalErrorSeg<<16)|10,
+		(generalErrorSeg<<16)|19,
 		base.ErrorLevelFatal,
 		"numOfThreads is wrong",
 	)
 
 	ErrMaxNodeDepthIsWrong = base.DefineConfigError(
-		(generalErrorSeg<<16)|11,
+		(generalErrorSeg<<16)|20,
 		base.ErrorLevelFatal,
 		"maxNodeDepth is wrong",
 	)
 
 	// ErrFnCacheMkdirAll ... *
 	ErrCacheMkdirAll = base.DefineConfigError(
-		(generalErrorSeg<<16)|12,
+		(generalErrorSeg<<16)|21,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
 	// ErrFnCacheWriteFile ... *
 	ErrCacheWriteFile = base.DefineConfigError(
-		(generalErrorSeg<<16)|13,
+		(generalErrorSeg<<16)|22,
 		base.ErrorLevelFatal,
 		"write to file error",
 	)
 )
 
-const fnCacheErrorSeg = 1001
+const kernelErrorSeg = 1000
 
 var (
 	// ErrFnCacheIllegalKindString ... *
 	ErrFnCacheIllegalKindString = base.DefineKernelError(
-		(fnCacheErrorSeg<<16)|3,
+		(kernelErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	// ErrFnCacheDuplicateKindString ... *
 	ErrFnCacheDuplicateKindString = base.DefineKernelError(
-		(fnCacheErrorSeg<<16)|4,
+		(kernelErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"",
 	)
-)
 
-const processorErrorSeg = 1002
-
-var (
 	ErrProcessorMaxCallDepthIsWrong = base.DefineKernelError(
-		(processorErrorSeg<<16)|3,
+		(kernelErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"maxCallDepth is wrong",
 	)
 
 	ErrProcessorNodeMetaIsNil = base.DefineKernelError(
-		(processorErrorSeg<<16)|5,
+		(kernelErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"nodeMeta is nil",
 	)
 
 	ErrProcessorMetaIsNil = base.DefineKernelError(
-		(processorErrorSeg<<16)|11,
+		(kernelErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
 		"meta is nil",
 	)
-)
-
-const replyRuntimeSeg = 1003
-
-var (
-	ErrRuntimeIllegalInCurrentGoroutine = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|1,
-		base.ErrorLevelFatal,
-		"Runtime is illegal in current goroutine",
-	)
-
-	ErrRuntimeErrorArgumentIsNil = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|2,
-		base.ErrorLevelError,
-		"Runtime.Error argument is nil",
-	)
-
-	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|4,
-		base.ErrorLevelError,
-		"Runtime.OK has been called before",
-	)
-
-	ErrRuntimeErrorHasBeenCalled = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|5,
-		base.ErrorLevelError,
-		"Runtime.Error has been called before",
-	)
-
-	ErrRuntimeExternalReturn = base.DefineDevelopError(
-		(replyRuntimeSeg<<16)|6,
-		base.ErrorLevelError,
-		"reply must be return through Runtime.OK or Runtime.Error",
-	)
 
 	ErrRuntimeServiceNodeIsNil = base.DefineKernelError(
-		(replyRuntimeSeg<<16)|7,
+		(kernelErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",
 	)
-)
 
-const threadErrorSeg = 1004
-
-var (
 	ErrThreadEvalFatal = base.DefineKernelError(
-		(threadErrorSeg<<16)|1,
+		(kernelErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)
