@@ -11,19 +11,19 @@ import (
 func getTestDepthArray(depth int) [2]interface{} {
 	if depth <= 1 {
 		return [2]interface{}{true, ""}
-	} else {
-		ret := getTestDepthArray(depth - 1)
-		return [2]interface{}{Array{ret[0]}, "[0]" + ret[1].(string)}
 	}
+
+	ret := getTestDepthArray(depth - 1)
+	return [2]interface{}{Array{ret[0]}, "[0]" + ret[1].(string)}
 }
 
 func getTestDepthMap(depth int) [2]interface{} {
 	if depth <= 1 {
 		return [2]interface{}{true, ""}
-	} else {
-		ret := getTestDepthMap(depth - 1)
-		return [2]interface{}{Map{"a": ret[0]}, "[\"a\"]" + ret[1].(string)}
 	}
+
+	ret := getTestDepthMap(depth - 1)
+	return [2]interface{}{Map{"a": ret[0]}, "[\"a\"]" + ret[1].(string)}
 }
 
 var streamTestRuntime = Runtime{id: 0, thread: getFakeThread(true)}
@@ -939,7 +939,7 @@ func TestStream_CheckStream(t *testing.T) {
 			changePos := rand.Int() % stream.GetWritePos()
 			changeSeg := changePos / streamBlockSize
 			changeIndex := changePos % streamBlockSize
-			(*stream.frames[changeSeg])[changeIndex] += 1
+			(*stream.frames[changeSeg])[changeIndex]++
 			assert(stream.CheckStream()).IsFalse()
 			stream.Release()
 		}

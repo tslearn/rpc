@@ -77,12 +77,15 @@ type Map = map[string]interface{}
 // Any ...
 type Any = interface{}
 
+// ReturnObject ...
+type ReturnObject struct{}
+
 // Return ...
-type returnObject struct{}
-type Return = *returnObject
+type Return = *ReturnObject
 
-var emptyReturn = &returnObject{}
+var emptyReturn = &ReturnObject{}
 
+// RTArray ...
 type RTArray struct {
 	rt    Runtime
 	items []posRecord
@@ -105,20 +108,22 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 	return
 }
 
+// Get ...
 func (p *RTArray) Get(index int) RTValue {
 	if index >= 0 && index < len(p.items) {
 		return makeRTValue(p.rt, p.items[index])
-	} else {
-		return RTValue{}
 	}
+
+	return RTValue{}
 }
 
+// Size ...
 func (p *RTArray) Size() int {
 	if p.items != nil {
 		return len(p.items)
-	} else {
-		return -1
 	}
+
+	return -1
 }
 
 type mapItem struct {
@@ -128,6 +133,7 @@ type mapItem struct {
 
 const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
 
+// RTMap ...
 type RTMap struct {
 	rt       Runtime
 	items    []mapItem
@@ -159,6 +165,7 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 	return
 }
 
+// Get ...
 func (p *RTMap) Get(key string) RTValue {
 	if p.items != nil {
 		for i := len(p.items) - 1; i >= 0; i-- {
@@ -177,6 +184,7 @@ func (p *RTMap) Get(key string) RTValue {
 	}
 }
 
+// Size ...
 func (p *RTMap) Size() int {
 	if p.items != nil {
 		return len(p.items)
@@ -208,13 +216,14 @@ func (p posRecord) isString() bool {
 }
 
 func makePosRecord(pos int64, isString bool) posRecord {
-	if !isString {
-		return posRecord(pos)
-	} else {
+	if isString {
 		return 0x8000000000000000 | posRecord(pos)
 	}
+
+	return posRecord(pos)
 }
 
+// RTValue ...
 type RTValue struct {
 	err         *base.Error
 	rt          Runtime
@@ -252,6 +261,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 	}
 }
 
+// ToBool ...
 func (p RTValue) ToBool() (Bool, *base.Error) {
 	if p.err != nil {
 		return false, p.err
@@ -264,6 +274,7 @@ func (p RTValue) ToBool() (Bool, *base.Error) {
 	}
 }
 
+// ToInt64 ...
 func (p RTValue) ToInt64() (Int64, *base.Error) {
 	if p.err != nil {
 		return 0, p.err
@@ -276,6 +287,7 @@ func (p RTValue) ToInt64() (Int64, *base.Error) {
 	}
 }
 
+// ToUint64 ...
 func (p RTValue) ToUint64() (Uint64, *base.Error) {
 	if p.err != nil {
 		return 0, p.err
@@ -288,6 +300,7 @@ func (p RTValue) ToUint64() (Uint64, *base.Error) {
 	}
 }
 
+// ToFloat64 ...
 func (p RTValue) ToFloat64() (Float64, *base.Error) {
 	if p.err != nil {
 		return 0, p.err
@@ -300,6 +313,7 @@ func (p RTValue) ToFloat64() (Float64, *base.Error) {
 	}
 }
 
+// ToString ...
 func (p RTValue) ToString() (ret String, err *base.Error) {
 	if p.err != nil {
 		return "", p.err
@@ -312,6 +326,7 @@ func (p RTValue) ToString() (ret String, err *base.Error) {
 	}
 }
 
+// ToBytes ...
 func (p RTValue) ToBytes() (Bytes, *base.Error) {
 	if p.err != nil {
 		return Bytes(nil), p.err
@@ -324,6 +339,7 @@ func (p RTValue) ToBytes() (Bytes, *base.Error) {
 	}
 }
 
+// ToArray ...
 func (p RTValue) ToArray() (Array, *base.Error) {
 	if p.err != nil {
 		return Array(nil), p.err
@@ -336,6 +352,7 @@ func (p RTValue) ToArray() (Array, *base.Error) {
 	}
 }
 
+// ToRTArray ...
 func (p RTValue) ToRTArray() (RTArray, *base.Error) {
 	if p.err != nil {
 		return RTArray{}, p.err
@@ -348,6 +365,7 @@ func (p RTValue) ToRTArray() (RTArray, *base.Error) {
 	}
 }
 
+// ToMap ...
 func (p RTValue) ToMap() (Map, *base.Error) {
 	if p.err != nil {
 		return Map{}, p.err
@@ -360,6 +378,7 @@ func (p RTValue) ToMap() (Map, *base.Error) {
 	}
 }
 
+// ToRTMap ...
 func (p RTValue) ToRTMap() (RTMap, *base.Error) {
 	if p.err != nil {
 		return RTMap{}, p.err

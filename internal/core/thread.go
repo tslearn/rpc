@@ -143,9 +143,9 @@ func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
 		ret := unsafe.Pointer(&p.cache[p.top.cachePos])
 		p.top.cachePos += uint16(numOfBytes)
 		return ret
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
@@ -212,8 +212,18 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		}
 		p.top.retStatus = 1
 		return emptyReturn
+	} else if p.top.retStatus == 1 {
+		return p.WriteError(
+			errors.ErrRuntimeOKHasBeenCalled.
+				AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+			skip+1,
+		)
 	} else {
-		return p.WriteError(nil, skip+1)
+		return p.WriteError(
+			errors.ErrRuntimeErrorHasBeenCalled.
+				AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+			skip+1,
+		)
 	}
 }
 

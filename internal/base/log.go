@@ -15,6 +15,7 @@ var logWriter = unsafe.Pointer(&logHelper{
 	writer: os.Stdout,
 })
 
+// Log ...
 func Log(str string) {
 	if helper := (*logHelper)(atomic.LoadPointer(&logWriter)); helper != nil {
 		_, _ = helper.writer.Write(StringToBytesUnsafe(str))
@@ -23,6 +24,7 @@ func Log(str string) {
 	}
 }
 
+// SetLogWriter ...
 func SetLogWriter(writer io.Writer) {
 	if writer != nil {
 		atomic.StorePointer(&logWriter, unsafe.Pointer(&logHelper{

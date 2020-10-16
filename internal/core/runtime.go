@@ -71,6 +71,7 @@ func (p Runtime) Error(value error) Return {
 	return emptyReturn
 }
 
+// Call ...
 func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
@@ -103,6 +104,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	}
 }
 
+// GetServiceData ...
 func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	if thread := p.thread; thread == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
@@ -117,6 +119,7 @@ func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	}
 }
 
+// SetServiceData ...
 func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	if thread := p.thread; thread == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
@@ -132,6 +135,7 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	}
 }
 
+// ParseResponseStream ...
 func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
 	if errCode, err := stream.ReadUint64(); err != nil {
 		return RTValue{err: err}

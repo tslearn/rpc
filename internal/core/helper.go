@@ -101,6 +101,7 @@ func convertTypeToString(reflectType reflect.Type) string {
 	}
 }
 
+// MakeRequestStream ...
 func MakeRequestStream(
 	target string,
 	from string,
@@ -126,6 +127,7 @@ func MakeRequestStream(
 	return stream, nil
 }
 
+// ParseResponseStream ...
 func ParseResponseStream(stream *Stream) (Any, *base.Error) {
 	if errCode, err := stream.ReadUint64(); err != nil {
 		return nil, err

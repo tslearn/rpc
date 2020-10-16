@@ -30,9 +30,12 @@ const (
 	streamStatusBitDebug = 0
 
 	// StreamWriteOK ...
-	StreamWriteOK                = ""
-	StreamWriteOverflow          = " overflows"
-	StreamWriteIsNotAvailable    = " is not available"
+	StreamWriteOK = ""
+	// StreamWriteOverflow ...
+	StreamWriteOverflow = " overflows"
+	// StreamWriteIsNotAvailable ...
+	StreamWriteIsNotAvailable = " is not available"
+	// StreamWriteNilIsNotSupported ...
 	StreamWriteNilIsNotSupported = " is nil"
 )
 
@@ -167,14 +170,17 @@ func (p *Stream) SetVersion(version uint8) {
 	(*p.frames[0])[streamPosVersion] = version
 }
 
+// HasStatusBitDebug ...
 func (p *Stream) HasStatusBitDebug() bool {
 	return (*p.frames[0])[streamPosStatusBit]&(1<<streamStatusBitDebug) != 0
 }
 
+// SetStatusBitDebug ...
 func (p *Stream) SetStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] |= 1 << streamStatusBitDebug
 }
 
+// ClearStatusBitDebug ...
 func (p *Stream) ClearStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDebug) ^ 0xFF
 }
@@ -275,12 +281,14 @@ func (p *Stream) getCheckSum() uint64 {
 	return checksum
 }
 
+// BuildStreamCheck ...
 func (p *Stream) BuildStreamCheck() {
 	buf := (*p.frames[0])[streamPosCheck:]
 	binary.LittleEndian.PutUint64(buf, 0)
 	binary.LittleEndian.PutUint64(buf, p.getCheckSum())
 }
 
+// CheckStream ...
 func (p *Stream) CheckStream() bool {
 	return p.getCheckSum() == 0
 }
@@ -720,6 +728,7 @@ func (p *Stream) WriteUint64(v uint64) {
 	}
 }
 
+// WriteString ...
 func (p *Stream) WriteString(v string) {
 	length := len(v)
 	if length == 0 {
@@ -790,6 +799,7 @@ func (p *Stream) WriteString(v string) {
 	}
 }
 
+// WriteBytes ...
 func (p *Stream) WriteBytes(v Bytes) {
 	length := len(v)
 	if length == 0 {
@@ -1185,17 +1195,17 @@ func (p *Stream) writeRTValue(v RTValue) string {
 			return StreamWriteIsNotAvailable
 		}
 		return StreamWriteOK
-	} else {
-		return StreamWriteIsNotAvailable
 	}
+
+	return StreamWriteIsNotAvailable
 }
 
 func (p *Stream) Write(v interface{}) string {
 	if reason := p.write(v, 64); reason != StreamWriteOK {
 		return "value" + reason
-	} else {
-		return StreamWriteOK
 	}
+
+	return StreamWriteOK
 }
 
 func (p *Stream) write(v interface{}, depth int) string {
@@ -2012,13 +2022,13 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			p.SetReadPos(readStart)
 		}
 		return RTArray{}, errors.ErrStream
-	} else {
-		return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
 	}
+
+	return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
+		AddDebug(base.GetFileLine(1))
 }
 
-// ReadRPCMap read a RPCMap value
+// ReadRTMap read a RTMap value
 func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 	if thread := rt.lock(); thread != nil {
 		defer rt.unlock()
@@ -2120,10 +2130,10 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			p.SetReadPos(readStart)
 		}
 		return RTMap{}, errors.ErrStream
-	} else {
-		return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
 	}
+
+	return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
+		AddDebug(base.GetFileLine(1))
 }
 
 // ReadRTValue read a RTValue value
@@ -2149,31 +2159,31 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 				cacheSafe:   cacheSafe,
 				cacheError:  cacheError,
 			}
-		} else {
-			startPos := cs.GetReadPos()
-			skip, _ := cs.peekSkip()
-
-			if skip <= 0 {
-				return RTValue{err: errors.ErrStream}
-			} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
-				cs.readIndex += skip
-			} else if !cs.SetReadPos(startPos + skip) {
-				return RTValue{err: errors.ErrStream}
-			}
-
-			return RTValue{
-				err:         nil,
-				rt:          rt,
-				pos:         int64(startPos),
-				cacheString: "",
-				cacheError:  errors.ErrStream,
-				cacheSafe:   false,
-			}
 		}
-	} else {
+
+		startPos := cs.GetReadPos()
+		skip, _ := cs.peekSkip()
+
+		if skip <= 0 {
+			return RTValue{err: errors.ErrStream}
+		} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
+			cs.readIndex += skip
+		} else if !cs.SetReadPos(startPos + skip) {
+			return RTValue{err: errors.ErrStream}
+		}
+
 		return RTValue{
-			err: errors.ErrRuntimeIllegalInCurrentGoroutine.
-				AddDebug(base.GetFileLine(1)),
+			err:         nil,
+			rt:          rt,
+			pos:         int64(startPos),
+			cacheString: "",
+			cacheError:  errors.ErrStream,
+			cacheSafe:   false,
 		}
+	}
+
+	return RTValue{
+		err: errors.ErrRuntimeIllegalInCurrentGoroutine.
+			AddDebug(base.GetFileLine(1)),
 	}
 }

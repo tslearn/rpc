@@ -7,12 +7,14 @@ import (
 const generalErrorSeg = 0
 
 var (
+	// ErrStream ...
 	ErrStream = base.DefineSecurityError(
 		(generalErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"stream is broken",
 	)
 
+	// ErrUnsupportedValue ...
 	ErrUnsupportedValue = base.DefineDevelopError(
 		(generalErrorSeg<<16)|2,
 		base.ErrorLevelError,
@@ -61,60 +63,70 @@ var (
 		"",
 	)
 
+	// ErrReplyCustom ...
 	ErrReplyCustom = base.DefineReplyError(
 		(generalErrorSeg<<16)|10,
 		base.ErrorLevelError,
 		"",
 	)
 
+	// ErrReplyPanic ...
 	ErrReplyPanic = base.DefineDevelopError(
 		(generalErrorSeg<<16)|9,
 		base.ErrorLevelFatal,
 		"",
 	)
 
+	// ErrRPCTargetNotExist ...
 	ErrRPCTargetNotExist = base.DefineSecurityError(
 		(generalErrorSeg<<16)|11,
 		base.ErrorLevelError,
 		"",
 	)
 
+	// ErrRPCCallOverflow ...
 	ErrRPCCallOverflow = base.DefineSecurityError(
 		(generalErrorSeg<<16)|12,
 		base.ErrorLevelError,
 		"",
 	)
 
+	// ErrRPCArgumentsNotMatch ...
 	ErrRPCArgumentsNotMatch = base.DefineSecurityError(
 		(generalErrorSeg<<16)|13,
 		base.ErrorLevelError,
 		"",
 	)
 
+	// ErrRuntimeIllegalInCurrentGoroutine ...
 	ErrRuntimeIllegalInCurrentGoroutine = base.DefineDevelopError(
 		(generalErrorSeg<<16)|14,
 		base.ErrorLevelFatal,
 		"Runtime is illegal in current goroutine",
 	)
 
+	// ErrRuntimeErrorArgumentIsNil ...
 	ErrRuntimeErrorArgumentIsNil = base.DefineDevelopError(
 		(generalErrorSeg<<16)|15,
 		base.ErrorLevelError,
 		"Runtime.Error argument is nil",
 	)
 
+	// ErrRuntimeOKHasBeenCalled ...
 	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
 		(generalErrorSeg<<16)|16,
 		base.ErrorLevelError,
 		"Runtime.OK has been called before",
 	)
 
+	// ErrRuntimeErrorHasBeenCalled ...
 	ErrRuntimeErrorHasBeenCalled = base.DefineDevelopError(
 		(generalErrorSeg<<16)|17,
 		base.ErrorLevelError,
 		"Runtime.Error has been called before",
 	)
 
+	// ErrRuntimeExternalReturn ...
 	ErrRuntimeExternalReturn = base.DefineDevelopError(
 		(generalErrorSeg<<16)|18,
 		base.ErrorLevelError,
@@ -135,14 +147,14 @@ var (
 		"maxNodeDepth is wrong",
 	)
 
-	// ErrFnCacheMkdirAll ... *
+	// ErrCacheMkdirAll ... *
 	ErrCacheMkdirAll = base.DefineConfigError(
 		(generalErrorSeg<<16)|21,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
-	// ErrFnCacheWriteFile ... *
+	// ErrCacheWriteFile ... *
 	ErrCacheWriteFile = base.DefineConfigError(
 		(generalErrorSeg<<16)|22,
 		base.ErrorLevelFatal,
@@ -195,18 +207,21 @@ var (
 		"reply meta is nil",
 	)
 
+	// ErrGetServiceDataServiceNodeIsNil ...
 	ErrGetServiceDataServiceNodeIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",
 	)
 
+	// ErrSetServiceDataServiceNodeIsNil ...
 	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|8,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",
 	)
 
+	// ErrThreadEvalFatal ...
 	ErrThreadEvalFatal = base.DefineKernelError(
 		(kernelErrorSeg<<16)|9,
 		base.ErrorLevelFatal,

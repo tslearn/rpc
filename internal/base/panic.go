@@ -9,11 +9,13 @@ var (
 	gPanicSubscriptions = make([]*PanicSubscription, 0)
 )
 
+// PanicSubscription ...
 type PanicSubscription struct {
 	id      int64
 	onPanic func(err *Error)
 }
 
+// Close ...
 func (p *PanicSubscription) Close() bool {
 	if p == nil {
 		return false
@@ -67,6 +69,7 @@ func PublishPanic(err *Error) {
 	}
 }
 
+// RunWithCatchPanic ...
 func RunWithCatchPanic(fn func()) (ret interface{}) {
 	defer func() {
 		ret = recover()
@@ -76,6 +79,7 @@ func RunWithCatchPanic(fn func()) (ret interface{}) {
 	return
 }
 
+// RunWithSubscribePanic ...
 func RunWithSubscribePanic(fn func()) *Error {
 	ch := make(chan *Error, 1)
 	sub := SubscribePanic(func(err *Error) {

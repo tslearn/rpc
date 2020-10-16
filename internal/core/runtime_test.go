@@ -101,7 +101,7 @@ func TestContextObject_Error(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
-		)).Equal(nil, errors.ErrReplyReturn.
+		)).Equal(nil, errors.ErrReplyCustom.
 			AddDebug("error").
 			AddDebug(source),
 		)

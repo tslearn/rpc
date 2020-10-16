@@ -6,6 +6,8 @@ import (
 
 // SyncPoolDebug should only works on debug mode, when release it,
 // please replace it with sync.Pool
+
+// SyncPool ...
 type SyncPool = SyncPoolDebug
 
 // type SyncPool = sync.Pool
@@ -15,11 +17,13 @@ var (
 	safePoolDebugMap   = map[interface{}]bool{}
 )
 
+// SyncPoolDebug ...
 type SyncPoolDebug struct {
 	pool sync.Pool
 	New  func() interface{}
 }
 
+// Put ...
 func (p *SyncPoolDebug) Put(value interface{}) {
 	safePoolDebugMutex.Lock()
 	defer safePoolDebugMutex.Unlock()
@@ -36,6 +40,7 @@ func (p *SyncPoolDebug) Put(value interface{}) {
 	}
 }
 
+// Get ...
 func (p *SyncPoolDebug) Get() interface{} {
 	safePoolDebugMutex.Lock()
 	defer safePoolDebugMutex.Unlock()

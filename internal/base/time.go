@@ -100,9 +100,9 @@ func (p *timeMaster) Run() bool {
 			}
 		}
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 func (p *timeMaster) Close() bool {
@@ -185,6 +185,7 @@ func TimeNowISOString() string {
 	return gTimeMaster.TimeNowISOString()
 }
 
+// IsTimeApproximatelyEqual ...
 func IsTimeApproximatelyEqual(t1 time.Time, t2 time.Time) bool {
 	delta := t1.Sub(t2)
 	return delta < 50*time.Millisecond && delta > -50*time.Millisecond

@@ -21,6 +21,7 @@ var (
 		"+/"
 )
 
+// IsNil ...
 func IsNil(val interface{}) (ret bool) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -35,6 +36,7 @@ func IsNil(val interface{}) (ret bool) {
 	return reflect.ValueOf(val).IsNil()
 }
 
+// MinInt ...
 func MinInt(v1 int, v2 int) int {
 	if v1 < v2 {
 		return v1
@@ -43,6 +45,7 @@ func MinInt(v1 int, v2 int) int {
 	return v2
 }
 
+// MaxInt ...
 func MaxInt(v1 int, v2 int) int {
 	if v1 < v2 {
 		return v2
@@ -51,6 +54,7 @@ func MaxInt(v1 int, v2 int) int {
 	return v1
 }
 
+// StringToBytesUnsafe ...
 func StringToBytesUnsafe(s string) (ret []byte) {
 	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret))
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
@@ -60,6 +64,7 @@ func StringToBytesUnsafe(s string) (ret []byte) {
 	return
 }
 
+// BytesToStringUnsafe ...
 func BytesToStringUnsafe(bytes []byte) (ret string) {
 	bytesHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&ret))
@@ -68,6 +73,7 @@ func BytesToStringUnsafe(bytes []byte) (ret string) {
 	return
 }
 
+// IsUTF8Bytes ...
 func IsUTF8Bytes(bytes []byte) bool {
 	idx := 0
 	length := len(bytes)
@@ -213,6 +219,7 @@ func IsTCPPortOccupied(port uint16) bool {
 	return err == nil
 }
 
+// ReadFromFile ...
 func ReadFromFile(filePath string) (string, error) {
 	ret, err := ioutil.ReadFile(filePath)
 	if err != nil {

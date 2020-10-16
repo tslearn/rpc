@@ -6,25 +6,37 @@ import (
 	"sync"
 )
 
+// ErrorType ...
 type ErrorType uint8
 
 const (
-	ErrorTypeConfig    = ErrorType(1)
+	// ErrorTypeConfig ...
+	ErrorTypeConfig = ErrorType(1)
+	// ErrorTypeTransport ...
 	ErrorTypeTransport = ErrorType(2)
-	ErrorTypeReply     = ErrorType(3)
-	ErrorTypeDevelop   = ErrorType(4)
-	ErrorTypeKernel    = ErrorType(5)
-	ErrorTypeSecurity  = ErrorType(6)
+	// ErrorTypeReply ...
+	ErrorTypeReply = ErrorType(3)
+	// ErrorTypeDevelop ...
+	ErrorTypeDevelop = ErrorType(4)
+	// ErrorTypeKernel ...
+	ErrorTypeKernel = ErrorType(5)
+	// ErrorTypeSecurity ..
+	ErrorTypeSecurity = ErrorType(6)
 )
 
+// ErrorLevel ...
 type ErrorLevel uint8
 
 const (
-	ErrorLevelWarn  = ErrorLevel(1)
+	// ErrorLevelWarn ...
+	ErrorLevelWarn = ErrorLevel(1)
+	// ErrorLevelError ...
 	ErrorLevelError = ErrorLevel(2)
+	// ErrorLevelFatal ...
 	ErrorLevelFatal = ErrorLevel(3)
 )
 
+// ErrorNumber ...
 type ErrorNumber uint32
 
 var (
@@ -32,11 +44,13 @@ var (
 	errorDefineMap   = map[ErrorNumber]string{}
 )
 
+// Error ...
 type Error struct {
 	code    uint64
 	message string
 }
 
+// NewError ...
 func NewError(code uint64, message string) *Error {
 	return &Error{
 		code:    code,
@@ -98,26 +112,32 @@ func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
 }
 
+// GetCode ...
 func (p *Error) GetCode() uint64 {
 	return p.code
 }
 
+// GetType ...
 func (p *Error) GetType() ErrorType {
 	return ErrorType(p.code >> 42)
 }
 
+// GetLevel ...
 func (p *Error) GetLevel() ErrorLevel {
 	return ErrorLevel((p.code >> 34) & 0xFF)
 }
 
+// GetNumber ...
 func (p *Error) GetNumber() ErrorNumber {
 	return ErrorNumber((p.code >> 2) & 0xFFFFFFFF)
 }
 
+// GetMessage ...
 func (p *Error) GetMessage() string {
 	return p.message
 }
 
+// AddDebug ...
 func (p *Error) AddDebug(debug string) *Error {
 	if p.code%2 == 0 {
 		ret := &Error{code: p.code + 1}
