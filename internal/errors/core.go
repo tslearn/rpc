@@ -61,15 +61,15 @@ var (
 		"",
 	)
 
-	ErrReplyPanic = base.DefineDevelopError(
-		(generalErrorSeg<<16)|9,
-		base.ErrorLevelFatal,
+	ErrReplyCustom = base.DefineReplyError(
+		(generalErrorSeg<<16)|10,
+		base.ErrorLevelError,
 		"",
 	)
 
-	ErrReplyReturn = base.DefineReplyError(
-		(generalErrorSeg<<16)|10,
-		base.ErrorLevelError,
+	ErrReplyPanic = base.DefineDevelopError(
+		(generalErrorSeg<<16)|9,
+		base.ErrorLevelFatal,
 		"",
 	)
 

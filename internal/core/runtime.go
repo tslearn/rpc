@@ -49,7 +49,7 @@ func (p Runtime) Error(value error) Return {
 			)
 		} else if value != nil {
 			return p.thread.WriteError(
-				errors.ErrReplyReturn.
+				errors.ErrReplyCustom.
 					AddDebug(value.Error()).
 					AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 				1,
