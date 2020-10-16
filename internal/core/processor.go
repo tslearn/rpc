@@ -86,9 +86,9 @@ func NewProcessor(
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 	onReturnStream func(stream *Stream),
-) *Processor {
+) (*Processor, *base.Error) {
 	if onReturnStream == nil {
-		return nil
+		return nil, errors.ErrProcessorOnReturnStreamIsNil
 	}
 
 	fnError := func(err *base.Error) {
@@ -102,14 +102,11 @@ func NewProcessor(
 	}
 
 	if numOfThreads <= 0 {
-		fnError(errors.ErrNumOfThreadsIsWrong)
-		return nil
+		return nil, errors.ErrNumOfThreadsIsWrong
 	} else if maxNodeDepth <= 0 {
-		fnError(errors.ErrMaxNodeDepthIsWrong)
-		return nil
+		return nil, errors.ErrMaxNodeDepthIsWrong
 	} else if maxCallDepth <= 0 {
-		fnError(errors.ErrProcessorMaxCallDepthIsWrong)
-		return nil
+		return nil, errors.ErrProcessorMaxCallDepthIsWrong
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
@@ -148,8 +145,7 @@ func NewProcessor(
 
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
-				fnError(err)
-				return nil
+				return nil, err
 			}
 		}
 
@@ -191,7 +187,7 @@ func NewProcessor(
 			ret.threads[i] = thread
 			ret.freeCHArray[i%freeGroups] <- thread
 		}
-		return ret
+		return ret, nil
 	}
 }
 
@@ -326,29 +322,27 @@ func (p *Processor) mountNode(
 	fnCache ReplyCache,
 ) *base.Error {
 	if nodeMeta == nil {
-		// check nodeMeta is not nil
 		return errors.ErrProcessorNodeMetaIsNil
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
-		// check nodeMeta.name is valid
-		return errors.ErrServiceName.AddDebug(base.ConcatString(
-			"name ", nodeMeta.name, " is illegal",
-		)).AddDebug(nodeMeta.fileLine)
+		return errors.ErrServiceName.
+			AddDebug(fmt.Sprintf("service name %s is illegal", nodeMeta.name)).
+			AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
-		// check nodeMeta.service is not nil
 		return errors.ErrServiceIsNil.AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
-		if parentNode.depth+1 > p.maxNodeDepth {
-			// check max node depth overflow
-			return errors.ErrServiceOverflow.AddDebug(nodeMeta.fileLine)
-		} else if item, ok := p.servicesMap[servicePath]; ok {
-			// check the mount path is not occupied
-			return errors.ErrServiceName.
+		if parentNode.depth+1 > p.maxNodeDepth { // depth overflows
+			return errors.ErrServiceOverflow.
 				AddDebug(fmt.Sprintf(
-					"duplicated service name %s",
-					nodeMeta.name,
+					"service path %s is overflow (max depth: %d, current depth:%d)",
+					servicePath,
+					p.maxNodeDepth, parentNode.depth+1,
 				)).
+				AddDebug(nodeMeta.fileLine)
+		} else if item, ok := p.servicesMap[servicePath]; ok { // path is occupied
+			return errors.ErrServiceName.
+				AddDebug(fmt.Sprintf("duplicated service name %s", nodeMeta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
 					base.AddPrefixPerLine(nodeMeta.fileLine, "\t"),
@@ -431,20 +425,16 @@ func (p *Processor) mountReply(
 	fnCache ReplyCache,
 ) *base.Error {
 	if meta == nil {
-		// check the rpcReplyMeta is nil
-		return errors.ErrProcessorMetaIsNil
+		return errors.ErrProcessorReplyMetaIsNil
 	} else if !replyNameRegex.MatchString(meta.name) {
-		// check the name
 		return errors.ErrReplyName.
-			AddDebug(base.ConcatString("reply name ", meta.name, " is illegal")).
+			AddDebug(fmt.Sprintf("reply name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
-		// check the reply handler is nil
 		return errors.ErrReplyHandler.
 			AddDebug("handler is nil").
 			AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
-		// Check reply handler is Func
 		return errors.ErrReplyHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(runtimeType),

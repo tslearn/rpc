@@ -337,7 +337,7 @@ func TestParseResponseStream(t *testing.T) {
 }
 
 func getFakeProcessor(debug bool) *Processor {
-	processor := NewProcessor(
+	processor, _ := NewProcessor(
 		debug,
 		1,
 		32,
@@ -387,18 +387,20 @@ func newTestProcessorHelper(
 		}
 	}
 
+	processor, _ := NewProcessor(
+		isDebug,
+		numOfThreads,
+		maxNodeDepth,
+		maxCallDepth,
+		fnCache,
+		closeTimeout,
+		mountServices,
+		fnOnReturnStream,
+	)
+
 	return &testProcessorHelper{
-		streamCH: streamCH,
-		processor: NewProcessor(
-			isDebug,
-			numOfThreads,
-			maxNodeDepth,
-			maxCallDepth,
-			fnCache,
-			closeTimeout,
-			mountServices,
-			fnOnReturnStream,
-		),
+		streamCH:  streamCH,
+		processor: processor,
 	}
 }
 

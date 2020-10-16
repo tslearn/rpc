@@ -19,36 +19,42 @@ var (
 		"",
 	)
 
+	// ErrServiceName ... *
 	ErrServiceName = base.DefineDevelopError(
 		(generalErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	ErrReplyName = base.DefineDevelopError(
-		(generalErrorSeg<<16)|4,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	ErrReplyHandler = base.DefineDevelopError(
-		(generalErrorSeg<<16)|5,
-		base.ErrorLevelFatal,
-		"",
-	)
-
+	// ErrServiceIsNil ... *
 	ErrServiceIsNil = base.DefineDevelopError(
 		(generalErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
 		"service is nil",
 	)
 
+	// ErrServiceOverflow ... *
 	ErrServiceOverflow = base.DefineDevelopError(
 		(generalErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)
 
+	// ErrReplyName ... *
+	ErrReplyName = base.DefineDevelopError(
+		(generalErrorSeg<<16)|4,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	// ErrReplyHandler ... *
+	ErrReplyHandler = base.DefineDevelopError(
+		(generalErrorSeg<<16)|5,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	// ErrReplyCloseTimeout ... *
 	ErrReplyCloseTimeout = base.DefineDevelopError(
 		(generalErrorSeg<<16)|8,
 		base.ErrorLevelError,
@@ -115,12 +121,14 @@ var (
 		"reply must be return through Runtime.OK or Runtime.Error",
 	)
 
+	// ErrNumOfThreadsIsWrong ... *
 	ErrNumOfThreadsIsWrong = base.DefineConfigError(
 		(generalErrorSeg<<16)|19,
 		base.ErrorLevelFatal,
 		"numOfThreads is wrong",
 	)
 
+	// ErrMaxNodeDepthIsWrong ... *
 	ErrMaxNodeDepthIsWrong = base.DefineConfigError(
 		(generalErrorSeg<<16)|20,
 		base.ErrorLevelFatal,
@@ -159,38 +167,48 @@ var (
 		"",
 	)
 
-	ErrProcessorMaxCallDepthIsWrong = base.DefineKernelError(
+	// ErrProcessorOnReturnStreamIsNil ... *
+	ErrProcessorOnReturnStreamIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|3,
+		base.ErrorLevelFatal,
+		"onReturnStream is nil",
+	)
+
+	// ErrProcessorMaxCallDepthIsWrong ... *
+	ErrProcessorMaxCallDepthIsWrong = base.DefineKernelError(
+		(kernelErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"maxCallDepth is wrong",
 	)
 
+	// ErrProcessorNodeMetaIsNil ... *
 	ErrProcessorNodeMetaIsNil = base.DefineKernelError(
-		(kernelErrorSeg<<16)|4,
-		base.ErrorLevelFatal,
-		"nodeMeta is nil",
-	)
-
-	ErrProcessorMetaIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
-		"meta is nil",
+		"node meta is nil",
+	)
+
+	// ErrProcessorReplyMetaIsNil ... *
+	ErrProcessorReplyMetaIsNil = base.DefineKernelError(
+		(kernelErrorSeg<<16)|6,
+		base.ErrorLevelFatal,
+		"reply meta is nil",
 	)
 
 	ErrGetServiceDataServiceNodeIsNil = base.DefineKernelError(
-		(kernelErrorSeg<<16)|6,
-		base.ErrorLevelFatal,
-		"serviceNode is nil",
-	)
-
-	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"serviceNode is nil",
 	)
 
-	ErrThreadEvalFatal = base.DefineKernelError(
+	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|8,
+		base.ErrorLevelFatal,
+		"serviceNode is nil",
+	)
+
+	ErrThreadEvalFatal = base.DefineKernelError(
+		(kernelErrorSeg<<16)|9,
 		base.ErrorLevelFatal,
 		"",
 	)
