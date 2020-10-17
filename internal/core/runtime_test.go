@@ -2,6 +2,7 @@ package core
 
 import (
 	sysError "errors"
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
@@ -136,6 +137,7 @@ func TestRuntime_Call(t *testing.T) {
 		assert := base.NewAssert(t)
 		source1 := ""
 		source2 := ""
+
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				errArg := make(chan bool)
@@ -148,6 +150,36 @@ func TestRuntime_Call(t *testing.T) {
 			}),
 		)).Equal(nil, errors.ErrUnsupportedValue.
 			AddDebug("2nd argument: value type(chan bool) is not supported").
+			AddDebug(source1).AddDebug(source2),
+		)
+	})
+
+	t.Run("depth overflow", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source1 := ""
+		source2 := ""
+		assert(ParseResponseStream(
+			testWithProcessorAndRuntime(
+				true,
+				func(processor *Processor, rt Runtime) Return {
+					// set max call depth to 1
+					oldMaxCallDepth := processor.maxCallDepth
+					processor.maxCallDepth = 1
+					defer func() {
+						processor.maxCallDepth = oldMaxCallDepth
+					}()
+
+					rtValue, s1 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
+					fmt.Println(rtValue)
+					source1 = rt.thread.GetReplyNode().path + " " + s1
+					_, err := rtValue.ToString()
+					ret, s2 := rt.Error(err), base.GetFileLine(0)
+					source2 = rt.thread.GetReplyNode().path + " " + s2
+					return ret
+				},
+			),
+		)).Equal(nil, errors.ErrCallOverflow.
+			AddDebug("call #.test:SayHello level(1) overflows").
 			AddDebug(source1).AddDebug(source2),
 		)
 	})

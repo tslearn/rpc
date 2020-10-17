@@ -77,22 +77,22 @@ var (
 		"",
 	)
 
-	// ErrRPCTargetNotExist ...
-	ErrRPCTargetNotExist = base.DefineSecurityError(
+	// ErrTargetNotExist ...
+	ErrTargetNotExist = base.DefineSecurityError(
 		(generalErrorSeg<<16)|11,
 		base.ErrorLevelError,
 		"",
 	)
 
-	// ErrRPCCallOverflow ...
-	ErrRPCCallOverflow = base.DefineSecurityError(
+	// ErrCallOverflow ...
+	ErrCallOverflow = base.DefineSecurityError(
 		(generalErrorSeg<<16)|12,
 		base.ErrorLevelError,
 		"",
 	)
 
-	// ErrRPCArgumentsNotMatch ...
-	ErrRPCArgumentsNotMatch = base.DefineSecurityError(
+	// ErrArgumentsNotMatch ...
+	ErrArgumentsNotMatch = base.DefineSecurityError(
 		(generalErrorSeg<<16)|13,
 		base.ErrorLevelError,
 		"",

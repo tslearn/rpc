@@ -50,7 +50,12 @@ func (p Runtime) Error(value error) Return {
 	}
 	defer p.unlock()
 
-	if err, ok := value.(*base.Error); ok && err != nil {
+	if err, ok := value.(*base.Error); ok {
+		if err == nil {
+			err = errors.ErrUnsupportedValue.
+				AddDebug("value type(nil) is not supported")
+		}
+
 		return p.thread.WriteError(
 			err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 			1,
@@ -81,13 +86,12 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 				AddDebug(base.GetFileLine(1)),
 		}
 	}
-	defer p.unlock()
-
 	frame := thread.top
 
 	// make stream
 	stream, err := MakeRequestStream(target, frame.from, args...)
 	if err != nil {
+		p.unlock()
 		return RTValue{
 			err: err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		}
@@ -97,10 +101,9 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 
 	// switch thread frame
 	thread.pushFrame()
-	defer thread.popFrame()
-
-	// eval
 	thread.Eval(stream, func(stream *Stream) {})
+	thread.popFrame()
+	p.unlock()
 
 	// return
 	return p.ParseResponseStream(stream)

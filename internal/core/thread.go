@@ -325,7 +325,7 @@ func (p *rpcThread) Eval(
 		return p.WriteError(err, 0)
 	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
 		return p.WriteError(
-			errors.ErrRPCTargetNotExist.
+			errors.ErrTargetNotExist.
 				AddDebug(base.ConcatString("target ", replyPath, " does not exist")),
 			0,
 		)
@@ -333,9 +333,9 @@ func (p *rpcThread) Eval(
 		atomic.StorePointer(&frame.replyNode, unsafe.Pointer(execReplyNode))
 	}
 
-	if frame.depth > p.processor.maxCallDepth {
+	if frame.depth >= p.processor.maxCallDepth {
 		return p.WriteError(
-			errors.ErrRPCCallOverflow.
+			errors.ErrCallOverflow.
 				AddDebug(base.ConcatString(
 					"call ",
 					replyPath,
@@ -454,7 +454,7 @@ func (p *rpcThread) Eval(
 			return p.WriteError(err, 0)
 		} else if !p.processor.isDebug {
 			return p.WriteError(
-				errors.ErrRPCArgumentsNotMatch.
+				errors.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(
 						replyPath,
 						" reply arguments does not match",
@@ -493,7 +493,7 @@ func (p *rpcThread) Eval(
 			}
 
 			return p.WriteError(
-				errors.ErrRPCArgumentsNotMatch.AddDebug(base.ConcatString(
+				errors.ErrArgumentsNotMatch.AddDebug(base.ConcatString(
 					replyPath,
 					" reply arguments does not match\nwant: ",
 					execReplyNode.callString,
