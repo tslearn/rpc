@@ -106,7 +106,12 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	p.unlock()
 
 	// return
-	return p.ParseResponseStream(stream)
+	ret := p.ParseResponseStream(stream)
+	if ret.err != nil {
+		ret.err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
+	}
+
+	return ret
 }
 
 // GetServiceData ...

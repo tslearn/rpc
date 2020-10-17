@@ -158,6 +158,7 @@ func TestRuntime_Call(t *testing.T) {
 		assert := base.NewAssert(t)
 		source1 := ""
 		source2 := ""
+		source3 := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(
 				true,
@@ -169,18 +170,35 @@ func TestRuntime_Call(t *testing.T) {
 						processor.maxCallDepth = oldMaxCallDepth
 					}()
 
-					rtValue, s1 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
-					fmt.Println(rtValue)
-					source1 = rt.thread.GetReplyNode().path + " " + s1
-					_, err := rtValue.ToString()
-					ret, s2 := rt.Error(err), base.GetFileLine(0)
+					rtValue, s2 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
+					source1 = "#.test:SayHello " +
+						rt.thread.processor.repliesMap["#.test:SayHello"].meta.fileLine
 					source2 = rt.thread.GetReplyNode().path + " " + s2
+					_, err := rtValue.ToString()
+					ret, s3 := rt.Error(err), base.GetFileLine(0)
+					source3 = rt.thread.GetReplyNode().path + " " + s3
 					return ret
 				},
 			),
 		)).Equal(nil, errors.ErrCallOverflow.
 			AddDebug("call #.test:SayHello level(1) overflows").
-			AddDebug(source1).AddDebug(source2),
+			AddDebug(source1).AddDebug(source2).AddDebug(source3),
+		)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(ParseResponseStream(
+			testWithProcessorAndRuntime(
+				true,
+				func(processor *Processor, rt Runtime) Return {
+					rtValue := rt.Call("#.test:SayHello", "ts")
+					fmt.Println(rtValue.ToString())
+					return rt.OK(rtValue)
+				},
+			),
+		)).Equal(nil, errors.ErrCallOverflow.
+			AddDebug("call #.test:SayHello level(1) overflows"),
 		)
 	})
 }
