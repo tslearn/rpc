@@ -8,9 +8,10 @@ import (
 // please replace it with sync.Pool
 
 // SyncPool ...
-type SyncPool = SyncPoolDebug
+// type SyncPool = SyncPoolDebug
 
-// type SyncPool = sync.Pool
+// SyncPool ...
+type SyncPool = sync.Pool
 
 var (
 	safePoolDebugMutex = sync.Mutex{}

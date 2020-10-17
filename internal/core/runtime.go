@@ -64,9 +64,9 @@ func (p Runtime) Error(value error) Return {
 		)
 	} else {
 		return p.thread.WriteError(
-			errors.ErrRuntimeErrorArgumentIsNil.AddDebug(
-				base.AddFileLine(thread.GetExecReplyNodePath(), 1),
-			),
+			errors.ErrUnsupportedValue.
+				AddDebug("value type(nil) is not supported").
+				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 			1,
 		)
 	}

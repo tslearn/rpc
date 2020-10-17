@@ -101,10 +101,7 @@ func TestContextObject_Error(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
-		)).Equal(nil, errors.ErrReplyCustom.
-			AddDebug("error").
-			AddDebug(source),
-		)
+		)).Equal(nil, errors.ErrReplyCustom.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("argument is nil", func(t *testing.T) {
@@ -117,7 +114,12 @@ func TestContextObject_Error(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
-		)).Equal(nil, errors.ErrRuntimeErrorArgumentIsNil.AddDebug(source))
+		)).Equal(
+			nil,
+			errors.ErrUnsupportedValue.
+				AddDebug("value type(nil) is not supported").
+				AddDebug(source),
+		)
 	})
 }
 

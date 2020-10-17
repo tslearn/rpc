@@ -105,13 +105,6 @@ var (
 		"Runtime is illegal in current goroutine",
 	)
 
-	// ErrRuntimeErrorArgumentIsNil ...
-	ErrRuntimeErrorArgumentIsNil = base.DefineDevelopError(
-		(generalErrorSeg<<16)|15,
-		base.ErrorLevelError,
-		"Runtime.Error argument is nil",
-	)
-
 	// ErrRuntimeOKHasBeenCalled ...
 	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
 		(generalErrorSeg<<16)|16,
