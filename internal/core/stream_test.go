@@ -2921,8 +2921,9 @@ func TestStream_ReadRTValue(t *testing.T) {
 		type R = Runtime
 		s := ""
 		f := base.GetFileLine
-		assert(stream.ReadRTValue((func() R { s = f(0); return R{} })())).Equal(
-			RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(s)},
-		)
+		assert(stream.ReadRTValue((func() R { s = f(0); return R{} })())).
+			Equal(
+				RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(s)},
+			)
 	})
 }

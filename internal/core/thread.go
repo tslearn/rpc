@@ -205,7 +205,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 		if reason := stream.Write(value); reason != StreamWriteOK {
 			return p.WriteError(
 				errors.ErrUnsupportedValue.
-					AddDebug(base.ConcatString("value", reason)).
+					AddDebug(reason).
 					AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
 				skip+1,
 			)

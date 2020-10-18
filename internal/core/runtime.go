@@ -86,12 +86,12 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 				AddDebug(base.GetFileLine(1)),
 		}
 	}
+	defer p.unlock()
 	frame := thread.top
 
 	// make stream
 	stream, err := MakeRequestStream(target, frame.from, args...)
 	if err != nil {
-		p.unlock()
 		return RTValue{
 			err: err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
 		}
@@ -103,7 +103,6 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	thread.pushFrame()
 	thread.Eval(stream, func(stream *Stream) {})
 	thread.popFrame()
-	p.unlock()
 
 	// return
 	ret := p.ParseResponseStream(stream)

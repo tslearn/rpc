@@ -1005,8 +1005,7 @@ func (p *Stream) writeMap(v Map, depth int) string {
 }
 
 func (p *Stream) writeRTArray(v RTArray) string {
-	if thread := v.rt.lock(); thread != nil {
-		defer v.rt.unlock()
+	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
 		length := v.Size()
 
@@ -1089,8 +1088,7 @@ func (p *Stream) writeRTArray(v RTArray) string {
 
 // WriteRPCMap write RPCMap value to stream
 func (p *Stream) writeRTMap(v RTMap) string {
-	if thread := v.rt.lock(); thread != nil {
-		defer v.rt.unlock()
+	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
 
 		length := v.Size()
@@ -1185,8 +1183,7 @@ func (p *Stream) writeRTMap(v RTMap) string {
 }
 
 func (p *Stream) writeRTValue(v RTValue) string {
-	if thread := v.rt.lock(); thread != nil {
-		defer v.rt.unlock()
+	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
 		if !readStream.SetReadPos(int(v.pos)) {
 			return StreamWriteIsNotAvailable
@@ -1924,8 +1921,7 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 
 // ReadRTArray read a RPCArray value
 func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
-	if thread := rt.lock(); thread != nil {
-		defer rt.unlock()
+	if thread := rt.thread; thread != nil {
 		v := p.readFrame[p.readIndex]
 		if v >= 64 && v < 96 {
 			cs := thread.rtStream
@@ -2030,8 +2026,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 
 // ReadRTMap read a RTMap value
 func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
-	if thread := rt.lock(); thread != nil {
-		defer rt.unlock()
+	if thread := rt.thread; thread != nil {
 		v := p.readFrame[p.readIndex]
 		if v >= 96 && v < 128 {
 			cs := thread.rtStream
@@ -2138,8 +2133,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 
 // ReadRTValue read a RTValue value
 func (p *Stream) ReadRTValue(rt Runtime) RTValue {
-	if thread := rt.lock(); thread != nil {
-		defer rt.unlock()
+	if thread := rt.thread; thread != nil {
 		cs := thread.rtStream
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())

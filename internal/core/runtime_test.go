@@ -197,8 +197,6 @@ func TestRuntime_Call(t *testing.T) {
 					return rt.OK(rtValue)
 				},
 			),
-		)).Equal(nil, errors.ErrCallOverflow.
-			AddDebug("call #.test:SayHello level(1) overflows"),
-		)
+		)).Equal("hello ts", nil)
 	})
 }
