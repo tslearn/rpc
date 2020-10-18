@@ -31,14 +31,15 @@ var rpcThreadFrameCache = &sync.Pool{
 }
 
 type rpcThreadFrame struct {
-	stream     *Stream
-	replyNode  unsafe.Pointer
-	from       string
-	depth      uint16
-	cachePos   uint16
-	retStatus  uint32
-	lockStatus uint64
-	next       *rpcThreadFrame
+	stream           *Stream
+	replyNode        unsafe.Pointer
+	from             string
+	depth            uint16
+	cachePos         uint16
+	retStatus        uint32
+	lockStatus       uint64
+	parentRTWritePos int
+	next             *rpcThreadFrame
 }
 
 func newRPCThreadFrame() *rpcThreadFrame {
@@ -48,6 +49,7 @@ func newRPCThreadFrame() *rpcThreadFrame {
 func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
 	p.cachePos = 0
+	p.parentRTWritePos = streamPosBody
 	atomic.StorePointer(&p.replyNode, nil)
 	p.from = ""
 }
@@ -168,12 +170,14 @@ func (p *rpcThread) unlock(rtID uint64) {
 func (p *rpcThread) pushFrame() {
 	frame := newRPCThreadFrame()
 	frame.cachePos = p.top.cachePos
+	frame.parentRTWritePos = p.rtStream.GetWritePos()
 	frame.next = p.top
 	p.top = frame
 }
 
 func (p *rpcThread) popFrame() {
 	if frame := p.top.next; frame != nil {
+		p.rtStream.SetWritePos(p.top.parentRTWritePos)
 		p.top.Release()
 		p.top = frame
 	}
