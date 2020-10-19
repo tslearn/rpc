@@ -14,8 +14,8 @@ const (
 	ErrorTypeConfig = ErrorType(1)
 	// ErrorTypeTransport ...
 	ErrorTypeTransport = ErrorType(2)
-	// ErrorTypeReply ...
-	ErrorTypeReply = ErrorType(3)
+	// ErrorTypeAction ...
+	ErrorTypeAction = ErrorType(3)
 	// ErrorTypeDevelop ...
 	ErrorTypeDevelop = ErrorType(4)
 	// ErrorTypeKernel ...
@@ -94,7 +94,7 @@ func DefineTransportError(num ErrorNumber, level ErrorLevel, msg string) *Error 
 
 // DefineReplyError ...
 func DefineReplyError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeReply, num, level, msg, GetFileLine(1))
+	return defineError(ErrorTypeAction, num, level, msg, GetFileLine(1))
 }
 
 // DefineDevelopError ...
@@ -163,7 +163,7 @@ func (p *Error) getErrorTypeString() string {
 		return "Config"
 	case ErrorTypeTransport:
 		return "Transport"
-	case ErrorTypeReply:
+	case ErrorTypeAction:
 		return "Reply"
 	case ErrorTypeDevelop:
 		return "Develop"
