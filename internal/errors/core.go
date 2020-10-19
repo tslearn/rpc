@@ -42,8 +42,8 @@ var (
 		"",
 	)
 
-	// ErrReplyName ... *
-	ErrReplyName = base.DefineDevelopError(
+	// ErrActionName ... *
+	ErrActionName = base.DefineDevelopError(
 		(generalErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",

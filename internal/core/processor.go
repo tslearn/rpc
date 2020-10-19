@@ -301,11 +301,11 @@ func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 
 func (p *Processor) onUpdateConfig() {
 	for key := range p.servicesMap {
-		p.invokeSystemReply("onUpdateConfig", key)
+		p.invokeSystemAction("onUpdateConfig", key)
 	}
 }
 
-func (p *Processor) invokeSystemReply(name string, path string) {
+func (p *Processor) invokeSystemAction(name string, path string) {
 	unmountPath := path + ":$" + name
 	if _, ok := p.actionsMap[unmountPath]; ok {
 		stream, _ := MakeRequestStream(unmountPath, "")
@@ -373,10 +373,10 @@ func (p *Processor) mountNode(
 			}
 
 			// invoke onUpdateConfig
-			p.invokeSystemReply("onUpdateConfig", servicePath)
+			p.invokeSystemAction("onUpdateConfig", servicePath)
 
 			// invoke onMount
-			p.invokeSystemReply("onMount", servicePath)
+			p.invokeSystemAction("onMount", servicePath)
 			node.isMount = true
 
 			// mount children
@@ -404,7 +404,7 @@ func (p *Processor) unmount(path string) {
 	for key, v := range p.servicesMap {
 		if strings.HasPrefix(key, path) {
 			if v.isMount {
-				p.invokeSystemReply("onUnmount", key)
+				p.invokeSystemAction("onUnmount", key)
 				v.isMount = false
 			}
 			delete(p.servicesMap, key)
@@ -427,7 +427,7 @@ func (p *Processor) mountReply(
 	if meta == nil {
 		return errors.ErrProcessorReplyMetaIsNil
 	} else if !actionNameRegex.MatchString(meta.name) {
-		return errors.ErrReplyName.
+		return errors.ErrActionName.
 			AddDebug(fmt.Sprintf("reply name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
@@ -447,7 +447,7 @@ func (p *Processor) mountReply(
 		replyPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.actionsMap[replyPath]; ok {
 			// check the reply path is not occupied
-			return errors.ErrReplyName.
+			return errors.ErrActionName.
 				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
@@ -465,7 +465,7 @@ func (p *Processor) mountReply(
 			argStrings[i] = convertTypeToString(argTypes[i])
 		}
 
-		replyNode := &rpcActionNode{
+		actionNode := &rpcActionNode{
 			path:      replyPath,
 			meta:      meta,
 			service:   serviceNode,
@@ -482,10 +482,10 @@ func (p *Processor) mountReply(
 		}
 
 		if fnCache != nil {
-			replyNode.cacheFN = fnCache.Get(fnTypeString)
+			actionNode.cacheFN = fnCache.Get(fnTypeString)
 		}
 
-		p.actionsMap[replyPath] = replyNode
+		p.actionsMap[replyPath] = actionNode
 		return nil
 	}
 }
