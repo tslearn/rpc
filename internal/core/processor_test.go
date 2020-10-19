@@ -174,7 +174,7 @@ func TestNewProcessor(t *testing.T) {
 //	lock2.Lock()
 //	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 //		base.NewReplyPanic(
-//			"the following replies can not close: \n\t" +
+//			"the following actions can not close: \n\t" +
 //				replyFileLine2 + " (1 goroutine)",
 //		),
 //	})
@@ -216,7 +216,7 @@ func TestNewProcessor(t *testing.T) {
 //	lock3.Lock()
 //	assert(helper3.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 //		base.NewReplyPanic(
-//			"the following replies can not close: \n\t" +
+//			"the following actions can not close: \n\t" +
 //				replyFileLine3 + " (2 goroutines)",
 //		),
 //	})
@@ -436,7 +436,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "user",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies:  []*rpcReplyMeta{nil},
+//				actions:  []*rpcActionMeta{nil},
 //				fileLine: "DebugReply",
 //			},
 //			fileLine: "DebugService",
@@ -452,7 +452,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies: []*rpcReplyMeta{{
+//				actions: []*rpcActionMeta{{
 //					name:     "-",
 //					handler:  nil,
 //					fileLine: "DebugReply",
@@ -472,7 +472,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies: []*rpcReplyMeta{{
+//				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  nil,
 //					fileLine: "DebugReply",
@@ -492,7 +492,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies: []*rpcReplyMeta{{
+//				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  3,
 //					fileLine: "DebugReply",
@@ -512,7 +512,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies: []*rpcReplyMeta{{
+//				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  func() {},
 //					fileLine: "DebugReply",
@@ -532,7 +532,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: &Service{
 //				children: []*ServiceMeta{},
-//				replies: []*rpcReplyMeta{{
+//				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  func(rt Runtime) Return { return rt.OK(true) },
 //					fileLine: "DebugReply1",
@@ -551,14 +551,14 @@ func TestNewProcessor(t *testing.T) {
 //	)
 //
 //	// Test(12)
-//	replyMeta12Eval1 := &rpcReplyMeta{
+//	replyMeta12Eval1 := &rpcActionMeta{
 //		name: "Eval1",
 //		handler: func(rt Runtime, _a Array) Return {
 //			return rt.OK(true)
 //		},
 //		fileLine: "DebugEval1",
 //	}
-//	replyMeta12Eval2 := &rpcReplyMeta{
+//	replyMeta12Eval2 := &rpcActionMeta{
 //		name: "Eval2",
 //		handler: func(rt Runtime,
 //			_ bool, _ int64, _ uint64, _ float64,
@@ -572,7 +572,7 @@ func TestNewProcessor(t *testing.T) {
 //		name: "test",
 //		service: &Service{
 //			children: []*ServiceMeta{},
-//			replies:  []*rpcReplyMeta{replyMeta12Eval1, replyMeta12Eval2},
+//			actions:  []*rpcActionMeta{replyMeta12Eval1, replyMeta12Eval2},
 //			fileLine: base.GetFileLine(1),
 //		},
 //		fileLine: "serviceDebug",

@@ -28,7 +28,7 @@ var (
 
 type rpcReplyNode struct {
 	path       string
-	meta       *rpcReplyMeta
+	meta       *rpcActionMeta
 	service    *rpcServiceNode
 	cacheFN    ReplyCacheFunc
 	reflectFn  reflect.Value
@@ -236,7 +236,7 @@ func (p *Processor) Close() bool {
 		if len(errList) > 0 {
 			p.fnError(
 				errors.ErrReplyCloseTimeout.AddDebug(base.ConcatString(
-					"the following replies can not close: \n\t",
+					"the following actions can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
 			)
@@ -364,8 +364,8 @@ func (p *Processor) mountNode(
 			// mount the node
 			p.servicesMap[servicePath] = node
 
-			// mount the replies
-			for _, replyMeta := range nodeMeta.service.replies {
+			// mount the actions
+			for _, replyMeta := range nodeMeta.service.actions {
 				if err := p.mountReply(node, replyMeta, fnCache); err != nil {
 					p.unmount(servicePath)
 					return err
@@ -411,7 +411,7 @@ func (p *Processor) unmount(path string) {
 		}
 	}
 
-	// clean replies
+	// clean actions
 	for key := range p.repliesMap {
 		if strings.HasPrefix(key, path) {
 			delete(p.repliesMap, key)
@@ -421,7 +421,7 @@ func (p *Processor) unmount(path string) {
 
 func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
-	meta *rpcReplyMeta,
+	meta *rpcActionMeta,
 	fnCache ReplyCache,
 ) *base.Error {
 	if meta == nil {

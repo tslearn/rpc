@@ -123,7 +123,7 @@ package core
 //	defer thread2.Close()
 //	thread2.top.replyNode = unsafe.Pointer(&rpcReplyNode{
 //		path: "#.test:Eval",
-//		meta: &rpcReplyMeta{fileLine: "/test_file:234"},
+//		meta: &rpcActionMeta{fileLine: "/test_file:234"},
 //	})
 //	assert(thread2.GetExecReplyDebug()).Equal("#.test:Eval /test_file:234")
 //}
