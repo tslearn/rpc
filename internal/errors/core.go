@@ -70,8 +70,8 @@ var (
 		"",
 	)
 
-	// ErrReplyPanic ...
-	ErrReplyPanic = base.DefineDevelopError(
+	// ErrActionPanic ...
+	ErrActionPanic = base.DefineDevelopError(
 		(generalErrorSeg<<16)|9,
 		base.ErrorLevelFatal,
 		"",
