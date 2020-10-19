@@ -46,7 +46,7 @@ func TestService_AddChildService(t *testing.T) {
 func TestService_Reply(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		service, fileLine := NewService().Reply("sayHello", 2345), base.GetFileLine(0)
+		service, fileLine := NewService().On("sayHello", 2345), base.GetFileLine(0)
 		assert(service).IsNotNil()
 		assert(len(service.children)).Equal(0)
 		assert(len(service.replies)).Equal(1)

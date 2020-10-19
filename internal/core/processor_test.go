@@ -98,7 +98,7 @@ func TestNewProcessor(t *testing.T) {
 //		5*time.Second,
 //		[]*ServiceMeta{{
 //			name: "test",
-//			service: NewService().Reply("Eval", func(rt Runtime) Return {
+//			service: NewService().On("Eval", func(rt Runtime) Return {
 //				time.Sleep(time.Second)
 //				return rt.OK(true)
 //			}),
@@ -152,7 +152,7 @@ func TestNewProcessor(t *testing.T) {
 //		time.Second,
 //		[]*ServiceMeta{{
 //			name: "test",
-//			service: NewService().Reply("Eval", func(rt Runtime) Return {
+//			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock2.Lock()
 //				replyFileLine2 = rt.thread.GetExecReplyDebug()
 //				lock2.Unlock()
@@ -194,7 +194,7 @@ func TestNewProcessor(t *testing.T) {
 //		time.Second,
 //		[]*ServiceMeta{{
 //			name: "test",
-//			service: NewService().Reply("Eval", func(rt Runtime) Return {
+//			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock3.Lock()
 //				replyFileLine3 = rt.thread.GetExecReplyDebug()
 //				lock3.Unlock()
@@ -309,7 +309,7 @@ func TestNewProcessor(t *testing.T) {
 //		5*time.Second,
 //		[]*ServiceMeta{{
 //			name: "test",
-//			service: NewService().Reply("Eval", func(rt Runtime) Return {
+//			service: NewService().On("Eval", func(rt Runtime) Return {
 //				return rt.OK(true)
 //			}),
 //			fileLine: "",
@@ -641,10 +641,10 @@ func TestNewProcessor(t *testing.T) {
 //		[]*ServiceMeta{{
 //			name: "user",
 //			service: NewService().
-//				Reply("inner", func(rt Runtime) Return {
+//				On("inner", func(rt Runtime) Return {
 //					return rt.OK(int64(0))
 //				}).
-//				Reply("sayHello", func(rt Runtime, rtMap RTMap) Return {
+//				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
 //					a, ok := rtMap.Get("name").ToString()
 //					if !ok {
 //						return rt.Error(errors.New("param error"))

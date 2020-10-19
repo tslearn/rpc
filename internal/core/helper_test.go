@@ -434,10 +434,10 @@ func testWithProcessorAndRuntime(
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().
-				Reply("Eval", func(rt Runtime) Return {
+				On("Eval", func(rt Runtime) Return {
 					return fn(helper.processor, rt)
 				}).
-				Reply("SayHello", func(rt Runtime, name string) Return {
+				On("SayHello", func(rt Runtime, name string) Return {
 					return rt.OK("hello " + name)
 				}),
 			fileLine: "",

@@ -265,7 +265,7 @@ package core
 //	onTest func(processor *Processor),
 //) (ret interface{}, retError base.Error, retPanic base.Error) {
 //	helper := newTestProcessorReturnHelper()
-//	service := NewService().Reply("Eval", handler)
+//	service := NewService().On("Eval", handler)
 //
 //	if processor := NewProcessor(
 //		isDebug,

@@ -69,8 +69,8 @@ func (p *Service) AddChildService(
 	return p
 }
 
-// Reply add reply handler
-func (p *Service) Reply(
+// On add reply handler
+func (p *Service) On(
 	name string,
 	handler interface{},
 ) *Service {
