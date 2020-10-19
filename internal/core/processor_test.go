@@ -154,7 +154,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock2.Lock()
-//				replyFileLine2 = rt.thread.GetExecReplyDebug()
+//				replyFileLine2 = rt.thread.GetExecActionDebug()
 //				lock2.Unlock()
 //				time.Sleep(4 * time.Second)
 //				return rt.OK(true)
@@ -196,7 +196,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock3.Lock()
-//				replyFileLine3 = rt.thread.GetExecReplyDebug()
+//				replyFileLine3 = rt.thread.GetExecActionDebug()
 //				lock3.Unlock()
 //				time.Sleep(4 * time.Second)
 //				return rt.OK(true)

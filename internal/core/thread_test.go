@@ -101,13 +101,13 @@ package core
 //	// Test(1)
 //	thread1 := getFakeThread(true)
 //	defer thread1.Close()
-//	assert(thread1.GetExecReplyNodePath()).Equal("")
+//	assert(thread1.GetExecActionNodePath()).Equal("")
 //
 //	// Test(2)
 //	thread2 := getFakeThread(true)
 //	defer thread2.Close()
-//	thread2.top.actionNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
-//	assert(thread2.GetExecReplyNodePath()).Equal("#.test:Eval")
+//	thread2.top.actionNode = unsafe.Pointer(&rpcActionNode{path: "#.test:Eval"})
+//	assert(thread2.GetExecActionNodePath()).Equal("#.test:Eval")
 //}
 //
 //func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
@@ -116,16 +116,16 @@ package core
 //	// Test(1)
 //	thread1 := getFakeThread(true)
 //	defer thread1.Close()
-//	assert(thread1.GetExecReplyDebug()).Equal("")
+//	assert(thread1.GetExecActionDebug()).Equal("")
 //
 //	// Test(2)
 //	thread2 := getFakeThread(true)
 //	defer thread2.Close()
-//	thread2.top.actionNode = unsafe.Pointer(&rpcReplyNode{
+//	thread2.top.actionNode = unsafe.Pointer(&rpcActionNode{
 //		path: "#.test:Eval",
 //		meta: &rpcActionMeta{fileLine: "/test_file:234"},
 //	})
-//	assert(thread2.GetExecReplyDebug()).Equal("#.test:Eval /test_file:234")
+//	assert(thread2.GetExecActionDebug()).Equal("#.test:Eval /test_file:234")
 //}
 //
 //func TestRpcThread_WriteError(t *testing.T) {

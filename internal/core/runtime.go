@@ -57,21 +57,21 @@ func (p Runtime) Error(value error) Return {
 		}
 
 		return p.thread.WriteError(
-			err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
 		)
 	} else if value != nil {
 		return p.thread.WriteError(
 			errors.ErrReplyCustom.
 				AddDebug(value.Error()).
-				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
 		)
 	} else {
 		return p.thread.WriteError(
 			errors.ErrUnsupportedValue.
 				AddDebug("value type(nil) is not supported").
-				AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
+				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
 		)
 	}
@@ -93,7 +93,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	stream, err := MakeRequestStream(target, frame.from, args...)
 	if err != nil {
 		return RTValue{
-			err: err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1)),
+			err: err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 		}
 	}
 	defer stream.Release()
@@ -107,7 +107,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	// return
 	ret := p.ParseResponseStream(stream)
 	if ret.err != nil {
-		ret.err.AddDebug(base.AddFileLine(thread.GetExecReplyNodePath(), 1))
+		ret.err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1))
 	}
 
 	return ret
@@ -118,7 +118,7 @@ func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	if thread := p.thread; thread == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if replyNode := thread.GetReplyNode(); replyNode == nil {
+	} else if replyNode := thread.GetActionNode(); replyNode == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	} else if serviceNode := replyNode.service; serviceNode == nil {
@@ -133,7 +133,7 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	if thread := p.thread; thread == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if replyNode := thread.GetReplyNode(); replyNode == nil {
+	} else if replyNode := thread.GetActionNode(); replyNode == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
 	} else if serviceNode := replyNode.service; serviceNode == nil {

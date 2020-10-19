@@ -84,7 +84,7 @@ func TestContextObject_Error(t *testing.T) {
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				err := errors.ErrStream.AddDebug("error")
 				ret, s := rt.Error(err), base.GetFileLine(0)
-				source = rt.thread.GetReplyNode().path + " " + s
+				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
@@ -98,7 +98,7 @@ func TestContextObject_Error(t *testing.T) {
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				err := sysError.New("error")
 				ret, s := rt.Error(err), base.GetFileLine(0)
-				source = rt.thread.GetReplyNode().path + " " + s
+				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
@@ -111,7 +111,7 @@ func TestContextObject_Error(t *testing.T) {
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				ret, s := rt.Error(nil), base.GetFileLine(0)
-				source = rt.thread.GetReplyNode().path + " " + s
+				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
@@ -142,10 +142,10 @@ func TestRuntime_Call(t *testing.T) {
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				errArg := make(chan bool)
 				rtValue, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
-				source1 = rt.thread.GetReplyNode().path + " " + s1
+				source1 = rt.thread.GetActionNode().path + " " + s1
 				_, err := rtValue.ToString()
 				ret, s2 := rt.Error(err), base.GetFileLine(0)
-				source2 = rt.thread.GetReplyNode().path + " " + s2
+				source2 = rt.thread.GetActionNode().path + " " + s2
 				return ret
 			}),
 		)).Equal(nil, errors.ErrUnsupportedValue.
@@ -173,10 +173,10 @@ func TestRuntime_Call(t *testing.T) {
 					rtValue, s2 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
 					source1 = "#.test:SayHello " +
 						rt.thread.processor.repliesMap["#.test:SayHello"].meta.fileLine
-					source2 = rt.thread.GetReplyNode().path + " " + s2
+					source2 = rt.thread.GetActionNode().path + " " + s2
 					_, err := rtValue.ToString()
 					ret, s3 := rt.Error(err), base.GetFileLine(0)
-					source3 = rt.thread.GetReplyNode().path + " " + s3
+					source3 = rt.thread.GetActionNode().path + " " + s3
 					return ret
 				},
 			),

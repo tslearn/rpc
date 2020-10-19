@@ -183,19 +183,19 @@ func (p *rpcThread) popFrame() {
 	}
 }
 
-func (p *rpcThread) GetReplyNode() *rpcReplyNode {
-	return (*rpcReplyNode)(atomic.LoadPointer(&p.top.actionNode))
+func (p *rpcThread) GetActionNode() *rpcActionNode {
+	return (*rpcActionNode)(atomic.LoadPointer(&p.top.actionNode))
 }
 
-func (p *rpcThread) GetExecReplyNodePath() string {
-	if node := p.GetReplyNode(); node != nil {
+func (p *rpcThread) GetExecActionNodePath() string {
+	if node := p.GetActionNode(); node != nil {
 		return node.path
 	}
 	return ""
 }
 
-func (p *rpcThread) GetExecReplyDebug() string {
-	if node := p.GetReplyNode(); node != nil && node.meta != nil {
+func (p *rpcThread) GetExecActionDebug() string {
+	if node := p.GetActionNode(); node != nil && node.meta != nil {
 		return base.ConcatString(node.path, " ", node.meta.fileLine)
 	}
 	return ""
@@ -210,7 +210,7 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 			return p.WriteError(
 				errors.ErrUnsupportedValue.
 					AddDebug(reason).
-					AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+					AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
 				skip+1,
 			)
 		}
@@ -219,13 +219,13 @@ func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
 	} else if p.top.retStatus == 1 {
 		return p.WriteError(
 			errors.ErrRuntimeOKHasBeenCalled.
-				AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+				AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
 			skip+1,
 		)
 	} else {
 		return p.WriteError(
 			errors.ErrRuntimeErrorHasBeenCalled.
-				AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1)),
+				AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
 			skip+1,
 		)
 	}
@@ -240,10 +240,10 @@ func (p *rpcThread) WriteError(err *base.Error, skip uint) Return {
 		writeError = err
 	} else if p.top.retStatus == 1 {
 		writeError = errors.ErrRuntimeOKHasBeenCalled.
-			AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1))
+			AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
 	} else {
 		writeError = errors.ErrRuntimeErrorHasBeenCalled.
-			AddDebug(base.AddFileLine(p.GetExecReplyNodePath(), skip+1))
+			AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
 	}
 
 	stream.WriteUint64(writeError.GetCode())
@@ -278,7 +278,7 @@ func (p *rpcThread) Eval(
 	frame.lockStatus = rtID
 	frame.retStatus = 0
 	frame.depth = inStream.GetDepth()
-	execReplyNode := (*rpcReplyNode)(nil)
+	execReplyNode := (*rpcActionNode)(nil)
 	ok := true
 
 	defer func() {
@@ -287,7 +287,7 @@ func (p *rpcThread) Eval(
 			p.WriteError(
 				errors.ErrReplyPanic.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
-					AddDebug(p.GetExecReplyDebug()).AddDebug(string(debug.Stack())),
+					AddDebug(p.GetExecActionDebug()).AddDebug(string(debug.Stack())),
 				0,
 			)
 		}
@@ -307,7 +307,7 @@ func (p *rpcThread) Eval(
 		}
 
 		if frame.retStatus == 0 {
-			p.WriteError(errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecReplyDebug()), 0)
+			p.WriteError(errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()), 0)
 		} else {
 			// count
 			if execReplyNode != nil {
@@ -347,7 +347,7 @@ func (p *rpcThread) Eval(
 					strconv.FormatUint(uint64(frame.depth), 10),
 					") overflows",
 				)).
-				AddDebug(p.GetExecReplyDebug()),
+				AddDebug(p.GetExecActionDebug()),
 			0,
 		)
 	} else if frame.from, _, err = inStream.readUnsafeString(); err != nil {
@@ -505,7 +505,7 @@ func (p *rpcThread) Eval(
 					replyPath,
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
-				)).AddDebug(p.GetExecReplyDebug()),
+				)).AddDebug(p.GetExecActionDebug()),
 				0,
 			)
 		}

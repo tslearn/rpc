@@ -26,7 +26,7 @@ var (
 	)
 )
 
-type rpcReplyNode struct {
+type rpcActionNode struct {
 	path       string
 	meta       *rpcActionMeta
 	service    *rpcServiceNode
@@ -62,7 +62,7 @@ func (p *rpcServiceNode) SetData(key string, value Any) {
 type Processor struct {
 	isDebug           bool
 	status            int32
-	repliesMap        map[string]*rpcReplyNode
+	repliesMap        map[string]*rpcActionNode
 	servicesMap       map[string]*rpcServiceNode
 	maxNodeDepth      uint16
 	maxCallDepth      uint16
@@ -112,7 +112,7 @@ func NewProcessor(
 		ret := &Processor{
 			isDebug:        isDebug,
 			status:         processorStatusRunning,
-			repliesMap:     make(map[string]*rpcReplyNode),
+			repliesMap:     make(map[string]*rpcActionNode),
 			servicesMap:    make(map[string]*rpcServiceNode),
 			maxNodeDepth:   uint16(maxNodeDepth),
 			maxCallDepth:   uint16(maxCallDepth),
@@ -207,7 +207,7 @@ func (p *Processor) Close() bool {
 				if p.threads[idx].Close() {
 					p.closeCH <- ""
 				} else {
-					p.closeCH <- p.threads[idx].GetExecReplyDebug()
+					p.closeCH <- p.threads[idx].GetExecActionDebug()
 				}
 			}(i)
 		}
@@ -465,7 +465,7 @@ func (p *Processor) mountReply(
 			argStrings[i] = convertTypeToString(argTypes[i])
 		}
 
-		replyNode := &rpcReplyNode{
+		replyNode := &rpcActionNode{
 			path:      replyPath,
 			meta:      meta,
 			service:   serviceNode,
