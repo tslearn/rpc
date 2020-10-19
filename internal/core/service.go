@@ -6,9 +6,9 @@ import (
 )
 
 type rpcActionMeta struct {
-	name     string      // the name of reply
-	handler  interface{} // reply handler
-	fileLine string      // where the reply add in source file
+	name     string      // action name
+	handler  interface{} // action handler
+	fileLine string      // where the action add in source file
 }
 
 // ServiceMeta ...
@@ -77,7 +77,7 @@ func (p *Service) On(
 	p.Lock()
 	defer p.Unlock()
 
-	// add reply meta
+	// add action meta
 	p.actions = append(p.actions, &rpcActionMeta{
 		name:     name,
 		handler:  handler,

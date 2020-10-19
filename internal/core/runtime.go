@@ -62,7 +62,7 @@ func (p Runtime) Error(value error) Return {
 		)
 	} else if value != nil {
 		return p.thread.WriteError(
-			errors.ErrReplyCustom.
+			errors.ErrActionCustom.
 				AddDebug(value.Error()).
 				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
@@ -118,10 +118,10 @@ func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	if thread := p.thread; thread == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if replyNode := thread.GetActionNode(); replyNode == nil {
+	} else if actionNode := thread.GetActionNode(); actionNode == nil {
 		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if serviceNode := replyNode.service; serviceNode == nil {
+	} else if serviceNode := actionNode.service; serviceNode == nil {
 		return nil, errors.ErrGetServiceDataServiceNodeIsNil
 	} else {
 		return serviceNode.GetData(key), nil
@@ -133,10 +133,10 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 	if thread := p.thread; thread == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if replyNode := thread.GetActionNode(); replyNode == nil {
+	} else if actionNode := thread.GetActionNode(); actionNode == nil {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine.
 			AddDebug(base.GetFileLine(1))
-	} else if serviceNode := replyNode.service; serviceNode == nil {
+	} else if serviceNode := actionNode.service; serviceNode == nil {
 		return errors.ErrSetServiceDataServiceNodeIsNil
 	} else {
 		serviceNode.SetData(key, value)

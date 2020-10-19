@@ -102,7 +102,7 @@ func TestContextObject_Error(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}),
-		)).Equal(nil, errors.ErrReplyCustom.AddDebug("error").AddDebug(source))
+		)).Equal(nil, errors.ErrActionCustom.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("argument is nil", func(t *testing.T) {
@@ -172,7 +172,7 @@ func TestRuntime_Call(t *testing.T) {
 
 					rtValue, s2 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
 					source1 = "#.test:SayHello " +
-						rt.thread.processor.repliesMap["#.test:SayHello"].meta.fileLine
+						rt.thread.processor.actionsMap["#.test:SayHello"].meta.fileLine
 					source2 = rt.thread.GetActionNode().path + " " + s2
 					_, err := rtValue.ToString()
 					ret, s3 := rt.Error(err), base.GetFileLine(0)

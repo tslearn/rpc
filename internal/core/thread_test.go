@@ -95,7 +95,7 @@ package core
 //	assert(thread3.Close()).IsFalse()
 //}
 //
-//func TestRpcThread_GetExecReplyNodePath(t *testing.T) {
+//func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
 //	// Test(1)
@@ -1003,7 +1003,7 @@ package core
 //			return rt.OK(a)
 //		},
 //		func(processor *Processor) *Stream {
-//			actionNode := processor.repliesMap["#.test:Eval"]
+//			actionNode := processor.actionsMap["#.test:Eval"]
 //			actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 //			stream := NewStream()
 //			stream.SetDepth(3)

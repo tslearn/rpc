@@ -8,17 +8,17 @@ import (
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
-		return "", errors.ErrReplyHandler.
+		return "", errors.ErrActionHandler.
 			AddDebug("handler must be a function")
 	} else if fn.Type().NumIn() < 1 ||
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
-		return "", errors.ErrReplyHandler.AddDebug(base.ConcatString(
+		return "", errors.ErrActionHandler.AddDebug(base.ConcatString(
 			"handler 1st argument type must be ",
 			convertTypeToString(runtimeType)),
 		)
 	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
-		return "", errors.ErrReplyHandler.AddDebug(base.ConcatString(
+		return "", errors.ErrActionHandler.AddDebug(base.ConcatString(
 			"handler return type must be ",
 			convertTypeToString(returnType),
 		))
@@ -51,7 +51,7 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 			case rtMapType:
 				sb.AppendByte(vkRTMap)
 			default:
-				return "", errors.ErrReplyHandler.AddDebug(
+				return "", errors.ErrActionHandler.AddDebug(
 					base.ConcatString(
 						"handler ",
 						base.ConvertOrdinalToString(1+uint(i)),

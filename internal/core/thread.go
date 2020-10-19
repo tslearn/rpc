@@ -278,7 +278,7 @@ func (p *rpcThread) Eval(
 	frame.lockStatus = rtID
 	frame.retStatus = 0
 	frame.depth = inStream.GetDepth()
-	execReplyNode := (*rpcActionNode)(nil)
+	execActionNode := (*rpcActionNode)(nil)
 	ok := true
 
 	defer func() {
@@ -310,8 +310,8 @@ func (p *rpcThread) Eval(
 			p.WriteError(errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()), 0)
 		} else {
 			// count
-			if execReplyNode != nil {
-				execReplyNode.indicator.Count(
+			if execActionNode != nil {
+				execActionNode.indicator.Count(
 					base.TimeNow().Sub(timeStart),
 					frame.retStatus == 1,
 				)
@@ -324,17 +324,17 @@ func (p *rpcThread) Eval(
 	}()
 
 	// set exec reply node
-	replyPath, _, err := inStream.readUnsafeString()
+	actionPath, _, err := inStream.readUnsafeString()
 	if err != nil {
 		return p.WriteError(err, 0)
-	} else if execReplyNode, ok = p.processor.repliesMap[replyPath]; !ok {
+	} else if execActionNode, ok = p.processor.actionsMap[actionPath]; !ok {
 		return p.WriteError(
 			errors.ErrTargetNotExist.
-				AddDebug(base.ConcatString("target ", replyPath, " does not exist")),
+				AddDebug(base.ConcatString("target ", actionPath, " does not exist")),
 			0,
 		)
 	} else {
-		atomic.StorePointer(&frame.actionNode, unsafe.Pointer(execReplyNode))
+		atomic.StorePointer(&frame.actionNode, unsafe.Pointer(execActionNode))
 	}
 
 	if frame.depth >= p.processor.maxCallDepth {
@@ -342,7 +342,7 @@ func (p *rpcThread) Eval(
 			errors.ErrCallOverflow.
 				AddDebug(base.ConcatString(
 					"call ",
-					replyPath,
+					actionPath,
 					" level(",
 					strconv.FormatUint(uint64(frame.depth), 10),
 					") overflows",
@@ -358,18 +358,18 @@ func (p *rpcThread) Eval(
 		// save argsPos
 		argsStreamPos := inStream.GetReadPos()
 
-		if fnCache := execReplyNode.cacheFN; fnCache != nil {
-			ok = fnCache(rt, inStream, execReplyNode.meta.handler)
+		if fnCache := execActionNode.cacheFN; fnCache != nil {
+			ok = fnCache(rt, inStream, execActionNode.meta.handler)
 			if ok {
 				return emptyReturn
 			}
 		} else {
 			args := make([]reflect.Value, 0, 8)
 			args = append(args, reflect.ValueOf(rt))
-			for i := 1; i < len(execReplyNode.argTypes); i++ {
+			for i := 1; i < len(execActionNode.argTypes); i++ {
 				var rv reflect.Value
 
-				switch execReplyNode.argTypes[i] {
+				switch execActionNode.argTypes[i] {
 				case int64Type:
 					if v, err := inStream.ReadInt64(); err == nil {
 						rv = reflect.ValueOf(v)
@@ -449,7 +449,7 @@ func (p *rpcThread) Eval(
 
 			if ok {
 				inStream.SetWritePosToBodyStart()
-				execReplyNode.reflectFn.Call(args)
+				execActionNode.reflectFn.Call(args)
 				return emptyReturn
 			}
 		}
@@ -460,8 +460,8 @@ func (p *rpcThread) Eval(
 			return p.WriteError(
 				errors.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(
-						replyPath,
-						" reply arguments does not match",
+						actionPath,
+						" action arguments does not match",
 					)),
 				0,
 			)
@@ -478,8 +478,8 @@ func (p *rpcThread) Eval(
 						convertTypeToString(reflect.ValueOf(val).Type()),
 					)
 				} else {
-					if len(remoteArgsType) < len(execReplyNode.argTypes) {
-						argType := execReplyNode.argTypes[len(remoteArgsType)]
+					if len(remoteArgsType) < len(execActionNode.argTypes) {
+						argType := execActionNode.argTypes[len(remoteArgsType)]
 						if argType == bytesType ||
 							argType == arrayType ||
 							argType == mapType {
@@ -498,11 +498,11 @@ func (p *rpcThread) Eval(
 
 			return p.WriteError(
 				errors.ErrArgumentsNotMatch.AddDebug(base.ConcatString(
-					replyPath,
-					" reply arguments does not match\nwant: ",
-					execReplyNode.callString,
+					actionPath,
+					" action arguments does not match\nwant: ",
+					execActionNode.callString,
 					"\ngot: ",
-					replyPath,
+					actionPath,
 					"(", strings.Join(remoteArgsType, ", "), ") ",
 					convertTypeToString(returnType),
 				)).AddDebug(p.GetExecActionDebug()),

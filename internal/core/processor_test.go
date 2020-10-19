@@ -115,7 +115,7 @@ func TestNewProcessor(t *testing.T) {
 //	}
 //	assert(processor6).IsNotNil()
 //	assert(processor6.isDebug).IsTrue()
-//	assert(len(processor6.repliesMap)).Equal(1)
+//	assert(len(processor6.actionsMap)).Equal(1)
 //	assert(len(processor6.servicesMap)).Equal(2)
 //	assert(processor6.maxNodeDepth).Equal(uint16(2))
 //	assert(processor6.maxCallDepth).Equal(uint16(3))
@@ -141,7 +141,7 @@ func TestNewProcessor(t *testing.T) {
 //
 //	// Test(2)
 //	lock2 := sync.Mutex{}
-//	replyFileLine2 := ""
+//	actionFileLine2 := ""
 //	helper2 := newTestProcessorReturnHelper()
 //	processor2 := NewProcessor(
 //		true,
@@ -154,7 +154,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock2.Lock()
-//				replyFileLine2 = rt.thread.GetExecActionDebug()
+//				actionFileLine2 = rt.thread.GetExecActionDebug()
 //				lock2.Unlock()
 //				time.Sleep(4 * time.Second)
 //				return rt.OK(true)
@@ -175,14 +175,14 @@ func TestNewProcessor(t *testing.T) {
 //	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 //		base.NewReplyPanic(
 //			"the following actions can not close: \n\t" +
-//				replyFileLine2 + " (1 goroutine)",
+//				actionFileLine2 + " (1 goroutine)",
 //		),
 //	})
 //	lock2.Unlock()
 //	time.Sleep(2 * time.Second)
 //
 //	// Test(3)
-//	replyFileLine3 := ""
+//	actionFileLine3 := ""
 //	lock3 := sync.Mutex{}
 //	helper3 := newTestProcessorReturnHelper()
 //	processor3 := NewProcessor(
@@ -196,7 +196,7 @@ func TestNewProcessor(t *testing.T) {
 //			name: "test",
 //			service: NewService().On("Eval", func(rt Runtime) Return {
 //				lock3.Lock()
-//				replyFileLine3 = rt.thread.GetExecActionDebug()
+//				actionFileLine3 = rt.thread.GetExecActionDebug()
 //				lock3.Unlock()
 //				time.Sleep(4 * time.Second)
 //				return rt.OK(true)
@@ -217,7 +217,7 @@ func TestNewProcessor(t *testing.T) {
 //	assert(helper3.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
 //		base.NewReplyPanic(
 //			"the following actions can not close: \n\t" +
-//				replyFileLine3 + " (2 goroutines)",
+//				actionFileLine3 + " (2 goroutines)",
 //		),
 //	})
 //	lock3.Unlock()
@@ -462,7 +462,7 @@ func TestNewProcessor(t *testing.T) {
 //			fileLine: "Debug1",
 //		}},
 //		base.ErrorKindRuntimePanic,
-//		"reply name - is illegal",
+//		"action name - is illegal",
 //		"DebugReply",
 //	)
 //
@@ -546,19 +546,19 @@ func TestNewProcessor(t *testing.T) {
 //			fileLine: "Debug1",
 //		}},
 //		base.ErrorKindRuntimePanic,
-//		"reply name Eval is duplicated",
+//		"action name Eval is duplicated",
 //		"current:\n\tDebugReply2\nconflict:\n\tDebugReply1",
 //	)
 //
 //	// Test(12)
-//	replyMeta12Eval1 := &rpcActionMeta{
+//	actionMeta12Eval1 := &rpcActionMeta{
 //		name: "Eval1",
 //		handler: func(rt Runtime, _a Array) Return {
 //			return rt.OK(true)
 //		},
 //		fileLine: "DebugEval1",
 //	}
-//	replyMeta12Eval2 := &rpcActionMeta{
+//	actionMeta12Eval2 := &rpcActionMeta{
 //		name: "Eval2",
 //		handler: func(rt Runtime,
 //			_ bool, _ int64, _ uint64, _ float64,
@@ -572,7 +572,7 @@ func TestNewProcessor(t *testing.T) {
 //		name: "test",
 //		service: &Service{
 //			children: []*ServiceMeta{},
-//			actions:  []*rpcActionMeta{replyMeta12Eval1, replyMeta12Eval2},
+//			actions:  []*rpcActionMeta{actionMeta12Eval1, actionMeta12Eval2},
 //			fileLine: base.GetFileLine(1),
 //		},
 //		fileLine: "serviceDebug",
@@ -599,32 +599,32 @@ func TestNewProcessor(t *testing.T) {
 //		addMeta: addMeta12,
 //		depth:   1,
 //	})
-//	assert(processor12.repliesMap["#.test:Eval1"].path).Equal("#.test:Eval1")
-//	assert(processor12.repliesMap["#.test:Eval1"].meta).Equal(replyMeta12Eval1)
-//	assert(processor12.repliesMap["#.test:Eval1"].cacheFN).IsNil()
-//	assert(getFuncKind(processor12.repliesMap["#.test:Eval1"].reflectFn)).
+//	assert(processor12.actionsMap["#.test:Eval1"].path).Equal("#.test:Eval1")
+//	assert(processor12.actionsMap["#.test:Eval1"].meta).Equal(actionMeta12Eval1)
+//	assert(processor12.actionsMap["#.test:Eval1"].cacheFN).IsNil()
+//	assert(getFuncKind(processor12.actionsMap["#.test:Eval1"].reflectFn)).
 //		Equal("A", nil)
-//	assert(processor12.repliesMap["#.test:Eval1"].callString).
+//	assert(processor12.actionsMap["#.test:Eval1"].callString).
 //		Equal("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
-//	assert(processor12.repliesMap["#.test:Eval1"].argTypes).
+//	assert(processor12.actionsMap["#.test:Eval1"].argTypes).
 //		Equal([]reflect.Type{runtimeType, arrayType})
-//	assert(processor12.repliesMap["#.test:Eval1"].indicator).IsNotNil()
+//	assert(processor12.actionsMap["#.test:Eval1"].indicator).IsNotNil()
 //
-//	assert(processor12.repliesMap["#.test:Eval2"].path).Equal("#.test:Eval2")
-//	assert(processor12.repliesMap["#.test:Eval2"].meta).Equal(replyMeta12Eval2)
-//	assert(processor12.repliesMap["#.test:Eval2"].cacheFN).IsNotNil()
-//	assert(getFuncKind(processor12.repliesMap["#.test:Eval2"].reflectFn)).
+//	assert(processor12.actionsMap["#.test:Eval2"].path).Equal("#.test:Eval2")
+//	assert(processor12.actionsMap["#.test:Eval2"].meta).Equal(actionMeta12Eval2)
+//	assert(processor12.actionsMap["#.test:Eval2"].cacheFN).IsNotNil()
+//	assert(getFuncKind(processor12.actionsMap["#.test:Eval2"].reflectFn)).
 //		Equal("BIUFSXAM", nil)
-//	assert(processor12.repliesMap["#.test:Eval2"].callString).Equal(
+//	assert(processor12.actionsMap["#.test:Eval2"].callString).Equal(
 //		"#.test:Eval2(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
 //	)
-//	assert(processor12.repliesMap["#.test:Eval2"].argTypes).
+//	assert(processor12.actionsMap["#.test:Eval2"].argTypes).
 //		Equal([]reflect.Type{
 //			runtimeType, boolType, int64Type, uint64Type,
 //			float64Type, stringType, bytesType, arrayType, mapType,
 //		})
-//	assert(processor12.repliesMap["#.test:Eval2"].indicator).IsNotNil()
+//	assert(processor12.actionsMap["#.test:Eval2"].indicator).IsNotNil()
 //}
 //
 //func BenchmarkRpcProcessor_Execute(b *testing.B) {

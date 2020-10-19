@@ -15,7 +15,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := 3
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler must be a function",
 			))
 	})
@@ -24,7 +24,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := func() {}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 1st argument type must be rpc.Runtime",
 			))
 	})
@@ -33,7 +33,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := func(_ chan bool) {}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 1st argument type must be rpc.Runtime",
 			))
 	})
@@ -42,7 +42,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := func(rt Runtime) {}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler return type must be rpc.Return",
 			))
 	})
@@ -51,7 +51,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := func(rt Runtime) (Return, bool) { return emptyReturn, true }
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler return type must be rpc.Return",
 			))
 	})
@@ -60,7 +60,7 @@ func TestGetFuncKind(t *testing.T) {
 		v := func(rt Runtime, _ bool) bool { return true }
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler return type must be rpc.Return",
 			))
 	})
@@ -74,7 +74,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 2nd argument type int32 is not supported",
 			))
 	})
@@ -88,7 +88,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 3rd argument type int32 is not supported",
 			))
 	})
@@ -102,7 +102,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 4th argument type int32 is not supported",
 			))
 	})
@@ -116,7 +116,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 5th argument type int32 is not supported",
 			))
 	})
@@ -130,7 +130,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 6th argument type int32 is not supported",
 			))
 	})
@@ -144,7 +144,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 7th argument type int32 is not supported",
 			))
 	})
@@ -158,7 +158,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 8th argument type int32 is not supported",
 			))
 	})
@@ -172,7 +172,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 9th argument type int32 is not supported",
 			))
 	})
@@ -186,7 +186,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 10th argument type int32 is not supported",
 			))
 	})
@@ -200,7 +200,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 11th argument type int32 is not supported",
 			))
 	})
@@ -214,7 +214,7 @@ func TestGetFuncKind(t *testing.T) {
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
-			errors.ErrReplyHandler.AddDebug(
+			errors.ErrActionHandler.AddDebug(
 				"handler 12th argument type int32 is not supported",
 			))
 	})

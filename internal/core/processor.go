@@ -62,7 +62,7 @@ func (p *rpcServiceNode) SetData(key string, value Any) {
 type Processor struct {
 	isDebug           bool
 	status            int32
-	repliesMap        map[string]*rpcActionNode
+	actionsMap        map[string]*rpcActionNode
 	servicesMap       map[string]*rpcServiceNode
 	maxNodeDepth      uint16
 	maxCallDepth      uint16
@@ -112,7 +112,7 @@ func NewProcessor(
 		ret := &Processor{
 			isDebug:        isDebug,
 			status:         processorStatusRunning,
-			repliesMap:     make(map[string]*rpcActionNode),
+			actionsMap:     make(map[string]*rpcActionNode),
 			servicesMap:    make(map[string]*rpcServiceNode),
 			maxNodeDepth:   uint16(maxNodeDepth),
 			maxCallDepth:   uint16(maxCallDepth),
@@ -235,7 +235,7 @@ func (p *Processor) Close() bool {
 
 		if len(errList) > 0 {
 			p.fnError(
-				errors.ErrReplyCloseTimeout.AddDebug(base.ConcatString(
+				errors.ErrActionCloseTimeout.AddDebug(base.ConcatString(
 					"the following actions can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
@@ -285,8 +285,8 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 // BuildCache ...
 func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 	retMap := make(map[string]bool)
-	for _, reply := range p.repliesMap {
-		if fnTypeString, err := getFuncKind(reply.reflectFn); err == nil {
+	for _, action := range p.actionsMap {
+		if fnTypeString, err := getFuncKind(action.reflectFn); err == nil {
 			retMap[fnTypeString] = true
 		}
 	}
@@ -307,7 +307,7 @@ func (p *Processor) onUpdateConfig() {
 
 func (p *Processor) invokeSystemReply(name string, path string) {
 	unmountPath := path + ":$" + name
-	if _, ok := p.repliesMap[unmountPath]; ok {
+	if _, ok := p.actionsMap[unmountPath]; ok {
 		stream, _ := MakeRequestStream(unmountPath, "")
 		defer func() {
 			stream.Release()
@@ -412,9 +412,9 @@ func (p *Processor) unmount(path string) {
 	}
 
 	// clean actions
-	for key := range p.repliesMap {
+	for key := range p.actionsMap {
 		if strings.HasPrefix(key, path) {
-			delete(p.repliesMap, key)
+			delete(p.actionsMap, key)
 		}
 	}
 }
@@ -431,11 +431,11 @@ func (p *Processor) mountReply(
 			AddDebug(fmt.Sprintf("reply name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
-		return errors.ErrReplyHandler.
+		return errors.ErrActionHandler.
 			AddDebug("handler is nil").
 			AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
-		return errors.ErrReplyHandler.AddDebug(fmt.Sprintf(
+		return errors.ErrActionHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(runtimeType),
 			convertTypeToString(returnType),
@@ -445,7 +445,7 @@ func (p *Processor) mountReply(
 		return err.AddDebug(meta.fileLine)
 	} else {
 		replyPath := serviceNode.path + ":" + meta.name
-		if item, ok := p.repliesMap[replyPath]; ok {
+		if item, ok := p.actionsMap[replyPath]; ok {
 			// check the reply path is not occupied
 			return errors.ErrReplyName.
 				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
@@ -485,7 +485,7 @@ func (p *Processor) mountReply(
 			replyNode.cacheFN = fnCache.Get(fnTypeString)
 		}
 
-		p.repliesMap[replyPath] = replyNode
+		p.actionsMap[replyPath] = replyNode
 		return nil
 	}
 }

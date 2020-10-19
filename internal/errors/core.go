@@ -49,22 +49,22 @@ var (
 		"",
 	)
 
-	// ErrReplyHandler ... *
-	ErrReplyHandler = base.DefineDevelopError(
+	// ErrActionHandler ... *
+	ErrActionHandler = base.DefineDevelopError(
 		(generalErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
 		"",
 	)
 
-	// ErrReplyCloseTimeout ... *
-	ErrReplyCloseTimeout = base.DefineDevelopError(
+	// ErrActionCloseTimeout ... *
+	ErrActionCloseTimeout = base.DefineDevelopError(
 		(generalErrorSeg<<16)|8,
 		base.ErrorLevelError,
 		"",
 	)
 
-	// ErrReplyCustom ...
-	ErrReplyCustom = base.DefineActionError(
+	// ErrActionCustom ...
+	ErrActionCustom = base.DefineActionError(
 		(generalErrorSeg<<16)|10,
 		base.ErrorLevelError,
 		"",
