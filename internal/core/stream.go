@@ -1185,6 +1185,9 @@ func (p *Stream) writeRTMap(v RTMap) string {
 func (p *Stream) writeRTValue(v RTValue) string {
 	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
+		if v.err != nil {
+			return StreamWriteIsNotAvailable
+		}
 		if !readStream.SetReadPos(int(v.pos)) {
 			return StreamWriteIsNotAvailable
 		}

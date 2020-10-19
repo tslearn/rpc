@@ -201,56 +201,43 @@ func (p *rpcThread) GetExecActionDebug() string {
 	return ""
 }
 
-func (p *rpcThread) WriteOK(value interface{}, skip uint) Return {
-	if p.top.retStatus == 0 {
-		stream := p.top.stream
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(0)
-		if reason := stream.Write(value); reason != StreamWriteOK {
-			return p.WriteError(
-				errors.ErrUnsupportedValue.
-					AddDebug(reason).
-					AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
-				skip+1,
-			)
-		}
-		p.top.retStatus = 1
-		return emptyReturn
-	} else if p.top.retStatus == 1 {
-		return p.WriteError(
-			errors.ErrRuntimeOKHasBeenCalled.
-				AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
-			skip+1,
-		)
-	} else {
-		return p.WriteError(
-			errors.ErrRuntimeErrorHasBeenCalled.
-				AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1)),
-			skip+1,
-		)
-	}
-}
+func (p *rpcThread) Write(value interface{}, skip uint) Return {
+	frame := p.top
 
-func (p *rpcThread) WriteError(err *base.Error, skip uint) Return {
-	stream := p.top.stream
+	if frame.retStatus != 0 {
+		value = errors.ErrRuntimeOKHasBeenCalled.
+			AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+	}
+
+	stream := frame.stream
+
 	stream.SetWritePosToBodyStart()
-
-	writeError := (*base.Error)(nil)
-	if p.top.retStatus == 0 {
-		writeError = err
-	} else if p.top.retStatus == 1 {
-		writeError = errors.ErrRuntimeOKHasBeenCalled.
-			AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+	stream.WriteUint64(0)
+	if reason := stream.Write(value); reason == StreamWriteOK {
+		frame.retStatus = 1
+		return emptyReturn
+	} else if err, ok := value.(*base.Error); ok && err != nil {
+		frame.retStatus = 2
+		stream.SetWritePosToBodyStart()
+		stream.WriteUint64(err.GetCode())
+		stream.WriteString(err.GetMessage())
+		return emptyReturn
+	} else if rtValue, ok := value.(RTValue); ok && rtValue.err != nil {
+		frame.retStatus = 2
+		stream.SetWritePosToBodyStart()
+		stream.WriteUint64(rtValue.err.GetCode())
+		stream.WriteString(rtValue.err.GetMessage())
+		return emptyReturn
 	} else {
-		writeError = errors.ErrRuntimeErrorHasBeenCalled.
+		frame.retStatus = 2
+		err = errors.ErrUnsupportedValue.
+			AddDebug(reason).
 			AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+		stream.SetWritePosToBodyStart()
+		stream.WriteUint64(err.GetCode())
+		stream.WriteString(err.GetMessage())
+		return emptyReturn
 	}
-
-	stream.WriteUint64(writeError.GetCode())
-	stream.WriteString(writeError.GetMessage())
-
-	p.top.retStatus = 2
-	return emptyReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
@@ -284,7 +271,7 @@ func (p *rpcThread) Eval(
 	defer func() {
 		if v := recover(); v != nil {
 			// write runtime error
-			p.WriteError(
+			p.Write(
 				errors.ErrActionPanic.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
 					AddDebug(p.GetExecActionDebug()).AddDebug(string(debug.Stack())),
@@ -307,7 +294,10 @@ func (p *rpcThread) Eval(
 		}
 
 		if frame.retStatus == 0 {
-			p.WriteError(errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()), 0)
+			p.Write(
+				errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()),
+				0,
+			)
 		} else {
 			// count
 			if execActionNode != nil {
@@ -326,9 +316,9 @@ func (p *rpcThread) Eval(
 	// set exec action node
 	actionPath, _, err := inStream.readUnsafeString()
 	if err != nil {
-		return p.WriteError(err, 0)
+		return p.Write(err, 0)
 	} else if execActionNode, ok = p.processor.actionsMap[actionPath]; !ok {
-		return p.WriteError(
+		return p.Write(
 			errors.ErrTargetNotExist.
 				AddDebug(base.ConcatString("target ", actionPath, " does not exist")),
 			0,
@@ -338,7 +328,7 @@ func (p *rpcThread) Eval(
 	}
 
 	if frame.depth >= p.processor.maxCallDepth {
-		return p.WriteError(
+		return p.Write(
 			errors.ErrCallOverflow.
 				AddDebug(base.ConcatString(
 					"call ",
@@ -351,7 +341,7 @@ func (p *rpcThread) Eval(
 			0,
 		)
 	} else if frame.from, _, err = inStream.readUnsafeString(); err != nil {
-		return p.WriteError(err, 0)
+		return p.Write(err, 0)
 	} else {
 		// create context
 		rt := Runtime{id: rtID, thread: p}
@@ -455,9 +445,9 @@ func (p *rpcThread) Eval(
 		}
 
 		if _, err := inStream.Read(); err != nil {
-			return p.WriteError(err, 0)
+			return p.Write(err, 0)
 		} else if !p.processor.isDebug {
-			return p.WriteError(
+			return p.Write(
 				errors.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(
 						actionPath,
@@ -471,7 +461,7 @@ func (p *rpcThread) Eval(
 			inStream.SetReadPos(argsStreamPos)
 			for inStream.CanRead() {
 				if val, err := inStream.Read(); err != nil {
-					return p.WriteError(err, 0)
+					return p.Write(err, 0)
 				} else if val != nil {
 					remoteArgsType = append(
 						remoteArgsType,
@@ -496,7 +486,7 @@ func (p *rpcThread) Eval(
 				}
 			}
 
-			return p.WriteError(
+			return p.Write(
 				errors.ErrArgumentsNotMatch.AddDebug(base.ConcatString(
 					actionPath,
 					" action arguments does not match\nwant: ",

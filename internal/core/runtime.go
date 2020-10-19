@@ -36,7 +36,7 @@ func (p Runtime) OK(value interface{}) Return {
 	}
 
 	defer p.unlock()
-	return thread.WriteOK(value, 1)
+	return thread.Write(value, 1)
 }
 
 // Error ...
@@ -56,19 +56,19 @@ func (p Runtime) Error(value error) Return {
 				AddDebug("value type(nil) is not supported")
 		}
 
-		return p.thread.WriteError(
+		return p.thread.Write(
 			err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
 		)
 	} else if value != nil {
-		return p.thread.WriteError(
+		return p.thread.Write(
 			errors.ErrActionCustom.
 				AddDebug(value.Error()).
 				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 			1,
 		)
 	} else {
-		return p.thread.WriteError(
+		return p.thread.Write(
 			errors.ErrUnsupportedValue.
 				AddDebug("value type(nil) is not supported").
 				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
