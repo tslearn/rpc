@@ -69,7 +69,7 @@ func (p *Service) AddChildService(
 	return p
 }
 
-// On add reply handler
+// On ...
 func (p *Service) On(
 	name string,
 	handler interface{},
