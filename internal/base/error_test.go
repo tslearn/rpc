@@ -77,7 +77,7 @@ func TestDefineConfigError(t *testing.T) {
 	})
 }
 
-func TestDefineTransportError(t *testing.T) {
+func TestDefineNetError(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
 	t.Run("test", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestDefineTransportError(t *testing.T) {
 	})
 }
 
-func TestDefineReplyError(t *testing.T) {
+func TestDefineActionError(t *testing.T) {
 	num := ErrorNumber(math.MaxUint32)
 
 	t.Run("test", func(t *testing.T) {
@@ -381,8 +381,8 @@ func TestError_getErrorTypeString(t *testing.T) {
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.getErrorTypeString()).Equal("Config")
-		assert(v2.getErrorTypeString()).Equal("Transport")
-		assert(v3.getErrorTypeString()).Equal("Reply")
+		assert(v2.getErrorTypeString()).Equal("Net")
+		assert(v3.getErrorTypeString()).Equal("Action")
 		assert(v4.getErrorTypeString()).Equal("Develop")
 		assert(v5.getErrorTypeString()).Equal("Kernel")
 		assert(v6.getErrorTypeString()).Equal("Security")

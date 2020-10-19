@@ -162,9 +162,9 @@ func (p *Error) getErrorTypeString() string {
 	case ErrorTypeConfig:
 		return "Config"
 	case ErrorTypeNet:
-		return "Transport"
+		return "Net"
 	case ErrorTypeAction:
-		return "Reply"
+		return "Action"
 	case ErrorTypeDevelop:
 		return "Develop"
 	case ErrorTypeKernel:
