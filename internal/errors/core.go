@@ -64,7 +64,7 @@ var (
 	)
 
 	// ErrReplyCustom ...
-	ErrReplyCustom = base.DefineReplyError(
+	ErrReplyCustom = base.DefineActionError(
 		(generalErrorSeg<<16)|10,
 		base.ErrorLevelError,
 		"",

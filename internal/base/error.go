@@ -12,8 +12,8 @@ type ErrorType uint8
 const (
 	// ErrorTypeConfig ...
 	ErrorTypeConfig = ErrorType(1)
-	// ErrorTypeTransport ...
-	ErrorTypeTransport = ErrorType(2)
+	// ErrorTypeNet ...
+	ErrorTypeNet = ErrorType(2)
 	// ErrorTypeAction ...
 	ErrorTypeAction = ErrorType(3)
 	// ErrorTypeDevelop ...
@@ -87,13 +87,13 @@ func DefineConfigError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeConfig, num, level, msg, GetFileLine(1))
 }
 
-// DefineTransportError ...
-func DefineTransportError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeTransport, num, level, msg, GetFileLine(1))
+// DefineNetError ...
+func DefineNetError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeNet, num, level, msg, GetFileLine(1))
 }
 
-// DefineReplyError ...
-func DefineReplyError(num ErrorNumber, level ErrorLevel, msg string) *Error {
+// DefineActionError ...
+func DefineActionError(num ErrorNumber, level ErrorLevel, msg string) *Error {
 	return defineError(ErrorTypeAction, num, level, msg, GetFileLine(1))
 }
 
@@ -161,7 +161,7 @@ func (p *Error) getErrorTypeString() string {
 	switch p.GetType() {
 	case ErrorTypeConfig:
 		return "Config"
-	case ErrorTypeTransport:
+	case ErrorTypeNet:
 		return "Transport"
 	case ErrorTypeAction:
 		return "Reply"

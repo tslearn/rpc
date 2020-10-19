@@ -8,7 +8,7 @@ const streamConnErrorSeg = 2000
 
 var (
 	// ErrStreamConnIsClosed ... *
-	ErrStreamConnIsClosed = base.DefineTransportError(
+	ErrStreamConnIsClosed = base.DefineNetError(
 		(streamConnErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"stream conn is closed",
@@ -19,21 +19,21 @@ const websocketStreamConnErrorSeg = 2001
 
 var (
 	// ErrWebsocketStreamConnWSConnWriteMessage ... *
-	ErrWebsocketStreamConnWSConnWriteMessage = base.DefineTransportError(
+	ErrWebsocketStreamConnWSConnWriteMessage = base.DefineNetError(
 		(websocketStreamConnErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
 		"",
 	)
 
 	// ErrWebsocketStreamConnWSConnSetReadDeadline ... *
-	ErrWebsocketStreamConnWSConnSetReadDeadline = base.DefineTransportError(
+	ErrWebsocketStreamConnWSConnSetReadDeadline = base.DefineNetError(
 		(websocketStreamConnErrorSeg<<16)|2,
 		base.ErrorLevelWarn,
 		"",
 	)
 
 	// ErrWebsocketStreamConnWSConnReadMessage ... *
-	ErrWebsocketStreamConnWSConnReadMessage = base.DefineTransportError(
+	ErrWebsocketStreamConnWSConnReadMessage = base.DefineNetError(
 		(websocketStreamConnErrorSeg<<16)|3,
 		base.ErrorLevelWarn,
 		"",
@@ -54,7 +54,7 @@ var (
 	)
 
 	// ErrWebsocketStreamConnWSConnClose ... *
-	ErrWebsocketStreamConnWSConnClose = base.DefineTransportError(
+	ErrWebsocketStreamConnWSConnClose = base.DefineNetError(
 		(websocketStreamConnErrorSeg<<16)|6,
 		base.ErrorLevelWarn,
 		"",
@@ -93,7 +93,7 @@ var (
 	)
 
 	// ErrWebsocketServerAdapterWSServerClose ... *
-	ErrWebsocketServerAdapterWSServerClose = base.DefineTransportError(
+	ErrWebsocketServerAdapterWSServerClose = base.DefineNetError(
 		(websocketServerAdapterErrorSeg<<16)|5,
 		base.ErrorLevelError,
 		"",

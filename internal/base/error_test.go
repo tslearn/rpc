@@ -11,7 +11,7 @@ func TestError(t *testing.T) {
 		assert := NewAssert(t)
 
 		assert(ErrorTypeConfig).Equal(ErrorType(1))
-		assert(ErrorTypeTransport).Equal(ErrorType(2))
+		assert(ErrorTypeNet).Equal(ErrorType(2))
 		assert(ErrorTypeAction).Equal(ErrorType(3))
 		assert(ErrorTypeDevelop).Equal(ErrorType(4))
 		assert(ErrorTypeKernel).Equal(ErrorType(5))
@@ -82,14 +82,14 @@ func TestDefineTransportError(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1, s1 := DefineTransportError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		v1, s1 := DefineNetError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
 		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
-			Equal(ErrorTypeTransport, num, ErrorLevelWarn, "msg")
+			Equal(ErrorTypeNet, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
@@ -99,7 +99,7 @@ func TestDefineReplyError(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1, s1 := DefineReplyError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		v1, s1 := DefineActionError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
@@ -183,20 +183,20 @@ func TestError_GetType(t *testing.T) {
 		assert(v1.GetType()).Equal(ErrorTypeConfig)
 	})
 
-	t.Run("test ErrorTypeTransport", func(t *testing.T) {
+	t.Run("test ErrorTypeNet", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineTransportError(num, ErrorLevelWarn, "msg")
+		v1 := DefineNetError(num, ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType()).Equal(ErrorTypeTransport)
+		assert(v1.GetType()).Equal(ErrorTypeNet)
 	})
 
 	t.Run("test ErrorTypeAction", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1 := DefineReplyError(num, ErrorLevelWarn, "msg")
+		v1 := DefineActionError(num, ErrorLevelWarn, "msg")
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)
@@ -364,8 +364,8 @@ func TestError_getErrorTypeString(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := DefineConfigError(num, ErrorLevelFatal, "msg")
-		v2 := DefineTransportError(num-1, ErrorLevelFatal, "msg")
-		v3 := DefineReplyError(num-2, ErrorLevelFatal, "msg")
+		v2 := DefineNetError(num-1, ErrorLevelFatal, "msg")
+		v3 := DefineActionError(num-2, ErrorLevelFatal, "msg")
 		v4 := DefineDevelopError(num-3, ErrorLevelFatal, "msg")
 		v5 := DefineKernelError(num-4, ErrorLevelFatal, "msg")
 		v6 := DefineSecurityError(num-5, ErrorLevelFatal, "msg")
