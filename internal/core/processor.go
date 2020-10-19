@@ -365,8 +365,8 @@ func (p *Processor) mountNode(
 			p.servicesMap[servicePath] = node
 
 			// mount the actions
-			for _, replyMeta := range nodeMeta.service.actions {
-				if err := p.mountReply(node, replyMeta, fnCache); err != nil {
+			for _, actionMeta := range nodeMeta.service.actions {
+				if err := p.mountAction(node, actionMeta, fnCache); err != nil {
 					p.unmount(servicePath)
 					return err
 				}
@@ -419,16 +419,16 @@ func (p *Processor) unmount(path string) {
 	}
 }
 
-func (p *Processor) mountReply(
+func (p *Processor) mountAction(
 	serviceNode *rpcServiceNode,
 	meta *rpcActionMeta,
 	fnCache ActionCache,
 ) *base.Error {
 	if meta == nil {
-		return errors.ErrProcessorReplyMetaIsNil
+		return errors.ErrProcessorActionMetaIsNil
 	} else if !actionNameRegex.MatchString(meta.name) {
 		return errors.ErrActionName.
-			AddDebug(fmt.Sprintf("reply name %s is illegal", meta.name)).
+			AddDebug(fmt.Sprintf("action name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
 		return errors.ErrActionHandler.
@@ -441,14 +441,14 @@ func (p *Processor) mountReply(
 			convertTypeToString(returnType),
 		)).AddDebug(meta.fileLine)
 	} else if fnTypeString, err := getFuncKind(fn); err != nil {
-		// Check reply handler is right
+		// Check action handler is right
 		return err.AddDebug(meta.fileLine)
 	} else {
-		replyPath := serviceNode.path + ":" + meta.name
-		if item, ok := p.actionsMap[replyPath]; ok {
-			// check the reply path is not occupied
+		actionPath := serviceNode.path + ":" + meta.name
+		if item, ok := p.actionsMap[actionPath]; ok {
+			// check the action path is not occupied
 			return errors.ErrActionName.
-				AddDebug(base.ConcatString("duplicated reply name ", meta.name)).
+				AddDebug(base.ConcatString("duplicated action name ", meta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
 					base.AddPrefixPerLine(meta.fileLine, "\t"),
@@ -456,7 +456,7 @@ func (p *Processor) mountReply(
 				))
 		}
 
-		// mount the replyRecord
+		// mount the action
 		numOfArgs := fn.Type().NumIn()
 		argTypes := make([]reflect.Type, numOfArgs)
 		argStrings := make([]string, numOfArgs)
@@ -466,14 +466,14 @@ func (p *Processor) mountReply(
 		}
 
 		actionNode := &rpcActionNode{
-			path:      replyPath,
+			path:      actionPath,
 			meta:      meta,
 			service:   serviceNode,
 			cacheFN:   nil,
 			reflectFn: fn,
 			callString: fmt.Sprintf(
 				"%s(%s) %s",
-				replyPath,
+				actionPath,
 				strings.Join(argStrings, ", "),
 				convertTypeToString(returnType),
 			),
@@ -485,7 +485,7 @@ func (p *Processor) mountReply(
 			actionNode.cacheFN = fnCache.Get(fnTypeString)
 		}
 
-		p.actionsMap[replyPath] = actionNode
+		p.actionsMap[actionPath] = actionNode
 		return nil
 	}
 }

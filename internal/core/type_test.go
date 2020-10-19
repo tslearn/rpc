@@ -418,9 +418,9 @@ package core
 //					fallthrough
 //				case base.ErrorKindTransport:
 //					fallthrough
-//				case base.ErrorKindReply:
+//				case base.ErrorKindAction:
 //					errorArray = append(errorArray, err)
-//				case base.ErrorKindReplyPanic:
+//				case base.ErrorKindActionPanic:
 //					fallthrough
 //				case base.ErrorKindRuntimePanic:
 //					fallthrough

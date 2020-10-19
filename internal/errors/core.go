@@ -123,7 +123,7 @@ var (
 	ErrRuntimeExternalReturn = base.DefineDevelopError(
 		(generalErrorSeg<<16)|18,
 		base.ErrorLevelError,
-		"reply must be return through Runtime.OK or Runtime.Error",
+		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
 	// ErrNumOfThreadsIsWrong ... *
@@ -193,11 +193,11 @@ var (
 		"node meta is nil",
 	)
 
-	// ErrProcessorReplyMetaIsNil ... *
-	ErrProcessorReplyMetaIsNil = base.DefineKernelError(
+	// ErrProcessorActionMetaIsNil ... *
+	ErrProcessorActionMetaIsNil = base.DefineKernelError(
 		(kernelErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
-		"reply meta is nil",
+		"action meta is nil",
 	)
 
 	// ErrGetServiceDataServiceNodeIsNil ...

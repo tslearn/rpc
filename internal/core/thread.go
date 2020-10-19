@@ -323,7 +323,7 @@ func (p *rpcThread) Eval(
 		onEvalBack(inStream)
 	}()
 
-	// set exec reply node
+	// set exec action node
 	actionPath, _, err := inStream.readUnsafeString()
 	if err != nil {
 		return p.WriteError(err, 0)

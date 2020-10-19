@@ -110,7 +110,7 @@ package core
 //	assert(thread2.GetExecActionNodePath()).Equal("#.test:Eval")
 //}
 //
-//func TestRpcThread_GetExecReplyFileLine(t *testing.T) {
+//func TestRpcThread_GetExecActionFileLine(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
 //	// Test(1)
@@ -148,7 +148,7 @@ package core
 //			return stream
 //		},
 //		nil,
-//	)).Equal(nil, base.NewReplyError("error").AddDebug("#.test:Eval "+source1), nil)
+//	)).Equal(nil, base.NewActionError("error").AddDebug("#.test:Eval "+source1), nil)
 //}
 //
 //func TestRpcThread_WriteOK(t *testing.T) {
@@ -176,7 +176,7 @@ package core
 //	)).Equal(
 //		nil,
 //		nil,
-//		base.NewReplyPanic("value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+//		base.NewActionPanic("value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 //			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 //			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 //			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
@@ -206,7 +206,7 @@ package core
 //	)).Equal(
 //		nil,
 //		nil,
-//		base.NewReplyPanic("value type is not supported").
+//		base.NewActionPanic("value type is not supported").
 //			AddDebug("#.test:Eval "+source2),
 //	)
 //
@@ -250,7 +250,7 @@ package core
 //func TestRpcThread_Eval1(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
-//	// Test(1) read reply path error
+//	// Test(1) read action path error
 //	assert(testRunWithProcessor(true, nil,
 //		func(rt Runtime, name string) Return {
 //			return rt.OK("hello " + name)
@@ -287,7 +287,7 @@ package core
 //		nil,
 //	)).Equal("hello world", nil, nil)
 //
-//	// Test(1) read reply path error
+//	// Test(1) read action path error
 //	assert(testRunWithProcessor(true, nil,
 //		func(rt Runtime, name string) Return {
 //			return rt.OK("hello " + name)
@@ -304,7 +304,7 @@ package core
 //		nil,
 //	)).Equal(nil, base.NewProtocolError(base.ErrStringBadStream), nil)
 //
-//	// Test(2) reply path is not mounted
+//	// Test(2) action path is not mounted
 //	assert(testRunWithProcessor(true, nil,
 //		func(rt Runtime, name string) Return {
 //			return rt.OK("hello " + name)
@@ -312,14 +312,14 @@ package core
 //		func(_ *Processor) *Stream {
 //			stream := NewStream()
 //			stream.SetDepth(3)
-//			// reply path is not mounted
+//			// action path is not mounted
 //			stream.WriteString("#.system:Eval")
 //			stream.WriteString("#")
 //			stream.WriteString("world")
 //			return stream
 //		},
 //		nil,
-//	)).Equal(nil, base.NewReplyError("target #.system:Eval does not exist"), nil)
+//	)).Equal(nil, base.NewActionError("target #.system:Eval does not exist"), nil)
 //
 //	// Test(4) depth is overflow
 //	ret4, error4, panic4 := testRunWithProcessor(true, nil,
@@ -338,7 +338,7 @@ package core
 //		nil,
 //	)
 //	assert(ret4, panic4).IsNil()
-//	assert(error4.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error4.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error4.GetMessage()).
 //		Equal("call #.test:Eval level(17) overflows")
 //	assert(strings.Contains(error4.GetDebug(), "#.test:Eval")).IsTrue()
@@ -414,7 +414,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -445,9 +445,9 @@ package core
 //		nil,
 //	)
 //	assert(ret8, panic8).IsNil()
-//	assert(error8.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error8.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error8.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Int64, rpc.Int64, rpc.Uint64, " +
@@ -484,7 +484,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -515,9 +515,9 @@ package core
 //		nil,
 //	)
 //	assert(ret10, panic10).IsNil()
-//	assert(error10.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error10.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error10.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Bool, rpc.Uint64, " +
@@ -553,7 +553,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -584,9 +584,9 @@ package core
 //		nil,
 //	)
 //	assert(ret12, panic12).IsNil()
-//	assert(error12.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error12.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error12.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Bool, " +
@@ -622,7 +622,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -653,9 +653,9 @@ package core
 //		nil,
 //	)
 //	assert(ret14, panic14).IsNil()
-//	assert(error14.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error14.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error14.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -691,7 +691,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -722,9 +722,9 @@ package core
 //		nil,
 //	)
 //	assert(ret16, panic16).IsNil()
-//	assert(error16.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error16.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error16.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -760,7 +760,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -791,9 +791,9 @@ package core
 //		nil,
 //	)
 //	assert(ret18, panic18).IsNil()
-//	assert(error18.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error18.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error18.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -829,7 +829,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -860,9 +860,9 @@ package core
 //		nil,
 //	)
 //	assert(ret20, panic20).IsNil()
-//	assert(error20.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error20.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error20.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -898,7 +898,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -929,9 +929,9 @@ package core
 //		nil,
 //	)
 //	assert(ret22, panic22).IsNil()
-//	assert(error22.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error22.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error22.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
@@ -1015,7 +1015,7 @@ package core
 //		nil,
 //	)).Equal(
 //		nil,
-//		base.NewReplyError("#.test:Eval reply arguments does not match"),
+//		base.NewActionError("#.test:Eval action arguments does not match"),
 //		nil,
 //	)
 //
@@ -1037,9 +1037,9 @@ package core
 //		nil,
 //	)
 //	assert(ret27, panic27).IsNil()
-//	assert(error27.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error27.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error27.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, <nil>, rpc.Map, <nil>) rpc.Return",
 //	)
@@ -1084,7 +1084,7 @@ package core
 //	assert(ret29, error29).IsNil()
 //	assert(panic29).IsNotNil()
 //	if panic29 != nil {
-//		assert(panic29.GetKind()).Equal(base.ErrorKindReplyPanic)
+//		assert(panic29.GetKind()).Equal(base.ErrorKindActionPanic)
 //		assert(panic29.GetMessage()).
 //			Equal("runtime error: this is a error")
 //		assert(strings.Contains(panic29.GetDebug(), "#.test:Eval")).IsTrue()
@@ -1112,7 +1112,7 @@ package core
 //	assert(ret30, error30).IsNil()
 //	assert(panic30).IsNotNil()
 //	if panic30 != nil {
-//		assert(panic30.GetKind()).Equal(base.ErrorKindReplyPanic)
+//		assert(panic30.GetKind()).Equal(base.ErrorKindActionPanic)
 //		assert(panic30.GetMessage()).
 //			Equal("runtime error: this is a error")
 //		assert(strings.Contains(panic30.GetDebug(), "#.test:Eval")).IsTrue()
@@ -1161,9 +1161,9 @@ package core
 //	assert(ret32, error32).Equal(nil, nil)
 //	assert(panic32).IsNotNil()
 //	if panic32 != nil {
-//		assert(panic32.GetKind()).Equal(base.ErrorKindReplyPanic)
+//		assert(panic32.GetKind()).Equal(base.ErrorKindActionPanic)
 //		assert(panic32.GetMessage()).
-//			Equal("reply must return through Runtime.OK or Runtime.Error")
+//			Equal("action must return through Runtime.OK or Runtime.Error")
 //		assert(strings.Contains(panic32.GetDebug(), "type_test.go")).IsTrue()
 //	} else {
 //		assert().Fail("nil)")
@@ -1226,9 +1226,9 @@ package core
 //	assert(error34).IsNotNil()
 //	assert(error34.GetMessage())
 //
-//	assert(error34.GetKind()).Equal(base.ErrorKindReply)
+//	assert(error34.GetKind()).Equal(base.ErrorKindAction)
 //	assert(error34.GetMessage()).Equal(
-//		"#.test:Eval reply arguments does not match\n" +
+//		"#.test:Eval action arguments does not match\n" +
 //			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
 //			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
 //			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +

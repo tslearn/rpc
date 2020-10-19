@@ -173,7 +173,7 @@ func TestNewProcessor(t *testing.T) {
 //	assert(processor2.Close()).IsFalse()
 //	lock2.Lock()
 //	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
-//		base.NewReplyPanic(
+//		base.NewActionPanic(
 //			"the following actions can not close: \n\t" +
 //				actionFileLine2 + " (1 goroutine)",
 //		),
@@ -215,7 +215,7 @@ func TestNewProcessor(t *testing.T) {
 //	assert(processor3.Close()).IsFalse()
 //	lock3.Lock()
 //	assert(helper3.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
-//		base.NewReplyPanic(
+//		base.NewActionPanic(
 //			"the following actions can not close: \n\t" +
 //				actionFileLine3 + " (2 goroutines)",
 //		),
@@ -437,13 +437,13 @@ func TestNewProcessor(t *testing.T) {
 //			service: &Service{
 //				children: []*ServiceMeta{},
 //				actions:  []*rpcActionMeta{nil},
-//				fileLine: "DebugReply",
+//				fileLine: "DebugAction",
 //			},
 //			fileLine: "DebugService",
 //		}},
 //		base.ErrorKindKernelPanic,
 //		"meta is nil",
-//		"DebugReply",
+//		"DebugAction",
 //	)
 //
 //	// Test(7)
@@ -455,7 +455,7 @@ func TestNewProcessor(t *testing.T) {
 //				actions: []*rpcActionMeta{{
 //					name:     "-",
 //					handler:  nil,
-//					fileLine: "DebugReply",
+//					fileLine: "DebugAction",
 //				}},
 //				fileLine: "DebugService",
 //			},
@@ -463,7 +463,7 @@ func TestNewProcessor(t *testing.T) {
 //		}},
 //		base.ErrorKindRuntimePanic,
 //		"action name - is illegal",
-//		"DebugReply",
+//		"DebugAction",
 //	)
 //
 //	// Test(8)
@@ -475,7 +475,7 @@ func TestNewProcessor(t *testing.T) {
 //				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  nil,
-//					fileLine: "DebugReply",
+//					fileLine: "DebugAction",
 //				}},
 //				fileLine: "DebugService",
 //			},
@@ -483,7 +483,7 @@ func TestNewProcessor(t *testing.T) {
 //		}},
 //		base.ErrorKindRuntimePanic,
 //		"handler is nil",
-//		"DebugReply",
+//		"DebugAction",
 //	)
 //
 //	// Test(9)
@@ -495,7 +495,7 @@ func TestNewProcessor(t *testing.T) {
 //				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  3,
-//					fileLine: "DebugReply",
+//					fileLine: "DebugAction",
 //				}},
 //				fileLine: "DebugService",
 //			},
@@ -503,7 +503,7 @@ func TestNewProcessor(t *testing.T) {
 //		}},
 //		base.ErrorKindRuntimePanic,
 //		"handler must be func(rt rpc.Runtime, ...) rpc.Return",
-//		"DebugReply",
+//		"DebugAction",
 //	)
 //
 //	// Test(10)
@@ -515,7 +515,7 @@ func TestNewProcessor(t *testing.T) {
 //				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  func() {},
-//					fileLine: "DebugReply",
+//					fileLine: "DebugAction",
 //				}},
 //				fileLine: "DebugService",
 //			},
@@ -523,7 +523,7 @@ func TestNewProcessor(t *testing.T) {
 //		}},
 //		base.ErrorKindRuntimePanic,
 //		"handler 1st argument type must be rpc.Runtime",
-//		"DebugReply",
+//		"DebugAction",
 //	)
 //
 //	// Test(11)
@@ -535,11 +535,11 @@ func TestNewProcessor(t *testing.T) {
 //				actions: []*rpcActionMeta{{
 //					name:     "Eval",
 //					handler:  func(rt Runtime) Return { return rt.OK(true) },
-//					fileLine: "DebugReply1",
+//					fileLine: "DebugAction1",
 //				}, {
 //					name:     "Eval",
 //					handler:  func(rt Runtime) Return { return rt.OK(true) },
-//					fileLine: "DebugReply2",
+//					fileLine: "DebugAction2",
 //				}},
 //				fileLine: "DebugService",
 //			},
@@ -547,7 +547,7 @@ func TestNewProcessor(t *testing.T) {
 //		}},
 //		base.ErrorKindRuntimePanic,
 //		"action name Eval is duplicated",
-//		"current:\n\tDebugReply2\nconflict:\n\tDebugReply1",
+//		"current:\n\tDebugAction2\nconflict:\n\tDebugAction1",
 //	)
 //
 //	// Test(12)
