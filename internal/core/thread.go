@@ -22,7 +22,7 @@ var rpcThreadFrameCache = &sync.Pool{
 		return &rpcThreadFrame{
 			stream:     nil,
 			depth:      0,
-			replyNode:  nil,
+			actionNode: nil,
 			from:       "",
 			retStatus:  0,
 			lockStatus: 0,
@@ -32,7 +32,7 @@ var rpcThreadFrameCache = &sync.Pool{
 
 type rpcThreadFrame struct {
 	stream           *Stream
-	replyNode        unsafe.Pointer
+	actionNode       unsafe.Pointer
 	from             string
 	depth            uint16
 	cachePos         uint16
@@ -50,7 +50,7 @@ func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
 	p.cachePos = 0
 	p.parentRTWritePos = streamPosBody
-	atomic.StorePointer(&p.replyNode, nil)
+	atomic.StorePointer(&p.actionNode, nil)
 	p.from = ""
 }
 
@@ -184,7 +184,7 @@ func (p *rpcThread) popFrame() {
 }
 
 func (p *rpcThread) GetReplyNode() *rpcReplyNode {
-	return (*rpcReplyNode)(atomic.LoadPointer(&p.top.replyNode))
+	return (*rpcReplyNode)(atomic.LoadPointer(&p.top.actionNode))
 }
 
 func (p *rpcThread) GetExecReplyNodePath() string {
@@ -334,7 +334,7 @@ func (p *rpcThread) Eval(
 			0,
 		)
 	} else {
-		atomic.StorePointer(&frame.replyNode, unsafe.Pointer(execReplyNode))
+		atomic.StorePointer(&frame.actionNode, unsafe.Pointer(execReplyNode))
 	}
 
 	if frame.depth >= p.processor.maxCallDepth {

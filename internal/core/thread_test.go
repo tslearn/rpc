@@ -34,7 +34,7 @@ package core
 //	assert(thread4.closeCH).IsNotNil()
 //	assert(thread4.top.stream).IsNil()
 //	assert(thread4.top.depth).IsNotNil()
-//	assert(thread4.top.replyNode).IsNil()
+//	assert(thread4.top.actionNode).IsNil()
 //	assert(thread4.top.from).Equal("")
 //
 //	// Test(5) release thread
@@ -45,7 +45,7 @@ package core
 //	assert(thread5.closeCH).IsNotNil()
 //	assert(thread5.top.stream).IsNil()
 //	assert(thread5.top.depth).IsNotNil()
-//	assert(thread5.top.replyNode).IsNil()
+//	assert(thread5.top.actionNode).IsNil()
 //	assert(thread5.top.from).Equal("")
 //
 //	// Test(6) closeTimeout is less than 1 * time.Second
@@ -106,7 +106,7 @@ package core
 //	// Test(2)
 //	thread2 := getFakeThread(true)
 //	defer thread2.Close()
-//	thread2.top.replyNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
+//	thread2.top.actionNode = unsafe.Pointer(&rpcReplyNode{path: "#.test:Eval"})
 //	assert(thread2.GetExecReplyNodePath()).Equal("#.test:Eval")
 //}
 //
@@ -121,7 +121,7 @@ package core
 //	// Test(2)
 //	thread2 := getFakeThread(true)
 //	defer thread2.Close()
-//	thread2.top.replyNode = unsafe.Pointer(&rpcReplyNode{
+//	thread2.top.actionNode = unsafe.Pointer(&rpcReplyNode{
 //		path: "#.test:Eval",
 //		meta: &rpcActionMeta{fileLine: "/test_file:234"},
 //	})
@@ -1003,8 +1003,8 @@ package core
 //			return rt.OK(a)
 //		},
 //		func(processor *Processor) *Stream {
-//			replyNode := processor.repliesMap["#.test:Eval"]
-//			replyNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+//			actionNode := processor.repliesMap["#.test:Eval"]
+//			actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
 //			stream := NewStream()
 //			stream.SetDepth(3)
 //			stream.WriteString("#.test:Eval")
