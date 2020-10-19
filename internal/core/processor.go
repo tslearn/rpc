@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	nodeNameRegex  = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
-	replyNameRegex = regexp.MustCompile(
+	nodeNameRegex   = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
+	actionNameRegex = regexp.MustCompile(
 		`^([_a-zA-Z][_0-9a-zA-Z]*)|(\$onMount)|(\$onUnmount)|(\$onUpdateConfig)$`,
 	)
 )
@@ -426,7 +426,7 @@ func (p *Processor) mountReply(
 ) *base.Error {
 	if meta == nil {
 		return errors.ErrProcessorReplyMetaIsNil
-	} else if !replyNameRegex.MatchString(meta.name) {
+	} else if !actionNameRegex.MatchString(meta.name) {
 		return errors.ErrReplyName.
 			AddDebug(fmt.Sprintf("reply name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)

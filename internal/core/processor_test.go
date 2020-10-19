@@ -6,12 +6,12 @@ import (
 )
 
 func TestNewProcessor(t *testing.T) {
-	fmt.Println(replyNameRegex.MatchString("$onMount"))
-	fmt.Println(replyNameRegex.MatchString("$onUnmount"))
-	fmt.Println(replyNameRegex.MatchString("$onUpdateConfig"))
-	fmt.Println(replyNameRegex.MatchString("onMount"))
-	fmt.Println(replyNameRegex.MatchString("sayHello"))
-	fmt.Println(replyNameRegex.MatchString("$sayHello"))
+	fmt.Println(actionNameRegex.MatchString("$onMount"))
+	fmt.Println(actionNameRegex.MatchString("$onUnmount"))
+	fmt.Println(actionNameRegex.MatchString("$onUpdateConfig"))
+	fmt.Println(actionNameRegex.MatchString("onMount"))
+	fmt.Println(actionNameRegex.MatchString("sayHello"))
+	fmt.Println(actionNameRegex.MatchString("$sayHello"))
 }
 
 //

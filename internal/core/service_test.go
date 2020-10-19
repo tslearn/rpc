@@ -43,7 +43,7 @@ func TestService_AddChildService(t *testing.T) {
 	})
 }
 
-func TestService_Reply(t *testing.T) {
+func TestService_On(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		service, fileLine := NewService().On("sayHello", 2345), base.GetFileLine(0)
