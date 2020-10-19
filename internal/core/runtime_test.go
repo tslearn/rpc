@@ -1,7 +1,6 @@
 package core
 
 import (
-	sysError "errors"
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -43,12 +42,12 @@ func TestRuntime_unlock(t *testing.T) {
 	})
 }
 
-func TestContextObject_OK(t *testing.T) {
+func TestRuntime_Reply(t *testing.T) {
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(base.RunWithSubscribePanic(func() {
-			_, source = Runtime{}.OK(true), base.GetFileLine(0)
+			_, source = Runtime{}.Reply(true), base.GetFileLine(0)
 		})).Equal(
 			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
 		)
@@ -58,23 +57,9 @@ func TestContextObject_OK(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
-				return rt.OK(true)
+				return rt.Reply(true)
 			}),
 		)).Equal(true, nil)
-	})
-}
-
-func TestContextObject_Error(t *testing.T) {
-	t.Run("thread lock error", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		source := ""
-		assert(base.RunWithSubscribePanic(func() {
-			ret, s := Runtime{}.Error(sysError.New("error")), base.GetFileLine(0)
-			source = s
-			assert(ret).Equal(emptyReturn)
-		})).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
-		)
 	})
 
 	t.Run("test ok (Error)", func(t *testing.T) {
@@ -83,7 +68,7 @@ func TestContextObject_Error(t *testing.T) {
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				err := errors.ErrStream.AddDebug("error")
-				ret, s := rt.Error(err), base.GetFileLine(0)
+				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
@@ -96,8 +81,8 @@ func TestContextObject_Error(t *testing.T) {
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
-				err := sysError.New("error")
-				ret, s := rt.Error(err), base.GetFileLine(0)
+				err := errors.ErrActionCustom.AddDebug("error")
+				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
@@ -105,12 +90,12 @@ func TestContextObject_Error(t *testing.T) {
 		)).Equal(nil, errors.ErrActionCustom.AddDebug("error").AddDebug(source))
 	})
 
-	t.Run("argument is nil", func(t *testing.T) {
+	t.Run("argument is (*Error)(nil)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
-				ret, s := rt.Error(nil), base.GetFileLine(0)
+				ret, s := rt.Reply((*base.Error)(nil)), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
@@ -118,7 +103,25 @@ func TestContextObject_Error(t *testing.T) {
 		)).Equal(
 			nil,
 			errors.ErrUnsupportedValue.
-				AddDebug("value type(nil) is not supported").
+				AddDebug("value is nil").
+				AddDebug(source),
+		)
+	})
+
+	t.Run("argument is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(ParseResponseStream(
+			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+				ret, s := rt.Reply((*base.Error)(nil)), base.GetFileLine(0)
+				source = rt.thread.GetActionNode().path + " " + s
+				assert(ret).Equal(emptyReturn)
+				return ret
+			}),
+		)).Equal(
+			nil,
+			errors.ErrUnsupportedValue.
+				AddDebug("value is nil").
 				AddDebug(source),
 		)
 	})
@@ -144,7 +147,7 @@ func TestRuntime_Call(t *testing.T) {
 				rtValue, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
 				source1 = rt.thread.GetActionNode().path + " " + s1
 				_, err := rtValue.ToString()
-				ret, s2 := rt.Error(err), base.GetFileLine(0)
+				ret, s2 := rt.Reply(err), base.GetFileLine(0)
 				source2 = rt.thread.GetActionNode().path + " " + s2
 				return ret
 			}),
@@ -175,7 +178,7 @@ func TestRuntime_Call(t *testing.T) {
 						rt.thread.processor.actionsMap["#.test:SayHello"].meta.fileLine
 					source2 = rt.thread.GetActionNode().path + " " + s2
 					_, err := rtValue.ToString()
-					ret, s3 := rt.Error(err), base.GetFileLine(0)
+					ret, s3 := rt.Reply(err), base.GetFileLine(0)
 					source3 = rt.thread.GetActionNode().path + " " + s3
 					return ret
 				},
@@ -194,7 +197,7 @@ func TestRuntime_Call(t *testing.T) {
 				func(processor *Processor, rt Runtime) Return {
 					rtValue := rt.Call("#.test:SayHello", "ts")
 					fmt.Println(rtValue.ToString())
-					return rt.OK(rtValue)
+					return rt.Reply(rtValue)
 				},
 			),
 		)).Equal("hello ts", nil)

@@ -70,7 +70,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ int32, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -84,7 +84,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int32, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -98,7 +98,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ int32, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -112,7 +112,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ int32, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -126,7 +126,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ int32, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -140,7 +140,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ int32,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -154,7 +154,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ int32, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -168,7 +168,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ int32, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -182,7 +182,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ int32, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -196,7 +196,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ int32, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -210,7 +210,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ int32,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal(
 			"",
@@ -224,7 +224,7 @@ func TestGetFuncKind(t *testing.T) {
 			_ bool, _ int64, _ uint64, _ float64, _ string, _ Bytes,
 			_ Array, _ Map, _ RTValue, _ RTArray, _ RTMap,
 		) Return {
-			return rt.OK(true)
+			return rt.Reply(true)
 		}
 		assert(getFuncKind(reflect.ValueOf(v))).Equal("BIUFSXAMVYZ", nil)
 	})
@@ -438,7 +438,7 @@ func testWithProcessorAndRuntime(
 					return fn(helper.processor, rt)
 				}).
 				On("SayHello", func(rt Runtime, name string) Return {
-					return rt.OK("hello " + name)
+					return rt.Reply("hello " + name)
 				}),
 			fileLine: "",
 		}},

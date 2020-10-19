@@ -24,8 +24,8 @@ func (p Runtime) unlock() {
 	}
 }
 
-// OK ...
-func (p Runtime) OK(value interface{}) Return {
+// Reply ...
+func (p Runtime) Reply(value interface{}) Return {
 	thread := p.lock()
 
 	if thread == nil {
@@ -36,45 +36,7 @@ func (p Runtime) OK(value interface{}) Return {
 	}
 
 	defer p.unlock()
-	return thread.Write(value, 1)
-}
-
-// Error ...
-func (p Runtime) Error(value error) Return {
-	thread := p.lock()
-	if thread == nil {
-		base.PublishPanic(
-			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
-		)
-		return emptyReturn
-	}
-	defer p.unlock()
-
-	if err, ok := value.(*base.Error); ok {
-		if err == nil {
-			err = errors.ErrUnsupportedValue.
-				AddDebug("value type(nil) is not supported")
-		}
-
-		return p.thread.Write(
-			err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
-			1,
-		)
-	} else if value != nil {
-		return p.thread.Write(
-			errors.ErrActionCustom.
-				AddDebug(value.Error()).
-				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
-			1,
-		)
-	} else {
-		return p.thread.Write(
-			errors.ErrUnsupportedValue.
-				AddDebug("value type(nil) is not supported").
-				AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
-			1,
-		)
-	}
+	return thread.Write(value, 1, true)
 }
 
 // Call ...
