@@ -38,13 +38,13 @@ var (
 	rtMapType   = reflect.ValueOf(RTMap{}).Type()
 )
 
-// ReplyCache ...
-type ReplyCache interface {
-	Get(fnString string) ReplyCacheFunc
+// ActionCache ...
+type ActionCache interface {
+	Get(fnString string) ActionCacheFunc
 }
 
-// ReplyCacheFunc ...
-type ReplyCacheFunc = func(
+// ActionCacheFunc ...
+type ActionCacheFunc = func(
 	rt Runtime,
 	stream *Stream,
 	fn interface{},

@@ -73,10 +73,10 @@ type Error = base.Error
 type Stream = core.Stream
 
 // ReplyCache ...
-type ReplyCache = core.ReplyCache
+type ReplyCache = core.ActionCache
 
 // ReplyCacheFunc ...
-type ReplyCacheFunc = core.ReplyCacheFunc
+type ReplyCacheFunc = core.ActionCacheFunc
 
 // GetRandString ...
 var GetRandString = base.GetRandString

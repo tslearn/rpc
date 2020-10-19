@@ -370,7 +370,7 @@ func newTestProcessorHelper(
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
-	fnCache ReplyCache,
+	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 ) *testProcessorHelper {

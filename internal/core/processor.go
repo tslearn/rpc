@@ -30,7 +30,7 @@ type rpcReplyNode struct {
 	path       string
 	meta       *rpcActionMeta
 	service    *rpcServiceNode
-	cacheFN    ReplyCacheFunc
+	cacheFN    ActionCacheFunc
 	reflectFn  reflect.Value
 	callString string
 	argTypes   []reflect.Type
@@ -82,7 +82,7 @@ func NewProcessor(
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
-	fnCache ReplyCache,
+	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 	onReturnStream func(stream *Stream),
@@ -319,7 +319,7 @@ func (p *Processor) invokeSystemReply(name string, path string) {
 func (p *Processor) mountNode(
 	parentServiceNodePath string,
 	nodeMeta *ServiceMeta,
-	fnCache ReplyCache,
+	fnCache ActionCache,
 ) *base.Error {
 	if nodeMeta == nil {
 		return errors.ErrProcessorNodeMetaIsNil
@@ -422,7 +422,7 @@ func (p *Processor) unmount(path string) {
 func (p *Processor) mountReply(
 	serviceNode *rpcServiceNode,
 	meta *rpcActionMeta,
-	fnCache ReplyCache,
+	fnCache ActionCache,
 ) *base.Error {
 	if meta == nil {
 		return errors.ErrProcessorReplyMetaIsNil

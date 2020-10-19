@@ -152,13 +152,13 @@ func buildFuncCache(pkgName string, output string, kinds []string) *base.Error {
 		sb.AppendString("type rpcCache struct{}\n\n")
 
 		sb.AppendString("// NewRPCCache ...\n")
-		sb.AppendString("func NewRPCCache() rpc.ReplyCache {\n")
+		sb.AppendString("func NewRPCCache() rpc.ActionCache {\n")
 		sb.AppendString("\treturn &rpcCache{}\n")
 		sb.AppendString("}\n\n")
 
 		sb.AppendString("// Get ...\n")
 		sb.AppendString(
-			"func (p *rpcCache) Get(fnString string) rpc.ReplyCacheFunc {\n",
+			"func (p *rpcCache) Get(fnString string) rpc.ActionCacheFunc {\n",
 		)
 		sb.AppendString(
 			"\tswitch fnString {\n",

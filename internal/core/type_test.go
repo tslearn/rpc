@@ -109,7 +109,7 @@ package core
 //
 //type testFuncCache struct{}
 //
-//func (p *testFuncCache) Get(fnString string) ReplyCacheFunc {
+//func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 //	switch fnString {
 //	case "":
 //		return func(rt Runtime, stream *Stream, fn interface{}) bool {
@@ -259,7 +259,7 @@ package core
 //
 //func testRunWithProcessor(
 //	isDebug bool,
-//	fnCache ReplyCache,
+//	fnCache ActionCache,
 //	handler interface{},
 //	getStream func(processor *Processor) *Stream,
 //	onTest func(processor *Processor),
