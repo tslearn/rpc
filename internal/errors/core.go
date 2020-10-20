@@ -126,6 +126,13 @@ var (
 		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
+	// ErrRTValueNotAvailable ... *
+	ErrRTValueNotAvailable = base.DefineDevelopError(
+		(generalErrorSeg<<16)|222,
+		base.ErrorLevelFatal,
+		"",
+	)
+
 	// ErrNumOfThreadsIsWrong ... *
 	ErrNumOfThreadsIsWrong = base.DefineConfigError(
 		(generalErrorSeg<<16)|19,
