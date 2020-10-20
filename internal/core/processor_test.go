@@ -647,9 +647,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(rtMap)
 				}).
 				On("sayHello", func(rt Runtime, rtMap int64) Return {
-					return rt.Reply(
-						rt.Call("#.user:inner", rtMap),
-					)
+					return rt.Reply(rt.Call("#.user:inner", rtMap))
 				}),
 			fileLine: "",
 		}},
