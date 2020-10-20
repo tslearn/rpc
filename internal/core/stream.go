@@ -2003,7 +2003,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 						return RTArray{}, errors.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
-					} else if !p.SetReadPos(itemPos + skip) {
+					} else if !cs.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
 						return RTArray{}, errors.ErrStream
 					}
