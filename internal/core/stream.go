@@ -35,8 +35,10 @@ const (
 	StreamWriteOverflow = " overflows"
 	// StreamWriteIsNotAvailable ...
 	StreamWriteIsNotAvailable = " is not available"
-	// StreamWriteNilIsNotSupported ...
-	StreamWriteNilIsNotSupported = " is nil"
+	// StreamWriteIsNotSupported ...
+	StreamWriteIsNotSupported = " is not supported"
+	// StreamWriteIsNil ...
+	StreamWriteIsNil = " is nil"
 )
 
 var (
@@ -1214,7 +1216,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 	}
 
 	if v == nil {
-		return StreamWriteNilIsNotSupported
+		return StreamWriteIsNil
 	}
 
 	switch v.(type) {
@@ -1274,11 +1276,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 	case RTValue:
 		return p.writeRTValue(v.(RTValue))
 	default:
-		return base.ConcatString(
-			" type(",
-			convertTypeToString(reflect.ValueOf(v).Type()),
-			") is not supported",
-		)
+		return StreamWriteIsNotSupported
 	}
 }
 

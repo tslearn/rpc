@@ -152,7 +152,7 @@ func TestRuntime_Call(t *testing.T) {
 				return ret
 			}),
 		)).Equal(nil, errors.ErrUnsupportedValue.
-			AddDebug("2nd argument: value type(chan bool) is not supported").
+			AddDebug("2nd argument: value is not supported").
 			AddDebug(source1).AddDebug(source2),
 		)
 	})
