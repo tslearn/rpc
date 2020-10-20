@@ -647,17 +647,16 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(int64(0))
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					//fmt.Println(unsafe.Sizeof(rtMap))
-					//a, err := rtMap.Get("name").ToString()
-					//if err != nil {
-					//	return rt.Reply(err)
-					//}
-					return rt.Reply(rtMap)
+					age, err := rtMap.Get("age").ToInt64()
+					if err != nil {
+						return rt.Reply(err)
+					}
+					return rt.Reply(age)
 				}),
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			//fmt.Println(ParseResponseStream(stream))
+			// fmt.Println(ParseResponseStream(stream))
 			stream.Release()
 		},
 	)
@@ -673,7 +672,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.Write(Map{})
+			stream.Write(Map{"age": int64(1)})
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}

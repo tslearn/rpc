@@ -117,8 +117,7 @@ func (p *RTArray) Get(index int) RTValue {
 
 	return RTValue{
 		err: errors.ErrRTValueNotAvailable.
-			AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)).
-			AddDebug(base.GetFileLine(0)),
+			AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)),
 	}
 }
 
@@ -180,8 +179,7 @@ func (p *RTMap) Get(key string) RTValue {
 		}
 		return RTValue{
 			err: errors.ErrRTValueNotAvailable.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)).
-				AddDebug(base.GetFileLine(0)),
+				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
 		}
 	} else if p.largeMap != nil {
 		if pos, ok := p.largeMap[key]; ok {
@@ -189,8 +187,7 @@ func (p *RTMap) Get(key string) RTValue {
 		}
 		return RTValue{
 			err: errors.ErrRTValueNotAvailable.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)).
-				AddDebug(base.GetFileLine(0)),
+				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
 		}
 	} else {
 		return RTValue{
