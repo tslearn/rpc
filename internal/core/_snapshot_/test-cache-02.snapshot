@@ -104,7 +104,7 @@ func fnCache0(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache1(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadArray(); !ok {
+	if arg0, err := stream.ReadArray(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -116,7 +116,7 @@ func fnCache1(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache2(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -128,7 +128,7 @@ func fnCache2(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache3(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadFloat64(); !ok {
+	if arg0, err := stream.ReadFloat64(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -140,7 +140,7 @@ func fnCache3(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache4(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadInt64(); !ok {
+	if arg0, err := stream.ReadInt64(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -152,7 +152,7 @@ func fnCache4(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache5(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -164,7 +164,7 @@ func fnCache5(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache6(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadString(); !ok {
+	if arg0, err := stream.ReadString(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -176,7 +176,7 @@ func fnCache6(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache7(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadUint64(); !ok {
+	if arg0, err := stream.ReadUint64(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -188,7 +188,7 @@ func fnCache7(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache8(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTValue(rt); !ok {
+	if arg0, err := stream.ReadRTValue(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -200,7 +200,7 @@ func fnCache8(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache9(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBytes(); !ok {
+	if arg0, err := stream.ReadBytes(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -212,7 +212,7 @@ func fnCache9(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache10(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTArray(rt); !ok {
+	if arg0, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -224,7 +224,7 @@ func fnCache10(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache11(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTMap(rt); !ok {
+	if arg0, err := stream.ReadRTMap(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -236,9 +236,9 @@ func fnCache11(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache12(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadArray(); !ok {
+	if arg0, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -250,9 +250,9 @@ func fnCache12(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache13(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -264,9 +264,9 @@ func fnCache13(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache14(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadFloat64(); !ok {
+	if arg0, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -278,9 +278,9 @@ func fnCache14(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache15(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadInt64(); !ok {
+	if arg0, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -292,9 +292,9 @@ func fnCache15(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache16(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -306,9 +306,9 @@ func fnCache16(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache17(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadString(); !ok {
+	if arg0, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -320,9 +320,9 @@ func fnCache17(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache18(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadUint64(); !ok {
+	if arg0, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -334,9 +334,9 @@ func fnCache18(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache19(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTValue(rt); !ok {
+	if arg0, err := stream.ReadRTValue(rt); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -348,9 +348,9 @@ func fnCache19(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache20(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBytes(); !ok {
+	if arg0, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -362,9 +362,9 @@ func fnCache20(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache21(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTArray(rt); !ok {
+	if arg0, err := stream.ReadRTArray(rt); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -376,9 +376,9 @@ func fnCache21(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache22(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadRTMap(rt); !ok {
+	if arg0, err := stream.ReadRTMap(rt); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg1, err := stream.ReadRTArray(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -390,11 +390,11 @@ func fnCache22(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache23(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadArray(); !ok {
+	if arg0, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadArray(); !ok {
+	} else if arg1, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadArray(); !ok {
+	} else if arg2, err := stream.ReadArray(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -406,11 +406,11 @@ func fnCache23(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache24(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadArray(); !ok {
+	if arg0, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadBool(); !ok {
+	} else if arg1, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadMap(); !ok {
+	} else if arg2, err := stream.ReadMap(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -422,11 +422,11 @@ func fnCache24(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache25(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadUint64(); !ok {
+	} else if arg1, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadFloat64(); !ok {
+	} else if arg2, err := stream.ReadFloat64(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -438,11 +438,11 @@ func fnCache25(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache26(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadFloat64(); !ok {
+	} else if arg1, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadFloat64(); !ok {
+	} else if arg2, err := stream.ReadFloat64(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -454,11 +454,11 @@ func fnCache26(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache27(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadMap(); !ok {
+	} else if arg1, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadMap(); !ok {
+	} else if arg2, err := stream.ReadMap(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -470,11 +470,11 @@ func fnCache27(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache28(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadMap(); !ok {
+	} else if arg1, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadString(); !ok {
+	} else if arg2, err := stream.ReadString(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -486,11 +486,11 @@ func fnCache28(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache29(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadUint64(); !ok {
+	if arg0, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadFloat64(); !ok {
+	} else if arg1, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadString(); !ok {
+	} else if arg2, err := stream.ReadString(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -502,11 +502,11 @@ func fnCache29(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache30(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBytes(); !ok {
+	if arg0, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadArray(); !ok {
+	} else if arg1, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadArray(); !ok {
+	} else if arg2, err := stream.ReadArray(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -518,21 +518,21 @@ func fnCache30(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache31(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadArray(); !ok {
+	if arg0, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadArray(); !ok {
+	} else if arg1, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadArray(); !ok {
+	} else if arg2, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadArray(); !ok {
+	} else if arg3, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadArray(); !ok {
+	} else if arg4, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadArray(); !ok {
+	} else if arg5, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadArray(); !ok {
+	} else if arg6, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadArray(); !ok {
+	} else if arg7, err := stream.ReadArray(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -544,21 +544,21 @@ func fnCache31(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache32(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadInt64(); !ok {
+	} else if arg1, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadUint64(); !ok {
+	} else if arg2, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadFloat64(); !ok {
+	} else if arg3, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadString(); !ok {
+	} else if arg4, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadBytes(); !ok {
+	} else if arg5, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadArray(); !ok {
+	} else if arg6, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadMap(); !ok {
+	} else if arg7, err := stream.ReadMap(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -570,21 +570,21 @@ func fnCache32(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache33(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadMap(); !ok {
+	if arg0, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadArray(); !ok {
+	} else if arg1, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadBytes(); !ok {
+	} else if arg2, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadString(); !ok {
+	} else if arg3, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadFloat64(); !ok {
+	} else if arg4, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadUint64(); !ok {
+	} else if arg5, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadInt64(); !ok {
+	} else if arg6, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadBool(); !ok {
+	} else if arg7, err := stream.ReadBool(); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -596,25 +596,25 @@ func fnCache33(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache34(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadInt64(); !ok {
+	} else if arg1, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadUint64(); !ok {
+	} else if arg2, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadFloat64(); !ok {
+	} else if arg3, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadString(); !ok {
+	} else if arg4, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadBytes(); !ok {
+	} else if arg5, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadArray(); !ok {
+	} else if arg6, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadMap(); !ok {
+	} else if arg7, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg8, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg8, err := stream.ReadRTArray(rt); err != nil {
 		return false
-	} else if arg9, ok := stream.ReadRTMap(rt); !ok {
+	} else if arg9, err := stream.ReadRTMap(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -626,25 +626,25 @@ func fnCache34(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache35(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadInt64(); !ok {
+	} else if arg1, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadUint64(); !ok {
+	} else if arg2, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadFloat64(); !ok {
+	} else if arg3, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadBytes(); !ok {
+	} else if arg4, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadArray(); !ok {
+	} else if arg5, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadMap(); !ok {
+	} else if arg6, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadRTValue(rt); !ok {
+	} else if arg7, err := stream.ReadRTValue(rt); err != nil {
 		return false
-	} else if arg8, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg8, err := stream.ReadRTArray(rt); err != nil {
 		return false
-	} else if arg9, ok := stream.ReadRTMap(rt); !ok {
+	} else if arg9, err := stream.ReadRTMap(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -656,25 +656,25 @@ func fnCache35(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache36(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadInt64(); !ok {
+	} else if arg1, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadUint64(); !ok {
+	} else if arg2, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadString(); !ok {
+	} else if arg3, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadBytes(); !ok {
+	} else if arg4, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadArray(); !ok {
+	} else if arg5, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadMap(); !ok {
+	} else if arg6, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadRTValue(rt); !ok {
+	} else if arg7, err := stream.ReadRTValue(rt); err != nil {
 		return false
-	} else if arg8, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg8, err := stream.ReadRTArray(rt); err != nil {
 		return false
-	} else if arg9, ok := stream.ReadRTMap(rt); !ok {
+	} else if arg9, err := stream.ReadRTMap(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false
@@ -686,27 +686,27 @@ func fnCache36(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
 }
 
 func fnCache37(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
-	if arg0, ok := stream.ReadBool(); !ok {
+	if arg0, err := stream.ReadBool(); err != nil {
 		return false
-	} else if arg1, ok := stream.ReadInt64(); !ok {
+	} else if arg1, err := stream.ReadInt64(); err != nil {
 		return false
-	} else if arg2, ok := stream.ReadUint64(); !ok {
+	} else if arg2, err := stream.ReadUint64(); err != nil {
 		return false
-	} else if arg3, ok := stream.ReadFloat64(); !ok {
+	} else if arg3, err := stream.ReadFloat64(); err != nil {
 		return false
-	} else if arg4, ok := stream.ReadString(); !ok {
+	} else if arg4, err := stream.ReadString(); err != nil {
 		return false
-	} else if arg5, ok := stream.ReadBytes(); !ok {
+	} else if arg5, err := stream.ReadBytes(); err != nil {
 		return false
-	} else if arg6, ok := stream.ReadArray(); !ok {
+	} else if arg6, err := stream.ReadArray(); err != nil {
 		return false
-	} else if arg7, ok := stream.ReadMap(); !ok {
+	} else if arg7, err := stream.ReadMap(); err != nil {
 		return false
-	} else if arg8, ok := stream.ReadRTValue(rt); !ok {
+	} else if arg8, err := stream.ReadRTValue(rt); err != nil {
 		return false
-	} else if arg9, ok := stream.ReadRTArray(rt); !ok {
+	} else if arg9, err := stream.ReadRTArray(rt); err != nil {
 		return false
-	} else if arg10, ok := stream.ReadRTMap(rt); !ok {
+	} else if arg10, err := stream.ReadRTMap(rt); err != nil {
 		return false
 	} else if !stream.IsReadFinish() {
 		return false

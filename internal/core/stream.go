@@ -2110,7 +2110,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 						return RTMap{}, errors.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
-					} else if !p.SetReadPos(itemPos + skip) {
+					} else if !cs.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
 						return RTMap{}, errors.ErrStream
 					}

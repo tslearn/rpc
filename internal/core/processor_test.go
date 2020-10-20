@@ -2,7 +2,9 @@ package core
 
 import (
 	"fmt"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -626,60 +628,69 @@ func TestNewProcessor(t *testing.T) {
 //		})
 //	assert(processor12.actionsMap["#.test:Eval2"].indicator).IsNotNil()
 //}
-//
-//func BenchmarkRpcProcessor_Execute(b *testing.B) {
-//	total := uint64(0)
-//	success := uint64(0)
-//	failed := uint64(0)
-//	processor := NewProcessor(
-//		false,
-//		8192*24,
-//		16,
-//		16,
-//		&testFuncCache{},
-//		5*time.Second,
-//		[]*ServiceMeta{{
-//			name: "user",
-//			service: NewService().
-//				On("inner", func(rt Runtime) Return {
-//					return rt.OK(int64(0))
-//				}).
-//				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-//					a, ok := rtMap.Get("name").ToString()
-//					if !ok {
-//						return rt.Error(errors.New("param error"))
-//					}
-//					return rt.OK(a)
-//				}),
-//			fileLine: "",
-//		}},
-//		func(stream *Stream) {
-//			stream.Release()
-//		},
-//	)
-//
-//	sendStr := ""
-//	for i := 0; i < 500; i++ {
-//		sendStr += "a"
-//	}
-//
-//	b.ResetTimer()
-//	b.ReportAllocs()
-//	b.N = 50000000
-//	b.SetParallelism(1024)
-//
-//	b.RunParallel(func(pb *testing.PB) {
-//		for pb.Next() {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.user:sayHello")
-//			stream.WriteString("")
-//			stream.WriteMap(Map{"name": sendStr})
-//			atomic.AddUint64(&total, 1)
-//			processor.PutStream(stream)
-//		}
-//	})
-//
-//	fmt.Println(processor.Close())
-//	fmt.Println(total, success, failed)
-//}
+
+func BenchmarkRpcProcessor_Execute(b *testing.B) {
+	total := uint64(0)
+	success := uint64(0)
+	failed := uint64(0)
+	processor, _ := NewProcessor(
+		true,
+		8192*24,
+		16,
+		16,
+		&testFuncCache{},
+		5*time.Second,
+		[]*ServiceMeta{{
+			name: "user",
+			service: NewService().
+				On("inner", func(rt Runtime) Return {
+					return rt.Reply(int64(0))
+				}).
+				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
+					a, err := rtMap.Get("name").ToString()
+					if err != nil {
+						return rt.Reply(err)
+					}
+					return rt.Reply(a)
+				}),
+			fileLine: "",
+		}},
+		func(stream *Stream) {
+			fmt.Println(ParseResponseStream(stream))
+			stream.Release()
+		},
+	)
+
+	sendStr := ""
+	for i := 0; i < 500; i++ {
+		sendStr += "a"
+	}
+
+	//b.ResetTimer()
+	//b.ReportAllocs()
+	//b.N = 2000000
+	//b.SetParallelism(1024)
+	//
+	//b.RunParallel(func(pb *testing.PB) {
+	//  for pb.Next() {
+	//    stream := NewStream()
+	//    stream.SetDepth(3)
+	//    stream.WriteString("#.user:sayHello")
+	//    stream.WriteString("")
+	//    stream.Write(Map{"name": sendStr})
+	//    atomic.AddUint64(&total, 1)
+	//    processor.PutStream(stream)
+	//  }
+	//})
+
+	stream := NewStream()
+	stream.SetDepth(3)
+	stream.WriteString("#.user:sayHello")
+	stream.WriteString("")
+	stream.Write(Map{"name": sendStr})
+	atomic.AddUint64(&total, 1)
+	processor.PutStream(stream)
+
+	fmt.Println(processor.Close())
+	fmt.Println(total, success, failed)
+}
