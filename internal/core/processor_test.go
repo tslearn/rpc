@@ -643,15 +643,13 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		[]*ServiceMeta{{
 			name: "user",
 			service: NewService().
-				On("inner", func(rt Runtime) Return {
-					return rt.Reply(int64(0))
+				On("inner", func(rt Runtime, rtMap int64) Return {
+					return rt.Reply(rtMap)
 				}).
-				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					age, err := rtMap.Get("age").ToInt64()
-					if err != nil {
-						return rt.Reply(err)
-					}
-					return rt.Reply(age)
+				On("sayHello", func(rt Runtime, rtMap int64) Return {
+					return rt.Reply(
+						rt.Call("#.user:inner", rtMap),
+					)
 				}),
 			fileLine: "",
 		}},
@@ -672,7 +670,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.Write(Map{"age": int64(1)})
+			stream.WriteInt64(12832)
+			// stream.Write(Map{"age": int64(1)})
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}
