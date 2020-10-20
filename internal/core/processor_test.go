@@ -647,49 +647,37 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(int64(0))
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					a, err := rtMap.Get("name").ToString()
-					if err != nil {
-						return rt.Reply(err)
-					}
-					return rt.Reply(a)
+					//fmt.Println(unsafe.Sizeof(rtMap))
+					//a, err := rtMap.Get("name").ToString()
+					//if err != nil {
+					//	return rt.Reply(err)
+					//}
+					return rt.Reply(rtMap)
 				}),
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			fmt.Println(ParseResponseStream(stream))
+			//fmt.Println(ParseResponseStream(stream))
 			stream.Release()
 		},
 	)
 
-	sendStr := ""
-	for i := 0; i < 500; i++ {
-		sendStr += "a"
-	}
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.N = 50000000
+	b.SetParallelism(1024)
 
-	//b.ResetTimer()
-	//b.ReportAllocs()
-	//b.N = 2000000
-	//b.SetParallelism(1024)
-	//
-	//b.RunParallel(func(pb *testing.PB) {
-	//  for pb.Next() {
-	//    stream := NewStream()
-	//    stream.SetDepth(3)
-	//    stream.WriteString("#.user:sayHello")
-	//    stream.WriteString("")
-	//    stream.Write(Map{"name": sendStr})
-	//    atomic.AddUint64(&total, 1)
-	//    processor.PutStream(stream)
-	//  }
-	//})
-
-	stream := NewStream()
-	stream.SetDepth(3)
-	stream.WriteString("#.user:sayHello")
-	stream.WriteString("")
-	stream.Write(Map{"name": sendStr})
-	atomic.AddUint64(&total, 1)
-	processor.PutStream(stream)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			stream := NewStream()
+			stream.SetDepth(3)
+			stream.WriteString("#.user:sayHello")
+			stream.WriteString("")
+			stream.Write(Map{})
+			atomic.AddUint64(&total, 1)
+			processor.PutStream(stream)
+		}
+	})
 
 	fmt.Println(processor.Close())
 	fmt.Println(total, success, failed)
