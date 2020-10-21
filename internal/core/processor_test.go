@@ -647,7 +647,11 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(rtMap)
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTValue) Return {
-					return rt.Reply(rtMap)
+					name, err := rtMap.ToString()
+					if err != nil {
+						return rt.Reply(false)
+					}
+					return rt.Reply(name)
 				}),
 			fileLine: "",
 		}},
@@ -668,7 +672,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			stream.SetDepth(3)
 			stream.WriteString("#.user:sayHello")
 			stream.WriteString("")
-			stream.WriteInt64(12832)
+			stream.WriteString("tslearn")
 			// stream.Write(Map{"age": int64(1)})
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)

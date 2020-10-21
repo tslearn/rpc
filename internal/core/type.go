@@ -334,19 +334,14 @@ func (p RTValue) ToFloat64() (Float64, *base.Error) {
 
 // ToString ...
 func (p RTValue) ToString() (ret String, err *base.Error) {
-	if p.err != nil {
-		return "", p.err
+	if !p.cacheSafe {
+		ret = string(base.StringToBytesUnsafe(p.cacheString))
 	}
 
-	defer func() {
-		if atomic.LoadUint64(&p.rt.thread.top.lockStatus) != p.rt.id {
-			ret = ""
-			err = errors.ErrRuntimeIllegalInCurrentGoroutine
-		}
-	}()
-
-	if !p.cacheSafe {
-		return string(base.StringToBytesUnsafe(p.cacheString)), p.cacheError
+	if p.err != nil {
+		return "", p.err
+	} else if atomic.LoadUint64(&p.rt.thread.top.lockStatus) != p.rt.id {
+		return "", errors.ErrRuntimeIllegalInCurrentGoroutine
 	} else {
 		return p.cacheString, p.cacheError
 	}
