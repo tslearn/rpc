@@ -434,7 +434,11 @@ func (p *rpcThread) Eval(
 						ok = false
 					}
 				case rtValueType:
-					rv = reflect.ValueOf(inStream.ReadRTValue(rt))
+					if v, err := inStream.ReadRTValue(rt); err == nil {
+						rv = reflect.ValueOf(v)
+					} else {
+						ok = false
+					}
 				default:
 					ok = false
 				}

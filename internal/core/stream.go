@@ -2133,13 +2133,13 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 }
 
 // ReadRTValue read a RTValue value
-func (p *Stream) ReadRTValue(rt Runtime) RTValue {
+func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 	if thread := rt.thread; thread != nil {
 		cs := thread.rtStream
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
-				return RTValue{err: errors.ErrStream}
+				return RTValue{err: errors.ErrStream}, errors.ErrStream
 			}
 		}
 
@@ -2153,18 +2153,18 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 				cacheString: cacheString,
 				cacheSafe:   cacheSafe,
 				cacheError:  cacheError,
-			}
+			}, nil
 		}
 
 		startPos := cs.GetReadPos()
 		skip, _ := cs.peekSkip()
 
 		if skip <= 0 {
-			return RTValue{err: errors.ErrStream}
+			return RTValue{err: errors.ErrStream}, errors.ErrStream
 		} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 			cs.readIndex += skip
 		} else if !cs.SetReadPos(startPos + skip) {
-			return RTValue{err: errors.ErrStream}
+			return RTValue{err: errors.ErrStream}, errors.ErrStream
 		}
 
 		return RTValue{
@@ -2174,11 +2174,9 @@ func (p *Stream) ReadRTValue(rt Runtime) RTValue {
 			cacheString: "",
 			cacheError:  errors.ErrStream,
 			cacheSafe:   false,
-		}
+		}, nil
 	}
 
-	return RTValue{
-		err: errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1)),
-	}
+	return RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine},
+		errors.ErrRuntimeIllegalInCurrentGoroutine
 }

@@ -111,7 +111,8 @@ func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
 	if errCode, err := stream.ReadUint64(); err != nil {
 		return RTValue{err: err}
 	} else if errCode == 0 {
-		return stream.ReadRTValue(p)
+		ret, _ := stream.ReadRTValue(p)
+		return ret
 	} else if message, err := stream.ReadString(); err != nil {
 		return RTValue{err: err}
 	} else if !stream.IsReadFinish() {

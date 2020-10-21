@@ -1714,7 +1714,7 @@ func TestStream_writeRTValue(t *testing.T) {
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
 					assert(stream.Write(testData[0])).Equal(StreamWriteOK)
-					rtValue := stream.ReadRTValue(streamTestRuntime)
+					rtValue, _ := stream.ReadRTValue(streamTestRuntime)
 					stream.SetWritePos(i)
 					assert(stream.writeRTValue(rtValue)).Equal(StreamWriteOK)
 					assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
@@ -2828,7 +2828,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
 					stream.Write(testData[0])
-					rtValue := stream.ReadRTValue(streamTestRuntime)
+					rtValue, _ := stream.ReadRTValue(streamTestRuntime)
 					switch testData[0].(type) {
 					case string:
 						assert(rtValue.cacheString, rtValue.cacheError).
@@ -2861,7 +2861,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 						stream.SetReadPos(i)
 						stream.SetWritePos(idx)
 						assert(stream.ReadRTValue(streamTestRuntime)).
-							Equal(RTValue{err: errors.ErrStream})
+							Equal(RTValue{err: errors.ErrStream}, errors.ErrStream)
 						assert(stream.GetReadPos()).Equal(i)
 					}
 					stream.Release()
@@ -2886,11 +2886,12 @@ func TestStream_ReadRTValue(t *testing.T) {
 						stream.SetWritePos(idx)
 						switch testData[0].(type) {
 						case string:
-							assert(stream.ReadRTValue(streamTestRuntime).ToString()).
+							rtValue, _ := stream.ReadRTValue(streamTestRuntime)
+							assert(rtValue.ToString()).
 								Equal("", errors.ErrStream)
 						default:
 							assert(stream.ReadRTValue(streamTestRuntime)).
-								Equal(RTValue{err: errors.ErrStream})
+								Equal(RTValue{err: errors.ErrStream}, errors.ErrStream)
 						}
 						assert(stream.GetReadPos()).Equal(i)
 					}
@@ -2909,7 +2910,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 			stream.SetReadPos(i)
 			stream.PutBytes([]byte{13})
 			assert(stream.ReadRTValue(streamTestRuntime)).
-				Equal(RTValue{err: errors.ErrStream})
+				Equal(RTValue{err: errors.ErrStream}, errors.ErrStream)
 			assert(stream.GetReadPos()).Equal(i)
 			stream.Release()
 		}
@@ -2918,12 +2919,10 @@ func TestStream_ReadRTValue(t *testing.T) {
 	t.Run("runtime is not available", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
-		type R = Runtime
-		s := ""
-		f := base.GetFileLine
-		assert(stream.ReadRTValue((func() R { s = f(0); return R{} })())).
+		assert(stream.ReadRTValue(Runtime{})).
 			Equal(
-				RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(s)},
+				RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine},
+				errors.ErrRuntimeIllegalInCurrentGoroutine,
 			)
 	})
 }
