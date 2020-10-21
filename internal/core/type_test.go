@@ -157,6 +157,18 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 				return true
 			}
 		}
+	case "X":
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+			if arg0, err := stream.ReadRTValue(rt); err != nil {
+				return false
+			} else if !stream.IsReadFinish() {
+				return false
+			} else {
+				stream.SetWritePosToBodyStart()
+				fn.(func(Runtime, RTValue) Return)(rt, arg0)
+				return true
+			}
+		}
 	case "Y":
 		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, err := stream.ReadRTArray(rt); err != nil {
