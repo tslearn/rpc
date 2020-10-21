@@ -157,7 +157,7 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 				return true
 			}
 		}
-	case "X":
+	case "V":
 		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, err := stream.ReadRTValue(rt); err != nil {
 				return false
