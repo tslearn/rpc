@@ -651,7 +651,11 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					if err != nil {
 						return rt.Reply(false)
 					}
-					return rt.Reply(name)
+					if name == "err" {
+						return rt.Reply("err")
+					} else {
+						return rt.Reply("OK")
+					}
 				}),
 			fileLine: "",
 		}},
