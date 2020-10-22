@@ -649,18 +649,20 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 				On("sayHello", func(rt Runtime, rtMap RTValue) Return {
 					name, err := rtMap.ToString()
 					if err != nil {
-						return rt.Reply(false)
-					}
-					if name == "err" {
-						return rt.Reply("err")
+						return rt.Reply("param error")
+					} else if name == "" {
+						return rt.Reply("name is empty")
 					} else {
-						return rt.Reply("OK")
+						return rt.Reply(Map{
+							"status": "hello" + name,
+							"values": Array{"ts", "world", 200},
+						})
 					}
 				}),
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			// fmt.Println(ParseResponseStream(stream))
+			//fmt.Println(ParseResponseStream(stream))
 			stream.Release()
 		},
 	)
