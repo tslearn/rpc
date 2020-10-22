@@ -646,26 +646,41 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 				On("inner", func(rt Runtime, rtMap int64) Return {
 					return rt.Reply(rtMap)
 				}).
-				On("sayHello", func(rt Runtime, rtMap RTValue) Return {
-					name, err := rtMap.ToString()
-					if err != nil {
-						return rt.Reply("param error")
-					} else if name == "" {
-						return rt.Reply("name is empty")
-					} else {
-						return rt.Reply(Map{
-							"status": "hello" + name,
-							"values": Array{"ts", "world", 200},
-						})
-					}
+				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
+					return rt.Reply("ok")
 				}),
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			//fmt.Println(ParseResponseStream(stream))
+			// fmt.Println(ParseResponseStream(stream))
 			stream.Release()
 		},
 	)
+
+	stream := NewStream()
+	stream.SetDepth(3)
+	stream.WriteString("#.user:sayHello")
+	stream.WriteString("")
+	// stream.WriteString("tslearn")
+	stream.Write(Map{
+		"v1":  "1",
+		"v2":  "2",
+		"v3":  "3",
+		"v4":  "4",
+		"v5":  "5",
+		"v6":  "6",
+		"v7":  "7",
+		"v8":  "8",
+		"v9":  "9",
+		"v10": "10",
+		"v11": "11",
+		"v12": "12",
+		"v13": "13",
+		"v14": "14",
+		"v15": "15",
+		"v16": "16",
+	})
+	sendBuf := stream.GetBuffer()
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -675,11 +690,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			stream := NewStream()
-			stream.SetDepth(3)
-			stream.WriteString("#.user:sayHello")
-			stream.WriteString("")
-			stream.WriteString("tslearn")
-			// stream.Write(Map{"age": int64(1)})
+			stream.PutBytesTo(sendBuf, 0)
 			atomic.AddUint64(&total, 1)
 			processor.PutStream(stream)
 		}
