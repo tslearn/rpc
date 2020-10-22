@@ -95,7 +95,7 @@ type RTArray struct {
 func newRTArray(rt Runtime, size int) (ret RTArray) {
 	ret.rt = rt
 
-	if thread := rt.thread; thread != nil {
+	if thread := rt.thread; thread != nil && size <= 32 {
 		if data := thread.malloc(sizeOfPosRecord * size); data != nil {
 			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
 			itemsHeader.Len = 0
@@ -147,7 +147,7 @@ type RTMap struct {
 func newRTMap(rt Runtime, size int) (ret RTMap) {
 	ret.rt = rt
 
-	if thread := rt.thread; thread != nil && size <= 8 {
+	if thread := rt.thread; thread != nil && size <= 16 {
 		if data := thread.malloc(sizeOfMapItem * size); data != nil {
 			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
 			itemsHeader.Len = 0
@@ -158,13 +158,8 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 		}
 	}
 
-	if size <= 16 {
-		ret.items = make([]mapItem, 0, size)
-		ret.largeMap = nil
-	} else {
-		ret.items = nil
-		ret.largeMap = make(map[string]posRecord)
-	}
+	ret.items = nil
+	ret.largeMap = make(map[string]posRecord, size)
 
 	return
 }

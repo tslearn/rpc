@@ -15,7 +15,7 @@ import (
 	"unsafe"
 )
 
-const rpcThreadCacheSize = 512
+const rpcThreadCacheSize = 1024
 
 var rpcThreadFrameCache = &sync.Pool{
 	New: func() interface{} {
@@ -69,7 +69,7 @@ type rpcThread struct {
 	rootFrame    rpcThreadFrame
 	sequence     uint64
 	rtStream     *Stream
-	cache        [rpcThreadCacheSize]byte
+	cache        []byte
 	sync.Mutex
 }
 
@@ -100,6 +100,7 @@ func newThread(
 			closeTimeout: timeout,
 			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
 			rtStream:     NewStream(),
+			cache:        make([]byte, rpcThreadCacheSize),
 		}
 
 		thread.top = &thread.rootFrame
