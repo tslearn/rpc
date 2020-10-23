@@ -2090,14 +2090,16 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			end := start + totalLen
 			if mapLen > 0 && totalLen > 4 {
 				ret := newRTMap(rt, mapLen)
-				keyMap := make(map[string]bool, mapLen)
 				for i := 0; i < mapLen; i++ {
 					key, _, err := cs.readUnsafeString()
 					if err != nil {
 						p.SetReadPos(readStart)
 						return RTMap{}, err
 					}
-					keyMap[key] = true
+					if ret.getPosRecord(key) != 0 {
+						p.SetReadPos(readStart)
+						return RTMap{}, errors.ErrStream
+					}
 					op := cs.readFrame[cs.readIndex]
 					skip, _ := cs.peekSkip()
 					itemPos := cs.GetReadPos()
