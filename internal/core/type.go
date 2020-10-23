@@ -158,7 +158,7 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 		}
 	}
 
-	if size <= 32 {
+	if size <= 64 {
 		ret.items = make([]mapItem, 0, size)
 		ret.largeMap = nil
 		return
