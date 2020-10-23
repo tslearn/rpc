@@ -1139,10 +1139,19 @@ func (p *Stream) writeRTMap(v RTMap) string {
 				}
 			}
 
-			if v.items != nil {
+			if v.sItems != nil {
 				for i := 0; i < length; i++ {
-					p.WriteString(v.items[i].key)
-					readStream.SetReadPos(int(v.items[i].pos.getPos()))
+					p.WriteString(v.sItems[i].key)
+					readStream.SetReadPos(int(v.sItems[i].pos.getPos()))
+					if !p.writeStreamNext(readStream) {
+						p.SetWritePos(startPos)
+						return StreamWriteIsNotAvailable
+					}
+				}
+			} else if v.lItems != nil {
+				for name, pos := range v.lItems {
+					p.WriteString(name)
+					readStream.SetReadPos(int(pos.getPos()))
 					if !p.writeStreamNext(readStream) {
 						p.SetWritePos(startPos)
 						return StreamWriteIsNotAvailable
@@ -2081,12 +2090,14 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			end := start + totalLen
 			if mapLen > 0 && totalLen > 4 {
 				ret := newRTMap(rt, mapLen)
+				keyMap := make(map[string]bool, mapLen)
 				for i := 0; i < mapLen; i++ {
 					key, _, err := cs.readUnsafeString()
 					if err != nil {
 						p.SetReadPos(readStart)
 						return RTMap{}, err
 					}
+					keyMap[key] = true
 					op := cs.readFrame[cs.readIndex]
 					skip, _ := cs.peekSkip()
 					itemPos := cs.GetReadPos()

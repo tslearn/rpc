@@ -188,59 +188,84 @@ const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
 
 // RTMap ...
 type RTMap struct {
-	rt    Runtime
-	items []mapItem
+	rt     Runtime
+	sItems []mapItem
+	lItems map[string]posRecord
 }
 
 func newRTMap(rt Runtime, size int) (ret RTMap) {
 	ret.rt = rt
 
-	if thread := rt.thread; thread != nil && size <= 8 {
+	if thread := rt.thread; thread != nil && size <= 16 {
 		if data := thread.malloc(sizeOfMapItem * size); data != nil {
-			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.sItems))
 			itemsHeader.Len = 0
 			itemsHeader.Cap = size
 			itemsHeader.Data = uintptr(data)
+			ret.lItems = nil
 			return
 		}
 	}
 
-	ret.items = make([]mapItem, 0, size)
+	if size <= 64 {
+		ret.sItems = make([]mapItem, 0, size)
+		ret.lItems = nil
+		return
+	}
+
+	ret.sItems = nil
+	ret.lItems = make(map[string]posRecord, size)
 	return
+}
+
+func (p *RTMap) getPosRecord(key string) posRecord {
+	if p.sItems != nil {
+		for i := len(p.sItems) - 1; i >= 0; i-- {
+			if key == p.sItems[i].key {
+				return p.sItems[i].pos
+			}
+		}
+		return 0
+	} else if p.lItems != nil {
+		if pos, ok := p.lItems[key]; ok {
+			return pos
+		}
+		return 0
+	} else {
+		return 0
+	}
 }
 
 // Get ...
 func (p *RTMap) Get(key string) RTValue {
-	if p.items != nil {
-		for i := len(p.items) - 1; i >= 0; i-- {
-			if key == p.items[i].key {
-				return makeRTValue(p.rt, p.items[i].pos)
-			}
-		}
-		return RTValue{
-			err: errors.ErrRTMapNameNotFound.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
-		}
-	} else {
-		return RTValue{
-			err: errors.ErrRTMapNameNotFound.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
-		}
+	if pos := p.getPosRecord(key); pos > 0 {
+		return makeRTValue(p.rt, pos)
+	}
+
+	return RTValue{
+		err: errors.ErrRTMapNameNotFound.
+			AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
 	}
 }
 
 // Size ...
 func (p *RTMap) Size() int {
-	if p.items != nil {
-		return len(p.items)
+	if p.sItems != nil {
+		return len(p.sItems)
+	} else if p.lItems != nil {
+		return len(p.lItems)
 	} else {
 		return -1
 	}
 }
 
 func (p *RTMap) appendValue(key string, pos posRecord) {
-	if p.items != nil {
-		p.items = append(p.items, mapItem{key: key, pos: pos})
+	if p.sItems != nil {
+		p.sItems = append(p.sItems, mapItem{key: key, pos: pos})
+	} else if p.lItems != nil {
+		p.lItems[key] = pos
+	} else {
+		// do nothing
 	}
 }
 
