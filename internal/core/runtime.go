@@ -121,3 +121,11 @@ func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
 		return RTValue{err: base.NewError(errCode, message)}
 	}
 }
+
+func (p Runtime) NewRTArray() RTArray {
+	return newRTArray(p, 16)
+}
+
+func (p Runtime) NewRTMap() RTMap {
+	return newRTMap(p, 8)
+}
