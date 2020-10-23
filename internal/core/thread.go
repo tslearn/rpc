@@ -206,7 +206,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	frame := p.top
 
 	if frame.retStatus != 0 {
-		value = errors.ErrRuntimeOKHasBeenCalled
+		value = errors.ErrRuntimeReplyHasBeenCalled
 	}
 
 	stream := frame.stream

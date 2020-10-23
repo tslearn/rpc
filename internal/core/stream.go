@@ -1148,15 +1148,6 @@ func (p *Stream) writeRTMap(v RTMap) string {
 						return StreamWriteIsNotAvailable
 					}
 				}
-			} else if v.largeMap != nil {
-				for name, pos := range v.largeMap {
-					p.WriteString(name)
-					readStream.SetReadPos(int(pos.getPos()))
-					if !p.writeStreamNext(readStream) {
-						p.SetWritePos(startPos)
-						return StreamWriteIsNotAvailable
-					}
-				}
 			}
 
 			totalLength := uint32(p.GetWritePos() - startPos)

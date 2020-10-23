@@ -371,10 +371,6 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			RTMap{rt: streamTestRuntime, items: []mapItem{{"key", 0}}},
 			" is not available",
 		},
-		{
-			RTMap{rt: streamTestRuntime, largeMap: map[string]posRecord{"key": 0}},
-			" is not available",
-		},
 	},
 	"rtValue": {
 		{

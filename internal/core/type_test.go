@@ -1,5 +1,10 @@
 package core
 
+import (
+	"fmt"
+	"testing"
+)
+
 //
 //import (
 //	"errors"
@@ -447,3 +452,27 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 //	}
 //	return retArray, errorArray, panicArray
 //}
+
+func ttxx(arr []int) {
+	arr = append(arr, 11)
+	fmt.Println(arr)
+}
+
+func Test_Array(t *testing.T) {
+	arr := make([]int, 0)
+	arr = append(arr, 10)
+	ttxx(arr)
+	fmt.Println(arr)
+}
+
+func ttmm(mp map[int]bool) {
+	mp[15] = false
+	fmt.Println(mp)
+}
+
+func Test_Map(t *testing.T) {
+	mp := make(map[int]bool, 0)
+	mp[10] = true
+	ttmm(mp)
+	fmt.Println(mp)
+}

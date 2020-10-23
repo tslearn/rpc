@@ -105,18 +105,11 @@ var (
 		"Runtime is illegal in current goroutine",
 	)
 
-	// ErrRuntimeOKHasBeenCalled ...
-	ErrRuntimeOKHasBeenCalled = base.DefineDevelopError(
+	// ErrRuntimeReplyHasBeenCalled ...
+	ErrRuntimeReplyHasBeenCalled = base.DefineDevelopError(
 		(generalErrorSeg<<16)|16,
 		base.ErrorLevelError,
-		"Runtime.OK has been called before",
-	)
-
-	// ErrRuntimeErrorHasBeenCalled ...
-	ErrRuntimeErrorHasBeenCalled = base.DefineDevelopError(
-		(generalErrorSeg<<16)|17,
-		base.ErrorLevelError,
-		"Runtime.Error has been called before",
+		"Runtime.Reply has been called before",
 	)
 
 	// ErrRuntimeExternalReturn ...
@@ -126,9 +119,16 @@ var (
 		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
-	// ErrRTValueNotAvailable ... *
-	ErrRTValueNotAvailable = base.DefineDevelopError(
+	// ErrRTArrayIndexOverflow ...
+	ErrRTArrayIndexOverflow = base.DefineDevelopError(
 		(generalErrorSeg<<16)|222,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	// ErrRTMapNameNotFound ...
+	ErrRTMapNameNotFound = base.DefineDevelopError(
+		(generalErrorSeg<<16)|223,
 		base.ErrorLevelFatal,
 		"",
 	)

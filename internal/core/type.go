@@ -116,8 +116,57 @@ func (p *RTArray) Get(index int) RTValue {
 	}
 
 	return RTValue{
-		err: errors.ErrRTValueNotAvailable.
+		err: errors.ErrRTArrayIndexOverflow.
 			AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)),
+	}
+}
+
+func (p *RTArray) Set(index int, value interface{}) *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		pos := int64(thread.rtStream.GetWritePos())
+
+		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
+			return errors.ErrUnsupportedValue.AddDebug(reason)
+		}
+
+		if index < 0 || index >= len(p.items) {
+			return errors.ErrRTArrayIndexOverflow.
+				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index))
+		}
+
+		switch value.(type) {
+		case string:
+			p.items[index] = makePosRecord(pos, true)
+		default:
+			p.items[index] = makePosRecord(pos, false)
+		}
+		return nil
+	} else {
+		return errors.ErrRuntimeIllegalInCurrentGoroutine
+	}
+}
+
+func (p *RTArray) Append(value interface{}) *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		pos := int64(thread.rtStream.GetWritePos())
+
+		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
+			return errors.ErrUnsupportedValue.AddDebug(reason)
+		}
+
+		switch value.(type) {
+		case string:
+			p.items = append(p.items, makePosRecord(pos, true))
+		default:
+			p.items = append(p.items, makePosRecord(pos, false))
+		}
+		return nil
+	} else {
+		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -139,9 +188,8 @@ const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
 
 // RTMap ...
 type RTMap struct {
-	rt       Runtime
-	items    []mapItem
-	largeMap map[string]posRecord
+	rt    Runtime
+	items []mapItem
 }
 
 func newRTMap(rt Runtime, size int) (ret RTMap) {
@@ -153,19 +201,11 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 			itemsHeader.Len = 0
 			itemsHeader.Cap = size
 			itemsHeader.Data = uintptr(data)
-			ret.largeMap = nil
 			return
 		}
 	}
 
-	if size <= 64 {
-		ret.items = make([]mapItem, 0, size)
-		ret.largeMap = nil
-		return
-	}
-
-	ret.items = nil
-	ret.largeMap = make(map[string]posRecord, size)
+	ret.items = make([]mapItem, 0, size)
 	return
 }
 
@@ -178,22 +218,13 @@ func (p *RTMap) Get(key string) RTValue {
 			}
 		}
 		return RTValue{
-			err: errors.ErrRTValueNotAvailable.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
-		}
-	} else if p.largeMap != nil {
-		if pos, ok := p.largeMap[key]; ok {
-			return makeRTValue(p.rt, pos)
-		}
-		return RTValue{
-			err: errors.ErrRTValueNotAvailable.
+			err: errors.ErrRTMapNameNotFound.
 				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
 		}
 	} else {
 		return RTValue{
-			err: errors.ErrRTValueNotAvailable.
-				AddDebug("RTMap is not available").
-				AddDebug(base.GetFileLine(0)),
+			err: errors.ErrRTMapNameNotFound.
+				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
 		}
 	}
 }
@@ -202,8 +233,6 @@ func (p *RTMap) Get(key string) RTValue {
 func (p *RTMap) Size() int {
 	if p.items != nil {
 		return len(p.items)
-	} else if p.largeMap != nil {
-		return len(p.largeMap)
 	} else {
 		return -1
 	}
@@ -212,8 +241,6 @@ func (p *RTMap) Size() int {
 func (p *RTMap) appendValue(key string, pos posRecord) {
 	if p.items != nil {
 		p.items = append(p.items, mapItem{key: key, pos: pos})
-	} else {
-		p.largeMap[key] = pos
 	}
 }
 
