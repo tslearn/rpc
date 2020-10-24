@@ -1139,19 +1139,10 @@ func (p *Stream) writeRTMap(v RTMap) string {
 				}
 			}
 
-			if v.sItems != nil {
+			if v.items != nil {
 				for i := 0; i < length; i++ {
-					p.WriteString(v.sItems[i].key)
-					readStream.SetReadPos(int(v.sItems[i].pos.getPos()))
-					if !p.writeStreamNext(readStream) {
-						p.SetWritePos(startPos)
-						return StreamWriteIsNotAvailable
-					}
-				}
-			} else if v.lItems != nil {
-				for name, pos := range v.lItems {
-					p.WriteString(name)
-					readStream.SetReadPos(int(pos.getPos()))
+					p.WriteString(v.items[i].key)
+					readStream.SetReadPos(int(v.items[i].pos.getPos()))
 					if !p.writeStreamNext(readStream) {
 						p.SetWritePos(startPos)
 						return StreamWriteIsNotAvailable
