@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"sort"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -647,6 +648,9 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(rtMap)
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
+					sort.Slice(rtMap.items, func(i, j int) bool {
+						return rtMap.items[i].key < rtMap.items[j].key
+					})
 					return rt.Reply("ok")
 				}),
 			fileLine: "",

@@ -368,7 +368,10 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			" is not available",
 		},
 		{
-			RTMap{rt: streamTestRuntime, items: []mapItem{{"key", 0}}},
+			RTMap{
+				rt:    streamTestRuntime,
+				items: []mapItem{{"key", getFastKey("key"), 0}},
+			},
 			" is not available",
 		},
 	},
