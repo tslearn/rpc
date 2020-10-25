@@ -28,7 +28,7 @@ func getFastKey(s string) uint32 {
 	return ret
 }
 
-func compareMapItem(m1 mapItem, m2 mapItem) int {
+func compareMapItem(m1 *mapItem, m2 *mapItem) int {
 	if m1.fastKey > m2.fastKey {
 		return 1
 	} else if m1.fastKey < m2.fastKey {
@@ -132,11 +132,11 @@ func getSort4(items []mapItem, v uint32) uint32 {
 	b2 := (v >> 12) & 0xF
 	ret := uint32(0)
 
-	if compareMapItem(items[s1], items[s2]) < 0 {
-		if compareMapItem(items[b1], items[b2]) < 0 {
+	if compareMapItem(&items[s1], &items[s2]) < 0 {
+		if compareMapItem(&items[b1], &items[b2]) < 0 {
 			ret |= s1
 			ret |= b2 << 12
-			if compareMapItem(items[s2], items[b1]) < 0 {
+			if compareMapItem(&items[s2], &items[b1]) < 0 {
 				ret |= s2 << 4
 				ret |= b1 << 8
 			} else {
@@ -146,7 +146,7 @@ func getSort4(items []mapItem, v uint32) uint32 {
 		} else {
 			ret |= s1
 			ret |= b1 << 12
-			if compareMapItem(items[s2], items[b2]) < 0 {
+			if compareMapItem(&items[s2], &items[b2]) < 0 {
 				ret |= s2 << 4
 				ret |= b2 << 8
 			} else {
@@ -155,10 +155,10 @@ func getSort4(items []mapItem, v uint32) uint32 {
 			}
 		}
 	} else {
-		if compareMapItem(items[b1], items[b2]) < 0 {
+		if compareMapItem(&items[b1], &items[b2]) < 0 {
 			ret |= s2
 			ret |= b2 << 12
-			if compareMapItem(items[s1], items[b1]) < 0 {
+			if compareMapItem(&items[s1], &items[b1]) < 0 {
 				ret |= s1 << 4
 				ret |= b1 << 8
 			} else {
@@ -168,7 +168,7 @@ func getSort4(items []mapItem, v uint32) uint32 {
 		} else {
 			ret |= s2
 			ret |= b1 << 12
-			if compareMapItem(items[s1], items[b2]) < 0 {
+			if compareMapItem(&items[s1], &items[b2]) < 0 {
 				ret |= s1 << 4
 				ret |= b2 << 8
 			} else {
@@ -187,7 +187,7 @@ func (p *RTMap) getSort8() uint32 {
 			sort8 := uint32(0)
 			sortItems := p.items[mapSize-8:]
 			for i := uint32(0); i < 8; i += 2 {
-				if compareMapItem(sortItems[i], sortItems[i+1]) < 0 {
+				if compareMapItem(&sortItems[i], &sortItems[i+1]) < 0 {
 					sort8 |= (i | (i+1)<<4) << (i * 4)
 				} else {
 					sort8 |= ((i + 1) | (i << 4)) << (i * 4)
@@ -202,7 +202,7 @@ func (p *RTMap) getSort8() uint32 {
 			hiV := sort4HI & 0xF
 
 			for loV != 0xF && hiV != 0xF {
-				if compareMapItem(sortItems[loV], sortItems[hiV]) < 0 {
+				if compareMapItem(&sortItems[loV], &sortItems[hiV]) < 0 {
 					ret |= loV << pos
 					sort4LO >>= 4
 					loV = sort4LO & 0xF

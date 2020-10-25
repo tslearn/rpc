@@ -6,6 +6,7 @@ import (
 
 func TestRTMap_swapUint32(t *testing.T) {
 	rtMap := streamTestRuntime.NewRTMap()
+
 	rtMap.appendValue("v1", 34234)
 	rtMap.appendValue("v8", 34234)
 	rtMap.appendValue("v5", 34234)
