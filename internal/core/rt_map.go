@@ -27,22 +27,6 @@ func getFastKey(s string) uint32 {
 	return ret
 }
 
-func compareMapItem(m1 *mapItem, m2 *mapItem) int {
-	if m1.fastKey > m2.fastKey {
-		return 1
-	} else if m1.fastKey < m2.fastKey {
-		return -1
-	} else {
-		if m1.key > m2.key {
-			return 1
-		} else if m1.key < m2.key {
-			return -1
-		} else {
-			return 0
-		}
-	}
-}
-
 // RTMap ...
 type RTMap struct {
 	rt    Runtime
@@ -106,6 +90,82 @@ func (p *RTMap) appendValue(key string, pos posRecord) {
 			p.items,
 			mapItem{key: key, fastKey: getFastKey(key), pos: pos},
 		)
+
+		if len(p.items)%8 == 0 {
+			p.sort()
+		}
+	}
+}
+
+func (p *RTMap) sort() {
+	size := len(p.items)
+
+	arrBuffer := [8]mapItem{}
+	items := p.items[size-8:]
+	sort8 := getSort8(items)
+
+	if size == 8 {
+		copy(arrBuffer[0:], items)
+		for i := uint32(0); i < 8; i++ {
+			oIndex := sort8 & 0xF
+			sort8 >>= 4
+			if i != oIndex {
+				items[i] = arrBuffer[oIndex]
+			}
+		}
+	} else {
+		for i := uint32(0); i < 8; i++ {
+			oIndex := sort8 & 0xF
+			sort8 >>= 4
+			arrBuffer[i] = items[oIndex]
+		}
+		copy(p.items[8:], p.items[0:])
+
+		// merge
+		i := 8
+		j := 0
+		k := 0
+		for i < size && j < 8 {
+			if orderLess(&p.items[i], &arrBuffer[j]) {
+				p.items[k] = p.items[i]
+				i++
+			} else {
+				p.items[k] = arrBuffer[j]
+				j++
+			}
+
+			if p.items[k].pos != 0 {
+				k++
+			}
+		}
+
+		for i < size {
+			p.items[k] = p.items[i]
+			i++
+			if p.items[k].pos != 0 {
+				k++
+			}
+		}
+
+		for j < 8 {
+			p.items[k] = arrBuffer[j]
+			j++
+			if p.items[k].pos != 0 {
+				k++
+			}
+		}
+
+		p.items = p.items[:k]
+	}
+}
+
+func orderLess(m1 *mapItem, m2 *mapItem) bool {
+	if m1.fastKey > m2.fastKey {
+		return false
+	} else if m1.fastKey < m2.fastKey {
+		return true
+	} else {
+		return m1.key < m2.key
 	}
 }
 
@@ -116,11 +176,11 @@ func getSort4(items []mapItem, v uint32) uint32 {
 	b2 := (v >> 12) & 0xF
 	ret := uint32(0)
 
-	if items[s1].fastKey < items[s2].fastKey || items[s1].key < items[s2].key {
-		if compareMapItem(&items[b1], &items[b2]) < 0 {
+	if orderLess(&items[s1], &items[s2]) {
+		if orderLess(&items[b1], &items[b2]) {
 			ret |= s1
 			ret |= b2 << 12
-			if compareMapItem(&items[s2], &items[b1]) < 0 {
+			if orderLess(&items[s2], &items[b1]) {
 				ret |= s2 << 4
 				ret |= b1 << 8
 			} else {
@@ -130,7 +190,7 @@ func getSort4(items []mapItem, v uint32) uint32 {
 		} else {
 			ret |= s1
 			ret |= b1 << 12
-			if compareMapItem(&items[s2], &items[b2]) < 0 {
+			if orderLess(&items[s2], &items[b2]) {
 				ret |= s2 << 4
 				ret |= b2 << 8
 			} else {
@@ -139,10 +199,10 @@ func getSort4(items []mapItem, v uint32) uint32 {
 			}
 		}
 	} else {
-		if compareMapItem(&items[b1], &items[b2]) < 0 {
+		if orderLess(&items[b1], &items[b2]) {
 			ret |= s2
 			ret |= b2 << 12
-			if compareMapItem(&items[s1], &items[b1]) < 0 {
+			if orderLess(&items[s1], &items[b1]) {
 				ret |= s1 << 4
 				ret |= b1 << 8
 			} else {
@@ -152,7 +212,7 @@ func getSort4(items []mapItem, v uint32) uint32 {
 		} else {
 			ret |= s2
 			ret |= b1 << 12
-			if compareMapItem(&items[s1], &items[b2]) < 0 {
+			if orderLess(&items[s1], &items[b2]) {
 				ret |= s1 << 4
 				ret |= b2 << 8
 			} else {
@@ -167,7 +227,7 @@ func getSort4(items []mapItem, v uint32) uint32 {
 func getSort8(items []mapItem) uint32 {
 	sort8 := uint32(0)
 	for i := uint32(0); i < 8; i += 2 {
-		if compareMapItem(&items[i], &items[i+1]) < 0 {
+		if orderLess(&items[i], &items[i+1]) {
 			sort8 |= (i | (i+1)<<4) << (i * 4)
 		} else {
 			sort8 |= ((i + 1) | (i << 4)) << (i * 4)
@@ -182,7 +242,7 @@ func getSort8(items []mapItem) uint32 {
 	hiV := sort4HI & 0xF
 
 	for loV != 0xF && hiV != 0xF {
-		if compareMapItem(&items[loV], &items[hiV]) < 0 {
+		if orderLess(&items[loV], &items[hiV]) {
 			ret |= loV << pos
 			sort4LO >>= 4
 			loV = sort4LO & 0xF
