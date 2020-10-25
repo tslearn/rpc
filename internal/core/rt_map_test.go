@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestRTMap_swapUint32(t *testing.T) {
 	rtMap.appendValue("v7", 34234)
 	rtMap.appendValue("v4", 34234)
 	rtMap.appendValue("v6", 34234)
-	rtMap.getSort8()
+	fmt.Printf("0x%08x\n", getSort8(rtMap.items))
 }
 
 func BenchmarkMakeRequestStream(b *testing.B) {
@@ -29,8 +30,9 @@ func BenchmarkMakeRequestStream(b *testing.B) {
 	rtMap.appendValue("v4", 34234)
 	rtMap.appendValue("v6", 34234)
 
+	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		rtMap.getSort8()
+		getSort8(rtMap.items)
 	}
 }
