@@ -10,7 +10,6 @@ import (
 type mapItem struct {
 	key     string
 	fastKey uint32
-	active  bool
 	pos     posRecord
 }
 
@@ -52,21 +51,39 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 	return
 }
 
-func (p *RTMap) getPosRecord(key string) posRecord {
+func (p *RTMap) getPosRecord(key string) (int, posRecord) {
 	if p.items != nil {
-		for i := len(p.items) - 1; i >= 0; i-- {
+		fastKey := getFastKey(key)
+		size := len(p.items)
+		randStart := size - size%8
+		bsStart := 0
+		bsEnd := randStart - 1
+
+		for bsStart <= bsEnd {
+			mid := (bsStart + bsEnd) >> 1
+
+			if v := compareItem(&p.items[mid], key, fastKey); v > 0 {
+				bsEnd = mid - 1
+			} else if v < 0 {
+				bsStart = mid + 1
+			} else {
+				return mid, p.items[mid].pos
+			}
+		}
+
+		for i := len(p.items) - 1; i >= randStart; i-- {
 			if key == p.items[i].key {
-				return p.items[i].pos
+				return i, p.items[i].pos
 			}
 		}
 	}
 
-	return 0
+	return -1, 0
 }
 
 // Get ...
 func (p *RTMap) Get(key string) RTValue {
-	if pos := p.getPosRecord(key); pos > 0 {
+	if _, pos := p.getPosRecord(key); pos > 0 {
 		return makeRTValue(p.rt, pos)
 	}
 
@@ -87,10 +104,14 @@ func (p *RTMap) Size() int {
 
 func (p *RTMap) appendValue(key string, pos posRecord) {
 	if p.items != nil {
-		p.items = append(
-			p.items,
-			mapItem{key: key, fastKey: getFastKey(key), active: true, pos: pos},
-		)
+		if idx, _ := p.getPosRecord(key); idx > 0 {
+			p.items[idx].pos = pos
+		} else {
+			p.items = append(
+				p.items,
+				mapItem{key: key, fastKey: getFastKey(key), pos: pos},
+			)
+		}
 
 		if len(p.items)%8 == 0 {
 			p.sort()
@@ -135,7 +156,7 @@ func (p *RTMap) sort() {
 				j++
 			}
 
-			if p.items[k].active {
+			if p.items[k].pos != 0 {
 				k++
 			}
 		}
@@ -143,7 +164,7 @@ func (p *RTMap) sort() {
 		for i < size {
 			p.items[k] = p.items[i]
 			i++
-			if p.items[k].active {
+			if p.items[k].pos != 0 {
 				k++
 			}
 		}
@@ -151,12 +172,26 @@ func (p *RTMap) sort() {
 		for j < 8 {
 			p.items[k] = arrBuffer[j]
 			j++
-			if p.items[k].active {
+			if p.items[k].pos != 0 {
 				k++
 			}
 		}
 
 		p.items = p.items[:k]
+	}
+}
+
+func compareItem(m1 *mapItem, key string, fastKey uint32) int {
+	if m1.fastKey > fastKey {
+		return 1
+	} else if m1.fastKey < fastKey {
+		return -1
+	} else if m1.key > key {
+		return 1
+	} else if m1.key < key {
+		return -1
+	} else {
+		return 0
 	}
 }
 

@@ -2087,10 +2087,6 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 						p.SetReadPos(readStart)
 						return RTMap{}, err
 					}
-					if ret.getPosRecord(key) != 0 {
-						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStream
-					}
 					op := cs.readFrame[cs.readIndex]
 					skip, _ := cs.peekSkip()
 					itemPos := cs.GetReadPos()
