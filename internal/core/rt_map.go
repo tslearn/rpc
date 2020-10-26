@@ -51,23 +51,24 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 	return
 }
 
-func (p *RTMap) getPosRecord(key string) (int, posRecord) {
+func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 	if p.items != nil {
-		fastKey := getFastKey(key)
 		size := len(p.items)
 		randStart := size - size%8
-		bsStart := 0
-		bsEnd := randStart - 1
 
-		for bsStart <= bsEnd {
-			mid := (bsStart + bsEnd) >> 1
+		if randStart > 0 {
+			bsStart := 0
+			bsEnd := randStart - 1
+			for bsStart <= bsEnd {
+				mid := (bsStart + bsEnd) >> 1
 
-			if v := compareItem(&p.items[mid], key, fastKey); v > 0 {
-				bsEnd = mid - 1
-			} else if v < 0 {
-				bsStart = mid + 1
-			} else {
-				return mid, p.items[mid].pos
+				if v := compareItem(&p.items[mid], key, fastKey); v > 0 {
+					bsEnd = mid - 1
+				} else if v < 0 {
+					bsStart = mid + 1
+				} else {
+					return mid, p.items[mid].pos
+				}
 			}
 		}
 
@@ -83,7 +84,7 @@ func (p *RTMap) getPosRecord(key string) (int, posRecord) {
 
 // Get ...
 func (p *RTMap) Get(key string) RTValue {
-	if _, pos := p.getPosRecord(key); pos > 0 {
+	if _, pos := p.getPosRecord(key, getFastKey(key)); pos > 0 {
 		return makeRTValue(p.rt, pos)
 	}
 
@@ -104,12 +105,13 @@ func (p *RTMap) Size() int {
 
 func (p *RTMap) appendValue(key string, pos posRecord) {
 	if p.items != nil {
-		if idx, _ := p.getPosRecord(key); idx > 0 {
+		fastKey := getFastKey(key)
+		if idx, _ := p.getPosRecord(key, fastKey); idx > 0 {
 			p.items[idx].pos = pos
 		} else {
 			p.items = append(
 				p.items,
-				mapItem{key: key, fastKey: getFastKey(key), pos: pos},
+				mapItem{key: key, fastKey: fastKey, pos: pos},
 			)
 		}
 

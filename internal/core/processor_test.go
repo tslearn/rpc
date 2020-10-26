@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"sort"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -648,9 +647,6 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(rtMap)
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					sort.Slice(rtMap.items, func(i, j int) bool {
-						return rtMap.items[i].key < rtMap.items[j].key
-					})
 					return rt.Reply("ok")
 				}),
 			fileLine: "",
@@ -667,14 +663,15 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 	stream.WriteString("")
 	// stream.WriteString("tslearn")
 	stream.Write(Map{
-		"v1": "1",
-		"v2": "2",
-		"v3": "3",
-		"v4": "4",
-		"v5": "5",
-		"v6": "6",
-		"v7": "7",
-		"v8": "8",
+		"v1": 1,
+		"v2": 2,
+		"v3": 3,
+		"v4": 4,
+		"v5": 5,
+		"v6": 6,
+		"v7": 7,
+		//"v8": "8",
+		//"v9": "8",
 	})
 	sendBuf := stream.GetBuffer()
 
