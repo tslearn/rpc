@@ -354,7 +354,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			" is not available",
 		},
 		{
-			RTArray{rt: streamTestRuntime, items: []posRecord{0}},
+			RTArray{rt: streamTestRuntime, items: &[]posRecord{0}},
 			" is not available",
 		},
 	},
@@ -408,7 +408,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		{[]byte{}, StreamWriteOK},
 		{Array{}, StreamWriteOK},
 		{Map{}, StreamWriteOK},
-		{RTArray{rt: streamTestRuntime, items: []posRecord{}}, StreamWriteOK},
+		{RTArray{rt: streamTestRuntime, items: &[]posRecord{}}, StreamWriteOK},
 		{RTMap{rt: streamTestRuntime, items: &[]mapItem{}}, StreamWriteOK},
 		{RTValue{}, "value is not available"},
 		{RTArray{}, "value is not available"},

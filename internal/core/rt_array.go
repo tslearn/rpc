@@ -11,30 +11,39 @@ import (
 // RTArray ...
 type RTArray struct {
 	rt    Runtime
-	items []posRecord
+	items *[]posRecord
 }
 
 func newRTArray(rt Runtime, size int) (ret RTArray) {
-	ret.rt = rt
+	if thread := rt.thread; thread != nil {
+		ret.rt = rt
+		size += 4
 
-	if thread := rt.thread; thread != nil && size <= 32 {
-		if data := thread.malloc(sizeOfPosRecord * size); data != nil {
-			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
-			itemsHeader.Len = 0
-			itemsHeader.Cap = size
-			itemsHeader.Data = uintptr(data)
-			return
+		if d1 := thread.malloc(sizeOfSlice); d1 != nil {
+			ret.items = (*[]posRecord)(d1)
+
+			if d2 := thread.malloc(sizeOfPosRecord * size); d2 != nil && size <= 36 {
+				itemsHeader := (*reflect.SliceHeader)(d1)
+				itemsHeader.Len = 0
+				itemsHeader.Cap = size
+				itemsHeader.Data = uintptr(d2)
+				return
+			}
+
+			*ret.items = make([]posRecord, 0, size)
+		} else {
+			items := make([]posRecord, 0, size)
+			ret.items = &items
 		}
 	}
 
-	ret.items = make([]posRecord, 0, size)
 	return
 }
 
 // Get ...
 func (p *RTArray) Get(index int) RTValue {
-	if index >= 0 && index < len(p.items) {
-		return makeRTValue(p.rt, p.items[index])
+	if index >= 0 && index < len(*p.items) {
+		return makeRTValue(p.rt, (*p.items)[index])
 	}
 
 	return RTValue{
@@ -53,16 +62,16 @@ func (p *RTArray) Set(index int, value interface{}) *base.Error {
 			return errors.ErrUnsupportedValue.AddDebug(reason)
 		}
 
-		if index < 0 || index >= len(p.items) {
+		if index < 0 || index >= len(*p.items) {
 			return errors.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index))
 		}
 
 		switch value.(type) {
 		case string:
-			p.items[index] = makePosRecord(pos, true)
+			(*p.items)[index] = makePosRecord(pos, true)
 		default:
-			p.items[index] = makePosRecord(pos, false)
+			(*p.items)[index] = makePosRecord(pos, false)
 		}
 		return nil
 	} else {
@@ -82,9 +91,9 @@ func (p *RTArray) Append(value interface{}) *base.Error {
 
 		switch value.(type) {
 		case string:
-			p.items = append(p.items, makePosRecord(pos, true))
+			*p.items = append(*p.items, makePosRecord(pos, true))
 		default:
-			p.items = append(p.items, makePosRecord(pos, false))
+			*p.items = append(*p.items, makePosRecord(pos, false))
 		}
 		return nil
 	} else {
@@ -96,7 +105,7 @@ func (p *RTArray) Delete(index int) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
-		size := len(p.items)
+		size := len(*p.items)
 		if index < 0 || index >= size {
 			return errors.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index))
@@ -113,7 +122,7 @@ func (p *RTArray) Delete(index int) *base.Error {
 // Size ...
 func (p *RTArray) Size() int {
 	if p.items != nil {
-		return len(p.items)
+		return len(*p.items)
 	}
 
 	return -1

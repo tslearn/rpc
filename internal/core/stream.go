@@ -1056,7 +1056,8 @@ func (p *Stream) writeRTArray(v RTArray) string {
 			}
 
 			for i := 0; i < length; i++ {
-				readStream.SetReadPos(int(v.items[i].getPos()))
+				items := *v.items
+				readStream.SetReadPos(int(items[i].getPos()))
 				if !p.writeStreamNext(readStream) {
 					p.SetWritePos(startPos)
 					return StreamWriteIsNotAvailable
@@ -1999,9 +2000,9 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 					}
 
 					if op>>6 == 2 {
-						ret.items = append(ret.items, makePosRecord(int64(itemPos), true))
+						*ret.items = append(*ret.items, makePosRecord(int64(itemPos), true))
 					} else {
-						ret.items = append(ret.items, makePosRecord(int64(itemPos), false))
+						*ret.items = append(*ret.items, makePosRecord(int64(itemPos), false))
 					}
 				}
 				if cs.GetReadPos() == end {
