@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
 	"unsafe"
@@ -103,21 +104,61 @@ func (p *RTMap) Size() int {
 	return -1
 }
 
-func (p *RTMap) appendValue(key string, pos posRecord) {
-	if p.items != nil {
-		fastKey := getFastKey(key)
-		if idx, _ := p.getPosRecord(key, fastKey); idx > 0 {
-			p.items[idx].pos = pos
-		} else {
-			p.items = append(
-				p.items,
-				mapItem{key: key, fastKey: fastKey, pos: pos},
-			)
+// Set
+func (p *RTMap) Set(key string, value interface{}) *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		pos := int64(thread.rtStream.GetWritePos())
+
+		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
+			return errors.ErrUnsupportedValue.AddDebug(reason)
 		}
 
-		if len(p.items)%8 == 0 {
-			p.sort()
+		switch value.(type) {
+		case string:
+			p.appendValue(key, makePosRecord(pos, true))
+		default:
+			p.appendValue(key, makePosRecord(pos, false))
 		}
+
+		return nil
+	} else {
+		return errors.ErrRuntimeIllegalInCurrentGoroutine
+	}
+}
+
+// Delete ...
+func (p *RTMap) Delete(key string) *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		if idx, r := p.getPosRecord(key, getFastKey(key)); idx > 0 && r > 0 {
+			p.items[idx].pos = 0
+			return nil
+		}
+
+		return errors.ErrRTMapNameNotFound.
+			AddDebug(fmt.Sprintf("RTMap key %s is not exist", key))
+	} else {
+		return errors.ErrRuntimeIllegalInCurrentGoroutine
+	}
+}
+
+func (p *RTMap) appendValue(key string, pos posRecord) {
+	fastKey := getFastKey(key)
+
+	if idx, _ := p.getPosRecord(key, fastKey); idx > 0 {
+		p.items[idx].pos = pos
+	} else {
+		p.items = append(
+			p.items,
+			mapItem{key: key, fastKey: fastKey, pos: pos},
+		)
+	}
+
+	if len(p.items)%8 == 0 {
+		p.sort()
 	}
 }
 
