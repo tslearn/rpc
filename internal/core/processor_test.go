@@ -670,8 +670,8 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"v5": 5,
 		"v6": 6,
 		"v7": 7,
-		//"v8": "8",
-		//"v9": "8",
+		"v8": "8",
+		"v9": "8",
 	})
 	sendBuf := stream.GetBuffer()
 
