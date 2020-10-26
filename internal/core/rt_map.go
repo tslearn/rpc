@@ -72,7 +72,7 @@ func (p *RTMap) getPosRecord(key string) (int, posRecord) {
 		}
 
 		for i := len(p.items) - 1; i >= randStart; i-- {
-			if key == p.items[i].key {
+			if compareItem(&p.items[i], key, fastKey) == 0 {
 				return i, p.items[i].pos
 			}
 		}
