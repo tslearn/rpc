@@ -370,7 +370,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		{
 			RTMap{
 				rt:    streamTestRuntime,
-				items: []mapItem{{"key", getFastKey("key"), 0}},
+				items: []mapItem{{"key", getFastKey("key"), true, 0}},
 			},
 			" is not available",
 		},

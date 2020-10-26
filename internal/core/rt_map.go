@@ -10,6 +10,7 @@ import (
 type mapItem struct {
 	key     string
 	fastKey uint32
+	active  bool
 	pos     posRecord
 }
 
@@ -88,7 +89,7 @@ func (p *RTMap) appendValue(key string, pos posRecord) {
 	if p.items != nil {
 		p.items = append(
 			p.items,
-			mapItem{key: key, fastKey: getFastKey(key), pos: pos},
+			mapItem{key: key, fastKey: getFastKey(key), active: true, pos: pos},
 		)
 
 		if len(p.items)%8 == 0 {
@@ -134,7 +135,7 @@ func (p *RTMap) sort() {
 				j++
 			}
 
-			if p.items[k].pos != 0 {
+			if p.items[k].active {
 				k++
 			}
 		}
@@ -142,7 +143,7 @@ func (p *RTMap) sort() {
 		for i < size {
 			p.items[k] = p.items[i]
 			i++
-			if p.items[k].pos != 0 {
+			if p.items[k].active {
 				k++
 			}
 		}
@@ -150,7 +151,7 @@ func (p *RTMap) sort() {
 		for j < 8 {
 			p.items[k] = arrBuffer[j]
 			j++
-			if p.items[k].pos != 0 {
+			if p.items[k].active {
 				k++
 			}
 		}
