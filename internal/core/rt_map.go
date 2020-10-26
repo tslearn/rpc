@@ -8,24 +8,12 @@ import (
 	"unsafe"
 )
 
+const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
+
 type mapItem struct {
 	key     string
 	fastKey uint32
 	pos     posRecord
-}
-
-const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
-
-func getFastKey(s string) uint32 {
-	header := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	if header.Len >= 4 {
-		return *(*uint32)(unsafe.Pointer(header.Data))
-	}
-	ret := uint32(0)
-	for i := uintptr(0); i < uintptr(header.Len); i++ {
-		ret |= uint32(*(*uint8)(unsafe.Pointer(header.Data + i))) << (24 - 8*i)
-	}
-	return ret
 }
 
 // RTMap ...
@@ -222,6 +210,18 @@ func (p *RTMap) sort() {
 
 		p.items = p.items[:k]
 	}
+}
+
+func getFastKey(s string) uint32 {
+	header := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	if header.Len >= 4 {
+		return *(*uint32)(unsafe.Pointer(header.Data))
+	}
+	ret := uint32(0)
+	for i := uintptr(0); i < uintptr(header.Len); i++ {
+		ret |= uint32(*(*uint8)(unsafe.Pointer(header.Data + i))) << (24 - 8*i)
+	}
+	return ret
 }
 
 func compareItem(m1 *mapItem, key string, fastKey uint32) int {
