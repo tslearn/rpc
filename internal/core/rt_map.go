@@ -19,30 +19,39 @@ type mapItem struct {
 // RTMap ...
 type RTMap struct {
 	rt    Runtime
-	items []mapItem
+	items *[]mapItem
 }
 
 func newRTMap(rt Runtime, size int) (ret RTMap) {
-	ret.rt = rt
-	size += 4
+	if thread := rt.thread; thread != nil {
+		ret.rt = rt
+		size += 4
 
-	if thread := rt.thread; thread != nil && size <= 20 {
-		if data := thread.malloc(sizeOfMapItem * size); data != nil {
-			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&ret.items))
-			itemsHeader.Len = 0
-			itemsHeader.Cap = size
-			itemsHeader.Data = uintptr(data)
-			return
+		if d1 := thread.malloc(sizeOfSlice); d1 != nil {
+			ret.items = (*[]mapItem)(d1)
+
+			if d2 := thread.malloc(sizeOfMapItem * size); d2 != nil && size <= 20 {
+				itemsHeader := (*reflect.SliceHeader)(d1)
+				itemsHeader.Len = 0
+				itemsHeader.Cap = size
+				itemsHeader.Data = uintptr(d2)
+				return
+			}
+
+			*ret.items = make([]mapItem, 0, size)
+		} else {
+			items := make([]mapItem, 0, size)
+			ret.items = &items
 		}
 	}
 
-	ret.items = make([]mapItem, 0, size)
 	return
 }
 
 func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 	if p.items != nil {
-		size := len(p.items)
+		items := *p.items
+		size := len(items)
 		randStart := size - size%8
 
 		if randStart > 0 {
@@ -51,19 +60,19 @@ func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 			for bsStart <= bsEnd {
 				mid := (bsStart + bsEnd) >> 1
 
-				if v := compareItem(&p.items[mid], key, fastKey); v > 0 {
+				if v := compareItem(&items[mid], key, fastKey); v > 0 {
 					bsEnd = mid - 1
 				} else if v < 0 {
 					bsStart = mid + 1
 				} else {
-					return mid, p.items[mid].pos
+					return mid, items[mid].pos
 				}
 			}
 		}
 
-		for i := len(p.items) - 1; i >= randStart; i-- {
-			if compareItem(&p.items[i], key, fastKey) == 0 {
-				return i, p.items[i].pos
+		for i := size - 1; i >= randStart; i-- {
+			if compareItem(&items[i], key, fastKey) == 0 {
+				return i, items[i].pos
 			}
 		}
 	}
@@ -86,7 +95,7 @@ func (p *RTMap) Get(key string) RTValue {
 // Size ...
 func (p *RTMap) Size() int {
 	if p.items != nil {
-		return len(p.items)
+		return len(*p.items)
 	}
 
 	return -1
@@ -122,7 +131,7 @@ func (p *RTMap) Delete(key string) *base.Error {
 		defer p.rt.unlock()
 
 		if idx, r := p.getPosRecord(key, getFastKey(key)); idx > 0 && r > 0 {
-			p.items[idx].pos = 0
+			(*p.items)[idx].pos = 0
 			return nil
 		}
 
@@ -137,78 +146,79 @@ func (p *RTMap) appendValue(key string, pos posRecord) {
 	fastKey := getFastKey(key)
 
 	if idx, _ := p.getPosRecord(key, fastKey); idx > 0 {
-		p.items[idx].pos = pos
+		(*p.items)[idx].pos = pos
 	} else {
-		p.items = append(
-			p.items,
+		*p.items = append(
+			*p.items,
 			mapItem{key: key, fastKey: fastKey, pos: pos},
 		)
 	}
 
-	if len(p.items)%8 == 0 {
+	if len(*p.items)%8 == 0 {
 		p.sort()
 	}
 }
 
 func (p *RTMap) sort() {
-	size := len(p.items)
+	items := *p.items
+	size := len(items)
 
 	arrBuffer := [8]mapItem{}
-	items := p.items[size-8:]
-	sort8 := getSort8(items)
+	sortItems := items[size-8:]
+	sort8 := getSort8(sortItems)
 
 	if size == 8 {
-		copy(arrBuffer[0:], items)
+		copy(arrBuffer[0:], sortItems)
 		for i := uint32(0); i < 8; i++ {
 			oIndex := sort8 & 0xF
 			sort8 >>= 4
 			if i != oIndex {
-				items[i] = arrBuffer[oIndex]
+				sortItems[i] = arrBuffer[oIndex]
 			}
 		}
 	} else {
 		for i := uint32(0); i < 8; i++ {
 			oIndex := sort8 & 0xF
 			sort8 >>= 4
-			arrBuffer[i] = items[oIndex]
+			arrBuffer[i] = sortItems[oIndex]
 		}
-		copy(p.items[8:], p.items[0:])
+		copy(items[8:], items[0:])
 
 		// merge
 		i := 8
 		j := 0
 		k := 0
 		for i < size && j < 8 {
-			if orderLess(&p.items[i], &arrBuffer[j]) {
-				p.items[k] = p.items[i]
+			if orderLess(&items[i], &arrBuffer[j]) {
+				items[k] = items[i]
 				i++
 			} else {
-				p.items[k] = arrBuffer[j]
+				items[k] = arrBuffer[j]
 				j++
 			}
 
-			if p.items[k].pos != 0 {
+			if items[k].pos != 0 {
 				k++
 			}
 		}
 
 		for i < size {
-			p.items[k] = p.items[i]
+			items[k] = items[i]
 			i++
-			if p.items[k].pos != 0 {
+			if items[k].pos != 0 {
 				k++
 			}
 		}
 
 		for j < 8 {
-			p.items[k] = arrBuffer[j]
+			items[k] = arrBuffer[j]
 			j++
-			if p.items[k].pos != 0 {
+			if items[k].pos != 0 {
 				k++
 			}
 		}
 
-		p.items = p.items[:k]
+		*p.items = items[:k]
 	}
 }
 
