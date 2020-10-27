@@ -252,6 +252,18 @@ func TestConvertTypeToString(t *testing.T) {
 	})
 }
 
+func TestGetFastKey(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(getFastKey("")).Equal(uint32(0))
+		assert(getFastKey("0")).Equal(uint32('0'<<16 | '0'<<8 | '0'))
+		assert(getFastKey("01")).Equal(uint32('0'<<16 | '1'<<8 | '1'))
+		assert(getFastKey("012")).Equal(uint32('0'<<16 | '1'<<8 | '2'))
+		assert(getFastKey("0123")).Equal(uint32('0'<<16 | '2'<<8 | '3'))
+		assert(getFastKey("01234")).Equal(uint32('0'<<16 | '2'<<8 | '4'))
+	})
+}
+
 func TestMakeRequestStream(t *testing.T) {
 	t.Run("write error", func(t *testing.T) {
 		assert := base.NewAssert(t)

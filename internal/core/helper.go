@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
+	"unsafe"
 )
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
@@ -99,6 +100,17 @@ func convertTypeToString(reflectType reflect.Type) string {
 	default:
 		return reflectType.String()
 	}
+}
+
+func getFastKey(s string) uint32 {
+	header := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	size := uintptr(header.Len)
+	if size == 0 {
+		return 0
+	}
+	return uint32(*(*uint8)(unsafe.Pointer(header.Data)))<<16 |
+		uint32(*(*uint8)(unsafe.Pointer(header.Data + size>>1)))<<8 |
+		uint32(*(*uint8)(unsafe.Pointer(header.Data + size - 1)))
 }
 
 // MakeRequestStream ...

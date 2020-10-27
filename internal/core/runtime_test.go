@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+var testRuntime = Runtime{id: 0, thread: getFakeThread(true)}
+
 func TestRuntime_lock(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
