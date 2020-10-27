@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -647,7 +648,15 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 					return rt.Reply(rtMap)
 				}).
 				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					return rt.Reply("ok")
+					v1, _ := rtMap.Get("v1").ToInt64()
+					v2, _ := rtMap.Get("v2").ToInt64()
+					v3, _ := rtMap.Get("v3").ToInt64()
+					v4, _ := rtMap.Get("v4").ToInt64()
+					v5, _ := rtMap.Get("v5").ToInt64()
+					v6, _ := rtMap.Get("v6").ToInt64()
+					v7, _ := rtMap.Get("v7").ToInt64()
+					return rt.Reply(v1 + v2 + v3 + v4 + v5 + v6 + v7)
+					// return rt.Reply(1)
 				}),
 			fileLine: "",
 		}},
@@ -670,15 +679,15 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"v5": 5,
 		"v6": 6,
 		"v7": 7,
-		"v8": "8",
-		"v9": "8",
+		"v8": 8,
 	})
 	sendBuf := stream.GetBuffer()
 
+	runtime.GC()
 	b.ResetTimer()
 	b.ReportAllocs()
-	b.N = 50000000
-	b.SetParallelism(1024)
+	b.N = 100000000
+	b.SetParallelism(32)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

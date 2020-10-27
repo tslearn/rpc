@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"sort"
 	"testing"
@@ -183,6 +184,29 @@ func TestNewRTMap(t *testing.T) {
 	})
 }
 
+func TestRTMap_Get(t *testing.T) {
+	t.Run("invalid RTMap", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rtMap := RTMap{}
+		assert(rtMap.Get("name")).Equal(RTValue{
+			err: errors.ErrRTMapNameNotFound.AddDebug("RTMap key name is not exist"),
+		})
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.rootFrame.Reset()
+		v := testRuntime.NewRTMap()
+		_ = v.Set("name", "kitty")
+		_ = v.Set("age", uint64(18))
+		assert(v.Get("name").ToString()).Equal("kitty", nil)
+		assert(v.Get("age").ToUint64()).Equal(uint64(18), nil)
+		assert(v.Get("noKey").ToString()).Equal(
+			"",
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key noKey is not exist"))
+	})
+}
+
 func TestRTMap_swapUint32(t *testing.T) {
 	rtMap := testRuntime.NewRTMap()
 
@@ -208,20 +232,23 @@ func TestRTMap_swapUint32(t *testing.T) {
 }
 
 func BenchmarkMakeRequestStream(b *testing.B) {
+	testRuntime.thread.rtStream.Reset()
+	testRuntime.thread.rootFrame.Reset()
+	rtMap := testRuntime.NewRTMap()
+	rtMap.appendValue("v1", 34234)
+	rtMap.appendValue("v8", 34234)
+	rtMap.appendValue("v7", 34234)
+	rtMap.appendValue("a7", 34234)
+	rtMap.appendValue("a8", 34234)
+	rtMap.appendValue("v5", 34234)
+	rtMap.appendValue("v2", 34234)
+	rtMap.appendValue("v3", 34234)
+
 	b.ResetTimer()
 	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
-		testRuntime.thread.rtStream.Reset()
-		testRuntime.thread.rootFrame.Reset()
-		rtMap := testRuntime.NewRTMap()
-		rtMap.appendValue("v1", 34234)
-		rtMap.appendValue("v8", 34234)
-		rtMap.appendValue("v7", 34234)
-		rtMap.appendValue("a7", 34234)
-		rtMap.appendValue("a8", 34234)
-		rtMap.appendValue("v5", 34234)
-		rtMap.appendValue("v2", 34234)
-		rtMap.appendValue("v3", 34234)
+		_, _ = rtMap.Get("v1").ToInt64()
 		//rtMap.appendValue("a2", 34234)
 		//rtMap.appendValue("v4", 34234)
 		//rtMap.appendValue("v6", 34234)

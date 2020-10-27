@@ -17,12 +17,11 @@ type RTArray struct {
 func newRTArray(rt Runtime, size int) (ret RTArray) {
 	if thread := rt.thread; thread != nil {
 		ret.rt = rt
-		size += 4
 
 		if d1 := thread.malloc(sizeOfSlice); d1 != nil {
 			ret.items = (*[]posRecord)(d1)
 
-			if d2 := thread.malloc(sizeOfPosRecord * size); d2 != nil && size <= 36 {
+			if d2 := thread.malloc(sizeOfPosRecord * size); d2 != nil && size <= 32 {
 				itemsHeader := (*reflect.SliceHeader)(d1)
 				itemsHeader.Len = 0
 				itemsHeader.Cap = size
@@ -42,13 +41,21 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 
 // Get ...
 func (p *RTArray) Get(index int) RTValue {
-	if index >= 0 && index < len(*p.items) {
-		return makeRTValue(p.rt, (*p.items)[index])
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		if index >= 0 && index < len(*p.items) {
+			return makeRTValue(p.rt, (*p.items)[index])
+		}
+
+		return RTValue{
+			err: errors.ErrRTArrayIndexOverflow.
+				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)),
+		}
 	}
 
 	return RTValue{
-		err: errors.ErrRTArrayIndexOverflow.
-			AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)),
+		err: errors.ErrRuntimeIllegalInCurrentGoroutine,
 	}
 }
 

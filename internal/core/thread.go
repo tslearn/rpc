@@ -156,9 +156,9 @@ func (p *rpcThread) lock(rtID uint64) *rpcThread {
 		currStatus := atomic.LoadUint64(&p.top.lockStatus)
 		if currStatus == rtID || rtID == rtID+1 {
 			time.Sleep(10 * time.Millisecond)
-		} else {
-			return nil
 		}
+
+		return nil
 	}
 
 	return p

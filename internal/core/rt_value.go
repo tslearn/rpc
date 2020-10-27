@@ -16,7 +16,7 @@ type RTValue struct {
 	cacheError  *base.Error
 }
 
-func makeRTValue(rt Runtime, record posRecord) RTValue {
+func makeRTValue(rt Runtime, record posRecord) (ret RTValue) {
 	if !record.isString() {
 		return RTValue{
 			err:         nil,
@@ -26,26 +26,14 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			cacheSafe:   true,
 			cacheError:  errors.ErrStream,
 		}
-	} else if thread := rt.lock(); thread == nil {
-		return RTValue{
-			err:         errors.ErrRuntimeIllegalInCurrentGoroutine,
-			rt:          rt,
-			pos:         record.getPos(),
-			cacheString: "",
-			cacheSafe:   true,
-			cacheError:  errors.ErrStream,
-		}
 	} else {
-		defer rt.unlock()
 		pos := record.getPos()
-		thread.rtStream.SetReadPos(int(pos))
-		ret := RTValue{
-			err: nil,
-			rt:  rt,
-			pos: record.getPos(),
-		}
-		ret.cacheString, ret.cacheSafe, ret.err = thread.rtStream.readUnsafeString()
-		return ret
+		rtStream := rt.thread.rtStream
+		ret.rt = rt
+		ret.pos = pos
+		rtStream.SetReadPos(int(pos))
+		ret.cacheString, ret.cacheSafe, ret.err = rtStream.readUnsafeString()
+		return
 	}
 }
 

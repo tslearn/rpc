@@ -165,26 +165,25 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 
 // Get ...
 func (p *RTMap) Get(key string) RTValue {
-	if _, pos := p.getPosRecord(key, getFastKey(key)); pos > 0 {
-		return makeRTValue(p.rt, pos)
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+
+		if _, pos := p.getPosRecord(key, getFastKey(key)); pos > 0 {
+			return makeRTValue(p.rt, pos)
+		}
+
+		return RTValue{
+			err: errors.ErrRTMapNameNotFound.
+				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
+		}
 	}
 
 	return RTValue{
-		err: errors.ErrRTMapNameNotFound.
-			AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
+		err: errors.ErrRuntimeIllegalInCurrentGoroutine,
 	}
 }
 
-// Size ...
-func (p *RTMap) Size() int {
-	if p.items != nil {
-		return len(*p.items)
-	}
-
-	return -1
-}
-
-// Set
+// Set ...
 func (p *RTMap) Set(key string, value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
@@ -203,9 +202,9 @@ func (p *RTMap) Set(key string, value interface{}) *base.Error {
 		}
 
 		return nil
-	} else {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Delete ...
@@ -223,6 +222,15 @@ func (p *RTMap) Delete(key string) *base.Error {
 	} else {
 		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+}
+
+// Size ...
+func (p *RTMap) Size() int {
+	if p.items != nil {
+		return len(*p.items)
+	}
+
+	return -1
 }
 
 func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
