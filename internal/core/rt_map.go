@@ -109,7 +109,7 @@ func getSort4(items []mapItem, start uint32) uint32 {
 		}
 	}
 
-	return 0xFFFF0000 | ret
+	return ret
 }
 
 func getSort8(items []mapItem) uint32 {
