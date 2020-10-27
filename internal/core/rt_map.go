@@ -76,26 +76,16 @@ func getSort4(items []mapItem, start uint32) uint32 {
 			}
 		} else {
 			ret |= s1
+			ret |= s2 << 4
+			ret |= b2 << 8
 			ret |= b1 << 12
-			if isMapItemLess(&items[s2], &items[b2]) {
-				ret |= s2 << 4
-				ret |= b2 << 8
-			} else {
-				ret |= b2 << 4
-				ret |= s2 << 8
-			}
 		}
 	} else {
 		if isMapItemLess(&items[b1], &items[b2]) {
 			ret |= s2
+			ret |= s1 << 4
+			ret |= b1 << 8
 			ret |= b2 << 12
-			if isMapItemLess(&items[s1], &items[b1]) {
-				ret |= s1 << 4
-				ret |= b1 << 8
-			} else {
-				ret |= b1 << 4
-				ret |= s1 << 8
-			}
 		} else {
 			ret |= s2
 			ret |= b1 << 12
@@ -109,7 +99,7 @@ func getSort4(items []mapItem, start uint32) uint32 {
 		}
 	}
 
-	return ret
+	return 0xFFFF0000 | ret
 }
 
 func getSort8(items []mapItem) uint32 {
@@ -135,10 +125,8 @@ func getSort8(items []mapItem) uint32 {
 
 	if loV != 0xF {
 		ret |= sort4LO << pos
-	} else if hiV != 0xF {
-		ret |= sort4HI << pos
 	} else {
-		// do nothing
+		ret |= sort4HI << pos
 	}
 
 	return ret

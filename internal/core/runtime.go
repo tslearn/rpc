@@ -127,5 +127,5 @@ func (p Runtime) NewRTArray() RTArray {
 }
 
 func (p Runtime) NewRTMap() RTMap {
-	return newRTMap(p, 8)
+	return newRTMap(p, 12)
 }

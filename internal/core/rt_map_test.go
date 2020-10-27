@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"math/rand"
+	"sort"
 	"testing"
 	"unsafe"
 )
@@ -105,18 +106,42 @@ func TestIsMapItemLess(t *testing.T) {
 	})
 }
 
-//func TestGetSort4(t *testing.T) {
-//  t.Run("test ok", func(t *testing.T) {
-//    assert := base.NewAssert(t)
-//    for i := 0; i < 1000; i++ {
-//      items := getTestMapItems(4)
-//      v1 := getSort4(items, )
-//    }
-//  })
-//}
+func TestGetSort4(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 10000; i++ {
+			items := getTestMapItems(4)
+			v1 := getSort4(items, 0)
+			sort.Slice(items, func(i, j int) bool {
+				return isMapItemLess(&items[i], &items[j])
+			})
+			v2 := uint32(0)
+			for i := len(items) - 1; i >= 0; i-- {
+				v2 <<= 4
+				v2 |= uint32(items[i].pos)
+			}
+			assert(v1).Equal(v2)
+		}
+	})
+}
 
 func TestGetSort8(t *testing.T) {
-
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 10000; i++ {
+			items := getTestMapItems(8)
+			v1 := getSort8(items)
+			sort.Slice(items, func(i, j int) bool {
+				return isMapItemLess(&items[i], &items[j])
+			})
+			v2 := uint32(0)
+			for i := len(items) - 1; i >= 0; i-- {
+				v2 <<= 4
+				v2 |= uint32(items[i].pos)
+			}
+			assert(v1).Equal(v2)
+		}
+	})
 }
 
 func TestRTMap(t *testing.T) {
@@ -159,7 +184,6 @@ func TestNewRTMap(t *testing.T) {
 }
 
 func TestRTMap_swapUint32(t *testing.T) {
-	fmt.Println(sizeOfMapItem)
 	rtMap := testRuntime.NewRTMap()
 
 	rtMap.appendValue("a2", 34234)
