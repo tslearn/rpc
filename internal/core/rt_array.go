@@ -50,7 +50,7 @@ func (p *RTArray) Get(index int) RTValue {
 
 		return RTValue{
 			err: errors.ErrRTArrayIndexOverflow.
-				AddDebug(fmt.Sprintf("RTArray index %d overflows", index)),
+				AddDebug(fmt.Sprintf("RTArray index %d out of range", index)),
 		}
 	}
 
@@ -71,7 +71,7 @@ func (p *RTArray) Set(index int, value interface{}) *base.Error {
 
 		if index < 0 || index >= len(*p.items) {
 			return errors.ErrRTArrayIndexOverflow.
-				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index))
+				AddDebug(fmt.Sprintf("RTArray index %d out of range", index))
 		}
 
 		switch value.(type) {
@@ -115,7 +115,7 @@ func (p *RTArray) Delete(index int) *base.Error {
 		size := len(*p.items)
 		if index < 0 || index >= size {
 			return errors.ErrRTArrayIndexOverflow.
-				AddDebug(fmt.Sprintf("RTArray index %d overflows", index))
+				AddDebug(fmt.Sprintf("RTArray index %d out of range", index))
 		}
 
 		itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.items))
