@@ -343,6 +343,47 @@ func TestRTMap_Size(t *testing.T) {
 	})
 }
 
+func TestRTMapGetPosRecord(t *testing.T) {
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 1; i < 600; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTMap()
+
+			items := getTestMapItems(i)
+
+			for _, it := range items {
+				_ = v.Set(it.key, true)
+			}
+
+			for _, it := range items {
+				idx, pos := v.getPosRecord(it.key, getFastKey(it.key))
+				assert(pos > 0).IsTrue()
+				assert((*v.items)[idx].key).Equal(it.key)
+			}
+		}
+	})
+
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 1; i < 600; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTMap()
+			items := getTestMapItems(i)
+			for _, it := range items {
+				_ = v.Set(it.key, true)
+			}
+
+			for j := 0; j < 600; j++ {
+				key := base.GetRandString(6 + rand.Int()%6)
+				assert(v.getPosRecord(key, getFastKey(key))).Equal(-1, posRecord(0))
+			}
+		}
+	})
+}
+
 func TestRTMap_swapUint32(t *testing.T) {
 	testRuntime.thread.Reset()
 
