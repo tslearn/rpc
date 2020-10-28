@@ -320,6 +320,29 @@ func TestRTMap_Delete(t *testing.T) {
 	})
 }
 
+func TestRTMap_Size(t *testing.T) {
+	t.Run("invalid RTMap", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := RTMap{}
+		assert(v.Size()).Equal(-1)
+	})
+
+	t.Run("valid RTMap 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		assert(v.Size()).Equal(0)
+	})
+
+	t.Run("valid RTMap 2", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		_ = v.Set("name", "kitty")
+		assert(v.Size()).Equal(1)
+	})
+}
+
 func TestRTMap_swapUint32(t *testing.T) {
 	testRuntime.thread.Reset()
 
