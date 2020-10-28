@@ -18,7 +18,7 @@ func getTestMapItems(size int) []mapItem {
 		str := base.GetRandString(rand.Int() % 6)
 		if _, ok := mp[str]; !ok {
 			mp[str] = true
-			ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos)})
+			ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos + 1)})
 			pos++
 		}
 	}
@@ -380,6 +380,44 @@ func TestRTMapGetPosRecord(t *testing.T) {
 				key := base.GetRandString(6 + rand.Int()%6)
 				assert(v.getPosRecord(key, getFastKey(key))).Equal(-1, posRecord(0))
 			}
+		}
+	})
+}
+
+func TestRTMapAppendValue(t *testing.T) {
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		v.appendValue("name", 1)
+		assert(len(*v.items)).Equal(1)
+		assert((*v.items)[0].pos).Equal(posRecord(1))
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		v.appendValue("name", 1)
+		v.appendValue("name", 2)
+		fmt.Println(*v.items)
+		assert(len(*v.items)).Equal(1)
+		assert((*v.items)[0].pos).Equal(posRecord(2))
+	})
+
+	t.Run("sort ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTMap()
+			items := getTestMapItems(i * 16)
+			for _, it := range items {
+				v.appendValue(it.key, it.pos)
+			}
+			sort.Slice(items, func(i, j int) bool {
+				return isMapItemLess(&items[i], &items[j])
+			})
+			assert(*v.items).Equal(items)
 		}
 	})
 }

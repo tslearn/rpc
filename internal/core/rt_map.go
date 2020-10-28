@@ -298,7 +298,7 @@ func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 func (p *RTMap) appendValue(key string, pos posRecord) {
 	fastKey := getFastKey(key)
 
-	if idx, _ := p.getPosRecord(key, fastKey); idx > 0 {
+	if idx, _ := p.getPosRecord(key, fastKey); idx >= 0 {
 		(*p.items)[idx].pos = pos
 	} else {
 		*p.items = append(
