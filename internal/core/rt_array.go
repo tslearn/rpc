@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
-	"unsafe"
 )
 
 // RTArray ...
@@ -112,14 +111,16 @@ func (p *RTArray) Delete(index int) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
-		size := len(*p.items)
+		items := *p.items
+		size := len(items)
 		if index < 0 || index >= size {
 			return errors.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d out of range", index))
 		}
 
-		itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.items))
-		itemsHeader.Len--
+		copy(items[index:], items[index+1:])
+		*p.items = items[:size-1]
+
 		return nil
 	}
 

@@ -130,9 +130,45 @@ func TestRTArray_Append(t *testing.T) {
 	t.Run("invalid RTArray", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
-		assert(rtArray.Set(0, true)).Equal(
+		assert(rtArray.Append(true)).Equal(
 			errors.ErrRuntimeIllegalInCurrentGoroutine,
 		)
+	})
+
+	t.Run("unsupported value", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		assert(v.Append(make(chan bool))).Equal(
+			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+		)
+		assert(v.Size()).Equal(0)
+	})
+
+	t.Run("test ok (string)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		assert(v.Append("kitty")).Equal(nil)
+		assert(v.Size()).Equal(1)
+		assert(v.Get(0).ToString()).Equal("kitty", nil)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 1000; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTArray()
+			for j := int64(0); j < 1000; j++ {
+				assert(v.Append(j)).IsNil()
+			}
+
+			assert(v.Size()).Equal(1000)
+			for j := 0; j < 1000; j++ {
+				assert(v.Get(j).ToInt64()).Equal(int64(j), nil)
+			}
+		}
 	})
 }
 
@@ -140,9 +176,66 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("invalid RTArray", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
-		assert(rtArray.Set(0, true)).Equal(
+		assert(rtArray.Delete(0)).Equal(
 			errors.ErrRuntimeIllegalInCurrentGoroutine,
 		)
+	})
+
+	t.Run("index overflow 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(true)
+		assert(v.Delete(1)).Equal(errors.ErrRTArrayIndexOverflow.
+			AddDebug("RTArray index 1 out of range"))
+	})
+
+	t.Run("index overflow 2", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(true)
+		assert(v.Delete(-1)).Equal(errors.ErrRTArrayIndexOverflow.
+			AddDebug("RTArray index -1 out of range"))
+	})
+
+	t.Run("delete first elem", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(0)
+		_ = v.Append(1)
+		_ = v.Append(2)
+		assert(v.Delete(0)).Equal(nil)
+		assert(v.Size()).Equal(2)
+		assert(v.Get(0).ToInt64()).Equal(int64(1), nil)
+		assert(v.Get(1).ToInt64()).Equal(int64(2), nil)
+	})
+
+	t.Run("delete middle elem", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(0)
+		_ = v.Append(1)
+		_ = v.Append(2)
+		assert(v.Delete(1)).Equal(nil)
+		assert(v.Size()).Equal(2)
+		assert(v.Get(0).ToInt64()).Equal(int64(0), nil)
+		assert(v.Get(1).ToInt64()).Equal(int64(2), nil)
+	})
+
+	t.Run("delete last elem", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(0)
+		_ = v.Append(1)
+		_ = v.Append(2)
+		assert(v.Delete(2)).Equal(nil)
+		assert(v.Size()).Equal(2)
+		assert(v.Get(0).ToInt64()).Equal(int64(0), nil)
+		assert(v.Get(1).ToInt64()).Equal(int64(1), nil)
 	})
 }
 
@@ -150,8 +243,21 @@ func TestRTArray_Size(t *testing.T) {
 	t.Run("invalid RTArray", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
-		assert(rtArray.Set(0, true)).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
-		)
+		assert(rtArray.Size()).Equal(-1)
+	})
+
+	t.Run("valid RTArray 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		assert(v.Size()).Equal(0)
+	})
+
+	t.Run("valid RTArray 2", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray()
+		_ = v.Append(1)
+		assert(v.Size()).Equal(1)
 	})
 }
