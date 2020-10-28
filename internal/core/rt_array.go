@@ -81,9 +81,9 @@ func (p *RTArray) Set(index int, value interface{}) *base.Error {
 			(*p.items)[index] = makePosRecord(pos, false)
 		}
 		return nil
-	} else {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 func (p *RTArray) Append(value interface{}) *base.Error {
@@ -103,9 +103,9 @@ func (p *RTArray) Append(value interface{}) *base.Error {
 			*p.items = append(*p.items, makePosRecord(pos, false))
 		}
 		return nil
-	} else {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 func (p *RTArray) Delete(index int) *base.Error {
@@ -121,15 +121,15 @@ func (p *RTArray) Delete(index int) *base.Error {
 		itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.items))
 		itemsHeader.Len--
 		return nil
-	} else {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Size ...
 func (p *RTArray) Size() int {
-	if p.items != nil {
-		return len(*p.items)
+	if items := p.items; items != nil {
+		return len(*items)
 	}
 
 	return -1
