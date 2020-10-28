@@ -116,10 +116,10 @@ func TestGetSort4(t *testing.T) {
 			sort.Slice(items, func(i, j int) bool {
 				return isMapItemLess(&items[i], &items[j])
 			})
-			v2 := uint32(0)
+			v2 := uint64(0)
 			for i := len(items) - 1; i >= 0; i-- {
 				v2 <<= 4
-				v2 |= uint32(items[i].pos)
+				v2 |= uint64(0xFFFFFFFFFFFF0000 | items[i].pos)
 			}
 			assert(v1).Equal(v2)
 		}
@@ -131,15 +131,36 @@ func TestGetSort8(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 10000; i++ {
 			items := getTestMapItems(8)
-			v1 := getSort8(items)
+			v1 := getSort8(items, 0)
 			sort.Slice(items, func(i, j int) bool {
 				return isMapItemLess(&items[i], &items[j])
 			})
-			v2 := uint32(0)
+			v2 := uint64(0)
 			for i := len(items) - 1; i >= 0; i-- {
 				v2 <<= 4
-				v2 |= uint32(items[i].pos)
+				v2 |= uint64(items[i].pos)
 			}
+			assert(v1).Equal(0xFFFFFFFF00000000 | v2)
+		}
+	})
+}
+
+func TestGetSort16(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000000; i++ {
+			items := getTestMapItems(16)
+			v1 := getSort16(items)
+
+			sort.Slice(items, func(i, j int) bool {
+				return isMapItemLess(&items[i], &items[j])
+			})
+			v2 := uint64(0)
+			for i := len(items) - 1; i >= 0; i-- {
+				v2 <<= 4
+				v2 |= uint64(items[i].pos)
+			}
+
 			assert(v1).Equal(v2)
 		}
 	})
@@ -188,12 +209,12 @@ func TestRTMap_Get(t *testing.T) {
 	t.Run("invalid RTMap", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtMap := RTMap{}
-		assert(rtMap.Get("name")).Equal(RTValue{
-			err: errors.ErrRTMapNameNotFound.AddDebug("RTMap key name is not exist"),
-		})
+		assert(rtMap.Get("name").err).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine,
+		)
 	})
 
-	t.Run("test ok", func(t *testing.T) {
+	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.rootFrame.Reset()
 		v := testRuntime.NewRTMap()
@@ -204,6 +225,18 @@ func TestRTMap_Get(t *testing.T) {
 		assert(v.Get("noKey").ToString()).Equal(
 			"",
 			errors.ErrRTMapNameNotFound.AddDebug("RTMap key noKey is not exist"))
+	})
+
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.rootFrame.Reset()
+		v := testRuntime.NewRTMap()
+		assert(v.Get("name").err).Equal(
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name is not exist"),
+		)
+		assert(v.Get("age").err).Equal(
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key age is not exist"),
+		)
 	})
 }
 
