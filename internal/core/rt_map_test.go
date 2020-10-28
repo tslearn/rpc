@@ -18,7 +18,7 @@ func getTestMapItems(size int) []mapItem {
 		str := base.GetRandString(rand.Int() % 6)
 		if _, ok := mp[str]; !ok {
 			mp[str] = true
-			ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos + 1)})
+			ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos)})
 			pos++
 		}
 	}
