@@ -2140,12 +2140,12 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 			pos := int64(cs.GetReadPos())
 			cacheString, cacheSafe, cacheError := cs.readUnsafeString()
 			return RTValue{
-				err:         nil,
-				rt:          rt,
-				pos:         pos,
-				cacheString: cacheString,
-				cacheSafe:   cacheSafe,
-				cacheError:  cacheError,
+				err:        nil,
+				rt:         rt,
+				pos:        pos,
+				cacheBytes: base.StringToBytesUnsafe(cacheString),
+				cacheSafe:  cacheSafe,
+				cacheError: cacheError,
 			}, nil
 		}
 
@@ -2161,12 +2161,12 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 		}
 
 		return RTValue{
-			err:         nil,
-			rt:          rt,
-			pos:         int64(startPos),
-			cacheString: "",
-			cacheError:  errors.ErrStream,
-			cacheSafe:   false,
+			err:        nil,
+			rt:         rt,
+			pos:        int64(startPos),
+			cacheBytes: []byte{},
+			cacheError: errors.ErrStream,
+			cacheSafe:  false,
 		}, nil
 	}
 

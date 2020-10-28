@@ -8,23 +8,23 @@ import (
 
 // RTValue ...
 type RTValue struct {
-	err         *base.Error
-	rt          Runtime
-	pos         int64
-	cacheString string
-	cacheSafe   bool
-	cacheError  *base.Error
+	err        *base.Error
+	rt         Runtime
+	pos        int64
+	cacheBytes []byte
+	cacheSafe  bool
+	cacheError *base.Error
 }
 
 func makeRTValue(rt Runtime, record posRecord) (ret RTValue) {
 	if !record.isString() {
 		return RTValue{
-			err:         nil,
-			rt:          rt,
-			pos:         record.getPos(),
-			cacheString: "",
-			cacheSafe:   true,
-			cacheError:  errors.ErrStream,
+			err:        nil,
+			rt:         rt,
+			pos:        record.getPos(),
+			cacheBytes: []byte{},
+			cacheSafe:  true,
+			cacheError: errors.ErrStream,
 		}
 	} else {
 		pos := record.getPos()
@@ -32,7 +32,10 @@ func makeRTValue(rt Runtime, record posRecord) (ret RTValue) {
 		ret.rt = rt
 		ret.pos = pos
 		rtStream.SetReadPos(int(pos))
-		ret.cacheString, ret.cacheSafe, ret.err = rtStream.readUnsafeString()
+		cacheString, cacheSafe, cacheError := rtStream.readUnsafeString()
+		ret.cacheBytes = base.StringToBytesUnsafe(cacheString)
+		ret.cacheSafe = cacheSafe
+		ret.cacheError = cacheError
 		return
 	}
 }
@@ -90,20 +93,14 @@ func (p RTValue) ToFloat64() (Float64, *base.Error) {
 }
 
 // ToString ...
-func (p RTValue) ToString() (ret String, err *base.Error) {
-	if !p.cacheSafe {
-		ret = string(base.StringToBytesUnsafe(p.cacheString))
-	} else {
-		ret = p.cacheString
-	}
-
+func (p RTValue) ToString() (String, *base.Error) {
 	if p.err != nil {
 		return "", p.err
 	} else if p.rt.thread == nil ||
 		atomic.LoadUint64(&p.rt.thread.top.lockStatus) != p.rt.id {
 		return "", errors.ErrRuntimeIllegalInCurrentGoroutine
 	} else {
-		return
+		return string(p.cacheBytes), p.cacheError
 	}
 }
 

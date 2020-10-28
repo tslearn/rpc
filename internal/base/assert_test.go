@@ -94,27 +94,27 @@ func TestRpcAssert_Equals(t *testing.T) {
 		})).Equal(true, "\targuments length not match\n\t"+source+"\n")
 	})
 
-	t.Run("arguments is not equal", func(t *testing.T) {
+	t.Run("arguments does not equal", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
 			func() { o(1).Equal(2); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"int(2)",
 			"int(1)",
 			source,
 		))
 	})
 
-	t.Run("arguments type is not equal", func(t *testing.T) {
+	t.Run("arguments type does not equal", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
 
 		assert(testFailHelper(func(o func(_ ...interface{}) Assert) {
 			func() { o(1).Equal(int64(1)); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"int64(1)",
 			"int(1)",
 			source,
@@ -125,7 +125,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 			v2 := map[int]interface{}{3: "OK", 4: nil}
 			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"map[int]interface {}(map[3:OK 4:<nil>])",
 			"map[int]interface {}(map[3:OK 4:[]])",
 			source,
@@ -136,7 +136,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 			v2 := []int64{1, 2, 3}
 			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"[]int64([1 2 3])",
 			"[]int([1 2 3])",
 			source,
@@ -147,7 +147,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 			v2 := []int{1, 3, 2}
 			func() { o(v1).Equal(v2); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"[]int([1 3 2])",
 			"[]int([1 2 3])",
 			source,
@@ -157,7 +157,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 			v1 := make([]interface{}, 0)
 			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"<nil>(<nil>)",
 			"[]interface {}([])",
 			source,
@@ -167,7 +167,7 @@ func TestRpcAssert_Equals(t *testing.T) {
 			v1 := map[string]interface{}{}
 			func() { o(v1).Equal(nil); source = GetFileLine(0) }()
 		})).Equal(true, fmt.Sprintf(
-			"\t1st argment is not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
+			"\t1st argment does not equal\n\twant:\n\t%s\n\tgot:\n\t%s\n\t%s\n",
 			"<nil>(<nil>)",
 			"map[string]interface {}(map[])",
 			source,

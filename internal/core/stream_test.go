@@ -2828,7 +2828,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 					rtValue, _ := stream.ReadRTValue(testRuntime)
 					switch testData[0].(type) {
 					case string:
-						assert(rtValue.cacheString, rtValue.cacheError).
+						assert(string(rtValue.cacheBytes), rtValue.cacheError).
 							Equal(testData[0], nil)
 					}
 					assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)

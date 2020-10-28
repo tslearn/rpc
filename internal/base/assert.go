@@ -52,7 +52,7 @@ func (p *rpcAssert) Equal(args ...interface{}) {
 			if !reflect.DeepEqual(p.args[i], args[i]) {
 				if !IsNil(p.args[i]) || !IsNil(args[i]) {
 					p.fail(fmt.Sprintf(
-						"%s argment is not equal\n\twant:\n%s\n\tgot:\n%s",
+						"%s argment does not equal\n\twant:\n%s\n\tgot:\n%s",
 						ConvertOrdinalToString(uint(i+1)),
 						AddPrefixPerLine(fmt.Sprintf("%T(%v)", args[i], args[i]), "\t"),
 						AddPrefixPerLine(fmt.Sprintf("%T(%v)", p.args[i], p.args[i]), "\t"),

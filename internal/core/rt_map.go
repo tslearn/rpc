@@ -249,9 +249,9 @@ func (p *RTMap) Delete(key string) *base.Error {
 
 		return errors.ErrRTMapNameNotFound.
 			AddDebug(fmt.Sprintf("RTMap key %s is not exist", key))
-	} else {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Size ...

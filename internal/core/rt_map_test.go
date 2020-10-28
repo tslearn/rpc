@@ -240,6 +240,62 @@ func TestRTMap_Get(t *testing.T) {
 	})
 }
 
+func TestRTMap_Set(t *testing.T) {
+	t.Run("invalid RTMap", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rtMap := RTMap{}
+		assert(rtMap.Set("name", "kitty")).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine,
+		)
+	})
+
+	t.Run("unsupported value", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.rootFrame.Reset()
+		v := testRuntime.NewRTMap()
+		assert(v.Set("name", make(chan bool))).Equal(
+			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+		)
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.rootFrame.Reset()
+		v := testRuntime.NewRTMap()
+		_ = v.Set("name", "kitty")
+		assert(v.Get("name").ToString()).Equal("kitty", nil)
+		assert(v.Get("name").cacheBytes).Equal([]byte("kitty"))
+		_ = v.Set("name", "doggy")
+		assert(v.Get("name").ToString()).Equal("doggy", nil)
+		assert(v.Get("name").cacheBytes).Equal([]byte("doggy"))
+
+		_ = v.Set("age", 3)
+		assert(v.Get("age").ToInt64()).Equal(int64(3), nil)
+		assert(v.Get("age").cacheSafe).Equal(true)
+		assert(v.Get("age").cacheBytes).Equal([]byte{})
+		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
+		_ = v.Set("age", 6)
+		assert(v.Get("age").ToInt64()).Equal(int64(6), nil)
+		assert(v.Get("age").cacheSafe).Equal(true)
+		assert(v.Get("age").cacheBytes).Equal([]byte{})
+		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
+	})
+}
+
+func TestRTMap_Delete(t *testing.T) {
+	t.Run("invalid RTMap", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rtMap := RTMap{}
+		assert(rtMap.Delete("name")).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine,
+		)
+	})
+
+	t.Run("name does not exist", func(t *testing.T) {
+
+	})
+}
+
 func TestRTMap_swapUint32(t *testing.T) {
 	rtMap := testRuntime.NewRTMap()
 
