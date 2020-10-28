@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-func getTestMapItems(size int) []mapItem {
+func getTestMapItems(size int, sequencePos bool) []mapItem {
 	ret := make([]mapItem, 0, size)
 	mp := map[string]bool{}
 	pos := 0
@@ -18,7 +18,12 @@ func getTestMapItems(size int) []mapItem {
 		str := base.GetRandString(rand.Int() % 6)
 		if _, ok := mp[str]; !ok {
 			mp[str] = true
-			ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos)})
+			if sequencePos {
+				ret = append(ret, mapItem{str, getFastKey(str), posRecord(pos)})
+			} else {
+				ret = append(ret, mapItem{str, getFastKey(str), posRecord(1)})
+			}
+
 			pos++
 		}
 	}
@@ -111,7 +116,7 @@ func TestGetSort4(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 10000; i++ {
-			items := getTestMapItems(4)
+			items := getTestMapItems(4, true)
 			v1 := getSort4(items, 0)
 			sort.Slice(items, func(i, j int) bool {
 				return isMapItemLess(&items[i], &items[j])
@@ -130,7 +135,7 @@ func TestGetSort8(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 10000; i++ {
-			items := getTestMapItems(8)
+			items := getTestMapItems(8, true)
 			v1 := getSort8(items, 0)
 			sort.Slice(items, func(i, j int) bool {
 				return isMapItemLess(&items[i], &items[j])
@@ -149,7 +154,7 @@ func TestGetSort16(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 10000; i++ {
-			items := getTestMapItems(16)
+			items := getTestMapItems(16, true)
 			v1 := getSort16(items)
 
 			sort.Slice(items, func(i, j int) bool {
@@ -343,7 +348,7 @@ func TestRTMap_Size(t *testing.T) {
 	})
 }
 
-func TestRTMapGetPosRecord(t *testing.T) {
+func TestRTMap_getPosRecord(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
@@ -351,7 +356,7 @@ func TestRTMapGetPosRecord(t *testing.T) {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap()
 
-			items := getTestMapItems(i)
+			items := getTestMapItems(i, false)
 
 			for _, it := range items {
 				_ = v.Set(it.key, true)
@@ -371,7 +376,7 @@ func TestRTMapGetPosRecord(t *testing.T) {
 		for i := 1; i < 600; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap()
-			items := getTestMapItems(i)
+			items := getTestMapItems(i, false)
 			for _, it := range items {
 				_ = v.Set(it.key, true)
 			}
@@ -384,7 +389,7 @@ func TestRTMapGetPosRecord(t *testing.T) {
 	})
 }
 
-func TestRTMapAppendValue(t *testing.T) {
+func TestRTMap_appendValue(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
@@ -410,7 +415,7 @@ func TestRTMapAppendValue(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap()
-			items := getTestMapItems(i * 16)
+			items := getTestMapItems(i*16, false)
 			for _, it := range items {
 				v.appendValue(it.key, it.pos)
 			}
@@ -422,71 +427,20 @@ func TestRTMapAppendValue(t *testing.T) {
 	})
 }
 
-func TestRTMap_swapUint32(t *testing.T) {
-	testRuntime.thread.Reset()
-
-	rtMap := testRuntime.NewRTMap()
-
-	rtMap.appendValue("a2", 34234)
-	rtMap.appendValue("v4", 34234)
-	rtMap.appendValue("v6", 34234)
-	rtMap.appendValue("b4", 34234)
-	rtMap.appendValue("c4", 34234)
-	rtMap.appendValue("c5", 34234)
-	rtMap.appendValue("c6", 34234)
-	rtMap.appendValue("b6", 34234)
-	rtMap.appendValue("b7", 34234)
-	rtMap.appendValue("b2", 34234)
-	rtMap.appendValue("b3", 34234)
-	rtMap.appendValue("a3", 34234)
-	rtMap.appendValue("a5", 34234)
-	rtMap.appendValue("a6", 34234)
-	rtMap.appendValue("v1", 34234)
-	rtMap.appendValue("v8", 34234)
-	rtMap.appendValue("c1", 34234)
-	rtMap.appendValue("c2", 34234)
-	rtMap.appendValue("c7", 34234)
-	rtMap.appendValue("c8", 34234)
-	rtMap.appendValue("v7", 34234)
-	rtMap.appendValue("a7", 34234)
-	rtMap.appendValue("c3", 34234)
-	rtMap.appendValue("b1", 34234)
-	rtMap.appendValue("v3", 34234)
-	rtMap.appendValue("b5", 34234)
-	rtMap.appendValue("a1", 34234)
-	rtMap.appendValue("a4", 34234)
-	rtMap.appendValue("a8", 34234)
-	rtMap.appendValue("v5", 34234)
-	rtMap.appendValue("v2", 34234)
-	rtMap.appendValue("b8", 34234)
-
-	fmt.Println(rtMap.items)
-}
-
-func BenchmarkMakeRequestStream(b *testing.B) {
-	testRuntime.thread.Reset()
-	rtMap := testRuntime.NewRTMap()
-	rtMap.appendValue("v1", 34234)
-	rtMap.appendValue("v8", 34234)
-	rtMap.appendValue("v7", 34234)
-	rtMap.appendValue("a7", 34234)
-	rtMap.appendValue("a8", 34234)
-	rtMap.appendValue("v5", 34234)
-	rtMap.appendValue("v2", 34234)
-	rtMap.appendValue("v3", 34234)
-
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		_, _ = rtMap.Get("v1").ToInt64()
-		//rtMap.appendValue("a2", 34234)
-		//rtMap.appendValue("v4", 34234)
-		//rtMap.appendValue("v6", 34234)
-		//rtMap.appendValue("a1", 34234)
-		//rtMap.appendValue("a4", 34234)
-		//rtMap.appendValue("a3", 34234)
-		//rtMap.appendValue("a5", 34234)
-		//rtMap.appendValue("a6", 34234)
-	}
+func TestRTMap_sort(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTMap()
+			items := getTestMapItems(i*16, false)
+			for _, it := range items {
+				v.appendValue(it.key, it.pos)
+			}
+			sort.Slice(items, func(i, j int) bool {
+				return isMapItemLess(&items[i], &items[j])
+			})
+			assert(*v.items).Equal(items)
+		}
+	})
 }
