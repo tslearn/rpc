@@ -108,9 +108,8 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
+			thread.Reset()
 			thread.Eval(stream, onEvalBack)
-			thread.rtStream.Reset()
-			thread.rootFrame.Reset()
 			onEvalFinish(thread)
 		}
 
@@ -118,6 +117,11 @@ func newThread(
 	}()
 
 	return <-retCH
+}
+
+func (p *rpcThread) Reset() {
+	p.rtStream.Reset()
+	p.rootFrame.Reset()
 }
 
 func (p *rpcThread) Close() bool {

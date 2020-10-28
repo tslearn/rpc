@@ -148,7 +148,7 @@ func TestGetSort8(t *testing.T) {
 func TestGetSort16(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			items := getTestMapItems(16)
 			v1 := getSort16(items)
 
@@ -183,7 +183,7 @@ func TestNewRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		// consume cache
-		testRuntime.thread.rootFrame.Reset()
+		testRuntime.thread.Reset()
 		for i := 0; i < len(testRuntime.thread.cache); i++ {
 			testRuntime.thread.malloc(1)
 		}
@@ -197,7 +197,7 @@ func TestNewRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		for i := 0; i < 100; i++ {
-			testRuntime.thread.rootFrame.Reset()
+			testRuntime.thread.Reset()
 			v := newRTMap(testRuntime, i)
 			assert(v.rt).Equal(testRuntime)
 			assert(len(*v.items), cap(*v.items)).Equal(0, i)
@@ -216,7 +216,7 @@ func TestRTMap_Get(t *testing.T) {
 
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		testRuntime.thread.rootFrame.Reset()
+		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
 		_ = v.Set("name", "kitty")
 		_ = v.Set("age", uint64(18))
@@ -229,7 +229,7 @@ func TestRTMap_Get(t *testing.T) {
 
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		testRuntime.thread.rootFrame.Reset()
+		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
 		assert(v.Get("name").err).Equal(
 			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name is not exist"),
@@ -251,7 +251,7 @@ func TestRTMap_Set(t *testing.T) {
 
 	t.Run("unsupported value", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		testRuntime.thread.rootFrame.Reset()
+		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
 		assert(v.Set("name", make(chan bool))).Equal(
 			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
@@ -260,7 +260,7 @@ func TestRTMap_Set(t *testing.T) {
 
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		testRuntime.thread.rootFrame.Reset()
+		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
 		_ = v.Set("name", "kitty")
 		assert(v.Get("name").ToString()).Equal("kitty", nil)
@@ -292,11 +292,19 @@ func TestRTMap_Delete(t *testing.T) {
 	})
 
 	t.Run("name does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		assert(v.Set("name", make(chan bool))).Equal(
+			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+		)
 
 	})
 }
 
 func TestRTMap_swapUint32(t *testing.T) {
+	testRuntime.thread.Reset()
+
 	rtMap := testRuntime.NewRTMap()
 
 	rtMap.appendValue("a2", 34234)
@@ -336,8 +344,7 @@ func TestRTMap_swapUint32(t *testing.T) {
 }
 
 func BenchmarkMakeRequestStream(b *testing.B) {
-	testRuntime.thread.rtStream.Reset()
-	testRuntime.thread.rootFrame.Reset()
+	testRuntime.thread.Reset()
 	rtMap := testRuntime.NewRTMap()
 	rtMap.appendValue("v1", 34234)
 	rtMap.appendValue("v8", 34234)

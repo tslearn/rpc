@@ -1627,6 +1627,7 @@ func TestStream_writeRTArray(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -1637,7 +1638,6 @@ func TestStream_writeRTArray(t *testing.T) {
 				assert(stream.writeRTArray(rtArray)).Equal(StreamWriteOK)
 				assert(stream.GetBuffer()[i:]).Equal(testData[1])
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
-				testRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -1666,6 +1666,7 @@ func TestStream_writeRTMap(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["map"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -1677,7 +1678,6 @@ func TestStream_writeRTMap(t *testing.T) {
 				assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 				stream.SetReadPos(i)
 				assert(stream.ReadMap()).Equal(testData[0].(Map), nil)
-				testRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -1690,6 +1690,7 @@ func TestStream_writeRTValue(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestWriteCollections["rtValue"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				assert(stream.writeRTValue(testData[0].(RTValue))).Equal(testData[1])
@@ -1707,6 +1708,7 @@ func TestStream_writeRTValue(t *testing.T) {
 		for key := range streamTestSuccessCollections {
 			for _, testData := range streamTestSuccessCollections[key] {
 				for _, i := range testRange {
+					testRuntime.thread.Reset()
 					stream := NewStream()
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
@@ -1717,7 +1719,6 @@ func TestStream_writeRTValue(t *testing.T) {
 					assert(stream.GetWritePos()).Equal(len(testData[1].([]byte)) + i)
 					stream.SetReadPos(i)
 					assert(stream.Read()).Equal(testData[0], nil)
-					testRuntime.thread.rtStream.SetWritePosToBodyStart()
 					stream.Release()
 				}
 			}
@@ -1731,6 +1732,7 @@ func TestStream_Write(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestWriteCollections["value"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				assert(stream.Write(testData[0])).Equal(testData[1])
@@ -2538,6 +2540,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2549,7 +2552,6 @@ func TestStream_ReadRTArray(t *testing.T) {
 				stream.SetReadPos(i)
 				stream.writeRTArray(rtArray)
 				assert(stream.ReadArray()).Equal(testData[0], nil)
-				testRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -2560,6 +2562,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2582,6 +2585,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["array"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := testRuntime.thread.rtStream
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2603,6 +2607,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2618,6 +2623,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2633,6 +2639,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2648,6 +2655,7 @@ func TestStream_ReadRTArray(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2676,6 +2684,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["map"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2687,7 +2696,6 @@ func TestStream_ReadRTMap(t *testing.T) {
 				stream.SetReadPos(i)
 				stream.writeRTMap(rtMap)
 				assert(stream.ReadMap()).Equal(testData[0], nil)
-				testRuntime.thread.rtStream.SetWritePosToBodyStart()
 				stream.Release()
 			}
 		}
@@ -2698,6 +2706,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, testData := range streamTestSuccessCollections["map"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := NewStream()
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2720,6 +2729,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 20, 20, 61)
 		for _, testData := range streamTestSuccessCollections["map"] {
 			for _, i := range testRange {
+				testRuntime.thread.Reset()
 				stream := testRuntime.thread.rtStream
 				stream.SetWritePos(i)
 				stream.SetReadPos(i)
@@ -2741,6 +2751,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2756,6 +2767,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2773,6 +2785,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2790,6 +2803,7 @@ func TestStream_ReadRTMap(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
@@ -2821,6 +2835,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 		for key := range streamTestSuccessCollections {
 			for _, testData := range streamTestSuccessCollections[key] {
 				for _, i := range testRange {
+					testRuntime.thread.Reset()
 					stream := NewStream()
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
@@ -2836,7 +2851,6 @@ func TestStream_ReadRTValue(t *testing.T) {
 					stream.SetReadPos(i)
 					stream.writeRTValue(rtValue)
 					assert(stream.Read()).Equal(testData[0], nil)
-					testRuntime.thread.rtStream.SetWritePosToBodyStart()
 					stream.Release()
 				}
 			}
@@ -2849,6 +2863,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 		for key := range streamTestSuccessCollections {
 			for _, testData := range streamTestSuccessCollections[key] {
 				for _, i := range testRange {
+					testRuntime.thread.Reset()
 					stream := NewStream()
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
@@ -2873,6 +2888,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 		for key := range streamTestSuccessCollections {
 			for _, testData := range streamTestSuccessCollections[key] {
 				for _, i := range testRange {
+					testRuntime.thread.Reset()
 					stream := testRuntime.thread.rtStream
 					stream.SetWritePos(i)
 					stream.SetReadPos(i)
@@ -2902,6 +2918,7 @@ func TestStream_ReadRTValue(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRange := getTestRange(streamPosBody, 3*streamBlockSize, 80, 80, 61)
 		for _, i := range testRange {
+			testRuntime.thread.Reset()
 			stream := NewStream()
 			stream.SetWritePos(i)
 			stream.SetReadPos(i)
