@@ -50,7 +50,7 @@ func (p *RTArray) Get(index int) RTValue {
 
 		return RTValue{
 			err: errors.ErrRTArrayIndexOverflow.
-				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index)),
+				AddDebug(fmt.Sprintf("RTArray index %d overflows", index)),
 		}
 	}
 
@@ -115,7 +115,7 @@ func (p *RTArray) Delete(index int) *base.Error {
 		size := len(*p.items)
 		if index < 0 || index >= size {
 			return errors.ErrRTArrayIndexOverflow.
-				AddDebug(fmt.Sprintf("RTArray index %d is overflow", index))
+				AddDebug(fmt.Sprintf("RTArray index %d overflows", index))
 		}
 
 		itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.items))

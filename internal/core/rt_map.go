@@ -204,7 +204,7 @@ func (p *RTMap) Get(key string) RTValue {
 
 		return RTValue{
 			err: errors.ErrRTMapNameNotFound.
-				AddDebug(fmt.Sprintf("RTMap key %s is not exist", key)),
+				AddDebug(fmt.Sprintf("RTMap key %s does not exist", key)),
 		}
 	}
 
@@ -242,13 +242,13 @@ func (p *RTMap) Delete(key string) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
-		if idx, r := p.getPosRecord(key, getFastKey(key)); idx > 0 && r > 0 {
+		if idx, r := p.getPosRecord(key, getFastKey(key)); idx >= 0 && r > 0 {
 			(*p.items)[idx].pos = 0
 			return nil
 		}
 
 		return errors.ErrRTMapNameNotFound.
-			AddDebug(fmt.Sprintf("RTMap key %s is not exist", key))
+			AddDebug(fmt.Sprintf("RTMap key %s does not exist", key))
 	}
 
 	return errors.ErrRuntimeIllegalInCurrentGoroutine

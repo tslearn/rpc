@@ -224,7 +224,7 @@ func TestRTMap_Get(t *testing.T) {
 		assert(v.Get("age").ToUint64()).Equal(uint64(18), nil)
 		assert(v.Get("noKey").ToString()).Equal(
 			"",
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key noKey is not exist"))
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key noKey does not exist"))
 	})
 
 	t.Run("key does not exist", func(t *testing.T) {
@@ -232,10 +232,10 @@ func TestRTMap_Get(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
 		assert(v.Get("name").err).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name is not exist"),
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
 		assert(v.Get("age").err).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key age is not exist"),
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key age does not exist"),
 		)
 	})
 }
@@ -258,7 +258,7 @@ func TestRTMap_Set(t *testing.T) {
 		)
 	})
 
-	t.Run("key exists", func(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
@@ -291,14 +291,32 @@ func TestRTMap_Delete(t *testing.T) {
 		)
 	})
 
-	t.Run("name does not exist", func(t *testing.T) {
+	t.Run("name does not exist 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap()
-		assert(v.Set("name", make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+		assert(v.Delete("name")).Equal(
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
+	})
 
+	t.Run("name does not exist 2", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		_ = v.Set("name", "kitty")
+		_ = v.Delete("name")
+		assert(v.Delete("name")).Equal(
+			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
+		)
+	})
+
+	t.Run("name exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap()
+		_ = v.Set("name", "kitty")
+		assert(v.Delete("name")).Equal(nil)
 	})
 }
 
