@@ -386,6 +386,10 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			RTValue{rt: testRuntime, pos: streamPosBody},
 			" is not available",
 		},
+		{
+			RTValue{rt: testRuntime, err: errors.ErrStream},
+			" is not available",
+		},
 	},
 	"value": {
 		{nil, "value is nil"},
