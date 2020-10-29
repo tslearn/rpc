@@ -11,7 +11,7 @@ var (
 	ErrStream = base.DefineSecurityError(
 		(generalErrorSeg<<16)|1,
 		base.ErrorLevelWarn,
-		"stream is broken",
+		"stream error",
 	)
 
 	// ErrUnsupportedValue ...
