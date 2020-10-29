@@ -230,10 +230,75 @@ func TestRTValue_ToRTArray(t *testing.T) {
 		}, true)
 	})
 
-	//t.Run("test ok", func(t *testing.T) {
-	//  assert := base.NewAssert(t)
-	//  testWithRTValue(func(v RTValue) {
-	//    assert(v.ToArray()).Equal(Array{"1", true, int64(3)}, nil)
-	//  }, Array{"1", true, int64(3)})
-	//})
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithRTValue(func(v RTValue) {
+			rtArray, err := v.ToRTArray()
+			assert(err).IsNil()
+			assert(rtArray.Size()).Equal(3)
+			assert(rtArray.Get(0).ToString()).Equal("1", nil)
+			assert(rtArray.Get(1).ToBool()).Equal(true, nil)
+			assert(rtArray.Get(2).ToInt64()).Equal(int64(3), nil)
+		}, Array{"1", true, int64(3)})
+	})
+}
+
+func TestRTValue_ToAMap(t *testing.T) {
+	t.Run("err is not nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(RTValue{err: errors.ErrStream}.ToMap()).
+			Equal(Map{}, errors.ErrStream)
+	})
+
+	t.Run("thread lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(RTValue{}.ToMap()).
+			Equal(Map{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+	})
+
+	t.Run("type error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithRTValue(func(v RTValue) {
+			assert(v.ToMap()).Equal(Map{}, errors.ErrStream)
+		}, true)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithRTValue(func(v RTValue) {
+			assert(v.ToMap()).Equal(Map{"name": "kitty", "age": int64(18)}, nil)
+		}, Map{"name": "kitty", "age": int64(18)})
+	})
+}
+
+func TestRTValue_ToRTMap(t *testing.T) {
+	t.Run("err is not nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(RTValue{err: errors.ErrStream}.ToRTMap()).
+			Equal(RTMap{}, errors.ErrStream)
+	})
+
+	t.Run("thread lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(RTValue{}.ToRTMap()).
+			Equal(RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+	})
+
+	t.Run("type error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithRTValue(func(v RTValue) {
+			assert(v.ToRTMap()).Equal(RTMap{}, errors.ErrStream)
+		}, true)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithRTValue(func(v RTValue) {
+			rtMap, err := v.ToRTMap()
+			assert(err).IsNil()
+			assert(rtMap.Size()).Equal(2)
+			assert(rtMap.Get("name").ToString()).Equal("kitty", nil)
+			assert(rtMap.Get("age").ToInt64()).Equal(int64(18), nil)
+		}, Map{"name": "kitty", "age": int64(18)})
+	})
 }
