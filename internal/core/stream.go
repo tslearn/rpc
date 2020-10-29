@@ -1979,7 +1979,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			}
 
 			end := start + totalLen
-			if arrLen > 0 && totalLen > 4 && end <= cs.GetWritePos() {
+			if arrLen > 0 && totalLen > 4 {
 				ret := newRTArray(rt, arrLen)
 				for i := 0; i < arrLen; i++ {
 					op := cs.readFrame[cs.readIndex]
