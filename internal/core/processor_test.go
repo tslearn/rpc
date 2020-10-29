@@ -661,7 +661,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 			fileLine: "",
 		}},
 		func(stream *Stream) {
-			// fmt.Println(ParseResponseStream(stream))
+			// fmt.Println(parseResponseStream(stream))
 			stream.Release()
 		},
 	)
