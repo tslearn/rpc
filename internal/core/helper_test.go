@@ -435,6 +435,7 @@ func (p *testProcessorHelper) Close() {
 func testWithProcessorAndRuntime(
 	isDebug bool,
 	fn func(processor *Processor, rt Runtime) Return,
+	data Map,
 ) *Stream {
 	helper := (*testProcessorHelper)(nil)
 	helper = newTestProcessorHelper(
@@ -454,6 +455,7 @@ func testWithProcessorAndRuntime(
 					return rt.Reply("hello " + name)
 				}),
 			fileLine: "",
+			data:     data,
 		}},
 	)
 	defer helper.Close()

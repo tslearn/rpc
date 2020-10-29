@@ -61,7 +61,7 @@ func TestRuntime_Reply(t *testing.T) {
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
 				return rt.Reply(true)
-			}),
+			}, nil),
 		)).Equal(true, nil)
 	})
 
@@ -75,7 +75,7 @@ func TestRuntime_Reply(t *testing.T) {
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
-			}),
+			}, nil),
 		)).Equal(nil, errors.ErrStream.AddDebug("error").AddDebug(source))
 	})
 
@@ -89,7 +89,7 @@ func TestRuntime_Reply(t *testing.T) {
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
-			}),
+			}, nil),
 		)).Equal(nil, errors.ErrActionCustom.AddDebug("error").AddDebug(source))
 	})
 
@@ -102,7 +102,7 @@ func TestRuntime_Reply(t *testing.T) {
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
-			}),
+			}, nil),
 		)).Equal(
 			nil,
 			errors.ErrUnsupportedValue.
@@ -120,7 +120,7 @@ func TestRuntime_Reply(t *testing.T) {
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
-			}),
+			}, nil),
 		)).Equal(
 			nil,
 			errors.ErrUnsupportedValue.
@@ -153,7 +153,7 @@ func TestRuntime_Call(t *testing.T) {
 				ret, s2 := rt.Reply(err), base.GetFileLine(0)
 				source2 = rt.thread.GetActionNode().path + " " + s2
 				return ret
-			}),
+			}, nil),
 		)).Equal(nil, errors.ErrUnsupportedValue.
 			AddDebug("2nd argument: value is not supported").
 			AddDebug(source1).AddDebug(source2),
@@ -185,6 +185,7 @@ func TestRuntime_Call(t *testing.T) {
 					source3 = rt.thread.GetActionNode().path + " " + s3
 					return ret
 				},
+				nil,
 			),
 		)).Equal(nil, errors.ErrCallOverflow.
 			AddDebug("call #.test:SayHello level(1) overflows").
@@ -202,6 +203,7 @@ func TestRuntime_Call(t *testing.T) {
 					fmt.Println(rtValue.ToString())
 					return rt.Reply(rtValue)
 				},
+				nil,
 			),
 		)).Equal("hello ts", nil)
 	})
@@ -252,19 +254,76 @@ func TestRuntime_GetServiceData(t *testing.T) {
 		testRuntime.thread.top.actionNode = nil
 	})
 
-	//t.Run("key does not exist", func(t *testing.T) {
-	//  assert := base.NewAssert(t)
-	//
-	//})
-	//
-	//t.Run("key exists", func(t *testing.T) {
-	//  assert := base.NewAssert(t)
-	//
-	//})
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithProcessorAndRuntime(
+			false,
+			func(processor *Processor, rt Runtime) Return {
+				assert(rt.GetServiceData("name")).Equal(nil, false)
+				return rt.Reply(true)
+			},
+			nil,
+		)
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithProcessorAndRuntime(
+			false,
+			func(processor *Processor, rt Runtime) Return {
+				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				return rt.Reply(true)
+			},
+			Map{"name": "kitty"},
+		)
+	})
 }
 
 func TestRuntime_SetServiceData(t *testing.T) {
+	t.Run("runtime is invalid", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := Runtime{}
+		assert(v.SetServiceData("name", "kitty")).Equal(false)
+	})
 
+	t.Run("action node is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testRuntime.SetServiceData("name", "kitty")).Equal(false)
+	})
+
+	t.Run("service node is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.top.actionNode = unsafe.Pointer(&rpcActionNode{})
+		assert(testRuntime.SetServiceData("name", "kitty")).Equal(false)
+		testRuntime.thread.top.actionNode = nil
+	})
+
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithProcessorAndRuntime(
+			false,
+			func(processor *Processor, rt Runtime) Return {
+				assert(rt.SetServiceData("name", "kitty")).Equal(true)
+				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				return rt.Reply(true)
+			},
+			nil,
+		)
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testWithProcessorAndRuntime(
+			false,
+			func(processor *Processor, rt Runtime) Return {
+				assert(rt.GetServiceData("name")).Equal("doggy", true)
+				assert(rt.SetServiceData("name", "kitty")).Equal(true)
+				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				return rt.Reply(true)
+			},
+			Map{"name": "doggy"},
+		)
+	})
 }
 
 func TestRuntime_parseResponseStream(t *testing.T) {
