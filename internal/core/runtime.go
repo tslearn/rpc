@@ -86,34 +86,38 @@ func (p Runtime) NewRTMap(size int) RTMap {
 }
 
 // GetServiceData ...
-func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
-	if thread := p.thread; thread == nil {
-		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
-	} else if actionNode := thread.GetActionNode(); actionNode == nil {
-		return nil, errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
-	} else if serviceNode := actionNode.service; serviceNode == nil {
-		return nil, errors.ErrGetServiceDataServiceNodeIsNil
-	} else {
-		return serviceNode.GetData(key), nil
+func (p Runtime) GetServiceData(key string) (Any, bool) {
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+
+		if actionNode := thread.GetActionNode(); actionNode == nil {
+			return nil, false
+		} else if serviceNode := actionNode.service; serviceNode == nil {
+			return nil, false
+		} else {
+			return serviceNode.GetData(key)
+		}
 	}
+
+	return nil, false
 }
 
 // SetServiceData ...
-func (p Runtime) SetServiceData(key string, value Any) *base.Error {
-	if thread := p.thread; thread == nil {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
-	} else if actionNode := thread.GetActionNode(); actionNode == nil {
-		return errors.ErrRuntimeIllegalInCurrentGoroutine.
-			AddDebug(base.GetFileLine(1))
-	} else if serviceNode := actionNode.service; serviceNode == nil {
-		return errors.ErrSetServiceDataServiceNodeIsNil
-	} else {
-		serviceNode.SetData(key, value)
-		return nil
+func (p Runtime) SetServiceData(key string, value Any) bool {
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+
+		if actionNode := thread.GetActionNode(); actionNode == nil {
+			return false
+		} else if serviceNode := actionNode.service; serviceNode == nil {
+			return false
+		} else {
+			serviceNode.SetData(key, value)
+			return true
+		}
 	}
+
+	return false
 }
 
 func (p Runtime) parseResponseStream(stream *Stream) RTValue {
