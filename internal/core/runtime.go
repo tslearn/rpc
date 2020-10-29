@@ -75,6 +75,32 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	return ret
 }
 
+// ParseResponseStream ...
+func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
+	if errCode, err := stream.ReadUint64(); err != nil {
+		return RTValue{err: err}
+	} else if errCode == 0 {
+		ret, _ := stream.ReadRTValue(p)
+		return ret
+	} else if message, err := stream.ReadString(); err != nil {
+		return RTValue{err: err}
+	} else if !stream.IsReadFinish() {
+		return RTValue{err: errors.ErrStream}
+	} else {
+		return RTValue{err: base.NewError(errCode, message)}
+	}
+}
+
+// NewRTArray ...
+func (p Runtime) NewRTArray() RTArray {
+	return newRTArray(p, 16)
+}
+
+// NewRTMap ...
+func (p Runtime) NewRTMap() RTMap {
+	return newRTMap(p, 12)
+}
+
 // GetServiceData ...
 func (p Runtime) GetServiceData(key string) (Any, *base.Error) {
 	if thread := p.thread; thread == nil {
@@ -104,28 +130,4 @@ func (p Runtime) SetServiceData(key string, value Any) *base.Error {
 		serviceNode.SetData(key, value)
 		return nil
 	}
-}
-
-// ParseResponseStream ...
-func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
-	if errCode, err := stream.ReadUint64(); err != nil {
-		return RTValue{err: err}
-	} else if errCode == 0 {
-		ret, _ := stream.ReadRTValue(p)
-		return ret
-	} else if message, err := stream.ReadString(); err != nil {
-		return RTValue{err: err}
-	} else if !stream.IsReadFinish() {
-		return RTValue{err: errors.ErrStream}
-	} else {
-		return RTValue{err: base.NewError(errCode, message)}
-	}
-}
-
-func (p Runtime) NewRTArray() RTArray {
-	return newRTArray(p, 16)
-}
-
-func (p Runtime) NewRTMap() RTMap {
-	return newRTMap(p, 12)
 }
