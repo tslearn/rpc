@@ -198,6 +198,21 @@ func TestNewRTMap(t *testing.T) {
 		assert(len(*v.items), cap(*v.items)).Equal(0, 2)
 	})
 
+	t.Run("size is less than zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		assert(newRTMap(testRuntime, -1)).Equal(RTMap{})
+	})
+
+	t.Run("size is zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := newRTMap(testRuntime, 0)
+		assert(v.rt).Equal(testRuntime)
+		assert(v.items != nil)
+		assert(len(*v.items), cap(*v.items)).Equal(0, 0)
+	})
+
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
@@ -277,12 +292,12 @@ func TestRTMap_Set(t *testing.T) {
 		_ = v.Set("age", 3)
 		assert(v.Get("age").ToInt64()).Equal(int64(3), nil)
 		assert(v.Get("age").cacheSafe).Equal(true)
-		assert(v.Get("age").cacheBytes).Equal([]byte{})
+		assert(v.Get("age").cacheBytes).Equal([]byte(nil))
 		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
 		_ = v.Set("age", 6)
 		assert(v.Get("age").ToInt64()).Equal(int64(6), nil)
 		assert(v.Get("age").cacheSafe).Equal(true)
-		assert(v.Get("age").cacheBytes).Equal([]byte{})
+		assert(v.Get("age").cacheBytes).Equal([]byte(nil))
 		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
 	})
 }

@@ -16,27 +16,29 @@ type RTValue struct {
 	cacheError *base.Error
 }
 
-func makeRTValue(rt Runtime, record posRecord) (ret RTValue) {
+func makeRTValue(rt Runtime, record posRecord) RTValue {
 	if !record.isString() {
 		return RTValue{
 			err:        nil,
 			rt:         rt,
 			pos:        record.getPos(),
-			cacheBytes: []byte{},
+			cacheBytes: nil,
 			cacheSafe:  true,
 			cacheError: errors.ErrStream,
 		}
 	} else {
-		pos := record.getPos()
 		rtStream := rt.thread.rtStream
-		ret.rt = rt
-		ret.pos = pos
+		pos := record.getPos()
 		rtStream.SetReadPos(int(pos))
 		cacheString, cacheSafe, cacheError := rtStream.readUnsafeString()
-		ret.cacheBytes = base.StringToBytesUnsafe(cacheString)
-		ret.cacheSafe = cacheSafe
-		ret.cacheError = cacheError
-		return
+		return RTValue{
+			err:        nil,
+			rt:         rt,
+			pos:        pos,
+			cacheBytes: base.StringToBytesUnsafe(cacheString),
+			cacheSafe:  cacheSafe,
+			cacheError: cacheError,
+		}
 	}
 }
 
@@ -107,33 +109,33 @@ func (p RTValue) ToString() (String, *base.Error) {
 // ToBytes ...
 func (p RTValue) ToBytes() (Bytes, *base.Error) {
 	if p.err != nil {
-		return Bytes(nil), p.err
+		return Bytes{}, p.err
 	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBytes()
 	} else {
-		return Bytes(nil), errors.ErrRuntimeIllegalInCurrentGoroutine
+		return Bytes{}, errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
 // ToArray ...
 func (p RTValue) ToArray() (Array, *base.Error) {
 	if p.err != nil {
-		return Array(nil), p.err
+		return Array{}, p.err
 	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadArray()
 	} else {
-		return Array(nil), errors.ErrRuntimeIllegalInCurrentGoroutine
+		return Array{}, errors.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
 // ToRTArray ...
 func (p RTValue) ToRTArray() (RTArray, *base.Error) {
 	if p.err != nil {
-		return RTArray{}, p.err
+		return newRTArray(p.rt, 0), p.err
 	} else if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 		thread.rtStream.SetReadPos(int(p.pos))

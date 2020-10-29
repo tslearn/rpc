@@ -169,7 +169,7 @@ type RTMap struct {
 }
 
 func newRTMap(rt Runtime, size int) (ret RTMap) {
-	if thread := rt.thread; thread != nil {
+	if thread := rt.thread; thread != nil && size >= 0 {
 		ret.rt = rt
 
 		if d1 := thread.malloc(sizeOfSlice); d1 != nil {

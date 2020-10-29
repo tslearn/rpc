@@ -14,7 +14,7 @@ type RTArray struct {
 }
 
 func newRTArray(rt Runtime, size int) (ret RTArray) {
-	if thread := rt.thread; thread != nil {
+	if thread := rt.thread; thread != nil && size >= 0 {
 		ret.rt = rt
 
 		if d1 := thread.malloc(sizeOfSlice); d1 != nil {

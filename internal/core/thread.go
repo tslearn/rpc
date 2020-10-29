@@ -146,7 +146,7 @@ func (p *rpcThread) Close() bool {
 }
 
 func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
-	if numOfBytes > 0 && rpcThreadCacheSize-int(p.top.cachePos) > numOfBytes {
+	if numOfBytes >= 0 && rpcThreadCacheSize-int(p.top.cachePos) > numOfBytes {
 		ret := unsafe.Pointer(&p.cache[p.top.cachePos])
 		p.top.cachePos += uint16(numOfBytes)
 		return ret

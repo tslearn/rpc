@@ -26,6 +26,21 @@ func TestRTArrayNewRTArray(t *testing.T) {
 		assert(len(*v.items), cap(*v.items)).Equal(0, 2)
 	})
 
+	t.Run("size is less than zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		assert(newRTArray(testRuntime, -1)).Equal(RTArray{})
+	})
+
+	t.Run("size is zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := newRTArray(testRuntime, 0)
+		assert(v.rt).Equal(testRuntime)
+		assert(v.items != nil)
+		assert(len(*v.items), cap(*v.items)).Equal(0, 0)
+	})
+
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 

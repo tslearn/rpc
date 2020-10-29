@@ -2164,7 +2164,7 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 			err:        nil,
 			rt:         rt,
 			pos:        int64(startPos),
-			cacheBytes: []byte{},
+			cacheBytes: nil,
 			cacheError: errors.ErrStream,
 			cacheSafe:  false,
 		}, nil
