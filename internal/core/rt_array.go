@@ -20,7 +20,7 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 		if d1 := thread.malloc(sizeOfSlice); d1 != nil {
 			ret.items = (*[]posRecord)(d1)
 
-			if d2 := thread.malloc(sizeOfPosRecord * size); d2 != nil && size <= 32 {
+			if d2 := thread.malloc(sizeOfPosRecord * size); d2 != nil && size <= 64 {
 				itemsHeader := (*reflect.SliceHeader)(d1)
 				itemsHeader.Len = 0
 				itemsHeader.Cap = size

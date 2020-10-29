@@ -65,7 +65,7 @@ func TestRTArray_Get(t *testing.T) {
 	t.Run("index overflow 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Get(1).err).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
@@ -74,7 +74,7 @@ func TestRTArray_Get(t *testing.T) {
 	t.Run("index overflow 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Get(-1).err).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
@@ -83,7 +83,7 @@ func TestRTArray_Get(t *testing.T) {
 	t.Run("index ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Get(0).ToBool()).Equal(true, nil)
 	})
@@ -101,7 +101,7 @@ func TestRTArray_Set(t *testing.T) {
 	t.Run("unsupported value", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Set(0, make(chan bool))).Equal(
 			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
@@ -111,7 +111,7 @@ func TestRTArray_Set(t *testing.T) {
 	t.Run("index overflow 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Set(1, true)).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
@@ -120,7 +120,7 @@ func TestRTArray_Set(t *testing.T) {
 	t.Run("index overflow 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Set(-1, true)).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
@@ -129,7 +129,7 @@ func TestRTArray_Set(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		_ = v.Append("kitty")
 		assert(v.Get(0).ToBool()).Equal(true, nil)
@@ -153,7 +153,7 @@ func TestRTArray_Append(t *testing.T) {
 	t.Run("unsupported value", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		assert(v.Append(make(chan bool))).Equal(
 			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
 		)
@@ -163,7 +163,7 @@ func TestRTArray_Append(t *testing.T) {
 	t.Run("test ok (string)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		assert(v.Append("kitty")).Equal(nil)
 		assert(v.Size()).Equal(1)
 		assert(v.Get(0).ToString()).Equal("kitty", nil)
@@ -174,7 +174,7 @@ func TestRTArray_Append(t *testing.T) {
 
 		for i := 0; i < 1000; i++ {
 			testRuntime.thread.Reset()
-			v := testRuntime.NewRTArray()
+			v := testRuntime.NewRTArray(0)
 			for j := int64(0); j < 1000; j++ {
 				assert(v.Append(j)).IsNil()
 			}
@@ -199,7 +199,7 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("index overflow 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Delete(1)).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
@@ -208,7 +208,7 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("index overflow 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Delete(-1)).Equal(errors.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
@@ -217,7 +217,7 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("delete first elem", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(0)
 		_ = v.Append(1)
 		_ = v.Append(2)
@@ -230,7 +230,7 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("delete middle elem", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(0)
 		_ = v.Append(1)
 		_ = v.Append(2)
@@ -243,7 +243,7 @@ func TestRTArray_Delete(t *testing.T) {
 	t.Run("delete last elem", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(0)
 		_ = v.Append(1)
 		_ = v.Append(2)
@@ -264,14 +264,14 @@ func TestRTArray_Size(t *testing.T) {
 	t.Run("valid RTArray 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		assert(v.Size()).Equal(0)
 	})
 
 	t.Run("valid RTArray 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTArray()
+		v := testRuntime.NewRTArray(0)
 		_ = v.Append(1)
 		assert(v.Size()).Equal(1)
 	})

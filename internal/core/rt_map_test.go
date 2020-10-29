@@ -237,7 +237,7 @@ func TestRTMap_Get(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		_ = v.Set("age", uint64(18))
 		assert(v.Get("name").ToString()).Equal("kitty", nil)
@@ -250,7 +250,7 @@ func TestRTMap_Get(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		assert(v.Get("name").err).Equal(
 			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
@@ -272,7 +272,7 @@ func TestRTMap_Set(t *testing.T) {
 	t.Run("unsupported value", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		assert(v.Set("name", make(chan bool))).Equal(
 			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
 		)
@@ -281,7 +281,7 @@ func TestRTMap_Set(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		assert(v.Get("name").ToString()).Equal("kitty", nil)
 		assert(v.Get("name").cacheBytes).Equal([]byte("kitty"))
@@ -314,7 +314,7 @@ func TestRTMap_Delete(t *testing.T) {
 	t.Run("name does not exist 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		assert(v.Delete("name")).Equal(
 			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
@@ -323,7 +323,7 @@ func TestRTMap_Delete(t *testing.T) {
 	t.Run("name does not exist 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		_ = v.Delete("name")
 		assert(v.Delete("name")).Equal(
@@ -334,7 +334,7 @@ func TestRTMap_Delete(t *testing.T) {
 	t.Run("name exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		assert(v.Delete("name")).Equal(nil)
 	})
@@ -350,14 +350,14 @@ func TestRTMap_Size(t *testing.T) {
 	t.Run("valid RTMap 1", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		assert(v.Size()).Equal(0)
 	})
 
 	t.Run("valid RTMap 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		assert(v.Size()).Equal(1)
 	})
@@ -369,7 +369,7 @@ func TestRTMap_getPosRecord(t *testing.T) {
 
 		for i := 1; i < 600; i++ {
 			testRuntime.thread.Reset()
-			v := testRuntime.NewRTMap()
+			v := testRuntime.NewRTMap(0)
 
 			items := getTestMapItems(i, false)
 
@@ -390,7 +390,7 @@ func TestRTMap_getPosRecord(t *testing.T) {
 
 		for i := 1; i < 600; i++ {
 			testRuntime.thread.Reset()
-			v := testRuntime.NewRTMap()
+			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i, false)
 			for _, it := range items {
 				_ = v.Set(it.key, true)
@@ -408,7 +408,7 @@ func TestRTMap_appendValue(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		v.appendValue("name", 1)
 		assert(len(*v.items)).Equal(1)
 		assert((*v.items)[0].pos).Equal(posRecord(1))
@@ -417,7 +417,7 @@ func TestRTMap_appendValue(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
-		v := testRuntime.NewRTMap()
+		v := testRuntime.NewRTMap(0)
 		v.appendValue("name", 1)
 		v.appendValue("name", 2)
 		fmt.Println(*v.items)
@@ -429,7 +429,7 @@ func TestRTMap_appendValue(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
-			v := testRuntime.NewRTMap()
+			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i*16, false)
 			for _, it := range items {
 				v.appendValue(it.key, it.pos)
@@ -447,7 +447,7 @@ func TestRTMap_sort(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
-			v := testRuntime.NewRTMap()
+			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i*16, false)
 			for _, it := range items {
 				v.appendValue(it.key, it.pos)

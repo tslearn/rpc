@@ -131,6 +131,7 @@ func NewProcessor(
 		ret.systemThread = newThread(
 			ret,
 			closeTimeout,
+			2048,
 			func(stream *Stream) {},
 			func(thread *rpcThread) {},
 		)
@@ -173,6 +174,7 @@ func NewProcessor(
 			thread := newThread(
 				ret,
 				closeTimeout,
+				2048,
 				onReturnStream,
 				func(thread *rpcThread) {
 					defer func() {

@@ -92,13 +92,13 @@ func (p Runtime) ParseResponseStream(stream *Stream) RTValue {
 }
 
 // NewRTArray ...
-func (p Runtime) NewRTArray() RTArray {
-	return newRTArray(p, 16)
+func (p Runtime) NewRTArray(size int) RTArray {
+	return newRTArray(p, size)
 }
 
 // NewRTMap ...
-func (p Runtime) NewRTMap() RTMap {
-	return newRTMap(p, 12)
+func (p Runtime) NewRTMap(size int) RTMap {
+	return newRTMap(p, size)
 }
 
 // GetServiceData ...

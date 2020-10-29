@@ -15,8 +15,6 @@ import (
 	"unsafe"
 )
 
-const rpcThreadCacheSize = 1024
-
 var rpcThreadFrameCache = &sync.Pool{
 	New: func() interface{} {
 		return &rpcThreadFrame{
@@ -76,6 +74,7 @@ type rpcThread struct {
 func newThread(
 	processor *Processor,
 	closeTimeout time.Duration,
+	bufferSize uint32,
 	onEvalBack func(*Stream),
 	onEvalFinish func(*rpcThread),
 ) *rpcThread {
@@ -100,7 +99,7 @@ func newThread(
 			closeTimeout: timeout,
 			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
 			rtStream:     NewStream(),
-			cache:        make([]byte, rpcThreadCacheSize),
+			cache:        make([]byte, bufferSize),
 		}
 
 		thread.top = &thread.rootFrame
@@ -146,7 +145,7 @@ func (p *rpcThread) Close() bool {
 }
 
 func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
-	if numOfBytes >= 0 && rpcThreadCacheSize-int(p.top.cachePos) > numOfBytes {
+	if numOfBytes >= 0 && len(p.cache)-int(p.top.cachePos) > numOfBytes {
 		ret := unsafe.Pointer(&p.cache[p.top.cachePos])
 		p.top.cachePos += uint16(numOfBytes)
 		return ret

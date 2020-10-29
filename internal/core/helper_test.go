@@ -367,6 +367,7 @@ func getFakeThread(debug bool) *rpcThread {
 	return newThread(
 		getFakeProcessor(debug),
 		5*time.Second,
+		2048,
 		func(stream *Stream) {},
 		func(thread *rpcThread) {},
 	)

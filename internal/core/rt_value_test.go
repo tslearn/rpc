@@ -8,7 +8,7 @@ import (
 
 func testWithRTValue(fn func(v RTValue), v interface{}) {
 	testRuntime.thread.Reset()
-	rtArray := testRuntime.NewRTArray()
+	rtArray := testRuntime.NewRTArray(1)
 	_ = rtArray.Append(v)
 	fn(rtArray.Get(0))
 	testRuntime.thread.Reset()

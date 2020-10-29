@@ -205,3 +205,93 @@ func TestRuntime_Call(t *testing.T) {
 		)).Equal("hello ts", nil)
 	})
 }
+
+func TestRuntime_ParseResponseStream(t *testing.T) {
+	t.Run("errCode format error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteInt64(3)
+		assert(testRuntime.ParseResponseStream(v)).Equal(
+			RTValue{err: errors.ErrStream},
+		)
+	})
+
+	t.Run("Read ret error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(0)
+		assert(testRuntime.ParseResponseStream(v)).Equal(
+			RTValue{err: errors.ErrStream},
+		)
+	})
+
+	t.Run("Read ret ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(0)
+		v.WriteBool(true)
+		assert(testRuntime.ParseResponseStream(v).ToBool()).Equal(true, nil)
+	})
+
+	t.Run("error message Read error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(uint64(base.ErrorTypeSecurity))
+		v.WriteBool(true)
+		assert(testRuntime.ParseResponseStream(v)).Equal(
+			RTValue{err: errors.ErrStream},
+		)
+	})
+
+	t.Run("error stream is not finish", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(errors.ErrStream.GetCode())
+		v.WriteString(errors.ErrStream.GetMessage())
+		v.WriteBool(true)
+		assert(testRuntime.ParseResponseStream(v)).Equal(
+			RTValue{err: errors.ErrStream},
+		)
+	})
+
+	t.Run("error stream ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(errors.ErrStream.GetCode())
+		v.WriteString(errors.ErrStream.GetMessage())
+		assert(testRuntime.ParseResponseStream(v)).Equal(
+			RTValue{err: errors.ErrStream},
+		)
+	})
+}
+
+func TestRuntime_NewRTArray(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTArray(i)
+			assert(v.rt).Equal(testRuntime)
+			assert(len(*v.items), cap(*v.items)).Equal(0, i)
+		}
+	})
+}
+
+func TestRuntime_NewRTMap(t *testing.T) {
+
+}
+
+func TestRuntime_GetServiceData(t *testing.T) {
+
+}
+
+func TestRuntime_SetServiceData(t *testing.T) {
+
+}
