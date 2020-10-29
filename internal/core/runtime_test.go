@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
+	"unsafe"
 )
 
 var testRuntime = Runtime{id: 0, thread: getFakeThread(true)}
@@ -233,7 +234,33 @@ func TestRuntime_NewRTMap(t *testing.T) {
 }
 
 func TestRuntime_GetServiceData(t *testing.T) {
+	t.Run("runtime is invalid", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := Runtime{}
+		assert(v.GetServiceData("name")).Equal(nil, false)
+	})
 
+	t.Run("action node is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testRuntime.GetServiceData("name")).Equal(nil, false)
+	})
+
+	t.Run("service node is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.top.actionNode = unsafe.Pointer(&rpcActionNode{})
+		assert(testRuntime.GetServiceData("name")).Equal(nil, false)
+		testRuntime.thread.top.actionNode = nil
+	})
+
+	//t.Run("key does not exist", func(t *testing.T) {
+	//  assert := base.NewAssert(t)
+	//
+	//})
+	//
+	//t.Run("key exists", func(t *testing.T) {
+	//  assert := base.NewAssert(t)
+	//
+	//})
 }
 
 func TestRuntime_SetServiceData(t *testing.T) {

@@ -59,6 +59,7 @@ func (p *Service) AddChildService(
 ) *Service {
 	p.Lock()
 	defer p.Unlock()
+
 	// add child meta
 	p.children = append(p.children, &ServiceMeta{
 		name:     name,
