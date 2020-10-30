@@ -22,8 +22,8 @@ func testWithRPCBenchmark(
 		if processor, err := NewProcessor(
 			false,
 			numOfThreads,
-			16,
-			16,
+			64,
+			64,
 			threadBufferSize,
 			fnCache,
 			5*time.Second,
@@ -144,7 +144,7 @@ func BenchmarkRPC_map(b *testing.B) {
 
 func BenchmarkRPC_call(b *testing.B) {
 	testWithRPCBenchmark(
-		8192*24,
+		1024,
 		2048,
 		&testFuncCache{},
 		func(rt Runtime, v int64) Return {
@@ -154,8 +154,8 @@ func BenchmarkRPC_call(b *testing.B) {
 			return rt.Reply(rt.Call("#.test:bench", v-1))
 		},
 		nil,
-		5000000,
+		1000000,
 		b,
-		int64(6),
+		int64(60),
 	)
 }
