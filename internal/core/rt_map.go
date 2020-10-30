@@ -256,8 +256,9 @@ func (p *RTMap) Delete(key string) *base.Error {
 
 // Size ...
 func (p *RTMap) Size() int {
-	if items := p.items; items != nil {
-		return len(*items)
+	if p.rt.lock() != nil {
+		defer p.rt.unlock()
+		return len(*p.items)
 	}
 
 	return -1

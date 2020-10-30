@@ -129,8 +129,9 @@ func (p *RTArray) Delete(index int) *base.Error {
 
 // Size ...
 func (p *RTArray) Size() int {
-	if items := p.items; items != nil {
-		return len(*items)
+	if p.rt.lock() != nil {
+		defer p.rt.unlock()
+		return len(*p.items)
 	}
 
 	return -1
