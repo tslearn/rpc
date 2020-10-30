@@ -348,10 +348,6 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			" is not available",
 		},
 		{
-			RTArray{rt: testRuntime, items: nil},
-			" is not available",
-		},
-		{
 			RTArray{rt: testRuntime, items: &[]posRecord{0}},
 			" is not available",
 		},
@@ -359,10 +355,6 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 	"rtMap": {
 		{
 			RTMap{},
-			" is not available",
-		},
-		{
-			RTMap{rt: testRuntime, items: nil},
 			" is not available",
 		},
 		{
