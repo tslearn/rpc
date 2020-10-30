@@ -666,12 +666,22 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		},
 	)
 
-	stream := NewStream()
-	stream.SetDepth(3)
-	stream.WriteString("#.user:sayHello")
-	stream.WriteString("")
-	// stream.WriteString("tslearn")
-	stream.Write(Map{
+	//stream := NewStream()
+	//stream.SetDepth(3)
+	//stream.WriteString("#.user:sayHello")
+	//stream.WriteString("")
+	//// stream.WriteString("tslearn")
+	//stream.Write(Map{
+	//	"v1": 1,
+	//	"v2": 2,
+	//	"v3": 3,
+	//	"v4": 4,
+	//	"v5": 5,
+	//	"v6": 6,
+	//	"v7": 7,
+	//	"v8": 8,
+	//})
+	stream, _ := MakeRequestStream("#.user:sayHello", "", Map{
 		"v1": 1,
 		"v2": 2,
 		"v3": 3,
@@ -682,6 +692,7 @@ func BenchmarkRpcProcessor_Execute(b *testing.B) {
 		"v8": 8,
 	})
 	sendBuf := stream.GetBuffer()
+	stream.Release()
 
 	runtime.GC()
 	b.ResetTimer()
