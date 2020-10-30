@@ -225,7 +225,7 @@ func BenchmarkRPC_getServiceData(b *testing.B) {
 			return rt.Reply(true)
 		},
 		Map{"dbName": "mysql", "port": uint64(3366)},
-		10000000,
+		20000000,
 		b,
 	)
 }
