@@ -361,6 +361,23 @@ func TestRTMap_Size(t *testing.T) {
 		_ = v.Set("name", "kitty")
 		assert(v.Size()).Equal(1)
 	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 500; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTMap(0)
+			items := getTestMapItems(i, false)
+			for _, it := range items {
+				assert(v.Set(it.key, true)).Equal(nil)
+			}
+			assert(v.Size()).Equal(i)
+			for _, it := range items {
+				assert(v.Delete(it.key)).Equal(nil)
+			}
+			assert(v.Size()).Equal(0)
+		}
+	})
 }
 
 func TestRTMap_getPosRecord(t *testing.T) {

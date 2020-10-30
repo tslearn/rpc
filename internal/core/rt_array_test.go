@@ -275,4 +275,20 @@ func TestRTArray_Size(t *testing.T) {
 		_ = v.Append(1)
 		assert(v.Size()).Equal(1)
 	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 500; i++ {
+			testRuntime.thread.Reset()
+			v := testRuntime.NewRTArray(0)
+			for j := 0; j < i; j++ {
+				assert(v.Append(true)).Equal(nil)
+			}
+			assert(v.Size()).Equal(i)
+			for j := 0; j < i; j++ {
+				assert(v.Delete(0)).Equal(nil)
+			}
+			assert(v.Size()).Equal(0)
+		}
+	})
 }
