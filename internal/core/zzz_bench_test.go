@@ -209,3 +209,23 @@ func BenchmarkRPC_call_reply_rtValue(b *testing.B) {
 		},
 	)
 }
+
+func BenchmarkRPC_getServiceData(b *testing.B) {
+	testWithRPCBenchmark(
+		8192*24,
+		2048,
+		&testFuncCache{},
+		func(rt Runtime) Return {
+			if v, ok := rt.GetServiceData("dbName"); !ok || v != "mysql" {
+				panic("error")
+			}
+			if v, ok := rt.GetServiceData("port"); !ok || v != uint64(3366) {
+				panic("error")
+			}
+			return rt.Reply(true)
+		},
+		Map{"dbName": "mysql", "port": uint64(3366)},
+		10000000,
+		b,
+	)
+}
