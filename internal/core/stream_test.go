@@ -361,6 +361,10 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 			RTMap{
 				rt:    testRuntime,
 				items: &[]mapItem{{"key", getFastKey("key"), 0}},
+				length: (func() *uint32 {
+					v := uint32(1)
+					return &v
+				})(),
 			},
 			" is not available",
 		},
@@ -403,7 +407,10 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		{Array{}, StreamWriteOK},
 		{Map{}, StreamWriteOK},
 		{RTArray{rt: testRuntime, items: &[]posRecord{}}, StreamWriteOK},
-		{RTMap{rt: testRuntime, items: &[]mapItem{}}, StreamWriteOK},
+		{
+			RTMap{rt: testRuntime, items: &[]mapItem{}, length: new(uint32)},
+			StreamWriteOK,
+		},
 		{RTValue{}, "value is not available"},
 		{RTArray{}, "value is not available"},
 		{RTMap{}, "value is not available"},

@@ -1009,11 +1009,9 @@ func (p *Stream) writeMap(v Map, depth int) string {
 func (p *Stream) writeRTArray(v RTArray) string {
 	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
-		length := v.Size()
+		length := len(*v.items)
 
-		if length < 0 {
-			return StreamWriteIsNotAvailable
-		} else if length == 0 {
+		if length == 0 {
 			p.writeFrame[p.writeIndex] = 64
 			p.writeIndex++
 			if p.writeIndex == streamBlockSize {
@@ -1093,11 +1091,9 @@ func (p *Stream) writeRTArray(v RTArray) string {
 func (p *Stream) writeRTMap(v RTMap) string {
 	if thread := v.rt.thread; thread != nil {
 		readStream := thread.rtStream
+		length := int(*v.length)
 
-		length := v.Size()
-		if length < 0 {
-			return StreamWriteIsNotAvailable
-		} else if length == 0 {
+		if length == 0 {
 			p.writeFrame[p.writeIndex] = 96
 			p.writeIndex++
 			if p.writeIndex == streamBlockSize {
