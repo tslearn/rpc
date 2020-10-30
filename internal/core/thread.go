@@ -29,7 +29,7 @@ var (
 			}
 		},
 	}
-	zeroCacheEntry = [16]cacheEntry{}
+	zeroCacheEntry = [8]cacheEntry{}
 )
 
 type rpcThreadFrame struct {
@@ -83,7 +83,7 @@ type rpcThread struct {
 	rootFrame       rpcThreadFrame
 	sequence        uint64
 	rtStream        *Stream
-	cacheEntry      [16]cacheEntry
+	cacheEntry      [8]cacheEntry
 	cacheArrayItems []posRecord
 	cacheMapItems   []mapItem
 	sync.Mutex
@@ -172,7 +172,7 @@ func newRTArray(rt Runtime, size int) (ret RTArray) {
 		ret.rt = rt
 		frame := thread.top
 
-		if frame.cacheArrayEntryPos < 16 {
+		if frame.cacheArrayEntryPos < 8 {
 			ret.items = &thread.cacheEntry[frame.cacheArrayEntryPos].arrayItems
 			frame.cacheArrayEntryPos++
 		} else {
@@ -199,7 +199,7 @@ func newRTMap(rt Runtime, size int) (ret RTMap) {
 		ret.rt = rt
 		frame := thread.top
 
-		if frame.cacheMapEntryPos < 16 {
+		if frame.cacheMapEntryPos < 8 {
 			ret.items = &thread.cacheEntry[frame.cacheMapEntryPos].mapItems
 			ret.length = &thread.cacheEntry[frame.cacheMapEntryPos].mapLength
 			*ret.length = 0
