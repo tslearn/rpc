@@ -77,12 +77,22 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 
 // NewRTArray ...
 func (p Runtime) NewRTArray(size int) RTArray {
-	return newRTArray(p, size)
+	if p.lock() != nil {
+		defer p.unlock()
+		return newRTArray(p, size)
+	}
+
+	return RTArray{}
 }
 
 // NewRTMap ...
 func (p Runtime) NewRTMap(size int) RTMap {
-	return newRTMap(p, size)
+	if p.lock() != nil {
+		defer p.unlock()
+		return newRTMap(p, size)
+	}
+
+	return RTMap{}
 }
 
 // GetServiceData ...

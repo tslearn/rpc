@@ -210,6 +210,17 @@ func TestRuntime_Call(t *testing.T) {
 }
 
 func TestRuntime_NewRTArray(t *testing.T) {
+	t.Run("runtime error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := Runtime{}.NewRTArray(i)
+			assert(v.rt).Equal(Runtime{})
+			assert(v.items).Equal(nil)
+		}
+	})
+
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
@@ -223,6 +234,17 @@ func TestRuntime_NewRTArray(t *testing.T) {
 }
 
 func TestRuntime_NewRTMap(t *testing.T) {
+	t.Run("runtime error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := Runtime{}.NewRTMap(i)
+			assert(v.rt).Equal(Runtime{})
+			assert(v.items).Equal(nil)
+		}
+	})
+
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
