@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
+	"runtime"
 	"sort"
 	"testing"
 	"unsafe"
@@ -175,6 +176,34 @@ func TestRTMap(t *testing.T) {
 	t.Run("check constant", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(sizeOfMapItem).Equal(int(unsafe.Sizeof(mapItem{})))
+	})
+
+	t.Run("test thread safe", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTMap(7)
+		wait := make(chan bool)
+		for i := 0; i < 200; i++ {
+			go func(idx int) {
+				for j := 0; j < 500; j++ {
+					assert(v.Set(fmt.Sprintf("%d-%d", idx, j), idx)).IsNil()
+				}
+				wait <- true
+			}(i)
+			runtime.GC()
+		}
+		for i := 0; i < 200; i++ {
+			<-wait
+		}
+		assert(v.Size()).Equal(100000)
+		sum := int64(0)
+		for i := 0; i < 200; i++ {
+			for j := 0; j < 500; j++ {
+				v, _ := v.Get(fmt.Sprintf("%d-%d", i, j)).ToInt64()
+				sum += v
+			}
+		}
+		assert(sum).Equal(int64(9950000))
 	})
 }
 

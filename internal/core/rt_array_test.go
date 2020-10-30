@@ -12,24 +12,26 @@ func TestRTArray(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(7)
-
 		wait := make(chan bool)
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 200; i++ {
 			go func(idx int) {
-				for j := 0; j < 1000; j++ {
+				for j := 0; j < 500; j++ {
 					assert(v.Append(idx)).IsNil()
 				}
 				wait <- true
 			}(i)
-
 			runtime.GC()
 		}
-
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 200; i++ {
 			<-wait
 		}
-
-		//  assert(v.Size()).Equal(1000000)
+		assert(v.Size()).Equal(100000)
+		sum := int64(0)
+		for i := 0; i < 100000; i++ {
+			v, _ := v.Get(i).ToInt64()
+			sum += v
+		}
+		assert(sum).Equal(int64(9950000))
 	})
 }
 
