@@ -8,6 +8,7 @@ import (
 
 func testWithRPCBenchmark(
 	numOfThreads int,
+	threadBufferSize uint32,
 	fnCache ActionCache,
 	handler interface{},
 	serviceData Map,
@@ -22,6 +23,7 @@ func testWithRPCBenchmark(
 			numOfThreads,
 			16,
 			16,
+			threadBufferSize,
 			fnCache,
 			5*time.Second,
 			[]*ServiceMeta{{
@@ -49,7 +51,7 @@ func BenchmarkRPC_basic(b *testing.B) {
 		runtime.GC()
 		b.ResetTimer()
 		b.ReportAllocs()
-		b.N = 100000000
+		b.N = 20000000
 		b.SetParallelism(32)
 
 		b.RunParallel(func(pb *testing.PB) {
@@ -63,6 +65,7 @@ func BenchmarkRPC_basic(b *testing.B) {
 
 	testWithRPCBenchmark(
 		8192*24,
+		2048,
 		&testFuncCache{},
 		handler,
 		nil,
@@ -85,7 +88,7 @@ func BenchmarkRPC_string(b *testing.B) {
 		runtime.GC()
 		b.ResetTimer()
 		b.ReportAllocs()
-		b.N = 100000000
+		b.N = 20000000
 		b.SetParallelism(32)
 
 		b.RunParallel(func(pb *testing.PB) {
@@ -99,6 +102,7 @@ func BenchmarkRPC_string(b *testing.B) {
 
 	testWithRPCBenchmark(
 		8192*24,
+		2048,
 		&testFuncCache{},
 		handler,
 		nil,
@@ -128,7 +132,7 @@ func BenchmarkRPC_array(b *testing.B) {
 		runtime.GC()
 		b.ResetTimer()
 		b.ReportAllocs()
-		b.N = 100000000
+		b.N = 20000000
 		b.SetParallelism(32)
 
 		b.RunParallel(func(pb *testing.PB) {
@@ -142,6 +146,7 @@ func BenchmarkRPC_array(b *testing.B) {
 
 	testWithRPCBenchmark(
 		8192*24,
+		2048,
 		&testFuncCache{},
 		handler,
 		nil,
@@ -168,7 +173,7 @@ func BenchmarkRPC_map(b *testing.B) {
 		runtime.GC()
 		b.ResetTimer()
 		b.ReportAllocs()
-		b.N = 100000000
+		b.N = 20000000
 		b.SetParallelism(32)
 
 		b.RunParallel(func(pb *testing.PB) {
@@ -182,6 +187,7 @@ func BenchmarkRPC_map(b *testing.B) {
 
 	testWithRPCBenchmark(
 		8192*24,
+		2048,
 		&testFuncCache{},
 		handler,
 		nil,

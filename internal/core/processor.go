@@ -79,6 +79,7 @@ func NewProcessor(
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
+	threadBufferSize uint32,
 	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
@@ -171,7 +172,7 @@ func NewProcessor(
 			thread := newThread(
 				ret,
 				closeTimeout,
-				2048,
+				threadBufferSize,
 				onReturnStream,
 				func(thread *rpcThread) {
 					defer func() {

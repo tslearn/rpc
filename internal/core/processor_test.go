@@ -2,10 +2,7 @@ package core
 
 import (
 	"fmt"
-	"runtime"
-	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -629,86 +626,3 @@ func TestNewProcessor(t *testing.T) {
 //		})
 //	assert(processor12.actionsMap["#.test:Eval2"].indicator).IsNotNil()
 //}
-
-func BenchmarkRpcProcessor_Execute(b *testing.B) {
-	total := uint64(0)
-	success := uint64(0)
-	failed := uint64(0)
-	processor, _ := NewProcessor(
-		false,
-		8192*24,
-		16,
-		16,
-		&testFuncCache{},
-		5*time.Second,
-		[]*ServiceMeta{{
-			name: "user",
-			service: NewService().
-				On("inner", func(rt Runtime, rtMap int64) Return {
-					return rt.Reply(rtMap)
-				}).
-				On("sayHello", func(rt Runtime, rtMap RTMap) Return {
-					v1, _ := rtMap.Get("v1").ToInt64()
-					v2, _ := rtMap.Get("v2").ToInt64()
-					v3, _ := rtMap.Get("v3").ToInt64()
-					v4, _ := rtMap.Get("v4").ToInt64()
-					v5, _ := rtMap.Get("v5").ToInt64()
-					v6, _ := rtMap.Get("v6").ToInt64()
-					v7, _ := rtMap.Get("v7").ToInt64()
-					return rt.Reply(v1 + v2 + v3 + v4 + v5 + v6 + v7)
-					// return rt.Reply(1)
-				}),
-			fileLine: "",
-		}},
-		func(stream *Stream) {
-			// fmt.Println(parseResponseStream(stream))
-			stream.Release()
-		},
-	)
-
-	//stream := NewStream()
-	//stream.SetDepth(3)
-	//stream.WriteString("#.user:sayHello")
-	//stream.WriteString("")
-	//// stream.WriteString("tslearn")
-	//stream.Write(Map{
-	//	"v1": 1,
-	//	"v2": 2,
-	//	"v3": 3,
-	//	"v4": 4,
-	//	"v5": 5,
-	//	"v6": 6,
-	//	"v7": 7,
-	//	"v8": 8,
-	//})
-	stream, _ := MakeRequestStream("#.user:sayHello", "", Map{
-		"v1": 1,
-		"v2": 2,
-		"v3": 3,
-		"v4": 4,
-		"v5": 5,
-		"v6": 6,
-		"v7": 7,
-		"v8": 8,
-	})
-	sendBuf := stream.GetBuffer()
-	stream.Release()
-
-	runtime.GC()
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.N = 100000000
-	b.SetParallelism(32)
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			stream := NewStream()
-			stream.PutBytesTo(sendBuf, 0)
-			atomic.AddUint64(&total, 1)
-			processor.PutStream(stream)
-		}
-	})
-
-	fmt.Println(processor.Close())
-	fmt.Println(total, success, failed)
-}
