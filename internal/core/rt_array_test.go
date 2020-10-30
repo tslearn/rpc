@@ -35,39 +35,6 @@ func TestRTArray(t *testing.T) {
 	})
 }
 
-func TestRTArrayNewRTArray(t *testing.T) {
-	t.Run("thread is nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		assert(newRTArray(Runtime{}, 2)).Equal(RTArray{})
-	})
-
-	t.Run("size is less than zero", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		testRuntime.thread.Reset()
-		assert(newRTArray(testRuntime, -1)).Equal(RTArray{})
-	})
-
-	t.Run("size is zero", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		testRuntime.thread.Reset()
-		v := newRTArray(testRuntime, 0)
-		assert(v.rt).Equal(testRuntime)
-		assert(v.items != nil)
-		assert(len(*v.items), cap(*v.items)).Equal(0, 0)
-	})
-
-	t.Run("test ok", func(t *testing.T) {
-		assert := base.NewAssert(t)
-
-		for i := 0; i < 100; i++ {
-			testRuntime.thread.Reset()
-			v := newRTArray(testRuntime, i)
-			assert(v.rt).Equal(testRuntime)
-			assert(len(*v.items), cap(*v.items)).Equal(0, i)
-		}
-	})
-}
-
 func TestRTArray_Get(t *testing.T) {
 	t.Run("invalid RTArray", func(t *testing.T) {
 		assert := base.NewAssert(t)
