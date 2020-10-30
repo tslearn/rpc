@@ -247,6 +247,7 @@ func (p *RTMap) Delete(key string) *base.Error {
 
 		if idx, r := p.getPosRecord(key, getFastKey(key)); idx >= 0 && r > 0 {
 			(*p.items)[idx].pos = 0
+			*p.length--
 			return nil
 		}
 
@@ -261,7 +262,7 @@ func (p *RTMap) Delete(key string) *base.Error {
 func (p *RTMap) Size() int {
 	if p.rt.lock() != nil {
 		defer p.rt.unlock()
-		return len(*p.items)
+		return int(*p.length)
 	}
 
 	return -1
@@ -310,6 +311,8 @@ func (p *RTMap) appendValue(key string, pos posRecord) {
 			mapItem{key: key, fastKey: fastKey, pos: pos},
 		)
 	}
+
+	*p.length++
 
 	if len(*p.items)%16 == 0 {
 		p.sort()
