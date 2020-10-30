@@ -2,6 +2,7 @@ package core
 
 import (
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -142,20 +143,69 @@ func BenchmarkRPC_map(b *testing.B) {
 	)
 }
 
-func BenchmarkRPC_call(b *testing.B) {
+func BenchmarkRPC_call_reply_rtArray(b *testing.B) {
 	testWithRPCBenchmark(
-		1024,
+		8192*24,
 		2048,
 		&testFuncCache{},
 		func(rt Runtime, v int64) Return {
 			if v == 0 {
-				return rt.Reply(true)
+				rtArray := rt.NewRTArray(64)
+				for i := 0; i < 64; i++ {
+					_ = rtArray.Append("hello")
+				}
+				return rt.Reply(rtArray)
 			}
 			return rt.Reply(rt.Call("#.test:bench", v-1))
 		},
 		nil,
-		1000000,
+		10000000,
 		b,
-		int64(60),
+		int64(6),
+	)
+}
+
+func BenchmarkRPC_call_reply_rtMap(b *testing.B) {
+	testWithRPCBenchmark(
+		8192*24,
+		2048,
+		&testFuncCache{},
+		func(rt Runtime, v int64) Return {
+			if v == 0 {
+				rtMap := rt.NewRTMap(32)
+				for i := 0; i < 32; i++ {
+					_ = rtMap.Set(strconv.Itoa(i), "hello")
+				}
+				return rt.Reply(rtMap)
+			}
+			return rt.Reply(rt.Call("#.test:bench", v-1))
+		},
+		nil,
+		10000000,
+		b,
+		int64(6),
+	)
+}
+
+func BenchmarkRPC_call_reply_rtValue(b *testing.B) {
+	testWithRPCBenchmark(
+		8192*24,
+		2048,
+		&testFuncCache{},
+		func(rt Runtime, v int64, rtValue RTValue) Return {
+			if v == 0 {
+				return rt.Reply(v)
+			}
+			return rt.Reply(rt.Call("#.test:bench", v-1, rtValue))
+		},
+		nil,
+		10000000,
+		b,
+		int64(6),
+		Array{
+			Map{"name": "kitty", "age": int64(12)},
+			Map{"name": "doggy", "age": int64(14)},
+			Map{"name": "ducky", "age": int64(9)},
+		},
 	)
 }

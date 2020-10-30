@@ -198,6 +198,20 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 				return true
 			}
 		}
+	case "IV":
+		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+			if arg0, err := stream.ReadInt64(); err != nil {
+				return false
+			} else if arg1, err := stream.ReadRTValue(rt); err != nil {
+				return false
+			} else if !stream.IsReadFinish() {
+				return false
+			} else {
+				stream.SetWritePosToBodyStart()
+				fn.(func(Runtime, Int64, RTValue) Return)(rt, arg0, arg1)
+				return true
+			}
+		}
 	case "BIUFSXAM":
 		return func(rt Runtime, stream *Stream, fn interface{}) bool {
 			if arg0, err := stream.ReadBool(); err != nil {
