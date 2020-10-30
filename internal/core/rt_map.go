@@ -169,7 +169,7 @@ type RTMap struct {
 }
 
 // Get ...
-func (p *RTMap) Get(key string) RTValue {
+func (p RTMap) Get(key string) RTValue {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -189,7 +189,7 @@ func (p *RTMap) Get(key string) RTValue {
 }
 
 // Set ...
-func (p *RTMap) Set(key string, value interface{}) *base.Error {
+func (p RTMap) Set(key string, value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -213,7 +213,7 @@ func (p *RTMap) Set(key string, value interface{}) *base.Error {
 }
 
 // Delete ...
-func (p *RTMap) Delete(key string) *base.Error {
+func (p RTMap) Delete(key string) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -231,7 +231,7 @@ func (p *RTMap) Delete(key string) *base.Error {
 }
 
 // Size ...
-func (p *RTMap) Size() int {
+func (p RTMap) Size() int {
 	if p.rt.lock() != nil {
 		defer p.rt.unlock()
 		return int(*p.length)
@@ -240,7 +240,7 @@ func (p *RTMap) Size() int {
 	return -1
 }
 
-func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
+func (p RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 	if p.items != nil {
 		items := *p.items
 		size := len(items)
@@ -272,7 +272,7 @@ func (p *RTMap) getPosRecord(key string, fastKey uint32) (int, posRecord) {
 	return -1, 0
 }
 
-func (p *RTMap) appendValue(key string, pos posRecord) {
+func (p RTMap) appendValue(key string, pos posRecord) {
 	fastKey := getFastKey(key)
 
 	if idx, _ := p.getPosRecord(key, fastKey); idx >= 0 {
@@ -291,7 +291,7 @@ func (p *RTMap) appendValue(key string, pos posRecord) {
 	}
 }
 
-func (p *RTMap) sort() {
+func (p RTMap) sort() {
 	items := *p.items
 	size := len(items)
 

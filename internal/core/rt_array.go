@@ -13,7 +13,7 @@ type RTArray struct {
 }
 
 // Get ...
-func (p *RTArray) Get(index int) RTValue {
+func (p RTArray) Get(index int) RTValue {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -32,7 +32,7 @@ func (p *RTArray) Get(index int) RTValue {
 	}
 }
 
-func (p *RTArray) Set(index int, value interface{}) *base.Error {
+func (p RTArray) Set(index int, value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -59,7 +59,7 @@ func (p *RTArray) Set(index int, value interface{}) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
-func (p *RTArray) Append(value interface{}) *base.Error {
+func (p RTArray) Append(value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -81,7 +81,7 @@ func (p *RTArray) Append(value interface{}) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
-func (p *RTArray) Delete(index int) *base.Error {
+func (p RTArray) Delete(index int) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
 
@@ -102,7 +102,7 @@ func (p *RTArray) Delete(index int) *base.Error {
 }
 
 // Size ...
-func (p *RTArray) Size() int {
+func (p RTArray) Size() int {
 	if p.rt.lock() != nil {
 		defer p.rt.unlock()
 		return len(*p.items)
