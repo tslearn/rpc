@@ -3,8 +3,35 @@ package core
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"runtime"
 	"testing"
 )
+
+func TestRTArray(t *testing.T) {
+	t.Run("test thread safe", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := testRuntime.NewRTArray(7)
+
+		wait := make(chan bool)
+		for i := 0; i < 1000; i++ {
+			go func(idx int) {
+				for j := 0; j < 1000; j++ {
+					assert(v.Append(idx)).IsNil()
+				}
+				wait <- true
+			}(i)
+
+			runtime.GC()
+		}
+
+		for i := 0; i < 1000; i++ {
+			<-wait
+		}
+
+		//  assert(v.Size()).Equal(1000000)
+	})
+}
 
 func TestRTArrayNewRTArray(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {

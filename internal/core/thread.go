@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"reflect"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -155,10 +156,14 @@ func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
-	for !atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID, rtID+1) {
-		currStatus := atomic.LoadUint64(&p.top.lockStatus)
-		if currStatus == rtID || rtID == rtID+1 {
-			time.Sleep(10 * time.Millisecond)
+	lockPtr := &p.top.lockStatus
+	for !atomic.CompareAndSwapUint64(lockPtr, rtID, rtID+1) {
+		currStatus := atomic.LoadUint64(lockPtr)
+		for currStatus == rtID || currStatus == rtID+1 {
+			runtime.Gosched()
+			if atomic.CompareAndSwapUint64(lockPtr, rtID, rtID+1) {
+				return p
+			}
 		}
 
 		return nil
