@@ -195,7 +195,7 @@ func TestNewRTMap(t *testing.T) {
 
 		v := newRTMap(testRuntime, 2)
 		assert(v.rt).Equal(testRuntime)
-		assert(len(*v.items), cap(*v.items)).Equal(0, 2)
+		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 2, uint32(0))
 	})
 
 	t.Run("size is less than zero", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestNewRTMap(t *testing.T) {
 		v := newRTMap(testRuntime, 0)
 		assert(v.rt).Equal(testRuntime)
 		assert(v.items != nil)
-		assert(len(*v.items), cap(*v.items)).Equal(0, 0)
+		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 0, uint32(0))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -220,7 +220,7 @@ func TestNewRTMap(t *testing.T) {
 			testRuntime.thread.Reset()
 			v := newRTMap(testRuntime, i)
 			assert(v.rt).Equal(testRuntime)
-			assert(len(*v.items), cap(*v.items)).Equal(0, i)
+			assert(len(*v.items), cap(*v.items), *v.length).Equal(0, i, uint32(0))
 		}
 	})
 }
