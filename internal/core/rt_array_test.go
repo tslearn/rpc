@@ -41,20 +41,6 @@ func TestRTArrayNewRTArray(t *testing.T) {
 		assert(newRTArray(Runtime{}, 2)).Equal(RTArray{})
 	})
 
-	t.Run("no cache", func(t *testing.T) {
-		assert := base.NewAssert(t)
-
-		// consume cache
-		testRuntime.thread.Reset()
-		for i := 0; i < len(testRuntime.thread.cache); i++ {
-			testRuntime.thread.malloc(1)
-		}
-
-		v := newRTArray(testRuntime, 2)
-		assert(v.rt).Equal(testRuntime)
-		assert(len(*v.items), cap(*v.items)).Equal(0, 2)
-	})
-
 	t.Run("size is less than zero", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()

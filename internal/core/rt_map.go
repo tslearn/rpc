@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"reflect"
 	"unsafe"
 )
 
@@ -167,33 +166,6 @@ type RTMap struct {
 	rt     Runtime
 	items  *[]mapItem
 	length *uint32
-}
-
-func newRTMap(rt Runtime, size int) (ret RTMap) {
-	if thread := rt.thread; thread != nil && size >= 0 {
-		ret.rt = rt
-
-		if d1 := thread.malloc(sizeOfSlice + 4); d1 != nil {
-			ret.items = (*[]mapItem)(d1)
-			ret.length = (*uint32)(unsafe.Pointer(uintptr(d1) + uintptr(sizeOfSlice)))
-			*ret.length = 0
-
-			if d2 := thread.malloc(sizeOfMapItem * size); d2 != nil && size <= 16 {
-				itemsHeader := (*reflect.SliceHeader)(d1)
-				itemsHeader.Len = 0
-				itemsHeader.Cap = size
-				itemsHeader.Data = uintptr(d2)
-			} else {
-				*ret.items = make([]mapItem, 0, size)
-			}
-		} else {
-			items := make([]mapItem, 0, size)
-			ret.items = &items
-			ret.length = new(uint32)
-		}
-	}
-
-	return
 }
 
 // Get ...

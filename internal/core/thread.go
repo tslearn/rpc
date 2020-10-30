@@ -30,15 +30,18 @@ var rpcThreadFrameCache = &sync.Pool{
 }
 
 type rpcThreadFrame struct {
-	stream           *Stream
-	actionNode       unsafe.Pointer
-	from             string
-	depth            uint16
-	cachePos         uint16
-	retStatus        uint32
-	lockStatus       uint64
-	parentRTWritePos int
-	next             *rpcThreadFrame
+	stream             *Stream
+	actionNode         unsafe.Pointer
+	from               string
+	depth              uint16
+	cacheArrayItemsPos uint32
+	cacheMapItemsPos   uint32
+	cacheArrayEntryPos uint32
+	cacheMapEntryPos   uint32
+	retStatus          uint32
+	lockStatus         uint64
+	parentRTWritePos   int
+	next               *rpcThreadFrame
 }
 
 func newRPCThreadFrame() *rpcThreadFrame {
@@ -47,7 +50,10 @@ func newRPCThreadFrame() *rpcThreadFrame {
 
 func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
-	p.cachePos = 0
+	p.cacheArrayItemsPos = 0
+	p.cacheMapItemsPos = 0
+	p.cacheArrayEntryPos = 0
+	p.cacheMapEntryPos = 0
 	p.parentRTWritePos = streamPosBody
 	atomic.StorePointer(&p.actionNode, nil)
 	p.from = ""
@@ -59,16 +65,24 @@ func (p *rpcThreadFrame) Release() {
 	rpcThreadFrameCache.Put(p)
 }
 
+type cacheEntry struct {
+	arrayItems []posRecord
+	mapItems   []mapItem
+	mapLength  uint32
+}
+
 type rpcThread struct {
-	processor    *Processor
-	inputCH      chan *Stream
-	closeCH      unsafe.Pointer
-	closeTimeout time.Duration
-	top          *rpcThreadFrame
-	rootFrame    rpcThreadFrame
-	sequence     uint64
-	rtStream     *Stream
-	cache        []byte
+	processor       *Processor
+	inputCH         chan *Stream
+	closeCH         unsafe.Pointer
+	closeTimeout    time.Duration
+	top             *rpcThreadFrame
+	rootFrame       rpcThreadFrame
+	sequence        uint64
+	rtStream        *Stream
+	cacheEntry      [16]cacheEntry
+	cacheArrayItems []posRecord
+	cacheMapItems   []mapItem
 	sync.Mutex
 }
 
@@ -93,14 +107,18 @@ func newThread(
 	inputCH := make(chan *Stream)
 	closeCH := make(chan bool, 1)
 	go func() {
+		numOfArray := int(bufferSize) / (2 * sizeOfPosRecord)
+		numOfMap := int(bufferSize) / (2 * sizeOfMapItem)
+
 		thread := &rpcThread{
-			processor:    processor,
-			inputCH:      inputCH,
-			closeCH:      unsafe.Pointer(&closeCH),
-			closeTimeout: timeout,
-			sequence:     rand.Uint64() % (1 << 56) / 2 * 2,
-			rtStream:     NewStream(),
-			cache:        make([]byte, bufferSize),
+			processor:       processor,
+			inputCH:         inputCH,
+			closeCH:         unsafe.Pointer(&closeCH),
+			closeTimeout:    timeout,
+			sequence:        rand.Uint64() % (1 << 56) / 2 * 2,
+			rtStream:        NewStream(),
+			cacheArrayItems: make([]posRecord, numOfArray, numOfArray),
+			cacheMapItems:   make([]mapItem, numOfMap, numOfMap),
 		}
 
 		thread.top = &thread.rootFrame
@@ -108,9 +126,9 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
-			thread.Reset()
 			thread.Eval(stream, onEvalBack)
 			onEvalFinish(thread)
+			thread.Reset()
 		}
 
 		closeCH <- true
@@ -145,14 +163,61 @@ func (p *rpcThread) Close() bool {
 	return false
 }
 
-func (p *rpcThread) malloc(numOfBytes int) unsafe.Pointer {
-	if numOfBytes >= 0 && len(p.cache)-int(p.top.cachePos) > numOfBytes {
-		ret := unsafe.Pointer(&p.cache[p.top.cachePos])
-		p.top.cachePos += uint16(numOfBytes)
-		return ret
+func newRTArray(rt Runtime, size int) (ret RTArray) {
+	if thread := rt.thread; thread != nil && size >= 0 {
+		ret.rt = rt
+		frame := thread.top
+
+		if frame.cacheArrayEntryPos < 16 {
+			ret.items = &thread.cacheEntry[frame.cacheArrayEntryPos].arrayItems
+			frame.cacheArrayEntryPos++
+		} else {
+			ret.items = new([]posRecord)
+		}
+
+		end := int(frame.cacheArrayItemsPos) + size
+		if end <= len(thread.cacheArrayItems) {
+			*ret.items = thread.cacheArrayItems[frame.cacheArrayItemsPos:]
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
+			itemsHeader.Len = 0
+			itemsHeader.Cap = size
+			frame.cacheArrayItemsPos = uint32(end)
+		} else {
+			*ret.items = make([]posRecord, 0, size)
+		}
 	}
 
-	return nil
+	return
+}
+
+func newRTMap(rt Runtime, size int) (ret RTMap) {
+	if thread := rt.thread; thread != nil && size >= 0 {
+		ret.rt = rt
+		frame := thread.top
+
+		if frame.cacheMapEntryPos < 16 {
+			ret.items = &thread.cacheEntry[frame.cacheMapEntryPos].mapItems
+			ret.length = &thread.cacheEntry[frame.cacheMapEntryPos].mapLength
+			*ret.length = 0
+			frame.cacheMapEntryPos++
+		} else {
+			ret.items = new([]mapItem)
+			ret.length = new(uint32)
+		}
+
+		end := int(frame.cacheMapItemsPos) + size
+		if end <= len(thread.cacheMapItems) {
+			*ret.items = thread.cacheMapItems[frame.cacheMapItemsPos:]
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
+			itemsHeader.Len = 0
+			itemsHeader.Cap = size
+			frame.cacheMapItemsPos = uint32(end)
+		} else {
+			*ret.items = make([]mapItem, 0, size)
+		}
+	}
+
+	return
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
@@ -178,7 +243,10 @@ func (p *rpcThread) unlock(rtID uint64) {
 
 func (p *rpcThread) pushFrame() {
 	frame := newRPCThreadFrame()
-	frame.cachePos = p.top.cachePos
+	frame.cacheArrayItemsPos = p.top.cacheArrayItemsPos
+	frame.cacheMapItemsPos = p.top.cacheMapItemsPos
+	frame.cacheArrayEntryPos = p.top.cacheArrayEntryPos
+	frame.cacheMapEntryPos = p.top.cacheMapEntryPos
 	frame.parentRTWritePos = p.rtStream.GetWritePos()
 	frame.next = p.top
 	p.top = frame

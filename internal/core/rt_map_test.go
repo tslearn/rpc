@@ -183,7 +183,7 @@ func TestRTMap(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(7)
 		wait := make(chan bool)
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 100; i++ {
 			go func(idx int) {
 				for j := 0; j < 500; j++ {
 					assert(v.Set(fmt.Sprintf("%d-%d", idx, j), idx)).IsNil()
@@ -192,18 +192,18 @@ func TestRTMap(t *testing.T) {
 			}(i)
 			runtime.GC()
 		}
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 100; i++ {
 			<-wait
 		}
-		assert(v.Size()).Equal(100000)
+		assert(v.Size()).Equal(50000)
 		sum := int64(0)
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 100; i++ {
 			for j := 0; j < 500; j++ {
 				v, _ := v.Get(fmt.Sprintf("%d-%d", i, j)).ToInt64()
 				sum += v
 			}
 		}
-		assert(sum).Equal(int64(9950000))
+		assert(sum).Equal(int64(2475000))
 	})
 }
 
@@ -211,20 +211,6 @@ func TestNewRTMap(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(newRTMap(Runtime{}, 2)).Equal(RTMap{})
-	})
-
-	t.Run("no cache", func(t *testing.T) {
-		assert := base.NewAssert(t)
-
-		// consume cache
-		testRuntime.thread.Reset()
-		for i := 0; i < len(testRuntime.thread.cache); i++ {
-			testRuntime.thread.malloc(1)
-		}
-
-		v := newRTMap(testRuntime, 2)
-		assert(v.rt).Equal(testRuntime)
-		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 2, uint32(0))
 	})
 
 	t.Run("size is less than zero", func(t *testing.T) {
