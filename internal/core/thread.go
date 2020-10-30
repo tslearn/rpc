@@ -16,18 +16,21 @@ import (
 	"unsafe"
 )
 
-var rpcThreadFrameCache = &sync.Pool{
-	New: func() interface{} {
-		return &rpcThreadFrame{
-			stream:     nil,
-			depth:      0,
-			actionNode: nil,
-			from:       "",
-			retStatus:  0,
-			lockStatus: 0,
-		}
-	},
-}
+var (
+	rpcThreadFrameCache = &sync.Pool{
+		New: func() interface{} {
+			return &rpcThreadFrame{
+				stream:     nil,
+				depth:      0,
+				actionNode: nil,
+				from:       "",
+				retStatus:  0,
+				lockStatus: 0,
+			}
+		},
+	}
+	zeroCacheEntry = [16]cacheEntry{}
+)
 
 type rpcThreadFrame struct {
 	stream             *Stream
@@ -140,6 +143,7 @@ func newThread(
 func (p *rpcThread) Reset() {
 	p.rtStream.Reset()
 	p.rootFrame.Reset()
+	p.cacheEntry = zeroCacheEntry
 }
 
 func (p *rpcThread) Close() bool {
