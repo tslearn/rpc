@@ -50,7 +50,8 @@ func TestRuntime_Reply(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(base.RunWithSubscribePanic(func() {
-			_, source = Runtime{}.Reply(true), base.GetFileLine(0)
+			v := Runtime{}
+			_, source = v.Reply(true), base.GetFileLine(0)
 		})).Equal(
 			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
 		)
