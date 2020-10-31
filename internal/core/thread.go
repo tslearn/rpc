@@ -89,6 +89,63 @@ type rpcThread struct {
 	sync.Mutex
 }
 
+func newRTArray(rt Runtime, size int) (ret RTArray) {
+	if thread := rt.thread; thread != nil && size >= 0 {
+		ret.rt = rt
+		frame := thread.top
+
+		if frame.cacheArrayEntryPos < 8 {
+			ret.items = &thread.cacheEntry[frame.cacheArrayEntryPos].arrayItems
+			frame.cacheArrayEntryPos++
+		} else {
+			ret.items = new([]posRecord)
+		}
+
+		end := int(frame.cacheArrayItemsPos) + size
+		if end <= len(thread.cacheArrayItems) {
+			*ret.items = thread.cacheArrayItems[frame.cacheArrayItemsPos:]
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
+			itemsHeader.Len = 0
+			itemsHeader.Cap = size
+			frame.cacheArrayItemsPos = uint32(end)
+		} else {
+			*ret.items = make([]posRecord, 0, size)
+		}
+	}
+
+	return
+}
+
+func newRTMap(rt Runtime, size int) (ret RTMap) {
+	if thread := rt.thread; thread != nil && size >= 0 {
+		ret.rt = rt
+		frame := thread.top
+
+		if frame.cacheMapEntryPos < 8 {
+			ret.items = &thread.cacheEntry[frame.cacheMapEntryPos].mapItems
+			ret.length = &thread.cacheEntry[frame.cacheMapEntryPos].mapLength
+			*ret.length = 0
+			frame.cacheMapEntryPos++
+		} else {
+			ret.items = new([]mapItem)
+			ret.length = new(uint32)
+		}
+
+		end := int(frame.cacheMapItemsPos) + size
+		if end <= len(thread.cacheMapItems) {
+			*ret.items = thread.cacheMapItems[frame.cacheMapItemsPos:]
+			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
+			itemsHeader.Len = 0
+			itemsHeader.Cap = size
+			frame.cacheMapItemsPos = uint32(end)
+		} else {
+			*ret.items = make([]mapItem, 0, size)
+		}
+	}
+
+	return
+}
+
 func newThread(
 	processor *Processor,
 	closeTimeout time.Duration,
@@ -165,63 +222,6 @@ func (p *rpcThread) Close() bool {
 	}
 
 	return false
-}
-
-func newRTArray(rt Runtime, size int) (ret RTArray) {
-	if thread := rt.thread; thread != nil && size >= 0 {
-		ret.rt = rt
-		frame := thread.top
-
-		if frame.cacheArrayEntryPos < 8 {
-			ret.items = &thread.cacheEntry[frame.cacheArrayEntryPos].arrayItems
-			frame.cacheArrayEntryPos++
-		} else {
-			ret.items = new([]posRecord)
-		}
-
-		end := int(frame.cacheArrayItemsPos) + size
-		if end <= len(thread.cacheArrayItems) {
-			*ret.items = thread.cacheArrayItems[frame.cacheArrayItemsPos:]
-			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
-			itemsHeader.Len = 0
-			itemsHeader.Cap = size
-			frame.cacheArrayItemsPos = uint32(end)
-		} else {
-			*ret.items = make([]posRecord, 0, size)
-		}
-	}
-
-	return
-}
-
-func newRTMap(rt Runtime, size int) (ret RTMap) {
-	if thread := rt.thread; thread != nil && size >= 0 {
-		ret.rt = rt
-		frame := thread.top
-
-		if frame.cacheMapEntryPos < 8 {
-			ret.items = &thread.cacheEntry[frame.cacheMapEntryPos].mapItems
-			ret.length = &thread.cacheEntry[frame.cacheMapEntryPos].mapLength
-			*ret.length = 0
-			frame.cacheMapEntryPos++
-		} else {
-			ret.items = new([]mapItem)
-			ret.length = new(uint32)
-		}
-
-		end := int(frame.cacheMapItemsPos) + size
-		if end <= len(thread.cacheMapItems) {
-			*ret.items = thread.cacheMapItems[frame.cacheMapItemsPos:]
-			itemsHeader := (*reflect.SliceHeader)(unsafe.Pointer(ret.items))
-			itemsHeader.Len = 0
-			itemsHeader.Cap = size
-			frame.cacheMapItemsPos = uint32(end)
-		} else {
-			*ret.items = make([]mapItem, 0, size)
-		}
-	}
-
-	return
 }
 
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
