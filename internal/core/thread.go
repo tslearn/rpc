@@ -53,18 +53,18 @@ func newRPCThreadFrame() *rpcThreadFrame {
 
 func (p *rpcThreadFrame) Reset() {
 	p.stream = nil
+	atomic.StorePointer(&p.actionNode, nil)
+	p.from = ""
 	p.cacheArrayItemsPos = 0
 	p.cacheMapItemsPos = 0
 	p.cacheArrayEntryPos = 0
 	p.cacheMapEntryPos = 0
 	p.parentRTWritePos = streamPosBody
-	atomic.StorePointer(&p.actionNode, nil)
-	p.from = ""
+	p.next = nil
 }
 
 func (p *rpcThreadFrame) Release() {
 	p.Reset()
-	p.next = nil
 	rpcThreadFrameCache.Put(p)
 }
 

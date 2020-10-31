@@ -3,7 +3,31 @@ package core
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"testing"
+	"unsafe"
 )
+
+func TestNewRPCThreadFrame(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 100; i++ {
+			v := newRPCThreadFrame()
+			assert(v).IsNotNil()
+			v.Release()
+		}
+	})
+}
+
+func TestRpcThreadFrame_Reset(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newRPCThreadFrame()
+		v.stream = NewStream()
+		v.actionNode = unsafe.Pointer(&rpcActionNode{})
+
+		assert(v).IsNotNil()
+		v.Release()
+	})
+}
 
 func TestNewRTMap(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
