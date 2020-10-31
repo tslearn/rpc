@@ -259,27 +259,34 @@ func (p *Stream) SetDepth(v uint16) {
 
 func (p *Stream) getCheckSum() uint64 {
 	checksum := uint64(0)
-	//pos := 0
+	arr := []uint64(nil)
+	arrHeader := (*reflect.SliceHeader)(unsafe.Pointer(&arr))
+
 	if p.writeSeg > 0 {
 		for i := 0; i < p.writeSeg; i++ {
-			byteHeader := (*reflect.SliceHeader)(unsafe.Pointer(p.frames[i]))
-			for j := uintptr(0); j < streamBlockSize; j += 8 {
-				checksum ^= *(*uint64)(unsafe.Pointer(byteHeader.Data + j))
+			frameHeader := (*reflect.SliceHeader)(unsafe.Pointer(p.frames[i]))
+			arrHeader.Len = streamBlockSize / 8
+			arrHeader.Cap = streamBlockSize / 8
+			arrHeader.Data = frameHeader.Data
+
+			for j := streamBlockSize/8 - 1; j >= 0; j-- {
+				checksum ^= arr[j]
 			}
 		}
 	}
 
-	sumEnd := ((p.writeIndex + 7) / 8) * 8
-
-	for i := p.writeIndex; i < sumEnd; i++ {
+	u64End := (p.writeIndex + 7) / 8
+	for i := p.writeIndex; i < u64End*8; i++ {
 		p.writeFrame[i] = 0
 	}
 
-	byteHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.writeFrame))
-	for j := uintptr(0); j < uintptr(sumEnd); j += 8 {
-		checksum ^= *(*uint64)(unsafe.Pointer(byteHeader.Data + j))
+	frameHeader := (*reflect.SliceHeader)(unsafe.Pointer(&p.writeFrame))
+	arrHeader.Len = u64End
+	arrHeader.Cap = u64End
+	arrHeader.Data = frameHeader.Data
+	for j := u64End - 1; j >= 0; j-- {
+		checksum ^= arr[j]
 	}
-
 	return checksum
 }
 
