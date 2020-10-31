@@ -175,14 +175,13 @@ func newThread(
 			inputCH:         inputCH,
 			closeCH:         unsafe.Pointer(&closeCH),
 			closeTimeout:    timeout,
-			sequence:        rand.Uint64() % (1 << 56) / 2 * 2,
+			sequence:        1<<48 + (rand.Uint64()%(1<<56)/2)*2,
 			rtStream:        NewStream(),
 			cacheArrayItems: make([]posRecord, numOfArray, numOfArray),
 			cacheMapItems:   make([]mapItem, numOfMap, numOfMap),
 		}
 
 		thread.top = &thread.rootFrame
-
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
@@ -209,7 +208,6 @@ func (p *rpcThread) Close() bool {
 
 	if chPtr := (*chan bool)(atomic.LoadPointer(&p.closeCH)); chPtr != nil {
 		atomic.StorePointer(&p.closeCH, nil)
-		time.Sleep(500 * time.Millisecond)
 		close(p.inputCH)
 		select {
 		case <-*chPtr:

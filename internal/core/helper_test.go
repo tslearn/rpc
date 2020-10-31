@@ -448,7 +448,7 @@ func testWithProcessorAndRuntime(
 		16,
 		2048,
 		nil,
-		5*time.Second,
+		3*time.Second,
 		[]*ServiceMeta{{
 			name: "test",
 			service: NewService().
@@ -465,6 +465,35 @@ func testWithProcessorAndRuntime(
 	defer helper.Close()
 
 	stream, _ := MakeRequestStream("#.test:Eval", "")
+	helper.GetProcessor().PutStream(stream)
+	return <-helper.streamCH
+}
+
+func testWithReply(
+	isDebug bool,
+	fnCache ActionCache,
+	data Map,
+	handler interface{},
+	args ...interface{},
+) *Stream {
+	helper := newTestProcessorHelper(
+		isDebug,
+		1,
+		16,
+		16,
+		2048,
+		fnCache,
+		3*time.Second,
+		[]*ServiceMeta{{
+			name:     "test",
+			service:  NewService().On("Eval", handler),
+			fileLine: "",
+			data:     data,
+		}},
+	)
+	defer helper.Close()
+
+	stream, _ := MakeRequestStream("#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH
 }
