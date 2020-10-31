@@ -236,6 +236,33 @@ func TestRTArray_Delete(t *testing.T) {
 	})
 }
 
+func TestRTArray_DeleteAll(t *testing.T) {
+	t.Run("invalid RTArray", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rtArray := RTArray{}
+		assert(rtArray.DeleteAll()).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine,
+		)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		rtArray := testRuntime.NewRTArray(0)
+
+		for i := 0; i < 100; i++ {
+			for j := 0; j < 100; j++ {
+				_ = rtArray.Append(j)
+			}
+			assert(rtArray.Size()).Equal(100)
+			preCap := cap(*rtArray.items)
+			assert(rtArray.DeleteAll()).Equal(nil)
+			assert(rtArray.Size()).Equal(0)
+			assert(len(*rtArray.items), cap(*rtArray.items)).Equal(0, preCap)
+		}
+	})
+}
+
 func TestRTArray_Size(t *testing.T) {
 	t.Run("invalid RTArray", func(t *testing.T) {
 		assert := base.NewAssert(t)

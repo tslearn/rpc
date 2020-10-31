@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"runtime"
 	"sort"
+	"strconv"
 	"testing"
 	"unsafe"
 )
@@ -319,6 +320,32 @@ func TestRTMap_Delete(t *testing.T) {
 		v := testRuntime.NewRTMap(0)
 		_ = v.Set("name", "kitty")
 		assert(v.Delete("name")).Equal(nil)
+	})
+}
+
+func TestRTMap_DeleteAll(t *testing.T) {
+	t.Run("invalid RTMap", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rtMap := RTMap{}
+		assert(rtMap.DeleteAll()).Equal(
+			errors.ErrRuntimeIllegalInCurrentGoroutine,
+		)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		rtMap := testRuntime.NewRTMap(0)
+		for i := 0; i < 100; i++ {
+			for j := 0; j < 100; j++ {
+				_ = rtMap.Set(strconv.Itoa(j), j)
+			}
+			assert(rtMap.Size()).Equal(100)
+			preCap := cap(*rtMap.items)
+			assert(rtMap.DeleteAll()).Equal(nil)
+			assert(rtMap.Size()).Equal(0)
+			assert(len(*rtMap.items), cap(*rtMap.items)).Equal(0, preCap)
+		}
 	})
 }
 
