@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 	"unsafe"
@@ -23,9 +24,45 @@ func TestRpcThreadFrame_Reset(t *testing.T) {
 		v := newRPCThreadFrame()
 		v.stream = NewStream()
 		v.actionNode = unsafe.Pointer(&rpcActionNode{})
-
-		assert(v).IsNotNil()
+		v.from = "#"
+		v.depth = 13
+		v.cacheArrayItemsPos = 16
+		v.cacheMapItemsPos = 16
+		v.cacheArrayEntryPos = 7
+		v.cacheMapEntryPos = 7
+		v.retStatus = 1
+		v.lockStatus = 82737243243
+		v.parentRTWritePos = 100
+		v.next = &rpcThreadFrame{}
+		v.Reset()
+		assert(v.stream).Equal(nil)
+		assert(v.actionNode).Equal(nil)
+		assert(v.from).Equal("")
+		assert(v.depth).Equal(uint16(13))
+		assert(v.cacheArrayItemsPos).Equal(uint32(0))
+		assert(v.cacheMapItemsPos).Equal(uint32(0))
+		assert(v.cacheArrayEntryPos).Equal(uint32(0))
+		assert(v.cacheMapEntryPos).Equal(uint32(0))
+		assert(v.retStatus).Equal(uint32(1))
+		assert(v.lockStatus).Equal(uint64(82737243243))
+		assert(v.parentRTWritePos).Equal(streamPosBody)
+		assert(v.next).Equal(nil)
 		v.Release()
+	})
+}
+
+func TestRpcThreadFrame_Release(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		mp := map[string]bool{}
+		for i := 0; i < 1000; i++ {
+			v := newRPCThreadFrame()
+			assert(v.cacheArrayItemsPos).Equal(uint32(0))
+			v.cacheArrayItemsPos = 32
+			mp[fmt.Sprintf("%p", v)] = true
+			v.Release()
+		}
+		assert(len(mp) < 1000).IsTrue()
 	})
 }
 
