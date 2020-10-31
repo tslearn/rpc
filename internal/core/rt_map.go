@@ -230,6 +230,17 @@ func (p RTMap) Delete(key string) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+func (p RTMap) DeleteAll() *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		*p.items = (*p.items)[:0]
+		*p.length = 0
+		return nil
+	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
+}
+
 // Size ...
 func (p RTMap) Size() int {
 	if p.rt.lock() != nil {

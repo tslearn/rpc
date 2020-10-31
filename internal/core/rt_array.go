@@ -101,6 +101,16 @@ func (p RTArray) Delete(index int) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+func (p RTArray) DeleteAll() *base.Error {
+	if thread := p.rt.lock(); thread != nil {
+		defer p.rt.unlock()
+		*p.items = (*p.items)[:0]
+		return nil
+	}
+
+	return errors.ErrRuntimeIllegalInCurrentGoroutine
+}
+
 // Size ...
 func (p RTArray) Size() int {
 	if p.rt.lock() != nil {
