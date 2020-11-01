@@ -30,28 +30,28 @@ var (
 
 	// ErrServiceIsNil ... *
 	ErrServiceIsNil = base.DefineDevelopError(
-		(generalErrorSeg<<16)|6,
+		(generalErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"service is nil",
 	)
 
 	// ErrServiceOverflow ... *
 	ErrServiceOverflow = base.DefineDevelopError(
-		(generalErrorSeg<<16)|7,
+		(generalErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	// ErrActionName ... *
 	ErrActionName = base.DefineDevelopError(
-		(generalErrorSeg<<16)|4,
+		(generalErrorSeg<<16)|6,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	// ErrActionHandler ... *
 	ErrActionHandler = base.DefineDevelopError(
-		(generalErrorSeg<<16)|5,
+		(generalErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)
@@ -65,14 +65,14 @@ var (
 
 	// ErrActionCustom ...
 	ErrActionCustom = base.DefineActionError(
-		(generalErrorSeg<<16)|10,
+		(generalErrorSeg<<16)|9,
 		base.ErrorLevelError,
 		"",
 	)
 
 	// ErrActionPanic ...
 	ErrActionPanic = base.DefineDevelopError(
-		(generalErrorSeg<<16)|9,
+		(generalErrorSeg<<16)|10,
 		base.ErrorLevelFatal,
 		"",
 	)
@@ -107,28 +107,28 @@ var (
 
 	// ErrRuntimeReplyHasBeenCalled ...
 	ErrRuntimeReplyHasBeenCalled = base.DefineDevelopError(
-		(generalErrorSeg<<16)|16,
+		(generalErrorSeg<<16)|15,
 		base.ErrorLevelError,
 		"Runtime.Reply has been called before",
 	)
 
 	// ErrRuntimeExternalReturn ...
 	ErrRuntimeExternalReturn = base.DefineDevelopError(
-		(generalErrorSeg<<16)|18,
+		(generalErrorSeg<<16)|16,
 		base.ErrorLevelError,
 		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
 	// ErrRTArrayIndexOverflow ...
 	ErrRTArrayIndexOverflow = base.DefineDevelopError(
-		(generalErrorSeg<<16)|222,
+		(generalErrorSeg<<16)|17,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	// ErrRTMapNameNotFound ...
 	ErrRTMapNameNotFound = base.DefineDevelopError(
-		(generalErrorSeg<<16)|223,
+		(generalErrorSeg<<16)|18,
 		base.ErrorLevelFatal,
 		"",
 	)
@@ -207,23 +207,9 @@ var (
 		"action meta is nil",
 	)
 
-	// ErrGetServiceDataServiceNodeIsNil ...
-	ErrGetServiceDataServiceNodeIsNil = base.DefineKernelError(
-		(kernelErrorSeg<<16)|7,
-		base.ErrorLevelFatal,
-		"serviceNode is nil",
-	)
-
-	// ErrSetServiceDataServiceNodeIsNil ...
-	ErrSetServiceDataServiceNodeIsNil = base.DefineKernelError(
-		(kernelErrorSeg<<16)|8,
-		base.ErrorLevelFatal,
-		"serviceNode is nil",
-	)
-
 	// ErrThreadEvalFatal ...
 	ErrThreadEvalFatal = base.DefineKernelError(
-		(kernelErrorSeg<<16)|9,
+		(kernelErrorSeg<<16)|7,
 		base.ErrorLevelFatal,
 		"",
 	)

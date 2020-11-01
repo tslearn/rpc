@@ -511,7 +511,7 @@ func testReply(
 	data Map,
 	handler interface{},
 	args ...interface{},
-) *Stream {
-	ret, _ := testReplyWithSource(isDebug, fnCache, data, handler, args...)
-	return ret
+) (Any, *base.Error) {
+	retStream, _ := testReplyWithSource(isDebug, fnCache, data, handler, args...)
+	return ParseResponseStream(retStream)
 }

@@ -435,8 +435,7 @@ func (p *rpcThread) Eval(
 					" level(",
 					strconv.FormatUint(uint64(frame.depth), 10),
 					") overflows",
-				)).
-				AddDebug(p.GetExecActionDebug()),
+				)),
 			0,
 			false,
 		)
