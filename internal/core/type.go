@@ -7,7 +7,6 @@ import (
 
 const (
 	sizeOfPosRecord = int(unsafe.Sizeof(posRecord(0)))
-	sizeOfSlice     = int(unsafe.Sizeof(reflect.SliceHeader{}))
 
 	vkBool    = 'B'
 	vkInt64   = 'I'
