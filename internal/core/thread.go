@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -362,7 +361,7 @@ func (p *rpcThread) Eval(
 	frame.retStatus = 0
 	frame.depth = inStream.GetDepth()
 	execActionNode := (*rpcActionNode)(nil)
-	ok := true
+	argErrorIndex := 0
 
 	defer func() {
 		if v := recover(); v != nil {
@@ -415,14 +414,18 @@ func (p *rpcThread) Eval(
 	actionPath, _, err := inStream.readUnsafeString()
 	if err != nil {
 		return p.Write(err, 0, false)
-	} else if execActionNode, ok = p.processor.actionsMap[actionPath]; !ok {
+	} else if actionNode, ok := p.processor.actionsMap[actionPath]; !ok {
 		return p.Write(
-			errors.ErrTargetNotExist.
-				AddDebug(base.ConcatString("target ", actionPath, " does not exist")),
+			errors.ErrTargetNotExist.AddDebug(base.ConcatString(
+				"rpc-call: ",
+				actionPath,
+				" does not exist",
+			)),
 			0,
 			false,
 		)
 	} else {
+		execActionNode = actionNode
 		atomic.StorePointer(&frame.actionNode, unsafe.Pointer(execActionNode))
 	}
 
@@ -444,12 +447,10 @@ func (p *rpcThread) Eval(
 	} else {
 		// create context
 		rt := Runtime{id: rtID, thread: p}
-		// save argsPos
-		argsStreamPos := inStream.GetReadPos()
 
 		if fnCache := execActionNode.cacheFN; fnCache != nil {
-			ok = fnCache(rt, inStream, execActionNode.meta.handler)
-			if ok {
+			argErrorIndex = fnCache(rt, inStream, execActionNode.meta.handler)
+			if argErrorIndex == 0 {
 				return emptyReturn
 			}
 		} else {
@@ -457,149 +458,121 @@ func (p *rpcThread) Eval(
 			args = append(args, reflect.ValueOf(rt))
 			for i := 1; i < len(execActionNode.argTypes); i++ {
 				var rv reflect.Value
-
 				switch execActionNode.argTypes[i] {
 				case int64Type:
 					if v, err := inStream.ReadInt64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case uint64Type:
 					if v, err := inStream.ReadUint64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case float64Type:
 					if v, err := inStream.ReadFloat64(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case boolType:
 					if v, err := inStream.ReadBool(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case stringType:
 					if v, err := inStream.ReadString(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case bytesType:
 					if v, err := inStream.ReadBytes(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case arrayType:
 					if v, err := inStream.ReadArray(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case rtArrayType:
 					if v, err := inStream.ReadRTArray(rt); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case mapType:
 					if v, err := inStream.ReadMap(); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case rtMapType:
 					if v, err := inStream.ReadRTMap(rt); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				case rtValueType:
 					if v, err := inStream.ReadRTValue(rt); err == nil {
 						rv = reflect.ValueOf(v)
 					} else {
-						ok = false
+						argErrorIndex = i
 					}
 				default:
-					ok = false
+					argErrorIndex = i
 				}
 
-				if !ok {
+				if argErrorIndex != 0 {
 					break
 				} else {
 					args = append(args, rv)
 				}
 			}
 
-			if !inStream.IsReadFinish() {
-				ok = false
-			}
+			if argErrorIndex == 0 {
+				if inStream.IsReadFinish() {
+					inStream.SetWritePosToBodyStart()
+					execActionNode.reflectFn.Call(args)
+					return emptyReturn
+				}
 
-			if ok {
-				inStream.SetWritePosToBodyStart()
-				execActionNode.reflectFn.Call(args)
-				return emptyReturn
+				argErrorIndex = -1
 			}
 		}
 
-		if _, err := inStream.Read(); err != nil {
+		if val, err := inStream.Read(); err != nil {
 			return p.Write(err, 0, false)
+		} else if argErrorIndex < 0 {
+			return p.Write(errors.ErrStream, 0, false)
 		} else if !inStream.HasStatusBitDebug() {
 			return p.Write(
 				errors.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(
+						"rpc-call: ",
 						actionPath,
-						" action arguments does not match",
+						" arguments does not match",
 					)),
 				0,
 				false,
 			)
 		} else {
-			remoteArgsType := make([]string, 0)
-			remoteArgsType = append(remoteArgsType, convertTypeToString(runtimeType))
-			inStream.SetReadPos(argsStreamPos)
-			for inStream.CanRead() {
-				if val, err := inStream.Read(); err != nil {
-					return p.Write(err, 0, false)
-				} else if val != nil {
-					remoteArgsType = append(
-						remoteArgsType,
-						convertTypeToString(reflect.ValueOf(val).Type()),
-					)
-				} else {
-					if len(remoteArgsType) < len(execActionNode.argTypes) {
-						argType := execActionNode.argTypes[len(remoteArgsType)]
-						if argType == bytesType ||
-							argType == arrayType ||
-							argType == mapType {
-							remoteArgsType = append(
-								remoteArgsType,
-								convertTypeToString(argType),
-							)
-						} else {
-							remoteArgsType = append(remoteArgsType, "<nil>")
-						}
-					} else {
-						remoteArgsType = append(remoteArgsType, "<nil>")
-					}
-				}
-			}
-
 			return p.Write(
-				errors.ErrArgumentsNotMatch.AddDebug(base.ConcatString(
-					actionPath,
-					" action arguments does not match\nwant: ",
-					execActionNode.callString,
-					"\ngot: ",
-					actionPath,
-					"(", strings.Join(remoteArgsType, ", "), ") ",
-					convertTypeToString(returnType),
-				)).AddDebug(p.GetExecActionDebug()),
+				errors.ErrArgumentsNotMatch.AddDebug(
+					fmt.Sprintf(
+						"rpc-call: %s %s argument does not match. want: %s got: %s\n%s",
+						actionPath,
+						base.ConvertOrdinalToString(uint(argErrorIndex)),
+						convertTypeToString(execActionNode.argTypes[argErrorIndex]),
+						convertTypeToString(reflect.ValueOf(val).Type()),
+						p.GetExecActionDebug(),
+					)),
 				0,
 				false,
 			)

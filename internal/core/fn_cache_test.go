@@ -198,8 +198,8 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(
-					Runtime, Bool, Int64, Uint64, Float64, String, Bytes,
-					Array, Map, RTValue, RTArray, RTMap,
+					Runtime, Bool, Int64, Uint64, Float64,
+					String, Bytes, Array, Map, RTValue, RTArray, RTMap,
 				) Return)(
 					rt, arg0, arg1, arg2, arg3, arg4, arg5,
 					arg6, arg7, arg8, arg9, arg10,

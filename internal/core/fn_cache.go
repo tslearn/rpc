@@ -84,7 +84,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 			}
 
 			sb.AppendString(fmt.Sprintf(
-				"%s %s, err := %s; err != nil {\n\t\treturn %dn\t}",
+				"%s %s, err := %s; err != nil {\n\t\treturn %d\n\t}",
 				condString,
 				argName,
 				callString,

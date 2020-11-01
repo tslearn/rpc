@@ -531,7 +531,8 @@ func TestRpcThread_Eval(t *testing.T) {
 			return rt.Reply(true)
 		}, stream)).Equal(
 			nil,
-			errors.ErrTargetNotExist.AddDebug("target #.system:Eval does not exist"),
+			errors.ErrTargetNotExist.
+				AddDebug("rpc-call: #.system:Eval does not exist"),
 		)
 	})
 
@@ -590,18 +591,13 @@ func TestRpcThread_Eval(t *testing.T) {
 			if debug {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
-						"#.test:Eval action arguments does not match\n"+
-							"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64,"+
-							" rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map,"+
-							" rpc.RTValue, rpc.RTArray, rpc.RTMap) rpc.Return\n"+
-							"got: #.test:Eval(rpc.Runtime, rpc.Int64, rpc.Int64, rpc.Uint64,"+
-							" rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map,"+
-							" rpc.Bool, rpc.Array, rpc.Map) rpc.Return",
+						"rpc-call: #.test:Eval 1st argument does not match. "+
+							"want: rpc.Bool got: rpc.Int64",
 					).AddDebug("#.test:Eval "+source))
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
-						"#.test:Eval action arguments does not match",
+						"rpc-call: #.test:Eval arguments does not match",
 					))
 			}
 		}
@@ -615,92 +611,7 @@ func TestRpcThread_Eval(t *testing.T) {
 //func TestRpcThread_Eval(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
-//	// Test(0) basic
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			return rt.OK("hello " + name)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal("hello world", nil, nil)
 //
-//
-//	// Test(7) error with 1st param
-//	assert(testRunWithProcessor(false, nil,
-//		func(rt Runtime,
-//			b bool, i int64, u uint64, f float64, s string,
-//			x Bytes, a Array, m Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			// error rpc.Bool
-//			stream.Write(2)
-//			stream.Write(int64(3))
-//			stream.Write(uint64(3))
-//			stream.Write(float64(3))
-//			stream.Write("hello")
-//			stream.Write(([]byte)("world"))
-//			stream.Write(Array{1})
-//			stream.Write(Map{"name": "world"})
-//			return stream
-//		},
-//		nil,
-//	)).Equal(
-//		nil,
-//		base.NewActionError("#.test:Eval action arguments does not match"),
-//		nil,
-//	)
-//
-//	// Test(8) error with 1st param
-//	ret8, error8, panic8 := testRunWithProcessor(true, nil,
-//		func(rt Runtime,
-//			b bool, i int64, u uint64, f float64, s string,
-//			x Bytes, a Array, m Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			// error rpc.Bool
-//			stream.Write(2)
-//			stream.Write(int64(3))
-//			stream.Write(uint64(3))
-//			stream.Write(float64(3))
-//			stream.Write("hello")
-//			stream.Write(([]byte)("world"))
-//			stream.Write(Array{1})
-//			stream.Write(Map{"name": "world"})
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret8, panic8).IsNil()
-//	assert(error8.GetKind()).Equal(base.ErrorKindAction)
-//	assert(error8.GetMessage()).Equal(
-//		"#.test:Eval action arguments does not match\n" +
-//			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
-//			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-//			"got: #.test:Eval(rpc.Runtime, rpc.Int64, rpc.Int64, rpc.Uint64, " +
-//			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
-//	)
-//
-//	assert(strings.Contains(error8.GetDebug(), "#.test:Eval")).IsTrue()
-//	assert(strings.Contains(error8.GetDebug(), "type_test.go:")).IsTrue()
 //
 //	// Test(9) error with 2nd param
 //	assert(testRunWithProcessor(false, nil,
