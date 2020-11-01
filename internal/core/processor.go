@@ -14,7 +14,7 @@ import (
 
 const (
 	rootName               = "#"
-	freeGroups             = 1024
+	freeGroups             = 512
 	processorStatusClosed  = 0
 	processorStatusRunning = 1
 )
@@ -57,7 +57,6 @@ func (p *rpcServiceNode) SetData(key string, value Any) {
 
 // Processor ...
 type Processor struct {
-	isDebug           bool
 	status            int32
 	actionsMap        map[string]*rpcActionNode
 	servicesMap       map[string]*rpcServiceNode
@@ -75,7 +74,6 @@ type Processor struct {
 
 // NewProcessor ...
 func NewProcessor(
-	isDebug bool,
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
@@ -108,7 +106,6 @@ func NewProcessor(
 	} else {
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
-			isDebug:        isDebug,
 			status:         processorStatusRunning,
 			actionsMap:     make(map[string]*rpcActionNode),
 			servicesMap:    make(map[string]*rpcServiceNode),

@@ -549,7 +549,7 @@ func (p *rpcThread) Eval(
 
 		if _, err := inStream.Read(); err != nil {
 			return p.Write(err, 0, false)
-		} else if !p.processor.isDebug {
+		} else if !inStream.HasStatusBitDebug() {
 			return p.Write(
 				errors.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(

@@ -21,7 +21,6 @@ func testWithRPCBenchmark(
 		defer stream.Release()
 
 		if processor, err := NewProcessor(
-			false,
 			numOfThreads,
 			64,
 			64,

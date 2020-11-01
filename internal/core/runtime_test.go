@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-var testRuntime = Runtime{id: 0, thread: getFakeThread(true)}
+var testRuntime = Runtime{id: 0, thread: getFakeThread()}
 
 func TestRuntime_lock(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
@@ -18,7 +18,7 @@ func TestRuntime_lock(t *testing.T) {
 
 	t.Run("thread is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		thread := getFakeThread(false)
+		thread := getFakeThread()
 		assert(Runtime{id: thread.top.lockStatus, thread: thread}.lock()).
 			Equal(thread)
 	})
@@ -34,7 +34,7 @@ func TestRuntime_unlock(t *testing.T) {
 
 	t.Run("thread is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		thread := getFakeThread(false)
+		thread := getFakeThread()
 		rt := Runtime{id: thread.top.lockStatus, thread: thread}
 		assert(base.RunWithCatchPanic(func() {
 			rt.lock()
@@ -60,7 +60,7 @@ func TestRuntime_Reply(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				return rt.Reply(true)
 			}, nil),
 		)).Equal(true, nil)
@@ -70,7 +70,7 @@ func TestRuntime_Reply(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				err := errors.ErrStream.AddDebug("error")
 				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
@@ -84,7 +84,7 @@ func TestRuntime_Reply(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				err := errors.ErrActionCustom.AddDebug("error")
 				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
@@ -98,7 +98,7 @@ func TestRuntime_Reply(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				ret, s := rt.Reply((*base.Error)(nil)), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
@@ -116,7 +116,7 @@ func TestRuntime_Reply(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				ret, s := rt.Reply((*base.Error)(nil)), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
@@ -146,7 +146,7 @@ func TestRuntime_Call(t *testing.T) {
 		source2 := ""
 
 		assert(ParseResponseStream(
-			testWithProcessorAndRuntime(true, func(_ *Processor, rt Runtime) Return {
+			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				errArg := make(chan bool)
 				rtValue, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
 				source1 = rt.thread.GetActionNode().path + " " + s1
@@ -165,10 +165,8 @@ func TestRuntime_Call(t *testing.T) {
 		assert := base.NewAssert(t)
 		source1 := ""
 		source2 := ""
-		source3 := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(
-				true,
 				func(processor *Processor, rt Runtime) Return {
 					// set max call depth to 1
 					oldMaxCallDepth := processor.maxCallDepth
@@ -177,20 +175,18 @@ func TestRuntime_Call(t *testing.T) {
 						processor.maxCallDepth = oldMaxCallDepth
 					}()
 
-					rtValue, s2 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
-					source1 = "#.test:SayHello " +
-						rt.thread.processor.actionsMap["#.test:SayHello"].meta.fileLine
-					source2 = rt.thread.GetActionNode().path + " " + s2
+					rtValue, s1 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
+					source1 = rt.thread.GetActionNode().path + " " + s1
 					_, err := rtValue.ToString()
-					ret, s3 := rt.Reply(err), base.GetFileLine(0)
-					source3 = rt.thread.GetActionNode().path + " " + s3
+					ret, s2 := rt.Reply(err), base.GetFileLine(0)
+					source2 = rt.thread.GetActionNode().path + " " + s2
 					return ret
 				},
 				nil,
 			),
 		)).Equal(nil, errors.ErrCallOverflow.
 			AddDebug("call #.test:SayHello level(1) overflows").
-			AddDebug(source1).AddDebug(source2).AddDebug(source3),
+			AddDebug(source1).AddDebug(source2),
 		)
 	})
 
@@ -198,7 +194,6 @@ func TestRuntime_Call(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(
-				true,
 				func(processor *Processor, rt Runtime) Return {
 					rtValue := rt.Call("#.test:SayHello", "ts")
 					fmt.Println(rtValue.ToString())
@@ -280,7 +275,6 @@ func TestRuntime_GetServiceData(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
-			false,
 			func(processor *Processor, rt Runtime) Return {
 				assert(rt.GetServiceData("name")).Equal(nil, false)
 				return rt.Reply(true)
@@ -292,7 +286,6 @@ func TestRuntime_GetServiceData(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
-			false,
 			func(processor *Processor, rt Runtime) Return {
 				assert(rt.GetServiceData("name")).Equal("kitty", true)
 				return rt.Reply(true)
@@ -324,7 +317,6 @@ func TestRuntime_SetServiceData(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
-			false,
 			func(processor *Processor, rt Runtime) Return {
 				assert(rt.SetServiceData("name", "kitty")).Equal(true)
 				assert(rt.GetServiceData("name")).Equal("kitty", true)
@@ -337,7 +329,6 @@ func TestRuntime_SetServiceData(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
-			false,
 			func(processor *Processor, rt Runtime) Return {
 				assert(rt.GetServiceData("name")).Equal("doggy", true)
 				assert(rt.SetServiceData("name", "kitty")).Equal(true)

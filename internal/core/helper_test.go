@@ -348,9 +348,8 @@ func TestParseResponseStream(t *testing.T) {
 	})
 }
 
-func getFakeProcessor(debug bool) *Processor {
+func getFakeProcessor() *Processor {
 	processor, _ := NewProcessor(
-		debug,
 		1,
 		32,
 		32,
@@ -364,9 +363,9 @@ func getFakeProcessor(debug bool) *Processor {
 	return processor
 }
 
-func getFakeThread(debug bool) *rpcThread {
+func getFakeThread() *rpcThread {
 	return newThread(
-		getFakeProcessor(debug),
+		getFakeProcessor(),
 		5*time.Second,
 		2048,
 		func(stream *Stream) {},
@@ -380,7 +379,6 @@ type testProcessorHelper struct {
 }
 
 func newTestProcessorHelper(
-	isDebug bool,
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
@@ -403,7 +401,6 @@ func newTestProcessorHelper(
 	}
 
 	processor, _ := NewProcessor(
-		isDebug,
 		numOfThreads,
 		maxNodeDepth,
 		maxCallDepth,
@@ -436,13 +433,11 @@ func (p *testProcessorHelper) Close() {
 }
 
 func testWithProcessorAndRuntime(
-	isDebug bool,
 	fn func(processor *Processor, rt Runtime) Return,
 	data Map,
 ) *Stream {
 	helper := (*testProcessorHelper)(nil)
 	helper = newTestProcessorHelper(
-		isDebug,
 		1,
 		16,
 		16,
@@ -470,7 +465,6 @@ func testWithProcessorAndRuntime(
 }
 
 func testReplyWithSource(
-	isDebug bool,
 	fnCache ActionCache,
 	data Map,
 	handler interface{},
@@ -478,7 +472,6 @@ func testReplyWithSource(
 ) (*Stream, string) {
 	service, source := NewService().On("Eval", handler), base.GetFileLine(0)
 	helper := newTestProcessorHelper(
-		isDebug,
 		1,
 		16,
 		16,
@@ -506,12 +499,11 @@ func testReplyWithSource(
 }
 
 func testReply(
-	isDebug bool,
 	fnCache ActionCache,
 	data Map,
 	handler interface{},
 	args ...interface{},
 ) (Any, *base.Error) {
-	retStream, _ := testReplyWithSource(isDebug, fnCache, data, handler, args...)
+	retStream, _ := testReplyWithSource(fnCache, data, handler, args...)
 	return ParseResponseStream(retStream)
 }
