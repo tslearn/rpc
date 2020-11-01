@@ -469,13 +469,14 @@ func testWithProcessorAndRuntime(
 	return <-helper.streamCH
 }
 
-func testWithReply(
+func testReplyWithSource(
 	isDebug bool,
 	fnCache ActionCache,
 	data Map,
 	handler interface{},
 	args ...interface{},
-) *Stream {
+) (*Stream, string) {
+	service, source := NewService().On("Eval", handler), base.GetFileLine(0)
 	helper := newTestProcessorHelper(
 		isDebug,
 		1,
@@ -486,14 +487,31 @@ func testWithReply(
 		3*time.Second,
 		[]*ServiceMeta{{
 			name:     "test",
-			service:  NewService().On("Eval", handler),
+			service:  service,
 			fileLine: "",
 			data:     data,
 		}},
 	)
 	defer helper.Close()
 
+	if len(args) == 1 {
+		if s, ok := args[0].(*Stream); ok {
+			helper.GetProcessor().PutStream(s)
+			return <-helper.streamCH, source
+		}
+	}
 	stream, _ := MakeRequestStream("#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
-	return <-helper.streamCH
+	return <-helper.streamCH, source
+}
+
+func testReply(
+	isDebug bool,
+	fnCache ActionCache,
+	data Map,
+	handler interface{},
+	args ...interface{},
+) *Stream {
+	ret, _ := testReplyWithSource(isDebug, fnCache, data, handler, args...)
+	return ret
 }
