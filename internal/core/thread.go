@@ -332,11 +332,16 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
+	if stream == nil {
+		return false
+	}
+
 	defer func() {
 		if v := recover(); v != nil {
 			ret = false
 		}
 	}()
+
 	if atomic.LoadPointer(&p.closeCH) != nil {
 		p.inputCH <- stream
 		return true

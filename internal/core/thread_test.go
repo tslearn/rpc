@@ -505,23 +505,34 @@ func TestRpcThread_Write(t *testing.T) {
 }
 
 func TestRpcThread_PutStream(t *testing.T) {
-	assert := base.NewAssert(t)
+	t.Run("thread is close", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v.Close()
+		assert(v.PutStream(NewStream())).IsFalse()
+	})
 
-	// Test(1)
-	thread1 := getFakeThread(true)
-	defer thread1.Close()
-	assert(thread1.PutStream(NewStream())).IsTrue()
+	t.Run("stream is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		assert(v.PutStream(nil)).IsFalse()
+		v.Close()
+	})
 
-	// Test(2)
-	thread2 := getFakeThread(true)
-	thread2.Close()
-	assert(thread2.PutStream(NewStream())).IsFalse()
+	t.Run("thread has internal error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v.Close()
+		atomic.StorePointer(&v.closeCH, unsafe.Pointer(v))
+		assert(v.PutStream(NewStream())).IsFalse()
+	})
 
-	// Test(3)
-	thread3 := getFakeThread(true)
-	thread3.Close()
-	atomic.StorePointer(&thread3.closeCH, unsafe.Pointer(thread3))
-	assert(thread3.PutStream(NewStream())).IsFalse()
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		assert(v.PutStream(NewStream())).IsTrue()
+		v.Close()
+	})
 }
 
 //func TestRpcThread_Eval1(t *testing.T) {
