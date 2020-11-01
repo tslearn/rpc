@@ -498,7 +498,6 @@ func TestRpcThread_Write(t *testing.T) {
 			}),
 		)).Equal(int64(12), nil)
 	})
-
 }
 
 //func TestRpcThread_WriteError(t *testing.T) {
