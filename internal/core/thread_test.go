@@ -548,6 +548,33 @@ func TestRpcThread_Eval(t *testing.T) {
 			errors.ErrCallOverflow.AddDebug("call #.test:Eval level(17) overflows"),
 		)
 	})
+
+	t.Run("execFrom data format error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := NewStream()
+		stream.SetDepth(3)
+		stream.WriteString("#.test:Eval")
+		stream.WriteBool(true)
+		assert(testReply(false, nil, nil, func(rt Runtime) Return {
+			return rt.Reply(true)
+		}, stream)).Equal(nil, errors.ErrStream)
+	})
+
+	t.Run("call with all type value", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		fnTest := func(fnCache ActionCache) {
+			assert(testReply(false, fnCache, nil,
+				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+					return rt.Reply(true)
+				},
+				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
+				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"},
+			)).Equal(true, nil)
+		}
+		fnTest(nil)
+		fnTest(&testFuncCache{})
+	})
 }
 
 //func TestRpcThread_Eval(t *testing.T) {
@@ -568,46 +595,6 @@ func TestRpcThread_Eval(t *testing.T) {
 //		},
 //		nil,
 //	)).Equal("hello world", nil, nil)
-//
-//	// Test(4)
-//	ret4, error4, panic4 := testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			return rt.OK("hello " + name)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			//  depth is overflow
-//			stream.SetDepth(17)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret4, panic4).IsNil()
-//	assert(error4.GetKind()).Equal(base.ErrorKindAction)
-//	assert(error4.GetMessage()).
-//		Equal("call #.test:Eval level(17) overflows")
-//	assert(strings.Contains(error4.GetDebug(), "#.test:Eval")).IsTrue()
-//	assert(strings.Contains(error4.GetDebug(), "type_test.go")).IsTrue()
-//
-//	// Test(5) execFrom data format error
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			return rt.OK("hello " + name)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			// execFrom data format error
-//			stream.WriteBool(true)
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal(nil, base.NewProtocolError(base.ErrStringBadStream), nil)
 //
 //	// Test(6) ok call with all type value
 //	assert(testRunWithProcessor(true, nil,
