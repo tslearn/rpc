@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
 	"time"
 	"unsafe"
@@ -352,7 +353,62 @@ func TestRpcThread_GetExecActionDebug(t *testing.T) {
 }
 
 func TestRpcThread_Write(t *testing.T) {
-	t.Run("")
+	t.Run("value is endless loop", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(ParseResponseStream(
+			testWithReply(false, nil, nil, func(rt Runtime) Return {
+				v := make(Map)
+				v["v"] = v
+				ret, s := rt.Reply(v), base.GetFileLine(0)
+				source = s
+				return ret
+			}),
+		)).Equal(
+			nil,
+			errors.ErrUnsupportedValue.AddDebug(
+				"value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] overflows").
+				AddDebug("#.test:Eval "+source),
+		)
+	})
+
+	t.Run("value is not supported", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(ParseResponseStream(
+			testWithReply(false, nil, nil, func(rt Runtime) Return {
+				ret, s := rt.Reply(make(chan bool)), base.GetFileLine(0)
+				source = s
+				return ret
+			}),
+		)).Equal(
+			nil,
+			errors.ErrUnsupportedValue.AddDebug("value is not supported").
+				AddDebug("#.test:Eval "+source),
+		)
+	})
+
+	t.Run("test ok (*Error)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(ParseResponseStream(
+			testWithReply(false, nil, nil, func(rt Runtime) Return {
+				ret, s := rt.Reply(errors.ErrStream), base.GetFileLine(0)
+				source = s
+				return ret
+			}),
+		)).Equal(
+			nil,
+			errors.ErrStream.AddDebug("#.test:Eval "+source),
+		)
+	})
 
 }
 
@@ -381,62 +437,6 @@ func TestRpcThread_Write(t *testing.T) {
 //
 //func TestRpcThread_WriteOK(t *testing.T) {
 //	assert := base.NewAssert(t)
-//
-//	// Test(1) value is endless loop
-//	source1 := ""
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			v := make(Map)
-//			v["v"] = v
-//			ret, source := rt.OK(v), base.GetFileLine(0)
-//			source1 = source
-//			return ret
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal(
-//		nil,
-//		nil,
-//		base.NewActionPanic("value[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-//			"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] write overflow").
-//			AddDebug("#.test:Eval "+source1),
-//	)
-//
-//	// Test(2) value is not support
-//	source2 := ""
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			ret, source := rt.OK(make(chan bool)), base.GetFileLine(0)
-//			source2 = source
-//			return ret
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal(
-//		nil,
-//		nil,
-//		base.NewActionPanic("value type is not supported").
-//			AddDebug("#.test:Eval "+source2),
-//	)
 //
 //	// Test(3) ok
 //	assert(testRunWithProcessor(true, nil,
