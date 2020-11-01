@@ -465,6 +465,7 @@ func testWithProcessorAndRuntime(
 }
 
 func testReplyWithSource(
+	debug bool,
 	fnCache ActionCache,
 	data Map,
 	handler interface{},
@@ -494,16 +495,20 @@ func testReplyWithSource(
 		}
 	}
 	stream, _ := MakeRequestStream("#.test:Eval", "", args...)
+	if debug {
+		stream.SetStatusBitDebug()
+	}
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH, source
 }
 
 func testReply(
+	debug bool,
 	fnCache ActionCache,
 	data Map,
 	handler interface{},
 	args ...interface{},
 ) (Any, *base.Error) {
-	retStream, _ := testReplyWithSource(fnCache, data, handler, args...)
+	retStream, _ := testReplyWithSource(debug, fnCache, data, handler, args...)
 	return ParseResponseStream(retStream)
 }
