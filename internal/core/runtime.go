@@ -69,7 +69,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	// return
 	ret := p.parseResponseStream(stream)
 	if ret.err != nil {
-		ret.err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1))
+		_ = ret.err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1))
 	}
 
 	return ret

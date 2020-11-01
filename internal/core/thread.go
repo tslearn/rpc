@@ -299,7 +299,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 			err = errors.ErrUnsupportedValue.AddDebug("value is nil")
 		}
 		if debug {
-			err.AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+			_ = err.AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
 		}
 		frame.retStatus = 2
 		stream.SetWritePosToBodyStart()
@@ -308,7 +308,9 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 		return emptyReturn
 	} else if rtValue, ok := value.(RTValue); ok && rtValue.err != nil {
 		if debug {
-			rtValue.err.AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+			_ = rtValue.err.AddDebug(
+				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
+			)
 		}
 		frame.retStatus = 2
 		stream.SetWritePosToBodyStart()
@@ -319,7 +321,9 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 		frame.retStatus = 2
 		err = errors.ErrUnsupportedValue.AddDebug(reason)
 		if debug {
-			err.AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
+			_ = err.AddDebug(
+				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
+			)
 		}
 		stream.SetWritePosToBodyStart()
 		stream.WriteUint64(err.GetCode())
