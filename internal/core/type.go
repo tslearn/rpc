@@ -49,7 +49,7 @@ type ActionCacheFunc = func(
 	rt Runtime,
 	stream *Stream,
 	fn interface{},
-) bool
+) int
 
 // Bool ...
 type Bool = bool

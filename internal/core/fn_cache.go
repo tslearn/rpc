@@ -23,7 +23,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 	defer sb.Release()
 
 	sb.AppendString(fmt.Sprintf(
-		"func %s(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {\n",
+		"func %s(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) int {\n",
 		name,
 	))
 
@@ -31,7 +31,7 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 	typeArray := []string{"rpc.Runtime"}
 
 	if kind == "" {
-		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn false\n\t}")
+		sb.AppendString("\tif !stream.IsReadFinish() {\n\t\treturn -1\n\t}")
 	} else {
 		for idx, c := range kind {
 			argName := "arg" + strconv.Itoa(idx)
@@ -84,21 +84,22 @@ func getFuncBodyByKind(name string, kind string) (string, *base.Error) {
 			}
 
 			sb.AppendString(fmt.Sprintf(
-				"%s %s, err := %s; err != nil {\n\t\treturn false\n\t}",
+				"%s %s, err := %s; err != nil {\n\t\treturn %dn\t}",
 				condString,
 				argName,
 				callString,
+				idx+1,
 			))
 		}
 
-		sb.AppendString(" else if !stream.IsReadFinish() {\n\t\treturn false\n\t}")
+		sb.AppendString(" else if !stream.IsReadFinish() {\n\t\treturn -1\n\t}")
 	}
 
 	sb.AppendString(fmt.Sprintf(
 		" else {"+
 			"\n\t\tstream.SetWritePosToBodyStart()"+
 			"\n\t\tfn.(func(%s) rpc.Return)(%s)\n\t\t"+
-			"return true\n\t}\n}",
+			"return 0\n\t}\n}",
 		strings.Join(typeArray, ", "),
 		strings.Join(argArray, ", "),
 	))

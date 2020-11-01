@@ -74,127 +74,127 @@ type testFuncCache struct{}
 func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 	switch fnString {
 	case "":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime) Return)(rt)
-				return true
+				return 0
 			}
 		}
 	case "S":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadString(); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, String) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "I":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadInt64(); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, Int64) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "M":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadMap(); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, Map) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "V":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadRTValue(rt); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, RTValue) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "Y":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadRTArray(rt); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, RTArray) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "Z":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadRTMap(rt); err != nil {
-				return false
+				return 1
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, RTMap) Return)(rt, arg0)
-				return true
+				return 0
 			}
 		}
 	case "IV":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadInt64(); err != nil {
-				return false
+				return 1
 			} else if arg1, err := stream.ReadRTValue(rt); err != nil {
-				return false
+				return 2
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(Runtime, Int64, RTValue) Return)(rt, arg0, arg1)
-				return true
+				return 0
 			}
 		}
 	case "BIUFSXAMVYZ":
-		return func(rt Runtime, stream *Stream, fn interface{}) bool {
+		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if arg0, err := stream.ReadBool(); err != nil {
-				return false
+				return 1
 			} else if arg1, err := stream.ReadInt64(); err != nil {
-				return false
+				return 2
 			} else if arg2, err := stream.ReadUint64(); err != nil {
-				return false
+				return 3
 			} else if arg3, err := stream.ReadFloat64(); err != nil {
-				return false
+				return 4
 			} else if arg4, err := stream.ReadString(); err != nil {
-				return false
+				return 5
 			} else if arg5, err := stream.ReadBytes(); err != nil {
-				return false
+				return 6
 			} else if arg6, err := stream.ReadArray(); err != nil {
-				return false
+				return 7
 			} else if arg7, err := stream.ReadMap(); err != nil {
-				return false
+				return 8
 			} else if arg8, err := stream.ReadRTValue(rt); err != nil {
-				return false
+				return 9
 			} else if arg9, err := stream.ReadRTArray(rt); err != nil {
-				return false
+				return 10
 			} else if arg10, err := stream.ReadRTMap(rt); err != nil {
-				return false
+				return 11
 			} else if !stream.IsReadFinish() {
-				return false
+				return -1
 			} else {
 				stream.SetWritePosToBodyStart()
 				fn.(func(
@@ -204,7 +204,7 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 					rt, arg0, arg1, arg2, arg3, arg4, arg5,
 					arg6, arg7, arg8, arg9, arg10,
 				)
-				return true
+				return 0
 			}
 		}
 	default:
