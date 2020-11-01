@@ -351,6 +351,11 @@ func TestRpcThread_GetExecActionDebug(t *testing.T) {
 	})
 }
 
+func TestRpcThread_Write(t *testing.T) {
+	t.Run("")
+
+}
+
 //func TestRpcThread_WriteError(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
