@@ -299,8 +299,12 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 			err = errors.ErrUnsupportedValue.AddDebug("value is nil")
 		}
 		writeErr = err
-	} else if _, ok := value.(RTValue); ok {
-		writeErr = errors.ErrUnsupportedValue.AddDebug("value is not available")
+	} else if v, ok := value.(RTValue); ok {
+		if v.err != nil {
+			writeErr = v.err
+		} else {
+			writeErr = errors.ErrUnsupportedValue.AddDebug("value is not available")
+		}
 	} else {
 		writeErr = errors.ErrUnsupportedValue.AddDebug(reason)
 	}
