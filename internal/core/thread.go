@@ -290,6 +290,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	stream := frame.stream
 	stream.SetWritePosToBodyStart()
 	stream.WriteUint64(0)
+	writeErr := (*base.Error)(nil)
 
 	if reason := stream.Write(value); reason == StreamWriteOK {
 		frame.retStatus = 1
@@ -298,38 +299,36 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 		if err == nil {
 			err = errors.ErrUnsupportedValue.AddDebug("value is nil")
 		}
-		if debug {
-			err = err.AddDebug(base.AddFileLine(p.GetExecActionNodePath(), skip+1))
-		}
-		frame.retStatus = 2
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(err.GetCode())
-		stream.WriteString(err.GetMessage())
-		return emptyReturn
-	} else if rtValue, ok := value.(RTValue); ok && rtValue.err != nil {
-		if debug {
-			rtValue.err = rtValue.err.AddDebug(
-				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
-			)
-		}
-		frame.retStatus = 2
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(rtValue.err.GetCode())
-		stream.WriteString(rtValue.err.GetMessage())
-		return emptyReturn
+		writeErr = err
+	} else if _, ok := value.(RTValue); ok {
+		writeErr = errors.ErrUnsupportedValue.AddDebug("value is not available")
 	} else {
-		frame.retStatus = 2
-		err = errors.ErrUnsupportedValue.AddDebug(reason)
-		if debug {
-			err = err.AddDebug(
-				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
-			)
-		}
-		stream.SetWritePosToBodyStart()
-		stream.WriteUint64(err.GetCode())
-		stream.WriteString(err.GetMessage())
-		return emptyReturn
+		writeErr = errors.ErrUnsupportedValue.AddDebug(reason)
 	}
+
+	frame.retStatus = 2
+	stream.SetWritePosToBodyStart()
+
+	if debug {
+		msg := writeErr.GetMessage()
+		stream.WriteUint64((writeErr.GetCode()/2)*2 + 1)
+		if msg == "" {
+			stream.WriteString(base.ConcatString(
+				writeErr.GetMessage(),
+				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
+			))
+		} else {
+			stream.WriteString(base.ConcatString(
+				writeErr.GetMessage(),
+				"\n",
+				base.AddFileLine(p.GetExecActionNodePath(), skip+1),
+			))
+		}
+	} else {
+		stream.WriteUint64(writeErr.GetCode())
+		stream.WriteString(writeErr.GetMessage())
+	}
+	return emptyReturn
 }
 
 func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
