@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -302,6 +303,7 @@ func TestRpcThread_GetActionNode(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
 		assert(v.GetActionNode()).Equal(nil)
+		v.Close()
 	})
 
 	t.Run("node is not nil", func(t *testing.T) {
@@ -320,6 +322,7 @@ func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
 		assert(v.GetExecActionNodePath()).Equal("")
+		v.Close()
 	})
 
 	t.Run("node is not nil", func(t *testing.T) {
@@ -338,6 +341,7 @@ func TestRpcThread_GetExecActionDebug(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
 		assert(v.GetExecActionDebug()).Equal("")
+		v.Close()
 	})
 
 	t.Run("node is not nil", func(t *testing.T) {
@@ -500,69 +504,26 @@ func TestRpcThread_Write(t *testing.T) {
 	})
 }
 
-//func TestRpcThread_WriteError(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1) ok
-//	source1 := ""
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			ret, source := rt.Error(errors.New("error")), base.GetFileLine(0)
-//			source1 = source
-//			return ret
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal(nil, base.NewActionError("error").AddDebug("#.test:Eval "+source1), nil)
-//}
-//
-//func TestRpcThread_WriteOK(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(3) ok
-//	assert(testRunWithProcessor(true, nil,
-//		func(rt Runtime, name string) Return {
-//			return rt.OK("hello " + name)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.WriteString("world")
-//			return stream
-//		},
-//		nil,
-//	)).Equal("hello world", nil, nil)
-//}
-//
-//func TestRpcThread_PutStream(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1)
-//	thread1 := getFakeThread(true)
-//	defer thread1.Close()
-//	assert(thread1.PutStream(NewStream())).IsTrue()
-//
-//	// Test(2)
-//	thread2 := getFakeThread(true)
-//	thread2.Close()
-//	assert(thread2.PutStream(NewStream())).IsFalse()
-//
-//	// Test(3)
-//	thread3 := getFakeThread(true)
-//	thread3.Close()
-//	atomic.StorePointer(&thread3.closeCH, unsafe.Pointer(thread3))
-//	assert(thread3.PutStream(NewStream())).IsFalse()
-//}
-//
+func TestRpcThread_PutStream(t *testing.T) {
+	assert := base.NewAssert(t)
+
+	// Test(1)
+	thread1 := getFakeThread(true)
+	defer thread1.Close()
+	assert(thread1.PutStream(NewStream())).IsTrue()
+
+	// Test(2)
+	thread2 := getFakeThread(true)
+	thread2.Close()
+	assert(thread2.PutStream(NewStream())).IsFalse()
+
+	// Test(3)
+	thread3 := getFakeThread(true)
+	thread3.Close()
+	atomic.StorePointer(&thread3.closeCH, unsafe.Pointer(thread3))
+	assert(thread3.PutStream(NewStream())).IsFalse()
+}
+
 //func TestRpcThread_Eval1(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
