@@ -156,7 +156,7 @@ func NewProcessor(
 			for atomic.LoadInt32(&ret.status) == processorStatusRunning {
 				time.Sleep(50 * time.Millisecond)
 				counter++
-				if counter%80 == 0 {
+				if counter%60 == 0 {
 					ret.onUpdateConfig()
 				}
 			}
@@ -245,6 +245,9 @@ func (p *Processor) Close() bool {
 			)
 		}
 
+		p.unmount("#")
+		p.systemThread.Close()
+
 		for _, freeCH := range p.freeCHArray {
 			close(freeCH)
 		}
@@ -309,9 +312,9 @@ func (p *Processor) onUpdateConfig() {
 }
 
 func (p *Processor) invokeSystemAction(name string, path string) {
-	unmountPath := path + ":$" + name
-	if _, ok := p.actionsMap[unmountPath]; ok {
-		stream, _ := MakeRequestStream(true, 0, unmountPath, "")
+	actionPath := path + ":$" + name
+	if _, ok := p.actionsMap[actionPath]; ok {
+		stream, _ := MakeRequestStream(true, 0, actionPath, "")
 		defer func() {
 			stream.Release()
 		}()
