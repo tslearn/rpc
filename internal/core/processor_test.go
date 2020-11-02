@@ -158,11 +158,6 @@ func TestNewProcessor(t *testing.T) {
 			}).
 			On("$onUpdateConfig", func(rt Runtime) Return {
 				wait <- "$onUpdateConfig called"
-				go func() {
-					time.Sleep(200 * time.Millisecond)
-					processor.Close()
-				}()
-
 				return rt.Reply(true)
 			}).
 			On("$onUnmount", func(rt Runtime) Return {
@@ -183,8 +178,8 @@ func TestNewProcessor(t *testing.T) {
 		assert(processor).IsNotNil()
 		assert(<-wait).Equal("$onMount called")
 		assert(<-wait).Equal("$onUpdateConfig called")
-		assert(<-wait).Equal("$onUnmount called")
 		processor.Close()
+		assert(<-wait).Equal("$onUnmount called")
 	})
 
 	t.Run("test ok (1M calls)", func(t *testing.T) {
