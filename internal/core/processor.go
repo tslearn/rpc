@@ -92,16 +92,6 @@ func NewProcessor(
 		return nil, errors.ErrProcessorOnReturnStreamIsNil
 	}
 
-	fnError := func(err *base.Error) {
-		defer func() {
-			_ = recover()
-		}()
-		stream := NewStream()
-		stream.WriteUint64(err.GetCode())
-		stream.WriteString(err.GetMessage())
-		onReturnStream(stream)
-	}
-
 	if numOfThreads <= 0 {
 		return nil, errors.ErrNumOfThreadsIsWrong
 	} else if maxNodeDepth <= 0 {
@@ -109,6 +99,16 @@ func NewProcessor(
 	} else if maxCallDepth <= 0 {
 		return nil, errors.ErrProcessorMaxCallDepthIsWrong
 	} else {
+		fnError := func(err *base.Error) {
+			defer func() {
+				_ = recover()
+			}()
+			stream := NewStream()
+			stream.WriteUint64(err.GetCode())
+			stream.WriteString(err.GetMessage())
+			onReturnStream(stream)
+		}
+
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
 			status:         processorStatusRunning,
@@ -154,9 +154,9 @@ func NewProcessor(
 		go func() {
 			counter := uint64(0)
 			for atomic.LoadInt32(&ret.status) == processorStatusRunning {
-				time.Sleep(300 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				counter++
-				if counter%10 == 0 {
+				if counter%40 == 0 {
 					ret.onUpdateConfig()
 				}
 			}

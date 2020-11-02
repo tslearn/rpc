@@ -1,9 +1,10 @@
 package core
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
+	"time"
 )
 
 func TestRpcActionNode_GetConfig(t *testing.T) {
@@ -49,88 +50,68 @@ func TestRpcActionNode_SetConfig(t *testing.T) {
 	})
 }
 
-func TestNewProcessor(t *testing.T) {
-	fmt.Println(actionNameRegex.MatchString("$onMount"))
-	fmt.Println(actionNameRegex.MatchString("$onUnmount"))
-	fmt.Println(actionNameRegex.MatchString("$onUpdateConfig"))
-	fmt.Println(actionNameRegex.MatchString("onMount"))
-	fmt.Println(actionNameRegex.MatchString("sayHello"))
-	fmt.Println(actionNameRegex.MatchString("$sayHello"))
+func TestProcessor(t *testing.T) {
+	t.Run("test regex", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(actionNameRegex.MatchString("$onMount")).IsTrue()
+		assert(actionNameRegex.MatchString("$onUnmount")).IsTrue()
+		assert(actionNameRegex.MatchString("$onUpdateConfig")).IsTrue()
+		assert(actionNameRegex.MatchString("onMount")).IsTrue()
+		assert(actionNameRegex.MatchString("sayHello")).IsTrue()
+		assert(actionNameRegex.MatchString("$sayHello")).IsFalse()
+	})
 }
 
-//
-//import (
-//	"errors"
-//	"fmt"
-//	"github.com/rpccloud/rpc/internal/base"
-//	"os"
-//	"path"
-//	"reflect"
-//	"runtime"
-//	"strings"
-//	"sync"
-//	"sync/atomic"
-//	"testing"
-//	"time"
-//)
-//
+func TestNewProcessor(t *testing.T) {
+	t.Run("onReturnStream is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewProcessor(
+			1024, 16, 16, 2048, nil, 5*time.Second, nil, nil,
+		)).Equal(nil, errors.ErrProcessorOnReturnStreamIsNil)
+	})
+
+	t.Run("numOfThreads <= 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewProcessor(
+			0, 16, 16, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
+		)).Equal(nil, errors.ErrNumOfThreadsIsWrong)
+	})
+
+	t.Run("maxNodeDepth <= 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewProcessor(
+			1024, 0, 16, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
+		)).Equal(nil, errors.ErrMaxNodeDepthIsWrong)
+	})
+
+	t.Run("maxCallDepth <= 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewProcessor(
+			1024, 16, 0, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
+		)).Equal(nil, errors.ErrMaxNodeDepthIsWrong)
+	})
+
+	t.Run("mount service error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(NewProcessor(
+			1024, 16, 16, 2048, nil, 5*time.Second,
+			[]*ServiceMeta{nil}, func(stream *Stream) {},
+		)).Equal(nil, errors.ErrProcessorNodeMetaIsNil)
+	})
+
+	//t.Run("test ok", func(t *testing.T) {
+	//
+	//  assert := base.NewAssert(t)
+	//  processor, err := NewProcessor(
+	//    1024, 16, 16, 2048, nil, 5*time.Second,
+	//    []*ServiceMeta{nil}, func(stream *Stream) {},
+	//  )
+	//
+	//})
+}
+
 //func TestNewProcessor(t *testing.T) {
 //	assert := base.NewAssert(t)
-//
-//	// Test(1) onReturnStream is nil
-//	assert(NewProcessor(true, 1, 1, 1, nil, 5*time.Second, nil, nil)).IsNil()
-//
-//	// Test(2) numOfThreads <= 0
-//	helper2 := newTestProcessorReturnHelper()
-//	assert(
-//		NewProcessor(true, 0, 1, 1, nil, 5*time.Second, nil, helper2.GetFunction()),
-//	).IsNil()
-//	_, _, panicArray2 := helper2.GetReturn()
-//	assert(len(panicArray2)).Equal(1)
-//	assert(panicArray2[0].GetKind()).Equal(base.ErrorKindKernelPanic)
-//	assert(panicArray2[0].GetMessage()).Equal("numOfThreads is wrong")
-//	assert(strings.Contains(panicArray2[0].GetDebug(), "NewProcessor")).IsTrue()
-//
-//	// Test(3) maxNodeDepth <= 0
-//	helper3 := newTestProcessorReturnHelper()
-//	assert(
-//		NewProcessor(true, 1, 0, 1, nil, 5*time.Second, nil, helper3.GetFunction()),
-//	).IsNil()
-//	_, _, panicArray3 := helper3.GetReturn()
-//	assert(len(panicArray3)).Equal(1)
-//	assert(panicArray3[0].GetKind()).Equal(base.ErrorKindKernelPanic)
-//	assert(panicArray3[0].GetMessage()).Equal("maxNodeDepth is wrong")
-//	assert(strings.Contains(panicArray3[0].GetDebug(), "NewProcessor")).IsTrue()
-//
-//	// Test(4) maxCallDepth <= 0
-//	helper4 := newTestProcessorReturnHelper()
-//	assert(
-//		NewProcessor(true, 1, 1, 0, nil, 5*time.Second, nil, helper4.GetFunction()),
-//	).IsNil()
-//	_, _, panicArray4 := helper4.GetReturn()
-//	assert(len(panicArray4)).Equal(1)
-//	assert(panicArray4[0].GetKind()).Equal(base.ErrorKindKernelPanic)
-//	assert(panicArray4[0].GetMessage()).Equal("maxCallDepth is wrong")
-//	assert(strings.Contains(panicArray4[0].GetDebug(), "NewProcessor")).IsTrue()
-//
-//	// Test(5) mount service error
-//	helper5 := newTestProcessorReturnHelper()
-//	assert(NewProcessor(
-//		true,
-//		1,
-//		1,
-//		1,
-//		nil,
-//		5*time.Second,
-//		[]*ServiceMeta{nil},
-//		helper5.GetFunction(),
-//	)).IsNil()
-//	_, _, panicArray5 := helper5.GetReturn()
-//	assert(len(panicArray5)).Equal(1)
-//	assert(panicArray5[0].GetKind()).Equal(base.ErrorKindKernelPanic)
-//	assert(panicArray5[0].GetMessage()).Equal("nodeMeta is nil")
-//	assert(strings.Contains(panicArray5[0].GetDebug(), "NewProcessor")).IsTrue()
-//
 //	// Test(6) OK
 //	helper6 := newTestProcessorReturnHelper()
 //	processor6 := NewProcessor(
