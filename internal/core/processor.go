@@ -189,6 +189,7 @@ func NewProcessor(
 			ret.threads[i] = thread
 			ret.freeCHArray[i%freeGroups] <- thread
 		}
+
 		return ret, nil
 	}
 }

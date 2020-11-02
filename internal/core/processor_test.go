@@ -36,14 +36,16 @@ func TestRpcActionNode_SetConfig(t *testing.T) {
 
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := &rpcServiceNode{data: Map{"age": 18}}
-		assert(v.GetConfig("name")).Equal(nil, false)
+		v := &rpcServiceNode{data: Map{}}
+		v.SetConfig("age", 3)
+		assert(v.data).Equal(Map{"age": 3})
 	})
 
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := &rpcServiceNode{data: Map{"age": 18}}
-		assert(v.GetConfig("age")).Equal(18, true)
+		v := &rpcServiceNode{data: Map{"age": 5}}
+		v.SetConfig("age", 3)
+		assert(v.data).Equal(Map{"age": 3})
 	})
 }
 
