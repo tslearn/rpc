@@ -24,6 +24,8 @@ var (
 	actionNameRegex = regexp.MustCompile(
 		`^([_a-zA-Z][_0-9a-zA-Z]*)|(\$onMount)|(\$onUnmount)|(\$onUpdateConfig)$`,
 	)
+	emptyEvalBack   = func(*Stream) {}
+	emptyEvalFinish = func(*rpcThread) {}
 )
 
 type rpcActionNode struct {
@@ -131,9 +133,9 @@ func NewProcessor(
 		ret.systemThread = newThread(
 			ret,
 			closeTimeout,
-			2048,
-			func(stream *Stream) {},
-			func(thread *rpcThread) {},
+			threadBufferSize,
+			emptyEvalBack,
+			emptyEvalFinish,
 		)
 
 		// mount nodes
@@ -318,7 +320,7 @@ func (p *Processor) invokeSystemAction(name string, path string) {
 		defer func() {
 			stream.Release()
 		}()
-		p.systemThread.Eval(stream, func(_ *Stream) {})
+		p.systemThread.Eval(stream, emptyEvalBack)
 	}
 }
 
