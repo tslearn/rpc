@@ -305,7 +305,7 @@ func (p *Processor) onUpdateConfig() {
 func (p *Processor) invokeSystemAction(name string, path string) {
 	unmountPath := path + ":$" + name
 	if _, ok := p.actionsMap[unmountPath]; ok {
-		stream, _ := MakeRequestStream(unmountPath, "")
+		stream, _ := MakeRequestStream(true, 0, unmountPath, "")
 		defer func() {
 			stream.Release()
 		}()

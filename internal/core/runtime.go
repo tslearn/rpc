@@ -52,17 +52,19 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	frame := thread.top
 
 	// make stream
-	stream, err := MakeRequestStream(target, frame.from, args...)
-	if frame.stream.HasStatusBitDebug() { // debug needs to pass
-		stream.SetStatusBitDebug()
-	}
+	stream, err := MakeRequestStream(
+		frame.stream.HasStatusBitDebug(),
+		frame.depth+1,
+		target,
+		frame.from,
+		args...,
+	)
 	if err != nil {
 		return RTValue{
 			err: err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
 		}
 	}
 	defer stream.Release()
-	stream.SetDepth(frame.depth + 1)
 
 	// switch thread frame
 	thread.pushFrame()

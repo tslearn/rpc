@@ -115,11 +115,21 @@ func getFastKey(s string) uint32 {
 
 // MakeRequestStream ...
 func MakeRequestStream(
+	debug bool,
+	depth uint16,
 	target string,
 	from string,
 	args ...interface{},
 ) (*Stream, *base.Error) {
 	stream := NewStream()
+	// set debug bit
+	if debug {
+		stream.SetStatusBitDebug()
+	} else {
+		stream.ClearStatusBitDebug()
+	}
+	// set depth
+	stream.SetDepth(depth)
 	// write target
 	stream.WriteString(target)
 	// write from

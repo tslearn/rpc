@@ -2516,7 +2516,7 @@ func TestStream_Read(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
 		stream.PutBytes([]byte{1})
-		assert(stream.Read()).Equal(false, errors.ErrStream)
+		assert(stream.Read()).Equal(nil, errors.ErrStream)
 		stream.Release()
 	})
 
@@ -2524,7 +2524,7 @@ func TestStream_Read(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
 		stream.PutBytes([]byte{12})
-		assert(stream.Read()).Equal(false, errors.ErrStream)
+		assert(stream.Read()).Equal(nil, errors.ErrStream)
 		stream.Release()
 	})
 
@@ -2532,7 +2532,7 @@ func TestStream_Read(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
 		stream.PutBytes([]byte{13})
-		assert(stream.Read()).Equal(false, errors.ErrStream)
+		assert(stream.Read()).Equal(nil, errors.ErrStream)
 		stream.Release()
 	})
 }

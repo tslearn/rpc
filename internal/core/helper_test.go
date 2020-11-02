@@ -267,7 +267,7 @@ func TestGetFastKey(t *testing.T) {
 func TestMakeRequestStream(t *testing.T) {
 	t.Run("write error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(MakeRequestStream("#", "", make(chan bool))).Equal(
+		assert(MakeRequestStream(false, 0, "#", "", make(chan bool))).Equal(
 			nil,
 			errors.ErrUnsupportedValue.AddDebug(
 				"2nd argument: value is not supported",
@@ -277,9 +277,11 @@ func TestMakeRequestStream(t *testing.T) {
 
 	t.Run("arguments is empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v, err := MakeRequestStream("#", "from")
+		v, err := MakeRequestStream(false, 2, "#", "from")
 		assert(v).IsNotNil()
 		assert(err).IsNil()
+		assert(v.HasStatusBitDebug()).IsFalse()
+		assert(v.GetDepth()).Equal(uint16(2))
 		assert(v.ReadString()).Equal("#", nil)
 		assert(v.ReadString()).Equal("from", nil)
 		assert(v.IsReadFinish()).IsTrue()
@@ -288,9 +290,11 @@ func TestMakeRequestStream(t *testing.T) {
 
 	t.Run("arguments is not empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v, err := MakeRequestStream("#", "from", false)
+		v, err := MakeRequestStream(true, 5, "#", "from", false)
 		assert(v).IsNotNil()
 		assert(err).IsNil()
+		assert(v.HasStatusBitDebug()).IsTrue()
+		assert(v.GetDepth()).Equal(uint16(5))
 		assert(v.ReadString()).Equal("#", nil)
 		assert(v.ReadString()).Equal("from", nil)
 		assert(v.ReadBool()).Equal(false, nil)
@@ -311,7 +315,7 @@ func TestParseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
 		v.WriteUint64(0)
-		assert(ParseResponseStream(v)).Equal(false, errors.ErrStream)
+		assert(ParseResponseStream(v)).Equal(nil, errors.ErrStream)
 	})
 
 	t.Run("Read ret ok", func(t *testing.T) {
@@ -459,7 +463,7 @@ func testWithProcessorAndRuntime(
 	)
 	defer helper.Close()
 
-	stream, _ := MakeRequestStream("#.test:Eval", "")
+	stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH
 }
@@ -494,10 +498,7 @@ func testReplyWithSource(
 			return <-helper.streamCH, source
 		}
 	}
-	stream, _ := MakeRequestStream("#.test:Eval", "", args...)
-	if debug {
-		stream.SetStatusBitDebug()
-	}
+	stream, _ := MakeRequestStream(debug, 0, "#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH, source
 }
