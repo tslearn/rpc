@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
@@ -224,145 +225,74 @@ func TestNewProcessor(t *testing.T) {
 	})
 }
 
-//func TestNewProcessor(t *testing.T) {
-//	assert := base.NewAssert(t)
-//	// Test(6) OK
-//	helper6 := newTestProcessorReturnHelper()
-//	processor6 := NewProcessor(
-//		true,
-//		2048,
-//		2,
-//		3,
-//		nil,
-//		5*time.Second,
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: NewService().On("Eval", func(rt Runtime) Return {
-//				time.Sleep(time.Second)
-//				return rt.OK(true)
-//			}),
-//			fileLine: "",
-//		}},
-//		helper6.GetFunction(),
-//	)
-//	for i := 0; i < 2048; i++ {
-//		stream := NewStream()
-//		stream.SetDepth(3)
-//		stream.WriteString("#.test:Eval")
-//		stream.WriteString("")
-//		processor6.PutStream(stream)
-//	}
-//	assert(processor6).IsNotNil()
-//	assert(processor6.isDebug).IsTrue()
-//	assert(len(processor6.actionsMap)).Equal(1)
-//	assert(len(processor6.servicesMap)).Equal(2)
-//	assert(processor6.maxNodeDepth).Equal(uint16(2))
-//	assert(processor6.maxCallDepth).Equal(uint16(3))
-//	assert(len(processor6.threads)).Equal(2048)
-//	assert(len(processor6.freeCHArray)).Equal(freeGroups)
-//	assert(processor6.readThreadPos).Equal(uint64(2048))
-//	assert(processor6.fnError).IsNotNil()
-//	processor6.Close()
-//	assert(processor6.writeThreadPos).Equal(uint64(2048))
-//	sumFrees := 0
-//	for _, freeCH := range processor6.freeCHArray {
-//		sumFrees += len(freeCH)
-//	}
-//	assert(sumFrees).Equal(2048)
-//}
-//
-//func TestProcessor_Close(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1) p.panicSubscription == nil
-//	processor1 := getFakeProcessor(true)
-//	assert(processor1.Close()).IsFalse()
-//
-//	// Test(2)
-//	lock2 := sync.Mutex{}
-//	actionFileLine2 := ""
-//	helper2 := newTestProcessorReturnHelper()
-//	processor2 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		nil,
-//		time.Second,
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: NewService().On("Eval", func(rt Runtime) Return {
-//				lock2.Lock()
-//				actionFileLine2 = rt.thread.GetExecActionDebug()
-//				lock2.Unlock()
-//				time.Sleep(4 * time.Second)
-//				return rt.OK(true)
-//			}),
-//			fileLine: "",
-//		}},
-//		helper2.GetFunction(),
-//	)
-//	for i := 0; i < 1; i++ {
-//		stream := NewStream()
-//		stream.SetDepth(3)
-//		stream.WriteString("#.test:Eval")
-//		stream.WriteString("")
-//		processor2.PutStream(stream)
-//	}
-//	assert(processor2.Close()).IsFalse()
-//	lock2.Lock()
-//	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
-//		base.NewActionPanic(
-//			"the following actions can not close: \n\t" +
-//				actionFileLine2 + " (1 goroutine)",
-//		),
-//	})
-//	lock2.Unlock()
-//	time.Sleep(2 * time.Second)
-//
-//	// Test(3)
-//	actionFileLine3 := ""
-//	lock3 := sync.Mutex{}
-//	helper3 := newTestProcessorReturnHelper()
-//	processor3 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		nil,
-//		time.Second,
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: NewService().On("Eval", func(rt Runtime) Return {
-//				lock3.Lock()
-//				actionFileLine3 = rt.thread.GetExecActionDebug()
-//				lock3.Unlock()
-//				time.Sleep(4 * time.Second)
-//				return rt.OK(true)
-//			}),
-//			fileLine: "",
-//		}},
-//		helper3.GetFunction(),
-//	)
-//	for i := 0; i < 2; i++ {
-//		stream := NewStream()
-//		stream.SetDepth(3)
-//		stream.WriteString("#.test:Eval")
-//		stream.WriteString("")
-//		processor3.PutStream(stream)
-//	}
-//	assert(processor3.Close()).IsFalse()
-//	lock3.Lock()
-//	assert(helper3.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{
-//		base.NewActionPanic(
-//			"the following actions can not close: \n\t" +
-//				actionFileLine3 + " (2 goroutines)",
-//		),
-//	})
-//	lock3.Unlock()
-//	time.Sleep(2 * time.Second)
-//}
-//
+func TestProcessor_Close(t *testing.T) {
+	t.Run("processor is not running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		processor := getFakeProcessor()
+		assert(processor.Close()).Equal(false)
+	})
+
+	t.Run("close timeout", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		fnTest := func(count int) {
+			source := ""
+			waitCH := make(chan bool)
+			streamCH := make(chan *Stream, 1)
+			processor, _ := NewProcessor(
+				1024,
+				2,
+				3,
+				2048,
+				nil,
+				time.Second,
+				[]*ServiceMeta{{
+					name: "test",
+					service: NewService().On("Eval", func(rt Runtime) Return {
+						waitCH <- true
+						source = rt.thread.GetExecActionDebug()
+						time.Sleep(4 * time.Second)
+						return rt.Reply(true)
+					}),
+					fileLine: "",
+				}},
+				func(stream *Stream) {
+					streamCH <- stream
+				},
+			)
+
+			for i := 0; i < count; i++ {
+				stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
+				processor.PutStream(stream)
+				<-waitCH
+			}
+
+			assert(processor.Close()).IsFalse()
+
+			if count == 1 {
+				assert(ParseResponseStream(<-streamCH)).Equal(
+					nil,
+					errors.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
+						"the following actions can not close: \n\t%s (1 goroutine)",
+						source,
+					)),
+				)
+			} else {
+				assert(ParseResponseStream(<-streamCH)).Equal(
+					nil,
+					errors.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
+						"the following actions can not close: \n\t%s (%d goroutines)",
+						source, count,
+					)),
+				)
+			}
+		}
+
+		fnTest(1)
+		fnTest(100)
+	})
+}
+
 //func TestProcessor_PutStream(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
