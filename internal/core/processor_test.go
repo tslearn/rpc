@@ -178,6 +178,48 @@ func TestNewProcessor(t *testing.T) {
 		assert(<-wait).Equal("$onMount called")
 		assert(<-wait).Equal("$onUpdateConfig called")
 		assert(<-wait).Equal("$onUnmount called")
+		processor.Close()
+	})
+
+	t.Run("test ok (1M calls)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		processor := (*Processor)(nil)
+		wait := make(chan bool)
+		service := NewService().
+			On("Eval", func(rt Runtime) Return {
+				return rt.Reply(true)
+			})
+		processor, _ = NewProcessor(
+			1, 16, 16, 2048, nil, 5*time.Second,
+			[]*ServiceMeta{{
+				name:     "test",
+				service:  service,
+				fileLine: "",
+			}},
+			func(stream *Stream) {
+				v, _ := ParseResponseStream(stream)
+				if ret, ok := v.(bool); ok {
+					wait <- ret
+				} else {
+					wait <- false
+				}
+				stream.Release()
+			},
+		)
+
+		go func() {
+			for i := 0; i < 1000000; i++ {
+				stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
+				processor.PutStream(stream)
+			}
+		}()
+
+		for i := 0; i < 1000000; i++ {
+			assert(<-wait).IsTrue()
+		}
+
+		assert(len(processor.freeCHArray)).Equal(freeGroups)
+		processor.Close()
 	})
 }
 
