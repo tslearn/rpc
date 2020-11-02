@@ -51,14 +51,20 @@ func TestRpcActionNode_SetConfig(t *testing.T) {
 }
 
 func TestProcessor(t *testing.T) {
-	t.Run("test regex", func(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
+		emptyEvalBack(nil)
+		emptyEvalFinish(nil)
 		assert(actionNameRegex.MatchString("$onMount")).IsTrue()
 		assert(actionNameRegex.MatchString("$onUnmount")).IsTrue()
 		assert(actionNameRegex.MatchString("$onUpdateConfig")).IsTrue()
 		assert(actionNameRegex.MatchString("onMount")).IsTrue()
 		assert(actionNameRegex.MatchString("sayHello")).IsTrue()
 		assert(actionNameRegex.MatchString("$sayHello")).IsFalse()
+		assert(rootName).Equal("#")
+		assert(freeGroups).Equal(1024)
+		assert(processorStatusClosed).Equal(0)
+		assert(processorStatusRunning).Equal(1)
 	})
 }
 
