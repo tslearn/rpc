@@ -917,6 +917,7 @@ func TestRpcThread_Eval(t *testing.T) {
 		fnTest(true, &testFuncCache{})
 		fnTest(false, &testFuncCache{})
 	})
+
 }
 
 //func TestRpcThread_Eval(t *testing.T) {
