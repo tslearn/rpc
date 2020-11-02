@@ -420,6 +420,21 @@ func TestRpcThread_Write(t *testing.T) {
 		)
 	})
 
+	t.Run("value is RTValue (with err)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(testReply(true, nil, nil, func(rt Runtime) Return {
+			thread := rt.thread
+			v := RTValue{err: errors.ErrStream}
+			ret, s := thread.Write(v, 0, true), base.GetFileLine(0)
+			source = s
+			return ret
+		})).Equal(
+			nil,
+			errors.ErrStream.AddDebug("#.test:Eval "+source),
+		)
+	})
+
 	t.Run("reply has already benn called (debug true)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
