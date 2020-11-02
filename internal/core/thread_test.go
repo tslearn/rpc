@@ -404,6 +404,64 @@ func TestRpcThread_unlock(t *testing.T) {
 	})
 }
 
+func TestRpcThread_pushFrame(t *testing.T) {
+	t.Run("unlock ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime) Return {
+				currFrame := rt.thread.top
+				rtArray := rt.NewRTArray(7)
+				rtMap := rt.NewRTMap(7)
+				_ = rtArray.Append("hello")
+				_ = rtMap.Set("name", "kitty")
+
+				parentRTWritePos := rt.thread.rtStream.GetWritePos()
+				rt.thread.pushFrame()
+				newFrame := rt.thread.top
+				assert(newFrame.next).Equal(currFrame)
+				assert(newFrame.cacheArrayItemsPos).Equal(uint32(7))
+				assert(newFrame.cacheMapItemsPos).Equal(uint32(7))
+				assert(newFrame.cacheArrayEntryPos).Equal(uint32(1))
+				assert(newFrame.cacheMapEntryPos).Equal(uint32(1))
+				assert(newFrame.parentRTWritePos).Equal(parentRTWritePos)
+				rt.thread.popFrame()
+				return rt.Reply("OK")
+			})).Equal("OK", nil)
+	})
+}
+
+func TestRpcThread_popFrame(t *testing.T) {
+	t.Run("unlock ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v int64) Return {
+				rtArray := rt.NewRTArray(7)
+				rtMap := rt.NewRTMap(7)
+				_ = rtArray.Append("hello")
+				_ = rtMap.Set("name", "kitty")
+
+				if v == 0 {
+					return rt.Reply(true)
+				}
+
+				currFrame := rt.thread.top
+				cacheArrayItemsPos := currFrame.cacheArrayItemsPos
+				cacheMapItemsPos := currFrame.cacheMapItemsPos
+				cacheArrayEntryPos := currFrame.cacheArrayEntryPos
+				cacheMapEntryPos := currFrame.cacheMapEntryPos
+				parentRTWritePos := rt.thread.rtStream.GetWritePos()
+				ret := rt.Reply(rt.Call("#.test:Eval", v-1))
+				assert(rt.thread.top).Equal(currFrame)
+				assert(rt.thread.top.cacheArrayItemsPos).Equal(cacheArrayItemsPos)
+				assert(rt.thread.top.cacheMapItemsPos).Equal(cacheMapItemsPos)
+				assert(rt.thread.top.cacheArrayEntryPos).Equal(cacheArrayEntryPos)
+				assert(rt.thread.top.cacheMapEntryPos).Equal(cacheMapEntryPos)
+				assert(rt.thread.rtStream.GetWritePos()).Equal(parentRTWritePos + 1)
+				return ret
+			}, 10)).Equal(true, nil)
+	})
+}
+
 func TestRpcThread_GetActionNode(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)

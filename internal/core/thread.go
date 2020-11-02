@@ -19,12 +19,18 @@ var (
 	rpcThreadFrameCache = &sync.Pool{
 		New: func() interface{} {
 			return &rpcThreadFrame{
-				stream:     nil,
-				depth:      0,
-				actionNode: nil,
-				from:       "",
-				retStatus:  0,
-				lockStatus: 0,
+				stream:             nil,
+				actionNode:         nil,
+				from:               "",
+				depth:              0,
+				cacheArrayItemsPos: 0,
+				cacheMapItemsPos:   0,
+				cacheArrayEntryPos: 0,
+				cacheMapEntryPos:   0,
+				retStatus:          0,
+				lockStatus:         0,
+				parentRTWritePos:   streamPosBody,
+				next:               nil,
 			}
 		},
 	}
@@ -181,6 +187,7 @@ func newThread(
 		}
 
 		thread.top = &thread.rootFrame
+		thread.top.parentRTWritePos = streamPosBody
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
