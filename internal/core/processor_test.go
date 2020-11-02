@@ -88,7 +88,7 @@ func TestNewProcessor(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewProcessor(
 			1024, 16, 0, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
-		)).Equal(nil, errors.ErrMaxNodeDepthIsWrong)
+		)).Equal(nil, errors.ErrProcessorMaxCallDepthIsWrong)
 	})
 
 	t.Run("mount service error", func(t *testing.T) {
@@ -99,15 +99,23 @@ func TestNewProcessor(t *testing.T) {
 		)).Equal(nil, errors.ErrProcessorNodeMetaIsNil)
 	})
 
-	//t.Run("test ok", func(t *testing.T) {
-	//
-	//  assert := base.NewAssert(t)
-	//  processor, err := NewProcessor(
-	//    1024, 16, 16, 2048, nil, 5*time.Second,
-	//    []*ServiceMeta{nil}, func(stream *Stream) {},
-	//  )
-	//
-	//})
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		processor, err := NewProcessor(
+			1, 16, 16, 2048, nil, 5*time.Second,
+			[]*ServiceMeta{{
+				name: "test",
+				service: NewService().On("Eval", func(rt Runtime) Return {
+					return rt.Reply(true)
+				}),
+				fileLine: "",
+			}},
+			func(stream *Stream) {},
+		)
+		assert(err).IsNil()
+		assert(processor).IsNotNil()
+		assert(len(processor.threads)).Equal(freeGroups)
+	})
 }
 
 //func TestNewProcessor(t *testing.T) {

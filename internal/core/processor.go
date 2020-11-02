@@ -14,7 +14,7 @@ import (
 
 const (
 	rootName               = "#"
-	freeGroups             = 512
+	freeGroups             = 1024
 	processorStatusClosed  = 0
 	processorStatusRunning = 1
 )
@@ -154,9 +154,9 @@ func NewProcessor(
 		go func() {
 			counter := uint64(0)
 			for atomic.LoadInt32(&ret.status) == processorStatusRunning {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(50 * time.Millisecond)
 				counter++
-				if counter%40 == 0 {
+				if counter%80 == 0 {
 					ret.onUpdateConfig()
 				}
 			}
