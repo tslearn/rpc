@@ -217,10 +217,10 @@ func BenchmarkRPC_getServiceData(b *testing.B) {
 		2048,
 		&testFuncCache{},
 		func(rt Runtime) Return {
-			if v, ok := rt.GetServiceData("dbName"); !ok || v != "mysql" {
+			if v, ok := rt.GetServiceConfig("dbName"); !ok || v != "mysql" {
 				panic("error")
 			}
-			if v, ok := rt.GetServiceData("port"); !ok || v != uint64(3366) {
+			if v, ok := rt.GetServiceConfig("port"); !ok || v != uint64(3366) {
 				panic("error")
 			}
 			return rt.Reply(true)

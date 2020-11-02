@@ -104,8 +104,8 @@ func (p Runtime) NewRTMap(size int) RTMap {
 	return RTMap{}
 }
 
-// GetServiceData ...
-func (p Runtime) GetServiceData(key string) (Any, bool) {
+// GetServiceConfig ...
+func (p Runtime) GetServiceConfig(key string) (Any, bool) {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 
@@ -114,15 +114,15 @@ func (p Runtime) GetServiceData(key string) (Any, bool) {
 		} else if serviceNode := actionNode.service; serviceNode == nil {
 			return nil, false
 		} else {
-			return serviceNode.GetData(key)
+			return serviceNode.GetConfig(key)
 		}
 	}
 
 	return nil, false
 }
 
-// SetServiceData ...
-func (p Runtime) SetServiceData(key string, value Any) bool {
+// SetServiceConfig ...
+func (p Runtime) SetServiceConfig(key string, value Any) bool {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 
@@ -131,7 +131,7 @@ func (p Runtime) SetServiceData(key string, value Any) bool {
 		} else if serviceNode := actionNode.service; serviceNode == nil {
 			return false
 		} else {
-			serviceNode.SetData(key, value)
+			serviceNode.SetConfig(key, value)
 			return true
 		}
 	}

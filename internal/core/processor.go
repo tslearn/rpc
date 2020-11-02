@@ -46,12 +46,12 @@ type rpcServiceNode struct {
 	sync.Mutex
 }
 
-func (p *rpcServiceNode) GetData(key string) (Any, bool) {
+func (p *rpcServiceNode) GetConfig(key string) (Any, bool) {
 	v, ok := p.data[key]
 	return v, ok
 }
 
-func (p *rpcServiceNode) SetData(key string, value Any) {
+func (p *rpcServiceNode) SetConfig(key string, value Any) {
 	p.data[key] = value
 }
 

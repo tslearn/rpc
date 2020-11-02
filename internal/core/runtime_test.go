@@ -253,22 +253,22 @@ func TestRuntime_NewRTMap(t *testing.T) {
 	})
 }
 
-func TestRuntime_GetServiceData(t *testing.T) {
+func TestRuntime_GetServiceConfig(t *testing.T) {
 	t.Run("runtime is invalid", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := Runtime{}
-		assert(v.GetServiceData("name")).Equal(nil, false)
+		assert(v.GetServiceConfig("name")).Equal(nil, false)
 	})
 
 	t.Run("action node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(testRuntime.GetServiceData("name")).Equal(nil, false)
+		assert(testRuntime.GetServiceConfig("name")).Equal(nil, false)
 	})
 
 	t.Run("service node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.top.actionNode = unsafe.Pointer(&rpcActionNode{})
-		assert(testRuntime.GetServiceData("name")).Equal(nil, false)
+		assert(testRuntime.GetServiceConfig("name")).Equal(nil, false)
 		testRuntime.thread.top.actionNode = nil
 	})
 
@@ -276,7 +276,7 @@ func TestRuntime_GetServiceData(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
 			func(processor *Processor, rt Runtime) Return {
-				assert(rt.GetServiceData("name")).Equal(nil, false)
+				assert(rt.GetServiceConfig("name")).Equal(nil, false)
 				return rt.Reply(true)
 			},
 			nil,
@@ -287,7 +287,7 @@ func TestRuntime_GetServiceData(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
 			func(processor *Processor, rt Runtime) Return {
-				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				assert(rt.GetServiceConfig("name")).Equal("kitty", true)
 				return rt.Reply(true)
 			},
 			Map{"name": "kitty"},
@@ -295,22 +295,22 @@ func TestRuntime_GetServiceData(t *testing.T) {
 	})
 }
 
-func TestRuntime_SetServiceData(t *testing.T) {
+func TestRuntime_SetServiceConfig(t *testing.T) {
 	t.Run("runtime is invalid", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := Runtime{}
-		assert(v.SetServiceData("name", "kitty")).Equal(false)
+		assert(v.SetServiceConfig("name", "kitty")).Equal(false)
 	})
 
 	t.Run("action node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(testRuntime.SetServiceData("name", "kitty")).Equal(false)
+		assert(testRuntime.SetServiceConfig("name", "kitty")).Equal(false)
 	})
 
 	t.Run("service node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.top.actionNode = unsafe.Pointer(&rpcActionNode{})
-		assert(testRuntime.SetServiceData("name", "kitty")).Equal(false)
+		assert(testRuntime.SetServiceConfig("name", "kitty")).Equal(false)
 		testRuntime.thread.top.actionNode = nil
 	})
 
@@ -318,8 +318,8 @@ func TestRuntime_SetServiceData(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
 			func(processor *Processor, rt Runtime) Return {
-				assert(rt.SetServiceData("name", "kitty")).Equal(true)
-				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				assert(rt.SetServiceConfig("name", "kitty")).Equal(true)
+				assert(rt.GetServiceConfig("name")).Equal("kitty", true)
 				return rt.Reply(true)
 			},
 			nil,
@@ -330,9 +330,9 @@ func TestRuntime_SetServiceData(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithProcessorAndRuntime(
 			func(processor *Processor, rt Runtime) Return {
-				assert(rt.GetServiceData("name")).Equal("doggy", true)
-				assert(rt.SetServiceData("name", "kitty")).Equal(true)
-				assert(rt.GetServiceData("name")).Equal("kitty", true)
+				assert(rt.GetServiceConfig("name")).Equal("doggy", true)
+				assert(rt.SetServiceConfig("name", "kitty")).Equal(true)
+				assert(rt.GetServiceConfig("name")).Equal("kitty", true)
 				return rt.Reply(true)
 			},
 			Map{"name": "doggy"},

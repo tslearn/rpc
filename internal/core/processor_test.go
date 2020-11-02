@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestRpcActionNode_GetData(t *testing.T) {
+	t.Run("data is nil", func(t *testing.T) {
+
+	})
+
+}
+
 func TestNewProcessor(t *testing.T) {
 	fmt.Println(actionNameRegex.MatchString("$onMount"))
 	fmt.Println(actionNameRegex.MatchString("$onUnmount"))

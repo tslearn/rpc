@@ -161,7 +161,7 @@ func getSeedWrapper() interface{} {
 	getManager := func(ctx rpc.Runtime) (*seedManager, error) {
 		if ptr := atomic.LoadPointer(&manager); ptr != nil {
 			return (*seedManager)(ptr), nil
-		} else if cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig); !ok {
+		} else if cfg, ok := ctx.GetServiceConfig().(*util.MongoDatabaseConfig); !ok {
 			return nil, errors.New("config data error")
 		} else {
 			mu.Lock()

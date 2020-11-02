@@ -72,7 +72,7 @@ func create(
 		return ctx.Error(errors.New("check code error"))
 	}
 
-	cfg, ok := ctx.GetServiceData().(*util.MongoDatabaseConfig)
+	cfg, ok := ctx.GetServiceConfig().(*util.MongoDatabaseConfig)
 	if !ok || cfg == nil {
 		return ctx.Error(errors.New("config error"))
 	}
