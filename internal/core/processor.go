@@ -51,8 +51,13 @@ func (p *rpcServiceNode) GetConfig(key string) (Any, bool) {
 	return v, ok
 }
 
-func (p *rpcServiceNode) SetConfig(key string, value Any) {
-	p.data[key] = value
+func (p *rpcServiceNode) SetConfig(key string, value Any) bool {
+	if p.data != nil {
+		p.data[key] = value
+		return true
+	} else {
+		return false
+	}
 }
 
 // Processor ...

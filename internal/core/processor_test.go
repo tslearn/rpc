@@ -2,14 +2,49 @@ package core
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 )
 
-func TestRpcActionNode_GetData(t *testing.T) {
+func TestRpcActionNode_GetConfig(t *testing.T) {
 	t.Run("data is nil", func(t *testing.T) {
-
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{}
+		assert(v.GetConfig("name")).Equal(nil, false)
 	})
 
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{data: Map{"age": 18}}
+		assert(v.GetConfig("name")).Equal(nil, false)
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{data: Map{"age": 18}}
+		assert(v.GetConfig("age")).Equal(18, true)
+	})
+}
+
+func TestRpcActionNode_SetConfig(t *testing.T) {
+	t.Run("data is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{}
+		v.SetConfig("age", 3)
+		assert(v.data).Equal(nil)
+	})
+
+	t.Run("key does not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{data: Map{"age": 18}}
+		assert(v.GetConfig("name")).Equal(nil, false)
+	})
+
+	t.Run("key exists", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &rpcServiceNode{data: Map{"age": 18}}
+		assert(v.GetConfig("age")).Equal(18, true)
+	})
 }
 
 func TestNewProcessor(t *testing.T) {

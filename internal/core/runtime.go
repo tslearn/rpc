@@ -131,8 +131,7 @@ func (p Runtime) SetServiceConfig(key string, value Any) bool {
 		} else if serviceNode := actionNode.service; serviceNode == nil {
 			return false
 		} else {
-			serviceNode.SetConfig(key, value)
-			return true
+			return serviceNode.SetConfig(key, value)
 		}
 	}
 
