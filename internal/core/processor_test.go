@@ -117,6 +117,68 @@ func TestNewProcessor(t *testing.T) {
 		assert(len(processor.threads)).Equal(freeGroups)
 		_ = processor.Close()
 	})
+
+	t.Run("test ok (subscribe error)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		streamCH := make(chan *Stream, 1)
+		processor, err := NewProcessor(
+			1, 16, 16, 2048, nil, 5*time.Second,
+			[]*ServiceMeta{{
+				name: "test",
+				service: NewService().On("Eval", func(rt Runtime) Return {
+					return rt.Reply(true)
+				}),
+				fileLine: "",
+			}},
+			func(stream *Stream) {
+				streamCH <- stream
+			},
+		)
+		assert(err).IsNil()
+		assert(processor).IsNotNil()
+		base.PublishPanic(errors.ErrStream)
+		assert(ParseResponseStream(<-streamCH)).Equal(nil, errors.ErrStream)
+		_ = processor.Close()
+	})
+
+	t.Run("test ok (system action)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		processor := (*Processor)(nil)
+		wait := make(chan string, 3)
+		service := NewService().
+			On("$onMount", func(rt Runtime) Return {
+				wait <- "$onMount called"
+				return rt.Reply(true)
+			}).
+			On("$onUpdateConfig", func(rt Runtime) Return {
+				wait <- "$onUpdateConfig called"
+				go func() {
+					time.Sleep(200 * time.Millisecond)
+					processor.Close()
+				}()
+
+				return rt.Reply(true)
+			}).
+			On("$onUnmount", func(rt Runtime) Return {
+				wait <- "$onUnmount called"
+				return rt.Reply(true)
+			})
+		processor, _ = NewProcessor(
+			1, 16, 16, 2048, nil, 5*time.Second,
+			[]*ServiceMeta{{
+				name:     "test",
+				service:  service,
+				fileLine: "",
+			}},
+			func(stream *Stream) {
+				stream.Release()
+			},
+		)
+		assert(processor).IsNotNil()
+		assert(<-wait).Equal("$onMount called")
+		assert(<-wait).Equal("$onUpdateConfig called")
+		assert(<-wait).Equal("$onUnmount called")
+	})
 }
 
 //func TestNewProcessor(t *testing.T) {

@@ -375,9 +375,6 @@ func (p *Processor) mountNode(
 				}
 			}
 
-			// invoke onUpdateConfig
-			p.invokeSystemAction("onUpdateConfig", servicePath)
-
 			// invoke onMount
 			p.invokeSystemAction("onMount", servicePath)
 			node.isMount = true
