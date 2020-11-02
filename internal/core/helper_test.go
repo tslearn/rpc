@@ -403,7 +403,6 @@ func newTestProcessorHelper(
 			}()
 		}
 	}
-
 	processor, _ := NewProcessor(
 		numOfThreads,
 		maxNodeDepth,

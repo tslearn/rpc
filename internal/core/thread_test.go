@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -579,8 +580,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("call with all type value", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			assert(testReply(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			assert(testReply(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -595,8 +596,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("1st param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -604,7 +605,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				int64(3), int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 1st argument does not match. "+
@@ -625,8 +626,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("2nd param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -634,7 +635,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, false, uint64(3), float64(3), "hello", []byte("hello"),
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 2nd argument does not match. "+
@@ -655,8 +656,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("3rd param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -664,7 +665,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), true, float64(3), "hello", []byte("hello"),
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 3rd argument does not match. "+
@@ -685,8 +686,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("4th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -694,7 +695,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), true, "hello", []byte("hello"),
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 4th argument does not match. "+
@@ -715,8 +716,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("5th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -724,7 +725,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), true, []byte("hello"),
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 5th argument does not match. "+
@@ -745,8 +746,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("6th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -754,7 +755,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), "hello", true,
 				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 6th argument does not match. "+
@@ -775,8 +776,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("7th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -784,7 +785,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				true, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 7th argument does not match. "+
@@ -805,8 +806,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("8th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -814,7 +815,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, true, true, Array{2}, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 8th argument does not match. "+
@@ -835,9 +836,9 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("9th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
+		fnTest := func(dbg bool, fnCache ActionCache) {
 			sendStream, _ := MakeRequestStream(
-				debug, 0, "#.test:Eval", "",
+				dbg, 0, "#.test:Eval", "",
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"},
 			)
@@ -845,7 +846,7 @@ func TestRpcThread_Eval(t *testing.T) {
 			sendStream.Write(Array{2})
 			sendStream.Write(Map{"name": "doggy"})
 
-			assert(testReply(debug, fnCache, nil,
+			assert(testReply(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -860,8 +861,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("10th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -869,7 +870,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"}, true, false, Map{"name": "doggy"})
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 10th argument does not match. "+
@@ -890,8 +891,8 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("11th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -899,7 +900,7 @@ func TestRpcThread_Eval(t *testing.T) {
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"}, true, Array{2}, false)
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 11th argument does not match. "+
@@ -920,15 +921,15 @@ func TestRpcThread_Eval(t *testing.T) {
 
 	t.Run("arguments length not match", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fnTest := func(debug bool, fnCache ActionCache) {
+		fnTest := func(dbg bool, fnCache ActionCache) {
 			sendStream, _ := MakeRequestStream(
-				debug, 0, "#.test:Eval", "",
+				dbg, 0, "#.test:Eval", "",
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"}, true, Array{2}, Map{"name": "doggy"},
 				false,
 			)
 			sendStream.SetWritePos(sendStream.GetWritePos() + 1)
-			assert(testReply(debug, fnCache, nil,
+			assert(testReply(dbg, fnCache, nil,
 				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
 					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
 					return rt.Reply(true)
@@ -944,10 +945,10 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("unsupported type", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		fnTest := func(debug bool, fnCache ActionCache) {
+		fnTest := func(dbg bool, fnCache ActionCache) {
 			source1 := ""
 			source2 := ""
-			stream, source := testReplyWithSource(debug, fnCache, nil,
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
 				func(rt Runtime, hook Bool) Return {
 					actionNode := rt.thread.GetActionNode()
 					actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
@@ -958,7 +959,7 @@ func TestRpcThread_Eval(t *testing.T) {
 					return ret
 				}, true)
 
-			if debug {
+			if dbg {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, errors.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 1st argument does not match. "+
@@ -994,8 +995,11 @@ func TestRpcThread_Eval(t *testing.T) {
 			assert(ret).Equal(nil)
 			assert(err).IsNotNil()
 			assert(err.GetCode()).Equal(expectErr.GetCode())
-			assert(err.GetMessage()[:len(expectErr.GetMessage())]).
-				Equal(expectErr.GetMessage())
+			assert(strings.HasPrefix(
+				err.GetMessage(),
+				expectErr.GetMessage(),
+			)).IsTrue()
+			assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
 		}
 		fnTest(true, nil)
 		fnTest(false, nil)
@@ -1003,214 +1007,80 @@ func TestRpcThread_Eval(t *testing.T) {
 		fnTest(false, &testFuncCache{})
 	})
 
-}
+	t.Run("onEvalFinish panic", func(t *testing.T) {
+		assert := base.NewAssert(t)
 
-//func TestRpcThread_Eval(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(29) call function error
-//	ret29, error29, panic29 := testRunWithProcessor(false, nil,
-//		func(rt Runtime, bVal bool) Return {
-//			if bVal {
-//				panic("this is a error")
-//			}
-//			return rt.OK(bVal)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret29, error29).IsNil()
-//	assert(panic29).IsNotNil()
-//	if panic29 != nil {
-//		assert(panic29.GetKind()).Equal(base.ErrorKindActionPanic)
-//		assert(panic29.GetMessage()).
-//			Equal("runtime error: this is a error")
-//		assert(strings.Contains(panic29.GetDebug(), "#.test:Eval")).IsTrue()
-//		assert(strings.Contains(panic29.GetDebug(), "thread_test.go")).IsTrue()
-//	}
-//
-//	// Test(30) call function error
-//	ret30, error30, panic30 := testRunWithProcessor(true, nil,
-//		func(rt Runtime, bVal bool) Return {
-//			if bVal {
-//				panic("this is a error")
-//			}
-//			return rt.OK(bVal)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret30, error30).IsNil()
-//	assert(panic30).IsNotNil()
-//	if panic30 != nil {
-//		assert(panic30.GetKind()).Equal(base.ErrorKindActionPanic)
-//		assert(panic30.GetMessage()).
-//			Equal("runtime error: this is a error")
-//		assert(strings.Contains(panic30.GetDebug(), "#.test:Eval")).IsTrue()
-//		assert(strings.Contains(panic30.GetDebug(), "thread_test.go")).IsTrue()
-//	}
-//
-//	// Test(31) return TransportError to make onEvalFinish panic
-//	ret31, error31, panic31 := testRunWithProcessor(true, nil,
-//		func(rt Runtime, bVal bool) Return {
-//			return rt.Error(base.NewTransportError("it makes onEvalFinish panic"))
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret31, error31).Equal(nil, nil)
-//	assert(panic31).IsNotNil()
-//	if panic31 != nil {
-//		assert(panic31.GetKind()).Equal(base.ErrorKindKernelPanic)
-//		assert(panic31.GetMessage()).
-//			Equal("kernel error: it makes onEvalFinish panic")
-//		assert(strings.Contains(panic31.GetDebug(), "type_test.go")).IsTrue()
-//	}
-//
-//	// Test(32) return without rt
-//	ret32, error32, panic32 := testRunWithProcessor(true, nil,
-//		func(rt Runtime, bVal bool) Return {
-//			return emptyReturn
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret32, error32).Equal(nil, nil)
-//	assert(panic32).IsNotNil()
-//	if panic32 != nil {
-//		assert(panic32.GetKind()).Equal(base.ErrorKindActionPanic)
-//		assert(panic32.GetMessage()).
-//			Equal("action must return through Runtime.OK or Runtime.Error")
-//		assert(strings.Contains(panic32.GetDebug(), "type_test.go")).IsTrue()
-//	} else {
-//		assert().Fail("nil)")
-//	}
-//
-//	// Test(33) ok call with  cache
-//	assert(testRunWithProcessor(true, &testFuncCache{},
-//		func(rt Runtime,
-//			b bool, i int64, u uint64, f float64, s string,
-//			x Bytes, a Array, m Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			stream.Write(int64(3))
-//			stream.Write(uint64(3))
-//			stream.Write(float64(3))
-//			stream.Write("hello")
-//			stream.Write(([]byte)("world"))
-//			stream.Write(Array{1})
-//			stream.Write(Map{"name": "world"})
-//			return stream
-//		},
-//		nil,
-//	)).Equal(true, nil, nil)
-//
-//	// Test(34) stream is not finish
-//	ret34, error34, panic34 := testRunWithProcessor(true, nil,
-//		func(rt Runtime,
-//			b bool, i int64, u uint64, f float64, s string,
-//			x Bytes, a Array, m Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			stream.Write(int64(3))
-//			stream.Write(uint64(3))
-//			stream.Write(float64(3))
-//			stream.Write("hello")
-//			stream.Write(([]byte)("world"))
-//			stream.Write(Array{1})
-//			stream.Write(Map{"name": "world"})
-//			// error
-//			stream.Write(true)
-//			return stream
-//		},
-//		nil,
-//	)
-//	assert(ret34, panic34).Equal(nil, nil)
-//	assert(error34).IsNotNil()
-//	assert(error34.GetMessage())
-//
-//	assert(error34.GetKind()).Equal(base.ErrorKindAction)
-//	assert(error34.GetMessage()).Equal(
-//		"#.test:Eval action arguments does not match\n" +
-//			"want: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
-//			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return\n" +
-//			"got: #.test:Eval(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
-//			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map, rpc.Bool) " +
-//			"rpc.Return",
-//	)
-//	assert(strings.Contains(error34.GetDebug(), "#.test:Eval")).IsTrue()
-//	assert(strings.Contains(error34.GetDebug(), "type_test.go:")).IsTrue()
-//
-//	// Test(35) bad stream
-//	assert(testRunWithProcessor(true, &testFuncCache{},
-//		func(rt Runtime,
-//			b bool, i int64, u uint64, f float64, s string,
-//			x Bytes, a Array, m Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		func(_ *Processor) *Stream {
-//			stream := NewStream()
-//			stream.SetDepth(3)
-//			stream.WriteString("#.test:Eval")
-//			stream.WriteString("#")
-//			stream.Write(true)
-//			stream.Write(int64(3))
-//			stream.Write(uint64(3))
-//			stream.Write(float64(3))
-//			stream.Write("hello")
-//			stream.Write(([]byte)("world"))
-//			stream.Write(Array{1})
-//			stream.Write(Map{"name": "world"})
-//			// error
-//			stream.Write(true)
-//			stream.Write(Map{"name": "world"})
-//			stream.SetWritePos(stream.GetWritePos() - 2)
-//
-//			return stream
-//		},
-//		nil,
-//	)).Equal(nil, base.NewProtocolError(base.ErrStringBadStream), nil)
-//}
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			processor, _ := NewProcessor(
+				1,
+				16,
+				16,
+				2048,
+				fnCache,
+				3*time.Second,
+				[]*ServiceMeta{{
+					name: "test",
+					service: NewService().On("Eval", func(rt Runtime) Return {
+						return rt.Reply(true)
+					}),
+					fileLine: "",
+					data:     nil,
+				}},
+				func(stream *Stream) {
+					panic("error")
+				},
+			)
+			defer processor.Close()
+			sendStream, _ := MakeRequestStream(dbg, 0, "#.test:Eval", "")
+			processor.PutStream(sendStream)
+
+			errCH := make(chan *base.Error)
+			subscription := base.SubscribePanic(func(e *base.Error) {
+				errCH <- e
+			})
+			defer subscription.Close()
+
+			err := <-errCH
+			expectErr := errors.ErrThreadEvalFatal.AddDebug("error")
+			assert(err).IsNotNil()
+			assert(strings.HasPrefix(
+				err.GetMessage(),
+				expectErr.GetMessage(),
+			)).IsTrue()
+			assert(strings.Contains(err.GetMessage(), "[running]:")).IsTrue()
+		}
+		fnTest(true, nil)
+		fnTest(false, nil)
+		fnTest(true, &testFuncCache{})
+		fnTest(false, &testFuncCache{})
+	})
+
+	t.Run("return without runtime", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream, source := testReplyWithSource(true, nil, nil,
+			func(rt Runtime) Return {
+				return emptyReturn
+			})
+		assert(ParseResponseStream(stream)).Equal(
+			nil,
+			errors.ErrRuntimeExternalReturn.AddDebug("#.test:Eval "+source))
+	})
+
+	t.Run("thread is locked for a while", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime) Return {
+				wait := make(chan bool)
+				ret := rt.Reply(true)
+				go func() {
+					rt.lock()
+					wait <- true
+					time.Sleep(500 * time.Millisecond)
+					rt.unlock()
+				}()
+				<-wait
+				return ret
+			}),
+		).Equal(true, nil)
+	})
+}
