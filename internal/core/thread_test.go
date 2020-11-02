@@ -77,39 +77,6 @@ func TestRpcThreadFrame_Release(t *testing.T) {
 	})
 }
 
-func TestNewRTMap(t *testing.T) {
-	t.Run("thread is nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		assert(newRTMap(Runtime{}, 2)).Equal(RTMap{})
-	})
-
-	t.Run("size is less than zero", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		testRuntime.thread.Reset()
-		assert(newRTMap(testRuntime, -1)).Equal(RTMap{})
-	})
-
-	t.Run("size is zero", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		testRuntime.thread.Reset()
-		v := newRTMap(testRuntime, 0)
-		assert(v.rt).Equal(testRuntime)
-		assert(v.items != nil)
-		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 0, uint32(0))
-	})
-
-	t.Run("test ok", func(t *testing.T) {
-		assert := base.NewAssert(t)
-
-		for i := 0; i < 100; i++ {
-			testRuntime.thread.Reset()
-			v := newRTMap(testRuntime, i)
-			assert(v.rt).Equal(testRuntime)
-			assert(len(*v.items), cap(*v.items), *v.length).Equal(0, i, uint32(0))
-		}
-	})
-}
-
 func TestRTArrayNewRTArray(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -133,12 +100,45 @@ func TestRTArrayNewRTArray(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
 
-		for i := 0; i < 100; i++ {
-			testRuntime.thread.Reset()
-			v := newRTArray(testRuntime, i)
+		for i := 0; i < 500; i++ {
+			v := newRTArray(testRuntime, 1)
 			assert(v.rt).Equal(testRuntime)
-			assert(len(*v.items), cap(*v.items)).Equal(0, i)
+			assert(len(*v.items), cap(*v.items)).Equal(0, 1)
+		}
+	})
+}
+
+func TestNewRTMap(t *testing.T) {
+	t.Run("thread is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(newRTMap(Runtime{}, 2)).Equal(RTMap{})
+	})
+
+	t.Run("size is less than zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		assert(newRTMap(testRuntime, -1)).Equal(RTMap{})
+	})
+
+	t.Run("size is zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := newRTMap(testRuntime, 0)
+		assert(v.rt).Equal(testRuntime)
+		assert(v.items != nil)
+		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 0, uint32(0))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+
+		for i := 0; i < 500; i++ {
+			v := newRTArray(testRuntime, 1)
+			assert(v.rt).Equal(testRuntime)
+			assert(len(*v.items), cap(*v.items)).Equal(0, 1)
 		}
 	})
 }
