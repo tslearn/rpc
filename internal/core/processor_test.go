@@ -115,6 +115,7 @@ func TestNewProcessor(t *testing.T) {
 		assert(err).IsNil()
 		assert(processor).IsNotNil()
 		assert(len(processor.threads)).Equal(freeGroups)
+		_ = processor.Close()
 	})
 }
 
