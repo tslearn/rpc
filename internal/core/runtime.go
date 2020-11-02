@@ -18,10 +18,12 @@ func (p Runtime) lock() *rpcThread {
 	return nil
 }
 
-func (p Runtime) unlock() {
+func (p Runtime) unlock() bool {
 	if thread := p.thread; thread != nil {
-		thread.unlock(p.id)
+		return thread.unlock(p.id)
 	}
+
+	return false
 }
 
 // Reply ...

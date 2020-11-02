@@ -98,7 +98,18 @@ func TestRTArrayNewRTArray(t *testing.T) {
 		assert(len(*v.items), cap(*v.items)).Equal(0, 0)
 	})
 
-	t.Run("test ok", func(t *testing.T) {
+	t.Run("test ok 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := newRTArray(testRuntime, i)
+			assert(v.rt).Equal(testRuntime)
+			assert(len(*v.items), cap(*v.items)).Equal(0, i)
+		}
+	})
+
+	t.Run("test ok 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 
@@ -131,12 +142,23 @@ func TestNewRTMap(t *testing.T) {
 		assert(len(*v.items), cap(*v.items), *v.length).Equal(0, 0, uint32(0))
 	})
 
-	t.Run("test ok", func(t *testing.T) {
+	t.Run("test ok 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		for i := 0; i < 100; i++ {
+			testRuntime.thread.Reset()
+			v := newRTMap(testRuntime, i)
+			assert(v.rt).Equal(testRuntime)
+			assert(len(*v.items), cap(*v.items), *v.length).Equal(0, i, uint32(0))
+		}
+	})
+
+	t.Run("test ok 2", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 
 		for i := 0; i < 500; i++ {
-			v := newRTArray(testRuntime, 1)
+			v := newRTMap(testRuntime, 1)
 			assert(v.rt).Equal(testRuntime)
 			assert(len(*v.items), cap(*v.items)).Equal(0, 1)
 		}
@@ -295,6 +317,90 @@ func TestRpcThread_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
 		assert(v.Close()).IsTrue()
+	})
+}
+
+func TestRpcThread_lock(t *testing.T) {
+	t.Run("concurrent lock", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v Int64) Return {
+				if v == 0 {
+					return rt.Reply("OK")
+				}
+
+				wait := make(chan bool)
+
+				for i := 0; i < 5; i++ {
+					go func() {
+						t := rt.thread.lock(rt.id)
+						assert(t).IsNotNil()
+						time.Sleep(100 * time.Millisecond)
+						rt.thread.unlock(rt.id)
+						wait <- true
+					}()
+				}
+
+				for i := 0; i < 5; i++ {
+					<-wait
+				}
+
+				return rt.Reply(rt.Call("#.test:Eval", v-1))
+			}, 3)).Equal("OK", nil)
+	})
+
+	t.Run("lock failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v Int64) Return {
+				if v == 0 {
+					return rt.Reply("OK")
+				}
+				assert(rt.thread.lock(rt.id + 2)).IsNil()
+				return rt.Reply(rt.Call("#.test:Eval", v-1))
+			}, 10)).Equal("OK", nil)
+	})
+
+	t.Run("lock ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v Int64) Return {
+				if v == 0 {
+					return rt.Reply("OK")
+				}
+				assert(rt.thread.lock(rt.id)).IsNotNil()
+				rt.thread.unlock(rt.id)
+				return rt.Reply(rt.Call("#.test:Eval", v-1))
+			}, 10)).Equal("OK", nil)
+	})
+}
+
+func TestRpcThread_unlock(t *testing.T) {
+	t.Run("unlock failed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v Int64) Return {
+				if v == 0 {
+					return rt.Reply("OK")
+				}
+				assert(rt.thread.lock(rt.id)).IsNotNil()
+				assert(rt.thread.unlock(rt.id + 2)).IsFalse()
+				rt.thread.unlock(rt.id)
+				return rt.Reply(rt.Call("#.test:Eval", v-1))
+			}, 10)).Equal("OK", nil)
+	})
+
+	t.Run("unlock ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil,
+			func(rt Runtime, v Int64) Return {
+				if v == 0 {
+					return rt.Reply("OK")
+				}
+				assert(rt.thread.lock(rt.id)).IsNotNil()
+				assert(rt.thread.unlock(rt.id)).IsTrue()
+				return rt.Reply(rt.Call("#.test:Eval", v-1))
+			}, 10)).Equal("OK", nil)
 	})
 }
 

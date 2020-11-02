@@ -238,8 +238,8 @@ func (p *rpcThread) lock(rtID uint64) *rpcThread {
 	return p
 }
 
-func (p *rpcThread) unlock(rtID uint64) {
-	atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID+1, rtID)
+func (p *rpcThread) unlock(rtID uint64) bool {
+	return atomic.CompareAndSwapUint64(&p.top.lockStatus, rtID+1, rtID)
 }
 
 func (p *rpcThread) pushFrame() {
