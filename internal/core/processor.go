@@ -324,7 +324,7 @@ func (p *Processor) onUpdateConfig() {
 	}
 }
 
-func (p *Processor) invokeSystemAction(name string, path string) {
+func (p *Processor) invokeSystemAction(name string, path string) bool {
 	actionPath := path + ":$" + name
 	if _, ok := p.actionsMap[actionPath]; ok {
 		stream, _ := MakeRequestStream(true, 0, actionPath, "")
@@ -332,7 +332,10 @@ func (p *Processor) invokeSystemAction(name string, path string) {
 			stream.Release()
 		}()
 		p.systemThread.Eval(stream, emptyEvalBack)
+		return true
 	}
+
+	return false
 }
 
 func (p *Processor) mountNode(

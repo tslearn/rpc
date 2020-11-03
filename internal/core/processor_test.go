@@ -347,7 +347,6 @@ func TestProcessor_PutStream(t *testing.T) {
 }
 
 func TestProcessor_BuildCache(t *testing.T) {
-	assert := base.NewAssert(t)
 	_, file, _, _ := runtime.Caller(0)
 	currDir := path.Dir(file)
 	defer func() {
@@ -355,6 +354,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	}()
 
 	t.Run("services is empty", func(t *testing.T) {
+		assert := base.NewAssert(t)
 		tmpFile := path.Join(currDir, "_tmp_/test-processor-01.go")
 		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
 		processor, _ := NewProcessor(
@@ -373,6 +373,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	})
 
 	t.Run("service is not empty", func(t *testing.T) {
+		assert := base.NewAssert(t)
 		tmpFile := path.Join(currDir, "_tmp_/test-processor-02.go")
 		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
 		processor, _ := NewProcessor(
@@ -397,6 +398,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	})
 
 	t.Run("processor is closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
 		processor, _ := NewProcessor(
 			freeGroups*16,
 			2,
@@ -410,6 +412,84 @@ func TestProcessor_BuildCache(t *testing.T) {
 		processor.Close()
 		assert(processor.BuildCache("pkgName", "")).
 			Equal(errors.ErrProcessorIsNotRunning)
+	})
+}
+
+func TestProcessor_onUpdateConfig(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		waitCH := make(chan bool, 2)
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "test1",
+				service: NewService().On("$onUpdateConfig", func(rt Runtime) Return {
+					waitCH <- true
+					return rt.Reply(true)
+				}),
+				fileLine: "",
+			}, {
+				name: "test2",
+				service: NewService().On("$onUpdateConfig", func(rt Runtime) Return {
+					waitCH <- true
+					return rt.Reply(true)
+				}),
+				fileLine: "",
+			}},
+			func(_ *Stream) {},
+		)
+		processor.onUpdateConfig()
+		assert(<-waitCH).Equal(true)
+		assert(<-waitCH).Equal(true)
+		processor.Close()
+	})
+}
+
+func TestProcessor_invokeSystemAction(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		waitCH := make(chan bool, 3)
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "test",
+				service: NewService().
+					On("$onMount", func(rt Runtime) Return {
+						waitCH <- true
+						return rt.Reply(true)
+					}).
+					On("$onUpdateConfig", func(rt Runtime) Return {
+						waitCH <- true
+						return rt.Reply(true)
+					}).
+					On("$onUnmount", func(rt Runtime) Return {
+						waitCH <- true
+						return rt.Reply(true)
+					}),
+				fileLine: "",
+			}},
+			func(_ *Stream) {},
+		)
+
+		// for default onMount
+		assert(<-waitCH).Equal(true)
+		assert(processor.invokeSystemAction("onMount", "#.test")).IsTrue()
+		assert(processor.invokeSystemAction("onUpdateConfig", "#.test")).IsTrue()
+		assert(processor.invokeSystemAction("onUnmount", "#.test")).IsTrue()
+		assert(<-waitCH).Equal(true)
+		assert(<-waitCH).Equal(true)
+		assert(<-waitCH).Equal(true)
+		processor.Close()
 	})
 }
 
