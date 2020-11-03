@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -742,168 +743,168 @@ func TestProcessor_mountAction(t *testing.T) {
 		)
 	})
 
-	t.Run("handler is error", func(t *testing.T) {
-
+	t.Run("handler is error 1", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "login",
+					handler:  func() {},
+					fileLine: "actionDebug",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionHandler.
+				AddDebug("handler 1st argument type must be rpc.Runtime").
+				AddDebug("actionDebug"),
+		)
 	})
 
+	t.Run("handler is error 2", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "login",
+					handler:  func(rt Runtime) {},
+					fileLine: "actionDebug",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionHandler.
+				AddDebug("handler return type must be rpc.Return").
+				AddDebug("actionDebug"),
+		)
+	})
+
+	t.Run("duplicated name", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "login",
+					handler:  func(rt Runtime) Return { return rt.Reply(true) },
+					fileLine: "actionDebug1",
+				}, {
+					name:     "login",
+					handler:  func(rt Runtime) Return { return rt.Reply(true) },
+					fileLine: "actionDebug2",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionName.
+				AddDebug("duplicated action name login").
+				AddDebug("current:\n\tactionDebug2\nconflict:\n\tactionDebug1"),
+		)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		handler := func(rt Runtime, v Bool) Return { return rt.Reply(v) }
+		fnCache := &testFuncCache{}
+
+		processor, err := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			fnCache,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "user",
+				service: &Service{
+					children: []*ServiceMeta{},
+					actions: []*rpcActionMeta{{
+						name:     "login",
+						handler:  handler,
+						fileLine: "actionDebug",
+					}},
+				},
+				fileLine: "nodeDebug",
+			},
+			},
+			func(_ *Stream) {},
+		)
+		assert(err).IsNil()
+		assert(processor.actionsMap["#.user:login"]).Equal(&rpcActionNode{
+			path:       "#.user:login",
+			meta:       processor.actionsMap["#.user:login"].meta,
+			service:    processor.servicesMap["#.user"],
+			cacheFN:    fnCache.Get("B"),
+			reflectFn:  reflect.ValueOf(handler),
+			callString: "#.user:login(rpc.Runtime, rpc.Bool) rpc.Return",
+			argTypes:   []reflect.Type{runtimeType, boolType},
+			indicator:  processor.actionsMap["#.user:login"].indicator,
+		})
+		processor.Close()
+	})
 }
 
-//func TestProcessor_mountNode(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	fnTestMount := func(
-//		services []*ServiceMeta,
-//		wantPanicKind base.ErrorKind,
-//		wantPanicMessage string,
-//		wantPanicDebug string,
-//	) {
-//		helper := newTestProcessorReturnHelper()
-//		assert(NewProcessor(
-//			true,
-//			1024,
-//			2,
-//			3,
-//			&testFuncCache{},
-//			5*time.Second,
-//			services,
-//			helper.GetFunction(),
-//		)).IsNil()
-//		retArray, errArray, panicArray := helper.GetReturn()
-//		assert(retArray, errArray).Equal([]Any{}, []base.Error{})
-//		assert(len(panicArray)).Equal(1)
-//
-//		assert(panicArray[0].GetKind()).Equal(wantPanicKind)
-//		assert(panicArray[0].GetMessage()).Equal(wantPanicMessage)
-//
-//		if wantPanicKind == base.ErrorKindKernelPanic {
-//			assert(strings.Contains(panicArray[0].GetDebug(), "goroutine")).IsTrue()
-//			assert(strings.Contains(panicArray[0].GetDebug(), "[running]")).IsTrue()
-//			assert(strings.Contains(panicArray[0].GetDebug(), "mountNode")).IsTrue()
-//			assert(strings.Contains(panicArray[0].GetDebug(), "NewProcessor")).
-//				IsTrue()
-//		} else {
-//			assert(panicArray[0].GetDebug()).Equal(wantPanicDebug)
-//		}
-//	}
-//
-//
-//	// Test(10)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions: []*rpcActionMeta{{
-//					name:     "Eval",
-//					handler:  func() {},
-//					fileLine: "DebugAction",
-//				}},
-//				fileLine: "DebugService",
-//			},
-//			fileLine: "Debug1",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"handler 1st argument type must be rpc.Runtime",
-//		"DebugAction",
-//	)
-//
-//	// Test(11)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions: []*rpcActionMeta{{
-//					name:     "Eval",
-//					handler:  func(rt Runtime) Return { return rt.OK(true) },
-//					fileLine: "DebugAction1",
-//				}, {
-//					name:     "Eval",
-//					handler:  func(rt Runtime) Return { return rt.OK(true) },
-//					fileLine: "DebugAction2",
-//				}},
-//				fileLine: "DebugService",
-//			},
-//			fileLine: "Debug1",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"action name Eval is duplicated",
-//		"current:\n\tDebugAction2\nconflict:\n\tDebugAction1",
-//	)
-//
-//	// Test(12)
-//	actionMeta12Eval1 := &rpcActionMeta{
-//		name: "Eval1",
-//		handler: func(rt Runtime, _a Array) Return {
-//			return rt.OK(true)
-//		},
-//		fileLine: "DebugEval1",
-//	}
-//	actionMeta12Eval2 := &rpcActionMeta{
-//		name: "Eval2",
-//		handler: func(rt Runtime,
-//			_ bool, _ int64, _ uint64, _ float64,
-//			_ string, _ Bytes, _ Array, _ Map,
-//		) Return {
-//			return rt.OK(true)
-//		},
-//		fileLine: "DebugEval2",
-//	}
-//	addMeta12 := &ServiceMeta{
-//		name: "test",
-//		service: &Service{
-//			children: []*ServiceMeta{},
-//			actions:  []*rpcActionMeta{actionMeta12Eval1, actionMeta12Eval2},
-//			fileLine: base.GetFileLine(1),
-//		},
-//		fileLine: "serviceDebug",
-//	}
-//	processor12 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		&testFuncCache{},
-//		5*time.Second,
-//		[]*ServiceMeta{addMeta12},
-//		getFakeOnEvalBack(),
-//	)
-//	assert(processor12).IsNotNil()
-//	defer processor12.Close()
-//	assert(*processor12.servicesMap["#"]).Equal(rpcServiceNode{
-//		path:    rootName,
-//		addMeta: nil,
-//		depth:   0,
-//	})
-//	assert(*processor12.servicesMap["#.test"]).Equal(rpcServiceNode{
-//		path:    "#.test",
-//		addMeta: addMeta12,
-//		depth:   1,
-//	})
-//	assert(processor12.actionsMap["#.test:Eval1"].path).Equal("#.test:Eval1")
-//	assert(processor12.actionsMap["#.test:Eval1"].meta).Equal(actionMeta12Eval1)
-//	assert(processor12.actionsMap["#.test:Eval1"].cacheFN).IsNil()
-//	assert(getFuncKind(processor12.actionsMap["#.test:Eval1"].reflectFn)).
-//		Equal("A", nil)
-//	assert(processor12.actionsMap["#.test:Eval1"].callString).
-//		Equal("#.test:Eval1(rpc.Runtime, rpc.Array) rpc.Return")
-//	assert(processor12.actionsMap["#.test:Eval1"].argTypes).
-//		Equal([]reflect.Type{runtimeType, arrayType})
-//	assert(processor12.actionsMap["#.test:Eval1"].indicator).IsNotNil()
-//
-//	assert(processor12.actionsMap["#.test:Eval2"].path).Equal("#.test:Eval2")
-//	assert(processor12.actionsMap["#.test:Eval2"].meta).Equal(actionMeta12Eval2)
-//	assert(processor12.actionsMap["#.test:Eval2"].cacheFN).IsNotNil()
-//	assert(getFuncKind(processor12.actionsMap["#.test:Eval2"].reflectFn)).
-//		Equal("BIUFSXAM", nil)
-//	assert(processor12.actionsMap["#.test:Eval2"].callString).Equal(
-//		"#.test:Eval2(rpc.Runtime, rpc.Bool, rpc.Int64, rpc.Uint64, " +
-//			"rpc.Float64, rpc.String, rpc.Bytes, rpc.Array, rpc.Map) rpc.Return",
-//	)
-//	assert(processor12.actionsMap["#.test:Eval2"].argTypes).
-//		Equal([]reflect.Type{
-//			runtimeType, boolType, int64Type, uint64Type,
-//			float64Type, stringType, bytesType, arrayType, mapType,
-//		})
-//	assert(processor12.actionsMap["#.test:Eval2"].indicator).IsNotNil()
-//}
+func TestProcessor_unmount(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		handler := func(rt Runtime, v Bool) Return { return rt.Reply(v) }
+		fnCache := &testFuncCache{}
+		waitCH := make(chan string, 2)
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			fnCache,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "test1",
+				service: NewService().
+					On("action", handler).
+					On("$onUnmount", func(rt Runtime) Return {
+						waitCH <- "test1"
+						return rt.Reply(true)
+					}),
+				fileLine: "nodeDebug",
+			}, {
+				name: "test2",
+				service: NewService().
+					On("action", handler).
+					On("$onUnmount", func(rt Runtime) Return {
+						waitCH <- "test2"
+						return rt.Reply(true)
+					}),
+				fileLine: "nodeDebug",
+			}, {
+				name: "test3",
+				service: NewService().
+					On("action", handler).
+					On("$onUnmount", func(rt Runtime) Return {
+						waitCH <- "test3"
+						return rt.Reply(true)
+					}),
+				fileLine: "nodeDebug",
+			}},
+			func(_ *Stream) {},
+		)
+
+		processor.unmount("#.test1")
+		assert(<-waitCH).Equal("test1")
+		assert(len(processor.servicesMap)).Equal(3)
+		assert(len(processor.actionsMap)).Equal(4)
+		processor.unmount("#.test2")
+		assert(<-waitCH).Equal("test2")
+		assert(len(processor.servicesMap)).Equal(2)
+		assert(len(processor.actionsMap)).Equal(2)
+		processor.unmount("#")
+		assert(<-waitCH).Equal("test3")
+		assert(len(processor.servicesMap)).Equal(0)
+		assert(len(processor.actionsMap)).Equal(0)
+		processor.Close()
+	})
+}

@@ -484,27 +484,27 @@ func (p *Processor) mountAction(
 }
 
 func (p *Processor) unmount(path string) {
-	// clean sub nodes
-	subPath := path + "."
-	if _, ok := p.servicesMap[subPath]; ok {
-		p.unmount(subPath + ".")
-	}
-
-	// clean node or sibling nodes
+	// invoke onUnmount
 	for key, v := range p.servicesMap {
 		if strings.HasPrefix(key, path) {
 			if v.isMount {
 				p.invokeSystemAction("onUnmount", key)
 				v.isMount = false
 			}
-			delete(p.servicesMap, key)
 		}
 	}
 
-	// clean actions
+	// clean node actions or sibling actions
 	for key := range p.actionsMap {
 		if strings.HasPrefix(key, path) {
 			delete(p.actionsMap, key)
+		}
+	}
+
+	// clean node or sibling nodes
+	for key, _ := range p.servicesMap {
+		if strings.HasPrefix(key, path) {
+			delete(p.servicesMap, key)
 		}
 	}
 }
