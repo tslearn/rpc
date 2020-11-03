@@ -38,7 +38,6 @@ func NewServiceMeta(
 type Service struct {
 	children []*ServiceMeta   // all the children node meta pointer
 	actions  []*rpcActionMeta // all the actions meta pointer
-	fileLine string           // where the service define in source file
 	sync.Mutex
 }
 
@@ -47,7 +46,6 @@ func NewService() *Service {
 	return &Service{
 		children: nil,
 		actions:  nil,
-		fileLine: base.GetFileLine(1),
 	}
 }
 

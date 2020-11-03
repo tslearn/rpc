@@ -20,11 +20,10 @@ func TestNewServiceMeta(t *testing.T) {
 func TestNewService(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		service, fileLine := NewService(), base.GetFileLine(0)
+		service := NewService()
 		assert(service).IsNotNil()
 		assert(len(service.children)).Equal(0)
 		assert(len(service.actions)).Equal(0)
-		assert(service.fileLine).Equal(fileLine)
 	})
 }
 

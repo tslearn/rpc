@@ -615,7 +615,6 @@ func TestProcessor_mountNode(t *testing.T) {
 			service: &Service{
 				children: []*ServiceMeta{},
 				actions:  []*rpcActionMeta{nil},
-				fileLine: "dbg",
 			},
 			fileLine: "",
 		}})).Equal(errors.ErrProcessorActionMetaIsNil)
@@ -628,7 +627,6 @@ func TestProcessor_mountNode(t *testing.T) {
 			service: &Service{
 				children: []*ServiceMeta{nil},
 				actions:  []*rpcActionMeta{},
-				fileLine: "dbg",
 			},
 			fileLine: "",
 		}})).Equal(errors.ErrProcessorNodeMetaIsNil)
@@ -670,6 +668,86 @@ func TestProcessor_mountNode(t *testing.T) {
 	})
 }
 
+func TestProcessor_mountAction(t *testing.T) {
+	t.Run("meta is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions:  []*rpcActionMeta{nil},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(errors.ErrProcessorActionMetaIsNil)
+	})
+
+	t.Run("name is illegal", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "+",
+					handler:  func(rt Runtime) Return { return rt.Reply(true) },
+					fileLine: "actionDebug",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionName.
+				AddDebug("action name + is illegal").
+				AddDebug("actionDebug"),
+		)
+	})
+
+	t.Run("handler is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "login",
+					handler:  nil,
+					fileLine: "actionDebug",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionHandler.
+				AddDebug("handler is nil").
+				AddDebug("actionDebug"),
+		)
+	})
+
+	t.Run("handler is not function", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions: []*rpcActionMeta{{
+					name:     "login",
+					handler:  3,
+					fileLine: "actionDebug",
+				}},
+			},
+			fileLine: "nodeDebug",
+		}})).Equal(
+			errors.ErrActionHandler.
+				AddDebug("handler must be func(rt rpc.Runtime, ...) rpc.Return").
+				AddDebug("actionDebug"),
+		)
+	})
+
+	t.Run("handler is error", func(t *testing.T) {
+
+	})
+
+}
+
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
@@ -707,66 +785,7 @@ func TestProcessor_mountNode(t *testing.T) {
 //			assert(panicArray[0].GetDebug()).Equal(wantPanicDebug)
 //		}
 //	}
-
-//	// Test(7)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions: []*rpcActionMeta{{
-//					name:     "-",
-//					handler:  nil,
-//					fileLine: "DebugAction",
-//				}},
-//				fileLine: "DebugService",
-//			},
-//			fileLine: "Debug1",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"action name - is illegal",
-//		"DebugAction",
-//	)
 //
-//	// Test(8)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions: []*rpcActionMeta{{
-//					name:     "Eval",
-//					handler:  nil,
-//					fileLine: "DebugAction",
-//				}},
-//				fileLine: "DebugService",
-//			},
-//			fileLine: "Debug1",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"handler is nil",
-//		"DebugAction",
-//	)
-//
-//	// Test(9)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions: []*rpcActionMeta{{
-//					name:     "Eval",
-//					handler:  3,
-//					fileLine: "DebugAction",
-//				}},
-//				fileLine: "DebugService",
-//			},
-//			fileLine: "Debug1",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"handler must be func(rt rpc.Runtime, ...) rpc.Return",
-//		"DebugAction",
-//	)
 //
 //	// Test(10)
 //	fnTestMount(
