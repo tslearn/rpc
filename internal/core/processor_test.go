@@ -11,6 +11,38 @@ import (
 	"time"
 )
 
+var (
+	testProcessor, _ = NewProcessor(
+		1,
+		32,
+		32,
+		2048,
+		nil,
+		5*time.Second,
+		nil,
+		func(stream *Stream) {},
+	)
+)
+
+func init() {
+	testProcessor.Close()
+}
+
+func testProcessorMountError(services []*ServiceMeta) *base.Error {
+	processor, err := NewProcessor(
+		freeGroups*16,
+		2,
+		3,
+		2048,
+		nil,
+		time.Second,
+		services,
+		func(_ *Stream) {},
+	)
+	processor.Close()
+	return err
+}
+
 func TestRpcActionNode_GetConfig(t *testing.T) {
 	t.Run("data is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -230,7 +262,17 @@ func TestNewProcessor(t *testing.T) {
 func TestProcessor_Close(t *testing.T) {
 	t.Run("processor is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		processor := getFakeProcessor()
+		processor, _ := NewProcessor(
+			1,
+			32,
+			32,
+			2048,
+			nil,
+			5*time.Second,
+			nil,
+			func(stream *Stream) {},
+		)
+		processor.Close()
 		assert(processor.Close()).Equal(false)
 	})
 
@@ -492,6 +534,30 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 		processor.Close()
 	})
 }
+
+//func TestProcessor_mountNode(t *testing.T) {
+//  t.Run("test", func(t *testing.T) {
+//    assert := base.NewAssert(t)
+//
+//    getFakeProcessor()
+//    testProcessorMountError := func(services []*ServiceMeta) *base.Error {
+//      _, err := NewProcessor(
+//        freeGroups*16,
+//        2,
+//        3,
+//        2048,
+//        nil,
+//        time.Second,
+//        services,
+//        func(_ *Stream) {},
+//      )
+//      assert(err).Equal(result)
+//    }
+//
+//    fnTest()
+//  })
+//
+//}
 
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := base.NewAssert(t)

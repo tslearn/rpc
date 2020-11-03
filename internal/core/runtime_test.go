@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-var testRuntime = Runtime{id: 0, thread: getFakeThread()}
+var testRuntime = Runtime{id: 0, thread: testThread}
 
 func TestRuntime_lock(t *testing.T) {
 	t.Run("thread is nil", func(t *testing.T) {
@@ -18,9 +18,10 @@ func TestRuntime_lock(t *testing.T) {
 
 	t.Run("thread is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		thread := getFakeThread()
-		assert(Runtime{id: thread.top.lockStatus, thread: thread}.lock()).
-			Equal(thread)
+		thread := testThread
+		v := Runtime{id: thread.top.lockStatus, thread: thread}
+		assert(v.lock()).Equal(thread)
+		assert(v.unlock()).IsTrue()
 	})
 }
 
@@ -34,14 +35,15 @@ func TestRuntime_unlock(t *testing.T) {
 
 	t.Run("thread is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		thread := getFakeThread()
-		rt := Runtime{id: thread.top.lockStatus, thread: thread}
+		thread := testThread
+		v := Runtime{id: thread.top.lockStatus, thread: thread}
 		assert(base.RunWithCatchPanic(func() {
-			rt.lock()
-			rt.unlock()
+			v.lock()
+			v.unlock()
 		})).IsNil()
 		// if unlock is success, the thread can lock again
-		assert(rt.lock()).Equal(thread)
+		assert(v.lock()).Equal(thread)
+		assert(v.unlock()).Equal(true)
 	})
 }
 

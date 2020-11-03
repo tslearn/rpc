@@ -13,9 +13,15 @@ import (
 )
 
 var (
-	fnEvalBack    = func(stream *Stream) {}
-	fnEvalFinish  = func(thread *rpcThread) {}
-	testProcessor = getFakeProcessor()
+	fnEvalBack   = func(stream *Stream) {}
+	fnEvalFinish = func(thread *rpcThread) {}
+	testThread   = newThread(
+		testProcessor,
+		5*time.Second,
+		2048,
+		func(stream *Stream) {},
+		func(thread *rpcThread) {},
+	)
 )
 
 func TestNewRPCThreadFrame(t *testing.T) {
@@ -262,7 +268,7 @@ func TestRpcThread_Reset(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(
-			getFakeProcessor(),
+			testProcessor,
 			5*time.Second,
 			2048,
 			func(stream *Stream) {},

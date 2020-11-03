@@ -352,31 +352,6 @@ func TestParseResponseStream(t *testing.T) {
 	})
 }
 
-func getFakeProcessor() *Processor {
-	processor, _ := NewProcessor(
-		1,
-		32,
-		32,
-		2048,
-		nil,
-		5*time.Second,
-		nil,
-		func(stream *Stream) {},
-	)
-	processor.Close()
-	return processor
-}
-
-func getFakeThread() *rpcThread {
-	return newThread(
-		getFakeProcessor(),
-		5*time.Second,
-		2048,
-		func(stream *Stream) {},
-		func(thread *rpcThread) {},
-	)
-}
-
 type testProcessorHelper struct {
 	streamCH  chan *Stream
 	processor *Processor
