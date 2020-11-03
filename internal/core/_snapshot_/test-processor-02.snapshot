@@ -19,13 +19,13 @@ func (p *rpcCache) Get(fnString string) rpc.ActionCacheFunc {
 	}
 }
 
-func fnCache0(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) bool {
+func fnCache0(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) int {
 	if !stream.IsReadFinish() {
-		return false
+		return -1
 	} else {
 		stream.SetWritePosToBodyStart()
 		fn.(func(rpc.Runtime) rpc.Return)(rt)
-		return true
+		return 0
 	}
 }
 

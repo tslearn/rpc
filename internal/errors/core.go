@@ -213,4 +213,11 @@ var (
 		base.ErrorLevelFatal,
 		"",
 	)
+
+	// ErrProcessorIsNotRunning ... *
+	ErrProcessorIsNotRunning = base.DefineKernelError(
+		(kernelErrorSeg<<16)|8,
+		base.ErrorLevelFatal,
+		"processor is not running",
+	)
 )

@@ -77,6 +77,7 @@ type Processor struct {
 	panicSubscription *base.PanicSubscription
 	fnError           func(err *base.Error)
 	closeCH           chan string
+	sync.Mutex
 }
 
 // NewProcessor ...
@@ -198,6 +199,9 @@ func NewProcessor(
 
 // Close ...
 func (p *Processor) Close() bool {
+	p.Lock()
+	defer p.Unlock()
+
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		processorStatusRunning,
@@ -292,19 +296,26 @@ func (p *Processor) PutStream(stream *Stream) (ret bool) {
 
 // BuildCache ...
 func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
-	retMap := make(map[string]bool)
-	for _, action := range p.actionsMap {
-		if fnTypeString, err := getFuncKind(action.reflectFn); err == nil {
-			retMap[fnTypeString] = true
+	p.Lock()
+	defer p.Unlock()
+
+	if atomic.LoadInt32(&p.status) == processorStatusRunning {
+		retMap := make(map[string]bool)
+		for _, action := range p.actionsMap {
+			if fnTypeString, err := getFuncKind(action.reflectFn); err == nil {
+				retMap[fnTypeString] = true
+			}
 		}
+
+		fnKinds := make([]string, 0)
+		for key := range retMap {
+			fnKinds = append(fnKinds, key)
+		}
+
+		return buildFuncCache(pkgName, path, fnKinds)
 	}
 
-	fnKinds := make([]string, 0)
-	for key := range retMap {
-		fnKinds = append(fnKinds, key)
-	}
-
-	return buildFuncCache(pkgName, path, fnKinds)
+	return errors.ErrProcessorIsNotRunning
 }
 
 func (p *Processor) onUpdateConfig() {

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"os"
+	"path"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -343,102 +346,73 @@ func TestProcessor_PutStream(t *testing.T) {
 	})
 }
 
-//
-//func TestProcessor_fnError(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1)
-//	err1 := base.NewRuntimePanic("message").AddDebug("debug")
-//	helper1 := newTestProcessorReturnHelper()
-//	processor1 := NewProcessor(
-//		true,
-//		1,
-//		1,
-//		1,
-//		nil,
-//		5*time.Second,
-//		nil,
-//		helper1.GetFunction(),
-//	)
-//	defer processor1.Close()
-//	processor1.fnError(err1)
-//	assert(helper1.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{err1})
-//}
+func TestProcessor_BuildCache(t *testing.T) {
+	assert := base.NewAssert(t)
+	_, file, _, _ := runtime.Caller(0)
+	currDir := path.Dir(file)
+	defer func() {
+		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
+	}()
 
-//func TestProcessor_BuildCache(t *testing.T) {
-//	assert := base.NewAssert(t)
-//	_, file, _, _ := runtime.Caller(0)
-//	currDir := path.Dir(file)
-//	defer func() {
-//		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
-//	}()
-//
-//	// Test(1)
-//	tmpFile1 := path.Join(currDir, "_tmp_/test-processor-01.go")
-//	snapshotFile3 := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
-//	helper1 := newTestProcessorReturnHelper()
-//	processor1 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		nil,
-//		5*time.Second,
-//		[]*ServiceMeta{},
-//		helper1.GetFunction(),
-//	)
-//	defer processor1.Close()
-//	assert(processor1.BuildCache("pkgName", tmpFile1)).IsNil()
-//	assert(helper1.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{})
-//	assert(testReadFromFile(tmpFile1)).Equal(testReadFromFile(snapshotFile3))
-//
-//	// Test(2)
-//	tmpFile2 := path.Join(currDir, "_tmp_/test-processor-02.go")
-//	snapshotFile2 := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
-//	helper2 := newTestProcessorReturnHelper()
-//	processor2 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		nil,
-//		5*time.Second,
-//		[]*ServiceMeta{{
-//			name: "test",
-//			service: NewService().On("Eval", func(rt Runtime) Return {
-//				return rt.OK(true)
-//			}),
-//			fileLine: "",
-//		}},
-//		helper2.GetFunction(),
-//	)
-//	defer processor2.Close()
-//	assert(processor2.BuildCache("pkgName", tmpFile2)).IsNil()
-//	assert(helper2.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{})
-//	assert(testReadFromFile(tmpFile2)).Equal(testReadFromFile(snapshotFile2))
-//
-//	// Test(3)
-//	helper3 := newTestProcessorReturnHelper()
-//	processor3 := NewProcessor(
-//		true,
-//		1024,
-//		2,
-//		3,
-//		nil,
-//		5*time.Second,
-//		nil,
-//		helper3.GetFunction(),
-//	)
-//	defer processor3.Close()
-//	err1 := processor3.BuildCache(
-//		"pkgName",
-//		path.Join(currDir, "processor_test.go/err_dir.go"),
-//	)
-//	assert(err1.GetKind()).Equal(base.ErrorKindRuntimePanic)
-//	assert(strings.Contains(err1.GetMessage(), "processor_test.go")).
-//		IsTrue()
-//}
-//
+	t.Run("services is empty", func(t *testing.T) {
+		tmpFile := path.Join(currDir, "_tmp_/test-processor-01.go")
+		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			nil,
+			func(_ *Stream) {},
+		)
+		defer processor.Close()
+		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
+		assert(base.ReadFromFile(tmpFile)).Equal(base.ReadFromFile(snapshotFile))
+	})
+
+	t.Run("service is not empty", func(t *testing.T) {
+		tmpFile := path.Join(currDir, "_tmp_/test-processor-02.go")
+		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "test",
+				service: NewService().On("Eval", func(rt Runtime) Return {
+					return rt.Reply(true)
+				}),
+				fileLine: "",
+			}},
+			func(_ *Stream) {},
+		)
+		defer processor.Close()
+		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
+		assert(base.ReadFromFile(tmpFile)).Equal(base.ReadFromFile(snapshotFile))
+	})
+
+	t.Run("processor is closed", func(t *testing.T) {
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			nil,
+			func(_ *Stream) {},
+		)
+		processor.Close()
+		assert(processor.BuildCache("pkgName", "")).
+			Equal(errors.ErrProcessorIsNotRunning)
+	})
+}
+
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := base.NewAssert(t)
 //
