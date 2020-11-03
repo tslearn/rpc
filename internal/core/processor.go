@@ -357,7 +357,7 @@ func (p *Processor) mountNode(
 		if parentNode.depth+1 > p.maxNodeDepth { // depth overflows
 			return errors.ErrServiceOverflow.
 				AddDebug(fmt.Sprintf(
-					"service path %s is overflow (max depth: %d, current depth:%d)",
+					"service path %s overflows (max depth: %d, current depth:%d)",
 					servicePath,
 					p.maxNodeDepth, parentNode.depth+1,
 				)).

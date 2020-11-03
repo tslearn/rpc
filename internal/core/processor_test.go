@@ -29,7 +29,7 @@ func init() {
 }
 
 func testProcessorMountError(services []*ServiceMeta) *base.Error {
-	processor, err := NewProcessor(
+	_, err := NewProcessor(
 		freeGroups*16,
 		2,
 		3,
@@ -39,7 +39,6 @@ func testProcessorMountError(services []*ServiceMeta) *base.Error {
 		services,
 		func(_ *Stream) {},
 	)
-	processor.Close()
 	return err
 }
 
@@ -535,29 +534,141 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 	})
 }
 
-//func TestProcessor_mountNode(t *testing.T) {
-//  t.Run("test", func(t *testing.T) {
-//    assert := base.NewAssert(t)
-//
-//    getFakeProcessor()
-//    testProcessorMountError := func(services []*ServiceMeta) *base.Error {
-//      _, err := NewProcessor(
-//        freeGroups*16,
-//        2,
-//        3,
-//        2048,
-//        nil,
-//        time.Second,
-//        services,
-//        func(_ *Stream) {},
-//      )
-//      assert(err).Equal(result)
-//    }
-//
-//    fnTest()
-//  })
-//
-//}
+func TestProcessor_mountNode(t *testing.T) {
+	t.Run("nodeMeta is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{
+			nil,
+		})).Equal(errors.ErrProcessorNodeMetaIsNil)
+	})
+
+	t.Run("service name is illegal", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name:     "+",
+			service:  NewService(),
+			fileLine: "dbg",
+		}})).Equal(errors.ErrServiceName.
+			AddDebug("service name + is illegal").
+			AddDebug("dbg"),
+		)
+	})
+
+	t.Run("service is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name:     "abc",
+			service:  nil,
+			fileLine: "dbg",
+		}})).Equal(errors.ErrServiceIsNil.AddDebug("dbg"))
+	})
+
+	t.Run("depth overflows", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		embedService, source := NewService().
+			AddChildService("s", NewService(), nil), base.GetFileLine(0)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name:     "s",
+			service:  NewService().AddChildService("s", embedService, nil),
+			fileLine: "dbg",
+		}})).Equal(errors.ErrServiceOverflow.AddDebug(
+			"service path #.s.s.s overflows (max depth: 2, current depth:3)",
+		).AddDebug(source))
+	})
+
+	t.Run("duplicated service name", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name:     "user",
+			service:  NewService(),
+			fileLine: "Debug1",
+		}, {
+			name:     "user",
+			service:  NewService(),
+			fileLine: "Debug2",
+		}})).Equal(errors.ErrServiceName.
+			AddDebug("duplicated service name user").
+			AddDebug("current:\n\tDebug2\nconflict:\n\tDebug1"),
+		)
+	})
+
+	t.Run("duplicated service name", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name:     "user",
+			service:  NewService(),
+			fileLine: "dbg1",
+		}, {
+			name:     "user",
+			service:  NewService(),
+			fileLine: "dbg2",
+		}})).Equal(errors.ErrServiceName.
+			AddDebug("duplicated service name user").
+			AddDebug("current:\n\tdbg2\nconflict:\n\tdbg1"),
+		)
+	})
+
+	t.Run("mount actions error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{},
+				actions:  []*rpcActionMeta{nil},
+				fileLine: "dbg",
+			},
+			fileLine: "",
+		}})).Equal(errors.ErrProcessorActionMetaIsNil)
+	})
+
+	t.Run("mount children error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testProcessorMountError([]*ServiceMeta{{
+			name: "user",
+			service: &Service{
+				children: []*ServiceMeta{nil},
+				actions:  []*rpcActionMeta{},
+				fileLine: "dbg",
+			},
+			fileLine: "",
+		}})).Equal(errors.ErrProcessorNodeMetaIsNil)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		processor, err := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			[]*ServiceMeta{{
+				name: "user",
+				service: NewService().On("Login", func(rt Runtime) Return {
+					return rt.Reply(true)
+				}),
+				fileLine: "dbg",
+				data:     Map{"name": "kitty", "age": 18},
+			}},
+			func(_ *Stream) {},
+		)
+		assert(err).IsNil()
+		assert(processor.servicesMap["#.user"]).Equal(&rpcServiceNode{
+			path: "#.user",
+			addMeta: &ServiceMeta{
+				name:     "user",
+				service:  processor.servicesMap["#.user"].addMeta.service,
+				fileLine: "dbg",
+				data:     Map{"name": "kitty", "age": 18},
+			},
+			depth:   1,
+			data:    Map{"name": "kitty", "age": 18},
+			isMount: true,
+		})
+	})
+}
 
 //func TestProcessor_mountNode(t *testing.T) {
 //	assert := base.NewAssert(t)
@@ -596,72 +707,7 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 //			assert(panicArray[0].GetDebug()).Equal(wantPanicDebug)
 //		}
 //	}
-//
-//	// Test(1)
-//	fnTestMount([]*ServiceMeta{
-//		nil,
-//	}, base.ErrorKindKernelPanic, "nodeMeta is nil", "")
-//
-//	// Test(2)
-//	fnTestMount([]*ServiceMeta{{
-//		name:     "+",
-//		service:  NewService(),
-//		fileLine: "DebugMessage",
-//	}}, base.ErrorKindRuntimePanic, "service name + is illegal", "DebugMessage")
-//
-//	// Test(3)
-//	fnTestMount([]*ServiceMeta{{
-//		name:     "abc",
-//		service:  nil,
-//		fileLine: "DebugMessage",
-//	}}, base.ErrorKindRuntimePanic, "service is nil", "DebugMessage")
-//
-//	// Test(4)
-//	s4, source1 := NewService().
-//		AddChildService("s", NewService(), nil), base.GetFileLine(0)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name:     "s",
-//			service:  NewService().AddChildService("s", s4, nil),
-//			fileLine: "DebugMessage",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"service path #.s.s.s is too long",
-//		source1,
-//	)
-//
-//	// Test(5)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name:     "user",
-//			service:  NewService(),
-//			fileLine: "Debug1",
-//		}, {
-//			name:     "user",
-//			service:  NewService(),
-//			fileLine: "Debug2",
-//		}},
-//		base.ErrorKindRuntimePanic,
-//		"duplicated service name user",
-//		"current:\n\tDebug2\nconflict:\n\tDebug1",
-//	)
-//
-//	// Test(6)
-//	fnTestMount(
-//		[]*ServiceMeta{{
-//			name: "user",
-//			service: &Service{
-//				children: []*ServiceMeta{},
-//				actions:  []*rpcActionMeta{nil},
-//				fileLine: "DebugAction",
-//			},
-//			fileLine: "DebugService",
-//		}},
-//		base.ErrorKindKernelPanic,
-//		"meta is nil",
-//		"DebugAction",
-//	)
-//
+
 //	// Test(7)
 //	fnTestMount(
 //		[]*ServiceMeta{{
