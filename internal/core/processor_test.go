@@ -220,7 +220,6 @@ func TestNewProcessor(t *testing.T) {
 			assert(<-wait).IsTrue()
 		}
 
-		assert(len(processor.freeCHArray)).Equal(freeGroups)
 		processor.Close()
 	})
 }
@@ -293,29 +292,57 @@ func TestProcessor_Close(t *testing.T) {
 	})
 }
 
-//func TestProcessor_PutStream(t *testing.T) {
-//	assert := base.NewAssert(t)
-//
-//	// Test(1)
-//	processor1 := NewProcessor(
-//		true,
-//		1024,
-//		32,
-//		32,
-//		nil,
-//		5*time.Second,
-//		nil,
-//		func(stream *Stream) {},
-//	)
-//	defer processor1.Close()
-//	assert(processor1.PutStream(NewStream())).IsTrue()
-//
-//	// Test(2)
-//	processor2 := getFakeProcessor(true)
-//	for i := 0; i < 2048; i++ {
-//		assert(processor2.PutStream(NewStream())).IsFalse()
-//	}
-//}
+func TestProcessor_PutStream(t *testing.T) {
+	t.Run("processor is closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		processor, _ := NewProcessor(
+			1024,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			nil,
+			func(_ *Stream) {},
+		)
+		processor.Close()
+
+		for i := 0; i < 2048; i++ {
+			assert(processor.PutStream(NewStream())).IsFalse()
+		}
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		waitCH := make(chan bool)
+		processor, _ := NewProcessor(
+			freeGroups*16,
+			2,
+			3,
+			2048,
+			nil,
+			time.Second,
+			nil,
+			func(_ *Stream) {
+				waitCH <- true
+			},
+		)
+
+		defer processor.Close()
+
+		for i := 0; i < 204800; i++ {
+			assert(processor.PutStream(NewStream())).IsTrue()
+			<-waitCH
+		}
+
+		freeSum := 0
+		for i := 0; i < len(processor.freeCHArray); i++ {
+			freeSum += len(processor.freeCHArray[i])
+		}
+		assert(freeSum).Equal(freeGroups * 16)
+	})
+}
+
 //
 //func TestProcessor_fnError(t *testing.T) {
 //	assert := base.NewAssert(t)
@@ -337,7 +364,7 @@ func TestProcessor_Close(t *testing.T) {
 //	processor1.fnError(err1)
 //	assert(helper1.GetReturn()).Equal([]Any{}, []base.Error{}, []base.Error{err1})
 //}
-//
+
 //func TestProcessor_BuildCache(t *testing.T) {
 //	assert := base.NewAssert(t)
 //	_, file, _, _ := runtime.Caller(0)
