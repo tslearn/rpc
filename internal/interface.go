@@ -1,4 +1,4 @@
-package adapter
+package internal
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
