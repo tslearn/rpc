@@ -365,9 +365,10 @@ func TestProcessor_PutStream(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		waitCH := make(chan bool)
+		testCount := 1024000
+		waitCH := make(chan bool, testCount)
 		processor, _ := NewProcessor(
-			freeGroups,
+			freeGroups*2,
 			2,
 			3,
 			2048,
@@ -381,16 +382,23 @@ func TestProcessor_PutStream(t *testing.T) {
 
 		defer processor.Close()
 
-		for i := 0; i < 204800; i++ {
+		for i := 0; i < testCount; i++ {
 			assert(processor.PutStream(NewStream())).IsTrue()
+		}
+
+		for i := 0; i < testCount; i++ {
 			<-waitCH
 		}
 
-		freeSum := 0
-		for i := 0; i < len(processor.freeCHArray); i++ {
-			freeSum += len(processor.freeCHArray[i])
+		for {
+			freeSum := 0
+			for i := 0; i < len(processor.freeCHArray); i++ {
+				freeSum += len(processor.freeCHArray[i])
+			}
+			if freeSum == freeGroups*2 {
+				break
+			}
 		}
-		assert(freeSum).Equal(freeGroups)
 	})
 }
 
