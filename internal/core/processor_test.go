@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 )
@@ -31,7 +32,7 @@ func init() {
 
 func testProcessorMountError(services []*ServiceMeta) *base.Error {
 	_, err := NewProcessor(
-		freeGroups*16,
+		freeGroups,
 		2,
 		3,
 		2048,
@@ -280,6 +281,7 @@ func TestProcessor_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		fnTest := func(count int) {
+			mutex := &sync.Mutex{}
 			source := ""
 			waitCH := make(chan bool)
 			streamCH := make(chan *Stream, 1)
@@ -294,7 +296,9 @@ func TestProcessor_Close(t *testing.T) {
 					name: "test",
 					service: NewService().On("Eval", func(rt Runtime) Return {
 						waitCH <- true
+						mutex.Lock()
 						source = rt.thread.GetExecActionDebug()
+						mutex.Unlock()
 						time.Sleep(4 * time.Second)
 						return rt.Reply(true)
 					}),
@@ -313,6 +317,7 @@ func TestProcessor_Close(t *testing.T) {
 
 			assert(processor.Close()).IsFalse()
 
+			mutex.Lock()
 			if count == 1 {
 				assert(ParseResponseStream(<-streamCH)).Equal(
 					nil,
@@ -330,6 +335,7 @@ func TestProcessor_Close(t *testing.T) {
 					)),
 				)
 			}
+			mutex.Unlock()
 		}
 
 		fnTest(1)
@@ -361,7 +367,7 @@ func TestProcessor_PutStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool)
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -384,7 +390,7 @@ func TestProcessor_PutStream(t *testing.T) {
 		for i := 0; i < len(processor.freeCHArray); i++ {
 			freeSum += len(processor.freeCHArray[i])
 		}
-		assert(freeSum).Equal(freeGroups * 16)
+		assert(freeSum).Equal(freeGroups)
 	})
 }
 
@@ -400,7 +406,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		tmpFile := path.Join(currDir, "_tmp_/test-processor-01.go")
 		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -419,7 +425,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		tmpFile := path.Join(currDir, "_tmp_/test-processor-02.go")
 		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -442,7 +448,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 	t.Run("processor is closed", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -462,7 +468,7 @@ func TestProcessor_onUpdateConfig(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool, 2)
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -497,7 +503,7 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool, 3)
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -637,7 +643,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		processor, err := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -813,7 +819,7 @@ func TestProcessor_mountAction(t *testing.T) {
 		fnCache := &testFuncCache{}
 
 		processor, err := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
@@ -856,7 +862,7 @@ func TestProcessor_unmount(t *testing.T) {
 		fnCache := &testFuncCache{}
 		waitCH := make(chan string, 2)
 		processor, _ := NewProcessor(
-			freeGroups*16,
+			freeGroups,
 			2,
 			3,
 			2048,
