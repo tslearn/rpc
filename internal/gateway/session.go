@@ -36,8 +36,8 @@ type Session struct {
 	security     string
 	conn         internal.IStreamConn
 	gateway      *GateWay
-	channels     []serverChannel
-	prevChannels []serverChannel
+	channels     []Channel
+	prevChannels []Channel
 	sync.Mutex
 }
 
@@ -47,7 +47,7 @@ func newSession(id uint64, gateway *GateWay) *Session {
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
 	ret.gateway = gateway
-	ret.channels = make([]serverChannel, gateway.config.channels)
+	ret.channels = make([]Channel, gateway.config.channels)
 	ret.prevChannels = nil
 	return ret
 }
