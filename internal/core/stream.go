@@ -27,7 +27,8 @@ const (
 	streamPosCheck      = 48
 	streamPosBody       = 56
 
-	streamStatusBitDebug = 0
+	streamStatusBitDebug     = 0
+	streamStatusBitDirection = 1
 
 	// StreamWriteOK ...
 	StreamWriteOK = ""
@@ -185,6 +186,21 @@ func (p *Stream) SetStatusBitDebug() {
 // ClearStatusBitDebug ...
 func (p *Stream) ClearStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDebug) ^ 0xFF
+}
+
+// IsDirectionIn ...
+func (p *Stream) IsDirectionIn() bool {
+	return (*p.frames[0])[streamPosStatusBit]&(1<<streamStatusBitDirection) != 0
+}
+
+// SetDirectionIn ...
+func (p *Stream) SetDirectionIn() {
+	(*p.frames[0])[streamPosStatusBit] |= 1 << streamStatusBitDirection
+}
+
+// SetDirectionOut ...
+func (p *Stream) SetDirectionOut() {
+	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDirection) ^ 0xFF
 }
 
 // GetTargetID ...
