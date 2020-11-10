@@ -188,18 +188,18 @@ func (p *Stream) ClearStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDebug) ^ 0xFF
 }
 
-// IsDirectionIn ...
-func (p *Stream) IsDirectionIn() bool {
+// IsDirectionOut ...
+func (p *Stream) IsDirectionOut() bool {
 	return (*p.frames[0])[streamPosStatusBit]&(1<<streamStatusBitDirection) != 0
-}
-
-// SetDirectionIn ...
-func (p *Stream) SetDirectionIn() {
-	(*p.frames[0])[streamPosStatusBit] |= 1 << streamStatusBitDirection
 }
 
 // SetDirectionOut ...
 func (p *Stream) SetDirectionOut() {
+	(*p.frames[0])[streamPosStatusBit] |= 1 << streamStatusBitDirection
+}
+
+// SetDirectionIn ...
+func (p *Stream) SetDirectionIn() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDirection) ^ 0xFF
 }
 

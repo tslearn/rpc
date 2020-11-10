@@ -706,7 +706,7 @@ func TestStream_IsDirectionIn(t *testing.T) {
 			v := NewStream()
 			(*v.frames[0])[streamPosStatusBit] = byte(i)
 			v.SetDirectionIn()
-			assert(v.IsDirectionIn()).IsTrue()
+			assert(v.IsDirectionOut()).IsFalse()
 			v.Release()
 		}
 	})
@@ -717,24 +717,7 @@ func TestStream_IsDirectionIn(t *testing.T) {
 			v := NewStream()
 			(*v.frames[0])[streamPosStatusBit] = byte(i)
 			v.SetDirectionOut()
-			assert(v.IsDirectionIn()).IsFalse()
-			v.Release()
-		}
-	})
-}
-
-func TestStream_SetDirectionIn(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		for i := 0; i < 256; i++ {
-			v := NewStream()
-			(*v.frames[0])[streamPosStatusBit] = byte(i)
-			if !v.IsDirectionIn() {
-				v.SetDirectionIn()
-				assert(v.IsDirectionIn()).IsTrue()
-				v.SetDirectionOut()
-			}
-			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
+			assert(v.IsDirectionOut()).IsTrue()
 			v.Release()
 		}
 	})
@@ -746,10 +729,27 @@ func TestStream_SetDirectionOut(t *testing.T) {
 		for i := 0; i < 256; i++ {
 			v := NewStream()
 			(*v.frames[0])[streamPosStatusBit] = byte(i)
-			if v.IsDirectionIn() {
+			if !v.IsDirectionOut() {
 				v.SetDirectionOut()
-				assert(v.IsDirectionIn()).IsFalse()
+				assert(v.IsDirectionOut()).IsTrue()
 				v.SetDirectionIn()
+			}
+			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
+			v.Release()
+		}
+	})
+}
+
+func TestStream_SetDirectionIn(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+			if v.IsDirectionOut() {
+				v.SetDirectionIn()
+				assert(v.IsDirectionOut()).IsFalse()
+				v.SetDirectionOut()
 			}
 			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
 			v.Release()
