@@ -22,4 +22,10 @@ var (
 		base.ErrorLevelFatal,
 		"it is not running",
 	)
+
+	ErrGatewaySequenceError = base.DefineConfigError(
+		(gatewayErrorSeg<<16)|4,
+		base.ErrorLevelError,
+		"channel sequence error",
+	)
 )

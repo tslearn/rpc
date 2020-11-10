@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/adapter/websocket"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"sync"
@@ -11,21 +12,26 @@ import (
 )
 
 type GateWay struct {
-	isRunning bool
-	closeCH   chan bool
-	config    *SessionConfig
-	onError   func(sessionID uint64, err *base.Error)
-	adapters  []internal.IServerAdapter
+	isRunning  bool
+	closeCH    chan bool
+	config     *SessionConfig
+	onStreamIn func(stream *core.Stream)
+	onError    func(sessionID uint64, err *base.Error)
+	adapters   []internal.IServerAdapter
 	sync.Mutex
 }
 
-func NewGateWay(onError func(sessionID uint64, err *base.Error)) *GateWay {
+func NewGateWay(
+	onStreamIn func(stream *core.Stream),
+	onError func(sessionID uint64, err *base.Error),
+) *GateWay {
 	return &GateWay{
-		isRunning: false,
-		closeCH:   make(chan bool, 1),
-		config:    getDefaultSessionConfig(),
-		onError:   onError,
-		adapters:  make([]internal.IServerAdapter, 0),
+		isRunning:  false,
+		closeCH:    make(chan bool, 1),
+		config:     getDefaultSessionConfig(),
+		onStreamIn: onStreamIn,
+		onError:    onError,
+		adapters:   make([]internal.IServerAdapter, 0),
 	}
 }
 
