@@ -56,36 +56,39 @@ func (p *Session) SetConn(conn internal.IStreamConn) {
 	p.conn = conn
 }
 
-func (p *Session) OnStream(stream *core.Stream) *base.Error {
+func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 	cbID := stream.GetCallbackID()
-	config := p.gateway.config
 
-	if stream.IsDirectionOut() {
-		// record stream
-		if cbID > 0 {
-			channel := p.channels[cbID%uint64(len(p.channels))]
-			if err := channel.Out(stream); err != nil {
-				return err
-			}
-		}
-
-		// write stream
-		return func() *base.Error {
-			p.Lock()
-			defer p.Unlock()
-			return p.conn.WriteStream(stream, config.writeTimeout)
-		}()
-	} else if cbID > 0 {
+	if cbID > 0 {
 		channel := p.channels[cbID%uint64(len(p.channels))]
 		if retStream, err := channel.In(cbID, uint64(len(p.channels))); err != nil {
 			return err
 		} else if retStream != nil {
-			return p.OnStream(retStream)
+			return p.StreamOut(retStream)
 		} else {
-			p.gateway.onStreamIn(stream)
-			return nil
+			return p.gateway.OnStream(stream)
 		}
 	} else {
 		return nil
 	}
+}
+
+func (p *Session) StreamOut(stream *core.Stream) *base.Error {
+	cbID := stream.GetCallbackID()
+	config := p.gateway.config
+
+	// record stream
+	if cbID > 0 {
+		channel := p.channels[cbID%uint64(len(p.channels))]
+		if err := channel.Out(stream); err != nil {
+			return err
+		}
+	}
+
+	// write stream
+	return func() *base.Error {
+		p.Lock()
+		defer p.Unlock()
+		return p.conn.WriteStream(stream, config.writeTimeout)
+	}()
 }

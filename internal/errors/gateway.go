@@ -28,4 +28,10 @@ var (
 		base.ErrorLevelError,
 		"channel sequence error",
 	)
+
+	ErrGateWaySessionNotFound = base.DefineConfigError(
+		(gatewayErrorSeg<<16)|5,
+		base.ErrorLevelWarn,
+		"session not found",
+	)
 )

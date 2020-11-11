@@ -25,3 +25,7 @@ type IClientAdapter interface {
 	Open(onConnRun func(IStreamConn), onError func(*base.Error))
 	Close(onError func(*base.Error))
 }
+
+type IStreamReceiver interface {
+	OnStream(stream *core.Stream) *base.Error
+}

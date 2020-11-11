@@ -12,26 +12,27 @@ import (
 )
 
 type GateWay struct {
-	isRunning  bool
-	closeCH    chan bool
-	config     *SessionConfig
-	onStreamIn func(stream *core.Stream)
-	onError    func(sessionID uint64, err *base.Error)
-	adapters   []internal.IServerAdapter
+	isRunning    bool
+	nextReceiver internal.IStreamReceiver
+	closeCH      chan bool
+	config       *SessionConfig
+	sessionMap   map[uint64]*Session
+	onError      func(sessionID uint64, err *base.Error)
+	adapters     []internal.IServerAdapter
 	sync.Mutex
 }
 
 func NewGateWay(
-	onStreamIn func(stream *core.Stream),
+	nextReceiver internal.IStreamReceiver,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
 	return &GateWay{
-		isRunning:  false,
-		closeCH:    make(chan bool, 1),
-		config:     getDefaultSessionConfig(),
-		onStreamIn: onStreamIn,
-		onError:    onError,
-		adapters:   make([]internal.IServerAdapter, 0),
+		isRunning:    false,
+		nextReceiver: nextReceiver,
+		closeCH:      make(chan bool, 1),
+		config:       getDefaultSessionConfig(),
+		onError:      onError,
+		adapters:     make([]internal.IServerAdapter, 0),
 	}
 }
 
@@ -95,8 +96,25 @@ func (p *GateWay) Serve() {
 	}
 }
 
+func (p *GateWay) getSessionById(id uint64) *Session {
+	p.Lock()
+	defer p.Unlock()
+	return p.sessionMap[id]
+}
+
 func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 
+}
+
+func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
+	if stream.IsDirectionOut() {
+		if session := p.getSessionById(stream.GetSessionID()); session != nil {
+			return session.StreamOut(stream)
+		}
+		return errors.ErrGateWaySessionNotFound
+	} else {
+		return p.nextReceiver.OnStream(stream)
+	}
 }
 
 func (p *GateWay) Close() {
