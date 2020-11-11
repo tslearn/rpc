@@ -12,28 +12,37 @@ import (
 )
 
 type GateWay struct {
-	isRunning    bool
-	nextReceiver internal.IStreamReceiver
-	closeCH      chan bool
-	config       *SessionConfig
-	sessionMap   map[uint64]*Session
-	onError      func(sessionID uint64, err *base.Error)
-	adapters     []internal.IServerAdapter
+	isRunning  bool
+	slot       internal.IStreamRouterSlot
+	closeCH    chan bool
+	config     *SessionConfig
+	sessionMap map[uint64]*Session
+	onError    func(sessionID uint64, err *base.Error)
+	adapters   []internal.IServerAdapter
 	sync.Mutex
 }
 
 func NewGateWay(
-	nextReceiver internal.IStreamReceiver,
+	router internal.IStreamRouter,
 	onError func(sessionID uint64, err *base.Error),
-) *GateWay {
-	return &GateWay{
-		isRunning:    false,
-		nextReceiver: nextReceiver,
-		closeCH:      make(chan bool, 1),
-		config:       getDefaultSessionConfig(),
-		onError:      onError,
-		adapters:     make([]internal.IServerAdapter, 0),
+) (*GateWay, *base.Error) {
+	ret := &GateWay{
+		isRunning: false,
+		slot:      nil,
+		closeCH:   make(chan bool, 1),
+		config:    getDefaultSessionConfig(),
+		onError:   onError,
+		adapters:  make([]internal.IServerAdapter, 0),
 	}
+
+	slot, err := router.Plug(ret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret.slot = slot
+	return ret, nil
 }
 
 func (p *GateWay) ListenWebSocket(addr string) *GateWay {
@@ -113,7 +122,7 @@ func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
 		}
 		return errors.ErrGateWaySessionNotFound
 	} else {
-		return p.nextReceiver.OnStream(stream)
+		return p.slot.SendStream(stream)
 	}
 }
 

@@ -29,3 +29,11 @@ type IClientAdapter interface {
 type IStreamReceiver interface {
 	OnStream(stream *core.Stream) *base.Error
 }
+
+type IStreamRouter interface {
+	Plug(receiver IStreamReceiver) (IStreamRouterSlot, *base.Error)
+}
+
+type IStreamRouterSlot interface {
+	SendStream(stream *core.Stream) *base.Error
+}

@@ -2,7 +2,7 @@ package errors
 
 import "github.com/rpccloud/rpc/internal/base"
 
-const gatewayErrorSeg = 3000
+const gatewayErrorSeg = 3001
 
 var (
 	ErrGatewayNoAvailableAdapters = base.DefineConfigError(
