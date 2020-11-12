@@ -117,10 +117,15 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 
 func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
 	if stream.IsDirectionOut() {
-		if session := p.getSessionById(stream.GetSessionID()); session != nil {
-			return session.StreamOut(stream)
-		}
-		return errors.ErrGateWaySessionNotFound
+		return func() *base.Error {
+			defer stream.Release()
+
+			if session := p.getSessionById(stream.GetSessionID()); session != nil {
+				return session.StreamOut(stream)
+			}
+
+			return errors.ErrGateWaySessionNotFound
+		}()
 	} else {
 		return p.slot.SendStream(stream)
 	}

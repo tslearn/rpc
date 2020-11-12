@@ -19,6 +19,12 @@ type DirectRouter struct {
 	receivers []internal.IStreamReceiver
 }
 
+func NewDirectRouter() internal.IStreamRouter {
+	return &DirectRouter{
+		receivers: make([]internal.IStreamReceiver, 2),
+	}
+}
+
 func (p *DirectRouter) Plug(
 	receiver internal.IStreamReceiver,
 ) (internal.IStreamRouterSlot, *base.Error) {
