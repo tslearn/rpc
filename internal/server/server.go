@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/router"
 	"path"
@@ -50,13 +51,14 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		panic("server has already running")
+		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else if numOfThreads <= 0 {
-		panic("numOfThreads must be greater than zero")
+		p.onError(0, errors.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.numOfThreads = numOfThreads
-		return p
 	}
+
+	return p
 }
 
 // SetThreadBufferSize ...
@@ -65,13 +67,14 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		panic("server has already running")
+		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else if threadBufferSize <= 0 {
-		panic("threadBufferSize must be greater than zero")
+		p.onError(0, errors.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.threadBufferSize = threadBufferSize
-		return p
 	}
+
+	return p
 }
 
 // SetActionCache ...
@@ -80,11 +83,12 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		panic("server has already running")
+		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.actionCache = actionCache
-		return p
 	}
+
+	return p
 }
 
 // AddService ...
@@ -97,7 +101,7 @@ func (p *Server) AddService(
 	defer p.Unlock()
 
 	if p.isRunning {
-		panic("server has already running")
+		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.mountServices = append(p.mountServices, core.NewServiceMeta(
 			name,
@@ -105,8 +109,9 @@ func (p *Server) AddService(
 			base.GetFileLine(1),
 			data,
 		))
-		return p
 	}
+
+	return p
 }
 
 // BuildReplyCache ...
@@ -133,14 +138,14 @@ func (p *Server) BuildReplyCache() *Server {
 		"cache",
 		path.Join(buildDir, "cache", "rpc_action_cache.go"),
 	); err != nil {
-		panic(err)
+		p.onError(0, err)
 	}
 
 	return p
 }
 
 // Serve ...
-func (p *Server) Serve() *base.Error {
+func (p *Server) Serve() {
 	err := func() *base.Error {
 		p.Lock()
 		defer p.Unlock()
@@ -148,7 +153,7 @@ func (p *Server) Serve() *base.Error {
 		directRouter := router.NewDirectRouter()
 
 		if p.isRunning {
-			panic("server has already running")
+			return errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1))
 		} else if gateway, err := gateway.NewGateWay(
 			directRouter,
 			p.onError,
@@ -173,12 +178,11 @@ func (p *Server) Serve() *base.Error {
 		}
 	}()
 
-	if err == nil {
-		return err
+	if err != nil {
+		p.onError(0, err)
+	} else {
+		p.gateway.Serve()
 	}
-
-	p.gateway.Serve()
-	return nil
 }
 
 func (p *Server) Close() {
@@ -186,7 +190,7 @@ func (p *Server) Close() {
 	defer p.Unlock()
 
 	if !p.isRunning {
-		panic("server has not running")
+		p.onError(0, errors.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.gateway.Close()
 		p.processor.Close()

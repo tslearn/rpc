@@ -140,23 +140,30 @@ var (
 		"numOfThreads is wrong",
 	)
 
+	// ErrNumOfThreadsIsWrong ... *
+	ErrThreadBufferSizeIsWrong = base.DefineConfigError(
+		(generalErrorSeg<<16)|20,
+		base.ErrorLevelFatal,
+		"threadBufferSize is wrong",
+	)
+
 	// ErrMaxNodeDepthIsWrong ... *
 	ErrMaxNodeDepthIsWrong = base.DefineConfigError(
-		(generalErrorSeg<<16)|20,
+		(generalErrorSeg<<16)|21,
 		base.ErrorLevelFatal,
 		"maxNodeDepth is wrong",
 	)
 
 	// ErrCacheMkdirAll ... *
 	ErrCacheMkdirAll = base.DefineConfigError(
-		(generalErrorSeg<<16)|21,
+		(generalErrorSeg<<16)|22,
 		base.ErrorLevelFatal,
 		"create directory error",
 	)
 
 	// ErrCacheWriteFile ... *
 	ErrCacheWriteFile = base.DefineConfigError(
-		(generalErrorSeg<<16)|22,
+		(generalErrorSeg<<16)|23,
 		base.ErrorLevelFatal,
 		"write to file error",
 	)
