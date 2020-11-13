@@ -69,7 +69,10 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	if p.isRunning {
 		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else if threadBufferSize <= 0 {
-		p.onError(0, errors.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)),
+		)
 	} else {
 		p.threadBufferSize = threadBufferSize
 	}
