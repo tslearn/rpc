@@ -4,7 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-const generalErrorSeg = 0
+const generalErrorSeg = 1000
 
 var (
 	// ErrStream ...
@@ -162,7 +162,7 @@ var (
 	)
 )
 
-const kernelErrorSeg = 1000
+const kernelErrorSeg = 1001
 
 var (
 	// ErrFnCacheIllegalKindString ... *
