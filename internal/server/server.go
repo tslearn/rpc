@@ -43,7 +43,11 @@ func NewServer() *Server {
 		closeTimeout:     5 * time.Second,
 		mountServices:    make([]*core.ServiceMeta, 0),
 	}
-	ret.gateway = gateway.NewGateWay(ret.router, ret.onError)
+	ret.gateway = gateway.NewGateWay(
+		gateway.NewSingleGenerator(),
+		ret.router,
+		ret.onError,
+	)
 	return ret
 }
 

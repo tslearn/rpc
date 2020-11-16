@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -12,6 +13,24 @@ var sessionCache = &sync.Pool{
 	New: func() interface{} {
 		return &Session{}
 	},
+}
+
+type SessionIDGenerator interface {
+	GetID() (uint64, *base.Error)
+}
+
+type SingleGenerator struct {
+	id uint64
+}
+
+func NewSingleGenerator() *SingleGenerator {
+	return &SingleGenerator{
+		id: 10000,
+	}
+}
+
+func (p *SingleGenerator) GetID() (uint64, *base.Error) {
+	return atomic.AddUint64(&p.id, 1), nil
 }
 
 type SessionConfig struct {
@@ -45,7 +64,7 @@ func newSession(id uint64, gateway *GateWay) *Session {
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
 	ret.gateway = gateway
-	ret.channels = make([]Channel, gateway.config.channels)
+	ret.channels = make([]Channel, gateway.GetSessionConfig().channels)
 	return ret
 }
 
@@ -75,7 +94,7 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 
 func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	cbID := stream.GetCallbackID()
-	config := p.gateway.config
+	config := p.gateway.GetSessionConfig()
 
 	// record stream
 	if cbID > 0 {

@@ -150,9 +150,9 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
 		return errors.ErrStream
-	} else if msgKind, err := backStream.ReadInt64(); err != nil {
+	} else if kind, err := backStream.ReadInt64(); err != nil {
 		return err
-	} else if msgKind != core.ControlStreamConnectResponse {
+	} else if kind != core.ControlStreamConnectResponse {
 		return errors.ErrStream
 	} else if sessionString, err := backStream.ReadString(); err != nil {
 		return err
