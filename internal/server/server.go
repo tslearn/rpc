@@ -51,6 +51,11 @@ func (p *Server) onError(sessionID uint64, err *base.Error) {
 	fmt.Println("server onError: ", sessionID, err)
 }
 
+func (p *Server) ListenWebSocket(addr string) *Server {
+	p.gateway.ListenWebSocket(addr)
+	return p
+}
+
 // SetNumOfThreads ...
 func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	p.Lock()
