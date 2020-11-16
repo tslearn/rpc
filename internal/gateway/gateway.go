@@ -25,7 +25,7 @@ type GateWay struct {
 func NewGateWay(
 	router internal.IStreamRouter,
 	onError func(sessionID uint64, err *base.Error),
-) (*GateWay, *base.Error) {
+) *GateWay {
 	ret := &GateWay{
 		isRunning: false,
 		slot:      nil,
@@ -34,15 +34,8 @@ func NewGateWay(
 		onError:   onError,
 		adapters:  make([]internal.IServerAdapter, 0),
 	}
-
-	slot, err := router.Plug(ret)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ret.slot = slot
-	return ret, nil
+	ret.slot = router.Plug(ret)
+	return ret
 }
 
 func (p *GateWay) ListenWebSocket(addr string) *GateWay {

@@ -22,10 +22,9 @@ func NewRPCProcessor(
 	mountServices []*core.ServiceMeta,
 ) (*RPCProcessor, *base.Error) {
 	ret := &RPCProcessor{}
+	slot := router.Plug(ret)
 
-	if slot, err := router.Plug(ret); err != nil {
-		return nil, err
-	} else if processor, err := core.NewProcessor(
+	if processor, err := core.NewProcessor(
 		numOfThreads,
 		maxNodeDepth,
 		maxCallDepth,

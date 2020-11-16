@@ -31,7 +31,7 @@ type IStreamReceiver interface {
 }
 
 type IStreamRouter interface {
-	Plug(receiver IStreamReceiver) (IStreamRouterSlot, *base.Error)
+	Plug(receiver IStreamReceiver) IStreamRouterSlot
 }
 
 type IStreamRouterSlot interface {

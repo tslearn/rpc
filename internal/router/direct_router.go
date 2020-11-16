@@ -4,7 +4,6 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 type DirectRouterSlot struct {
@@ -27,14 +26,14 @@ func NewDirectRouter() internal.IStreamRouter {
 
 func (p *DirectRouter) Plug(
 	receiver internal.IStreamReceiver,
-) (internal.IStreamRouterSlot, *base.Error) {
+) internal.IStreamRouterSlot {
 	if p.receivers[0] == nil {
 		p.receivers[0] = receiver
-		return &DirectRouterSlot{receiverPtr: &p.receivers[1]}, nil
+		return &DirectRouterSlot{receiverPtr: &p.receivers[1]}
 	} else if p.receivers[1] == nil {
 		p.receivers[1] = receiver
-		return &DirectRouterSlot{receiverPtr: &p.receivers[0]}, nil
+		return &DirectRouterSlot{receiverPtr: &p.receivers[0]}
 	} else {
-		return nil, errors.ErrDirectRouterConfigError
+		panic("DirectRouter can only be plugged twice")
 	}
 }

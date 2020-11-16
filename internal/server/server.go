@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -15,6 +17,7 @@ import (
 type Server struct {
 	isRunning        bool
 	processor        *RPCProcessor
+	router           internal.IStreamRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
@@ -27,9 +30,10 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	return &Server{
+	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
+		router:           router.NewDirectRouter(),
 		gateway:          nil,
 		numOfThreads:     runtime.NumCPU() * 16384,
 		maxNodeDepth:     64,
@@ -39,10 +43,12 @@ func NewServer() *Server {
 		closeTimeout:     5 * time.Second,
 		mountServices:    make([]*core.ServiceMeta, 0),
 	}
+	ret.gateway = gateway.NewGateWay(ret.router, ret.onError)
+	return ret
 }
 
 func (p *Server) onError(sessionID uint64, err *base.Error) {
-
+	fmt.Println("server onError: ", sessionID, err)
 }
 
 // SetNumOfThreads ...
@@ -153,17 +159,10 @@ func (p *Server) Serve() {
 		p.Lock()
 		defer p.Unlock()
 
-		directRouter := router.NewDirectRouter()
-
 		if p.isRunning {
 			return errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1))
-		} else if gateway, err := gateway.NewGateWay(
-			directRouter,
-			p.onError,
-		); err != nil {
-			return err
 		} else if processor, err := NewRPCProcessor(
-			directRouter,
+			p.router,
 			p.numOfThreads,
 			p.maxNodeDepth,
 			p.maxCallDepth,
@@ -175,7 +174,6 @@ func (p *Server) Serve() {
 			return err
 		} else {
 			p.isRunning = true
-			p.gateway = gateway
 			p.processor = processor
 			return nil
 		}
