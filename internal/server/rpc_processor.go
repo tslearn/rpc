@@ -33,6 +33,7 @@ func NewRPCProcessor(
 		closeTimeout,
 		mountServices,
 		func(stream *core.Stream) {
+			stream.SetDirectionOut()
 			_ = slot.SendStream(stream)
 		},
 	); err != nil {

@@ -325,6 +325,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 	} else {
 		select {
 		case channelID := <-p.freeChannels:
+			fmt.Println("AAA")
 			channel := p.channels[channelID]
 
 			// get and set the send item

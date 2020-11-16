@@ -239,7 +239,6 @@ func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
 	} else if stream.GetCallbackID() == 0 {
 		return errors.ErrStream
 	} else {
-		fmt.Println("DDD")
 		return p.slot.SendStream(stream)
 	}
 }
