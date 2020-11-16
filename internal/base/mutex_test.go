@@ -27,3 +27,14 @@ func TestMutex_Synchronized(t *testing.T) {
 
 	assert(sum).Equal(49995000000)
 }
+
+func BenchmarkMutex_Synchronized(b *testing.B) {
+	sum := 0
+	mu := Mutex{}
+
+	for i := 0; i < b.N; i++ {
+		mu.Synchronized(func() {
+			sum++
+		})
+	}
+}
