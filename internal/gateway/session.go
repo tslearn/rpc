@@ -104,7 +104,17 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 }
 
 func (p *Session) checkTimeout() {
+	nowNS := base.TimeNow().UnixNano()
+	for i := 0; i < len(p.channels); i++ {
+		p.channels[i].Timeout(nowNS, int64(p.config.cacheTimeout))
+	}
+}
+
+func (p *Session) Release() {
+	p.Lock()
+	defer p.Unlock()
 	for i := 0; i < len(p.channels); i++ {
 		p.channels[i].Clean()
 	}
+	sessionCache.Put(p)
 }
