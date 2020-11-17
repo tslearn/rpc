@@ -165,7 +165,7 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 	} else {
 		// try to find session by session string
 		sessionArray := strings.Split(sessionString, "-")
-		if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
+		if len(sessionArray) == 3 && len(sessionArray[1]) == 32 {
 			if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
 				p.Lock()
 				if s, ok := p.sessionMap[id]; ok && s.security == sessionArray[1] {
@@ -189,14 +189,17 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 		}
 
 		if session != nil {
+			session.UpdateConfig()
+
 			// write respond stream
 			initStream.SetWritePosToBodyStart()
 			initStream.WriteInt64(core.ControlStreamConnectResponse)
-			initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
+			initStream.WriteString(fmt.Sprintf(
+				"%d-%s-%d", session.id, session.security, len(session.channels),
+			))
 			initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
 			initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
 			initStream.WriteInt64(config.transLimit)
-			initStream.WriteInt64(config.channels)
 
 			if err := conn.WriteStream(initStream, config.writeTimeout); err != nil {
 				initStream.Release()
@@ -216,7 +219,7 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 				); err != nil {
 					runError = err
 				} else {
-					runError = p.OnStream(stream)
+					runError = session.StreamIn(stream)
 				}
 			}
 		} else {
@@ -226,21 +229,17 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 }
 
 func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
-	if stream.IsDirectionOut() {
-		return func() *base.Error {
-			defer stream.Release()
+	defer stream.Release()
 
-			if session := p.getSessionById(stream.GetSessionID()); session != nil {
-				return session.StreamOut(stream)
-			}
-
-			return errors.ErrGateWaySessionNotFound
-		}()
-	} else if stream.GetCallbackID() == 0 {
+	if !stream.IsDirectionOut() {
 		return errors.ErrStream
-	} else {
-		return p.slot.SendStream(stream)
 	}
+
+	if session := p.getSessionById(stream.GetSessionID()); session != nil {
+		return session.StreamOut(stream)
+	}
+
+	return errors.ErrGateWaySessionNotFound
 }
 
 func (p *GateWay) Close() {

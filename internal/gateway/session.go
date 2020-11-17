@@ -6,7 +6,6 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 var sessionCache = &sync.Pool{
@@ -15,42 +14,9 @@ var sessionCache = &sync.Pool{
 	},
 }
 
-type SessionIDGenerator interface {
-	GetID() (uint64, *base.Error)
-}
-
-type SingleGenerator struct {
-	id uint64
-}
-
-func NewSingleGenerator() *SingleGenerator {
-	return &SingleGenerator{
-		id: 10000,
-	}
-}
-
-func (p *SingleGenerator) GetID() (uint64, *base.Error) {
-	return atomic.AddUint64(&p.id, 1), nil
-}
-
-type SessionConfig struct {
-	channels     int64
-	transLimit   int64
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-}
-
-func getDefaultSessionConfig() *SessionConfig {
-	return &SessionConfig{
-		channels:     64,
-		transLimit:   4 * 1024 * 1024,
-		readTimeout:  12 * time.Second,
-		writeTimeout: 3 * time.Second,
-	}
-}
-
 type Session struct {
 	id       uint64
+	config   SessionConfig
 	security string
 	conn     internal.IStreamConn
 	gateway  *GateWay
@@ -64,37 +30,66 @@ func newSession(id uint64, gateway *GateWay) *Session {
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
 	ret.gateway = gateway
-	ret.channels = make([]Channel, gateway.GetSessionConfig().channels)
+	ret.channels = nil
 	return ret
+}
+
+func (p *Session) UpdateConfig() {
+	p.Lock()
+	defer p.Unlock()
+
+	p.config = p.gateway.GetSessionConfig().Copy()
+
+	if int64(len(p.channels)) != p.config.NumOfChannels() {
+		// find max Seq ID and clean
+		maxChannelSeq := uint64(0)
+		for i := 0; i < len(p.channels); i++ {
+			if seq := atomic.LoadUint64(&p.channels[i].seq); seq > maxChannelSeq {
+				maxChannelSeq = seq
+			}
+			p.channels[i].Clean()
+		}
+
+		newSeq := maxChannelSeq + 1
+		p.channels = make([]Channel, p.config.NumOfChannels())
+		for i := uint64(0); i < uint64(p.config.NumOfChannels()); i++ {
+			p.channels[i].seq = newSeq + i
+		}
+	}
 }
 
 func (p *Session) SetConn(conn internal.IStreamConn) {
 	p.Lock()
 	defer p.Unlock()
-
 	p.conn = conn
 }
 
 func (p *Session) StreamIn(stream *core.Stream) *base.Error {
+	p.Lock()
+	defer p.Unlock()
+
 	cbID := stream.GetCallbackID()
 
 	if cbID > 0 {
+		stream.SetSessionID(p.id)
 		channel := p.channels[cbID%uint64(len(p.channels))]
 		if retStream, err := channel.In(cbID, uint64(len(p.channels))); err != nil {
 			return err
 		} else if retStream != nil {
-			return p.StreamOut(retStream)
+			return p.conn.WriteStream(stream, p.config.WriteTimeout())
 		} else {
-			return p.gateway.OnStream(stream)
+			return p.gateway.slot.SendStream(stream)
 		}
 	} else {
+		// control message
 		return nil
 	}
 }
 
 func (p *Session) StreamOut(stream *core.Stream) *base.Error {
+	p.Lock()
+	defer p.Unlock()
 	cbID := stream.GetCallbackID()
-	config := p.gateway.GetSessionConfig()
 
 	// record stream
 	if cbID > 0 {
@@ -105,9 +100,11 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	}
 
 	// write stream
-	return func() *base.Error {
-		p.Lock()
-		defer p.Unlock()
-		return p.conn.WriteStream(stream, config.writeTimeout)
-	}()
+	return p.conn.WriteStream(stream, p.config.WriteTimeout())
+}
+
+func (p *Session) checkTimeout() {
+	for i := 0; i < len(p.channels); i++ {
+		p.channels[i].Clean()
+	}
 }
