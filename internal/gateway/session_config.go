@@ -20,7 +20,7 @@ type SessionConfig struct {
 
 func GetDefaultSessionConfig() SessionConfig {
 	return SessionConfig{
-		numOfChannels:   32,
+		numOfChannels:   48,
 		transLimit:      4 * 1024 * 1024,
 		readTimeout:     8 * time.Second,
 		writeTimeout:    3 * time.Second,
