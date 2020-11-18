@@ -183,6 +183,23 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 	}
 }
 
+func (p *Client) setConn(conn internal.IStreamConn) {
+	p.Lock()
+	defer p.Unlock()
+	p.conn = conn
+}
+
+func (p *Client) onCallbackStream(stream *core.Stream, callbackID uint64) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.channels != nil {
+		if chSize := uint64(len(p.channels)); chSize > 0 {
+			p.channels[callbackID%chSize].onCallbackStream(stream)
+		}
+	}
+}
+
 func (p *Client) onConnRun(conn internal.IStreamConn) {
 	// init conn
 	if err := p.initConn(conn); err != nil {
@@ -190,22 +207,15 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 		return
 	}
 
-	// set the conn
-	p.Lock()
-	p.conn = conn
-	p.Unlock()
-
 	err := (*base.Error)(nil)
+	p.setConn(conn)
 
-	// clear the conn when finish
 	defer func() {
+		p.setConn(nil)
+
 		if err != nil {
 			p.onError(err)
 		}
-
-		p.Lock()
-		p.conn = nil
-		p.Unlock()
 
 		if err := conn.Close(); err != nil {
 			p.onError(err)
@@ -223,9 +233,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			}
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
-			p.Lock()
-			p.channels[callbackID%uint64(len(p.channels))].onCallbackStream(stream)
-			p.Unlock()
+			p.onCallbackStream(stream, callbackID)
 		} else {
 			// broadcast message is not supported now
 			err = errors.ErrStream
