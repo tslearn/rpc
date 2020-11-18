@@ -45,6 +45,7 @@ func NewServer() *Server {
 	}
 	ret.gateway = gateway.NewGateWay(
 		gateway.NewSingleGenerator(),
+		gateway.GetDefaultSessionConfig(),
 		ret.router,
 		ret.onError,
 	)

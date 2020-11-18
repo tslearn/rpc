@@ -11,9 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 type GateWay struct {
@@ -21,7 +19,7 @@ type GateWay struct {
 	idGenerator SessionIDGenerator
 	slot        internal.IStreamRouterSlot
 	closeCH     chan bool
-	config      unsafe.Pointer
+	config      SessionConfig
 	sessionMap  map[uint64]*Session
 	onError     func(sessionID uint64, err *base.Error)
 	adapters    []internal.IServerAdapter
@@ -30,6 +28,7 @@ type GateWay struct {
 
 func NewGateWay(
 	idGenerator SessionIDGenerator,
+	config SessionConfig,
 	router internal.IStreamRouter,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
@@ -38,26 +37,13 @@ func NewGateWay(
 		idGenerator: idGenerator,
 		slot:        nil,
 		closeCH:     make(chan bool, 1),
-		config:      unsafe.Pointer(getDefaultSessionConfig()),
+		config:      config,
 		sessionMap:  map[uint64]*Session{},
 		onError:     onError,
 		adapters:    make([]internal.IServerAdapter, 0),
 	}
 	ret.slot = router.Plug(ret)
 	return ret
-}
-
-func (p *GateWay) GetSessionConfig() *SessionConfig {
-	return (*SessionConfig)(atomic.LoadPointer(&p.config))
-}
-
-func (p *GateWay) SetSessionConfig(sessionConfig *SessionConfig) bool {
-	if sessionConfig == nil {
-		return false
-	}
-
-	atomic.StorePointer(&p.config, unsafe.Pointer(sessionConfig))
-	return true
 }
 
 func (p *GateWay) ListenWebSocket(addr string) *GateWay {
@@ -128,8 +114,10 @@ func (p *GateWay) getSessionById(id uint64) *Session {
 
 func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 	session := (*Session)(nil)
-	config := p.GetSessionConfig()
-	initStream, runError := conn.ReadStream(config.readTimeout, config.transLimit)
+	initStream, runError := conn.ReadStream(
+		p.config.readTimeout,
+		p.config.transLimit,
+	)
 
 	defer func() {
 		sessionID := uint64(0)
@@ -189,19 +177,15 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 		}
 
 		if session != nil {
-			session.UpdateConfig()
-
-			// write respond stream
 			initStream.SetWritePosToBodyStart()
 			initStream.WriteInt64(core.ControlStreamConnectResponse)
-			initStream.WriteString(fmt.Sprintf(
-				"%d-%s-%d", session.id, session.security, len(session.channels),
-			))
-			initStream.WriteInt64(int64(config.readTimeout / time.Millisecond))
-			initStream.WriteInt64(int64(config.writeTimeout / time.Millisecond))
-			initStream.WriteInt64(config.transLimit)
+			initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
+			p.config.WriteToStream(initStream)
 
-			if err := conn.WriteStream(initStream, config.writeTimeout); err != nil {
+			if err := conn.WriteStream(
+				initStream,
+				p.config.writeTimeout,
+			); err != nil {
 				initStream.Release()
 				runError = err
 				return
@@ -214,8 +198,8 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 			defer session.SetConn(nil)
 			for runError == nil {
 				if stream, err := conn.ReadStream(
-					config.readTimeout,
-					config.transLimit,
+					p.config.readTimeout,
+					p.config.transLimit,
 				); err != nil {
 					runError = err
 				} else {

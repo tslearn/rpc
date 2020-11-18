@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"sync"
-	"sync/atomic"
 )
 
 var sessionCache = &sync.Pool{
@@ -16,7 +15,6 @@ var sessionCache = &sync.Pool{
 
 type Session struct {
 	id       uint64
-	config   SessionConfig
 	security string
 	conn     internal.IStreamConn
 	gateway  *GateWay
@@ -30,32 +28,8 @@ func newSession(id uint64, gateway *GateWay) *Session {
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
 	ret.gateway = gateway
-	ret.channels = nil
+	ret.channels = make([]Channel, gateway.config.NumOfChannels())
 	return ret
-}
-
-func (p *Session) UpdateConfig() {
-	p.Lock()
-	defer p.Unlock()
-
-	p.config = p.gateway.GetSessionConfig().Copy()
-
-	if int64(len(p.channels)) != p.config.NumOfChannels() {
-		// find max Seq ID and clean
-		maxChannelSeq := uint64(0)
-		for i := 0; i < len(p.channels); i++ {
-			if seq := atomic.LoadUint64(&p.channels[i].seq); seq > maxChannelSeq {
-				maxChannelSeq = seq
-			}
-			p.channels[i].Clean()
-		}
-
-		newSeq := maxChannelSeq + 1
-		p.channels = make([]Channel, p.config.NumOfChannels())
-		for i := uint64(0); i < uint64(p.config.NumOfChannels()); i++ {
-			p.channels[i].seq = newSeq + i
-		}
-	}
 }
 
 func (p *Session) SetConn(conn internal.IStreamConn) {
@@ -76,7 +50,7 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 		if retStream, err := channel.In(cbID, uint64(len(p.channels))); err != nil {
 			return err
 		} else if retStream != nil {
-			return p.conn.WriteStream(stream, p.config.WriteTimeout())
+			return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
 		} else {
 			return p.gateway.slot.SendStream(stream)
 		}
@@ -100,13 +74,13 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	}
 
 	// write stream
-	return p.conn.WriteStream(stream, p.config.WriteTimeout())
+	return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
 }
 
 func (p *Session) checkTimeout() {
 	nowNS := base.TimeNow().UnixNano()
 	for i := 0; i < len(p.channels); i++ {
-		p.channels[i].Timeout(nowNS, int64(p.config.cacheTimeout))
+		p.channels[i].Timeout(nowNS, int64(p.gateway.config.cacheTimeout))
 	}
 }
 

@@ -18,8 +18,8 @@ type SessionConfig struct {
 	requestInterval time.Duration
 }
 
-func getDefaultSessionConfig() *SessionConfig {
-	return &SessionConfig{
+func GetDefaultSessionConfig() SessionConfig {
+	return SessionConfig{
 		numOfChannels:   32,
 		transLimit:      4 * 1024 * 1024,
 		readTimeout:     8 * time.Second,
@@ -98,43 +98,43 @@ func (p *SessionConfig) WriteToStream(stream *core.Stream) {
 	stream.WriteInt64(int64(p.requestInterval))
 }
 
-func ReadSessionConfigFromStream(
+func ReadSessionConfig(
 	stream *core.Stream,
-) (*SessionConfig, *base.Error) {
+) (SessionConfig, *base.Error) {
 	if numOfChannels, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if numOfChannels <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if transLimit, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if transLimit <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if readTimeout, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if readTimeout <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if writeTimeout, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if writeTimeout <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if heartbeat, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if heartbeat <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if cacheTimeout, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if cacheTimeout <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if requestTimeout, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if requestTimeout <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else if requestInterval, err := stream.ReadInt64(); err != nil {
-		return nil, err
+		return GetDefaultSessionConfig(), err
 	} else if requestInterval <= 0 {
-		return nil, errors.ErrStream
+		return GetDefaultSessionConfig(), errors.ErrStream
 	} else {
-		return &SessionConfig{
+		return SessionConfig{
 			numOfChannels:   numOfChannels,
 			transLimit:      transLimit,
 			readTimeout:     time.Duration(readTimeout),

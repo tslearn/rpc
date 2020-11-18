@@ -7,6 +7,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"github.com/rpccloud/rpc/internal/gateway"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -29,11 +30,9 @@ type Client struct {
 	conn                 internal.IStreamConn
 	preSendHead          *SendItem
 	preSendTail          *SendItem
-	readTimeout          time.Duration
-	writeTimeout         time.Duration
-	readLimit            int64
 	channels             []Channel
 	freeChannels         chan int
+	config               gateway.SessionConfig
 	lastTimeoutCheckTime time.Time
 	sync.Mutex
 }
@@ -59,9 +58,7 @@ func newClient(connectString string) (*Client, *base.Error) {
 		conn:                 nil,
 		preSendHead:          nil,
 		preSendTail:          nil,
-		readTimeout:          0,
-		writeTimeout:         0,
-		readLimit:            0,
+		config:               gateway.SessionConfig{},
 		channels:             nil,
 		freeChannels:         nil,
 		lastTimeoutCheckTime: base.TimeNow(),
@@ -156,60 +153,33 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 		return errors.ErrStream
 	} else if sessionString, err := backStream.ReadString(); err != nil {
 		return err
-	} else if readTimeoutMS, err := backStream.ReadInt64(); err != nil {
+	} else if config, err := gateway.ReadSessionConfig(backStream); err != nil {
 		return err
-	} else if readTimeoutMS <= 0 {
-		return errors.ErrStream
-	} else if writeTimeoutMS, err := backStream.ReadInt64(); err != nil {
-		return err
-	} else if writeTimeoutMS <= 0 {
-		return errors.ErrStream
-	} else if readLimit, err := backStream.ReadInt64(); err != nil {
-		return err
-	} else if readLimit <= 0 {
-		return errors.ErrStream
-	} else if channelSize, err := backStream.ReadInt64(); err != nil {
-		return err
-	} else if channelSize <= 0 {
-		return errors.ErrStream
 	} else if !backStream.IsReadFinish() {
 		return errors.ErrStream
 	} else {
 		p.Lock()
 		defer p.Unlock()
 
-		if int64(len(p.channels)) != channelSize {
-			// find max Seq ID and clean
-			maxChannelSeq := uint64(0)
-
+		if sessionString != p.sessionString {
+			// new session
+			p.sessionString = sessionString
+			p.config = config
+			p.channels = make([]Channel, config.NumOfChannels())
+			p.freeChannels = make(chan int, config.NumOfChannels())
 			for i := 0; i < len(p.channels); i++ {
-				if seq := atomic.LoadUint64(&p.channels[i].seq); seq > maxChannelSeq {
-					maxChannelSeq = seq
-				}
-
-				if it := (*SendItem)(atomic.LoadPointer(&p.channels[i].item)); it != nil {
-					it.Release()
-				}
-			}
-
-			// create new channel
-			p.channels = make([]Channel, channelSize)
-			p.freeChannels = make(chan int, channelSize)
-			// init new channel
-			newSeq := ((maxChannelSeq + uint64(channelSize)) /
-				uint64(channelSize)) *
-				uint64(channelSize)
-			for i := 0; i < len(p.channels); i++ {
-				p.channels[i].seq = newSeq + uint64(i)
+				p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
 				p.channels[i].item = nil
 				p.freeChannels <- i
 			}
+		} else if !p.config.Equals(&config) {
+			// old session, but config changes
+			p.sessionString = ""
+			return errors.ErrClientConfigChanges
+		} else {
+			// old session
 		}
 
-		p.sessionString = sessionString
-		p.readTimeout = time.Duration(readTimeoutMS) * time.Millisecond
-		p.writeTimeout = time.Duration(writeTimeoutMS) * time.Millisecond
-		p.readLimit = readLimit
 		return nil
 	}
 }
@@ -245,7 +215,10 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 
 	// receive messages
 	for atomic.LoadInt32(&p.status) == clientStatusRunning {
-		if stream, e := conn.ReadStream(p.readTimeout, p.readLimit); e != nil {
+		if stream, e := conn.ReadStream(
+			p.config.ReadTimeout(),
+			p.config.TransLimit(),
+		); e != nil {
 			if e != errors.ErrStreamConnIsClosed {
 				err = e
 			}
@@ -344,7 +317,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			// try to send
 			if err := p.conn.WriteStream(
 				item.sendStream,
-				p.writeTimeout,
+				p.config.WriteTimeout(),
 			); err != nil {
 				p.onError(err)
 				return false
