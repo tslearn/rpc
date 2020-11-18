@@ -12,7 +12,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 const (
@@ -225,12 +224,7 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
 			p.Lock()
-			// TODO
-			// if v, ok := p.sendMap[callbackID]; ok {
-			//  if v.Return(stream) {
-			//    delete(p.sendMap, callbackID)
-			//  }
-			//}
+			p.channels[callbackID%uint64(len(p.channels))].onCallbackStream(stream)
 			p.Unlock()
 		} else {
 			// broadcast message is not supported now
@@ -298,7 +292,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 	} else {
 		select {
 		case channelID := <-p.freeChannels:
-			channel := p.channels[channelID]
+			channel := &p.channels[channelID]
 
 			// get and set the send item
 			item := p.preSendHead
@@ -312,7 +306,7 @@ func (p *Client) tryToDeliverPreSendMessage() bool {
 			item.id = atomic.LoadUint64(&channel.seq)
 			item.next = nil
 			item.sendStream.SetCallbackID(item.id)
-			atomic.StorePointer(&channel.item, (unsafe.Pointer)(item))
+			channel.item = item
 
 			// try to send
 			if err := p.conn.WriteStream(
