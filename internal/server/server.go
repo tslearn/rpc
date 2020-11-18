@@ -30,6 +30,7 @@ type Server struct {
 }
 
 func NewServer() *Server {
+	config := gateway.GetDefaultSessionConfig()
 	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
@@ -45,7 +46,7 @@ func NewServer() *Server {
 	}
 	ret.gateway = gateway.NewGateWay(
 		gateway.NewSingleGenerator(),
-		gateway.GetDefaultSessionConfig(),
+		&config,
 		ret.router,
 		ret.onError,
 	)

@@ -18,18 +18,24 @@ type Session struct {
 	id       uint64
 	security string
 	conn     internal.IStreamConn
-	gateway  *GateWay
+	config   *SessionConfig
+	slot     internal.IStreamRouterSlot
 	channels []Channel
 	sync.Mutex
 }
 
-func newSession(id uint64, gateway *GateWay) *Session {
+func newSession(
+	id uint64,
+	config *SessionConfig,
+	slot internal.IStreamRouterSlot,
+) *Session {
 	ret := sessionCache.Get().(*Session)
 	ret.id = id
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
-	ret.gateway = gateway
-	ret.channels = make([]Channel, gateway.config.NumOfChannels())
+	ret.config = config
+	ret.slot = slot
+	ret.channels = make([]Channel, config.NumOfChannels())
 	return ret
 }
 
@@ -58,10 +64,10 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 		if ok, retStream := p.channels[cbID%uint64(len(p.channels))].In(cbID); !ok {
 			return nil
 		} else if retStream != nil {
-			return p.conn.WriteStream(retStream, p.gateway.config.WriteTimeout())
+			return p.conn.WriteStream(retStream, p.config.WriteTimeout())
 		} else {
 			keepStream = true
-			return p.gateway.slot.SendStream(stream)
+			return p.slot.SendStream(stream)
 		}
 	} else if kind, err := stream.ReadInt64(); err != nil {
 		return err
@@ -69,7 +75,7 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 		// Send Pong
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
-		return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
+		return p.conn.WriteStream(stream, p.config.WriteTimeout())
 	} else {
 		return errors.ErrStream
 	}
@@ -88,13 +94,13 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	}
 
 	// write stream
-	return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
+	return p.conn.WriteStream(stream, p.config.WriteTimeout())
 }
 
 func (p *Session) checkTimeout() {
 	nowNS := base.TimeNow().UnixNano()
 	for i := 0; i < len(p.channels); i++ {
-		p.channels[i].Timeout(nowNS, int64(p.gateway.config.cacheTimeout))
+		p.channels[i].Timeout(nowNS, int64(p.config.cacheTimeout))
 	}
 }
 

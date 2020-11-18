@@ -19,7 +19,7 @@ type GateWay struct {
 	idGenerator SessionIDGenerator
 	slot        internal.IStreamRouterSlot
 	closeCH     chan bool
-	config      SessionConfig
+	config      *SessionConfig
 	sessionMap  map[uint64]*Session
 	onError     func(sessionID uint64, err *base.Error)
 	adapters    []internal.IServerAdapter
@@ -28,7 +28,7 @@ type GateWay struct {
 
 func NewGateWay(
 	idGenerator SessionIDGenerator,
-	config SessionConfig,
+	config *SessionConfig,
 	router internal.IStreamRouter,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
@@ -169,7 +169,7 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 			if err != nil {
 				runError = err
 			} else {
-				session = newSession(sessionID, p)
+				session = newSession(sessionID, p.config, p.slot)
 				p.Lock()
 				p.sessionMap[sessionID] = session
 				p.Unlock()
