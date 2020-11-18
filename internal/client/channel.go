@@ -5,12 +5,21 @@ import (
 )
 
 type Channel struct {
-	seq  uint64
-	item *SendItem
+	id     int
+	seq    uint64
+	item   *SendItem
+	client *Client
 }
 
-func (p *Channel) onCallbackStream(stream *core.Stream) {
+func (p *Channel) onCallbackStream(stream *core.Stream) bool {
 	if p.item != nil {
-		p.item.Return(stream)
+		if p.item.Return(stream) {
+			p.item = nil
+			p.client.freeChannels <- p.id
+			p.seq += uint64(len(p.client.channels))
+			return true
+		}
 	}
+
+	return false
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/errors"
 	"sync"
 )
 
@@ -42,23 +43,35 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 	p.Lock()
 	defer p.Unlock()
 
+	keepStream := false
+
+	defer func() {
+		if !keepStream {
+			stream.Release()
+		}
+	}()
+
 	cbID := stream.GetCallbackID()
 
 	if cbID > 0 {
 		stream.SetSessionID(p.id)
-		if ok, retStream := p.channels[cbID%uint64(len(p.channels))].In(
-			cbID, uint64(len(p.channels)),
-		); !ok {
-			// ignore
+		if ok, retStream := p.channels[cbID%uint64(len(p.channels))].In(cbID); !ok {
 			return nil
 		} else if retStream != nil {
-			return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
+			return p.conn.WriteStream(retStream, p.gateway.config.WriteTimeout())
 		} else {
+			keepStream = true
 			return p.gateway.slot.SendStream(stream)
 		}
+	} else if kind, err := stream.ReadInt64(); err != nil {
+		return err
+	} else if kind == core.ControlStreamPing {
+		// Send Pong
+		stream.SetWritePosToBodyStart()
+		stream.WriteInt64(core.ControlStreamPong)
+		return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
 	} else {
-		// control message
-		return nil
+		return errors.ErrStream
 	}
 }
 

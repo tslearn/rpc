@@ -33,6 +33,7 @@ type Client struct {
 	freeChannels         chan int
 	config               gateway.SessionConfig
 	lastTimeoutCheckTime time.Time
+	lastControlSendTime  time.Time
 	sync.Mutex
 }
 
@@ -61,6 +62,7 @@ func newClient(connectString string) (*Client, *base.Error) {
 		channels:             nil,
 		freeChannels:         nil,
 		lastTimeoutCheckTime: base.TimeNow(),
+		lastControlSendTime:  base.TimeNow(),
 	}
 
 	go func() {
@@ -77,9 +79,8 @@ func newClient(connectString string) (*Client, *base.Error) {
 		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
 			now := base.TimeNow()
 			ret.tryToTimeout(now)
-			for ret.tryToDeliverPreSendMessage() {
-				// loop until failed
-			}
+			ret.tryToDeliverPreSendMessages()
+			ret.tryToSendPing(now)
 			time.Sleep(100 * time.Millisecond)
 		}
 
@@ -167,6 +168,8 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 			p.channels = make([]Channel, config.NumOfChannels())
 			p.freeChannels = make(chan int, config.NumOfChannels())
 			for i := 0; i < len(p.channels); i++ {
+				p.channels[i].id = i
+				p.channels[i].client = p
 				p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
 				p.channels[i].item = nil
 				p.freeChannels <- i
@@ -234,10 +237,41 @@ func (p *Client) onConnRun(conn internal.IStreamConn) {
 			return
 		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
 			p.onCallbackStream(stream, callbackID)
+		} else if kind, e := stream.ReadInt64(); e != nil {
+			err = e
+			return
+		} else if kind == core.ControlStreamPong {
+			// ignore
 		} else {
 			// broadcast message is not supported now
 			err = errors.ErrStream
 			return
+		}
+	}
+}
+
+func (p *Client) tryToSendPing(now time.Time) {
+	p.Lock()
+	defer p.Unlock()
+
+	deltaTime := now.Sub(p.lastControlSendTime)
+
+	if p.conn == nil {
+		return
+	} else if deltaTime < p.config.Heartbeat() {
+		return
+	} else {
+		// Send Ping
+		p.lastControlSendTime = now
+		sendStream := core.NewStream()
+		defer sendStream.Release()
+		sendStream.SetCallbackID(0)
+		sendStream.WriteInt64(core.ControlStreamPing)
+		if err := p.conn.WriteStream(
+			sendStream,
+			p.config.WriteTimeout(),
+		); err != nil {
+			p.onError(err)
 		}
 	}
 }
@@ -285,10 +319,15 @@ func (p *Client) tryToTimeout(now time.Time) {
 	}
 }
 
-func (p *Client) tryToDeliverPreSendMessage() bool {
+func (p *Client) tryToDeliverPreSendMessages() {
 	p.Lock()
 	defer p.Unlock()
 
+	for p.tryToDeliverPreSendOneMessage() {
+	}
+}
+
+func (p *Client) tryToDeliverPreSendOneMessage() bool {
 	if atomic.LoadInt32(&p.status) != clientStatusRunning { // not running
 		return false
 	} else if p.conn == nil { // not connected
@@ -368,6 +407,8 @@ func (p *Client) SendMessage(
 		p.preSendTail = item
 	}
 	p.Unlock()
+
+	p.tryToDeliverPreSendMessages()
 
 	// wait for response
 	return core.ParseResponseStream(<-item.returnCH)

@@ -13,7 +13,7 @@ type Channel struct {
 	retStream *core.Stream
 }
 
-func (p *Channel) In(id uint64, gap uint64) (bool, *core.Stream) {
+func (p *Channel) In(id uint64) (bool, *core.Stream) {
 	if id > p.seq {
 		p.seq = id
 		return true, nil
