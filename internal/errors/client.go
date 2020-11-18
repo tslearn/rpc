@@ -30,7 +30,7 @@ var (
 	)
 
 	ErrClientConfigChanges = base.DefineKernelError(
-		(clientErrorSeg<<16)|4,
+		(clientErrorSeg<<16)|5,
 		base.ErrorLevelWarn,
 		"client config changes",
 	)

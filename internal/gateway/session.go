@@ -47,8 +47,9 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 	if cbID > 0 {
 		stream.SetSessionID(p.id)
 		channel := p.channels[cbID%uint64(len(p.channels))]
-		if retStream, err := channel.In(cbID, uint64(len(p.channels))); err != nil {
-			return err
+		if ok, retStream := channel.In(cbID, uint64(len(p.channels))); !ok {
+			// ignore
+			return nil
 		} else if retStream != nil {
 			return p.conn.WriteStream(stream, p.gateway.config.WriteTimeout())
 		} else {
@@ -68,8 +69,8 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	// record stream
 	if cbID > 0 {
 		channel := p.channels[cbID%uint64(len(p.channels))]
-		if err := channel.Out(stream); err != nil {
-			return err
+		if ok := channel.Out(stream); !ok {
+			return nil
 		}
 	}
 

@@ -3,43 +3,40 @@ package gateway
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const u63Mask = 0x8000000000000000
 
 type Channel struct {
 	seq       uint64
-	cacheSeq  uint64
 	retTimeNS int64
 	retStream *core.Stream
 }
 
-func (p *Channel) In(id uint64, gap uint64) (*core.Stream, *base.Error) {
-	if p.seq == id {
-		p.Clean()
-		p.cacheSeq = p.seq
-		p.seq = id + gap
-		return nil, nil
-	} else if p.seq == p.cacheSeq {
-		return p.retStream, nil
+func (p *Channel) In(id uint64, gap uint64) (bool, *core.Stream) {
+	if id > p.seq {
+		p.seq = id
+		return true, nil
+	} else if id == p.seq {
+		return false, p.retStream
 	} else {
-		return nil, errors.ErrGatewaySequenceError
+		return false, nil
 	}
 }
 
-func (p *Channel) Out(stream *core.Stream) *base.Error {
+func (p *Channel) Out(stream *core.Stream) bool {
 	id := stream.GetCallbackID()
 
-	if id == p.cacheSeq {
+	if id == p.seq {
 		if p.retTimeNS != 0 {
 			p.retTimeNS = base.TimeNow().UnixNano()
+			p.retStream = stream
 		}
-		return nil
+		return true
 	} else if id == 0 {
-		return nil
+		return true
 	} else {
-		return errors.ErrGatewaySequenceError
+		return false
 	}
 }
 
@@ -50,7 +47,6 @@ func (p *Channel) Timeout(nowNS int64, timeout int64) {
 }
 
 func (p *Channel) Clean() {
-	p.cacheSeq = 0
 	p.retTimeNS = 0
 	if p.retStream != nil {
 		p.retStream.Release()

@@ -153,7 +153,7 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 	} else {
 		// try to find session by session string
 		sessionArray := strings.Split(sessionString, "-")
-		if len(sessionArray) == 3 && len(sessionArray[1]) == 32 {
+		if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
 			if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
 				p.Lock()
 				if s, ok := p.sessionMap[id]; ok && s.security == sessionArray[1] {
@@ -196,6 +196,7 @@ func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
 			// Pump message from client
 			session.SetConn(conn)
 			defer session.SetConn(nil)
+
 			for runError == nil {
 				if stream, err := conn.ReadStream(
 					p.config.readTimeout,
