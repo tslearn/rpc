@@ -72,6 +72,7 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 	} else if kind, err := stream.ReadInt64(); err != nil {
 		return err
 	} else if kind == core.ControlStreamPing {
+		p.checkTimeout()
 		// Send Pong
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
