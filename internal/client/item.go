@@ -1,10 +1,10 @@
 package client
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -34,7 +34,7 @@ func newSendItem() *SendItem {
 	ret := sendItemCache.Get().(*SendItem)
 	ret.id = 0
 	ret.status = sendItemStatusRunning
-	ret.startTime = time.Time{}
+	ret.startTime = base.TimeNow()
 	ret.sendTime = time.Time{}
 	ret.timeout = 0
 	ret.returnCH = make(chan *core.Stream, 1)
@@ -45,11 +45,7 @@ func newSendItem() *SendItem {
 func (p *SendItem) Return(stream *core.Stream) bool {
 	if stream == nil {
 		return false
-	} else if !atomic.CompareAndSwapInt32(
-		&p.status,
-		sendItemStatusRunning,
-		sendItemStatusFinish,
-	) {
+	} else if p.status != sendItemStatusRunning {
 		stream.Release()
 		return false
 	} else {
@@ -58,12 +54,10 @@ func (p *SendItem) Return(stream *core.Stream) bool {
 	}
 }
 
-func (p *SendItem) Timeout() bool {
-	if atomic.CompareAndSwapInt32(
-		&p.status,
-		sendItemStatusRunning,
-		sendItemStatusFinish,
-	) {
+func (p *SendItem) CheckAndTimeout(now time.Time) bool {
+	if now.Sub(p.startTime) > p.timeout && p.status == sendItemStatusRunning {
+		p.status = sendItemStatusFinish
+
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())

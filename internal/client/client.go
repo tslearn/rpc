@@ -287,7 +287,7 @@ func (p *Client) tryToTimeout(now time.Time) {
 		preValidItem := (*SendItem)(nil)
 		item := p.preSendHead
 		for item != nil {
-			if now.Sub(item.startTime) > item.timeout && item.Timeout() {
+			if item.CheckAndTimeout(now) {
 				nextItem := item.next
 
 				if preValidItem == nil {
@@ -378,7 +378,6 @@ func (p *Client) SendMessage(
 	item := newSendItem()
 	defer item.Release()
 
-	item.startTime = base.TimeNow()
 	item.timeout = timeout
 
 	// set depth
