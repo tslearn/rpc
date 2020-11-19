@@ -25,6 +25,7 @@ type SendItem struct {
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &SendItem{
+			returnCH:   make(chan *core.Stream, 1),
 			sendStream: core.NewStream(),
 		}
 	},
@@ -37,7 +38,6 @@ func newSendItem() *SendItem {
 	ret.startTime = base.TimeNow()
 	ret.sendTime = time.Time{}
 	ret.timeout = 0
-	ret.returnCH = make(chan *core.Stream, 1)
 	ret.next = nil
 	return ret
 }
@@ -72,8 +72,6 @@ func (p *SendItem) CheckAndTimeout(now time.Time) bool {
 }
 
 func (p *SendItem) Release() {
-	close(p.returnCH)
-	p.returnCH = nil
 	p.sendStream.Reset()
 	sendItemCache.Put(p)
 }

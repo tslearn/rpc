@@ -407,5 +407,7 @@ func (p *Client) SendMessage(
 	p.tryToDeliverPreSendMessages()
 
 	// wait for response
-	return core.ParseResponseStream(<-item.returnCH)
+	retStream := <-item.returnCH
+	defer retStream.Release()
+	return core.ParseResponseStream(retStream)
 }
