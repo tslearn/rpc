@@ -12,7 +12,7 @@ type Channel struct {
 	client *Client
 }
 
-func (p *Channel) onCallbackStream(stream *core.Stream) bool {
+func (p *Channel) OnCallbackStream(stream *core.Stream) bool {
 	if p.item != nil {
 		if p.item.Return(stream) {
 			p.free()
@@ -23,7 +23,7 @@ func (p *Channel) onCallbackStream(stream *core.Stream) bool {
 	return false
 }
 
-func (p *Channel) onTimeout(now time.Time) bool {
+func (p *Channel) OnTimeout(now time.Time) bool {
 	if p.item != nil {
 		if p.item.CheckAndTimeout(now) {
 			p.free()

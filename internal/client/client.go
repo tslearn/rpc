@@ -198,7 +198,7 @@ func (p *Client) onCallbackStream(stream *core.Stream, callbackID uint64) {
 
 	if p.channels != nil {
 		if chSize := uint64(len(p.channels)); chSize > 0 {
-			p.channels[callbackID%chSize].onCallbackStream(stream)
+			p.channels[callbackID%chSize].OnCallbackStream(stream)
 		}
 	}
 }
@@ -311,7 +311,7 @@ func (p *Client) tryToTimeout(now time.Time) {
 
 		// sweep the channels
 		for i := 0; i < len(p.channels); i++ {
-			p.channels[i].onTimeout(now)
+			p.channels[i].OnTimeout(now)
 		}
 	}
 }
