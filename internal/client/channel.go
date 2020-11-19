@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/rpccloud/rpc/internal/core"
+	"time"
 )
 
 type Channel struct {
@@ -14,12 +15,27 @@ type Channel struct {
 func (p *Channel) onCallbackStream(stream *core.Stream) bool {
 	if p.item != nil {
 		if p.item.Return(stream) {
-			p.item = nil
-			p.client.freeChannels.Push(p.id)
-			p.seq += uint64(len(p.client.channels))
+			p.free()
 			return true
 		}
 	}
 
 	return false
+}
+
+func (p *Channel) onTimeout(now time.Time) bool {
+	if p.item != nil {
+		if p.item.CheckAndTimeout(now) {
+			p.free()
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *Channel) free() {
+	p.item = nil
+	p.client.freeChannels.Push(p.id)
+	p.seq += uint64(len(p.client.channels))
 }

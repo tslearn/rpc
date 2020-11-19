@@ -309,13 +309,10 @@ func (p *Client) tryToTimeout(now time.Time) {
 			}
 		}
 
-		// TODO
-		// sweep send map
-		//for key, value := range p.sendMap {
-		//  if now.Sub(value.startTime) > value.timeout && value.Timeout() {
-		//    delete(p.sendMap, key)
-		//  }
-		//}
+		// sweep the channels
+		for i := 0; i < len(p.channels); i++ {
+			p.channels[i].onTimeout(now)
+		}
 	}
 }
 
