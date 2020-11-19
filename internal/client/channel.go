@@ -15,7 +15,7 @@ func (p *Channel) onCallbackStream(stream *core.Stream) bool {
 	if p.item != nil {
 		if p.item.Return(stream) {
 			p.item = nil
-			p.client.freeChannels <- p.id
+			p.client.freeChannels.Push(p.id)
 			p.seq += uint64(len(p.client.channels))
 			return true
 		}

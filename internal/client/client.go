@@ -30,7 +30,7 @@ type Client struct {
 	preSendHead          *SendItem
 	preSendTail          *SendItem
 	channels             []Channel
-	freeChannels         chan int
+	freeChannels         *FreeChannelStack
 	config               gateway.SessionConfig
 	lastTimeoutCheckTime time.Time
 	lastControlSendTime  time.Time
@@ -166,13 +166,13 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 			p.sessionString = sessionString
 			p.config = config
 			p.channels = make([]Channel, config.NumOfChannels())
-			p.freeChannels = make(chan int, config.NumOfChannels())
+			p.freeChannels = NewFreeChannelStack(int(config.NumOfChannels()))
 			for i := 0; i < len(p.channels); i++ {
 				p.channels[i].id = i
 				p.channels[i].client = p
 				p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
 				p.channels[i].item = nil
-				p.freeChannels <- i
+				p.freeChannels.Push(i)
 			}
 		} else if !p.config.Equals(&config) {
 			// old session, but config changes
@@ -336,39 +336,36 @@ func (p *Client) tryToDeliverPreSendOneMessage() bool {
 		return false
 	} else if p.channels == nil {
 		return false
+	} else if channelID, ok := p.freeChannels.Pop(); !ok {
+		return false
 	} else {
-		select {
-		case channelID := <-p.freeChannels:
-			channel := &p.channels[channelID]
+		channel := &p.channels[channelID]
 
-			// get and set the send item
-			item := p.preSendHead
-			if item == p.preSendTail {
-				p.preSendHead = nil
-				p.preSendTail = nil
-			} else {
-				p.preSendHead = p.preSendHead.next
-			}
+		// get and set the send item
+		item := p.preSendHead
+		if item == p.preSendTail {
+			p.preSendHead = nil
+			p.preSendTail = nil
+		} else {
+			p.preSendHead = p.preSendHead.next
+		}
 
-			item.id = atomic.LoadUint64(&channel.seq)
-			item.next = nil
-			item.sendStream.SetCallbackID(item.id)
-			channel.item = item
+		item.id = atomic.LoadUint64(&channel.seq)
+		item.next = nil
+		item.sendStream.SetCallbackID(item.id)
+		channel.item = item
 
-			// try to send
-			if err := p.conn.WriteStream(
-				item.sendStream,
-				p.config.WriteTimeout(),
-			); err != nil {
-				p.onError(err)
-				return false
-			}
-
-			item.sendTime = base.TimeNow()
-			return true
-		default:
+		// try to send
+		if err := p.conn.WriteStream(
+			item.sendStream,
+			p.config.WriteTimeout(),
+		); err != nil {
+			p.onError(err)
 			return false
 		}
+
+		item.sendTime = base.TimeNow()
+		return true
 	}
 }
 
