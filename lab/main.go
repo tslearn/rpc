@@ -1,39 +1,38 @@
 package main
 
 import (
-	"container/heap"
-	"fmt"
+	"github.com/rpccloud/rpc"
+	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/server"
 )
 
-// An IntHeap is a min-heap of ints.
-type IntHeap []int
+type testFuncCache struct{}
 
-func (h IntHeap) Len() int           { return len(h) }
-func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
-func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *IntHeap) Push(x interface{}) {
-	// Push and Pop use pointer receivers because they modify the slice's length,
-	// not just its contents.
-	*h = append(*h, x.(int))
-}
-
-func (h *IntHeap) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
-}
-
-// This example inserts several ints into an IntHeap, checks the minimum,
-// and removes them in order of priority.
-func main() {
-	h := &IntHeap{2, 1, 5}
-	heap.Init(h)
-	heap.Push(h, 3)
-	fmt.Printf("minimum: %d\n", (*h)[0])
-	for h.Len() > 0 {
-		fmt.Printf("%d ", heap.Pop(h))
+func (p *testFuncCache) Get(fnString string) rpc.ActionCacheFunc {
+	switch fnString {
+	case "":
+		return func(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) int {
+			if !stream.IsReadFinish() {
+				return -1
+			} else {
+				stream.SetWritePosToBodyStart()
+				fn.(func(rpc.Runtime) rpc.Return)(rt)
+				return 0
+			}
+		}
+	default:
+		return nil
 	}
+}
+
+func main() {
+	rpcServer := server.NewServer().ListenTCP("0.0.0.0:28888")
+	rpcServer.AddService(
+		"test",
+		core.NewService().On("SayHello", func(rt core.Runtime) core.Return {
+			return rt.Reply(true)
+		}),
+		nil,
+	).SetNumOfThreads(4096).SetActionCache(&testFuncCache{})
+	rpcServer.Serve()
 }
