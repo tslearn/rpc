@@ -2,11 +2,11 @@ package tcp
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"io"
 	"net"
 	"time"
 )
@@ -196,13 +196,13 @@ func (p *tcpServerAdapter) Open(
 			for {
 				// Listen for an incoming connection.
 				conn, err := p.server.Accept()
+				fmt.Println(err)
 				if err == nil {
-					onConnRun(newTCPStreamConn(conn), conn.RemoteAddr())
-				} else if err == io.EOF {
-					break
+					go onConnRun(newTCPStreamConn(conn), conn.RemoteAddr())
 				} else {
 					onError(0, errors.ErrWebsocketServerAdapterWSServerListenAndServe.
-						AddDebug(e.Error()))
+						AddDebug(err.Error()))
+					break
 				}
 			}
 
