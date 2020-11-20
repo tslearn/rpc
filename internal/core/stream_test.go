@@ -472,6 +472,7 @@ func TestStream(t *testing.T) {
 		assert(streamPosCheck % 8).Equal(0)
 		assert(streamPosBody).Equal(56)
 		assert(streamStatusBitDebug).Equal(0)
+		assert(StreamHeadSize).Equal(56)
 		assert(StreamWriteOK).Equal("")
 		assert(ControlStreamConnectRequest).Equal(1)
 		assert(ControlStreamConnectResponse).Equal(2)

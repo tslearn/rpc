@@ -138,3 +138,23 @@ var (
 		"close timeout",
 	)
 )
+
+const tcpStreamConnErrorSeg = 2101
+
+var (
+	ErrTCPStreamConnReadStream = base.DefineNetError(
+		(tcpStreamConnErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"",
+	)
+	ErrTCPStreamConnWriteStream = base.DefineNetError(
+		(tcpStreamConnErrorSeg<<16)|2,
+		base.ErrorLevelWarn,
+		"",
+	)
+	ErrTCPStreamConnClose = base.DefineNetError(
+		(tcpStreamConnErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+)
