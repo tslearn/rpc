@@ -46,7 +46,7 @@ func newClient(connectString string) (*Client, *base.Error) {
 	} else if urlInfo.Scheme == "ws" {
 		adapter = websocket.NewWebsocketClientAdapter(connectString)
 	} else if urlInfo.Scheme == "tcp" {
-		adapter = tcp.NewTCPClientAdapter(connectString)
+		adapter = tcp.NewTCPClientAdapter(urlInfo.Host)
 	} else {
 		return nil, errors.ErrClientConnectString.AddDebug(
 			fmt.Sprintf("unsupported scheme %s", urlInfo.Scheme),
@@ -146,7 +146,7 @@ func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
 
 	if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
 		return err
-	} else if backStream, err = conn.ReadStream(3*time.Second, 0); err != nil {
+	} else if backStream, err = conn.ReadStream(3*time.Second, 1024); err != nil {
 		return err
 	} else if backStream.GetCallbackID() != 0 {
 		return errors.ErrStream

@@ -17,6 +17,7 @@ type tcpStreamConn struct {
 	readBuf []byte
 	readPos int
 	conn    net.Conn
+	u32Buf  [4]byte
 }
 
 func newTCPStreamConn(
@@ -72,11 +73,11 @@ func (p *tcpStreamConn) ReadStream(
 
 	ret := core.NewStream()
 
-	if p.readPos >= streamLen+8 {
-		ret.PutBytesTo(p.readBuf[8:streamLen+8], 0)
-		p.readPos = copy(p.readBuf, p.readBuf[streamLen+8:p.readPos-streamLen-8])
+	if p.readPos >= streamLen+4 {
+		ret.PutBytesTo(p.readBuf[4:streamLen+4], 0)
+		p.readPos = copy(p.readBuf, p.readBuf[streamLen+4:p.readPos])
 	} else {
-		ret.PutBytesTo(p.readBuf[8:p.readPos], 0)
+		ret.PutBytesTo(p.readBuf[4:p.readPos], 0)
 		streamLen -= p.readPos
 		p.readPos = 0
 
@@ -114,8 +115,17 @@ func (p *tcpStreamConn) WriteStream(
 	}
 
 	buffer := stream.GetBufferUnsafe()
+	binary.LittleEndian.PutUint32(p.u32Buf[0:], uint32(len(buffer)))
 	pos := 0
+	for pos < 4 {
+		n, e := p.conn.Write(p.u32Buf[pos:])
+		if e != nil {
+			return errors.ErrTCPStreamConnWriteStream.AddDebug(e.Error())
+		}
+		pos += n
+	}
 
+	pos = 0
 	for pos < len(buffer) {
 		n, e := p.conn.Write(stream.GetBufferUnsafe())
 		if e != nil {

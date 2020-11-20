@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/server"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestClient_Debug(t *testing.T) {
-	rpcServer := server.NewServer().ListenWebSocket("0.0.0.0:28888")
+	rpcServer := server.NewServer().ListenTCP("0.0.0.0:28888")
 
 	go func() {
 		rpcServer.Serve()
@@ -17,14 +18,14 @@ func TestClient_Debug(t *testing.T) {
 
 	time.Sleep(3000 * time.Millisecond)
 
-	rpcClient, err := newClient("ws://0.0.0.0:28888")
+	rpcClient, err := newClient("tcp://0.0.0.0:28888")
 
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < 10000; i++ {
-		rpcClient.SendMessage(20*time.Second, "#.test:SayHello", i)
+	for i := 0; i < 100; i++ {
+		fmt.Println(rpcClient.SendMessage(20*time.Second, "#.test:SayHello", i))
 	}
 
 	rpcServer.Close()

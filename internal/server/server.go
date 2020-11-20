@@ -62,6 +62,11 @@ func (p *Server) ListenWebSocket(addr string) *Server {
 	return p
 }
 
+func (p *Server) ListenTCP(addr string) *Server {
+	p.gateway.ListenTCP(addr)
+	return p
+}
+
 // SetNumOfThreads ...
 func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	p.Lock()
