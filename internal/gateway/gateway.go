@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/adapter/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -52,6 +53,19 @@ func (p *GateWay) ListenWebSocket(addr string) *GateWay {
 
 	if !p.isRunning {
 		p.adapters = append(p.adapters, websocket.NewWebsocketServerAdapter(addr))
+	} else {
+		p.onError(0, errors.ErrGatewayAlreadyRunning)
+	}
+
+	return p
+}
+
+func (p *GateWay) ListenTCP(addr string) *GateWay {
+	p.Lock()
+	defer p.Unlock()
+
+	if !p.isRunning {
+		p.adapters = append(p.adapters, tcp.NewTCPServerAdapter(addr))
 	} else {
 		p.onError(0, errors.ErrGatewayAlreadyRunning)
 	}

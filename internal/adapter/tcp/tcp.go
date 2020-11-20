@@ -153,8 +153,8 @@ type tcpServerAdapter struct {
 	base.StatusManager
 }
 
-// NewWebsocketServerAdapter ...
-func NewWebsocketServerAdapter(addr string) internal.IServerAdapter {
+// NewTCPServerAdapter ...
+func NewTCPServerAdapter(addr string) internal.IServerAdapter {
 	return &tcpServerAdapter{
 		addr:   addr,
 		server: nil,
@@ -236,8 +236,8 @@ type tcpClientAdapter struct {
 	base.StatusManager
 }
 
-// NewWebsocketClientAdapter ...
-func NewWebsocketClientAdapter(connectString string) internal.IClientAdapter {
+// NewTCPClientAdapter ...
+func NewTCPClientAdapter(connectString string) internal.IClientAdapter {
 	return &tcpClientAdapter{
 		conn:          nil,
 		connectString: connectString,

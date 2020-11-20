@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal"
+	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/adapter/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -42,8 +43,10 @@ func newClient(connectString string) (*Client, *base.Error) {
 
 	if urlInfo, e := url.Parse(connectString); e != nil {
 		return nil, errors.ErrClientConnectString.AddDebug(e.Error())
-	} else if urlInfo.Scheme == "ws" || urlInfo.Scheme == "wss" {
+	} else if urlInfo.Scheme == "ws" {
 		adapter = websocket.NewWebsocketClientAdapter(connectString)
+	} else if urlInfo.Scheme == "tcp" {
+		adapter = tcp.NewTCPClientAdapter(connectString)
 	} else {
 		return nil, errors.ErrClientConnectString.AddDebug(
 			fmt.Sprintf("unsupported scheme %s", urlInfo.Scheme),
