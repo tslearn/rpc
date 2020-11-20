@@ -13,10 +13,11 @@ import (
 const bufferSize = 1024
 
 type tcpStreamConn struct {
-	readBuf []byte
-	readPos int
-	conn    net.Conn
-	u32Buf  [4]byte
+	readBuf  []byte
+	writeBuf []byte
+	readPos  int
+	conn     net.Conn
+	u32Buf   [4]byte
 }
 
 func newTCPStreamConn(
@@ -27,8 +28,9 @@ func newTCPStreamConn(
 	}
 
 	ret := &tcpStreamConn{
-		readBuf: make([]byte, bufferSize),
-		conn:    conn,
+		readBuf:  make([]byte, bufferSize),
+		writeBuf: make([]byte, bufferSize),
+		conn:     conn,
 	}
 
 	return ret
@@ -114,6 +116,21 @@ func (p *tcpStreamConn) WriteStream(
 	}
 
 	buffer := stream.GetBufferUnsafe()
+
+	if len(buffer) < bufferSize-4 { // fast write
+		binary.LittleEndian.PutUint32(p.writeBuf, uint32(len(buffer)))
+		copy(p.writeBuf[4:], buffer)
+		pos := 0
+		for pos < len(buffer)+4 {
+			n, e := p.conn.Write(p.writeBuf[pos : len(buffer)+4])
+			if e != nil {
+				return errors.ErrTCPStreamConnWriteStream.AddDebug(e.Error())
+			}
+			pos += n
+		}
+		return nil
+	}
+
 	binary.LittleEndian.PutUint32(p.u32Buf[0:], uint32(len(buffer)))
 	pos := 0
 	for pos < 4 {
