@@ -213,6 +213,7 @@ func (p *tcpServerAdapter) Open(
 				// Listen for an incoming connection.
 				conn, err := p.server.Accept()
 				if err == nil {
+					conn.(*net.TCPConn).SetNoDelay(false)
 					go onConnRun(newTCPStreamConn(conn), conn.RemoteAddr())
 				} else {
 					onError(0, errors.ErrWebsocketServerAdapterWSServerListenAndServe.
@@ -280,6 +281,7 @@ func (p *tcpClientAdapter) Open(
 	} else if conn, err := net.Dial("tcp", p.connectString); err != nil {
 		onError(errors.ErrWebsocketClientAdapterDial.AddDebug(err.Error()))
 	} else {
+		conn.(*net.TCPConn).SetNoDelay(false)
 		streamConn := newTCPStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn

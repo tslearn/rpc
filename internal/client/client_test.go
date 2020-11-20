@@ -58,7 +58,7 @@ func BenchmarkClient_Debug(b *testing.B) {
 			return rt.Reply(true)
 		}),
 		nil,
-	).SetActionCache(&testFuncCache{})
+	).SetNumOfThreads(4096).SetActionCache(&testFuncCache{})
 	go func() {
 		rpcServer.Serve()
 	}()
@@ -73,7 +73,7 @@ func BenchmarkClient_Debug(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	b.N = 100000
+	b.N = 500000
 
 	for i := 0; i < b.N; i++ {
 		rpcClient.SendMessage(10*time.Second, "#.test:SayHello")
