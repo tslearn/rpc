@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -196,7 +195,6 @@ func (p *tcpServerAdapter) Open(
 			for {
 				// Listen for an incoming connection.
 				conn, err := p.server.Accept()
-				fmt.Println(err)
 				if err == nil {
 					go onConnRun(newTCPStreamConn(conn), conn.RemoteAddr())
 				} else {

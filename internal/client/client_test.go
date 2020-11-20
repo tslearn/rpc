@@ -51,7 +51,7 @@ func (p *testFuncCache) Get(fnString string) rpc.ActionCacheFunc {
 }
 
 func BenchmarkClient_Debug(b *testing.B) {
-	rpcServer := server.NewServer().ListenWebSocket("0.0.0.0:28888")
+	rpcServer := server.NewServer().ListenTCP("0.0.0.0:28888")
 	rpcServer.AddService(
 		"test",
 		core.NewService().On("SayHello", func(rt core.Runtime) core.Return {
@@ -65,7 +65,7 @@ func BenchmarkClient_Debug(b *testing.B) {
 
 	time.Sleep(1000 * time.Millisecond)
 
-	rpcClient, err := newClient("ws://0.0.0.0:28888")
+	rpcClient, err := newClient("tcp://0.0.0.0:28888")
 
 	if err != nil {
 		panic(err)
