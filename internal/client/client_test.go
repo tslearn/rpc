@@ -165,7 +165,7 @@ func BenchmarkClient_TCP(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	b.N = 5000000
+	b.N = 500000
 
 	for i := 0; i < b.N; i++ {
 		binary.LittleEndian.PutUint32(wBuf, uint32(len(sendString)))
