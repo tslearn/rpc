@@ -161,18 +161,6 @@ func (p *tcpStreamConn) Close() *base.Error {
 	}
 }
 
-//
-//var (
-//  wsUpgradeManager = websocket.Upgrader{
-//    ReadBufferSize:    1024,
-//    WriteBufferSize:   1024,
-//    EnableCompression: false,
-//    CheckOrigin: func(r *http.Request) bool {
-//      return true
-//    },
-//  }
-//)
-
 type tcpServerAdapter struct {
 	addr   string
 	server net.Listener
@@ -228,7 +216,6 @@ func (p *tcpServerAdapter) Open(
 			})
 		}
 	}
-
 }
 
 // Close ...
