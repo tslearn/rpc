@@ -81,8 +81,8 @@ func BenchmarkClient_Debug(b *testing.B) {
 		rpcClient.SendMessage(10*time.Second, "#.test:SayHello")
 	}
 
-	//	rpcServer.Close()
-	// rpcClient.Close()
+	rpcServer.Close()
+	rpcClient.Close()
 }
 
 func BenchmarkClient_TCP(b *testing.B) {
