@@ -91,6 +91,5 @@ func main() {
 				go echo(int(events[ev].Fd))
 			}
 		}
-
 	}
 }
