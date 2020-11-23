@@ -20,7 +20,7 @@ type tcpStreamConn struct {
 	u32Buf   [4]byte
 }
 
-func newTCPStreamConn(
+func NewTCPStreamConn(
 	conn net.Conn,
 ) *tcpStreamConn {
 	if conn == nil {
@@ -202,7 +202,7 @@ func (p *tcpServerAdapter) Open(
 				conn, err := p.server.Accept()
 				if err == nil {
 					conn.(*net.TCPConn).SetNoDelay(false)
-					go onConnRun(newTCPStreamConn(conn), conn.RemoteAddr())
+					go onConnRun(NewTCPStreamConn(conn), conn.RemoteAddr())
 				} else {
 					onError(0, errors.ErrWebsocketServerAdapterWSServerListenAndServe.
 						AddDebug(err.Error()))
@@ -269,7 +269,7 @@ func (p *tcpClientAdapter) Open(
 		onError(errors.ErrWebsocketClientAdapterDial.AddDebug(err.Error()))
 	} else {
 		conn.(*net.TCPConn).SetNoDelay(false)
-		streamConn := newTCPStreamConn(conn)
+		streamConn := NewTCPStreamConn(conn)
 		if !p.SetRunning(func() {
 			p.conn = streamConn
 		}) {

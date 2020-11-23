@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/rpccloud/rpc"
+	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/server"
 	"net"
@@ -60,34 +61,62 @@ func BenchmarkClient_Debug(b *testing.B) {
 			return rt.Reply(true)
 		}),
 		nil,
-	).SetActionCache(&testFuncCache{})
+	).SetNumOfThreads(1024).SetActionCache(&testFuncCache{})
 	go func() {
 		rpcServer.Serve()
 	}()
 
-	time.Sleep(3000 * time.Millisecond)
-	rpcClient, err := newClient("tcp://0.0.0.0:28888")
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(time.Second)
+	conn, e := net.Dial("tcp", "0.0.0.0:28888")
+	if e != nil {
+		panic(e)
+	}
+	sConn := tcp.NewTCPStreamConn(conn)
 
-	if err != nil {
+	sendStream := core.NewStream()
+	sendStream.SetCallbackID(0)
+	sendStream.WriteInt64(core.ControlStreamConnectRequest)
+	sendStream.WriteString("")
+
+	fmt.Println("OK")
+
+	if err := sConn.WriteStream(sendStream, 3*time.Second); err != nil {
+		panic(err)
+	}
+
+	if _, err := sConn.ReadStream(3*time.Second, 1024); err != nil {
 		panic(err)
 	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	b.N = 500000
+	b.N = 1000000
 
 	for i := 0; i < b.N; i++ {
-		rpcClient.SendMessage(10*time.Second, "#.test:SayHello")
+		sendS, _ := core.MakeRequestStream(false, 0, "#.test:SayHello", "@")
+		sendS.SetCallbackID(uint64(i) + 1)
+		if e := sConn.WriteStream(sendS, time.Second); e != nil {
+			fmt.Println(e)
+			return
+		}
+		sendS.Release()
+
+		s, e := sConn.ReadStream(time.Second, 1024)
+		if e != nil {
+			fmt.Println(e)
+			return
+		}
+		s.Release()
 	}
 
 	rpcServer.Close()
-	rpcClient.Close()
+	sConn.Close()
 }
 
 func BenchmarkClient_TCP(b *testing.B) {
 	const sendString = "hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world"
 	const writeString = "hello worldhello worldhello worldhello worldhello worldhello worldhel"
+
 	go func() { // create serve
 		server, err := net.Listen("tcp", "0.0.0.0:28888")
 		if err != nil {
