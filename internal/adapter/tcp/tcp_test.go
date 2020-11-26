@@ -14,7 +14,7 @@ func BenchmarkClient_TCP(b *testing.B) {
 	responseStream := core.NewStream()
 
 	fnServer := func(conn net.Conn) {
-		sConn := newTCPStreamConn(conn)
+		sConn := NewTCPStreamConn(conn)
 
 		for {
 			s, e := sConn.ReadStream(time.Second, 1024)
@@ -56,7 +56,7 @@ func BenchmarkClient_TCP(b *testing.B) {
 	if e != nil {
 		panic(e)
 	}
-	sConn := newTCPStreamConn(conn)
+	sConn := NewTCPStreamConn(conn)
 
 	b.ReportAllocs()
 	b.ResetTimer()
