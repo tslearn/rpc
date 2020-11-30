@@ -20,7 +20,7 @@
 
 // +build freebsd dragonfly darwin
 
-package netpoll
+package xadapter
 
 import "golang.org/x/sys/unix"
 

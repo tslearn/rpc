@@ -21,7 +21,7 @@
 
 // +build freebsd dragonfly darwin
 
-package netpoll
+package xadapter
 
 import (
 	"errors"
@@ -101,48 +101,18 @@ func (p *Poller) Polling(callback func(fd int, filter int16) error) error {
 	}
 }
 
-// AddReadWrite registers the given file-descriptor with readable and writable events to the poller.
-func (p *Poller) AddReadWrite(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_READ},
-		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_WRITE},
-	}, nil, nil)
-	return os.NewSyscallError("kevent add", err)
-}
-
 // AddRead registers the given file-descriptor with readable event to the poller.
-func (p *Poller) AddRead(fd int) error {
+func (p *Poller) Add(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_READ},
-	}, nil, nil)
-	return os.NewSyscallError("kevent add", err)
-}
-
-// AddWrite registers the given file-descriptor with writable event to the poller.
-func (p *Poller) AddWrite(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_WRITE},
-	}, nil, nil)
-	return os.NewSyscallError("kevent add", err)
-}
-
-// ModRead renews the given file-descriptor with readable event in the poller.
-func (p *Poller) ModRead(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: uint64(fd), Flags: unix.EV_DELETE, Filter: unix.EVFILT_WRITE},
-	}, nil, nil)
-	return os.NewSyscallError("kevent delete", err)
-}
-
-// ModReadWrite renews the given file-descriptor with readable and writable events in the poller.
-func (p *Poller) ModReadWrite(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_WRITE},
 	}, nil, nil)
 	return os.NewSyscallError("kevent add", err)
 }
 
 // Delete removes the given file-descriptor from the poller.
 func (p *Poller) Delete(fd int) error {
-	return nil
+	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
+		{Ident: uint64(fd), Flags: unix.EV_DELETE, Filter: unix.EVFILT_READ},
+	}, nil, nil)
+	return os.NewSyscallError("kevent delete", err)
 }
