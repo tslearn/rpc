@@ -36,7 +36,7 @@ func (p *LoopChannel) GetActiveConnCount() int64 {
 	return atomic.LoadInt64(&p.activeConnCount)
 }
 
-func (p *LoopChannel) TickRead() {
+func (p *LoopChannel) Open() {
 	p.poller.Polling(func(fd int, isClose bool) {
 		if conn, ok := p.connMap[fd]; ok {
 			if isClose {
@@ -58,12 +58,6 @@ func (p *LoopChannel) TickRead() {
 			}
 		}
 	})
-}
-
-func (p *LoopChannel) Open() {
-	for {
-		p.TickRead()
-	}
 }
 
 func (p *LoopChannel) Close() error {
