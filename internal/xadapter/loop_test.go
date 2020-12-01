@@ -31,17 +31,17 @@ func (p *TCPConn) OnRead() error {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Read:", string(buf[:n]))
+
+		go func() {
+			_, _ = p.conn.Write(buf[:n])
+		}()
 	}
 
 	return nil
 }
 
 func (p *TCPConn) OnClose() error {
-	fmt.Println("OnClose:")
-	return nil
-}
-
-func (p *TCPConn) OnWriteReady() error {
+	fmt.Println("OnClose")
 	return nil
 }
 

@@ -21,6 +21,10 @@ func main() {
 				} else {
 					_, _ = conn.Write([]byte("hello"))
 					time.Sleep(10 * time.Millisecond)
+
+					rBuf := make([]byte, 1024)
+					n, _ := conn.Read(rBuf)
+					fmt.Println(string(rBuf[:n]))
 					_ = conn.Close()
 				}
 			}
