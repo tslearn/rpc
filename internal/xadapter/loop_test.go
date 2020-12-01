@@ -71,7 +71,7 @@ func Test_Debug(t *testing.T) {
 		fmt.Println("AAA")
 		if err == nil {
 			channel := manager.AllocChannel()
-			fmt.Println(channel.AddRead(NewTCPConn(conn)))
+			channel.AddConn(NewTCPConn(conn))
 		} else {
 			panic(err)
 		}

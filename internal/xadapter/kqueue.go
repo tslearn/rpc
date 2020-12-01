@@ -1,48 +1,21 @@
-// Copyright (c) 2019 Andy Pan
-// Copyright (c) 2017 Joshua J Baker
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
 // +build freebsd dragonfly darwin
 
 package xadapter
 
 import (
-	"errors"
 	"fmt"
 	"golang.org/x/sys/unix"
 	"os"
 )
 
-// ErrServerShutdown occurs when server is closing.
-var ErrServerShutdown = errors.New("server is going to be shutdown")
-
-// ErrAcceptSocket occurs when acceptor does not accept the new connection properly.
-var ErrAcceptSocket = errors.New("accept a new connection error")
-
-// Poller represents a poller which is in charge of monitoring file-descriptors.
+// Poller ...
 type Poller struct {
-	fd int
+	fd     int
+	events [256]unix.Kevent_t
 }
 
-// OpenPoller instantiates a poller.
-func OpenPoller() (poller *Poller, err error) {
+// NewPoller ...
+func NewPoller() (poller *Poller, err error) {
 	poller = new(Poller)
 	if poller.fd, err = unix.Kqueue(); err != nil {
 		poller = nil
@@ -56,63 +29,60 @@ func OpenPoller() (poller *Poller, err error) {
 	}}, nil, nil); err != nil {
 		_ = poller.Close()
 		poller = nil
-		err = os.NewSyscallError("kevent add|clear", err)
+		err = os.NewSyscallError("kqueue add|clear", err)
 		return
 	}
 	return
 }
 
-// Close closes the poller.
+// Close ...
 func (p *Poller) Close() error {
 	return os.NewSyscallError("close", unix.Close(p.fd))
 }
 
-// Polling blocks the current goroutine, waiting for network-events.
-func (p *Poller) Polling(callback func(fd int, filter int16) error) error {
-	el := newEventList(InitEvents)
-
+// Polling ...
+func (p *Poller) Polling(
+	callback func(fd int, isClose bool),
+	trigger func(),
+) error {
 	for {
-		n, err := unix.Kevent(p.fd, nil, el.events, nil)
+		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
 		if err != nil && err != unix.EINTR {
-			fmt.Printf("Error occurs in kqueue: %v", os.NewSyscallError("kevent wait", err))
-			continue
+			return os.NewSyscallError("kqueue wait", err)
 		}
 
-		var evFilter int16
 		for i := 0; i < n; i++ {
-			if fd := int(el.events[i].Ident); fd != 0 {
-				evFilter = el.events[i].Filter
-				if (el.events[i].Flags&unix.EV_EOF != 0) || (el.events[i].Flags&unix.EV_ERROR != 0) {
-					evFilter = EVFilterSock
-				}
-				switch err = callback(fd, evFilter); err {
-				case nil:
-				case ErrAcceptSocket, ErrServerShutdown:
-					return err
-				default:
-					fmt.Printf("Error occurs in event-loop: %v", err)
-				}
+			evt := p.events[i]
+			if fd := int(evt.Ident); fd == 0 {
+				fmt.Println(evt.Filter)
+				trigger()
+			} else {
+				callback(fd, evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0)
 			}
-		}
-
-		if n == el.size {
-			el.increase()
 		}
 	}
 }
 
-// AddRead registers the given file-descriptor with readable event to the poller.
+// Add ...
 func (p *Poller) Add(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_READ},
 	}, nil, nil)
-	return os.NewSyscallError("kevent add", err)
+	return os.NewSyscallError("kqueue add", err)
 }
 
-// Delete removes the given file-descriptor from the poller.
+// Delete ...
 func (p *Poller) Delete(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{Ident: uint64(fd), Flags: unix.EV_DELETE, Filter: unix.EVFILT_READ},
 	}, nil, nil)
-	return os.NewSyscallError("kevent delete", err)
+	return os.NewSyscallError("kqueue delete", err)
+}
+
+// Trigger ...
+func (p *Poller) Trigger() (err error) {
+	_, err = unix.Kevent(p.fd, []unix.Kevent_t{
+		{Ident: 0, Filter: unix.EVFILT_USER, Fflags: unix.NOTE_TRIGGER},
+	}, nil, nil)
+	return os.NewSyscallError("kqueue trigger", err)
 }
