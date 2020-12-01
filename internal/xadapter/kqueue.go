@@ -8,6 +8,9 @@ import (
 	"os"
 )
 
+const TriggerTypeAdd = 1
+const triggerTypeShutdown = 2
+
 // Poller ...
 type Poller struct {
 	fd     int
@@ -43,7 +46,8 @@ func (p *Poller) Close() error {
 // Polling ...
 func (p *Poller) Polling(
 	callback func(fd int, isClose bool),
-	trigger func(),
+	addConn func(),
+	exit func(),
 ) error {
 	for {
 		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
@@ -54,8 +58,8 @@ func (p *Poller) Polling(
 		for i := 0; i < n; i++ {
 			evt := p.events[i]
 			if fd := int(evt.Ident); fd == 0 {
-				fmt.Println(evt.Filter)
-				trigger()
+				fmt.Println("evt.Fflags", evt.Data)
+				addConn()
 			} else {
 				callback(fd, evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0)
 			}
@@ -80,9 +84,9 @@ func (p *Poller) Delete(fd int) error {
 }
 
 // Trigger ...
-func (p *Poller) Trigger() (err error) {
+func (p *Poller) Trigger(data int64) (err error) {
 	_, err = unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: 0, Filter: unix.EVFILT_USER, Fflags: unix.NOTE_TRIGGER},
+		{Ident: 0, Filter: unix.EVFILT_USER, Fflags: unix.NOTE_TRIGGER, Data: data},
 	}, nil, nil)
 	return os.NewSyscallError("kqueue trigger", err)
 }

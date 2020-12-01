@@ -27,9 +27,9 @@ func NewLoopChannel() (*LoopChannel, error) {
 }
 
 func (p *LoopChannel) AddConn(conn XConn) {
-	_ = p.poller.Trigger()
+	_ = p.poller.Trigger(TriggerTypeAdd)
 	p.connCH <- conn
-	_ = p.poller.Trigger()
+	_ = p.poller.Trigger(TriggerTypeAdd)
 }
 
 func (p *LoopChannel) GetActiveConnCount() int64 {
@@ -57,6 +57,8 @@ func (p *LoopChannel) Open() {
 				return
 			}
 		}
+	}, func() {
+
 	})
 }
 
