@@ -3,13 +3,14 @@
 package xadapter
 
 import (
-	"fmt"
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
 )
 
-const TriggerTypeAdd = 1
-const triggerTypeShutdown = 2
+const triggerDataAdd = 1
+const triggerDataExit = 2
 
 // Poller ...
 type Poller struct {
@@ -45,30 +46,43 @@ func (p *Poller) Close() error {
 
 // Polling ...
 func (p *Poller) Polling(
-	callback func(fd int, isClose bool),
-	addConn func(),
-	exit func(),
-) error {
+	onTriggerAdd func(),
+	onRead func(fd int),
+	onClose func(fd int),
+	onError func(err *base.Error),
+	onTriggerExit func(),
+) {
 	for {
 		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
+
 		if err != nil && err != unix.EINTR {
-			return os.NewSyscallError("kqueue wait", err)
+			onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
 		}
 
 		for i := 0; i < n; i++ {
 			evt := p.events[i]
 			if fd := int(evt.Ident); fd == 0 {
-				fmt.Println("evt.Fflags", evt.Data)
-				addConn()
+				if evt.Data == triggerDataAdd {
+					onTriggerAdd()
+				} else if evt.Data == triggerDataExit {
+					onTriggerExit()
+					return
+				} else {
+					onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+				}
 			} else {
-				callback(fd, evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0)
+				if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+					onClose(fd)
+				} else {
+					onRead(fd)
+				}
 			}
 		}
 	}
 }
 
 // Add ...
-func (p *Poller) Add(fd int) error {
+func (p *Poller) RegisterFD(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{Ident: uint64(fd), Flags: unix.EV_ADD, Filter: unix.EVFILT_READ},
 	}, nil, nil)
@@ -76,17 +90,31 @@ func (p *Poller) Add(fd int) error {
 }
 
 // Delete ...
-func (p *Poller) Delete(fd int) error {
+func (p *Poller) UnregisterFD(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{Ident: uint64(fd), Flags: unix.EV_DELETE, Filter: unix.EVFILT_READ},
 	}, nil, nil)
 	return os.NewSyscallError("kqueue delete", err)
 }
 
-// Trigger ...
-func (p *Poller) Trigger(data int64) (err error) {
-	_, err = unix.Kevent(p.fd, []unix.Kevent_t{
-		{Ident: 0, Filter: unix.EVFILT_USER, Fflags: unix.NOTE_TRIGGER, Data: data},
-	}, nil, nil)
+// InvokeAddTrigger ...
+func (p *Poller) InvokeAddTrigger() (err error) {
+	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
+		Ident:  0,
+		Filter: unix.EVFILT_USER,
+		Fflags: unix.NOTE_TRIGGER,
+		Data:   triggerDataAdd,
+	}}, nil, nil)
+	return os.NewSyscallError("kqueue trigger", err)
+}
+
+// InvokeAddTrigger ...
+func (p *Poller) InvokeExitTrigger() (err error) {
+	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
+		Ident:  0,
+		Filter: unix.EVFILT_USER,
+		Fflags: unix.NOTE_TRIGGER,
+		Data:   triggerDataExit,
+	}}, nil, nil)
 	return os.NewSyscallError("kqueue trigger", err)
 }

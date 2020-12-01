@@ -2,6 +2,7 @@ package xadapter
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"reflect"
 	"testing"
@@ -23,7 +24,7 @@ func (p *TCPConn) FD() int {
 	return p.fd
 }
 
-func (p *TCPConn) OnRead() error {
+func (p *TCPConn) OnRead() *base.Error {
 	buf := make([]byte, 1024)
 	n, err := p.conn.Read(buf)
 
@@ -40,9 +41,12 @@ func (p *TCPConn) OnRead() error {
 	return nil
 }
 
-func (p *TCPConn) OnClose() error {
+func (p *TCPConn) OnError(err *base.Error) {
 	fmt.Println("OnClose")
-	return nil
+}
+
+func (p *TCPConn) OnClose() {
+	fmt.Println("OnClose")
 }
 
 func tcpFD(conn *net.TCPConn) int {

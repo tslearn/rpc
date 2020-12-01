@@ -1,7 +1,10 @@
 package xadapter
 
+import "github.com/rpccloud/rpc/internal/base"
+
 type XConn interface {
 	FD() int
-	OnRead() error
-	OnClose() error
+	OnRead() *base.Error
+	OnClose()
+	OnError(err *base.Error)
 }

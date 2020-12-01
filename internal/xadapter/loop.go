@@ -1,6 +1,8 @@
 package xadapter
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"sync/atomic"
 )
 
@@ -27,39 +29,88 @@ func NewLoopChannel() (*LoopChannel, error) {
 }
 
 func (p *LoopChannel) AddConn(conn XConn) {
-	_ = p.poller.Trigger(TriggerTypeAdd)
+	_ = p.poller.InvokeAddTrigger()
 	p.connCH <- conn
-	_ = p.poller.Trigger(TriggerTypeAdd)
+	_ = p.poller.InvokeAddTrigger()
 }
 
 func (p *LoopChannel) GetActiveConnCount() int64 {
 	return atomic.LoadInt64(&p.activeConnCount)
 }
 
-func (p *LoopChannel) Open() {
-	p.poller.Polling(func(fd int, isClose bool) {
-		if conn, ok := p.connMap[fd]; ok {
-			if isClose {
-				_ = p.poller.Delete(fd)
-				delete(p.connMap, fd)
-				conn.OnClose()
-			} else {
-				conn.OnRead()
+func (p *LoopChannel) onAddConn() {
+	for {
+		select {
+		case conn := <-p.connCH:
+			p.connMap[conn.FD()] = conn
+			if e := p.poller.RegisterFD(conn.FD()); e != nil {
+				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 			}
+		default:
+			return
 		}
-	}, func() {
-		for {
-			select {
-			case conn := <-p.connCH:
-				p.connMap[conn.FD()] = conn
-				p.poller.Add(conn.FD())
-			default:
-				return
-			}
-		}
-	}, func() {
+	}
+}
 
-	})
+func (p *LoopChannel) onRead(fd int) {
+	if conn, ok := p.connMap[fd]; ok {
+		if err := conn.OnRead(); err != nil {
+			p.onError(err)
+		}
+	}
+}
+
+func (p *LoopChannel) onClose(fd int) {
+	if e := p.poller.UnregisterFD(fd); e != nil {
+		p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+	}
+
+	if conn, ok := p.connMap[fd]; ok {
+		delete(p.connMap, fd)
+		conn.OnClose()
+	}
+}
+
+func (p *LoopChannel) onError(err *base.Error) {
+
+}
+
+func (p *LoopChannel) onExit() {
+
+}
+
+func (p *LoopChannel) Open() {
+	p.poller.Polling(
+		p.onAddConn,
+		p.onRead,
+		p.onClose,
+		p.onError,
+		p.onExit,
+	)
+
+	//p.poller.Polling(func(fd int, isClose bool) {
+	//	if conn, ok := p.connMap[fd]; ok {
+	//		if isClose {
+	//			_ = p.poller.UnregisterFD(fd)
+	//			delete(p.connMap, fd)
+	//			conn.OnClose()
+	//		} else {
+	//			conn.OnRead()
+	//		}
+	//	}
+	//}, func() {
+	//	for {
+	//		select {
+	//		case conn := <-p.connCH:
+	//			p.connMap[conn.FD()] = conn
+	//			p.poller.RegisterFD(conn.FD())
+	//		default:
+	//			return
+	//		}
+	//	}
+	//}, func() {
+	//
+	//})
 }
 
 func (p *LoopChannel) Close() error {
