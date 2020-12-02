@@ -11,4 +11,10 @@ var (
 		base.ErrorLevelFatal,
 		"",
 	)
+
+	ErrKqueueNotRunning = base.DefineNetError(
+		(xAdapterErrorSeg<<16)|2,
+		base.ErrorLevelFatal,
+		"it is not running",
+	)
 )

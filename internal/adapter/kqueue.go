@@ -7,76 +7,114 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
+	"sync/atomic"
+	"time"
 )
 
 const triggerDataAdd = 1
 const triggerDataExit = 2
 
+const pollerStatusRunning = 1
+const pollerStatusClosing = 2
+const pollerStatusClosed = 0
+
 // Poller ...
 type Poller struct {
-	fd     int
-	events [256]unix.Kevent_t
+	status  uint32
+	closeCH chan bool
+	onError func(err *base.Error)
+	fd      int
+	events  [256]unix.Kevent_t
 }
 
 // NewPoller ...
-func NewPoller() (poller *Poller, err error) {
-	poller = new(Poller)
-	if poller.fd, err = unix.Kqueue(); err != nil {
-		poller = nil
-		err = os.NewSyscallError("kqueue", err)
-		return
-	}
-	if _, err = unix.Kevent(poller.fd, []unix.Kevent_t{{
+func NewPoller(
+	onTriggerAdd func(),
+	onTriggerExit func(),
+	onRead func(fd int),
+	onClose func(fd int),
+	onError func(err *base.Error),
+) *Poller {
+	if pfd, e := unix.Kqueue(); e != nil {
+		onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+		return nil
+	} else if _, e := unix.Kevent(pfd, []unix.Kevent_t{{
 		Ident:  0,
 		Filter: unix.EVFILT_USER,
 		Flags:  unix.EV_ADD | unix.EV_CLEAR,
-	}}, nil, nil); err != nil {
-		_ = poller.Close()
-		poller = nil
-		err = os.NewSyscallError("kqueue add|clear", err)
-		return
+	}}, nil, nil); e != nil {
+		onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+		return nil
+	} else {
+		ret := &Poller{
+			status:  pollerStatusRunning,
+			closeCH: make(chan bool),
+			onError: onError,
+			fd:      pfd,
+		}
+
+		go func() {
+			for atomic.LoadUint32(&ret.status) == pollerStatusRunning {
+				n, err := unix.Kevent(ret.fd, nil, ret.events[:], nil)
+
+				if err != nil && err != unix.EINTR {
+					onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
+					continue
+				}
+
+				for i := 0; i < n; i++ {
+					evt := ret.events[i]
+					if fd := int(evt.Ident); fd == 0 {
+						if evt.Data == triggerDataAdd {
+							onTriggerAdd()
+						} else if evt.Data == triggerDataExit {
+							onTriggerExit()
+							atomic.StoreUint32(&ret.status, pollerStatusClosed)
+							break
+						} else {
+							onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+						}
+					} else {
+						if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+							onClose(fd)
+						} else {
+							onRead(fd)
+						}
+					}
+				}
+			}
+			ret.closeCH <- true
+		}()
+
+		return ret
 	}
-	return
 }
 
 // Close ...
-func (p *Poller) Close() error {
-	return os.NewSyscallError("close", unix.Close(p.fd))
-}
-
-// Polling ...
-func (p *Poller) Polling(
-	onTriggerAdd func(),
-	onRead func(fd int),
-	onClose func(fd int),
-	onTriggerExit func(),
-) *base.Error {
-	for {
-		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
-
-		if err != nil && err != unix.EINTR {
-			return errors.ErrKqueueSystem.AddDebug(err.Error())
-		}
-
-		for i := 0; i < n; i++ {
-			evt := p.events[i]
-			if fd := int(evt.Ident); fd == 0 {
-				if evt.Data == triggerDataAdd {
-					onTriggerAdd()
-				} else if evt.Data == triggerDataExit {
-					onTriggerExit()
-					return nil
-				} else {
-					return errors.ErrKqueueSystem.AddDebug("unknown event data")
+func (p *Poller) Close() *base.Error {
+	if atomic.CompareAndSwapUint32(
+		&p.status,
+		pollerStatusRunning,
+		pollerStatusClosing,
+	) {
+		go func() {
+			for atomic.LoadUint32(&p.status) == pollerStatusClosing {
+				if e := p.InvokeExitTrigger(); e != nil {
+					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 				}
-			} else {
-				if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-					onClose(fd)
-				} else {
-					onRead(fd)
-				}
+				time.Sleep(50 * time.Millisecond)
 			}
+		}()
+
+		<-p.closeCH
+
+		if e := unix.Close(p.fd); e != nil {
+			p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		}
+
+		return nil
+	} else {
+		return errors.ErrKqueueNotRunning
 	}
 }
 

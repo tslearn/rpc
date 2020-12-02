@@ -1,5 +1,7 @@
 package adapter
 
+import "github.com/rpccloud/rpc/internal/base"
+
 type LoopManager struct {
 	channels    []*LoopChannel
 	receiver    XReceiver
@@ -7,7 +9,7 @@ type LoopManager struct {
 	currRemains uint64
 }
 
-func NewLoopManager(channels int, receiver XReceiver) (*LoopManager, error) {
+func NewLoopManager(channels int, receiver XReceiver) (*LoopManager, *base.Error) {
 	if channels < 1 {
 		channels = 1
 	}
@@ -39,8 +41,8 @@ func (p *LoopManager) Open() {
 	}
 }
 
-func (p *LoopManager) Close() error {
-	return nil
+func (p *LoopManager) Close() {
+
 }
 
 func (p *LoopManager) AllocChannel() *LoopChannel {

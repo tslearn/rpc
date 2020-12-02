@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"sync/atomic"
 )
@@ -13,7 +14,7 @@ type LoopChannel struct {
 	connCH          chan *EventConn
 }
 
-func NewLoopChannel(manager *LoopManager) (*LoopChannel, error) {
+func NewLoopChannel(manager *LoopManager) (*LoopChannel, *base.Error) {
 	poller, err := NewPoller()
 
 	if err != nil {

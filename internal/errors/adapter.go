@@ -158,3 +158,31 @@ var (
 		"",
 	)
 )
+
+const tcpServerAdapterErrorSeg = 2102
+
+var (
+	ErrTCPServerAdapterAlreadyRunning = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"it is already running",
+	)
+
+	ErrTCPServerAdapterNotRunning = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|2,
+		base.ErrorLevelWarn,
+		"it is not running",
+	)
+
+	ErrTCPServerAdapterListen = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrTCPServerAdapterAccept = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+)
