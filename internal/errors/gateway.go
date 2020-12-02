@@ -34,4 +34,16 @@ var (
 		base.ErrorLevelWarn,
 		"session not found",
 	)
+
+	ErrGateWayIDOverflows = base.DefineConfigError(
+		(gatewayErrorSeg<<16)|5,
+		base.ErrorLevelWarn,
+		"gateway id overflows",
+	)
+
+	ErrGateWaySeedOverflows = base.DefineConfigError(
+		(gatewayErrorSeg<<16)|5,
+		base.ErrorLevelWarn,
+		"gateway seed overflows",
+	)
 )
