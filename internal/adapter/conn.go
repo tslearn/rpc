@@ -23,17 +23,27 @@ type XConn interface {
 }
 
 type EventConn struct {
-	receiver XReceiver
-	conn     XConn
-	fd       int
+	receiver   XReceiver
+	conn       XConn
+	fd         int
+	transLimit int
 }
 
 func NewEventConn(receiver XReceiver, conn XConn, fd int) *EventConn {
 	return &EventConn{
-		receiver: receiver,
-		conn:     conn,
-		fd:       fd,
+		receiver:   receiver,
+		conn:       conn,
+		fd:         fd,
+		transLimit: 4 * 1024 * 1024,
 	}
+}
+
+func (p *EventConn) GetTransLimit() int {
+	return p.transLimit
+}
+
+func (p *EventConn) SetTransLimit(transLimit int) {
+	p.transLimit = transLimit
 }
 
 func (p *EventConn) GetReceiver() XReceiver {
