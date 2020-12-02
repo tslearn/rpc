@@ -14,20 +14,30 @@ type LoopChannel struct {
 	connCH          chan *EventConn
 }
 
-func NewLoopChannel(manager *LoopManager) (*LoopChannel, *base.Error) {
-	poller, err := NewPoller()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &LoopChannel{
+func NewLoopChannel(manager *LoopManager) *LoopChannel {
+	ret := &LoopChannel{
 		manager:         manager,
 		activeConnCount: 0,
-		poller:          poller,
+		poller:          nil,
 		connMap:         make(map[int]*EventConn),
 		connCH:          make(chan *EventConn, 4096),
-	}, nil
+	}
+
+	ret.poller = NewPoller(
+		ret.onTriggerAdd,
+		ret.onTriggerExit,
+		ret.onReadReady,
+		ret.onClose,
+		ret.onError,
+	)
+
+	return ret
+}
+
+func (p *LoopChannel) Close() {
+	if err := p.poller.Close(); err != nil {
+		p.onError(err)
+	}
 }
 
 func (p *LoopChannel) AddConn(conn *EventConn) {
@@ -40,7 +50,7 @@ func (p *LoopChannel) GetActiveConnCount() int64 {
 	return atomic.LoadInt64(&p.activeConnCount)
 }
 
-func (p *LoopChannel) onAddConn() {
+func (p *LoopChannel) onTriggerAdd() {
 	for {
 		select {
 		case conn := <-p.connCH:
@@ -57,11 +67,13 @@ func (p *LoopChannel) onAddConn() {
 	}
 }
 
-func (p *LoopChannel) onRead(fd int) {
+func (p *LoopChannel) onTriggerExit() {
+
+}
+
+func (p *LoopChannel) onReadReady(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
-		if err := conn.reOnRead(); err != nil {
-			p.onError(err)
-		}
+		conn.OnReadyReady()
 	}
 }
 
@@ -79,21 +91,6 @@ func (p *LoopChannel) onClose(fd int) {
 	}
 }
 
-func (p *LoopChannel) onExit() {
-
-}
-
-func (p *LoopChannel) Open() {
-	if err := p.poller.Polling(
-		p.onAddConn,
-		p.onRead,
-		p.onClose,
-		p.onExit,
-	); err != nil {
-		p.manager.receiver.OnEventConnError(nil, err)
-	}
-}
-
-func (p *LoopChannel) Close() error {
-	return nil
+func (p *LoopChannel) onError(err *base.Error) {
+	p.manager.receiver.OnEventConnError(nil, err)
 }

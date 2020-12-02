@@ -31,7 +31,7 @@ type Poller struct {
 func NewPoller(
 	onTriggerAdd func(),
 	onTriggerExit func(),
-	onRead func(fd int),
+	onReadReady func(fd int),
 	onClose func(fd int),
 	onError func(err *base.Error),
 ) *Poller {
@@ -78,7 +78,7 @@ func NewPoller(
 						if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
 							onClose(fd)
 						} else {
-							onRead(fd)
+							onReadReady(fd)
 						}
 					}
 				}

@@ -61,3 +61,7 @@ func (p *EventConn) GetFD() int {
 func (p *EventConn) GetConn() XConn {
 	return p.conn
 }
+
+func (p *EventConn) OnReadyReady() {
+
+}
