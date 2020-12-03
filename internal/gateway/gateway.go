@@ -3,7 +3,7 @@ package gateway
 import (
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/xtcp"
+	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -65,7 +65,7 @@ func (p *GateWay) ListenTCP(addr string) *GateWay {
 	defer p.Unlock()
 
 	if !p.isRunning {
-		p.adapters = append(p.adapters, xtcp.NewTCPServerAdapter(addr))
+		p.adapters = append(p.adapters, tcp.NewTCPServerAdapter(addr))
 	} else {
 		p.onError(0, errors.ErrGatewayAlreadyRunning)
 	}
