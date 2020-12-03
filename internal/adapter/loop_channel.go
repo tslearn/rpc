@@ -58,12 +58,14 @@ func (p *LoopChannel) onTriggerAdd() {
 	for {
 		select {
 		case conn := <-p.connCH:
-			p.connMap[conn.GetFD()] = conn
 			if e := p.poller.RegisterFD(conn.GetFD()); e != nil {
 				conn.receiver.OnEventConnError(
 					conn,
 					errors.ErrKqueueSystem.AddDebug(e.Error()),
 				)
+			} else {
+				p.connMap[conn.GetFD()] = conn
+				conn.receiver.OnEventConnOpen(conn)
 			}
 		default:
 			return

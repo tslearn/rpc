@@ -6,31 +6,51 @@ import (
 )
 
 type XReceiver interface {
-	OnEventConnStream(eventConn *EventConn, stream *core.Stream)
+	OnEventConnOpen(eventConn *EventConn)
 	OnEventConnClose(eventConn *EventConn)
+	OnEventConnStream(eventConn *EventConn, stream *core.Stream)
 	OnEventConnError(eventConn *EventConn, err *base.Error)
 }
 
 type ReceiverHook struct {
 	receiver XReceiver
 
-	onEventConnStream func(eventConn *EventConn, stream *core.Stream)
+	onEventConnOpen   func(eventConn *EventConn)
 	onEventConnClose  func(eventConn *EventConn)
+	onEventConnStream func(eventConn *EventConn, stream *core.Stream)
 	onEventConnError  func(eventConn *EventConn, err *base.Error)
 }
 
 func NewReceiverHook(
 	receiver XReceiver,
-	onEventConnStream func(eventConn *EventConn, stream *core.Stream),
+	onEventConnOpen func(eventConn *EventConn),
 	onEventConnClose func(eventConn *EventConn),
+	onEventConnStream func(eventConn *EventConn, stream *core.Stream),
 	onEventConnError func(eventConn *EventConn, err *base.Error),
 ) *ReceiverHook {
 	return &ReceiverHook{
 		receiver:          receiver,
+		onEventConnOpen:   onEventConnOpen,
 		onEventConnStream: onEventConnStream,
 		onEventConnClose:  onEventConnClose,
 		onEventConnError:  onEventConnError,
 	}
+}
+
+func (p *ReceiverHook) OnEventConnOpen(eventConn *EventConn) {
+	if fn := p.onEventConnOpen; fn != nil {
+		fn(eventConn)
+	}
+
+	p.receiver.OnEventConnOpen(eventConn)
+}
+
+func (p *ReceiverHook) OnEventConnClose(eventConn *EventConn) {
+	if fn := p.onEventConnClose; fn != nil {
+		fn(eventConn)
+	}
+
+	p.receiver.OnEventConnClose(eventConn)
 }
 
 func (p *ReceiverHook) OnEventConnStream(
@@ -42,14 +62,6 @@ func (p *ReceiverHook) OnEventConnStream(
 	}
 
 	p.receiver.OnEventConnStream(eventConn, stream)
-}
-
-func (p *ReceiverHook) OnEventConnClose(eventConn *EventConn) {
-	if fn := p.onEventConnClose; fn != nil {
-		fn(eventConn)
-	}
-
-	p.receiver.OnEventConnClose(eventConn)
 }
 
 func (p *ReceiverHook) OnEventConnError(

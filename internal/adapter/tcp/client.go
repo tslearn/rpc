@@ -61,6 +61,7 @@ func (p *tcpClientAdapter) Open(receiver adapter.XReceiver) {
 					}
 				},
 				nil,
+				nil,
 			), conn, fd),
 		)
 
