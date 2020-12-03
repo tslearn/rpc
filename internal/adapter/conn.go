@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -63,5 +64,6 @@ func (p *EventConn) GetConn() XConn {
 }
 
 func (p *EventConn) OnReadReady() {
+	fmt.Println("OnReadReady")
 
 }

@@ -16,14 +16,14 @@ var (
 
 	// ErrKqueueSystem  ...
 	ErrKqueueSystem = base.DefineNetError(
-		(adapterErrorSeg<<16)|1,
+		(adapterErrorSeg<<16)|2,
 		base.ErrorLevelFatal,
 		"",
 	)
 
 	// ErrKqueueNotRunning ...
 	ErrKqueueNotRunning = base.DefineNetError(
-		(adapterErrorSeg<<16)|2,
+		(adapterErrorSeg<<16)|3,
 		base.ErrorLevelFatal,
 		"it is not running",
 	)
@@ -57,13 +57,13 @@ var (
 	)
 
 	ErrTCPServerAdapterClose = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|4,
+		(tcpServerAdapterErrorSeg<<16)|5,
 		base.ErrorLevelWarn,
 		"",
 	)
 )
 
-const tcpClientAdapterErrorSeg = 2101
+const tcpClientAdapterErrorSeg = 2102
 
 var (
 	ErrTCPClientAdapterAlreadyRunning = base.DefineNetError(
@@ -85,7 +85,7 @@ var (
 	)
 
 	ErrTCPClientAdapterClose = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|4,
+		(tcpClientAdapterErrorSeg<<16)|4,
 		base.ErrorLevelWarn,
 		"",
 	)

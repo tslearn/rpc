@@ -762,6 +762,23 @@ func TestStream_SetDirectionIn(t *testing.T) {
 	})
 }
 
+func TestStream_IsDirectionOut(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 256; i++ {
+			v := NewStream()
+			(*v.frames[0])[streamPosStatusBit] = byte(i)
+			if !v.IsDirectionOut() {
+				v.SetDirectionOut()
+				assert(v.IsDirectionOut()).IsTrue()
+				v.SetDirectionIn()
+			}
+			assert((*v.frames[0])[streamPosStatusBit]).Equal(byte(i))
+			v.Release()
+		}
+	})
+}
+
 func TestStream_GetZoneID(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -784,6 +801,21 @@ func TestStream_SetZoneID(t *testing.T) {
 			v.SetZoneID(id)
 			assert(v.GetZoneID()).Equal(id)
 			v.Release()
+		}
+	})
+}
+
+func TestStream_GetLength(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			randLen := rand.Int() % 10000
+			stream := NewStream()
+			bytes := []byte(base.GetRandString(randLen))
+			stream.PutBytes(bytes)
+			stream.BuildStreamCheck()
+			assert(int(stream.GetLength())).Equal(stream.GetWritePos())
+			stream.Release()
 		}
 	})
 }
@@ -882,6 +914,7 @@ func TestStream_CheckStream(t *testing.T) {
 			stream.PutBytes(bytes)
 			stream.BuildStreamCheck()
 			assert(stream.CheckStream()).IsTrue()
+			assert(int(stream.GetLength())).Equal(stream.GetWritePos())
 			stream.Release()
 		}
 	})

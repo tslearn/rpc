@@ -229,11 +229,6 @@ func (p *Stream) GetLength() uint32 {
 	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosLength:])
 }
 
-// SetLength ...
-func (p *Stream) SetLength(v uint32) {
-	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosLength:], v)
-}
-
 // GetTargetID ...
 func (p *Stream) GetTargetID() uint32 {
 	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosTargetID:])
@@ -289,6 +284,11 @@ func (p *Stream) getCheckSum() uint64 {
 
 // BuildStreamCheck ...
 func (p *Stream) BuildStreamCheck() {
+	binary.LittleEndian.PutUint32(
+		(*p.frames[0])[streamPosLength:],
+		uint32(p.GetWritePos()),
+	)
+
 	buf := (*p.frames[0])[streamPosCheckSum:]
 	binary.LittleEndian.PutUint64(buf, 0)
 	binary.LittleEndian.PutUint64(buf, p.getCheckSum())
@@ -296,7 +296,7 @@ func (p *Stream) BuildStreamCheck() {
 
 // CheckStream ...
 func (p *Stream) CheckStream() bool {
-	return p.getCheckSum() == 0
+	return p.getCheckSum() == 0 && uint32(p.GetWritePos()) == p.GetLength()
 }
 
 // GetSessionID ...

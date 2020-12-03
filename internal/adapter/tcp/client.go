@@ -1,3 +1,5 @@
+// +build linux freebsd dragonfly darwin
+
 package tcp
 
 import (
