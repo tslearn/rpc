@@ -78,6 +78,13 @@ func (p *tcpServerAdapter) Close(receiver adapter.XReceiver) {
 		tcpServerAdapterRunning,
 		tcpServerAdapterClosing,
 	) {
+		if e := p.server.Close(); e != nil {
+			receiver.OnEventConnError(
+				nil,
+				errors.ErrTCPServerAdapterClose.AddDebug(e.Error()),
+			)
+		}
+
 		<-p.closeCH
 	} else {
 		receiver.OnEventConnError(nil, errors.ErrTCPServerAdapterNotRunning)

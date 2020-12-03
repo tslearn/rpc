@@ -40,6 +40,7 @@ func NewLoopManager(channels int, receiver XReceiver) *LoopManager {
 func (p *LoopManager) Close() {
 	waitCH := make(chan bool)
 	channelSize := len(p.channels)
+
 	for i := 0; i < channelSize; i++ {
 		go func(idx int) {
 			p.channels[idx].Close()

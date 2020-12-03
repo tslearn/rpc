@@ -55,4 +55,38 @@ var (
 		base.ErrorLevelWarn,
 		"",
 	)
+
+	ErrTCPServerAdapterClose = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|4,
+		base.ErrorLevelWarn,
+		"",
+	)
+)
+
+const tcpClientAdapterErrorSeg = 2101
+
+var (
+	ErrTCPClientAdapterAlreadyRunning = base.DefineNetError(
+		(tcpClientAdapterErrorSeg<<16)|1,
+		base.ErrorLevelWarn,
+		"it is already running",
+	)
+
+	ErrTCPClientAdapterNotRunning = base.DefineNetError(
+		(tcpClientAdapterErrorSeg<<16)|2,
+		base.ErrorLevelWarn,
+		"it is not running",
+	)
+
+	ErrTCPClientAdapterDail = base.DefineNetError(
+		(tcpClientAdapterErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrTCPClientAdapterClose = base.DefineNetError(
+		(tcpServerAdapterErrorSeg<<16)|4,
+		base.ErrorLevelWarn,
+		"",
+	)
 )
