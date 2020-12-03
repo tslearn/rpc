@@ -31,6 +31,10 @@ func NewLoopChannel(manager *LoopManager) *LoopChannel {
 		ret.onError,
 	)
 
+	if ret.poller == nil {
+		return nil
+	}
+
 	return ret
 }
 
@@ -73,7 +77,7 @@ func (p *LoopChannel) onTriggerExit() {
 
 func (p *LoopChannel) onReadReady(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
-		conn.OnReadyReady()
+		conn.OnReadReady()
 	}
 }
 

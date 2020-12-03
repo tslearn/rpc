@@ -37,14 +37,12 @@ func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) *base.Error {
 	cpus := runtime.NumCPU()
 	if p.server != nil {
 		return errors.ErrTCPServerAdapterAlreadyRunning
-	} else if manager, err := adapter.NewLoopManager(cpus, receiver); err != nil {
-		return err
 	} else if server, e := net.Listen("tcp", p.addr); e != nil {
 		return errors.ErrTCPServerAdapterListen.AddDebug(e.Error())
 	} else {
 		atomic.StoreUint32(&p.status, tcpServerAdapterRunning)
 		p.server = server
-		manager.Open()
+		manager := adapter.NewLoopManager(cpus, receiver)
 		for atomic.LoadUint32(&p.status) == tcpServerAdapterRunning {
 			if conn, e := p.server.Accept(); e != nil {
 				receiver.OnEventConnError(

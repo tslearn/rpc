@@ -62,6 +62,6 @@ func (p *EventConn) GetConn() XConn {
 	return p.conn
 }
 
-func (p *EventConn) OnReadyReady() {
+func (p *EventConn) OnReadReady() {
 
 }

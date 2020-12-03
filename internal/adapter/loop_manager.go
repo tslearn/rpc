@@ -20,7 +20,18 @@ func NewLoopManager(channels int, receiver XReceiver) *LoopManager {
 	}
 
 	for i := 0; i < channels; i++ {
-		ret.channels[i] = NewLoopChannel(ret)
+		channel := NewLoopChannel(ret)
+
+		if channel != nil {
+			ret.channels[i] = NewLoopChannel(ret)
+		} else {
+			// clean up and return nil
+			for j := 0; j < i; j++ {
+				ret.channels[j].Close()
+				ret.channels[j] = nil
+			}
+			return nil
+		}
 	}
 
 	return ret
