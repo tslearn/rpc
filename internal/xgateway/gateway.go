@@ -95,9 +95,7 @@ func (p *GateWay) Serve() {
 			for _, item := range p.adapters {
 				go func(adapter adapter.IAdapter) {
 					for {
-						if err := adapter.Open(p); err != nil {
-							p.onError(0, err)
-						}
+						adapter.Open(p)
 
 						if p.IsRunning() {
 							time.Sleep(time.Second)
@@ -156,9 +154,7 @@ func (p *GateWay) Close() {
 
 		for _, item := range p.adapters {
 			go func(adapter adapter.IAdapter) {
-				if err := adapter.Close(); err != nil {
-					p.onError(0, err)
-				}
+				adapter.Close(p)
 			}(item)
 		}
 

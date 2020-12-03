@@ -2,14 +2,13 @@ package adapter
 
 import (
 	"errors"
-	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"reflect"
 )
 
 type IAdapter interface {
-	Open(receiver XReceiver) *base.Error
-	Close() *base.Error
+	Open(receiver XReceiver)
+	Close(receiver XReceiver)
 }
 
 func GetFD(conn net.Conn) (int, error) {

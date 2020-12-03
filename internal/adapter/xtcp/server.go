@@ -2,7 +2,6 @@ package xtcp
 
 import (
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"runtime"
@@ -33,12 +32,15 @@ func NewTCPServerAdapter(addr string) adapter.IAdapter {
 }
 
 // Open ...
-func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) *base.Error {
+func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) {
 	cpus := runtime.NumCPU()
 	if p.server != nil {
-		return errors.ErrTCPServerAdapterAlreadyRunning
+		receiver.OnEventConnError(nil, errors.ErrTCPServerAdapterAlreadyRunning)
 	} else if server, e := net.Listen("tcp", p.addr); e != nil {
-		return errors.ErrTCPServerAdapterListen.AddDebug(e.Error())
+		receiver.OnEventConnError(
+			nil,
+			errors.ErrTCPServerAdapterListen.AddDebug(e.Error()),
+		)
 	} else {
 		atomic.StoreUint32(&p.status, tcpServerAdapterRunning)
 		p.server = server
@@ -64,20 +66,18 @@ func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) *base.Error {
 		p.server = nil
 		atomic.StoreUint32(&p.status, tcpServerAdapterClosed)
 		p.closeCH <- true
-		return nil
 	}
 }
 
 // Close ...
-func (p *tcpServerAdapter) Close() *base.Error {
+func (p *tcpServerAdapter) Close(receiver adapter.XReceiver) {
 	if atomic.CompareAndSwapUint32(
 		&p.status,
 		tcpServerAdapterRunning,
 		tcpServerAdapterClosing,
 	) {
 		<-p.closeCH
-		return nil
 	} else {
-		return errors.ErrTCPServerAdapterNotRunning
+		receiver.OnEventConnError(nil, errors.ErrTCPServerAdapterNotRunning)
 	}
 }
