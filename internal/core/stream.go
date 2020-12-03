@@ -13,19 +13,19 @@ import (
 const (
 	streamVersion            = 1
 	streamBlockSize          = 512
-	streamFrameArrayInitSize = 4
+	streamFrameArrayInitSize = 8
 
 	streamPosVersion    = 0
 	streamPosStatusBit  = 1
-	streamPosTargetID   = 4
+	streamPosZoneID     = 2
+	streamPosLength     = 4
+	streamPosTargetID   = 8
 	streamPosSourceID   = 12
-	streamPosZoneID     = 20
-	streamPosIPMap      = 22
-	streamPosSessionID  = 30
-	streamPosCallbackID = 38
-	streamPosDepth      = 46
-	streamPosCheck      = 48
-	streamPosBody       = 56
+	streamPosCheckSum   = 16
+	streamPosSessionID  = 24
+	streamPosCallbackID = 32
+	streamPosDepth      = 40
+	streamPosBody       = 42
 
 	streamStatusBitDebug     = 0
 	streamStatusBitDirection = 1
@@ -214,26 +214,6 @@ func (p *Stream) SetDirectionIn() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDirection) ^ 0xFF
 }
 
-// GetTargetID ...
-func (p *Stream) GetTargetID() uint64 {
-	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosTargetID:])
-}
-
-// SetTargetID ...
-func (p *Stream) SetTargetID(v uint64) {
-	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosTargetID:], v)
-}
-
-// GetSourceID ...
-func (p *Stream) GetSourceID() uint64 {
-	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosSourceID:])
-}
-
-// SetSourceID ...
-func (p *Stream) SetSourceID(v uint64) {
-	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosSourceID:], v)
-}
-
 // GetZoneID ...
 func (p *Stream) GetZoneID() uint16 {
 	return binary.LittleEndian.Uint16((*p.frames[0])[streamPosZoneID:])
@@ -244,44 +224,34 @@ func (p *Stream) SetZoneID(v uint16) {
 	binary.LittleEndian.PutUint16((*p.frames[0])[streamPosZoneID:], v)
 }
 
-// GetIPMap ...
-func (p *Stream) GetIPMap() uint64 {
-	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosIPMap:])
+// GetLength ...
+func (p *Stream) GetLength() uint32 {
+	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosLength:])
 }
 
-// SetIPMap ...
-func (p *Stream) SetIPMap(v uint64) {
-	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosIPMap:], v)
+// SetLength ...
+func (p *Stream) SetLength(v uint32) {
+	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosLength:], v)
 }
 
-// GetSessionID ...
-func (p *Stream) GetSessionID() uint64 {
-	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosSessionID:])
+// GetTargetID ...
+func (p *Stream) GetTargetID() uint32 {
+	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosTargetID:])
 }
 
-// SetSessionID ...
-func (p *Stream) SetSessionID(v uint64) {
-	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosSessionID:], v)
+// SetTargetID ...
+func (p *Stream) SetTargetID(v uint32) {
+	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosTargetID:], v)
 }
 
-// GetCallbackID ...
-func (p *Stream) GetCallbackID() uint64 {
-	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosCallbackID:])
+// GetSourceID ...
+func (p *Stream) GetSourceID() uint32 {
+	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosSourceID:])
 }
 
-// SetCallbackID ...
-func (p *Stream) SetCallbackID(v uint64) {
-	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosCallbackID:], v)
-}
-
-// GetDepth ...
-func (p *Stream) GetDepth() uint16 {
-	return binary.LittleEndian.Uint16((*p.frames[0])[streamPosDepth:])
-}
-
-// SetDepth ...
-func (p *Stream) SetDepth(v uint16) {
-	binary.LittleEndian.PutUint16((*p.frames[0])[streamPosDepth:], v)
+// SetSourceID ...
+func (p *Stream) SetSourceID(v uint32) {
+	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosSourceID:], v)
 }
 
 func (p *Stream) getCheckSum() uint64 {
@@ -319,7 +289,7 @@ func (p *Stream) getCheckSum() uint64 {
 
 // BuildStreamCheck ...
 func (p *Stream) BuildStreamCheck() {
-	buf := (*p.frames[0])[streamPosCheck:]
+	buf := (*p.frames[0])[streamPosCheckSum:]
 	binary.LittleEndian.PutUint64(buf, 0)
 	binary.LittleEndian.PutUint64(buf, p.getCheckSum())
 }
@@ -327,6 +297,36 @@ func (p *Stream) BuildStreamCheck() {
 // CheckStream ...
 func (p *Stream) CheckStream() bool {
 	return p.getCheckSum() == 0
+}
+
+// GetSessionID ...
+func (p *Stream) GetSessionID() uint64 {
+	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosSessionID:])
+}
+
+// SetSessionID ...
+func (p *Stream) SetSessionID(v uint64) {
+	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosSessionID:], v)
+}
+
+// GetCallbackID ...
+func (p *Stream) GetCallbackID() uint64 {
+	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosCallbackID:])
+}
+
+// SetCallbackID ...
+func (p *Stream) SetCallbackID(v uint64) {
+	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosCallbackID:], v)
+}
+
+// GetDepth ...
+func (p *Stream) GetDepth() uint16 {
+	return binary.LittleEndian.Uint16((*p.frames[0])[streamPosDepth:])
+}
+
+// SetDepth ...
+func (p *Stream) SetDepth(v uint16) {
+	binary.LittleEndian.PutUint16((*p.frames[0])[streamPosDepth:], v)
 }
 
 // GetReadPos get the current read pos of the stream
