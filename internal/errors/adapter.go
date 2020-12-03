@@ -181,7 +181,7 @@ var (
 	)
 
 	ErrTCPServerAdapterAccept = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|3,
+		(tcpServerAdapterErrorSeg<<16)|4,
 		base.ErrorLevelWarn,
 		"",
 	)

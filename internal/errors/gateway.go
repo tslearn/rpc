@@ -36,13 +36,13 @@ var (
 	)
 
 	ErrGateWayIDOverflows = base.DefineConfigError(
-		(gatewayErrorSeg<<16)|5,
+		(gatewayErrorSeg<<16)|6,
 		base.ErrorLevelWarn,
 		"gateway id overflows",
 	)
 
 	ErrGateWaySeedOverflows = base.DefineConfigError(
-		(gatewayErrorSeg<<16)|5,
+		(gatewayErrorSeg<<16)|7,
 		base.ErrorLevelWarn,
 		"gateway seed overflows",
 	)
