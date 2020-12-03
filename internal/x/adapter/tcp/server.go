@@ -1,10 +1,10 @@
 // +build linux freebsd dragonfly darwin
 
-package xtcp
+package tcp
 
 import (
-	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/errors"
+	"github.com/rpccloud/rpc/internal/x/adapter"
 	"net"
 	"runtime"
 	"sync"
