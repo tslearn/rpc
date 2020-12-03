@@ -3,8 +3,8 @@
 package tcp
 
 import (
+	adapter2 "github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/errors"
-	"github.com/rpccloud/rpc/internal/x/adapter"
 	"net"
 	"runtime"
 	"sync"
@@ -24,7 +24,7 @@ type tcpServerAdapter struct {
 }
 
 // NewTCPServerAdapter ...
-func NewTCPServerAdapter(addr string) adapter.IAdapter {
+func NewTCPServerAdapter(addr string) adapter2.IAdapter {
 	return &tcpServerAdapter{
 		status:  tcpServerAdapterClosed,
 		closeCH: make(chan bool),
@@ -34,7 +34,7 @@ func NewTCPServerAdapter(addr string) adapter.IAdapter {
 }
 
 // Open ...
-func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) {
+func (p *tcpServerAdapter) Open(receiver adapter2.XReceiver) {
 	cpus := runtime.NumCPU()
 	if p.server != nil {
 		receiver.OnEventConnError(nil, errors.ErrTCPServerAdapterAlreadyRunning)
@@ -46,21 +46,21 @@ func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) {
 	} else {
 		atomic.StoreUint32(&p.status, tcpServerAdapterRunning)
 		p.server = server
-		manager := adapter.NewLoopManager(cpus, receiver)
+		manager := adapter2.NewLoopManager(cpus, receiver)
 		for atomic.LoadUint32(&p.status) == tcpServerAdapterRunning {
 			if conn, e := p.server.Accept(); e != nil {
 				receiver.OnEventConnError(
 					nil,
 					errors.ErrTCPServerAdapterAccept.AddDebug(e.Error()),
 				)
-			} else if fd, e := adapter.GetFD(conn); e != nil {
+			} else if fd, e := adapter2.GetFD(conn); e != nil {
 				receiver.OnEventConnError(
 					nil,
 					errors.ErrTCPServerAdapterAccept.AddDebug(e.Error()),
 				)
 			} else {
 				manager.AllocChannel().AddConn(
-					adapter.NewEventConn(receiver, conn, fd),
+					adapter2.NewEventConn(receiver, conn, fd),
 				)
 			}
 		}
@@ -72,7 +72,7 @@ func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) {
 }
 
 // Close ...
-func (p *tcpServerAdapter) Close(receiver adapter.XReceiver) {
+func (p *tcpServerAdapter) Close(receiver adapter2.XReceiver) {
 	if atomic.CompareAndSwapUint32(
 		&p.status,
 		tcpServerAdapterRunning,
