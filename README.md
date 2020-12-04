@@ -18,7 +18,7 @@ install graphviz
 $ sudo brew install graphviz
 
 look at a 30-second CPU profile:
-$ curl http://localhost:6060/debug/pprof/profile?seconds=10 -o cpu.prof
+$ curl "http://localhost:6060/debug/pprof/profile?seconds=10" -o cpu.prof
 $ go tool pprof -web cpu.prof
 ```
 
