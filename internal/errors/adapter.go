@@ -29,7 +29,23 @@ var (
 	)
 )
 
-const tcpServerAdapterErrorSeg = 2101
+const eventConnErrorSeg = 2101
+
+var (
+	ErrEventConnReadBufferIsTooSmall = base.DefineConfigError(
+		(eventConnErrorSeg<<16)|1,
+		base.ErrorLevelFatal,
+		"event conn read buffer is too small",
+	)
+
+	ErrEventConnRead = base.DefineConfigError(
+		(eventConnErrorSeg<<16)|2,
+		base.ErrorLevelWarn,
+		"",
+	)
+)
+
+const tcpServerAdapterErrorSeg = 2102
 
 var (
 	ErrTCPServerAdapterAlreadyRunning = base.DefineNetError(
@@ -63,7 +79,7 @@ var (
 	)
 )
 
-const tcpClientAdapterErrorSeg = 2102
+const tcpClientAdapterErrorSeg = 2103
 
 var (
 	ErrTCPClientAdapterAlreadyRunning = base.DefineNetError(
