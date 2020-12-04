@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -74,6 +75,30 @@ func (p *EventConn) GetConn() XConn {
 	return p.conn
 }
 
+func (p *EventConn) Close() *base.Error {
+	if e := p.conn.Close(); e != nil {
+		return errors.ErrEventConnClose.AddDebug(e.Error())
+	}
+
+	return nil
+}
+
+func (p *EventConn) WriteStream(stream *core.Stream) *base.Error {
+	buf := stream.GetBufferUnsafe()
+
+	start := 0
+
+	for start < len(buf) {
+		if n, e := p.conn.Write(buf[start:]); e != nil {
+			return errors.ErrEventConnWriteStream.AddDebug(e.Error())
+		} else {
+			start += n
+		}
+	}
+
+	return nil
+}
+
 func (p *EventConn) OnReadReady() {
 	if len(p.rBuf) < core.StreamHeadSize {
 		p.receiver.OnEventConnError(p, errors.ErrEventConnReadBufferIsTooSmall)
@@ -87,6 +112,17 @@ func (p *EventConn) OnReadReady() {
 
 		for start < p.rPos {
 			if p.rStream != nil {
+				streamLength := int(p.rStream.GetLength())
+				if streamLength < core.StreamHeadSize {
+					p.receiver.OnEventConnError(p, errors.ErrStream)
+					return
+				}
+
+				if streamLength > p.transLimit {
+					p.receiver.OnEventConnError(p, errors.ErrEventConnReadLimit)
+					return
+				}
+
 				remains := int(p.rStream.GetLength()) - p.rStream.GetWritePos()
 				if p.rPos < start+remains {
 					p.rStream.PutBytes(p.rBuf[start:p.rPos])
@@ -94,7 +130,14 @@ func (p *EventConn) OnReadReady() {
 				} else {
 					p.rStream.PutBytes(p.rBuf[start : start+remains])
 					start += remains
-					p.receiver.OnEventConnStream(p, p.rStream)
+
+					if p.rStream.CheckStream() {
+						p.receiver.OnEventConnStream(p, p.rStream)
+					} else {
+						p.receiver.OnEventConnError(p, errors.ErrStream)
+						return
+					}
+
 					p.rStream = nil
 				}
 			} else {

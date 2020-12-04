@@ -16,20 +16,28 @@ const tcpServerAdapterClosing = uint32(2)
 const tcpServerAdapterClosed = uint32(0)
 
 type tcpServerAdapter struct {
-	status  uint32
-	closeCH chan bool
-	addr    string
-	server  net.Listener
+	status   uint32
+	closeCH  chan bool
+	addr     string
+	server   net.Listener
+	rBufSize int
+	wBufSize int
 	sync.Mutex
 }
 
 // NewTCPServerAdapter ...
-func NewTCPServerAdapter(addr string) adapter.IAdapter {
+func NewTCPServerAdapter(
+	addr string,
+	rBufSize int,
+	wBufSize int,
+) adapter.IAdapter {
 	return &tcpServerAdapter{
-		status:  tcpServerAdapterClosed,
-		closeCH: make(chan bool),
-		addr:    addr,
-		server:  nil,
+		status:   tcpServerAdapterClosed,
+		closeCH:  make(chan bool),
+		addr:     addr,
+		rBufSize: rBufSize,
+		wBufSize: wBufSize,
+		server:   nil,
 	}
 }
 
@@ -60,7 +68,7 @@ func (p *tcpServerAdapter) Open(receiver adapter.XReceiver) {
 				)
 			} else {
 				manager.AllocChannel().AddConn(
-					adapter.NewEventConn(receiver, conn, fd),
+					adapter.NewEventConn(receiver, conn, fd, p.rBufSize),
 				)
 			}
 		}

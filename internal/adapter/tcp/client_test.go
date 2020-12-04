@@ -5,63 +5,92 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"net"
 	"testing"
 	"time"
 )
 
 type testReceiver struct {
+	streamCH  chan *core.Stream
+	eventConn *adapter.EventConn
+	isClient  bool
 }
 
 func (p *testReceiver) OnEventConnOpen(eventConn *adapter.EventConn) {
-	fmt.Println("OnEventConnOpen")
+	if p.isClient {
+		fmt.Println("Client: OnEventConnOpen")
+	} else {
+		fmt.Println("Server: OnEventConnOpen")
+	}
 
-	_, _ = eventConn.GetConn().Write([]byte("hello"))
+	p.eventConn = eventConn
 }
 
 func (p *testReceiver) OnEventConnClose(eventConn *adapter.EventConn) {
-	fmt.Println("OnEventConnClose")
+	if p.isClient {
+		fmt.Println("Client: OnEventConnClose")
+	} else {
+		fmt.Println("Server: OnEventConnClose")
+	}
+
+	p.eventConn = nil
 }
 
 func (p *testReceiver) OnEventConnStream(
 	eventConn *adapter.EventConn,
 	stream *core.Stream,
 ) {
-	fmt.Println("OnEventConnStream")
+	if p.isClient {
+		p.streamCH <- stream
+	} else {
+		if p.eventConn != nil {
+			if err := p.eventConn.WriteStream(stream); err != nil {
+				p.OnEventConnError(p.eventConn, err)
+			}
+		}
+	}
 }
 
 func (p *testReceiver) OnEventConnError(
 	eventConn *adapter.EventConn,
 	err *base.Error,
 ) {
-	fmt.Println("OnEventConnError", err)
+	if p.isClient {
+		fmt.Println("Client: OnEventConnError")
+	} else {
+		fmt.Println("Server: OnEventConnError")
+	}
 }
 
-func TestDebug(t *testing.T) {
+func BenchmarkDebug(b *testing.B) {
 	go func() {
-		ln, e := net.Listen("tcp", "0.0.0.0:8080")
-		if e != nil {
-			panic(e)
-		}
-		for {
-			tcpConn, e := ln.Accept()
-			if e != nil {
-				return
-			}
-
-			go func(conn net.Conn) {
-				buf := make([]byte, 1024)
-				n, _ := conn.Read(buf)
-				fmt.Println(conn.Write(buf[:n]))
-				//  _ = conn.Close()
-			}(tcpConn)
-		}
+		serverAdapter := NewTCPServerAdapter("0.0.0.0:8080", 1024, 1024)
+		serverAdapter.Open(&testReceiver{isClient: false})
 	}()
 
 	time.Sleep(time.Second)
 
-	tcpAdapter := NewTCPClientAdapter("0.0.0.0:8080")
-	tcpAdapter.Open(&testReceiver{})
+	clientReceiver := &testReceiver{isClient: true, streamCH: make(chan *core.Stream)}
+	tcpAdapter := NewTCPClientAdapter("0.0.0.0:8080", 1024, 1024)
+	go func() {
+		tcpAdapter.Open(clientReceiver)
+	}()
+	time.Sleep(time.Second)
 
-	fmt.Println("End")
+	stream := core.NewStream()
+	stream.WriteString("hello")
+	stream.BuildStreamCheck()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.N = 100000
+
+	for i := 0; i < b.N; i++ {
+		clientReceiver.eventConn.WriteStream(stream)
+		s := <-clientReceiver.streamCH
+		s.SetReadPosToBodyStart()
+		if s, _ := s.ReadString(); s != "hello" {
+			panic("error")
+		}
+	}
+
 }

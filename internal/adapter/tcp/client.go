@@ -16,19 +16,27 @@ const tcpClientAdapterClosing = uint32(2)
 const tcpClientAdapterClosed = uint32(0)
 
 type tcpClientAdapter struct {
-	status  uint32
-	closeCH chan bool
-	addr    string
-	conn    net.Conn
+	status   uint32
+	closeCH  chan bool
+	addr     string
+	conn     *adapter.EventConn
+	rBufSize int
+	wBufSize int
 	sync.Mutex
 }
 
 // NewTCPClientAdapter ...
-func NewTCPClientAdapter(addr string) adapter.IAdapter {
+func NewTCPClientAdapter(
+	addr string,
+	rBufSize int,
+	wBufSize int,
+) adapter.IAdapter {
 	return &tcpClientAdapter{
-		status:  tcpClientAdapterClosed,
-		closeCH: make(chan bool),
-		addr:    addr,
+		status:   tcpClientAdapterClosed,
+		closeCH:  make(chan bool),
+		addr:     addr,
+		rBufSize: rBufSize,
+		wBufSize: wBufSize,
 	}
 }
 
@@ -49,23 +57,22 @@ func (p *tcpClientAdapter) Open(receiver adapter.XReceiver) {
 		_ = conn.Close()
 	} else {
 		atomic.StoreUint32(&p.status, tcpClientAdapterRunning)
-		p.conn = conn
+		p.conn = adapter.NewEventConn(adapter.NewReceiverHook(
+			receiver,
+			nil,
+			func(eventConn *adapter.EventConn) {
+				if eventConn != nil && eventConn.GetFD() == fd {
+					go func() {
+						p.Close(receiver)
+					}()
+				}
+			},
+			nil,
+			nil,
+		), conn, fd, p.rBufSize)
+
 		manager := adapter.NewLoopManager(1, receiver)
-		manager.AllocChannel().AddConn(
-			adapter.NewEventConn(adapter.NewReceiverHook(
-				receiver,
-				nil,
-				func(eventConn *adapter.EventConn) {
-					if eventConn != nil && eventConn.GetFD() == fd {
-						go func() {
-							p.Close(receiver)
-						}()
-					}
-				},
-				nil,
-				nil,
-			), conn, fd),
-		)
+		manager.AllocChannel().AddConn(p.conn)
 
 		for atomic.LoadUint32(&p.status) == tcpClientAdapterRunning {
 			time.Sleep(50 * time.Millisecond)

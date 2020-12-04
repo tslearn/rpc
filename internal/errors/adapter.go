@@ -43,6 +43,24 @@ var (
 		base.ErrorLevelWarn,
 		"",
 	)
+
+	ErrEventConnReadLimit = base.DefineConfigError(
+		(eventConnErrorSeg<<16)|3,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrEventConnWriteStream = base.DefineNetError(
+		(eventConnErrorSeg<<16)|4,
+		base.ErrorLevelWarn,
+		"",
+	)
+
+	ErrEventConnClose = base.DefineNetError(
+		(eventConnErrorSeg<<16)|5,
+		base.ErrorLevelWarn,
+		"",
+	)
 )
 
 const tcpServerAdapterErrorSeg = 2102
