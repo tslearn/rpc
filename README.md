@@ -5,6 +5,7 @@
 
 ### 性能测试
 ```bash
+$ sudo brew install graphviz
 $ go get -u github.com/google/pprof
 $ pprof -web cpu.prof
 ```
