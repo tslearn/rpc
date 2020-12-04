@@ -10,6 +10,21 @@ $ go get -u github.com/google/pprof
 $ pprof -web cpu.prof
 ```
 
+```go
+import _ "net/http/pprof"
+
+
+go func() {
+	log.Println(http.ListenAndServe("localhost:6060", nil))
+}()
+```
+
+```bash
+look at a 30-second CPU profile:
+$ go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+```
+
+
 ### golint
 ```bash
 $ go get -u golang.org/x/lint/golint
