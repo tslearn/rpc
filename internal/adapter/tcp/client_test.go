@@ -47,6 +47,7 @@ func (p *testReceiver) OnEventConnStream(
 				p.OnEventConnError(p.eventConn, err)
 			}
 		}
+		stream.Release()
 	}
 }
 
@@ -62,12 +63,12 @@ func (p *testReceiver) OnEventConnError(
 }
 
 func BenchmarkDebug(b *testing.B) {
-	//go func() {
-	//	serverAdapter := NewTCPServerAdapter("0.0.0.0:8080", 1024, 1024)
-	//	serverAdapter.Open(&testReceiver{isClient: false})
-	//}()
-	//
-	//time.Sleep(time.Second)
+	go func() {
+		serverAdapter := NewTCPServerAdapter("0.0.0.0:8080", 1024, 1024)
+		serverAdapter.Open(&testReceiver{isClient: false})
+	}()
+
+	time.Sleep(time.Second)
 
 	clientReceiver := &testReceiver{isClient: true, streamCH: make(chan *core.Stream)}
 	tcpAdapter := NewTCPClientAdapter("0.0.0.0:8080", 1024, 1024)
