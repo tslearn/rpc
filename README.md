@@ -4,12 +4,6 @@
 
 
 ### 性能测试
-```bash
-$ sudo brew install graphviz
-$ go get -u github.com/google/pprof
-$ pprof -web cpu.prof
-```
-
 ```go
 import _ "net/http/pprof"
 
@@ -20,8 +14,12 @@ go func() {
 ```
 
 ```bash
+install graphviz
+$ sudo brew install graphviz
+
 look at a 30-second CPU profile:
-$ go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+$ curl http://localhost:6060/debug/pprof/profile?seconds=10 -o cpu.prof
+$ go tool pprof -web cpu.prof
 ```
 
 
