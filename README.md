@@ -4,11 +4,24 @@
 
 
 ### 性能测试
-```bash
-$ sudo brew install graphviz
-$ go get -u github.com/google/pprof
-$ pprof -web cpu.prof
+```go
+import _ "net/http/pprof"
+
+
+go func() {
+	log.Println(http.ListenAndServe("localhost:6060", nil))
+}()
 ```
+
+```bash
+install graphviz
+$ sudo brew install graphviz
+
+look at a 30-second CPU profile:
+$ curl "http://localhost:6060/debug/pprof/profile?seconds=10" -o cpu.prof
+$ go tool pprof -web cpu.prof
+```
+
 
 ### golint
 ```bash
