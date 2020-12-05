@@ -29,12 +29,12 @@ type Poller struct {
 
 // NewPoller ...
 func NewPoller(
-	onTriggerAdd func(),
-	onTriggerExit func(),
-	onReadReady func(fd int),
-	onWriteReady func(fd int),
-	onClose func(fd int),
 	onError func(err *base.Error),
+	onInvokeAdd func(),
+	onInvokeExit func(),
+	onFDRead func(fd int),
+	onFDWrite func(fd int),
+	onFDClose func(fd int),
 ) *Poller {
 	if pfd, e := unix.Kqueue(); e != nil {
 		onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
@@ -67,9 +67,9 @@ func NewPoller(
 					evt := ret.events[i]
 					if fd := int(evt.Ident); fd == 0 {
 						if evt.Data == triggerDataAdd {
-							onTriggerAdd()
+							onInvokeAdd()
 						} else if evt.Data == triggerDataExit {
-							onTriggerExit()
+							onInvokeExit()
 							atomic.StoreUint32(&ret.status, pollerStatusClosed)
 							break
 						} else {
@@ -77,11 +77,11 @@ func NewPoller(
 						}
 					} else {
 						if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-							onClose(fd)
+							onFDClose(fd)
 						} else if evt.Filter == unix.EVFILT_READ {
-							onReadReady(fd)
+							onFDRead(fd)
 						} else if evt.Filter == unix.EVFILT_WRITE {
-							onWriteReady(fd)
+							onFDWrite(fd)
 						} else {
 							onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
 						}

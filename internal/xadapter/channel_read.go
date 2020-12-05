@@ -8,23 +8,24 @@ import (
 type ReadChannel struct {
 	channel *Channel
 	poller  *Poller
-	connMap map[int]*PollConn
-	addCH   chan *PollConn
+	connMap map[int]*ChannelConn
+	addCH   chan *ChannelConn
 }
 
 func NewReadChannel(channel *Channel) *ReadChannel {
 	ret := &ReadChannel{
 		channel: channel,
-		connMap: make(map[int]*PollConn),
-		addCH:   make(chan *PollConn, 4096),
+		connMap: make(map[int]*ChannelConn),
+		addCH:   make(chan *ChannelConn, 4096),
 	}
 
 	ret.poller = NewPoller(
-		ret.onTriggerAdd,
-		ret.onTriggerExit,
-		ret.onReadReady,
-		ret.onClose,
 		ret.onError,
+		ret.onInvokeAdd,
+		ret.onInvokeExit,
+		ret.onFDRead,
+		ret.onFDWrite,
+		ret.onFDClose,
 	)
 
 	if ret.poller == nil {
@@ -34,21 +35,22 @@ func NewReadChannel(channel *Channel) *ReadChannel {
 	return ret
 }
 
-func (p *ReadChannel) AddConn(conn *PollConn) {
+func (p *ReadChannel) AddConn(conn *ChannelConn) {
 	_ = p.poller.InvokeAddTrigger()
 	p.addCH <- conn
 	_ = p.poller.InvokeAddTrigger()
 }
 
-func (p *ReadChannel) onTriggerAdd() {
+func (p *ReadChannel) onError(err *base.Error) {
+	p.channel.onError(err)
+}
+
+func (p *ReadChannel) onInvokeAdd() {
 	for {
 		select {
-		case pollConn := <-p.addCH:
-			if e := p.poller.RegisterFD(pollConn.conn.GetFD()); e != nil {
-				conn.receiver.OnEventConnError(
-					conn,
-					errors.ErrKqueueSystem.AddDebug(e.Error()),
-				)
+		case conn := <-p.addCH:
+			if e := p.poller.RegisterReadFD(conn.GetFD()); e != nil {
+				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 			} else {
 				p.connMap[conn.GetFD()] = conn
 				conn.receiver.OnEventConnOpen(conn)
@@ -81,8 +83,4 @@ func (p *ReadChannel) onClose(fd int) {
 		delete(p.connMap, fd)
 		conn.receiver.OnEventConnClose(conn)
 	}
-}
-
-func (p *ReadChannel) onError(err *base.Error) {
-	p.manager.receiver.OnEventConnError(nil, err)
 }
