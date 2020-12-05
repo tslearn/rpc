@@ -25,12 +25,12 @@ func NewManager(size int, onError func(err *base.Error)) *Manager {
 		poll := NewChannel(onError)
 
 		if poll != nil {
-			ret.pools[i] = poll
+			ret.channels[i] = poll
 		} else {
 			// clean up and return nil
 			for j := 0; j < i; j++ {
-				ret.pools[j].Close()
-				ret.pools[j] = nil
+				ret.channels[j].Close()
+				ret.channels[j] = nil
 			}
 			return nil
 		}
@@ -55,7 +55,7 @@ func (p *Manager) Close() {
 	}
 }
 
-func (p *LoopManager) AllocChannel() *LoopChannel {
+func (p *Manager) AllocChannel() *Channel {
 	if p.currRemains <= 0 {
 		maxConn := int64(-1)
 		for i := 0; i < len(p.channels); i++ {

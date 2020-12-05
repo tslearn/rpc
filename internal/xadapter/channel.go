@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
+	"sync"
 	"sync/atomic"
 )
 
@@ -111,6 +112,7 @@ type Channel struct {
 	activeConnCount int64
 	rChannel        *InnerChannel
 	wChannel        *InnerChannel
+	sync.Mutex
 }
 
 func NewChannel(onError func(err *base.Error)) *Channel {
@@ -122,18 +124,34 @@ func NewChannel(onError func(err *base.Error)) *Channel {
 	}
 
 	ret.rChannel = NewInnerChannel(true, ret)
-
-	if ret.rChannel == nil {
-		return nil
-	}
-
 	ret.wChannel = NewInnerChannel(false, ret)
-	if ret.wChannel == nil {
-		ret.rChannel.Close()
+
+	if ret.rChannel == nil || ret.wChannel == nil {
+		ret.Close()
 		return nil
 	}
 
 	return ret
+}
+
+func (p *Channel) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.rChannel != nil {
+		p.rChannel.Close()
+		p.rChannel = nil
+	}
+
+	if p.wChannel != nil {
+		p.wChannel.Close()
+		p.wChannel = nil
+	}
+}
+
+func (p *Channel) AddConn(conn *ChannelConn) {
+	p.rChannel.AddConn(conn)
+	p.wChannel.AddConn(conn)
 }
 
 func (p *Channel) CloseFD(fd int) *base.Error {
