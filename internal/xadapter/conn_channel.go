@@ -6,12 +6,14 @@ import (
 )
 
 type ChannelConn struct {
-	status  uint32
-	channel *Channel
-	fd      int
-	next    XConn
-	la      net.Addr
-	ra      net.Addr
+	status   uint32
+	channel  *Channel
+	fd       int
+	next     XConn
+	la       net.Addr
+	ra       net.Addr
+	rBufSize int
+	wBufSize int
 }
 
 func (p *ChannelConn) NewChannelConn(
@@ -19,19 +21,47 @@ func (p *ChannelConn) NewChannelConn(
 	fd int,
 	la net.Addr,
 	ra net.Addr,
+	rBufSize int,
+	wBufSize int,
 ) *ChannelConn {
 	return &ChannelConn{
-		status:  0,
-		channel: channel,
-		fd:      fd,
-		next:    nil,
-		la:      la,
-		ra:      ra,
+		status:   0,
+		channel:  channel,
+		fd:       fd,
+		next:     nil,
+		la:       la,
+		ra:       ra,
+		rBufSize: rBufSize,
+		wBufSize: wBufSize,
 	}
 }
 
 func (p *ChannelConn) SetNext(next XConn) {
 	p.next = next
+}
+
+func (p *ChannelConn) OnReadOpen() {
+	panic("not implement")
+}
+
+func (p *ChannelConn) OnWriteOpen() {
+	panic("not implement")
+}
+
+func (p *ChannelConn) OnReadReady() {
+
+}
+
+func (p *ChannelConn) OnWriteReady() {
+
+}
+
+func (p *ChannelConn) OnReadClose() {
+
+}
+
+func (p *ChannelConn) OnWriteClose() {
+
 }
 
 func (p *ChannelConn) OnOpen() {
