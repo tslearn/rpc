@@ -1,34 +1,36 @@
-package adapter
+package xadapter
 
-type LoopManager struct {
-	channels    []*LoopChannel
-	receiver    XReceiver
-	currChannel *LoopChannel
+import "github.com/rpccloud/rpc/internal/base"
+
+type Manager struct {
+	channels    []*Channel
+	onError     func(err *base.Error)
+	currChannel *Channel
 	currRemains uint64
 }
 
-func NewLoopManager(channels int, receiver XReceiver) *LoopManager {
-	if channels < 1 {
-		channels = 1
+func NewManager(size int, onError func(err *base.Error)) *Manager {
+	if size < 1 {
+		size = 1
 	}
 
-	ret := &LoopManager{
-		receiver:    receiver,
-		channels:    make([]*LoopChannel, channels),
+	ret := &Manager{
+		channels:    make([]*Channel, size),
+		onError:     onError,
 		currChannel: nil,
 		currRemains: 0,
 	}
 
-	for i := 0; i < channels; i++ {
-		channel := NewLoopChannel(ret)
+	for i := 0; i < size; i++ {
+		poll := NewChannel(onError)
 
-		if channel != nil {
-			ret.channels[i] = channel
+		if poll != nil {
+			ret.pools[i] = poll
 		} else {
 			// clean up and return nil
 			for j := 0; j < i; j++ {
-				ret.channels[j].Close()
-				ret.channels[j] = nil
+				ret.pools[j].Close()
+				ret.pools[j] = nil
 			}
 			return nil
 		}
@@ -37,7 +39,7 @@ func NewLoopManager(channels int, receiver XReceiver) *LoopManager {
 	return ret
 }
 
-func (p *LoopManager) Close() {
+func (p *Manager) Close() {
 	waitCH := make(chan bool)
 	channelSize := len(p.channels)
 
