@@ -6,118 +6,70 @@ import (
 	"errors"
 	"golang.org/x/sys/unix"
 	"net"
-	"os"
 	"strconv"
 )
 
-func getTCPSockaddr(proto, addr string) (sa unix.Sockaddr, family int, tcpAddr *net.TCPAddr, err error) {
-	var tcpVersion string
+func getTCPSockAddr(
+	network string,
+	addr string,
+) (unix.Sockaddr, int, *net.TCPAddr, error) {
+	if addr, err := net.ResolveTCPAddr(network, addr); err != nil {
+		return nil, unix.AF_UNSPEC, nil, err
+	} else if addr.IP.To4() != nil || network == "tcp4" {
+		sa4 := &unix.SockaddrInet4{Port: addr.Port}
 
-	tcpAddr, err = net.ResolveTCPAddr(proto, addr)
-	if err != nil {
-		return
-	}
-
-	tcpVersion, err = determineTCPProto(proto, tcpAddr)
-	if err != nil {
-		return
-	}
-
-	switch tcpVersion {
-	case "tcp":
-		sa, family = &unix.SockaddrInet4{Port: tcpAddr.Port}, unix.AF_INET
-	case "tcp4":
-		sa4 := &unix.SockaddrInet4{Port: tcpAddr.Port}
-
-		if tcpAddr.IP != nil {
-			if len(tcpAddr.IP) == 16 {
-				copy(sa4.Addr[:], tcpAddr.IP[12:16]) // copy last 4 bytes of slice to array
+		if addr.IP != nil {
+			if len(addr.IP) == 16 {
+				copy(sa4.Addr[:], addr.IP[12:16])
 			} else {
-				copy(sa4.Addr[:], tcpAddr.IP) // copy all bytes of slice to array
+				copy(sa4.Addr[:], addr.IP)
+			}
+		}
+		return sa4, unix.AF_INET, addr, nil
+	} else if addr.IP.To16() != nil || network == "tcp6" {
+		sa6 := &unix.SockaddrInet6{Port: addr.Port}
+
+		if addr.IP != nil {
+			copy(sa6.Addr[:], addr.IP)
+		}
+
+		if addr.Zone != "" {
+			if netInterface, err := net.InterfaceByName(addr.Zone); err != nil {
+				return nil, unix.AF_UNSPEC, nil, err
+			} else {
+				sa6.ZoneId = uint32(netInterface.Index)
 			}
 		}
 
-		sa, family = sa4, unix.AF_INET
-	case "tcp6":
-		sa6 := &unix.SockaddrInet6{Port: tcpAddr.Port}
-
-		if tcpAddr.IP != nil {
-			copy(sa6.Addr[:], tcpAddr.IP) // copy all bytes of slice to array
-		}
-
-		if tcpAddr.Zone != "" {
-			var iface *net.Interface
-			iface, err = net.InterfaceByName(tcpAddr.Zone)
-			if err != nil {
-				return
-			}
-
-			sa6.ZoneId = uint32(iface.Index)
-		}
-
-		sa, family = sa6, unix.AF_INET6
-	default:
-		err = errors.New("tcp: proto error")
+		return sa6, unix.AF_INET6, addr, nil
+	} else if network == "tcp" {
+		return &unix.SockaddrInet4{Port: addr.Port}, unix.AF_INET, addr, nil
+	} else {
+		return nil, unix.AF_UNSPEC, nil, errors.New("tcp: get proto error")
 	}
-
-	return
 }
 
-func determineTCPProto(proto string, addr *net.TCPAddr) (string, error) {
-	// If the protocol is set to "tcp", we try to determine the actual protocol
-	// version from the size of the resolved IP address. Otherwise, we simple use
-	// the protcol given to us by the caller.
-
-	if addr.IP.To4() != nil {
-		return "tcp4", nil
+func TCPSocket(proto, addr string) (int, net.Addr, error) {
+	if sockAddr, family, netAddr, err := getTCPSockAddr(proto, addr); err != nil {
+		return 0, nil, err
+	} else if fd, err := sysSocket(
+		family, unix.SOCK_STREAM, unix.IPPROTO_TCP,
+	); err != nil {
+		return 0, nil, err
+	} else if err := unix.SetsockoptInt(
+		fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1,
+	); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else if err := unix.Bind(fd, sockAddr); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else if err := unix.Listen(fd, 128); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else {
+		return fd, netAddr, nil
 	}
-
-	if addr.IP.To16() != nil {
-		return "tcp6", nil
-	}
-
-	switch proto {
-	case "tcp", "tcp4", "tcp6":
-		return proto, nil
-	}
-
-	return "", errors.New("tcp: proto error")
-}
-
-// tcpReusablePort creates an endpoint for communication and returns a file descriptor that refers to that endpoint.
-// Argument `reusePort` indicates whether the SO_REUSEPORT flag will be assigned.
-func TCPSocket(proto, addr string) (fd int, netAddr net.Addr, err error) {
-	var (
-		family   int
-		sockaddr unix.Sockaddr
-	)
-
-	if sockaddr, family, netAddr, err = getTCPSockaddr(proto, addr); err != nil {
-		return
-	}
-
-	if fd, err = sysSocket(family, unix.SOCK_STREAM, unix.IPPROTO_TCP); err != nil {
-		err = os.NewSyscallError("socket", err)
-		return
-	}
-	defer func() {
-		if err != nil {
-			_ = unix.Close(fd)
-		}
-	}()
-
-	if err = os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)); err != nil {
-		return
-	}
-
-	if err = os.NewSyscallError("bind", unix.Bind(fd, sockaddr)); err != nil {
-		return
-	}
-
-	// Set backlog size to the maximum.
-	err = os.NewSyscallError("listen", unix.Listen(fd, 128))
-
-	return
 }
 
 func ip6ZoneToString(zone int) string {

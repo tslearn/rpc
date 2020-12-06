@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func sysSocket(family, sotype, proto int) (fd int, err error) {
+func sysSocket(family int, sotype int, proto int) (fd int, err error) {
 	syscall.ForkLock.RLock()
 	if fd, err = unix.Socket(family, sotype, proto); err == nil {
 		unix.CloseOnExec(fd)
