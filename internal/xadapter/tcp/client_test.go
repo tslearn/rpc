@@ -64,7 +64,7 @@ func (p *testReceiver) OnEventConnError(
 
 func BenchmarkDebug(b *testing.B) {
 	go func() {
-		serverAdapter := NewTCPServerAdapter("0.0.0.0:8080", 1024, 1024)
+		serverAdapter := NewTCPServerAdapter("tcp", "0.0.0.0:8080", 1024, 1024)
 		serverAdapter.Open(&testReceiver{isClient: false})
 	}()
 
