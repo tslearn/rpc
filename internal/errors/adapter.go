@@ -27,6 +27,13 @@ var (
 		base.ErrorLevelFatal,
 		"it is not running",
 	)
+
+	// ErrTCPListener  ...
+	ErrTCPListener = base.DefineNetError(
+		(adapterErrorSeg<<16)|4,
+		base.ErrorLevelFatal,
+		"",
+	)
 )
 
 const eventConnErrorSeg = 2101

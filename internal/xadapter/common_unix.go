@@ -49,8 +49,10 @@ func getTCPSockAddr(
 	}
 }
 
-func TCPSocket(proto, addr string) (int, net.Addr, error) {
-	if sockAddr, family, netAddr, err := getTCPSockAddr(proto, addr); err != nil {
+func TCPSocket(network string, addr string) (int, net.Addr, error) {
+	if sockAddr, family, netAddr, err := getTCPSockAddr(
+		network, addr,
+	); err != nil {
 		return 0, nil, err
 	} else if fd, err := sysSocket(
 		family, unix.SOCK_STREAM, unix.IPPROTO_TCP,

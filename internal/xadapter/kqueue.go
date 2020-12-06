@@ -96,7 +96,7 @@ func NewPoller(
 }
 
 // Close ...
-func (p *Poller) Close() *base.Error {
+func (p *Poller) Close() {
 	if atomic.CompareAndSwapUint32(
 		&p.status,
 		pollerStatusRunning,
@@ -116,10 +116,8 @@ func (p *Poller) Close() *base.Error {
 		if e := unix.Close(p.fd); e != nil {
 			p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		}
-
-		return nil
 	} else {
-		return errors.ErrKqueueNotRunning
+		p.onError(errors.ErrKqueueNotRunning)
 	}
 }
 

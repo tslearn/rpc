@@ -102,9 +102,7 @@ func (p *InnerChannel) onFDClose(fd int) {
 }
 
 func (p *InnerChannel) Close() {
-	if err := p.poller.Close(); err != nil {
-		p.onError(err)
-	}
+	p.poller.Close()
 }
 
 type Channel struct {
