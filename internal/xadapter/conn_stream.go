@@ -6,13 +6,11 @@ import (
 )
 
 type StreamConn struct {
-	fd   int
 	prev XConn
 }
 
-func (p *StreamConn) NewStreamConn(fd int, prev XConn) *StreamConn {
+func NewStreamConn(prev XConn) *StreamConn {
 	return &StreamConn{
-		fd:   fd,
 		prev: prev,
 	}
 }

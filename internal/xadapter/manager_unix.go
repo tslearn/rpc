@@ -17,7 +17,7 @@ func NewManager(
 	network string,
 	addr string,
 	onError func(err *base.Error),
-	onConnect func(fd int, localAddr net.Addr, remoteAddr net.Addr) *ChannelConn,
+	onConnect func(fd int, lAddr net.Addr, rAddr net.Addr, channel *Channel) *ChannelConn,
 	size int,
 ) *Manager {
 	if size < 1 {
@@ -50,7 +50,8 @@ func NewManager(
 		network,
 		addr,
 		func(fd int, localAddr net.Addr, remoteAddr net.Addr) {
-			channelConn := onConnect(fd, localAddr, remoteAddr)
+			channel := ret.AllocChannel()
+			channelConn := onConnect(fd, localAddr, remoteAddr, channel)
 			if channelConn != nil {
 				ret.AllocChannel().AddConn(channelConn)
 			}

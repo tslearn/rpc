@@ -10,17 +10,17 @@ type ChannelConn struct {
 	channel  *Channel
 	fd       int
 	next     XConn
-	la       net.Addr
-	ra       net.Addr
+	lAddr    net.Addr
+	rAddr    net.Addr
 	rBufSize int
 	wBufSize int
 }
 
-func (p *ChannelConn) NewChannelConn(
+func NewChannelConn(
 	channel *Channel,
 	fd int,
-	la net.Addr,
-	ra net.Addr,
+	lAddr net.Addr,
+	rAddr net.Addr,
 	rBufSize int,
 	wBufSize int,
 ) *ChannelConn {
@@ -29,8 +29,8 @@ func (p *ChannelConn) NewChannelConn(
 		channel:  channel,
 		fd:       fd,
 		next:     nil,
-		la:       la,
-		ra:       ra,
+		lAddr:    lAddr,
+		rAddr:    rAddr,
 		rBufSize: rBufSize,
 		wBufSize: wBufSize,
 	}
@@ -93,11 +93,11 @@ func (p *ChannelConn) Close() {
 }
 
 func (p *ChannelConn) LocalAddr() net.Addr {
-	return p.la
+	return p.lAddr
 }
 
 func (p *ChannelConn) RemoteAddr() net.Addr {
-	return p.ra
+	return p.rAddr
 }
 
 func (p *ChannelConn) GetFD() int {
