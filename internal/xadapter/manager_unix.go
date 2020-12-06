@@ -1,15 +1,25 @@
 package xadapter
 
-import "github.com/rpccloud/rpc/internal/base"
+import (
+	"github.com/rpccloud/rpc/internal/base"
+	"net"
+)
 
 type Manager struct {
+	listener    *TCPListener
 	channels    []*Channel
 	onError     func(err *base.Error)
 	currChannel *Channel
 	currRemains uint64
 }
 
-func NewManager(size int, onError func(err *base.Error)) *Manager {
+func NewManager(
+	network string,
+	addr string,
+	onError func(err *base.Error),
+	onConnect func(fd int, localAddr net.Addr, remoteAddr net.Addr) *ChannelConn,
+	size int,
+) *Manager {
 	if size < 1 {
 		size = 1
 	}
@@ -22,10 +32,10 @@ func NewManager(size int, onError func(err *base.Error)) *Manager {
 	}
 
 	for i := 0; i < size; i++ {
-		poll := NewChannel(onError)
+		channel := NewChannel(onError)
 
-		if poll != nil {
-			ret.channels[i] = poll
+		if channel != nil {
+			ret.channels[i] = channel
 		} else {
 			// clean up and return nil
 			for j := 0; j < i; j++ {
@@ -34,6 +44,23 @@ func NewManager(size int, onError func(err *base.Error)) *Manager {
 			}
 			return nil
 		}
+	}
+
+	ret.listener = NewTCPListener(
+		network,
+		addr,
+		func(fd int, localAddr net.Addr, remoteAddr net.Addr) {
+			channelConn := onConnect(fd, localAddr, remoteAddr)
+			if channelConn != nil {
+				ret.AllocChannel().AddConn(channelConn)
+			}
+		},
+		onError,
+	)
+
+	if ret.listener == nil {
+		ret.Close()
+		return nil
 	}
 
 	return ret
