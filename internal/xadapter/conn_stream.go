@@ -36,25 +36,21 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 }
 
 func (p *StreamConn) TriggerWrite() {
-	p.GetRootConn().TriggerWrite()
+	p.prev.TriggerWrite()
 }
 
 func (p *StreamConn) Close() {
-	p.GetRootConn().Close()
+	p.prev.Close()
 }
 
 func (p *StreamConn) LocalAddr() net.Addr {
-	return p.GetRootConn().LocalAddr()
+	return p.prev.LocalAddr()
 }
 
 func (p *StreamConn) RemoteAddr() net.Addr {
-	return p.GetRootConn().RemoteAddr()
+	return p.prev.RemoteAddr()
 }
 
 func (p *StreamConn) GetFD() int {
-	return p.GetRootConn().GetFD()
-}
-
-func (p *StreamConn) GetRootConn() XConn {
-	return p.prev.GetRootConn()
+	return p.prev.GetFD()
 }

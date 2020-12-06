@@ -15,7 +15,6 @@ type XConn interface {
 	GetFD() int
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
-	GetRootConn() XConn
 	TriggerWrite()
 	Close()
 }

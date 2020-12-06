@@ -103,7 +103,3 @@ func (p *ChannelConn) RemoteAddr() net.Addr {
 func (p *ChannelConn) GetFD() int {
 	return p.fd
 }
-
-func (p *ChannelConn) GetRootConn() XConn {
-	return p
-}
