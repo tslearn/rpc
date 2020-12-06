@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"net"
 )
 
 type testReceiver struct {
@@ -37,6 +38,8 @@ func (p *testReceiver) OnEventConnError(
 }
 
 func main() {
+	net.Listen("tcp", "0.0.0.0:8888")
+
 	serverAdapter := tcp.NewTCPServerAdapter("0.0.0.0:8080", 1024, 1024)
 	serverAdapter.Open(&testReceiver{})
 }
