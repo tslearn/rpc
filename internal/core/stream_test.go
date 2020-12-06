@@ -461,18 +461,19 @@ func TestStream(t *testing.T) {
 		assert(streamFrameArrayInitSize).Equal(8)
 		assert(streamPosVersion).Equal(0)
 		assert(streamPosStatusBit).Equal(1)
-		assert(streamPosZoneID).Equal(2)
+		assert(streamPosPriority).Equal(2)
 		assert(streamPosLength).Equal(4)
-		assert(streamPosTargetID).Equal(8)
-		assert(streamPosSourceID).Equal(12)
-		assert(streamPosCheckSum).Equal(16)
+		assert(streamPosCheckSum).Equal(8)
 		assert(streamPosCheckSum % 8).Equal(0)
-		assert(streamPosSessionID).Equal(24)
-		assert(streamPosCallbackID).Equal(32)
-		assert(streamPosDepth).Equal(40)
-		assert(streamPosBody).Equal(42)
+		assert(streamPosZoneID).Equal(16)
+		assert(streamPosTargetID).Equal(20)
+		assert(streamPosSourceID).Equal(24)
+		assert(streamPosSessionID).Equal(28)
+		assert(streamPosCallbackID).Equal(36)
+		assert(streamPosDepth).Equal(44)
+		assert(streamPosBody).Equal(46)
 		assert(streamStatusBitDebug).Equal(0)
-		assert(StreamHeadSize).Equal(42)
+		assert(StreamHeadSize).Equal(46)
 		assert(StreamWriteOK).Equal("")
 		assert(ControlStreamConnectRequest).Equal(1)
 		assert(ControlStreamConnectResponse).Equal(2)
@@ -779,32 +780,6 @@ func TestStream_IsDirectionOut(t *testing.T) {
 	})
 }
 
-func TestStream_GetZoneID(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		for i := 0; i < 1000; i++ {
-			v := NewStream()
-			id := uint16(i)
-			v.SetZoneID(id)
-			assert(v.GetZoneID()).Equal(id)
-			v.Release()
-		}
-	})
-}
-
-func TestStream_SetZoneID(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		for i := 0; i < 1000; i++ {
-			v := NewStream()
-			id := uint16(i)
-			v.SetZoneID(id)
-			assert(v.GetZoneID()).Equal(id)
-			v.Release()
-		}
-	})
-}
-
 func TestStream_GetLength(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -820,53 +795,27 @@ func TestStream_GetLength(t *testing.T) {
 	})
 }
 
-func TestStream_GetTargetID(t *testing.T) {
+func TestStream_GetPriority(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
-			v.SetTargetID(id)
-			assert(v.GetTargetID()).Equal(id)
+			priority := rand.Uint32()
+			v.SetPriority(priority)
+			assert(v.GetPriority()).Equal(priority)
 			v.Release()
 		}
 	})
 }
 
-func TestStream_SetTargetID(t *testing.T) {
+func TestStream_SetPriority(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
-			v.SetTargetID(id)
-			assert(v.GetTargetID()).Equal(id)
-			v.Release()
-		}
-	})
-}
-
-func TestStream_GetSourceID(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		for i := 0; i < 1000; i++ {
-			v := NewStream()
-			id := rand.Uint32()
-			v.SetSourceID(id)
-			assert(v.GetSourceID()).Equal(id)
-			v.Release()
-		}
-	})
-}
-
-func TestStream_SetSourceID(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		for i := 0; i < 1000; i++ {
-			v := NewStream()
-			id := rand.Uint32()
-			v.SetSourceID(id)
-			assert(v.GetSourceID()).Equal(id)
+			priority := rand.Uint32()
+			v.SetPriority(priority)
+			assert(v.GetPriority()).Equal(priority)
 			v.Release()
 		}
 	})
@@ -934,6 +883,84 @@ func TestStream_CheckStream(t *testing.T) {
 			(*stream.frames[changeSeg])[changeIndex]++
 			assert(stream.CheckStream()).IsFalse()
 			stream.Release()
+		}
+	})
+}
+
+func TestStream_GetZoneID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := uint32(i)
+			v.SetZoneID(id)
+			assert(v.GetZoneID()).Equal(id)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_SetZoneID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := uint32(i)
+			v.SetZoneID(id)
+			assert(v.GetZoneID()).Equal(id)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_GetTargetID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint32()
+			v.SetTargetID(id)
+			assert(v.GetTargetID()).Equal(id)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_SetTargetID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint32()
+			v.SetTargetID(id)
+			assert(v.GetTargetID()).Equal(id)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_GetSourceID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint32()
+			v.SetSourceID(id)
+			assert(v.GetSourceID()).Equal(id)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_SetSourceID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			id := rand.Uint32()
+			v.SetSourceID(id)
+			assert(v.GetSourceID()).Equal(id)
+			v.Release()
 		}
 	})
 }
