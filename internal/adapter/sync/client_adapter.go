@@ -15,7 +15,7 @@ type ClientAdapter struct {
 	conn     *Conn
 }
 
-func NewAsyncServerAdapter(
+func NewSyncClientAdapter(
 	network string,
 	addr string,
 	rBufSize int,
