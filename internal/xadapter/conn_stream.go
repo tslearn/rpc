@@ -50,7 +50,3 @@ func (p *StreamConn) LocalAddr() net.Addr {
 func (p *StreamConn) RemoteAddr() net.Addr {
 	return p.prev.RemoteAddr()
 }
-
-func (p *StreamConn) GetFD() int {
-	return p.prev.GetFD()
-}

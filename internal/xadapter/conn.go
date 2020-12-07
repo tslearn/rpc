@@ -12,7 +12,6 @@ type XConn interface {
 	OnReadBytes(b []byte)
 	OnFillWrite(b []byte) int
 
-	GetFD() int
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	TriggerWrite()
