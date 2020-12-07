@@ -7,6 +7,13 @@ import (
 const adapterErrorSeg = 2000
 
 var (
+	// ErrTemp ... *
+	ErrTemp = base.DefineNetError(
+		(adapterErrorSeg<<16)|1000,
+		base.ErrorLevelWarn,
+		"",
+	)
+
 	// ErrStreamConnIsClosed ... *
 	ErrStreamConnIsClosed = base.DefineNetError(
 		(adapterErrorSeg<<16)|1,

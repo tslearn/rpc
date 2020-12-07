@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+func closeFD(fd int) error {
+	return unix.Close(fd)
+}
+
 func getTCPSockAddr(
 	network string,
 	addr string,

@@ -3,12 +3,12 @@ package xadapter
 import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 )
 
 type AsyncConn struct {
 	status   uint32
-	channel  *Channel
 	fd       int
 	next     adapter.XConn
 	lAddr    net.Addr
@@ -18,7 +18,6 @@ type AsyncConn struct {
 }
 
 func NewAsyncConn(
-	channel *Channel,
 	fd int,
 	lAddr net.Addr,
 	rAddr net.Addr,
@@ -27,7 +26,6 @@ func NewAsyncConn(
 ) *AsyncConn {
 	return &AsyncConn{
 		status:   0,
-		channel:  channel,
 		fd:       fd,
 		next:     nil,
 		lAddr:    lAddr,
@@ -90,7 +88,9 @@ func (p *AsyncConn) TriggerWrite() {
 }
 
 func (p *AsyncConn) Close() {
-	p.channel.CloseFD(p.fd)
+	if e := closeFD(p.fd); e != nil {
+		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+	}
 }
 
 func (p *AsyncConn) LocalAddr() net.Addr {

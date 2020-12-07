@@ -3,7 +3,6 @@ package xadapter
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"golang.org/x/sys/unix"
 	"sync"
 	"sync/atomic"
 )
@@ -88,8 +87,8 @@ func (p *InnerChannel) onFDWrite(fd int) {
 
 func (p *InnerChannel) onFDClose(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
-		if err := p.channel.CloseFD(fd); err != nil {
-			conn.OnError(err)
+		if e := closeFD(fd); e != nil {
+			conn.OnError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		} else {
 			delete(p.connMap, fd)
 			if p.isReadMode {
@@ -150,14 +149,6 @@ func (p *Channel) Close() {
 func (p *Channel) AddConn(conn *AsyncConn) {
 	p.rChannel.AddConn(conn)
 	p.wChannel.AddConn(conn)
-}
-
-func (p *Channel) CloseFD(fd int) *base.Error {
-	if e := unix.Close(fd); e != nil {
-		return errors.ErrKqueueSystem.AddDebug(e.Error())
-	}
-
-	return nil
 }
 
 func (p *Channel) GetActiveConnCount() int64 {
