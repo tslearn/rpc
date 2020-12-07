@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/core"
 	"net"
 )
 
@@ -19,12 +20,14 @@ type XConn interface {
 }
 
 type StreamConn struct {
-	prev XConn
+	prev     XConn
+	receiver IReceiver
 }
 
-func NewStreamConn(prev XConn) *StreamConn {
+func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
-		prev: prev,
+		prev:     prev,
+		receiver: receiver,
 	}
 }
 
@@ -62,4 +65,8 @@ func (p *StreamConn) LocalAddr() net.Addr {
 
 func (p *StreamConn) RemoteAddr() net.Addr {
 	return p.prev.RemoteAddr()
+}
+
+func (p *StreamConn) WriteStream(stream *core.Stream) {
+
 }
