@@ -1,6 +1,6 @@
 // +build freebsd dragonfly darwin
 
-package xadapter
+package async
 
 import (
 	"github.com/rpccloud/rpc/internal/base"

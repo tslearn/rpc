@@ -21,6 +21,13 @@ type RunnableService struct {
 	runnable IRunnable
 }
 
+func NewRunnableService(runnable IRunnable) *RunnableService {
+	return &RunnableService{
+		status:   serviceClosed,
+		runnable: runnable,
+	}
+}
+
 // Open ...
 func (p *RunnableService) Open() bool {
 	if atomic.CompareAndSwapInt32(&p.status, serviceClosed, serviceLoading) {

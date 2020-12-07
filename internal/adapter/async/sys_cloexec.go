@@ -1,6 +1,6 @@
 // +build darwin
 
-package xadapter
+package async
 
 import (
 	"syscall"

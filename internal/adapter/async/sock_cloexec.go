@@ -1,6 +1,6 @@
 // +build linux freebsd dragonfly
 
-package xadapter
+package async
 
 import "golang.org/x/sys/unix"
 

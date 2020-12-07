@@ -1,4 +1,4 @@
-package xadapter
+package async
 
 import (
 	"github.com/rpccloud/rpc/internal/base"

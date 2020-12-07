@@ -1,6 +1,6 @@
 // +build linux freebsd dragonfly darwin
 
-package xadapter
+package async
 
 import (
 	"errors"
