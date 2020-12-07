@@ -7,7 +7,7 @@ import (
 	"net"
 )
 
-type AsyncConn struct {
+type Conn struct {
 	status   uint32
 	fd       int
 	next     adapter.XConn
@@ -17,14 +17,14 @@ type AsyncConn struct {
 	wBufSize int
 }
 
-func NewAsyncConn(
+func NewConn(
 	fd int,
 	lAddr net.Addr,
 	rAddr net.Addr,
 	rBufSize int,
 	wBufSize int,
-) *AsyncConn {
-	return &AsyncConn{
+) *Conn {
+	return &Conn{
 		status:   0,
 		fd:       fd,
 		next:     nil,
@@ -35,72 +35,72 @@ func NewAsyncConn(
 	}
 }
 
-func (p *AsyncConn) SetNext(next adapter.XConn) {
+func (p *Conn) SetNext(next adapter.XConn) {
 	p.next = next
 }
 
-func (p *AsyncConn) OnReadOpen() {
+func (p *Conn) OnReadOpen() {
 	panic("not implement")
 }
 
-func (p *AsyncConn) OnWriteOpen() {
+func (p *Conn) OnWriteOpen() {
 	panic("not implement")
 }
 
-func (p *AsyncConn) OnReadReady() {
+func (p *Conn) OnReadReady() {
 
 }
 
-func (p *AsyncConn) OnWriteReady() {
+func (p *Conn) OnWriteReady() {
 
 }
 
-func (p *AsyncConn) OnReadClose() {
+func (p *Conn) OnReadClose() {
 
 }
 
-func (p *AsyncConn) OnWriteClose() {
+func (p *Conn) OnWriteClose() {
 
 }
 
-func (p *AsyncConn) OnOpen() {
+func (p *Conn) OnOpen() {
 	p.next.OnOpen()
 }
 
-func (p *AsyncConn) OnClose() {
+func (p *Conn) OnClose() {
 	p.next.OnClose()
 }
 
-func (p *AsyncConn) OnError(err *base.Error) {
+func (p *Conn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-func (p *AsyncConn) OnReadBytes(b []byte) {
+func (p *Conn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *AsyncConn) OnFillWrite(b []byte) int {
+func (p *Conn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
-func (p *AsyncConn) TriggerWrite() {
+func (p *Conn) TriggerWrite() {
 	panic("not implement")
 }
 
-func (p *AsyncConn) Close() {
+func (p *Conn) Close() {
 	if e := closeFD(p.fd); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
 }
 
-func (p *AsyncConn) LocalAddr() net.Addr {
+func (p *Conn) LocalAddr() net.Addr {
 	return p.lAddr
 }
 
-func (p *AsyncConn) RemoteAddr() net.Addr {
+func (p *Conn) RemoteAddr() net.Addr {
 	return p.rAddr
 }
 
-func (p *AsyncConn) GetFD() int {
+func (p *Conn) GetFD() int {
 	return p.fd
 }

@@ -7,8 +7,9 @@ import (
 
 type IRunnable interface {
 	OnOpen() bool
-	OnRun(service *RunnableService) bool
-	OnClose()
+	OnRun(service *RunnableService)
+	OnWillClose()
+	OnDidClose()
 }
 
 const serviceLoading = int32(1)
@@ -34,6 +35,7 @@ func (p *RunnableService) Open() bool {
 		if p.runnable.OnOpen() {
 			atomic.StoreInt32(&p.status, serviceRunning)
 			p.runnable.OnRun(p)
+			p.runnable.OnDidClose()
 			atomic.StoreInt32(&p.status, serviceClosed)
 		} else {
 			atomic.StoreInt32(&p.status, serviceClosed)
@@ -48,7 +50,7 @@ func (p *RunnableService) Open() bool {
 // Close ...
 func (p *RunnableService) Close() bool {
 	if atomic.CompareAndSwapInt32(&p.status, serviceRunning, serviceClosing) {
-		p.runnable.OnClose()
+		p.runnable.OnWillClose()
 
 		for atomic.LoadInt32(&p.status) != serviceClosed {
 			time.Sleep(50 * time.Millisecond)

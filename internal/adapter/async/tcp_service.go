@@ -2,49 +2,74 @@ package async
 
 import (
 	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/base"
+	"net"
+	"runtime"
+	"strings"
+	"time"
 )
 
-//
-//manager := xadapter.NewManager(
-//p.network,
-//p.addr, func(err *base.Error) {
-//  receiver.OnEventConnError(nil, err)
-//},
-//fnConnect,
-//runtime.NumCPU(),
-//)
-
-type TCPServerAdapter struct {
+type ServerAdapter struct {
 	network  string
 	addr     string
 	rBufSize int
 	wBufSize int
-
-	manager *common.Manager
+	receiver adapter.IReceiver
+	manager  *Manager
 }
 
-func NewAsyncTCPServerAdapter(
+func NewAsyncServerAdapter(
 	network string,
 	addr string,
 	rBufSize int,
 	wBufSize int,
+	receiver adapter.IReceiver,
 ) *adapter.RunnableService {
-	return adapter.NewRunnableService(&TCPServerAdapter{
+	return adapter.NewRunnableService(&ServerAdapter{
 		network:  network,
 		addr:     addr,
 		rBufSize: rBufSize,
 		wBufSize: wBufSize,
+		receiver: receiver,
+		manager:  nil,
 	})
 }
 
-func (p *TCPServerAdapter) OnOpen() bool {
+func (p *ServerAdapter) OnOpen() bool {
+	p.manager = NewManager(
+		p.network,
+		p.addr, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		},
+		p.GetConnectFunc(),
+		runtime.NumCPU(),
+	)
 
+	return p.manager != nil
 }
 
-func (p *TCPServerAdapter) OnRun(service *RunnableService) bool {
-
+func (p *ServerAdapter) OnRun(service *adapter.RunnableService) {
+	for service.IsRunning() {
+		time.Sleep(50 * time.Millisecond)
+	}
 }
 
-func (p *TCPServerAdapter) OnClose() {
+func (p *ServerAdapter) OnWillClose() {
+	// do nothing
+}
 
+func (p *ServerAdapter) OnDidClose() {
+	p.manager.Close()
+}
+
+func (p *ServerAdapter) GetConnectFunc() func(int, net.Addr, net.Addr) *Conn {
+	if strings.HasPrefix(p.network, "tcp") {
+		return func(fd int, lAddr net.Addr, rAddr net.Addr) *Conn {
+			conn := NewConn(fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
+			conn.SetNext(adapter.NewStreamConn(conn, p.receiver))
+			return conn
+		}
+	} else {
+		panic("not implement")
+	}
 }
