@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter/sync"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"net"
 	"time"
 )
 
@@ -43,7 +44,17 @@ func (p *receiver) OnConnError(
 	fmt.Println("Client: OnConnError", err)
 }
 
-func main() {
+func SimpleTestRead() {
+	conn, err := net.Dial("tcp", "0.0.0.0:8080")
+	if err != nil {
+		panic(err)
+	}
+	buf := make([]byte, 1024)
+	fmt.Println(conn.Read(buf))
+}
+
+func TestReceiver() {
+
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
 
 	clientAdapter := sync.NewSyncClientAdapter(
@@ -73,4 +84,9 @@ func main() {
 		}
 		s.Release()
 	}
+}
+
+func main() {
+	SimpleTestRead()
+	return
 }
