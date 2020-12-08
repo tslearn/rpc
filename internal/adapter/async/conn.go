@@ -1,6 +1,7 @@
 package async
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -55,11 +56,11 @@ func (p *Conn) OnWriteOpen() {
 }
 
 func (p *Conn) OnReadReady() {
-
+	fmt.Println("OnReadReady")
 }
 
 func (p *Conn) OnWriteReady() {
-
+	fmt.Println("OnWriteReady")
 }
 
 func (p *Conn) OnReadClose() {

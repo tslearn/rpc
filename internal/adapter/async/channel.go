@@ -53,13 +53,18 @@ func (p *InnerChannel) onInvokeAdd() {
 	for {
 		select {
 		case conn := <-p.addCH:
-			if e := p.poller.RegisterReadFD(conn.GetFD()); e != nil {
-				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-			} else {
-				p.connMap[conn.GetFD()] = conn
-				if p.isReadMode {
-					conn.OnReadOpen()
+			if p.isReadMode {
+				if e := p.poller.RegisterReadFD(conn.GetFD()); e != nil {
+					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 				} else {
+					p.connMap[conn.GetFD()] = conn
+					conn.OnReadOpen()
+				}
+			} else {
+				if e := p.poller.RegisterWriteFD(conn.GetFD()); e != nil {
+					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+				} else {
+					p.connMap[conn.GetFD()] = conn
 					conn.OnWriteOpen()
 				}
 			}
