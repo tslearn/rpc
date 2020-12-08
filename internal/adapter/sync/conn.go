@@ -31,11 +31,12 @@ func (p *Conn) SetNext(next adapter.XConn) {
 	p.next = next
 }
 
-func (p *Conn) TriggerRead() {
+func (p *Conn) TriggerRead() *base.Error {
 	if n, e := p.netConn.Read(p.rBuf); e != nil {
-		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		return errors.ErrTemp.AddDebug(e.Error())
 	} else {
 		p.OnReadBytes(p.rBuf[:n])
+		return nil
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
+	"sync/atomic"
 )
 
 type XConn interface {
@@ -20,24 +21,32 @@ type XConn interface {
 	Close()
 }
 
+const streamConnStatusRunning = int32(1)
+const streamConnStatusClosing = int32(2)
+const streamConnStatusClosed = int32(0)
+
 type StreamConn struct {
+	status   int32
 	prev     XConn
 	receiver IReceiver
 }
 
 func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
+		status:   streamConnStatusClosed,
 		prev:     prev,
 		receiver: receiver,
 	}
 }
 
 func (p *StreamConn) OnOpen() {
+	atomic.StoreInt32(&p.status, streamConnStatusRunning)
 	p.receiver.OnConnOpen(p)
 }
 
 func (p *StreamConn) OnClose() {
 	p.receiver.OnConnClose(p)
+	atomic.StoreInt32(&p.status, streamConnStatusClosed)
 }
 
 func (p *StreamConn) OnError(err *base.Error) {
@@ -57,8 +66,14 @@ func (p *StreamConn) TriggerWrite() {
 }
 
 func (p *StreamConn) Close() {
-	fmt.Println(p.prev)
-	p.prev.Close()
+	if atomic.CompareAndSwapInt32(
+		&p.status,
+		streamConnStatusRunning,
+		streamConnStatusClosing,
+	) {
+		fmt.Println("StreamConn Close")
+		p.prev.Close()
+	}
 }
 
 func (p *StreamConn) LocalAddr() net.Addr {

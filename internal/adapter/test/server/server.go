@@ -34,6 +34,10 @@ func (p *receiver) OnConnError(
 	streamConn *adapter.StreamConn,
 	err *base.Error,
 ) {
+	if streamConn != nil {
+		streamConn.Close()
+	}
+
 	fmt.Println("Server: OnConnError", err)
 }
 

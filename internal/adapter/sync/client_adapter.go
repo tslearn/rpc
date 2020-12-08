@@ -44,7 +44,10 @@ func (p *ClientAdapter) OnOpen() bool {
 
 func (p *ClientAdapter) OnRun(service *adapter.RunnableService) {
 	for service.IsRunning() {
-		p.conn.TriggerRead()
+		if err := p.conn.TriggerRead(); err != nil {
+			p.conn.OnError(err)
+			service.Close()
+		}
 	}
 }
 
