@@ -95,6 +95,8 @@ func (p *Conn) Close() {
 	if e := p.netConn.Close(); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
+
+	p.OnClose()
 }
 
 func (p *Conn) LocalAddr() net.Addr {
