@@ -66,10 +66,11 @@ func TestReceiver() {
 	}()
 
 	time.Sleep(time.Second)
-
 	if clientReceiver.streamConn == nil {
 		panic("not connect")
 	}
+
+	fmt.Println("Start Test")
 
 	stream := core.NewStream()
 	stream.WriteInt64(12)
@@ -84,9 +85,12 @@ func TestReceiver() {
 		}
 		s.Release()
 	}
+
+	fmt.Println("End Test")
+	time.Sleep(10 * time.Second)
 }
 
 func main() {
-	SimpleTestRead()
+	TestReceiver()
 	return
 }

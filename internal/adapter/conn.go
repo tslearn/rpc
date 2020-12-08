@@ -91,12 +91,15 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 }
 
 func (p *StreamConn) WriteStream(stream *core.Stream) {
-	defer func() {
-		if v := recover(); v != nil {
-			p.OnError(errors.ErrTemp.AddDebug(fmt.Sprintf("%v", v)))
-		}
+	func() {
+		defer func() {
+			if v := recover(); v != nil {
+				p.OnError(errors.ErrTemp.AddDebug(fmt.Sprintf("%v", v)))
+			}
+		}()
+
+		p.writeCH <- stream
 	}()
 
-	p.writeCH <- stream
 	p.TriggerWrite()
 }
