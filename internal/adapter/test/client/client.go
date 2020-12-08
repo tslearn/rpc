@@ -76,12 +76,14 @@ func TestReceiver() {
 	stream.WriteInt64(12)
 	stream.BuildStreamCheck()
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		clientReceiver.streamConn.WriteStream(stream)
 		s := <-clientReceiver.streamCH
 		s.SetReadPosToBodyStart()
 		if v, _ := s.ReadInt64(); v != int64(12) {
 			panic("error")
+		} else {
+			fmt.Println(v)
 		}
 		s.Release()
 	}

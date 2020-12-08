@@ -92,6 +92,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 		if p.readStream.GetWritePos() == streamLength {
 			if p.readStream.CheckStream() {
 				p.receiver.OnConnReadStream(p, p.readStream)
+				p.readStream = nil
 			} else {
 				p.receiver.OnConnError(p, errors.ErrStream)
 				return

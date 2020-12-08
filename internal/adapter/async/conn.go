@@ -1,6 +1,7 @@
 package async
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -17,6 +18,9 @@ type Conn struct {
 	rAddr       net.Addr
 	rBuf        []byte
 	wBuf        []byte
+	wStartPos   int
+	wEndPos     int
+	canWrite    bool
 }
 
 func NewConn(
@@ -35,6 +39,9 @@ func NewConn(
 		rAddr:       rAddr,
 		rBuf:        make([]byte, rBufSize),
 		wBuf:        make([]byte, wBufSize),
+		wStartPos:   0,
+		wEndPos:     0,
+		canWrite:    false,
 	}
 }
 
@@ -63,7 +70,27 @@ func (p *Conn) OnReadReady() {
 }
 
 func (p *Conn) OnWriteReady() {
-	panic("not implement")
+	if p.wEndPos < len(p.wBuf) {
+		if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
+			p.wEndPos += n
+		}
+	}
+
+	if p.wEndPos == 0 {
+		p.canWrite = true
+	} else {
+		p.canWrite = false
+		if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		} else {
+			p.wStartPos += n
+		}
+
+		if p.wStartPos == p.wEndPos {
+			p.wStartPos = 0
+			p.wEndPos = 0
+		}
+	}
 }
 
 func (p *Conn) OnReadClose() {
@@ -99,7 +126,11 @@ func (p *Conn) OnFillWrite(b []byte) int {
 }
 
 func (p *Conn) TriggerWrite() {
-	panic("not implement")
+	fmt.Println("TriggerWrite A")
+	if p.canWrite {
+		fmt.Println("TriggerWrite B")
+		p.OnWriteReady()
+	}
 }
 
 func (p *Conn) Close() {

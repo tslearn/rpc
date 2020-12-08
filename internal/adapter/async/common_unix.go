@@ -10,6 +10,7 @@ import (
 )
 
 var readFD = unix.Read
+var writeFD = unix.Write
 var closeFD = unix.Close
 
 func getTCPSockAddr(
