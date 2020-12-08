@@ -1,7 +1,6 @@
 package async
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -59,14 +58,12 @@ func (p *Conn) OnReadReady() {
 	if n, e := readFD(p.fd, p.rBuf); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	} else {
-		fmt.Println("OnReadReady", p.rBuf[:n])
 		p.OnReadBytes(p.rBuf[:n])
 	}
-
 }
 
 func (p *Conn) OnWriteReady() {
-	fmt.Println("OnWriteReady")
+	panic("not implement")
 }
 
 func (p *Conn) OnReadClose() {
