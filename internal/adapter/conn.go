@@ -1,8 +1,10 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"sync/atomic"
 )
@@ -90,7 +92,9 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 
 func (p *StreamConn) WriteStream(stream *core.Stream) {
 	defer func() {
-		_ = recover()
+		if v := recover(); v != nil {
+			p.OnError(errors.ErrTemp.AddDebug(fmt.Sprintf("%v", v)))
+		}
 	}()
 
 	p.writeCH <- stream

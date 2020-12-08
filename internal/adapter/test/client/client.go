@@ -62,8 +62,6 @@ func main() {
 
 	for i := 0; i < 1; i++ {
 		clientReceiver.streamConn.WriteStream(stream)
-
-		fmt.Println("OK1")
 		s := <-clientReceiver.streamCH
 		s.SetReadPosToBodyStart()
 		if v, _ := s.ReadInt64(); v != int64(12) {
