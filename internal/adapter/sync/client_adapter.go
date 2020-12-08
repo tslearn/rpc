@@ -38,6 +38,7 @@ func (p *ClientAdapter) OnOpen() bool {
 	} else {
 		p.conn = NewConn(netConn, p.rBufSize, p.wBufSize)
 		p.conn.SetNext(adapter.NewStreamConn(p.conn, p.receiver))
+		p.conn.OnOpen()
 		return true
 	}
 }
