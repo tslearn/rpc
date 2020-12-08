@@ -11,16 +11,16 @@ type InnerChannel struct {
 	isReadMode bool
 	channel    *Channel
 	poller     *Poller
-	connMap    map[int]*AsyncConn
-	addCH      chan *AsyncConn
+	connMap    map[int]*Conn
+	addCH      chan *Conn
 }
 
 func NewInnerChannel(isReadMode bool, channel *Channel) *InnerChannel {
 	ret := &InnerChannel{
 		isReadMode: isReadMode,
 		channel:    channel,
-		connMap:    make(map[int]*AsyncConn),
-		addCH:      make(chan *AsyncConn, 4096),
+		connMap:    make(map[int]*Conn),
+		addCH:      make(chan *Conn, 4096),
 	}
 
 	ret.poller = NewPoller(
@@ -39,7 +39,7 @@ func NewInnerChannel(isReadMode bool, channel *Channel) *InnerChannel {
 	return ret
 }
 
-func (p *InnerChannel) AddConn(conn *AsyncConn) {
+func (p *InnerChannel) AddConn(conn *Conn) {
 	_ = p.poller.InvokeAddTrigger()
 	p.addCH <- conn
 	_ = p.poller.InvokeAddTrigger()
@@ -146,7 +146,7 @@ func (p *Channel) Close() {
 	}
 }
 
-func (p *Channel) AddConn(conn *AsyncConn) {
+func (p *Channel) AddConn(conn *Conn) {
 	p.rChannel.AddConn(conn)
 	p.wChannel.AddConn(conn)
 }

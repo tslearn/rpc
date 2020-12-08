@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
@@ -32,15 +33,15 @@ func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
 }
 
 func (p *StreamConn) OnOpen() {
-	panic("not implement")
+	p.receiver.OnConnOpen(p)
 }
 
 func (p *StreamConn) OnClose() {
-	panic("not implement")
+	p.receiver.OnConnClose(p)
 }
 
 func (p *StreamConn) OnError(err *base.Error) {
-	panic("not implement")
+	p.receiver.OnConnError(p, err)
 }
 
 func (p *StreamConn) OnReadBytes(b []byte) {
@@ -56,6 +57,7 @@ func (p *StreamConn) TriggerWrite() {
 }
 
 func (p *StreamConn) Close() {
+	fmt.Println(p.prev)
 	p.prev.Close()
 }
 
