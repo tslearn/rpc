@@ -32,16 +32,24 @@ type StreamConn struct {
 	receiver IReceiver
 	writeCH  chan *core.Stream
 
+	readHeadPos int
+	readHeadBuf []byte
+	readStream  *core.Stream
 	writeStream *core.Stream
 	writePos    int
 }
 
 func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
-		status:   streamConnStatusClosed,
-		prev:     prev,
-		receiver: receiver,
-		writeCH:  make(chan *core.Stream, 16),
+		status:      streamConnStatusClosed,
+		prev:        prev,
+		receiver:    receiver,
+		writeCH:     make(chan *core.Stream, 16),
+		readHeadPos: 0,
+		readHeadBuf: make([]byte, core.StreamHeadSize),
+		readStream:  nil,
+		writeStream: nil,
+		writePos:    0,
 	}
 }
 
@@ -60,8 +68,40 @@ func (p *StreamConn) OnError(err *base.Error) {
 }
 
 func (p *StreamConn) OnReadBytes(b []byte) {
+	if p.readStream == nil {
+		if p.readHeadPos < core.StreamHeadSize {
+			copyBytes := copy(p.readHeadBuf[p.readHeadPos:], b)
+			p.readHeadPos += copyBytes
+			b = b[copyBytes:]
+		}
 
-	panic("not implement")
+		if p.readHeadPos < core.StreamHeadSize {
+			return
+		}
+
+		p.readStream = core.NewStream()
+		p.readStream.PutBytesTo(p.readHeadBuf, 0)
+		p.readHeadPos = 0
+	}
+
+	if byteLen := len(b); byteLen > 0 {
+		streamLength := int(p.readStream.GetLength())
+		remains := streamLength - p.readStream.GetWritePos()
+		writeBuf := b[:base.MinInt(byteLen, remains)]
+		p.readStream.PutBytes(writeBuf)
+		if p.readStream.GetWritePos() == streamLength {
+			if p.readStream.CheckStream() {
+				p.receiver.OnConnReadStream(p, p.readStream)
+			} else {
+				p.receiver.OnConnError(p, errors.ErrStream)
+				return
+			}
+		}
+
+		if byteLen > len(writeBuf) {
+			p.OnReadBytes(b[:len(writeBuf)])
+		}
+	}
 }
 
 func (p *StreamConn) OnFillWrite(b []byte) int {
