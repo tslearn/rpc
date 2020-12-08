@@ -1,7 +1,6 @@
 package async
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -126,9 +125,7 @@ func (p *Conn) OnFillWrite(b []byte) int {
 }
 
 func (p *Conn) TriggerWrite() {
-	fmt.Println("TriggerWrite A")
 	if p.canWrite {
-		fmt.Println("TriggerWrite B")
 		p.OnWriteReady()
 	}
 }

@@ -26,7 +26,6 @@ func (p *receiver) OnConnReadStream(
 	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
-	fmt.Println("Server: Read Stream")
 	streamConn.WriteStream(stream)
 	stream.Release()
 }
