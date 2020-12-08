@@ -68,5 +68,5 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 }
 
 func (p *StreamConn) WriteStream(stream *core.Stream) {
-
+	panic("not implement")
 }
