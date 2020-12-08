@@ -74,14 +74,19 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 		}
 	}
 
-	peekBuf := p.writeStream.PeekBufferSlice(p.writePos, len(b))
+	peekBuf, finish := p.writeStream.PeekBufferSlice(p.writePos, len(b))
 	if len(peekBuf) > 0 {
 		copyBytes := copy(b, peekBuf)
 		p.writePos += copyBytes
+
+		if finish {
+			p.writeStream = nil
+			p.writePos = 0
+		}
+
 		return copyBytes
 	} else {
-		p.writeStream = nil
-		p.writePos = 0
+		p.OnError(errors.ErrTemp.AddDebug("OnFillWrite internal error"))
 		return 0
 	}
 }
