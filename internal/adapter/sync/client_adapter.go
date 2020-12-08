@@ -46,15 +46,15 @@ func (p *ClientAdapter) OnRun(service *adapter.RunnableService) {
 	for service.IsRunning() {
 		if err := p.conn.TriggerRead(); err != nil {
 			p.conn.OnError(err)
-			service.Close()
+			break
 		}
 	}
 }
 
 func (p *ClientAdapter) OnWillClose() {
-	p.conn.Close()
+
 }
 
 func (p *ClientAdapter) OnDidClose() {
-	// do nothing
+	p.conn.Close()
 }
