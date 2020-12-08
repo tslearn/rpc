@@ -56,6 +56,10 @@ func main() {
 
 	time.Sleep(time.Second)
 
+	if clientReceiver.streamConn == nil {
+		panic("not connect")
+	}
+
 	stream := core.NewStream()
 	stream.WriteInt64(12)
 	stream.BuildStreamCheck()
