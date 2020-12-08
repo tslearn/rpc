@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
+	"sync"
 )
 
 type Conn struct {
@@ -12,6 +13,8 @@ type Conn struct {
 	next    adapter.XConn
 	rBuf    []byte
 	wBuf    []byte
+
+	sync.Mutex
 }
 
 func NewConn(
@@ -61,7 +64,31 @@ func (p *Conn) OnFillWrite(b []byte) int {
 }
 
 func (p *Conn) TriggerWrite() {
-	panic("not implement")
+	p.Lock()
+	defer p.Unlock()
+
+	isTriggerFinish := false
+
+	for !isTriggerFinish {
+		bufLen := 0
+
+		for !isTriggerFinish && bufLen < len(p.wBuf) {
+			if n := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
+				bufLen += n
+			} else {
+				isTriggerFinish = true
+			}
+		}
+
+		start := 0
+		for start < bufLen {
+			if n, e := p.netConn.Write(p.wBuf[start:bufLen]); e != nil {
+				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+			} else {
+				start += n
+			}
+		}
+	}
 }
 
 func (p *Conn) Close() {

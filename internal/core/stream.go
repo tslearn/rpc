@@ -540,6 +540,23 @@ func (p *Stream) GetBufferUnsafe() []byte {
 	return p.GetBuffer()
 }
 
+// TODO ... Test
+func (p *Stream) PeekBufferSlice(pos int, max int) []byte {
+	if pos < 0 || max <= 0 {
+		return nil
+	}
+
+	peekIndex := pos % streamBlockSize
+	peekSeg := pos / streamBlockSize
+	peekEnd := base.MinInt(peekIndex+max, streamBlockSize)
+
+	if peekIndex < p.writeIndex || peekSeg < p.writeSeg {
+		return (*p.frames[peekSeg])[peekIndex:peekEnd]
+	} else {
+		return nil
+	}
+}
+
 // PutBytes ...
 func (p *Stream) PutBytes(v []byte) {
 	if p.writeIndex+len(v) < streamBlockSize {

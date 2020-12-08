@@ -64,7 +64,26 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 }
 
 func (p *StreamConn) OnFillWrite(b []byte) int {
-	panic("not implement")
+	if p.writeStream == nil {
+		select {
+		case stream := <-p.writeCH:
+			p.writeStream = stream
+			p.writePos = 0
+		default:
+			return 0
+		}
+	}
+
+	peekBuf := p.writeStream.PeekBufferSlice(p.writePos, len(b))
+	if len(peekBuf) > 0 {
+		copyBytes := copy(b, peekBuf)
+		p.writePos += copyBytes
+		return copyBytes
+	} else {
+		p.writeStream = nil
+		p.writePos = 0
+		return 0
+	}
 }
 
 func (p *StreamConn) TriggerWrite() {
