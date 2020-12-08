@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
@@ -76,7 +75,6 @@ func (p *StreamConn) Close() {
 		streamConnStatusRunning,
 		streamConnStatusClosing,
 	) {
-		fmt.Println("StreamConn Close")
 		close(p.writeCH)
 		p.prev.Close()
 	}
