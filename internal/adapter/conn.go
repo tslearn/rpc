@@ -29,6 +29,10 @@ type StreamConn struct {
 	status   int32
 	prev     XConn
 	receiver IReceiver
+	writeCH  chan *core.Stream
+
+	writeStream *core.Stream
+	writePos    int
 }
 
 func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
@@ -36,6 +40,7 @@ func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
 		status:   streamConnStatusClosed,
 		prev:     prev,
 		receiver: receiver,
+		writeCH:  make(chan *core.Stream, 16),
 	}
 }
 
@@ -72,6 +77,7 @@ func (p *StreamConn) Close() {
 		streamConnStatusClosing,
 	) {
 		fmt.Println("StreamConn Close")
+		close(p.writeCH)
 		p.prev.Close()
 	}
 }
@@ -85,5 +91,10 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 }
 
 func (p *StreamConn) WriteStream(stream *core.Stream) {
-	panic("not implement")
+	defer func() {
+		_ = recover()
+	}()
+
+	p.writeCH <- stream
+	p.TriggerWrite()
 }
