@@ -60,6 +60,7 @@ func (p *StreamConn) OnError(err *base.Error) {
 }
 
 func (p *StreamConn) OnReadBytes(b []byte) {
+
 	panic("not implement")
 }
 

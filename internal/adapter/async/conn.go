@@ -16,8 +16,8 @@ type Conn struct {
 	next        adapter.XConn
 	lAddr       net.Addr
 	rAddr       net.Addr
-	rBufSize    int
-	wBufSize    int
+	rBuf        []byte
+	wBuf        []byte
 }
 
 func NewConn(
@@ -34,8 +34,8 @@ func NewConn(
 		next:        nil,
 		lAddr:       lAddr,
 		rAddr:       rAddr,
-		rBufSize:    rBufSize,
-		wBufSize:    wBufSize,
+		rBuf:        make([]byte, rBufSize),
+		wBuf:        make([]byte, wBufSize),
 	}
 }
 
@@ -56,7 +56,13 @@ func (p *Conn) OnWriteOpen() {
 }
 
 func (p *Conn) OnReadReady() {
-	fmt.Println("OnReadReady")
+	if n, e := readFD(p.fd, p.rBuf); e != nil {
+		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+	} else {
+		fmt.Println("OnReadReady", p.rBuf[:n])
+		p.OnReadBytes(p.rBuf[:n])
+	}
+
 }
 
 func (p *Conn) OnWriteReady() {
