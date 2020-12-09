@@ -135,6 +135,11 @@ type Stream struct {
 	bufferFrames [streamFrameArrayInitSize]*[]byte
 }
 
+// TODO test
+func GetStreamLengthByHeadBuffer(b []byte) uint32 {
+	return binary.LittleEndian.Uint32(b[streamPosLength:])
+}
+
 // NewStream ...
 func NewStream() *Stream {
 	return streamCache.Get().(*Stream)
