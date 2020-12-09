@@ -84,7 +84,7 @@ func TestReceiver() {
 			panic("error")
 		}
 
-		if i%1000 == 0 {
+		if i%10000 == 0 {
 			fmt.Println(i)
 		}
 
