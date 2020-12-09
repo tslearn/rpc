@@ -12,7 +12,6 @@ import (
 )
 
 const triggerDataAddConn = 1
-const triggerDataWriteConn = 2
 const triggerDataExit = 3
 
 const pollerStatusRunning = 1
@@ -82,9 +81,6 @@ func NewPoller(
 						} else if evt.Filter == unix.EVFILT_READ {
 							onFDRead(fd)
 						} else if evt.Filter == unix.EVFILT_WRITE {
-							onFDWrite(fd)
-						} else if evt.Filter == unix.EVFILT_USER &&
-							evt.Data == triggerDataWriteConn {
 							onFDWrite(fd)
 						} else {
 							onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
