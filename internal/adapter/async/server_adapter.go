@@ -42,7 +42,7 @@ func (p *ServerAdapter) OnOpen() bool {
 			p.receiver.OnConnError(nil, err)
 		},
 		p.GetConnectFunc(),
-		runtime.NumCPU(),
+		base.MaxInt(runtime.NumCPU()/2, 1),
 	)
 
 	return p.manager != nil
