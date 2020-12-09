@@ -62,10 +62,10 @@ func (p *ServerAdapter) OnDidClose() {
 	p.manager.Close()
 }
 
-func (p *ServerAdapter) GetConnectFunc() func(int, net.Addr, net.Addr) *Conn {
+func (p *ServerAdapter) GetConnectFunc() func(*Channel, int, net.Addr, net.Addr) *Conn {
 	if strings.HasPrefix(p.network, "tcp") {
-		return func(fd int, lAddr net.Addr, rAddr net.Addr) *Conn {
-			conn := NewConn(fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
+		return func(channel *Channel, fd int, lAddr net.Addr, rAddr net.Addr) *Conn {
+			conn := NewConn(channel, fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
 			conn.SetNext(adapter.NewStreamConn(conn, p.receiver))
 			return conn
 		}

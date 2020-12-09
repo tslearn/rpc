@@ -40,9 +40,9 @@ func NewInnerChannel(isReadMode bool, channel *Channel) *InnerChannel {
 }
 
 func (p *InnerChannel) AddConn(conn *Conn) {
-	_ = p.poller.InvokeAddTrigger()
+	_ = p.poller.TriggerAddConn()
 	p.addCH <- conn
-	_ = p.poller.InvokeAddTrigger()
+	_ = p.poller.TriggerAddConn()
 }
 
 func (p *InnerChannel) onError(err *base.Error) {
@@ -72,6 +72,10 @@ func (p *InnerChannel) onInvokeAdd() {
 			return
 		}
 	}
+}
+
+func (p *InnerChannel) TriggerWrite(fd int) {
+	_ = p.poller.TriggerWriteConn(fd)
 }
 
 func (p *InnerChannel) onInvokeExit() {
@@ -154,6 +158,10 @@ func (p *Channel) Close() {
 func (p *Channel) AddConn(conn *Conn) {
 	p.rChannel.AddConn(conn)
 	p.wChannel.AddConn(conn)
+}
+
+func (p *Channel) TriggerWrite(fd int) {
+	p.wChannel.TriggerWrite(fd)
 }
 
 func (p *Channel) GetActiveConnCount() int64 {

@@ -11,6 +11,7 @@ import (
 type Conn struct {
 	openStatus  int32
 	closeStatus int32
+	channel     *Channel
 	fd          int
 	next        adapter.XConn
 	lAddr       net.Addr
@@ -19,10 +20,10 @@ type Conn struct {
 	wBuf        []byte
 	wStartPos   int
 	wEndPos     int
-	canWrite    bool
 }
 
 func NewConn(
+	channel *Channel,
 	fd int,
 	lAddr net.Addr,
 	rAddr net.Addr,
@@ -32,6 +33,7 @@ func NewConn(
 	return &Conn{
 		openStatus:  0,
 		closeStatus: 0,
+		channel:     channel,
 		fd:          fd,
 		next:        nil,
 		lAddr:       lAddr,
@@ -40,7 +42,6 @@ func NewConn(
 		wBuf:        make([]byte, wBufSize),
 		wStartPos:   0,
 		wEndPos:     0,
-		canWrite:    false,
 	}
 }
 
@@ -75,10 +76,7 @@ func (p *Conn) OnWriteReady() {
 		}
 	}
 
-	if p.wEndPos == 0 {
-		p.canWrite = true
-	} else {
-		p.canWrite = false
+	if p.wEndPos > 0 {
 		if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
 			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		} else {
@@ -125,9 +123,7 @@ func (p *Conn) OnFillWrite(b []byte) int {
 }
 
 func (p *Conn) TriggerWrite() {
-	if p.canWrite {
-		p.OnWriteReady()
-	}
+	p.channel.TriggerWrite(p.fd)
 }
 
 func (p *Conn) Close() {
