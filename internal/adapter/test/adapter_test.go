@@ -99,7 +99,7 @@ func BenchmarkDebug(b *testing.B) {
 		panic("not connect")
 	}
 
-	b.N = 1000000
+	b.N = 100000
 
 	b.ReportAllocs()
 	b.ResetTimer()

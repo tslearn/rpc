@@ -25,6 +25,12 @@ type Poller struct {
 	onError func(err *base.Error)
 	fd      int
 	events  [256]unix.Kevent_t
+
+	onInvokeAdd  func()
+	onInvokeExit func()
+	onFDRead     func(fd int)
+	onFDWrite    func(fd int)
+	onFDClose    func(fd int)
 }
 
 // NewPoller ...
@@ -52,46 +58,70 @@ func NewPoller(
 			closeCH: make(chan bool),
 			onError: onError,
 			fd:      pfd,
+
+			onInvokeAdd:  onInvokeAdd,
+			onInvokeExit: onInvokeExit,
+			onFDRead:     onFDRead,
+			onFDWrite:    onFDWrite,
+			onFDClose:    onFDClose,
 		}
 
 		go func() {
-			for atomic.LoadUint32(&ret.status) == pollerStatusRunning {
-				n, err := unix.Kevent(ret.fd, nil, ret.events[:], nil)
-
-				if err != nil && err != unix.EINTR {
-					onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
-					continue
-				}
-
-				for i := 0; i < n; i++ {
-					evt := ret.events[i]
-					if fd := int(evt.Ident); fd == 0 {
-						if evt.Data == triggerDataAddConn {
-							onInvokeAdd()
-						} else if evt.Data == triggerDataExit {
-							onInvokeExit()
-							atomic.StoreUint32(&ret.status, pollerStatusClosed)
-							break
-						} else {
-							onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
-						}
-					} else {
-						if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-							onFDClose(fd)
-						} else if evt.Filter == unix.EVFILT_READ {
-							onFDRead(fd)
-						} else if evt.Filter == unix.EVFILT_WRITE {
-							onFDWrite(fd)
-						} else {
-							onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
-						}
-					}
-				}
-			}
-			ret.closeCH <- true
+			ret.run()
 		}()
 
 		return ret
+	}
+}
+
+func (p *Poller) run() {
+	for atomic.LoadUint32(&p.status) == pollerStatusRunning {
+		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
+
+		if err != nil && err != unix.EINTR {
+			p.onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
+			continue
+		}
+
+		for i := 0; i < n; i++ {
+			evt := &p.events[i]
+			if fd := int(evt.Ident); fd == 0 {
+				if evt.Data == triggerDataAddConn {
+					p.onInvokeAdd()
+				} else if evt.Data == triggerDataExit {
+					p.onInvokeExit()
+					atomic.StoreUint32(&p.status, pollerStatusClosed)
+					break
+				} else {
+					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+				}
+			} else {
+				p.Run1(evt, fd)
+				//if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+				//  p.onFDClose(fd)
+				//} else if evt.Filter == unix.EVFILT_READ {
+				//  p.onFDRead(fd)
+				//} else if evt.Filter == unix.EVFILT_WRITE {
+				//  p.onFDWrite(fd)
+				//} else {
+				//  p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
+				//}
+			}
+		}
+	}
+
+	p.closeCH <- true
+}
+
+func (p *Poller) Run1(evt *unix.Kevent_t, fd int) {
+	if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+		p.onFDClose(fd)
+	} else if evt.Filter == unix.EVFILT_READ {
+		p.onFDRead(fd)
+	} else if evt.Filter == unix.EVFILT_WRITE {
+		p.onFDWrite(fd)
+	} else {
+		p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
 	}
 }
 
