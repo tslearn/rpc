@@ -138,11 +138,6 @@ func (p *Poller) RegisterFD(fd int) error {
 			Flags:  unix.EV_ADD | unix.EV_CLEAR,
 			Filter: unix.EVFILT_WRITE,
 		},
-		{
-			Ident:  uint64(fd),
-			Flags:  unix.EV_ADD | unix.EV_CLEAR,
-			Filter: unix.EVFILT_USER,
-		},
 	}, nil, nil)
 	return os.NewSyscallError("kqueue add", err)
 }
@@ -154,16 +149,6 @@ func (p *Poller) TriggerAddConn() (err error) {
 		Filter: unix.EVFILT_USER,
 		Fflags: unix.NOTE_TRIGGER,
 		Data:   triggerDataAddConn,
-	}}, nil, nil)
-	return os.NewSyscallError("kqueue trigger", err)
-}
-
-func (p *Poller) TriggerWriteConn(fd int) (err error) {
-	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
-		Ident:  uint64(fd),
-		Filter: unix.EVFILT_USER,
-		Fflags: unix.NOTE_TRIGGER,
-		Data:   triggerDataWriteConn,
 	}}, nil, nil)
 	return os.NewSyscallError("kqueue trigger", err)
 }

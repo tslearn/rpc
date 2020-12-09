@@ -70,10 +70,6 @@ func (p *Channel) onInvokeAdd() {
 	}
 }
 
-func (p *Channel) TriggerWrite(fd int) {
-	_ = p.poller.TriggerWriteConn(fd)
-}
-
 func (p *Channel) onInvokeExit() {
 	panic("not implement")
 }

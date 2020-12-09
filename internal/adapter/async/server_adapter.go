@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"net"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -41,7 +42,7 @@ func (p *ServerAdapter) OnOpen() bool {
 			p.receiver.OnConnError(nil, err)
 		},
 		p.GetConnectFunc(),
-		1,
+		base.MaxInt(runtime.NumCPU()/2, 1),
 	)
 
 	return p.manager != nil

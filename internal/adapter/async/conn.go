@@ -4,7 +4,9 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"golang.org/x/sys/unix"
 	"net"
+	"sync"
 )
 
 type Conn struct {
@@ -17,6 +19,7 @@ type Conn struct {
 	wBuf      []byte
 	wStartPos int
 	wEndPos   int
+	sync.Mutex
 }
 
 func NewConn(
@@ -52,24 +55,40 @@ func (p *Conn) OnReadReady() {
 	}
 }
 
-func (p *Conn) OnWriteReady() {
-	if p.wEndPos < len(p.wBuf) {
+func (p *Conn) tryToPrepareWriteBuffer() {
+	for p.wEndPos < len(p.wBuf) {
 		if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
 			p.wEndPos += n
+		} else {
+			return
 		}
 	}
+}
 
-	if p.wEndPos > 0 {
-		if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
-			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+func (p *Conn) tryToWriteBuffer() {
+	if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
+		if e == unix.EINTR {
+			return
 		} else {
-			p.wStartPos += n
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		}
+	} else {
+		p.wStartPos += n
+	}
 
-		if p.wStartPos == p.wEndPos {
-			p.wStartPos = 0
-			p.wEndPos = 0
-		}
+	if p.wStartPos == p.wEndPos {
+		p.wStartPos = 0
+		p.wEndPos = 0
+	}
+}
+
+func (p *Conn) OnWriteReady() {
+	p.Lock()
+	defer p.Unlock()
+
+	p.tryToPrepareWriteBuffer()
+	if p.wEndPos > 0 {
+		p.tryToWriteBuffer()
 	}
 }
 
@@ -94,7 +113,7 @@ func (p *Conn) OnFillWrite(b []byte) int {
 }
 
 func (p *Conn) TriggerWrite() {
-	p.channel.TriggerWrite(p.fd)
+	p.OnWriteReady()
 }
 
 func (p *Conn) Close() {
