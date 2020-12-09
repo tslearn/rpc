@@ -69,6 +69,28 @@ func (p *StreamConn) OnError(err *base.Error) {
 
 func (p *StreamConn) OnReadBytes(b []byte) {
 	if p.readStream == nil {
+		if p.readHeadPos == 0 { // fast cache
+			if bytesLen := len(b); bytesLen >= core.StreamHeadSize {
+				streamLength := int(core.GetStreamLengthByHeadBuffer(b))
+				if bytesLen == streamLength {
+					stream := core.NewStream()
+					stream.PutBytesTo(b, 0)
+					p.receiver.OnConnReadStream(p, stream)
+					return
+				} else if bytesLen > streamLength {
+					stream := core.NewStream()
+					stream.PutBytesTo(b, 0)
+					p.receiver.OnConnReadStream(p, stream)
+					p.OnReadBytes(b[streamLength:])
+					return
+				} else {
+					p.readStream = core.NewStream()
+					p.readStream.PutBytesTo(b, 0)
+					return
+				}
+			}
+		}
+
 		if p.readHeadPos < core.StreamHeadSize {
 			copyBytes := copy(p.readHeadBuf[p.readHeadPos:], b)
 			p.readHeadPos += copyBytes
