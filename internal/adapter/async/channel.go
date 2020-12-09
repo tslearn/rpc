@@ -7,20 +7,22 @@ import (
 	"sync/atomic"
 )
 
-type InnerChannel struct {
-	isReadMode bool
-	channel    *Channel
-	poller     *Poller
-	connMap    map[int]*Conn
-	addCH      chan *Conn
+type Channel struct {
+	onError         func(err *base.Error)
+	activeConnCount int64
+	poller          *Poller
+	connMap         map[int]*Conn
+	addCH           chan *Conn
+	sync.Mutex
 }
 
-func NewInnerChannel(isReadMode bool, channel *Channel) *InnerChannel {
-	ret := &InnerChannel{
-		isReadMode: isReadMode,
-		channel:    channel,
-		connMap:    make(map[int]*Conn),
-		addCH:      make(chan *Conn, 4096),
+func NewChannel(onError func(err *base.Error)) *Channel {
+	ret := &Channel{
+		onError:         onError,
+		activeConnCount: 0,
+		poller:          nil,
+		connMap:         make(map[int]*Conn),
+		addCH:           make(chan *Conn, 4096),
 	}
 
 	ret.poller = NewPoller(
@@ -39,34 +41,28 @@ func NewInnerChannel(isReadMode bool, channel *Channel) *InnerChannel {
 	return ret
 }
 
-func (p *InnerChannel) AddConn(conn *Conn) {
+func (p *Channel) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	p.poller.Close()
+}
+
+func (p *Channel) AddConn(conn *Conn) {
 	_ = p.poller.TriggerAddConn()
 	p.addCH <- conn
 	_ = p.poller.TriggerAddConn()
 }
 
-func (p *InnerChannel) onError(err *base.Error) {
-	p.channel.onError(err)
-}
-
-func (p *InnerChannel) onInvokeAdd() {
+func (p *Channel) onInvokeAdd() {
 	for {
 		select {
 		case conn := <-p.addCH:
-			if p.isReadMode {
-				if e := p.poller.RegisterReadFD(conn.GetFD()); e != nil {
-					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-				} else {
-					p.connMap[conn.GetFD()] = conn
-					conn.OnReadOpen()
-				}
+			if e := p.poller.RegisterFD(conn.GetFD()); e != nil {
+				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 			} else {
-				if e := p.poller.RegisterWriteFD(conn.GetFD()); e != nil {
-					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-				} else {
-					p.connMap[conn.GetFD()] = conn
-					conn.OnWriteOpen()
-				}
+				p.connMap[conn.GetFD()] = conn
+				conn.OnOpen()
 			}
 		default:
 			return
@@ -74,94 +70,35 @@ func (p *InnerChannel) onInvokeAdd() {
 	}
 }
 
-func (p *InnerChannel) TriggerWrite(fd int) {
+func (p *Channel) TriggerWrite(fd int) {
 	_ = p.poller.TriggerWriteConn(fd)
 }
 
-func (p *InnerChannel) onInvokeExit() {
+func (p *Channel) onInvokeExit() {
 	panic("not implement")
 }
 
-func (p *InnerChannel) onFDRead(fd int) {
+func (p *Channel) onFDRead(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
 		conn.OnReadReady()
 	}
 }
 
-func (p *InnerChannel) onFDWrite(fd int) {
+func (p *Channel) onFDWrite(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
 		conn.OnWriteReady()
 	}
 }
 
-func (p *InnerChannel) onFDClose(fd int) {
+func (p *Channel) onFDClose(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
 		if e := closeFD(fd); e != nil {
 			conn.OnError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		} else {
 			delete(p.connMap, fd)
-			if p.isReadMode {
-				conn.OnReadClose()
-			} else {
-				conn.OnWriteClose()
-			}
+			conn.OnClose()
 		}
 	}
-}
-
-func (p *InnerChannel) Close() {
-	p.poller.Close()
-}
-
-type Channel struct {
-	onError         func(err *base.Error)
-	activeConnCount int64
-	rChannel        *InnerChannel
-	wChannel        *InnerChannel
-	sync.Mutex
-}
-
-func NewChannel(onError func(err *base.Error)) *Channel {
-	ret := &Channel{
-		onError:         onError,
-		activeConnCount: 0,
-		rChannel:        nil,
-		wChannel:        nil,
-	}
-
-	ret.rChannel = NewInnerChannel(true, ret)
-	ret.wChannel = NewInnerChannel(false, ret)
-
-	if ret.rChannel == nil || ret.wChannel == nil {
-		ret.Close()
-		return nil
-	}
-
-	return ret
-}
-
-func (p *Channel) Close() {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.rChannel != nil {
-		p.rChannel.Close()
-		p.rChannel = nil
-	}
-
-	if p.wChannel != nil {
-		p.wChannel.Close()
-		p.wChannel = nil
-	}
-}
-
-func (p *Channel) AddConn(conn *Conn) {
-	p.rChannel.AddConn(conn)
-	p.wChannel.AddConn(conn)
-}
-
-func (p *Channel) TriggerWrite(fd int) {
-	p.wChannel.TriggerWrite(fd)
 }
 
 func (p *Channel) GetActiveConnCount() int64 {

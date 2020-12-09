@@ -125,21 +125,14 @@ func (p *Poller) Close() {
 	}
 }
 
-// RegisterReadFD ...
-func (p *Poller) RegisterReadFD(fd int) error {
+// RegisterFD ...
+func (p *Poller) RegisterFD(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{
 			Ident:  uint64(fd),
 			Flags:  unix.EV_ADD | unix.EV_CLEAR,
 			Filter: unix.EVFILT_READ,
 		},
-	}, nil, nil)
-	return os.NewSyscallError("kqueue add", err)
-}
-
-// RegisterWriteFD ...
-func (p *Poller) RegisterWriteFD(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{
 			Ident:  uint64(fd),
 			Flags:  unix.EV_ADD | unix.EV_CLEAR,

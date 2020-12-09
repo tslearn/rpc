@@ -5,21 +5,18 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
-	"sync/atomic"
 )
 
 type Conn struct {
-	openStatus  int32
-	closeStatus int32
-	channel     *Channel
-	fd          int
-	next        adapter.XConn
-	lAddr       net.Addr
-	rAddr       net.Addr
-	rBuf        []byte
-	wBuf        []byte
-	wStartPos   int
-	wEndPos     int
+	channel   *Channel
+	fd        int
+	next      adapter.XConn
+	lAddr     net.Addr
+	rAddr     net.Addr
+	rBuf      []byte
+	wBuf      []byte
+	wStartPos int
+	wEndPos   int
 }
 
 func NewConn(
@@ -31,34 +28,20 @@ func NewConn(
 	wBufSize int,
 ) *Conn {
 	return &Conn{
-		openStatus:  0,
-		closeStatus: 0,
-		channel:     channel,
-		fd:          fd,
-		next:        nil,
-		lAddr:       lAddr,
-		rAddr:       rAddr,
-		rBuf:        make([]byte, rBufSize),
-		wBuf:        make([]byte, wBufSize),
-		wStartPos:   0,
-		wEndPos:     0,
+		channel:   channel,
+		fd:        fd,
+		next:      nil,
+		lAddr:     lAddr,
+		rAddr:     rAddr,
+		rBuf:      make([]byte, rBufSize),
+		wBuf:      make([]byte, wBufSize),
+		wStartPos: 0,
+		wEndPos:   0,
 	}
 }
 
 func (p *Conn) SetNext(next adapter.XConn) {
 	p.next = next
-}
-
-func (p *Conn) OnReadOpen() {
-	if atomic.AddInt32(&p.openStatus, 1) == 2 {
-		p.OnOpen()
-	}
-}
-
-func (p *Conn) OnWriteOpen() {
-	if atomic.AddInt32(&p.openStatus, 1) == 2 {
-		p.OnOpen()
-	}
 }
 
 func (p *Conn) OnReadReady() {
@@ -87,18 +70,6 @@ func (p *Conn) OnWriteReady() {
 			p.wStartPos = 0
 			p.wEndPos = 0
 		}
-	}
-}
-
-func (p *Conn) OnReadClose() {
-	if atomic.AddInt32(&p.closeStatus, 1) == 2 {
-		p.OnClose()
-	}
-}
-
-func (p *Conn) OnWriteClose() {
-	if atomic.AddInt32(&p.closeStatus, 1) == 2 {
-		p.OnClose()
 	}
 }
 

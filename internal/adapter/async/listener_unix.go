@@ -47,7 +47,7 @@ func NewTCPListener(
 	); poller == nil {
 		_ = unix.Close(lnFD)
 		return nil
-	} else if e := poller.RegisterReadFD(lnFD); e != nil {
+	} else if e := poller.RegisterFD(lnFD); e != nil {
 		_ = unix.Close(lnFD)
 		poller.Close()
 		return nil
