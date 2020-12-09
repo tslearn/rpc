@@ -3,7 +3,6 @@
 package async
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
@@ -167,7 +166,6 @@ func (p *Poller) TriggerAddConn() (err error) {
 }
 
 func (p *Poller) TriggerWriteConn(fd int) (err error) {
-	fmt.Println("TriggerWriteConn", fd)
 	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Filter: unix.EVFILT_USER,

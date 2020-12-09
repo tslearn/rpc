@@ -26,8 +26,7 @@ func (p *receiver) OnConnReadStream(
 	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
-	streamConn.WriteStream(stream)
-	stream.Release()
+	streamConn.WriteStreamAndRelease(stream)
 }
 
 func (p *receiver) OnConnError(

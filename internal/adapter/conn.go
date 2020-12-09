@@ -122,6 +122,7 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 		p.writePos += copyBytes
 
 		if finish {
+			p.writeStream.Release()
 			p.writeStream = nil
 			p.writePos = 0
 		}
@@ -156,7 +157,7 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 	return p.prev.RemoteAddr()
 }
 
-func (p *StreamConn) WriteStream(stream *core.Stream) {
+func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	func() {
 		defer func() {
 			if v := recover(); v != nil {

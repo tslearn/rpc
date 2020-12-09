@@ -70,25 +70,28 @@ func TestReceiver() {
 		panic("not connect")
 	}
 
-	fmt.Println("Start Test")
+	fmt.Println("Start Test", time.Now())
+	start := time.Now()
 
-	stream := core.NewStream()
-	stream.WriteInt64(12)
-	stream.BuildStreamCheck()
-
-	for i := 0; i < 1000000; i++ {
-		clientReceiver.streamConn.WriteStream(stream)
+	for i := 0; i < 10000000; i++ {
+		stream := core.NewStream()
+		stream.WriteInt64(12)
+		stream.BuildStreamCheck()
+		clientReceiver.streamConn.WriteStreamAndRelease(stream)
 		s := <-clientReceiver.streamCH
 		s.SetReadPosToBodyStart()
 		if v, _ := s.ReadInt64(); v != int64(12) {
 			panic("error")
 		}
 
-		fmt.Println(i)
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
+
 		s.Release()
 	}
 
-	fmt.Println("End Test")
+	fmt.Println("End Test", time.Now().Sub(start))
 	time.Sleep(10 * time.Second)
 }
 
