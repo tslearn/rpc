@@ -1,9 +1,22 @@
 package async
 
 import (
+	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
 	"unsafe"
+)
+
+const (
+	// InitEvents represents the initial length of poller event-list.
+	InitEvents = 128
+	// ErrEvents represents exceptional events that are not read/write, like socket being closed,
+	// reading/writing from/to a closed socket, etc.
+	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
+	// OutEvents combines EPOLLOUT event and some exceptional events.
+	OutEvents = ErrEvents | unix.EPOLLOUT
+	// InEvents combines EPOLLIN/EPOLLPRI events and some exceptional events.
+	InEvents = ErrEvents | unix.EPOLLIN | unix.EPOLLPRI
 )
 
 // Poller represents a poller which is in charge of monitoring file-descriptors.
@@ -11,6 +24,7 @@ type Poller struct {
 	fd     int    // epoll fd
 	wfd    int    // wake fd
 	wfdBuf []byte // wfd buffer to read packet
+	events [128]unix.EpollEvent
 }
 
 // OpenPoller instantiates a poller.
@@ -33,7 +47,6 @@ func OpenPoller() (poller *Poller, err error) {
 		poller = nil
 		return
 	}
-	poller.asyncJobQueue = internal.NewAsyncJobQueue()
 	return
 }
 
@@ -53,23 +66,22 @@ var (
 )
 
 // Trigger wakes up the poller blocked in waiting for network-events and runs jobs in asyncJobQueue.
-func (p *Poller) Trigger(job internal.Job) (err error) {
-	if p.asyncJobQueue.Push(job) == 1 {
-		_, err = unix.Write(p.wfd, b)
-	}
+func (p *Poller) Trigger() (err error) {
+	_, err = unix.Write(p.wfd, b)
 	return os.NewSyscallError("write", err)
 }
 
 // Polling blocks the current goroutine, waiting for network-events.
 func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
-	el := newEventList(InitEvents)
 	var wakenUp bool
 
 	for {
-		n, err := unix.EpollWait(p.fd, el.events, -1)
-		if err != nil && err != unix.EINTR {
-			logging.DefaultLogger.Warnf("Error occurs in epoll: %v", os.NewSyscallError("epoll_wait", err))
-			continue
+		n, e := unix.EpollWait(p.fd, p.events[:], -1)
+
+		if e != nil {
+			if e != unix.EINTR {
+				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+			}
 		}
 
 		for i := 0; i < n; i++ {
