@@ -7,6 +7,8 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
+	"sync/atomic"
+	"time"
 )
 
 const triggerDataAddConn = 1
@@ -78,8 +80,8 @@ func OpenPoller(
 			onFDClose:    onFDClose,
 		}
 
-		if e := ret.AddRead(ret.wfd); e != nil {
-			_ = ret.Close()
+		if e := ret.RegisterFD(ret.wfd); e != nil {
+			ret.Close()
 			return nil
 		}
 
@@ -151,11 +153,6 @@ func (p *Poller) Close() {
 	}
 }
 
-func (p *Poller) Trigger() (err error) {
-	_, err = unix.Write(p.wfd, b)
-	return os.NewSyscallError("write", err)
-}
-
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
 	e := unix.EpollCtl(
@@ -169,14 +166,14 @@ func (p *Poller) RegisterFD(fd int) error {
 
 // TriggerAddConn ...
 func (p *Poller) TriggerAddConn() (err error) {
-	e := unix.Write(p.wfd, []byte{triggerDataAddConn})
-	return os.NewSyscallError("kqueue trigger", err)
+	_, e := unix.Write(p.wfd, []byte{triggerDataAddConn})
+	return os.NewSyscallError("kqueue trigger", e)
 }
 
-// InvokeAddTrigger ...
+// InvokeAddTrigger ...err
 func (p *Poller) TriggerExit() (err error) {
-	e := unix.Write(p.wfd, []byte{triggerDataExit})
-	return os.NewSyscallError("kqueue trigger", err)
+	_, e := unix.Write(p.wfd, []byte{triggerDataExit})
+	return os.NewSyscallError("kqueue trigger", e)
 }
 
 // Delete removes the given file-descriptor from the poller.
