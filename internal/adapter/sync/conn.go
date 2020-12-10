@@ -59,7 +59,7 @@ func (p *Conn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *Conn) OnFillWrite(b []byte) int {
+func (p *Conn) OnFillWrite(b []byte) (int, bool) {
 	return p.next.OnFillWrite(b)
 }
 
@@ -73,7 +73,7 @@ func (p *Conn) TriggerWrite() {
 		bufLen := 0
 
 		for !isTriggerFinish && bufLen < len(p.wBuf) {
-			if n := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
+			if n, _ := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
 				bufLen += n
 			} else {
 				isTriggerFinish = true

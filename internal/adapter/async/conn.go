@@ -10,15 +10,16 @@ import (
 )
 
 type Conn struct {
-	channel   *Channel
-	fd        int
-	next      adapter.XConn
-	lAddr     net.Addr
-	rAddr     net.Addr
-	rBuf      []byte
-	wBuf      []byte
-	wStartPos int
-	wEndPos   int
+	channel       *Channel
+	fd            int
+	next          adapter.XConn
+	lAddr         net.Addr
+	rAddr         net.Addr
+	rBuf          []byte
+	wBuf          []byte
+	wStartPos     int
+	wEndPos       int
+	canWriteReady bool
 	sync.Mutex
 }
 
@@ -31,15 +32,16 @@ func NewConn(
 	wBufSize int,
 ) *Conn {
 	return &Conn{
-		channel:   channel,
-		fd:        fd,
-		next:      nil,
-		lAddr:     lAddr,
-		rAddr:     rAddr,
-		rBuf:      make([]byte, rBufSize),
-		wBuf:      make([]byte, wBufSize),
-		wStartPos: 0,
-		wEndPos:   0,
+		channel:       channel,
+		fd:            fd,
+		next:          nil,
+		lAddr:         lAddr,
+		rAddr:         rAddr,
+		rBuf:          make([]byte, rBufSize),
+		wBuf:          make([]byte, wBufSize),
+		wStartPos:     0,
+		wEndPos:       0,
+		canWriteReady: false,
 	}
 }
 
@@ -55,20 +57,21 @@ func (p *Conn) OnReadReady() {
 	}
 }
 
-func (p *Conn) tryToPrepareWriteBuffer() {
-	for p.wEndPos < len(p.wBuf) {
-		if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
+func (p *Conn) DoWrite() bool {
+	isFillFinish := false
+
+	// fill buffer
+	for !isFillFinish && p.wEndPos < len(p.wBuf) {
+		n := 0
+		if n, isFillFinish = p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
 			p.wEndPos += n
-		} else {
-			return
 		}
 	}
-}
 
-func (p *Conn) tryToWriteBuffer() {
+	// write buffer
 	if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
 		if e == unix.EINTR {
-			return
+			return false
 		} else {
 			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		}
@@ -79,16 +82,18 @@ func (p *Conn) tryToWriteBuffer() {
 	if p.wStartPos == p.wEndPos {
 		p.wStartPos = 0
 		p.wEndPos = 0
+		return isFillFinish
 	}
+
+	return false
 }
 
 func (p *Conn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
-	p.tryToPrepareWriteBuffer()
-	if p.wEndPos > 0 {
-		p.tryToWriteBuffer()
+	if p.canWriteReady {
+		p.canWriteReady = !p.DoWrite()
 	}
 }
 
@@ -108,12 +113,15 @@ func (p *Conn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *Conn) OnFillWrite(b []byte) int {
+func (p *Conn) OnFillWrite(b []byte) (int, bool) {
 	return p.next.OnFillWrite(b)
 }
 
 func (p *Conn) TriggerWrite() {
-	p.OnWriteReady()
+	p.Lock()
+	defer p.Unlock()
+
+	p.canWriteReady = !p.DoWrite()
 }
 
 func (p *Conn) Close() {
