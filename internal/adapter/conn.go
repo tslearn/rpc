@@ -14,7 +14,7 @@ type XConn interface {
 	OnClose()
 	OnError(err *base.Error)
 	OnReadBytes(b []byte)
-	OnFillWrite(b []byte) (int, bool)
+	OnFillWrite(b []byte) int
 
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
@@ -127,14 +127,14 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 	}
 }
 
-func (p *StreamConn) OnFillWrite(b []byte) (int, bool) {
+func (p *StreamConn) OnFillWrite(b []byte) int {
 	if p.writeStream == nil {
 		select {
 		case stream := <-p.writeCH:
 			p.writeStream = stream
 			p.writePos = 0
 		default:
-			return 0, true
+			return 0
 		}
 	}
 
@@ -146,21 +146,14 @@ func (p *StreamConn) OnFillWrite(b []byte) (int, bool) {
 
 		if finish {
 			p.writeStream.Release()
-			select {
-			case stream := <-p.writeCH:
-				p.writeStream = stream
-				p.writePos = 0
-			default:
-				p.writeStream = nil
-				p.writePos = 0
-				return copyBytes, true
-			}
+			p.writeStream = nil
+			p.writePos = 0
 		}
 
-		return copyBytes, false
+		return copyBytes
 	} else {
 		p.OnError(errors.ErrTemp.AddDebug("OnFillWrite internal error"))
-		return 0, true
+		return 0
 	}
 }
 

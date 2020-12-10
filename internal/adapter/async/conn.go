@@ -50,42 +50,55 @@ func (p *Conn) SetNext(next adapter.XConn) {
 }
 
 func (p *Conn) OnReadReady() {
-	if n, e := readFD(p.fd, p.rBuf); e != nil {
-		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
-	} else {
-		p.OnReadBytes(p.rBuf[:n])
+	for {
+		if n, e := readFD(p.fd, p.rBuf); e != nil {
+			if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
+				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+			}
+			return
+		} else {
+			p.OnReadBytes(p.rBuf[:n])
+		}
 	}
 }
 
 func (p *Conn) DoWrite() bool {
-	isFillFinish := false
+	for {
+		isFinish := false
 
-	// fill buffer
-	for !isFillFinish && p.wEndPos < len(p.wBuf) {
-		n := 0
-		if n, isFillFinish = p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
-			p.wEndPos += n
+		// fill buffer
+		if p.wEndPos == 0 {
+			for p.wEndPos < len(p.wBuf) {
+				if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
+					p.wEndPos += n
+				} else {
+					isFinish = true
+					break
+				}
+			}
 		}
-	}
 
-	// write buffer
-	if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
-		if e == unix.EINTR {
-			return false
-		} else {
-			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		// write buffer
+		for p.wStartPos < p.wEndPos {
+			if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
+				if e == unix.EINTR {
+					return false
+				} else {
+					p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+					return true
+				}
+			} else {
+				p.wStartPos += n
+			}
 		}
-	} else {
-		p.wStartPos += n
-	}
 
-	if p.wStartPos == p.wEndPos {
 		p.wStartPos = 0
 		p.wEndPos = 0
-		return isFillFinish
-	}
 
-	return false
+		if isFinish {
+			return true
+		}
+	}
 }
 
 func (p *Conn) OnWriteReady() {
@@ -113,7 +126,7 @@ func (p *Conn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *Conn) OnFillWrite(b []byte) (int, bool) {
+func (p *Conn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
