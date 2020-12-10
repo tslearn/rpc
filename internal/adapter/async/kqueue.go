@@ -76,43 +76,40 @@ func NewPoller(
 
 func (p *Poller) run() {
 	for atomic.LoadUint32(&p.status) == pollerStatusRunning {
-		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
+		n, e := unix.Kevent(p.fd, nil, p.events[:], nil)
 
-		if err != nil {
-			if err != unix.EINTR {
-				p.onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
+		if e != nil {
+			if e != unix.EINTR {
+				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 			}
 		}
 
 		for i := 0; i < n; i++ {
-			p.fireEvent(&p.events[i])
+			evt := &p.events[i]
+			if fd := int(evt.Ident); fd == 0 {
+				if evt.Data == triggerDataAddConn {
+					p.onInvokeAdd()
+				} else if evt.Data == triggerDataExit {
+					p.onInvokeExit()
+					atomic.StoreUint32(&p.status, pollerStatusClosed)
+				} else {
+					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+				}
+			} else {
+				if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+					p.onFDClose(fd)
+				} else if evt.Filter == unix.EVFILT_READ {
+					p.onFDRead(fd)
+				} else if evt.Filter == unix.EVFILT_WRITE {
+					p.onFDWrite(fd)
+				} else {
+					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
+				}
+			}
 		}
 	}
 
 	p.closeCH <- true
-}
-
-func (p *Poller) fireEvent(evt *unix.Kevent_t) {
-	if fd := int(evt.Ident); fd == 0 {
-		if evt.Data == triggerDataAddConn {
-			p.onInvokeAdd()
-		} else if evt.Data == triggerDataExit {
-			p.onInvokeExit()
-			atomic.StoreUint32(&p.status, pollerStatusClosed)
-		} else {
-			p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
-		}
-	} else {
-		if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-			p.onFDClose(fd)
-		} else if evt.Filter == unix.EVFILT_READ {
-			p.onFDRead(fd)
-		} else if evt.Filter == unix.EVFILT_WRITE {
-			p.onFDWrite(fd)
-		} else {
-			p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
-		}
-	}
 }
 
 // Close ...
