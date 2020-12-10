@@ -24,7 +24,7 @@ type Poller struct {
 	closeCH chan bool
 	onError func(err *base.Error)
 	fd      int
-	events  [256]unix.Kevent_t
+	events  [128]unix.Kevent_t
 
 	onInvokeAdd  func()
 	onInvokeExit func()
@@ -78,50 +78,40 @@ func (p *Poller) run() {
 	for atomic.LoadUint32(&p.status) == pollerStatusRunning {
 		n, err := unix.Kevent(p.fd, nil, p.events[:], nil)
 
-		if err != nil && err != unix.EINTR {
-			p.onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
-			continue
+		if err != nil {
+			if err != unix.EINTR {
+				p.onError(errors.ErrKqueueSystem.AddDebug(err.Error()))
+			}
 		}
 
 		for i := 0; i < n; i++ {
-			evt := &p.events[i]
-			if fd := int(evt.Ident); fd == 0 {
-				if evt.Data == triggerDataAddConn {
-					p.onInvokeAdd()
-				} else if evt.Data == triggerDataExit {
-					p.onInvokeExit()
-					atomic.StoreUint32(&p.status, pollerStatusClosed)
-					break
-				} else {
-					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
-				}
-			} else {
-				p.Run1(evt, fd)
-				//if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-				//  p.onFDClose(fd)
-				//} else if evt.Filter == unix.EVFILT_READ {
-				//  p.onFDRead(fd)
-				//} else if evt.Filter == unix.EVFILT_WRITE {
-				//  p.onFDWrite(fd)
-				//} else {
-				//  p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
-				//}
-			}
+			p.fireEvent(&p.events[i])
 		}
 	}
 
 	p.closeCH <- true
 }
 
-func (p *Poller) Run1(evt *unix.Kevent_t, fd int) {
-	if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-		p.onFDClose(fd)
-	} else if evt.Filter == unix.EVFILT_READ {
-		p.onFDRead(fd)
-	} else if evt.Filter == unix.EVFILT_WRITE {
-		p.onFDWrite(fd)
+func (p *Poller) fireEvent(evt *unix.Kevent_t) {
+	if fd := int(evt.Ident); fd == 0 {
+		if evt.Data == triggerDataAddConn {
+			p.onInvokeAdd()
+		} else if evt.Data == triggerDataExit {
+			p.onInvokeExit()
+			atomic.StoreUint32(&p.status, pollerStatusClosed)
+		} else {
+			p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+		}
 	} else {
-		p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
+		if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+			p.onFDClose(fd)
+		} else if evt.Filter == unix.EVFILT_READ {
+			p.onFDRead(fd)
+		} else if evt.Filter == unix.EVFILT_WRITE {
+			p.onFDWrite(fd)
+		} else {
+			p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
+		}
 	}
 }
 
