@@ -10,15 +10,9 @@ import (
 )
 
 const (
-	// InitEvents represents the initial length of poller event-list.
-	InitEvents = 128
-	// ErrEvents represents exceptional events that are not read/write, like socket being closed,
-	// reading/writing from/to a closed socket, etc.
 	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
-	// OutEvents combines EPOLLOUT event and some exceptional events.
 	OutEvents = ErrEvents | unix.EPOLLOUT
-	// InEvents combines EPOLLIN/EPOLLPRI events and some exceptional events.
-	InEvents = ErrEvents | unix.EPOLLIN | unix.EPOLLPRI
+	InEvents  = ErrEvents | unix.EPOLLIN | unix.EPOLLPRI
 )
 
 // Poller represents a poller which is in charge of monitoring file-descriptors.
