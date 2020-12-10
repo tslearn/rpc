@@ -175,3 +175,8 @@ func (p *Poller) TriggerExit() (err error) {
 	}}, nil, nil)
 	return os.NewSyscallError("kqueue trigger", err)
 }
+
+// Delete
+func (p *Poller) Delete(fd int) error {
+	return nil
+}
