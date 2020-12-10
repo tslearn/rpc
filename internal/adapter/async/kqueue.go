@@ -12,7 +12,7 @@ import (
 )
 
 const triggerDataAddConn = 1
-const triggerDataExit = 3
+const triggerDataExit = 2
 
 const pollerStatusRunning = 1
 const pollerStatusClosing = 2
@@ -22,10 +22,10 @@ const pollerStatusClosed = 0
 type Poller struct {
 	status  uint32
 	closeCH chan bool
-	onError func(err *base.Error)
 	fd      int
 	events  [128]unix.Kevent_t
 
+	onError      func(err *base.Error)
 	onInvokeAdd  func()
 	onInvokeExit func()
 	onFDRead     func(fd int)
@@ -54,11 +54,10 @@ func NewPoller(
 		return nil
 	} else {
 		ret := &Poller{
-			status:  pollerStatusRunning,
-			closeCH: make(chan bool),
-			onError: onError,
-			fd:      pfd,
-
+			status:       pollerStatusRunning,
+			closeCH:      make(chan bool),
+			fd:           pfd,
+			onError:      onError,
 			onInvokeAdd:  onInvokeAdd,
 			onInvokeExit: onInvokeExit,
 			onFDRead:     onFDRead,

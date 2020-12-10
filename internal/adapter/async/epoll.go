@@ -3,11 +3,19 @@
 package async
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
 	"unsafe"
 )
+
+const triggerDataAddConn = 1
+const triggerDataExit = 2
+
+const pollerStatusRunning = 1
+const pollerStatusClosing = 2
+const pollerStatusClosed = 0
 
 const (
 	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
@@ -17,33 +25,67 @@ const (
 
 // Poller represents a poller which is in charge of monitoring file-descriptors.
 type Poller struct {
-	fd     int    // epoll fd
-	wfd    int    // wake fd
-	wfdBuf []byte // wfd buffer to read packet
-	events [128]unix.EpollEvent
+	status  uint32
+	closeCH chan bool
+	fd      int    // epoll fd
+	wfd     int    // wake fd
+	wfdBuf  []byte // wfd buffer to read packet
+	events  [128]unix.EpollEvent
+
+	onError      func(err *base.Error)
+	onInvokeAdd  func()
+	onInvokeExit func()
+	onFDRead     func(fd int)
+	onFDWrite    func(fd int)
+	onFDClose    func(fd int)
 }
 
 // OpenPoller instantiates a poller.
-func OpenPoller() (poller *Poller, err error) {
-	poller = new(Poller)
-	if poller.fd, err = unix.EpollCreate1(unix.EPOLL_CLOEXEC); err != nil {
-		poller = nil
-		err = os.NewSyscallError("epoll_create1", err)
-		return
+func OpenPoller(
+	onError func(err *base.Error),
+	onInvokeAdd func(),
+	onInvokeExit func(),
+	onFDRead func(fd int),
+	onFDWrite func(fd int),
+	onFDClose func(fd int),
+) *Poller {
+
+	if pfd, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC); e != nil {
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
+	} else if wfd, e := unix.Eventfd(0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC); e != nil {
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
+	} else {
+		ret := &Poller{
+			status:       pollerStatusRunning,
+			closeCH:      make(chan bool),
+			fd:           pfd,
+			wfd:          wfd,
+			wfdBuf:       make([]byte, 512),
+			onError:      onError,
+			onInvokeAdd:  onInvokeAdd,
+			onInvokeExit: onInvokeExit,
+			onFDRead:     onFDRead,
+			onFDWrite:    onFDWrite,
+			onFDClose:    onFDClose,
+		}
+
+		if e := ret.AddRead(ret.wfd); e != nil {
+			_ = ret.Close()
+			return nil
+		}
+
+		go func() {
+			ret.run()
+		}()
+
+		return ret
 	}
-	if poller.wfd, err = unix.Eventfd(0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC); err != nil {
-		_ = poller.Close()
-		poller = nil
-		err = os.NewSyscallError("eventfd", err)
-		return
-	}
-	poller.wfdBuf = make([]byte, 8)
-	if err = poller.AddRead(poller.wfd); err != nil {
-		_ = poller.Close()
-		poller = nil
-		return
-	}
-	return
+}
+
+func (p *Poller) run() {
+
 }
 
 // Close closes the poller.
