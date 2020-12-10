@@ -108,16 +108,28 @@ func (p *Poller) run() {
 
 			if fd, ev := int(evt.Fd), evt.Events; fd != p.wfd {
 				if ev&ErrEvents != 0 {
-
+					p.onFDClose(fd)
 				} else if ev&InEvents != 0 {
-
+					p.onFDRead(fd)
 				} else if ev&OutEvents != 0 {
-
+					p.onFDWrite(fd)
 				} else {
-
+					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
 				}
 			} else {
-				_, _ = unix.Read(p.wfd, p.wfdBuf)
+				n, e = unix.Read(p.wfd, p.wfdBuf)
+				if e != nil {
+					for i := 0; i < n; i++ {
+						if p.wfdBuf[i] == triggerDataAddConn {
+							p.onInvokeAdd()
+						} else if p.wfdBuf[i] == triggerDataExit {
+							p.onInvokeExit()
+							atomic.StoreUint32(&p.status, pollerStatusClosed)
+						} else {
+							p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+						}
+					}
+				}
 			}
 		}
 	}
@@ -170,7 +182,7 @@ func (p *Poller) TriggerAddConn() (err error) {
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
-// InvokeAddTrigger ...err
+// TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
 	_, e := unix.Write(p.wfd, []byte{triggerDataExit})
 	return os.NewSyscallError("kqueue trigger", e)
