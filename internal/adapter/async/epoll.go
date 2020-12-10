@@ -19,8 +19,8 @@ const pollerStatusClosing = 2
 const pollerStatusClosed = 0
 
 const (
-	readEvents      = unix.EPOLLPRI | unix.EPOLLIN
-	writeEvents     = unix.EPOLLOUT
+	readEvents      = unix.EPOLLPRI | unix.EPOLLIN | unix.EPOLLET
+	writeEvents     = unix.EPOLLOUT | unix.EPOLLET
 	readWriteEvents = readEvents | writeEvents
 )
 
