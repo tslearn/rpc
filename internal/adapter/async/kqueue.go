@@ -3,12 +3,13 @@
 package async
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
-	"golang.org/x/sys/unix"
 	"os"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
+	"golang.org/x/sys/unix"
 )
 
 const triggerDataAddConn = 1
@@ -20,11 +21,10 @@ const pollerStatusClosed = 0
 
 // Poller ...
 type Poller struct {
-	status  uint32
-	closeCH chan bool
-	fd      int
-	events  [128]unix.Kevent_t
-
+	status       uint32
+	closeCH      chan bool
+	fd           int
+	events       [128]unix.Kevent_t
 	onError      func(err *base.Error)
 	onInvokeAdd  func()
 	onInvokeExit func()
@@ -165,7 +165,7 @@ func (p *Poller) TriggerAddConn() (err error) {
 	return os.NewSyscallError("kqueue trigger", err)
 }
 
-// InvokeAddTrigger ...
+// TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
 	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
 		Ident:  0,
@@ -176,7 +176,7 @@ func (p *Poller) TriggerExit() (err error) {
 	return os.NewSyscallError("kqueue trigger", err)
 }
 
-// Delete
+// Delete ...
 func (p *Poller) Delete(fd int) error {
 	return nil
 }
