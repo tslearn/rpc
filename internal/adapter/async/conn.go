@@ -81,11 +81,11 @@ func (p *Conn) DoWrite() bool {
 		// write buffer
 		for p.wStartPos < p.wEndPos {
 			if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
-				if e == unix.EINTR {
-					return false
-				} else {
+				if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
 					p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 					return true
+				} else {
+					return false
 				}
 			} else {
 				p.wStartPos += n
