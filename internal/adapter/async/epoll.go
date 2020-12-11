@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-const triggerDataAddConn = 1
-const triggerDataExit = 2
+const triggerDataAddConn = 10
+const triggerDataExit = 20
 
 const pollerStatusRunning = 1
 const pollerStatusClosing = 2
@@ -120,7 +120,8 @@ func (p *Poller) run() {
 				} else if ev&OutEvents != 0 {
 					p.onFDWrite(fd)
 				} else {
-					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
+					// fmt.Println("unknown event filter", p.fd, p.wfd, p.events, n)
+					// p.onError(errors.ErrKqueuep.wfdBuf[i]p.wfdBuf[i]System.AddDebug("unknown event filter"))
 				}
 			} else {
 				if ev&InEvents != 0 {
@@ -178,6 +179,8 @@ func (p *Poller) Close() {
 
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
+
+	fmt.Println("RegisterFD", fd)
 	e := unix.EpollCtl(
 		p.fd,
 		unix.EPOLL_CTL_ADD,
@@ -190,12 +193,14 @@ func (p *Poller) RegisterFD(fd int) error {
 // TriggerAddConn ...
 func (p *Poller) TriggerAddConn() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataAddConnBuffer)
+	fmt.Println("Send Bytes", triggerDataAddConnBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
 // TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
+	fmt.Println("Send Bytes", triggerDataAddConnBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
