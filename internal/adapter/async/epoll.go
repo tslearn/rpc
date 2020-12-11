@@ -4,12 +4,13 @@ package async
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
-	"golang.org/x/sys/unix"
 	"os"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
+	"golang.org/x/sys/unix"
 )
 
 const triggerDataAddConn = 10
@@ -200,7 +201,7 @@ func (p *Poller) TriggerAddConn() (err error) {
 // TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
-	fmt.Println("Send Bytes", triggerDataAddConnBuffer)
+	fmt.Println("Send Bytes", triggerDataExitBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
