@@ -48,7 +48,7 @@ type Poller struct {
 }
 
 // OpenPoller instantiates a poller.
-func OpenPoller(
+func NewPoller(
 	onError func(err *base.Error),
 	onInvokeAdd func(),
 	onInvokeExit func(),
