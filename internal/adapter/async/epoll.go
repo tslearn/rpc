@@ -13,8 +13,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const triggerDataAddConn = 10
-const triggerDataExit = 20
+const triggerDataAddConn = 1
+const triggerDataExit = 2
 
 const pollerStatusRunning = 1
 const pollerStatusClosing = 2
@@ -121,8 +121,7 @@ func (p *Poller) run() {
 				} else if ev&OutEvents != 0 {
 					p.onFDWrite(fd)
 				} else {
-					// fmt.Println("unknown event filter", p.fd, p.wfd, p.events, n)
-					// p.onError(errors.ErrKqueuep.wfdBuf[i]p.wfdBuf[i]System.AddDebug("unknown event filter"))
+					p.onError(errors.ErrTemp.AddDebug("unknown event filter"))
 				}
 			} else {
 				if ev&InEvents != 0 {
