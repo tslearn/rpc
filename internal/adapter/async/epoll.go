@@ -3,6 +3,7 @@
 package async
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
@@ -19,8 +20,8 @@ const pollerStatusClosing = 2
 const pollerStatusClosed = 0
 
 const (
-	readEvents      = unix.EPOLLPRI | unix.EPOLLIN | unix.EPOLLET
-	writeEvents     = unix.EPOLLOUT | unix.EPOLLET
+	readEvents      = unix.EPOLLPRI | unix.EPOLLIN
+	writeEvents     = unix.EPOLLOUT
 	readWriteEvents = readEvents | writeEvents
 )
 
@@ -28,6 +29,11 @@ const (
 	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
 	OutEvents = unix.EPOLLOUT
 	InEvents  = unix.EPOLLIN | unix.EPOLLPRI
+)
+
+var (
+	triggerDataAddConnBuffer = []byte{triggerDataAddConn, 0, 0, 0, 0, 0, 0, 0}
+	triggerDataExitBuffer    = []byte{triggerDataExit, 0, 0, 0, 0, 0, 0, 0}
 )
 
 // Poller represents a poller which is in charge of monitoring file-descriptors.
@@ -117,16 +123,21 @@ func (p *Poller) run() {
 					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
 				}
 			} else {
-				n, e = unix.Read(p.wfd, p.wfdBuf)
-				if e != nil {
-					for i := 0; i < n; i++ {
-						if p.wfdBuf[i] == triggerDataAddConn {
-							p.onInvokeAdd()
-						} else if p.wfdBuf[i] == triggerDataExit {
-							p.onInvokeExit()
-							atomic.StoreUint32(&p.status, pollerStatusClosed)
-						} else {
-							p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+				if ev&InEvents != 0 {
+					if readN, _ := unix.Read(p.wfd, p.wfdBuf); readN > 0 {
+						fmt.Println("Read Bytes ", p.wfdBuf[:readN])
+
+						for j := 0; j < readN; j++ {
+							if p.wfdBuf[j] == triggerDataAddConn {
+								p.onInvokeAdd()
+							} else if p.wfdBuf[j] == triggerDataExit {
+								p.onInvokeExit()
+								atomic.StoreUint32(&p.status, pollerStatusClosed)
+							} else if p.wfdBuf[j] == 0 {
+								continue
+							} else {
+								p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
+							}
 						}
 					}
 				}
@@ -171,20 +182,20 @@ func (p *Poller) RegisterFD(fd int) error {
 		p.fd,
 		unix.EPOLL_CTL_ADD,
 		fd,
-		&unix.EpollEvent{Fd: int32(fd), Events: readWriteEvents},
+		&unix.EpollEvent{Fd: int32(fd), Events: readWriteEvents | unix.EPOLLET},
 	)
 	return os.NewSyscallError("kqueue add", e)
 }
 
 // TriggerAddConn ...
 func (p *Poller) TriggerAddConn() (err error) {
-	_, e := unix.Write(p.wfd, []byte{triggerDataAddConn})
+	_, e := unix.Write(p.wfd, triggerDataAddConnBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
 // TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
-	_, e := unix.Write(p.wfd, []byte{triggerDataExit})
+	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
