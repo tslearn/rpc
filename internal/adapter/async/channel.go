@@ -1,10 +1,11 @@
 package async
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 type Channel struct {
