@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/adapter/async"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"log"
-	"net/http"
-	_ "net/http/pprof"
 )
 
 type receiver struct {
@@ -42,7 +43,7 @@ func (p *receiver) OnConnError(
 
 func main() {
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
 	serverAdapter := async.NewAsyncServerAdapter(
