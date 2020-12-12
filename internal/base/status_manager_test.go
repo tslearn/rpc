@@ -1,7 +1,6 @@
 package base
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -15,7 +14,6 @@ func TestStatusManager(t *testing.T) {
 
 		assert(StatusManager{}.status).Equal(statusManagerClosed)
 		assert(StatusManager{}.closeCH).Equal(nil)
-		assert(StatusManager{}.mutex).Equal(sync.Mutex{})
 	})
 }
 
