@@ -1,10 +1,12 @@
 package netpoll
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"net"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
+// Manager ...
 type Manager struct {
 	listener    *TCPListener
 	channels    []*Channel
@@ -13,6 +15,7 @@ type Manager struct {
 	currRemains uint64
 }
 
+// NewManager ...
 func NewManager(
 	network string,
 	addr string,
@@ -66,6 +69,7 @@ func NewManager(
 	return ret
 }
 
+// Close ...
 func (p *Manager) Close() {
 	waitCH := make(chan bool)
 	channelSize := len(p.channels)
@@ -82,6 +86,7 @@ func (p *Manager) Close() {
 	}
 }
 
+// AllocChannel ...
 func (p *Manager) AllocChannel() *Channel {
 	if p.currRemains <= 0 {
 		maxConn := int64(-1)

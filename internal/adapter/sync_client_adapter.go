@@ -1,10 +1,12 @@
 package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/errors"
 	"net"
+
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// SyncClientAdapter ...
 type SyncClientAdapter struct {
 	network  string
 	addr     string
@@ -14,6 +16,7 @@ type SyncClientAdapter struct {
 	conn     *SyncConn
 }
 
+// NewSyncClientAdapter ...
 func NewSyncClientAdapter(
 	network string,
 	addr string,
@@ -30,18 +33,22 @@ func NewSyncClientAdapter(
 	})
 }
 
+// OnOpen ...
 func (p *SyncClientAdapter) OnOpen() bool {
-	if netConn, e := net.Dial(p.network, p.addr); e != nil {
+	netConn, e := net.Dial(p.network, p.addr)
+
+	if e != nil {
 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
 		return false
-	} else {
-		p.conn = NewSyncConn(netConn, p.rBufSize, p.wBufSize)
-		p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
-		p.conn.OnOpen()
-		return true
 	}
+
+	p.conn = NewSyncConn(netConn, p.rBufSize, p.wBufSize)
+	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
+	p.conn.OnOpen()
+	return true
 }
 
+// OnRun ...
 func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	for service.IsRunning() {
 		if err := p.conn.TriggerRead(); err != nil {
@@ -51,10 +58,12 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	}
 }
 
+// OnWillClose ...
 func (p *SyncClientAdapter) OnWillClose() {
-
+	// do nothing
 }
 
+// OnDidClose ...
 func (p *SyncClientAdapter) OnDidClose() {
 	p.conn.Close()
 }

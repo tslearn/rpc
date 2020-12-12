@@ -5,6 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 )
 
+// IReceiver ...
 type IReceiver interface {
 	OnConnOpen(streamConn *StreamConn)
 	OnConnClose(streamConn *StreamConn)
@@ -12,6 +13,7 @@ type IReceiver interface {
 	OnConnError(streamConn *StreamConn, err *base.Error)
 }
 
+// ReceiverHook ...
 type ReceiverHook struct {
 	receiver         IReceiver
 	onConnOpen       func(streamConn *StreamConn)
@@ -20,6 +22,7 @@ type ReceiverHook struct {
 	onConnError      func(streamConn *StreamConn, err *base.Error)
 }
 
+// NewReceiverHook ...
 func NewReceiverHook(
 	receiver IReceiver,
 	onConnOpen func(streamConn *StreamConn),
@@ -36,6 +39,7 @@ func NewReceiverHook(
 	}
 }
 
+// OnConnOpen ...
 func (p *ReceiverHook) OnConnOpen(streamConn *StreamConn) {
 	if fn := p.onConnOpen; fn != nil {
 		fn(streamConn)
@@ -44,6 +48,7 @@ func (p *ReceiverHook) OnConnOpen(streamConn *StreamConn) {
 	p.receiver.OnConnOpen(streamConn)
 }
 
+// OnConnClose ...
 func (p *ReceiverHook) OnConnClose(streamConn *StreamConn) {
 	if fn := p.onConnClose; fn != nil {
 		fn(streamConn)
@@ -52,6 +57,7 @@ func (p *ReceiverHook) OnConnClose(streamConn *StreamConn) {
 	p.receiver.OnConnClose(streamConn)
 }
 
+// OnConnReadStream ...
 func (p *ReceiverHook) OnConnReadStream(
 	streamConn *StreamConn,
 	stream *core.Stream,
@@ -63,6 +69,7 @@ func (p *ReceiverHook) OnConnReadStream(
 	p.receiver.OnConnReadStream(streamConn, stream)
 }
 
+// OnConnError ...
 func (p *ReceiverHook) OnConnError(
 	streamConn *StreamConn,
 	err *base.Error,

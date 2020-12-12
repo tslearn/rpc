@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"time"
+
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"net"
-	"time"
 )
 
 type receiver struct {
@@ -43,7 +44,7 @@ func (p *receiver) OnConnError(
 	fmt.Println("Client: OnConnError", err)
 }
 
-func SimpleTestRead() {
+func simpleTestRead() {
 	conn, err := net.Dial("tcp", "0.0.0.0:8080")
 	if err != nil {
 		panic(err)
@@ -52,7 +53,7 @@ func SimpleTestRead() {
 	fmt.Println(conn.Read(buf))
 }
 
-func TestReceiver() {
+func testReceiver() {
 
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
 
@@ -95,6 +96,6 @@ func TestReceiver() {
 }
 
 func main() {
-	TestReceiver()
+	testReceiver()
 	return
 }

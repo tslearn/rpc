@@ -3,16 +3,43 @@
 package netpoll
 
 import (
+	"net"
+	"sync/atomic"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
-	"net"
-	"sync/atomic"
 )
 
 const tcpListenerStatusRunning = 1
 const tcpListenerStatusClosed = 0
 
+func listen(network string, addr string) (int, net.Addr, error) {
+	if sockAddr, family, netAddr, err := getTCPSockAddr(
+		network, addr,
+	); err != nil {
+		return 0, nil, err
+	} else if fd, err := sysSocket(
+		family, unix.SOCK_STREAM, unix.IPPROTO_TCP,
+	); err != nil {
+		return 0, nil, err
+	} else if err := unix.SetsockoptInt(
+		fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1,
+	); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else if err := unix.Bind(fd, sockAddr); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else if err := unix.Listen(fd, 128); err != nil {
+		_ = unix.Close(fd)
+		return 0, nil, err
+	} else {
+		return fd, netAddr, nil
+	}
+}
+
+// TCPListener ...
 type TCPListener struct {
 	status   int32
 	lnFD     int
@@ -22,6 +49,7 @@ type TCPListener struct {
 	onError  func(err *base.Error)
 }
 
+// NewTCPListener ...
 func NewTCPListener(
 	network string,
 	addr string,
@@ -34,7 +62,7 @@ func NewTCPListener(
 		onError:  onError,
 	}
 
-	if lnFD, lnAddr, e := TCPSocket(network, addr); e != nil {
+	if lnFD, lnAddr, e := listen(network, addr); e != nil {
 		onError(errors.ErrTCPListener.AddDebug(e.Error()))
 		return nil
 	} else if poller := NewPoller(
@@ -59,6 +87,7 @@ func NewTCPListener(
 	}
 }
 
+// OnRead ...
 func (p *TCPListener) OnRead(fd int) {
 	if fd == p.lnFD {
 		if connFD, sa, e := unix.Accept(p.lnFD); e != nil {
@@ -75,6 +104,7 @@ func (p *TCPListener) OnRead(fd int) {
 	}
 }
 
+// Close ...
 func (p *TCPListener) Close() {
 	if atomic.CompareAndSwapInt32(
 		&p.status,

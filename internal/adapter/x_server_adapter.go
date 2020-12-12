@@ -1,14 +1,16 @@
 package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/adapter/netpoll"
-	"github.com/rpccloud/rpc/internal/base"
 	"net"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/adapter/netpoll"
+	"github.com/rpccloud/rpc/internal/base"
 )
 
+// XServerAdapter ...
 type XServerAdapter struct {
 	network  string
 	addr     string
@@ -18,6 +20,7 @@ type XServerAdapter struct {
 	manager  *netpoll.Manager
 }
 
+// NewXServerAdapter ...
 func NewXServerAdapter(
 	network string,
 	addr string,
@@ -35,6 +38,7 @@ func NewXServerAdapter(
 	})
 }
 
+// OnOpen ...
 func (p *XServerAdapter) OnOpen() bool {
 	p.manager = netpoll.NewManager(
 		p.network,
@@ -48,20 +52,24 @@ func (p *XServerAdapter) OnOpen() bool {
 	return p.manager != nil
 }
 
+// OnRun ...
 func (p *XServerAdapter) OnRun(service *RunnableService) {
 	for service.IsRunning() {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
 
+// OnWillClose ...
 func (p *XServerAdapter) OnWillClose() {
 	// do nothing
 }
 
+// OnDidClose ...
 func (p *XServerAdapter) OnDidClose() {
 	p.manager.Close()
 }
 
+// GetConnectFunc ...
 func (p *XServerAdapter) GetConnectFunc() func(*netpoll.Channel, int, net.Addr, net.Addr) netpoll.Conn {
 	if strings.HasPrefix(p.network, "tcp") {
 		return func(channel *netpoll.Channel, fd int, lAddr net.Addr, rAddr net.Addr) netpoll.Conn {
@@ -69,7 +77,7 @@ func (p *XServerAdapter) GetConnectFunc() func(*netpoll.Channel, int, net.Addr, 
 			conn.SetNext(NewStreamConn(conn, p.receiver))
 			return conn
 		}
-	} else {
-		panic("not implement")
 	}
+
+	panic("unsupported protocol")
 }

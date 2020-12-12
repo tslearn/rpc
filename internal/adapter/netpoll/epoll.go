@@ -27,9 +27,12 @@ const (
 )
 
 const (
+	// ErrEvents ...
 	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
+	// OutEvents ...
 	OutEvents = unix.EPOLLOUT
-	InEvents  = unix.EPOLLIN | unix.EPOLLPRI
+	// InEvents ...
+	InEvents = unix.EPOLLIN | unix.EPOLLPRI
 )
 
 var (
@@ -54,7 +57,7 @@ type Poller struct {
 	onFDClose    func(fd int)
 }
 
-// OpenPoller instantiates a poller.
+// NewPoller instantiates a poller.
 func NewPoller(
 	onError func(err *base.Error),
 	onInvokeAdd func(),

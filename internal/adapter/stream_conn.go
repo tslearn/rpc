@@ -2,18 +2,20 @@ package adapter
 
 import (
 	"fmt"
+	"net"
+	"sync/atomic"
+
 	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"net"
-	"sync/atomic"
 )
 
 const streamConnStatusRunning = int32(1)
 const streamConnStatusClosing = int32(2)
 const streamConnStatusClosed = int32(0)
 
+// StreamConn ...
 type StreamConn struct {
 	status   int32
 	prev     netpoll.Conn
@@ -27,6 +29,7 @@ type StreamConn struct {
 	writePos    int
 }
 
+// NewStreamConn ...
 func NewStreamConn(prev netpoll.Conn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
 		status:      streamConnStatusClosed,
@@ -41,20 +44,24 @@ func NewStreamConn(prev netpoll.Conn, receiver IReceiver) *StreamConn {
 	}
 }
 
+// OnOpen ...
 func (p *StreamConn) OnOpen() {
 	atomic.StoreInt32(&p.status, streamConnStatusRunning)
 	p.receiver.OnConnOpen(p)
 }
 
+// OnClose ...
 func (p *StreamConn) OnClose() {
 	p.receiver.OnConnClose(p)
 	atomic.StoreInt32(&p.status, streamConnStatusClosed)
 }
 
+// OnError ...
 func (p *StreamConn) OnError(err *base.Error) {
 	p.receiver.OnConnError(p, err)
 }
 
+// OnReadBytes ...
 func (p *StreamConn) OnReadBytes(b []byte) {
 	if p.readStream == nil {
 		if p.readHeadPos == 0 { // fast cache
@@ -115,6 +122,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 	}
 }
 
+// OnFillWrite ...
 func (p *StreamConn) OnFillWrite(b []byte) int {
 	if p.writeStream == nil {
 		select {
@@ -128,27 +136,29 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 
 	peekBuf, finish := p.writeStream.PeekBufferSlice(p.writePos, len(b))
 
-	if len(peekBuf) > 0 {
-		copyBytes := copy(b, peekBuf)
-		p.writePos += copyBytes
-
-		if finish {
-			p.writeStream.Release()
-			p.writeStream = nil
-			p.writePos = 0
-		}
-
-		return copyBytes
-	} else {
+	if len(peekBuf) <= 0 {
 		p.OnError(errors.ErrTemp.AddDebug("OnFillWrite internal error"))
 		return 0
 	}
+
+	copyBytes := copy(b, peekBuf)
+	p.writePos += copyBytes
+
+	if finish {
+		p.writeStream.Release()
+		p.writeStream = nil
+		p.writePos = 0
+	}
+
+	return copyBytes
 }
 
+// TriggerWrite ...
 func (p *StreamConn) TriggerWrite() {
 	p.prev.TriggerWrite()
 }
 
+// Close ...
 func (p *StreamConn) Close() {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
@@ -160,14 +170,17 @@ func (p *StreamConn) Close() {
 	}
 }
 
+// LocalAddr ...
 func (p *StreamConn) LocalAddr() net.Addr {
 	return p.prev.LocalAddr()
 }
 
+// RemoteAddr ...
 func (p *StreamConn) RemoteAddr() net.Addr {
 	return p.prev.RemoteAddr()
 }
 
+// WriteStreamAndRelease ...
 func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	func() {
 		defer func() {
@@ -182,14 +195,17 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	p.TriggerWrite()
 }
 
+// OnReadReady ...
 func (p *StreamConn) OnReadReady() {
 	panic("kernel error, this code should not be called")
 }
 
+// OnWriteReady ...
 func (p *StreamConn) OnWriteReady() {
 	panic("kernel error, this code should not be called")
 }
 
+// GetFD ...
 func (p *StreamConn) GetFD() int {
 	panic("kernel error, this code should not be called")
 }

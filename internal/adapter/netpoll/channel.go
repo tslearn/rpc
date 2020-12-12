@@ -8,6 +8,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// Channel ...
 type Channel struct {
 	onError         func(err *base.Error)
 	activeConnCount int64
@@ -17,6 +18,7 @@ type Channel struct {
 	sync.Mutex
 }
 
+// NewChannel ...
 func NewChannel(onError func(err *base.Error)) *Channel {
 	ret := &Channel{
 		onError:         onError,
@@ -42,6 +44,7 @@ func NewChannel(onError func(err *base.Error)) *Channel {
 	return ret
 }
 
+// Close ...
 func (p *Channel) Close() {
 	p.Lock()
 	defer p.Unlock()
@@ -49,6 +52,7 @@ func (p *Channel) Close() {
 	p.poller.Close()
 }
 
+// AddConn ...
 func (p *Channel) AddConn(conn Conn) {
 	p.addCH <- conn
 	_ = p.poller.TriggerAddConn()
@@ -97,6 +101,7 @@ func (p *Channel) onFDClose(fd int) {
 	}
 }
 
+// GetActiveConnCount ...
 func (p *Channel) GetActiveConnCount() int64 {
 	return atomic.LoadInt64(&p.activeConnCount)
 }

@@ -4,21 +4,27 @@ package netpoll
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"net"
 	"strconv"
+
+	"golang.org/x/sys/unix"
 )
 
+// ReadFD ...
 var ReadFD = unix.Read
+
+// WriteFD ...
 var WriteFD = unix.Write
+
+// CloseFD ...
 var CloseFD = unix.Close
 
 func getTCPSockAddr(
 	network string,
 	addr string,
 ) (unix.Sockaddr, int, *net.TCPAddr, error) {
-	if addr, err := net.ResolveTCPAddr(network, addr); err != nil {
-		return nil, unix.AF_UNSPEC, nil, err
+	if addr, e := net.ResolveTCPAddr(network, addr); e != nil {
+		return nil, unix.AF_UNSPEC, nil, e
 	} else if addr.IP.To4() != nil || network == "tcp4" {
 		sa4 := &unix.SockaddrInet4{Port: addr.Port}
 
@@ -38,10 +44,10 @@ func getTCPSockAddr(
 		}
 
 		if addr.Zone != "" {
-			if netInterface, err := net.InterfaceByName(addr.Zone); err != nil {
-				return nil, unix.AF_UNSPEC, nil, err
-			} else {
+			if netInterface, e := net.InterfaceByName(addr.Zone); e == nil {
 				sa6.ZoneId = uint32(netInterface.Index)
+			} else {
+				return nil, unix.AF_UNSPEC, nil, e
 			}
 		}
 
@@ -50,31 +56,6 @@ func getTCPSockAddr(
 		return &unix.SockaddrInet4{Port: addr.Port}, unix.AF_INET, addr, nil
 	} else {
 		return nil, unix.AF_UNSPEC, nil, errors.New("tcp: get proto error")
-	}
-}
-
-func TCPSocket(network string, addr string) (int, net.Addr, error) {
-	if sockAddr, family, netAddr, err := getTCPSockAddr(
-		network, addr,
-	); err != nil {
-		return 0, nil, err
-	} else if fd, err := sysSocket(
-		family, unix.SOCK_STREAM, unix.IPPROTO_TCP,
-	); err != nil {
-		return 0, nil, err
-	} else if err := unix.SetsockoptInt(
-		fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1,
-	); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else if err := unix.Bind(fd, sockAddr); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else if err := unix.Listen(fd, 128); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else {
-		return fd, netAddr, nil
 	}
 }
 

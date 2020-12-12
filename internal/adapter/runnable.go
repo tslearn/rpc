@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// IRunnable ...
 type IRunnable interface {
 	OnOpen() bool
 	OnRun(service *RunnableService)
@@ -17,11 +18,13 @@ const serviceRunning = int32(2)
 const serviceClosing = int32(3)
 const serviceClosed = int32(0)
 
+// RunnableService ...
 type RunnableService struct {
 	status   int32
 	runnable IRunnable
 }
 
+// NewRunnableService ...
 func NewRunnableService(runnable IRunnable) *RunnableService {
 	return &RunnableService{
 		status:   serviceClosed,
@@ -62,6 +65,7 @@ func (p *RunnableService) Close() bool {
 	return false
 }
 
+// IsRunning ...
 func (p *RunnableService) IsRunning() bool {
 	return atomic.LoadInt32(&p.status) == serviceRunning
 }

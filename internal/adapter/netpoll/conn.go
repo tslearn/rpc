@@ -1,10 +1,12 @@
 package netpoll
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"net"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
+// Conn ...
 type Conn interface {
 	OnOpen()
 	OnClose()
