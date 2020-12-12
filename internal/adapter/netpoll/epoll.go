@@ -196,14 +196,12 @@ func (p *Poller) RegisterFD(fd int) error {
 // TriggerAddConn ...
 func (p *Poller) TriggerAddConn() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataAddConnBuffer)
-	fmt.Println("Send Bytes", triggerDataAddConnBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
 // TriggerExit ...
 func (p *Poller) TriggerExit() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
-	fmt.Println("Send Bytes", triggerDataExitBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
 }
 
