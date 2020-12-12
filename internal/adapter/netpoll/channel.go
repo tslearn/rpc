@@ -1,6 +1,7 @@
 package netpoll
 
 import (
+	"golang.org/x/sys/unix"
 	"sync"
 	"sync/atomic"
 
@@ -99,6 +100,26 @@ func (p *Channel) onFDClose(fd int) {
 			conn.OnClose()
 		}
 	}
+}
+
+func (p *Channel) CloseFD(fd int) error {
+	if e := p.poller.UnregisterFD(fd); e != nil {
+		return e
+	}
+
+	if e := unix.Close(fd); e != nil {
+		return e
+	}
+
+	return nil
+}
+
+func (p *Channel) WatchWrite(fd int) error {
+	return p.poller.WatchWrite(fd)
+}
+
+func (p *Channel) UnwatchWrite(fd int) error {
+	return p.poller.UnwatchWrite(fd)
 }
 
 // GetActiveConnCount ...

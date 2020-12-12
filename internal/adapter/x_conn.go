@@ -144,7 +144,7 @@ func (p *XConn) TriggerWrite() {
 
 // Close ...
 func (p *XConn) Close() {
-	if e := netpoll.CloseFD(p.fd); e != nil {
+	if e := p.channel.CloseFD(p.fd); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
 }

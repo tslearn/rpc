@@ -190,6 +190,12 @@ func (p *Poller) RegisterFD(fd int) error {
 	)
 }
 
+// UnregisterFD ...
+func (p *Poller) UnregisterFD(fd int) error {
+	e := unix.EpollCtl(p.fd, unix.EPOLL_CTL_DEL, fd, nil)
+	return os.NewSyscallError("kqueue add", e)
+}
+
 // WatchWrite ...
 func (p *Poller) WatchWrite(fd int) error {
 	return unix.EpollCtl(
@@ -220,10 +226,4 @@ func (p *Poller) TriggerAddConn() (err error) {
 func (p *Poller) TriggerExit() (err error) {
 	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
 	return os.NewSyscallError("kqueue trigger", e)
-}
-
-// Delete removes the given file-descriptor from the poller.
-func (p *Poller) Delete(fd int) error {
-	e := unix.EpollCtl(p.fd, unix.EPOLL_CTL_DEL, fd, nil)
-	return os.NewSyscallError("kqueue add", e)
 }

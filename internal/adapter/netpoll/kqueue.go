@@ -147,6 +147,11 @@ func (p *Poller) RegisterFD(fd int) error {
 	return err
 }
 
+// UnregisterFD ...
+func (p *Poller) UnregisterFD(fd int) error {
+	return nil
+}
+
 // WatchWrite ...
 func (p *Poller) WatchWrite(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
@@ -187,9 +192,4 @@ func (p *Poller) TriggerExit() (err error) {
 		Data:   triggerDataExit,
 	}}, nil, nil)
 	return os.NewSyscallError("kqueue trigger", err)
-}
-
-// Delete ...
-func (p *Poller) Delete(fd int) error {
-	return nil
 }
