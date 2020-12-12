@@ -2,14 +2,15 @@ package core
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"reflect"
 	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const (
@@ -57,9 +58,9 @@ func (p *rpcServiceNode) SetConfig(key string, value Any) bool {
 	if p.data != nil {
 		p.data[key] = value
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 // Processor ...
@@ -502,7 +503,7 @@ func (p *Processor) unmount(path string) {
 	}
 
 	// clean node or sibling nodes
-	for key, _ := range p.servicesMap {
+	for key := range p.servicesMap {
 		if strings.HasPrefix(key, path) {
 			delete(p.servicesMap, key)
 		}

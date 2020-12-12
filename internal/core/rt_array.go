@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
@@ -32,6 +33,7 @@ func (p RTArray) Get(index int) RTValue {
 	}
 }
 
+// Set ...
 func (p RTArray) Set(index int, value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
@@ -59,6 +61,7 @@ func (p RTArray) Set(index int, value interface{}) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+// Append ...
 func (p RTArray) Append(value interface{}) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
@@ -81,6 +84,7 @@ func (p RTArray) Append(value interface{}) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+// Delete ...
 func (p RTArray) Delete(index int) *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()
@@ -101,6 +105,7 @@ func (p RTArray) Delete(index int) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+// DeleteAll ...
 func (p RTArray) DeleteAll() *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()

@@ -1,9 +1,10 @@
 package core
 
 import (
+	"sync/atomic"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"sync/atomic"
 )
 
 // RTValue ...
@@ -26,19 +27,19 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			cacheSafe:  true,
 			cacheError: errors.ErrStream,
 		}
-	} else {
-		rtStream := rt.thread.rtStream
-		pos := record.getPos()
-		rtStream.SetReadPos(int(pos))
-		cacheString, cacheSafe, cacheError := rtStream.readUnsafeString()
-		return RTValue{
-			err:        nil,
-			rt:         rt,
-			pos:        pos,
-			cacheBytes: base.StringToBytesUnsafe(cacheString),
-			cacheSafe:  cacheSafe,
-			cacheError: cacheError,
-		}
+	}
+
+	rtStream := rt.thread.rtStream
+	pos := record.getPos()
+	rtStream.SetReadPos(int(pos))
+	cacheString, cacheSafe, cacheError := rtStream.readUnsafeString()
+	return RTValue{
+		err:        nil,
+		rt:         rt,
+		pos:        pos,
+		cacheBytes: base.StringToBytesUnsafe(cacheString),
+		cacheSafe:  cacheSafe,
+		cacheError: cacheError,
 	}
 }
 

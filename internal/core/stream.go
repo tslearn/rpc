@@ -2,12 +2,13 @@ package core
 
 import (
 	"encoding/binary"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"math"
 	"reflect"
 	"strconv"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const (
@@ -135,7 +136,7 @@ type Stream struct {
 	bufferFrames [streamFrameArrayInitSize]*[]byte
 }
 
-// TODO test
+// GetStreamLengthByHeadBuffer ... TODO test
 func GetStreamLengthByHeadBuffer(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b[streamPosLength:])
 }
@@ -545,7 +546,7 @@ func (p *Stream) GetBufferUnsafe() []byte {
 	return p.GetBuffer()
 }
 
-// TODO ... Test
+// PeekBufferSlice ... TODO test
 func (p *Stream) PeekBufferSlice(pos int, max int) ([]byte, bool) {
 	if pos < 0 || max <= 0 {
 		return nil, true
@@ -561,9 +562,8 @@ func (p *Stream) PeekBufferSlice(pos int, max int) ([]byte, bool) {
 		if peekIndex < p.writeIndex {
 			peekEnd := base.MinInt(peekIndex+max, p.writeIndex)
 			return (*p.frames[peekSeg])[peekIndex:peekEnd], peekEnd == p.writeIndex
-		} else {
-			return nil, true
 		}
+		return nil, true
 	} else {
 		return nil, true
 	}
@@ -1092,73 +1092,73 @@ func (p *Stream) writeRTArray(v RTArray) string {
 				p.gotoNextWriteFrame()
 			}
 			return StreamWriteOK
-		} else {
-			startPos := p.GetWritePos()
-
-			b := p.writeFrame[p.writeIndex:]
-			if p.writeIndex < streamBlockSize-5 {
-				p.writeIndex += 5
-			} else {
-				b = b[0:1]
-				p.SetWritePos(startPos + 5)
-			}
-
-			if length < 31 {
-				b[0] = byte(64 + length)
-			} else {
-				b[0] = 95
-			}
-
-			if length > 30 {
-				if p.writeIndex < streamBlockSize-4 {
-					l := p.writeFrame[p.writeIndex:]
-					l[0] = byte(uint32(length))
-					l[1] = byte(uint32(length) >> 8)
-					l[2] = byte(uint32(length) >> 16)
-					l[3] = byte(uint32(length) >> 24)
-					p.writeIndex += 4
-				} else {
-					p.PutBytes([]byte{
-						byte(uint32(length)),
-						byte(uint32(length) >> 8),
-						byte(uint32(length) >> 16),
-						byte(uint32(length) >> 24),
-					})
-				}
-			}
-
-			for i := 0; i < length; i++ {
-				items := *v.items
-				readStream.SetReadPos(int(items[i].getPos()))
-				if !p.writeStreamNext(readStream) {
-					p.SetWritePos(startPos)
-					return StreamWriteIsNotAvailable
-				}
-			}
-
-			totalLength := uint32(p.GetWritePos() - startPos)
-			if len(b) > 1 {
-				b[1] = byte(totalLength)
-				b[2] = byte(totalLength >> 8)
-				b[3] = byte(totalLength >> 16)
-				b[4] = byte(totalLength >> 24)
-			} else {
-				endPos := p.GetWritePos()
-				p.SetWritePos(startPos + 1)
-				p.PutBytes([]byte{
-					byte(totalLength),
-					byte(totalLength >> 8),
-					byte(totalLength >> 16),
-					byte(totalLength >> 24),
-				})
-				p.SetWritePos(endPos)
-			}
-
-			return StreamWriteOK
 		}
-	} else {
-		return StreamWriteIsNotAvailable
+
+		startPos := p.GetWritePos()
+
+		b := p.writeFrame[p.writeIndex:]
+		if p.writeIndex < streamBlockSize-5 {
+			p.writeIndex += 5
+		} else {
+			b = b[0:1]
+			p.SetWritePos(startPos + 5)
+		}
+
+		if length < 31 {
+			b[0] = byte(64 + length)
+		} else {
+			b[0] = 95
+		}
+
+		if length > 30 {
+			if p.writeIndex < streamBlockSize-4 {
+				l := p.writeFrame[p.writeIndex:]
+				l[0] = byte(uint32(length))
+				l[1] = byte(uint32(length) >> 8)
+				l[2] = byte(uint32(length) >> 16)
+				l[3] = byte(uint32(length) >> 24)
+				p.writeIndex += 4
+			} else {
+				p.PutBytes([]byte{
+					byte(uint32(length)),
+					byte(uint32(length) >> 8),
+					byte(uint32(length) >> 16),
+					byte(uint32(length) >> 24),
+				})
+			}
+		}
+
+		for i := 0; i < length; i++ {
+			items := *v.items
+			readStream.SetReadPos(int(items[i].getPos()))
+			if !p.writeStreamNext(readStream) {
+				p.SetWritePos(startPos)
+				return StreamWriteIsNotAvailable
+			}
+		}
+
+		totalLength := uint32(p.GetWritePos() - startPos)
+		if len(b) > 1 {
+			b[1] = byte(totalLength)
+			b[2] = byte(totalLength >> 8)
+			b[3] = byte(totalLength >> 16)
+			b[4] = byte(totalLength >> 24)
+		} else {
+			endPos := p.GetWritePos()
+			p.SetWritePos(startPos + 1)
+			p.PutBytes([]byte{
+				byte(totalLength),
+				byte(totalLength >> 8),
+				byte(totalLength >> 16),
+				byte(totalLength >> 24),
+			})
+			p.SetWritePos(endPos)
+		}
+
+		return StreamWriteOK
 	}
+
+	return StreamWriteIsNotAvailable
 }
 
 // WriteRPCMap write RPCMap value to stream
@@ -1174,77 +1174,76 @@ func (p *Stream) writeRTMap(v RTMap) string {
 				p.gotoNextWriteFrame()
 			}
 			return StreamWriteOK
-		} else {
-
-			startPos := p.GetWritePos()
-
-			b := p.writeFrame[p.writeIndex:]
-			if p.writeIndex < streamBlockSize-5 {
-				p.writeIndex += 5
-			} else {
-				b = b[0:1]
-				p.SetWritePos(startPos + 5)
-			}
-
-			if length < 31 {
-				b[0] = byte(96 + length)
-			} else {
-				b[0] = 127
-			}
-
-			if length > 30 {
-				if p.writeIndex < streamBlockSize-4 {
-					l := p.writeFrame[p.writeIndex:]
-					l[0] = byte(uint32(length))
-					l[1] = byte(uint32(length) >> 8)
-					l[2] = byte(uint32(length) >> 16)
-					l[3] = byte(uint32(length) >> 24)
-					p.writeIndex += 4
-				} else {
-					p.PutBytes([]byte{
-						byte(uint32(length)),
-						byte(uint32(length) >> 8),
-						byte(uint32(length) >> 16),
-						byte(uint32(length) >> 24),
-					})
-				}
-			}
-
-			if v.items != nil {
-				items := *v.items
-				for i := 0; i < length; i++ {
-					p.WriteString(items[i].key)
-					readStream.SetReadPos(int(items[i].pos.getPos()))
-					if !p.writeStreamNext(readStream) {
-						p.SetWritePos(startPos)
-						return StreamWriteIsNotAvailable
-					}
-				}
-			}
-
-			totalLength := uint32(p.GetWritePos() - startPos)
-			if len(b) > 1 {
-				b[1] = byte(totalLength)
-				b[2] = byte(totalLength >> 8)
-				b[3] = byte(totalLength >> 16)
-				b[4] = byte(totalLength >> 24)
-			} else {
-				endPos := p.GetWritePos()
-				p.SetWritePos(startPos + 1)
-				p.PutBytes([]byte{
-					byte(totalLength),
-					byte(totalLength >> 8),
-					byte(totalLength >> 16),
-					byte(totalLength >> 24),
-				})
-				p.SetWritePos(endPos)
-			}
-
-			return StreamWriteOK
 		}
-	} else {
-		return StreamWriteIsNotAvailable
+
+		startPos := p.GetWritePos()
+
+		b := p.writeFrame[p.writeIndex:]
+		if p.writeIndex < streamBlockSize-5 {
+			p.writeIndex += 5
+		} else {
+			b = b[0:1]
+			p.SetWritePos(startPos + 5)
+		}
+
+		if length < 31 {
+			b[0] = byte(96 + length)
+		} else {
+			b[0] = 127
+		}
+
+		if length > 30 {
+			if p.writeIndex < streamBlockSize-4 {
+				l := p.writeFrame[p.writeIndex:]
+				l[0] = byte(uint32(length))
+				l[1] = byte(uint32(length) >> 8)
+				l[2] = byte(uint32(length) >> 16)
+				l[3] = byte(uint32(length) >> 24)
+				p.writeIndex += 4
+			} else {
+				p.PutBytes([]byte{
+					byte(uint32(length)),
+					byte(uint32(length) >> 8),
+					byte(uint32(length) >> 16),
+					byte(uint32(length) >> 24),
+				})
+			}
+		}
+
+		if v.items != nil {
+			items := *v.items
+			for i := 0; i < length; i++ {
+				p.WriteString(items[i].key)
+				readStream.SetReadPos(int(items[i].pos.getPos()))
+				if !p.writeStreamNext(readStream) {
+					p.SetWritePos(startPos)
+					return StreamWriteIsNotAvailable
+				}
+			}
+		}
+
+		totalLength := uint32(p.GetWritePos() - startPos)
+		if len(b) > 1 {
+			b[1] = byte(totalLength)
+			b[2] = byte(totalLength >> 8)
+			b[3] = byte(totalLength >> 16)
+			b[4] = byte(totalLength >> 24)
+		} else {
+			endPos := p.GetWritePos()
+			p.SetWritePos(startPos + 1)
+			p.PutBytes([]byte{
+				byte(totalLength),
+				byte(totalLength >> 8),
+				byte(totalLength >> 16),
+				byte(totalLength >> 24),
+			})
+			p.SetWritePos(endPos)
+		}
+
+		return StreamWriteOK
 	}
+
+	return StreamWriteIsNotAvailable
 }
 
 func (p *Stream) writeRTValue(v RTValue) string {

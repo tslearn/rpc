@@ -2,9 +2,10 @@ package core
 
 import (
 	"fmt"
+	"unsafe"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"unsafe"
 )
 
 const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
@@ -47,11 +48,9 @@ func getSort4(items []mapItem, start uint64) uint64 {
 	b2 := start
 
 	if isMapItemLess(&items[start], &items[start+1]) {
-		s1 += 0
-		b1 += 1
+		b1++
 	} else {
-		s1 += 1
-		b1 += 0
+		s1++
 	}
 
 	if isMapItemLess(&items[start+2], &items[start+3]) {
@@ -230,6 +229,7 @@ func (p RTMap) Delete(key string) *base.Error {
 	return errors.ErrRuntimeIllegalInCurrentGoroutine
 }
 
+// DeleteAll ...
 func (p RTMap) DeleteAll() *base.Error {
 	if thread := p.rt.lock(); thread != nil {
 		defer p.rt.unlock()

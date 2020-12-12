@@ -1,12 +1,13 @@
 package core
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"os"
 	"path"
 	"runtime"
 	"testing"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 func TestBuildFuncCache(t *testing.T) {
@@ -77,11 +78,11 @@ func (p *testFuncCache) Get(fnString string) ActionCacheFunc {
 		return func(rt Runtime, stream *Stream, fn interface{}) int {
 			if !stream.IsReadFinish() {
 				return -1
-			} else {
-				stream.SetWritePosToBodyStart()
-				fn.(func(Runtime) Return)(rt)
-				return 0
 			}
+
+			stream.SetWritePosToBodyStart()
+			fn.(func(Runtime) Return)(rt)
+			return 0
 		}
 	case "S":
 		return func(rt Runtime, stream *Stream, fn interface{}) int {
