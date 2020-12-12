@@ -1,12 +1,12 @@
 package netpoll
 
 import (
-	"golang.org/x/sys/unix"
 	"sync"
 	"sync/atomic"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"golang.org/x/sys/unix"
 )
 
 // Channel ...
@@ -102,6 +102,7 @@ func (p *Channel) onFDClose(fd int) {
 	}
 }
 
+// CloseFD ...
 func (p *Channel) CloseFD(fd int) error {
 	if e := p.poller.UnregisterFD(fd); e != nil {
 		return e
@@ -114,11 +115,12 @@ func (p *Channel) CloseFD(fd int) error {
 	return nil
 }
 
-func (p *Channel) WatchWrite(fd int) error {
-	return p.poller.WatchWrite(fd)
-}
+// SetWathWrite ...
+func (p *Channel) SetWathWrite(fd int, isWatch bool) error {
+	if isWatch {
+		return p.poller.WatchWrite(fd)
+	}
 
-func (p *Channel) UnwatchWrite(fd int) error {
 	return p.poller.UnwatchWrite(fd)
 }
 

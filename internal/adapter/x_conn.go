@@ -55,16 +55,9 @@ func (p *XConn) SetNext(next netpoll.Conn) {
 
 func (p *XConn) setWatchWrite(isWatch bool) *base.Error {
 	if p.watchWrite != isWatch {
-		if isWatch {
-			if e := p.channel.WatchWrite(p.fd); e != nil {
-				return errors.ErrTemp.AddDebug(e.Error())
-			}
-		} else {
-			if e := p.channel.UnwatchWrite(p.fd); e != nil {
-				return errors.ErrTemp.AddDebug(e.Error())
-			}
+		if e := p.channel.SetWathWrite(p.fd, isWatch); e != nil {
+			return errors.ErrTemp.AddDebug(e.Error())
 		}
-
 		p.watchWrite = isWatch
 	}
 
