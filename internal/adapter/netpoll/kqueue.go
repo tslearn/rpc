@@ -139,19 +139,32 @@ func (p *Poller) Close() {
 
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
-		{
-			Ident:  uint64(fd),
-			Flags:  unix.EV_ADD,
-			Filter: unix.EVFILT_READ,
-		},
-		{
-			Ident:  uint64(fd),
-			Flags:  unix.EV_ADD,
-			Filter: unix.EVFILT_WRITE,
-		},
-	}, nil, nil)
-	return os.NewSyscallError("kqueue add", err)
+	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+		Ident:  uint64(fd),
+		Flags:  unix.EV_ADD,
+		Filter: unix.EVFILT_READ,
+	}}, nil, nil)
+	return err
+}
+
+// WatchWrite ...
+func (p *Poller) WatchWrite(fd int) error {
+	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+		Ident:  uint64(fd),
+		Flags:  unix.EV_ADD,
+		Filter: unix.EVFILT_WRITE,
+	}}, nil, nil)
+	return err
+}
+
+// UnwatchWrite ...
+func (p *Poller) UnwatchWrite(fd int) error {
+	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+		Ident:  uint64(fd),
+		Flags:  unix.EV_DELETE,
+		Filter: unix.EVFILT_WRITE,
+	}}, nil, nil)
+	return err
 }
 
 // TriggerAddConn ...

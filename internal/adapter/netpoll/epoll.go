@@ -182,15 +182,32 @@ func (p *Poller) Close() {
 
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
-
-	fmt.Println("RegisterFD", fd)
-	e := unix.EpollCtl(
+	return unix.EpollCtl(
 		p.fd,
 		unix.EPOLL_CTL_ADD,
 		fd,
-		&unix.EpollEvent{Fd: int32(fd), Events: readWriteEvents},
+		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
 	)
-	return os.NewSyscallError("kqueue add", e)
+}
+
+// WatchWrite ...
+func (p *Poller) WatchWrite(fd int) error {
+	return unix.EpollCtl(
+		p.fd,
+		unix.EPOLL_CTL_ADD,
+		fd,
+		&unix.EpollEvent{Fd: int32(fd), Events: writeEvents},
+	)
+}
+
+// UnwatchWrite ...
+func (p *Poller) UnwatchWrite(fd int) error {
+	return unix.EpollCtl(
+		p.fd,
+		unix.EPOLL_CTL_MOD,
+		fd,
+		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
+	)
 }
 
 // TriggerAddConn ...
