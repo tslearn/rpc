@@ -142,12 +142,12 @@ func (p *Poller) RegisterFD(fd int) error {
 	_, err := unix.Kevent(p.fd, []unix.Kevent_t{
 		{
 			Ident:  uint64(fd),
-			Flags:  unix.EV_ADD | unix.EV_CLEAR,
+			Flags:  unix.EV_ADD,
 			Filter: unix.EVFILT_READ,
 		},
 		{
 			Ident:  uint64(fd),
-			Flags:  unix.EV_ADD | unix.EV_CLEAR,
+			Flags:  unix.EV_ADD,
 			Filter: unix.EVFILT_WRITE,
 		},
 	}, nil, nil)

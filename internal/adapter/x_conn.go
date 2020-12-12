@@ -55,55 +55,48 @@ func (p *XConn) SetNext(next netpoll.Conn) {
 
 // OnReadReady ...
 func (p *XConn) OnReadReady() {
-	for {
-		if n, e := netpoll.ReadFD(p.fd, p.rBuf); e == nil {
-			p.OnReadBytes(p.rBuf[:n])
-		} else {
-			if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
-				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
-			}
-			return
+	if n, e := netpoll.ReadFD(p.fd, p.rBuf); e != nil {
+		if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		}
+	} else {
+		p.OnReadBytes(p.rBuf[:n])
 	}
 }
 
-// DoWrite ...
-func (p *XConn) DoWrite() bool {
-	for {
-		isFinish := false
+func (p *XConn) doWrite() bool {
+	isFillFinish := false
 
-		// fill buffer
-		if p.wEndPos == 0 {
-			for p.wEndPos < len(p.wBuf) {
-				if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
-					p.wEndPos += n
-				} else {
-					isFinish = true
-					break
-				}
-			}
-		}
-
-		// write buffer
-		for p.wStartPos < p.wEndPos {
-			if n, e := netpoll.WriteFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e == nil {
-				p.wStartPos += n
-			} else {
-				if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
-					p.OnError(errors.ErrTemp.AddDebug(e.Error()))
-					return true
-				}
-				return false
-			}
-		}
-
-		p.wStartPos = 0
-		p.wEndPos = 0
-
-		if isFinish {
-			return true
+	// fill buffer
+	for p.wEndPos < len(p.wBuf) {
+		if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
+			p.wEndPos += n
+		} else {
+			isFillFinish = true
+			break
 		}
 	}
+
+	// write buffer
+	if p.wStartPos < p.wEndPos {
+		if n, e := netpoll.WriteFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e == nil {
+			p.wStartPos += n
+		} else {
+			if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
+				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+				return true
+			}
+			return false
+		}
+	}
+
+	if p.wStartPos == p.wEndPos {
+		p.wStartPos = 0
+		p.wEndPos = 0
+		return isFillFinish
+	}
+
+	return false
 }
 
 // OnWriteReady ...
@@ -112,7 +105,7 @@ func (p *XConn) OnWriteReady() {
 	defer p.Unlock()
 
 	if p.canWriteReady {
-		p.canWriteReady = !p.DoWrite()
+		p.canWriteReady = !p.doWrite()
 	}
 }
 
@@ -146,7 +139,7 @@ func (p *XConn) TriggerWrite() {
 	p.Lock()
 	defer p.Unlock()
 
-	p.canWriteReady = !p.DoWrite()
+	p.canWriteReady = !p.doWrite()
 }
 
 // Close ...

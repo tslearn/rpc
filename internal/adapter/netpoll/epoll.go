@@ -188,7 +188,7 @@ func (p *Poller) RegisterFD(fd int) error {
 		p.fd,
 		unix.EPOLL_CTL_ADD,
 		fd,
-		&unix.EpollEvent{Fd: int32(fd), Events: readWriteEvents | unix.EPOLLET},
+		&unix.EpollEvent{Fd: int32(fd), Events: readWriteEvents},
 	)
 	return os.NewSyscallError("kqueue add", e)
 }
