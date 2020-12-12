@@ -50,7 +50,6 @@ func (p *Channel) Close() {
 }
 
 func (p *Channel) AddConn(conn Conn) {
-	_ = p.poller.TriggerAddConn()
 	p.addCH <- conn
 	_ = p.poller.TriggerAddConn()
 }
