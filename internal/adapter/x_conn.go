@@ -12,16 +12,16 @@ import (
 
 // XConn ...
 type XConn struct {
-	channel       *netpoll.Channel
-	fd            int
-	next          netpoll.Conn
-	lAddr         net.Addr
-	rAddr         net.Addr
-	rBuf          []byte
-	wBuf          []byte
-	wStartPos     int
-	wEndPos       int
-	canWriteReady bool
+	channel    *netpoll.Channel
+	fd         int
+	next       netpoll.Conn
+	lAddr      net.Addr
+	rAddr      net.Addr
+	rBuf       []byte
+	wBuf       []byte
+	wStartPos  int
+	wEndPos    int
+	watchWrite bool
 	sync.Mutex
 }
 
@@ -35,22 +35,40 @@ func NewXConn(
 	wBufSize int,
 ) *XConn {
 	return &XConn{
-		channel:       channel,
-		fd:            fd,
-		next:          nil,
-		lAddr:         lAddr,
-		rAddr:         rAddr,
-		rBuf:          make([]byte, rBufSize),
-		wBuf:          make([]byte, wBufSize),
-		wStartPos:     0,
-		wEndPos:       0,
-		canWriteReady: false,
+		channel:    channel,
+		fd:         fd,
+		next:       nil,
+		lAddr:      lAddr,
+		rAddr:      rAddr,
+		rBuf:       make([]byte, rBufSize),
+		wBuf:       make([]byte, wBufSize),
+		wStartPos:  0,
+		wEndPos:    0,
+		watchWrite: false,
 	}
 }
 
 // SetNext ...
 func (p *XConn) SetNext(next netpoll.Conn) {
 	p.next = next
+}
+
+func (p *XConn) setWatchWrite(isWatch bool) *base.Error {
+	if p.watchWrite != isWatch {
+		if isWatch {
+			if e := p.channel.WatchWrite(p.fd); e != nil {
+				return errors.ErrTemp.AddDebug(e.Error())
+			}
+		} else {
+			if e := p.channel.UnwatchWrite(p.fd); e != nil {
+				return errors.ErrTemp.AddDebug(e.Error())
+			}
+		}
+
+		p.watchWrite = isWatch
+	}
+
+	return nil
 }
 
 // OnReadReady ...
@@ -104,8 +122,8 @@ func (p *XConn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
-	if p.canWriteReady {
-		p.canWriteReady = !p.doWrite()
+	if err := p.setWatchWrite(!p.doWrite()); err != nil {
+		p.OnError(err)
 	}
 }
 
@@ -139,7 +157,9 @@ func (p *XConn) TriggerWrite() {
 	p.Lock()
 	defer p.Unlock()
 
-	p.canWriteReady = !p.doWrite()
+	if err := p.setWatchWrite(!p.doWrite()); err != nil {
+		p.OnError(err)
+	}
 }
 
 // Close ...
