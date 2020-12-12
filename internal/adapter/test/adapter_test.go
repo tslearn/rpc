@@ -74,7 +74,7 @@ func (p *clientReceiver) OnConnError(
 
 func BenchmarkDebug(b *testing.B) {
 	go func() {
-		serverAdapter := adapter.NewAsyncServerAdapter(
+		serverAdapter := adapter.NewXServerAdapter(
 			"tcp", "0.0.0.0:8080", 1200, 1200, &serverReceiver{},
 		)
 		serverAdapter.Open()

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type AsyncServerAdapter struct {
+type XServerAdapter struct {
 	network  string
 	addr     string
 	rBufSize int
@@ -18,14 +18,14 @@ type AsyncServerAdapter struct {
 	manager  *netpoll.Manager
 }
 
-func NewAsyncServerAdapter(
+func NewXServerAdapter(
 	network string,
 	addr string,
 	rBufSize int,
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-	return NewRunnableService(&AsyncServerAdapter{
+	return NewRunnableService(&XServerAdapter{
 		network:  network,
 		addr:     addr,
 		rBufSize: rBufSize,
@@ -35,7 +35,7 @@ func NewAsyncServerAdapter(
 	})
 }
 
-func (p *AsyncServerAdapter) OnOpen() bool {
+func (p *XServerAdapter) OnOpen() bool {
 	p.manager = netpoll.NewManager(
 		p.network,
 		p.addr, func(err *base.Error) {
@@ -48,24 +48,24 @@ func (p *AsyncServerAdapter) OnOpen() bool {
 	return p.manager != nil
 }
 
-func (p *AsyncServerAdapter) OnRun(service *RunnableService) {
+func (p *XServerAdapter) OnRun(service *RunnableService) {
 	for service.IsRunning() {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
 
-func (p *AsyncServerAdapter) OnWillClose() {
+func (p *XServerAdapter) OnWillClose() {
 	// do nothing
 }
 
-func (p *AsyncServerAdapter) OnDidClose() {
+func (p *XServerAdapter) OnDidClose() {
 	p.manager.Close()
 }
 
-func (p *AsyncServerAdapter) GetConnectFunc() func(*netpoll.Channel, int, net.Addr, net.Addr) netpoll.Conn {
+func (p *XServerAdapter) GetConnectFunc() func(*netpoll.Channel, int, net.Addr, net.Addr) netpoll.Conn {
 	if strings.HasPrefix(p.network, "tcp") {
 		return func(channel *netpoll.Channel, fd int, lAddr net.Addr, rAddr net.Addr) netpoll.Conn {
-			conn := NewAsyncConn(channel, fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
+			conn := NewXConn(channel, fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
 			conn.SetNext(NewStreamConn(conn, p.receiver))
 			return conn
 		}

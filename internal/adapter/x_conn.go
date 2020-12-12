@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type AsyncConn struct {
+type XConn struct {
 	channel       *netpoll.Channel
 	fd            int
 	next          netpoll.Conn
@@ -23,15 +23,15 @@ type AsyncConn struct {
 	sync.Mutex
 }
 
-func NewAsyncConn(
+func NewXConn(
 	channel *netpoll.Channel,
 	fd int,
 	lAddr net.Addr,
 	rAddr net.Addr,
 	rBufSize int,
 	wBufSize int,
-) *AsyncConn {
-	return &AsyncConn{
+) *XConn {
+	return &XConn{
 		channel:       channel,
 		fd:            fd,
 		next:          nil,
@@ -45,11 +45,11 @@ func NewAsyncConn(
 	}
 }
 
-func (p *AsyncConn) SetNext(next netpoll.Conn) {
+func (p *XConn) SetNext(next netpoll.Conn) {
 	p.next = next
 }
 
-func (p *AsyncConn) OnReadReady() {
+func (p *XConn) OnReadReady() {
 	for {
 		if n, e := netpoll.ReadFD(p.fd, p.rBuf); e != nil {
 			if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
@@ -62,7 +62,7 @@ func (p *AsyncConn) OnReadReady() {
 	}
 }
 
-func (p *AsyncConn) DoWrite() bool {
+func (p *XConn) DoWrite() bool {
 	for {
 		isFinish := false
 
@@ -101,7 +101,7 @@ func (p *AsyncConn) DoWrite() bool {
 	}
 }
 
-func (p *AsyncConn) OnWriteReady() {
+func (p *XConn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -110,47 +110,47 @@ func (p *AsyncConn) OnWriteReady() {
 	}
 }
 
-func (p *AsyncConn) OnOpen() {
+func (p *XConn) OnOpen() {
 	p.next.OnOpen()
 }
 
-func (p *AsyncConn) OnClose() {
+func (p *XConn) OnClose() {
 	p.next.OnClose()
 }
 
-func (p *AsyncConn) OnError(err *base.Error) {
+func (p *XConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-func (p *AsyncConn) OnReadBytes(b []byte) {
+func (p *XConn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *AsyncConn) OnFillWrite(b []byte) int {
+func (p *XConn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
-func (p *AsyncConn) TriggerWrite() {
+func (p *XConn) TriggerWrite() {
 	p.Lock()
 	defer p.Unlock()
 
 	p.canWriteReady = !p.DoWrite()
 }
 
-func (p *AsyncConn) Close() {
+func (p *XConn) Close() {
 	if e := netpoll.CloseFD(p.fd); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
 }
 
-func (p *AsyncConn) LocalAddr() net.Addr {
+func (p *XConn) LocalAddr() net.Addr {
 	return p.lAddr
 }
 
-func (p *AsyncConn) RemoteAddr() net.Addr {
+func (p *XConn) RemoteAddr() net.Addr {
 	return p.rAddr
 }
 
-func (p *AsyncConn) GetFD() int {
+func (p *XConn) GetFD() int {
 	return p.fd
 }
