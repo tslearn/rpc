@@ -3,7 +3,6 @@
 package netpoll
 
 import (
-	"fmt"
 	"os"
 	"sync/atomic"
 	"time"
@@ -129,8 +128,6 @@ func (p *Poller) run() {
 			} else {
 				if ev&InEvents != 0 {
 					if readN, _ := unix.Read(p.wfd, p.wfdBuf); readN > 0 {
-						fmt.Println("Read Bytes ", p.wfdBuf[:readN])
-
 						for j := 0; j < readN; j++ {
 							if p.wfdBuf[j] == triggerDataAddConn {
 								p.onInvokeAdd()
