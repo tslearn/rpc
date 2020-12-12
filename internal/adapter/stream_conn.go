@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -9,26 +10,13 @@ import (
 	"sync/atomic"
 )
 
-type XConn interface {
-	OnOpen()
-	OnClose()
-	OnError(err *base.Error)
-	OnReadBytes(b []byte)
-	OnFillWrite(b []byte) int
-
-	LocalAddr() net.Addr
-	RemoteAddr() net.Addr
-	TriggerWrite()
-	Close()
-}
-
 const streamConnStatusRunning = int32(1)
 const streamConnStatusClosing = int32(2)
 const streamConnStatusClosed = int32(0)
 
 type StreamConn struct {
 	status   int32
-	prev     XConn
+	prev     netpoll.Conn
 	receiver IReceiver
 	writeCH  chan *core.Stream
 
@@ -39,7 +27,7 @@ type StreamConn struct {
 	writePos    int
 }
 
-func NewStreamConn(prev XConn, receiver IReceiver) *StreamConn {
+func NewStreamConn(prev netpoll.Conn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
 		status:      streamConnStatusClosed,
 		prev:        prev,
@@ -192,4 +180,16 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	}()
 
 	p.TriggerWrite()
+}
+
+func (p *StreamConn) OnReadReady() {
+	panic("kernel error, this code should not be called")
+}
+
+func (p *StreamConn) OnWriteReady() {
+	panic("kernel error, this code should not be called")
+}
+
+func (p *StreamConn) GetFD() int {
+	panic("kernel error, this code should not be called")
 }

@@ -1,4 +1,4 @@
-package async
+package netpoll
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
@@ -17,7 +17,7 @@ func NewManager(
 	network string,
 	addr string,
 	onError func(err *base.Error),
-	onConnect func(channel *Channel, fd int, lAddr net.Addr, rAddr net.Addr) *Conn,
+	onConnect func(channel *Channel, fd int, lAddr net.Addr, rAddr net.Addr) Conn,
 	size int,
 ) *Manager {
 	if size < 1 {

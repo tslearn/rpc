@@ -3,8 +3,6 @@ package test
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/async"
-	"github.com/rpccloud/rpc/internal/adapter/sync"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"testing"
@@ -76,7 +74,7 @@ func (p *clientReceiver) OnConnError(
 
 func BenchmarkDebug(b *testing.B) {
 	go func() {
-		serverAdapter := async.NewAsyncServerAdapter(
+		serverAdapter := adapter.NewAsyncServerAdapter(
 			"tcp", "0.0.0.0:8080", 1200, 1200, &serverReceiver{},
 		)
 		serverAdapter.Open()
@@ -85,7 +83,7 @@ func BenchmarkDebug(b *testing.B) {
 	time.Sleep(time.Second)
 
 	cReceiver := &clientReceiver{streamCH: make(chan *core.Stream)}
-	clientAdapter := sync.NewSyncClientAdapter(
+	clientAdapter := adapter.NewSyncClientAdapter(
 		"tcp", "0.0.0.0:8080", 1200, 1200, cReceiver,
 	)
 

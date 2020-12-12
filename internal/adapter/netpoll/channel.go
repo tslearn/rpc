@@ -1,4 +1,4 @@
-package async
+package netpoll
 
 import (
 	"sync"
@@ -12,8 +12,8 @@ type Channel struct {
 	onError         func(err *base.Error)
 	activeConnCount int64
 	poller          *Poller
-	connMap         map[int]*Conn
-	addCH           chan *Conn
+	connMap         map[int]Conn
+	addCH           chan Conn
 	sync.Mutex
 }
 
@@ -22,8 +22,8 @@ func NewChannel(onError func(err *base.Error)) *Channel {
 		onError:         onError,
 		activeConnCount: 0,
 		poller:          nil,
-		connMap:         make(map[int]*Conn),
-		addCH:           make(chan *Conn, 4096),
+		connMap:         make(map[int]Conn),
+		addCH:           make(chan Conn, 4096),
 	}
 
 	ret.poller = NewPoller(
@@ -49,7 +49,7 @@ func (p *Channel) Close() {
 	p.poller.Close()
 }
 
-func (p *Channel) AddConn(conn *Conn) {
+func (p *Channel) AddConn(conn Conn) {
 	_ = p.poller.TriggerAddConn()
 	p.addCH <- conn
 	_ = p.poller.TriggerAddConn()
@@ -89,7 +89,7 @@ func (p *Channel) onFDWrite(fd int) {
 
 func (p *Channel) onFDClose(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
-		if e := closeFD(fd); e != nil {
+		if e := CloseFD(fd); e != nil {
 			conn.OnError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		} else {
 			delete(p.connMap, fd)

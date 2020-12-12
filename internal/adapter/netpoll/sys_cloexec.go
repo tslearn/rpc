@@ -1,6 +1,6 @@
 // +build darwin
 
-package async
+package netpoll
 
 import (
 	"syscall"

@@ -1,28 +1,28 @@
-package sync
+package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"sync"
 )
 
-type Conn struct {
+type SyncConn struct {
 	netConn net.Conn
-	next    adapter.XConn
+	next    netpoll.Conn
 	rBuf    []byte
 	wBuf    []byte
 
 	sync.Mutex
 }
 
-func NewConn(
+func NewSyncConn(
 	netConn net.Conn,
 	rBufSize int,
 	wBufSize int,
-) *Conn {
-	return &Conn{
+) *SyncConn {
+	return &SyncConn{
 		netConn: netConn,
 		next:    nil,
 		rBuf:    make([]byte, rBufSize),
@@ -30,11 +30,11 @@ func NewConn(
 	}
 }
 
-func (p *Conn) SetNext(next adapter.XConn) {
+func (p *SyncConn) SetNext(next netpoll.Conn) {
 	p.next = next
 }
 
-func (p *Conn) TriggerRead() *base.Error {
+func (p *SyncConn) TriggerRead() *base.Error {
 	if n, e := p.netConn.Read(p.rBuf); e != nil {
 		return errors.ErrTemp.AddDebug(e.Error())
 	} else {
@@ -43,27 +43,27 @@ func (p *Conn) TriggerRead() *base.Error {
 	}
 }
 
-func (p *Conn) OnOpen() {
+func (p *SyncConn) OnOpen() {
 	p.next.OnOpen()
 }
 
-func (p *Conn) OnClose() {
+func (p *SyncConn) OnClose() {
 	p.next.OnClose()
 }
 
-func (p *Conn) OnError(err *base.Error) {
+func (p *SyncConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-func (p *Conn) OnReadBytes(b []byte) {
+func (p *SyncConn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *Conn) OnFillWrite(b []byte) int {
+func (p *SyncConn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
-func (p *Conn) TriggerWrite() {
+func (p *SyncConn) TriggerWrite() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -91,7 +91,7 @@ func (p *Conn) TriggerWrite() {
 	}
 }
 
-func (p *Conn) Close() {
+func (p *SyncConn) Close() {
 	if e := p.netConn.Close(); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
@@ -99,10 +99,22 @@ func (p *Conn) Close() {
 	p.OnClose()
 }
 
-func (p *Conn) LocalAddr() net.Addr {
+func (p *SyncConn) LocalAddr() net.Addr {
 	return p.netConn.LocalAddr()
 }
 
-func (p *Conn) RemoteAddr() net.Addr {
+func (p *SyncConn) RemoteAddr() net.Addr {
 	return p.netConn.RemoteAddr()
+}
+
+func (p *SyncConn) OnReadReady() {
+	panic("kernel error, this code should not be called")
+}
+
+func (p *SyncConn) OnWriteReady() {
+	panic("kernel error, this code should not be called")
+}
+
+func (p *SyncConn) GetFD() int {
+	panic("kernel error, this code should not be called")
 }

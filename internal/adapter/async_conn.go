@@ -1,7 +1,7 @@
-package async
+package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
@@ -9,10 +9,10 @@ import (
 	"sync"
 )
 
-type Conn struct {
-	channel       *Channel
+type AsyncConn struct {
+	channel       *netpoll.Channel
 	fd            int
-	next          adapter.XConn
+	next          netpoll.Conn
 	lAddr         net.Addr
 	rAddr         net.Addr
 	rBuf          []byte
@@ -23,15 +23,15 @@ type Conn struct {
 	sync.Mutex
 }
 
-func NewConn(
-	channel *Channel,
+func NewAsyncConn(
+	channel *netpoll.Channel,
 	fd int,
 	lAddr net.Addr,
 	rAddr net.Addr,
 	rBufSize int,
 	wBufSize int,
-) *Conn {
-	return &Conn{
+) *AsyncConn {
+	return &AsyncConn{
 		channel:       channel,
 		fd:            fd,
 		next:          nil,
@@ -45,13 +45,13 @@ func NewConn(
 	}
 }
 
-func (p *Conn) SetNext(next adapter.XConn) {
+func (p *AsyncConn) SetNext(next netpoll.Conn) {
 	p.next = next
 }
 
-func (p *Conn) OnReadReady() {
+func (p *AsyncConn) OnReadReady() {
 	for {
-		if n, e := readFD(p.fd, p.rBuf); e != nil {
+		if n, e := netpoll.ReadFD(p.fd, p.rBuf); e != nil {
 			if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
 				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 			}
@@ -62,7 +62,7 @@ func (p *Conn) OnReadReady() {
 	}
 }
 
-func (p *Conn) DoWrite() bool {
+func (p *AsyncConn) DoWrite() bool {
 	for {
 		isFinish := false
 
@@ -80,7 +80,7 @@ func (p *Conn) DoWrite() bool {
 
 		// write buffer
 		for p.wStartPos < p.wEndPos {
-			if n, e := writeFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
+			if n, e := netpoll.WriteFD(p.fd, p.wBuf[p.wStartPos:p.wEndPos]); e != nil {
 				if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
 					p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 					return true
@@ -101,7 +101,7 @@ func (p *Conn) DoWrite() bool {
 	}
 }
 
-func (p *Conn) OnWriteReady() {
+func (p *AsyncConn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -110,47 +110,47 @@ func (p *Conn) OnWriteReady() {
 	}
 }
 
-func (p *Conn) OnOpen() {
+func (p *AsyncConn) OnOpen() {
 	p.next.OnOpen()
 }
 
-func (p *Conn) OnClose() {
+func (p *AsyncConn) OnClose() {
 	p.next.OnClose()
 }
 
-func (p *Conn) OnError(err *base.Error) {
+func (p *AsyncConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-func (p *Conn) OnReadBytes(b []byte) {
+func (p *AsyncConn) OnReadBytes(b []byte) {
 	p.next.OnReadBytes(b)
 }
 
-func (p *Conn) OnFillWrite(b []byte) int {
+func (p *AsyncConn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
-func (p *Conn) TriggerWrite() {
+func (p *AsyncConn) TriggerWrite() {
 	p.Lock()
 	defer p.Unlock()
 
 	p.canWriteReady = !p.DoWrite()
 }
 
-func (p *Conn) Close() {
-	if e := closeFD(p.fd); e != nil {
+func (p *AsyncConn) Close() {
+	if e := netpoll.CloseFD(p.fd); e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 	}
 }
 
-func (p *Conn) LocalAddr() net.Addr {
+func (p *AsyncConn) LocalAddr() net.Addr {
 	return p.lAddr
 }
 
-func (p *Conn) RemoteAddr() net.Addr {
+func (p *AsyncConn) RemoteAddr() net.Addr {
 	return p.rAddr
 }
 
-func (p *Conn) GetFD() int {
+func (p *AsyncConn) GetFD() int {
 	return p.fd
 }

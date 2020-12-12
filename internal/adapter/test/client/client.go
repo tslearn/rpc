@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/sync"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
@@ -57,7 +56,7 @@ func TestReceiver() {
 
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
 
-	clientAdapter := sync.NewSyncClientAdapter(
+	clientAdapter := adapter.NewSyncClientAdapter(
 		"tcp", "0.0.0.0:8080", 1200, 1200, clientReceiver,
 	)
 

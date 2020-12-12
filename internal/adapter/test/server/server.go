@@ -7,7 +7,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/async"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
@@ -46,7 +45,7 @@ func main() {
 		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
-	serverAdapter := async.NewAsyncServerAdapter(
+	serverAdapter := adapter.NewAsyncServerAdapter(
 		"tcp", "0.0.0.0:8080", 1200, 1200, &receiver{},
 	)
 	serverAdapter.Open()

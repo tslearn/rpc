@@ -1,6 +1,6 @@
 // +build linux freebsd dragonfly darwin
 
-package async
+package netpoll
 
 import (
 	"errors"
@@ -9,9 +9,9 @@ import (
 	"strconv"
 )
 
-var readFD = unix.Read
-var writeFD = unix.Write
-var closeFD = unix.Close
+var ReadFD = unix.Read
+var WriteFD = unix.Write
+var CloseFD = unix.Close
 
 func getTCPSockAddr(
 	network string,

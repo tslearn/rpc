@@ -1,6 +1,6 @@
 // +build linux freebsd dragonfly
 
-package async
+package netpoll
 
 import "golang.org/x/sys/unix"
 

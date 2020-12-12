@@ -1,6 +1,6 @@
 // +build freebsd dragonfly darwin
 
-package async
+package netpoll
 
 import (
 	"os"

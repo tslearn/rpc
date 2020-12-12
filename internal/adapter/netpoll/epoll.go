@@ -1,6 +1,6 @@
 // +build linux
 
-package async
+package netpoll
 
 import (
 	"fmt"

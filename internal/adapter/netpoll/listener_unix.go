@@ -1,6 +1,6 @@
 // +build linux freebsd dragonfly darwin
 
-package async
+package netpoll
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
