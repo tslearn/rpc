@@ -1,4 +1,4 @@
-// +build freebsd dragonfly darwin
+// +build darwin
 
 package netpoll
 

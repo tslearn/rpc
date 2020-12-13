@@ -1,4 +1,4 @@
-// +build linux freebsd dragonfly
+// +build linux
 
 package netpoll
 
