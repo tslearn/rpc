@@ -3,11 +3,9 @@
 package netpoll
 
 import (
-	"fmt"
-	"testing"
-	"time"
-
+	"github.com/rpccloud/rpc/internal/base"
 	"golang.org/x/sys/unix"
+	"testing"
 )
 
 type testEpoll struct {
@@ -43,6 +41,8 @@ func (p *testEpoll) RegisterRead(fd int) error {
 }
 
 func TestEpoll_CanAsync(t *testing.T) {
+	assert := base.Assert()
+
 	redBuf := make([]byte, 1024)
 	fd, e := unix.Eventfd(0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC)
 	if e != nil {
@@ -64,17 +64,9 @@ func TestEpoll_CanAsync(t *testing.T) {
 		panic(e)
 	}
 
-	go func() {
-		fmt.Println(poll1.wait())
-		fmt.Println(poll2.wait())
-
-		fmt.Println("A")
-		unix.Read(fd, redBuf)
-		fmt.Println("B")
-
-		fmt.Println(poll1.wait())
-		fmt.Println(poll2.wait())
-	}()
-
-	time.Sleep(10 * time.Second)
+	assert(poll1.wait()).Equal(1)
+	assert(poll2.wait()).Equal(1)
+	unix.Read(fd, redBuf)
+	assert(poll1.wait()).Equal(0)
+	assert(poll2.wait()).Equal(0)
 }
