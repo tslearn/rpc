@@ -10,22 +10,22 @@ import (
 )
 
 type testEpoll struct {
-	eid int
+	pollID int
 }
 
 func newTestEpoll() *testEpoll {
-	eid, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
+	pollID, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
 
 	if e != nil {
 		panic(e)
 	}
 
-	return &testEpoll{eid: eid}
+	return &testEpoll{pollID: pollID}
 }
 
 func (p *testEpoll) wait() int {
 	var events [128]unix.EpollEvent
-	n, e := unix.EpollWait(p.eid, events[:], 100)
+	n, e := unix.EpollWait(p.pollID, events[:], 100)
 	if e != nil {
 		panic(e)
 	}
@@ -34,7 +34,7 @@ func (p *testEpoll) wait() int {
 
 func (p *testEpoll) RegisterRead(fd int) error {
 	return unix.EpollCtl(
-		p.eid,
+		p.pollID,
 		unix.EPOLL_CTL_ADD,
 		fd,
 		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
@@ -70,4 +70,8 @@ func TestEpoll_CanAsync(t *testing.T) {
 	unix.Read(fd, redBuf)
 	assert(poll1.wait()).Equal(0)
 	assert(poll2.wait()).Equal(0)
+
+	_ = unix.Close(fd)
+	_ = unix.Close(poll1.pollID)
+	_ = unix.Close(poll2.pollID)
 }
