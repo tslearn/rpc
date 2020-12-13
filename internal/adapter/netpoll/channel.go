@@ -33,8 +33,7 @@ func NewChannel(onError func(err *base.Error)) *Channel {
 
 	ret.poller = NewPoller(
 		ret.onError,
-		ret.onInvokeAdd,
-		ret.onInvokeExit,
+		ret.onTrigger,
 		ret.onFDRead,
 		ret.onFDWrite,
 		ret.onFDClose,
@@ -58,10 +57,10 @@ func (p *Channel) Close() {
 // AddConn ...
 func (p *Channel) AddConn(conn Conn) {
 	p.addCH <- conn
-	_ = p.poller.TriggerAddConn()
+	_ = p.poller.Trigger()
 }
 
-func (p *Channel) onInvokeAdd() {
+func (p *Channel) onTrigger() {
 	for {
 		select {
 		case conn := <-p.addCH:
@@ -75,10 +74,6 @@ func (p *Channel) onInvokeAdd() {
 			return
 		}
 	}
-}
-
-func (p *Channel) onInvokeExit() {
-	panic("not implement")
 }
 
 func (p *Channel) onFDRead(fd int) {

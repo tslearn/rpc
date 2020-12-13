@@ -24,7 +24,7 @@ const (
 	inEvents  = unix.EPOLLIN | unix.EPOLLPRI
 )
 
-var triggerBuffer = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+var triggerSendData = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 
 // Poller ...
 type Poller struct {
@@ -168,6 +168,6 @@ func (p *Poller) UnwatchWrite(fd int) error {
 
 // Trigger ...
 func (p *Poller) Trigger() (err error) {
-	_, e := unix.Write(p.triggerFD, triggerBuffer)
+	_, e := unix.Write(p.triggerFD, triggerSendData)
 	return e
 }

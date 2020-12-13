@@ -68,7 +68,6 @@ func NewTCPListener(
 	} else if poller := NewPoller(
 		onError,
 		func() {},
-		func() {},
 		ret.OnRead,
 		func(fd int) {},
 		func(fd int) {},
