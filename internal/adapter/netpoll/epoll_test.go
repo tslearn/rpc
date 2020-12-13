@@ -11,22 +11,22 @@ import (
 )
 
 type testEpoll struct {
-	epid int
+	eid int
 }
 
 func newTestEpoll() *testEpoll {
-	epid, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
+	eid, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
 
 	if e != nil {
 		panic(e)
 	}
 
-	return &testEpoll{epid: epid}
+	return &testEpoll{eid: eid}
 }
 
 func (p *testEpoll) wait() int {
 	var events [128]unix.EpollEvent
-	n, e := unix.EpollWait(p.epid, events[:], 1000)
+	n, e := unix.EpollWait(p.eid, events[:], 1000)
 	if e != nil {
 		panic(e)
 	}
@@ -35,7 +35,7 @@ func (p *testEpoll) wait() int {
 
 func (p *testEpoll) RegisterRead(fd int) error {
 	return unix.EpollCtl(
-		p.epid,
+		p.eid,
 		unix.EPOLL_CTL_ADD,
 		fd,
 		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
