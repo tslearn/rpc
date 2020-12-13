@@ -12,31 +12,19 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const triggerDataAddConn = 1
-const triggerDataExit = 2
-
-const pollerStatusRunning = 1
-const pollerStatusClosing = 2
-const pollerStatusClosed = 0
-
 const (
-	readEvents      = unix.EPOLLPRI | unix.EPOLLIN
-	writeEvents     = unix.EPOLLOUT
-	readWriteEvents = readEvents | writeEvents
-)
+	pollerStatusRunning = 1
+	pollerStatusClosing = 2
+	pollerStatusClosed  = 0
 
-const (
-	// ErrEvents ...
-	ErrEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
-	// OutEvents ...
-	OutEvents = unix.EPOLLOUT
-	// InEvents ...
-	InEvents = unix.EPOLLIN | unix.EPOLLPRI
-)
+	readEvents  = unix.EPOLLPRI | unix.EPOLLIN
+	writeEvents = unix.EPOLLOUT
 
-var (
-	triggerDataAddConnBuffer = []byte{triggerDataAddConn, 0, 0, 0, 0, 0, 0, 0}
-	triggerDataExitBuffer    = []byte{triggerDataExit, 0, 0, 0, 0, 0, 0, 0}
+	errEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
+	outEvents = unix.EPOLLOUT
+	inEvents  = unix.EPOLLIN | unix.EPOLLPRI
+
+	triggerBuffer = [8]byte{}
 )
 
 // Poller ...

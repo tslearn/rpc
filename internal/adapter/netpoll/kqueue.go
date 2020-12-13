@@ -3,7 +3,6 @@
 package netpoll
 
 import (
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -12,40 +11,32 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const triggerDataAddConn = 1
-const triggerDataExit = 2
-
-const pollerStatusRunning = 1
-const pollerStatusClosing = 2
-const pollerStatusClosed = 0
+const (
+	pollerStatusRunning = 1
+	pollerStatusClosing = 2
+	pollerStatusClosed  = 0
+)
 
 // Poller ...
 type Poller struct {
-	status       uint32
-	closeCH      chan bool
-	fd           int
-	events       [128]unix.Kevent_t
-	onError      func(err *base.Error)
-	onInvokeAdd  func()
-	onInvokeExit func()
-	onFDRead     func(fd int)
-	onFDWrite    func(fd int)
-	onFDClose    func(fd int)
+	status  uint32
+	pollFD  int
+	events  [128]unix.Kevent_t
+	onError func(err *base.Error)
 }
 
 // NewPoller ...
 func NewPoller(
 	onError func(err *base.Error),
-	onInvokeAdd func(),
-	onInvokeExit func(),
+	onTrigger func(),
 	onFDRead func(fd int),
 	onFDWrite func(fd int),
 	onFDClose func(fd int),
 ) *Poller {
-	if pfd, e := unix.Kqueue(); e != nil {
+	if pollFD, e := unix.Kqueue(); e != nil {
 		onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		return nil
-	} else if _, e := unix.Kevent(pfd, []unix.Kevent_t{{
+	} else if _, e := unix.Kevent(pollFD, []unix.Kevent_t{{
 		Ident:  0,
 		Filter: unix.EVFILT_USER,
 		Flags:  unix.EV_ADD | unix.EV_CLEAR,
@@ -54,61 +45,44 @@ func NewPoller(
 		return nil
 	} else {
 		ret := &Poller{
-			status:       pollerStatusRunning,
-			closeCH:      make(chan bool),
-			fd:           pfd,
-			onError:      onError,
-			onInvokeAdd:  onInvokeAdd,
-			onInvokeExit: onInvokeExit,
-			onFDRead:     onFDRead,
-			onFDWrite:    onFDWrite,
-			onFDClose:    onFDClose,
+			status:  pollerStatusRunning,
+			pollFD:  pollFD,
+			onError: onError,
 		}
 
 		go func() {
-			ret.run()
+			for atomic.LoadUint32(&ret.status) == pollerStatusRunning {
+				n, e := unix.Kevent(ret.pollFD, nil, ret.events[:], nil)
+
+				if e != nil {
+					if e != unix.EINTR {
+						onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+					}
+				}
+
+				for i := 0; i < n; i++ {
+					evt := &ret.events[i]
+					if fd := int(evt.Ident); fd == 0 {
+						onTrigger()
+					} else {
+						if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
+							onFDClose(fd)
+						} else if evt.Filter == unix.EVFILT_READ {
+							onFDRead(fd)
+						} else if evt.Filter == unix.EVFILT_WRITE {
+							onFDWrite(fd)
+						} else {
+							// ignore
+						}
+					}
+				}
+			}
+
+			atomic.StoreUint32(&ret.status, pollerStatusClosed)
 		}()
 
 		return ret
 	}
-}
-
-func (p *Poller) run() {
-	for atomic.LoadUint32(&p.status) == pollerStatusRunning {
-		n, e := unix.Kevent(p.fd, nil, p.events[:], nil)
-
-		if e != nil {
-			if e != unix.EINTR {
-				p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-			}
-		}
-
-		for i := 0; i < n; i++ {
-			evt := &p.events[i]
-			if fd := int(evt.Ident); fd == 0 {
-				if evt.Data == triggerDataAddConn {
-					p.onInvokeAdd()
-				} else if evt.Data == triggerDataExit {
-					p.onInvokeExit()
-					atomic.StoreUint32(&p.status, pollerStatusClosed)
-				} else {
-					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
-				}
-			} else {
-				if evt.Flags&unix.EV_EOF != 0 || evt.Flags&unix.EV_ERROR != 0 {
-					p.onFDClose(fd)
-				} else if evt.Filter == unix.EVFILT_READ {
-					p.onFDRead(fd)
-				} else if evt.Filter == unix.EVFILT_WRITE {
-					p.onFDWrite(fd)
-				} else {
-					p.onError(errors.ErrKqueueSystem.AddDebug("unknown event filter"))
-				}
-			}
-		}
-	}
-
-	p.closeCH <- true
 }
 
 // Close ...
@@ -118,18 +92,11 @@ func (p *Poller) Close() {
 		pollerStatusRunning,
 		pollerStatusClosing,
 	) {
-		go func() {
-			for atomic.LoadUint32(&p.status) == pollerStatusClosing {
-				if e := p.TriggerExit(); e != nil {
-					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-				}
-				time.Sleep(50 * time.Millisecond)
-			}
-		}()
+		for atomic.LoadUint32(&p.status) == pollerStatusClosing {
+			time.Sleep(50 * time.Millisecond)
+		}
 
-		<-p.closeCH
-
-		if e := unix.Close(p.fd); e != nil {
+		if e := unix.Close(p.pollFD); e != nil {
 			p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		}
 	} else {
@@ -139,7 +106,7 @@ func (p *Poller) Close() {
 
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Flags:  unix.EV_ADD,
 		Filter: unix.EVFILT_READ,
@@ -154,7 +121,7 @@ func (p *Poller) UnregisterFD(fd int) error {
 
 // WatchWrite ...
 func (p *Poller) WatchWrite(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Flags:  unix.EV_ADD,
 		Filter: unix.EVFILT_WRITE,
@@ -164,7 +131,7 @@ func (p *Poller) WatchWrite(fd int) error {
 
 // UnwatchWrite ...
 func (p *Poller) UnwatchWrite(fd int) error {
-	_, err := unix.Kevent(p.fd, []unix.Kevent_t{{
+	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Flags:  unix.EV_DELETE,
 		Filter: unix.EVFILT_WRITE,
@@ -172,24 +139,13 @@ func (p *Poller) UnwatchWrite(fd int) error {
 	return err
 }
 
-// TriggerAddConn ...
-func (p *Poller) TriggerAddConn() (err error) {
-	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
+// Trigger ...
+func (p *Poller) Trigger() error {
+	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  0,
 		Filter: unix.EVFILT_USER,
 		Fflags: unix.NOTE_TRIGGER,
-		Data:   triggerDataAddConn,
+		Data:   0,
 	}}, nil, nil)
-	return os.NewSyscallError("kqueue trigger", err)
-}
-
-// TriggerExit ...
-func (p *Poller) TriggerExit() (err error) {
-	_, err = unix.Kevent(p.fd, []unix.Kevent_t{{
-		Ident:  0,
-		Filter: unix.EVFILT_USER,
-		Fflags: unix.NOTE_TRIGGER,
-		Data:   triggerDataExit,
-	}}, nil, nil)
-	return os.NewSyscallError("kqueue trigger", err)
+	return err
 }
