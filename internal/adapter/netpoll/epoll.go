@@ -39,7 +39,7 @@ var (
 	triggerDataExitBuffer    = []byte{triggerDataExit, 0, 0, 0, 0, 0, 0, 0}
 )
 
-// Poller represents a poller which is in charge of monitoring file-descriptors.
+// Poller ...
 type Poller struct {
 	status  uint32
 	closeCH chan bool
