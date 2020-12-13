@@ -24,7 +24,7 @@ const (
 	inEvents  = unix.EPOLLIN | unix.EPOLLPRI
 )
 
-var triggerSendData = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+var triggerSendData = []byte{1, 1, 1, 1, 1, 1, 1, 1}
 
 // Poller ...
 type Poller struct {
