@@ -1,13 +1,14 @@
-// +build darwin
+// +build darwin freebsd dragonfly
 
 package netpoll
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"golang.org/x/sys/unix"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"golang.org/x/sys/unix"
 )
 
 type testKqueue struct {
@@ -26,7 +27,7 @@ func newTestKqueue() *testKqueue {
 
 func (p *testKqueue) wait() int {
 	var events [128]unix.Kevent_t
-	n, e := unix.Kevent(p.pollID, nil, events[:], &unix.Timespec{Nsec: 1000})
+	n, e := unix.Kevent(p.pollID, nil, events[:], &unix.Timespec{Nsec: 10000000})
 	if e != nil {
 		panic(e)
 	}
@@ -71,6 +72,7 @@ func TestEpoll_CanAsync(t *testing.T) {
 	time.Sleep(time.Second)
 
 	assert(poll1.wait()).Equal(1)
+
 	assert(poll2.wait()).Equal(1)
 
 	if _, _, e := unix.Accept(fd); e != nil {
