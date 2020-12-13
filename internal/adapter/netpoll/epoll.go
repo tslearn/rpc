@@ -3,7 +3,6 @@
 package netpoll
 
 import (
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -23,115 +22,88 @@ const (
 	errEvents = unix.EPOLLERR | unix.EPOLLHUP | unix.EPOLLRDHUP
 	outEvents = unix.EPOLLOUT
 	inEvents  = unix.EPOLLIN | unix.EPOLLPRI
-
-	triggerBuffer = [8]byte{}
 )
+
+var triggerBuffer = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 
 // Poller ...
 type Poller struct {
-	status  uint32
-	closeCH chan bool
-	fd      int    // epoll fd
-	wfd     int    // wake fd
-	wfdBuf  []byte // wfd buffer to read packet
-	events  [128]unix.EpollEvent
-
-	onError      func(err *base.Error)
-	onInvokeAdd  func()
-	onInvokeExit func()
-	onFDRead     func(fd int)
-	onFDWrite    func(fd int)
-	onFDClose    func(fd int)
+	status    uint32
+	pollFD    int
+	triggerFD int
+	events    [128]unix.EpollEvent
+	onError   func(err *base.Error)
 }
 
 // NewPoller instantiates a poller.
 func NewPoller(
 	onError func(err *base.Error),
-	onInvokeAdd func(),
-	onInvokeExit func(),
+	onTrigger func(),
 	onFDRead func(fd int),
 	onFDWrite func(fd int),
 	onFDClose func(fd int),
 ) *Poller {
-	if pfd, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC); e != nil {
+	if pollFD, e := unix.EpollCreate1(unix.EPOLL_CLOEXEC); e != nil {
 		onError(errors.ErrTemp.AddDebug(e.Error()))
 		return nil
-	} else if wfd, e := unix.Eventfd(
+	} else if triggerFD, e := unix.Eventfd(
 		0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC,
 	); e != nil {
-		_ = unix.Close(pfd)
+		_ = unix.Close(pollFD)
 		onError(errors.ErrTemp.AddDebug(e.Error()))
 		return nil
 	} else {
 		ret := &Poller{
-			status:       pollerStatusRunning,
-			closeCH:      make(chan bool),
-			fd:           pfd,
-			wfd:          wfd,
-			wfdBuf:       make([]byte, 512),
-			onError:      onError,
-			onInvokeAdd:  onInvokeAdd,
-			onInvokeExit: onInvokeExit,
-			onFDRead:     onFDRead,
-			onFDWrite:    onFDWrite,
-			onFDClose:    onFDClose,
+			status:    pollerStatusRunning,
+			pollFD:    pollFD,
+			triggerFD: triggerFD,
+			onError:   onError,
 		}
 
-		if e := ret.RegisterFD(ret.wfd); e != nil {
+		if e := ret.RegisterFD(triggerFD); e != nil {
 			ret.Close()
 			return nil
 		}
 
 		go func() {
-			ret.run()
-		}()
+			triggerReadBuf := make([]byte, 256)
 
-		return ret
-	}
-}
+			for atomic.LoadUint32(&ret.status) == pollerStatusRunning {
+				n, e := unix.EpollWait(ret.pollFD, ret.events[:], -1)
 
-func (p *Poller) run() {
-	for {
-		n, e := unix.EpollWait(p.fd, p.events[:], -1)
-
-		if e != nil {
-			if e != unix.EINTR {
-				p.onError(errors.ErrTemp.AddDebug(e.Error()))
-			}
-		}
-
-		for i := 0; i < n; i++ {
-			evt := &p.events[i]
-
-			if fd, ev := int(evt.Fd), evt.Events; fd != p.wfd {
-				if ev&ErrEvents != 0 {
-					p.onFDClose(fd)
-				} else if ev&InEvents != 0 {
-					p.onFDRead(fd)
-				} else if ev&OutEvents != 0 {
-					p.onFDWrite(fd)
-				} else {
-					p.onError(errors.ErrTemp.AddDebug("unknown event filter"))
+				if e != nil {
+					if e != unix.EINTR {
+						onError(errors.ErrTemp.AddDebug(e.Error()))
+					}
 				}
-			} else {
-				if ev&InEvents != 0 {
-					if readN, _ := unix.Read(p.wfd, p.wfdBuf); readN > 0 {
-						for j := 0; j < readN; j++ {
-							if p.wfdBuf[j] == triggerDataAddConn {
-								p.onInvokeAdd()
-							} else if p.wfdBuf[j] == triggerDataExit {
-								p.onInvokeExit()
-								atomic.StoreUint32(&p.status, pollerStatusClosed)
-							} else if p.wfdBuf[j] == 0 {
-								continue
-							} else {
-								p.onError(errors.ErrKqueueSystem.AddDebug("unknown event data"))
-							}
+
+				for i := 0; i < n; i++ {
+					evt := &ret.events[i]
+					if fd, ev := int(evt.Fd), evt.Events; fd == triggerFD {
+						_, _ = unix.Read(triggerFD, triggerReadBuf)
+						onTrigger()
+					} else {
+						if ev&errEvents != 0 {
+							onFDClose(fd)
+						} else if ev&inEvents != 0 {
+							onFDRead(fd)
+						} else if ev&outEvents != 0 {
+							onFDWrite(fd)
+						} else {
+							// ignore
 						}
 					}
 				}
 			}
-		}
+
+			if e := unix.Close(triggerFD); e != nil {
+				onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+			}
+
+			atomic.StoreUint32(&ret.status, pollerStatusClosed)
+		}()
+
+		return ret
 	}
 }
 
@@ -142,22 +114,11 @@ func (p *Poller) Close() {
 		pollerStatusRunning,
 		pollerStatusClosing,
 	) {
-		go func() {
-			for atomic.LoadUint32(&p.status) == pollerStatusClosing {
-				if e := p.TriggerExit(); e != nil {
-					p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
-				}
-				time.Sleep(50 * time.Millisecond)
-			}
-		}()
-
-		<-p.closeCH
-
-		if e := unix.Close(p.wfd); e != nil {
-			p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
+		for atomic.LoadUint32(&p.status) == pollerStatusClosing {
+			time.Sleep(50 * time.Millisecond)
 		}
 
-		if e := unix.Close(p.fd); e != nil {
+		if e := unix.Close(p.pollFD); e != nil {
 			p.onError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		}
 	} else {
@@ -168,7 +129,7 @@ func (p *Poller) Close() {
 // RegisterFD ...
 func (p *Poller) RegisterFD(fd int) error {
 	return unix.EpollCtl(
-		p.fd,
+		p.pollFD,
 		unix.EPOLL_CTL_ADD,
 		fd,
 		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
@@ -177,14 +138,18 @@ func (p *Poller) RegisterFD(fd int) error {
 
 // UnregisterFD ...
 func (p *Poller) UnregisterFD(fd int) error {
-	e := unix.EpollCtl(p.fd, unix.EPOLL_CTL_DEL, fd, nil)
-	return os.NewSyscallError("kqueue add", e)
+	return unix.EpollCtl(
+		p.pollFD,
+		unix.EPOLL_CTL_DEL,
+		fd,
+		nil,
+	)
 }
 
 // WatchWrite ...
 func (p *Poller) WatchWrite(fd int) error {
 	return unix.EpollCtl(
-		p.fd,
+		p.pollFD,
 		unix.EPOLL_CTL_ADD,
 		fd,
 		&unix.EpollEvent{Fd: int32(fd), Events: writeEvents},
@@ -194,21 +159,15 @@ func (p *Poller) WatchWrite(fd int) error {
 // UnwatchWrite ...
 func (p *Poller) UnwatchWrite(fd int) error {
 	return unix.EpollCtl(
-		p.fd,
+		p.pollFD,
 		unix.EPOLL_CTL_MOD,
 		fd,
 		&unix.EpollEvent{Fd: int32(fd), Events: readEvents},
 	)
 }
 
-// TriggerAddConn ...
-func (p *Poller) TriggerAddConn() (err error) {
-	_, e := unix.Write(p.wfd, triggerDataAddConnBuffer)
-	return os.NewSyscallError("kqueue trigger", e)
-}
-
-// TriggerExit ...
-func (p *Poller) TriggerExit() (err error) {
-	_, e := unix.Write(p.wfd, triggerDataExitBuffer)
-	return os.NewSyscallError("kqueue trigger", e)
+// Trigger ...
+func (p *Poller) Trigger() (err error) {
+	_, e := unix.Write(p.triggerFD, triggerBuffer)
+	return e
 }
