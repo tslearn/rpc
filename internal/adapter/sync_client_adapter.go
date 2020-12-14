@@ -33,23 +33,19 @@ func NewSyncClientAdapter(
 	})
 }
 
-// OnOpen ...
-func (p *SyncClientAdapter) OnOpen() bool {
+// OnRun ...
+func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	netConn, e := net.Dial(p.network, p.addr)
 
 	if e != nil {
 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
-		return false
+		return
 	}
 
 	p.conn = NewSyncConn(netConn, p.rBufSize, p.wBufSize)
 	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
 	p.conn.OnOpen()
-	return true
-}
 
-// OnRun ...
-func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	for service.IsRunning() {
 		if err := p.conn.TriggerRead(); err != nil {
 			p.conn.OnError(err)
@@ -58,12 +54,18 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	}
 }
 
-// OnWillClose ...
-func (p *SyncClientAdapter) OnWillClose() {
-	// do nothing
+// OnStop ...
+func (p *SyncClientAdapter) OnStop(service *RunnableService) {
+	// if OnStop is caused by Close(), don't close the conn again
+	if p.conn != nil {
+		if service.IsRunning() {
+			p.conn.Close()
+		}
+		p.conn = nil
+	}
 }
 
-// OnDidClose ...
-func (p *SyncClientAdapter) OnDidClose() {
+// Close ...
+func (p *SyncClientAdapter) Close() {
 	p.conn.Close()
 }

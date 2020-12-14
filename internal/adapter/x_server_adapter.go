@@ -38,8 +38,8 @@ func NewXServerAdapter(
 	})
 }
 
-// OnOpen ...
-func (p *XServerAdapter) OnOpen() bool {
+// OnRun ...
+func (p *XServerAdapter) OnRun(service *RunnableService) {
 	p.manager = netpoll.NewManager(
 		p.network,
 		p.addr, func(err *base.Error) {
@@ -49,24 +49,25 @@ func (p *XServerAdapter) OnOpen() bool {
 		base.MaxInt(runtime.NumCPU()/2, 1),
 	)
 
-	return p.manager != nil
-}
+	if p.manager == nil {
+		return
+	}
 
-// OnRun ...
-func (p *XServerAdapter) OnRun(service *RunnableService) {
 	for service.IsRunning() {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
 
-// OnWillClose ...
-func (p *XServerAdapter) OnWillClose() {
-	// do nothing
+// OnStop ...
+func (p *XServerAdapter) OnStop(_ *RunnableService) {
+	if p.manager != nil {
+		p.manager.Close()
+	}
 }
 
-// OnDidClose ...
-func (p *XServerAdapter) OnDidClose() {
-	p.manager.Close()
+// Close ...
+func (p *XServerAdapter) Close() {
+	// do nothing
 }
 
 // GetConnectFunc ...
