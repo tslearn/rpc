@@ -59,7 +59,7 @@ func (p *SyncServerAdapter) runAsTCPServer(service *RunnableService) {
 				conn.SetNext(NewStreamConn(conn, p.receiver))
 				conn.OnOpen()
 				for {
-					if ok := conn.OnReadReady(); ok {
+					if ok := conn.OnReadReady(); !ok {
 						break
 					}
 				}
