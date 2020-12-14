@@ -11,11 +11,11 @@ import (
 
 // SyncConn ...
 type SyncConn struct {
-	netConn net.Conn
-	next    netpoll.Conn
-	rBuf    []byte
-	wBuf    []byte
-
+	isRunning bool
+	netConn   net.Conn
+	next      netpoll.Conn
+	rBuf      []byte
+	wBuf      []byte
 	sync.Mutex
 }
 
@@ -26,10 +26,11 @@ func NewSyncConn(
 	wBufSize int,
 ) *SyncConn {
 	return &SyncConn{
-		netConn: netConn,
-		next:    nil,
-		rBuf:    make([]byte, rBufSize),
-		wBuf:    make([]byte, wBufSize),
+		isRunning: true,
+		netConn:   netConn,
+		next:      nil,
+		rBuf:      make([]byte, rBufSize),
+		wBuf:      make([]byte, wBufSize),
 	}
 }
 
@@ -106,11 +107,17 @@ func (p *SyncConn) TriggerWrite() {
 
 // Close ...
 func (p *SyncConn) Close() {
-	if e := p.netConn.Close(); e != nil {
-		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
-	}
+	p.Lock()
+	defer p.Unlock()
 
-	p.OnClose()
+	if p.isRunning {
+		p.isRunning = false
+		if e := p.netConn.Close(); e != nil {
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		}
+
+		p.OnClose()
+	}
 }
 
 // LocalAddr ...

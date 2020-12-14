@@ -64,6 +64,7 @@ func (p *SyncServerAdapter) runAsTCPServer(service *RunnableService) {
 						break
 					}
 				}
+
 				conn.Close()
 				conn.OnClose()
 			}(tcpConn)
