@@ -196,12 +196,12 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 }
 
 // OnReadReady ...
-func (p *StreamConn) OnReadReady() {
+func (p *StreamConn) OnReadReady() bool {
 	panic("kernel error, this code should not be called")
 }
 
 // OnWriteReady ...
-func (p *StreamConn) OnWriteReady() {
+func (p *StreamConn) OnWriteReady() bool {
 	panic("kernel error, this code should not be called")
 }
 

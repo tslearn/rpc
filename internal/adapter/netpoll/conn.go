@@ -11,8 +11,8 @@ type Conn interface {
 	OnOpen()
 	OnClose()
 	OnError(err *base.Error)
-	OnReadReady()
-	OnWriteReady()
+	OnReadReady() bool
+	OnWriteReady() bool
 	OnReadBytes(b []byte)
 	OnFillWrite(b []byte) int
 

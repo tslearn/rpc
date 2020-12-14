@@ -47,8 +47,7 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 
 	p.conn.OnOpen()
 	for service.IsRunning() {
-		if err := p.conn.TriggerRead(); err != nil {
-			p.conn.OnError(err)
+		if ok := p.conn.next.OnReadReady(); !ok {
 			break
 		}
 	}

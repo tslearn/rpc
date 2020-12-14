@@ -39,18 +39,6 @@ func (p *SyncConn) SetNext(next netpoll.Conn) {
 	p.next = next
 }
 
-// TriggerRead ...
-func (p *SyncConn) TriggerRead() *base.Error {
-	n, e := p.netConn.Read(p.rBuf)
-
-	if e != nil {
-		return errors.ErrTemp.AddDebug(e.Error())
-	}
-
-	p.OnReadBytes(p.rBuf[:n])
-	return nil
-}
-
 // OnOpen ...
 func (p *SyncConn) OnOpen() {
 	p.next.OnOpen()
@@ -115,8 +103,6 @@ func (p *SyncConn) Close() {
 		if e := p.netConn.Close(); e != nil {
 			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		}
-
-		p.OnClose()
 	}
 }
 
@@ -131,12 +117,18 @@ func (p *SyncConn) RemoteAddr() net.Addr {
 }
 
 // OnReadReady ...
-func (p *SyncConn) OnReadReady() {
-	panic("kernel error, this code should not be called")
+func (p *SyncConn) OnReadReady() bool {
+	n, e := p.netConn.Read(p.rBuf)
+	if e != nil {
+		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		return false
+	}
+	p.OnReadBytes(p.rBuf[:n])
+	return true
 }
 
 // OnWriteReady ...
-func (p *SyncConn) OnWriteReady() {
+func (p *SyncConn) OnWriteReady() bool {
 	panic("kernel error, this code should not be called")
 }
 

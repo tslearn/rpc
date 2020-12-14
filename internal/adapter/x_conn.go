@@ -12,6 +12,7 @@ import (
 
 // XConn ...
 type XConn struct {
+	isRunning  bool
 	channel    *netpoll.Channel
 	fd         int
 	next       netpoll.Conn
@@ -35,6 +36,7 @@ func NewXConn(
 	wBufSize int,
 ) *XConn {
 	return &XConn{
+		isRunning:  true,
 		channel:    channel,
 		fd:         fd,
 		next:       nil,
@@ -55,7 +57,7 @@ func (p *XConn) SetNext(next netpoll.Conn) {
 
 func (p *XConn) setWatchWrite(isWatch bool) *base.Error {
 	if p.watchWrite != isWatch {
-		if e := p.channel.SetWathWrite(p.fd, isWatch); e != nil {
+		if e := p.channel.SetWatchWrite(p.fd, isWatch); e != nil {
 			return errors.ErrTemp.AddDebug(e.Error())
 		}
 		p.watchWrite = isWatch
@@ -65,14 +67,17 @@ func (p *XConn) setWatchWrite(isWatch bool) *base.Error {
 }
 
 // OnReadReady ...
-func (p *XConn) OnReadReady() {
+func (p *XConn) OnReadReady() bool {
 	if n, e := netpoll.ReadFD(p.fd, p.rBuf); e != nil {
 		if e != unix.EWOULDBLOCK && e != unix.EAGAIN {
 			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+			return false
 		}
 	} else {
 		p.OnReadBytes(p.rBuf[:n])
 	}
+
+	return true
 }
 
 func (p *XConn) doWrite() bool {
@@ -111,13 +116,15 @@ func (p *XConn) doWrite() bool {
 }
 
 // OnWriteReady ...
-func (p *XConn) OnWriteReady() {
+func (p *XConn) OnWriteReady() bool {
 	p.Lock()
 	defer p.Unlock()
 
 	if err := p.setWatchWrite(!p.doWrite()); err != nil {
 		p.OnError(err)
 	}
+
+	return true
 }
 
 // OnOpen ...
@@ -157,9 +164,16 @@ func (p *XConn) TriggerWrite() {
 
 // Close ...
 func (p *XConn) Close() {
-	if e := p.channel.CloseFD(p.fd); e != nil {
-		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+	p.Lock()
+	defer p.Unlock()
+
+	if p.isRunning {
+		if e := p.channel.CloseFD(p.fd); e != nil {
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		}
+		p.isRunning = false
 	}
+
 }
 
 // LocalAddr ...

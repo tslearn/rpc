@@ -112,8 +112,8 @@ func (p *Channel) CloseFD(fd int) error {
 	return nil
 }
 
-// SetWathWrite ...
-func (p *Channel) SetWathWrite(fd int, isWatch bool) error {
+// SetWatchWrite ...
+func (p *Channel) SetWatchWrite(fd int, isWatch bool) error {
 	if isWatch {
 		return p.poller.WatchWrite(fd)
 	}
