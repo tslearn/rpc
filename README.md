@@ -39,8 +39,12 @@ $ go fmt ./...
 $ git ls-files | xargs wc -l
 ```
 
-### 参考
-https://github.com/tslearn/rpc-cluster-go/tree/984c4a17ffd777b268a13c0506aef83d9ba6b15d
 
 ### Problems
 ##### How to avoid session flood
+
+### 参考
+https://github.com/tslearn/rpc-cluster-go/tree/984c4a17ffd777b268a13c0506aef83d9ba6b15d <br>
+
+ssl 安全测试 https://www.ssllabs.com/ssltest/ <br>
+
