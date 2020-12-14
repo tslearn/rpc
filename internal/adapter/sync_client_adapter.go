@@ -44,14 +44,15 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 
 	p.conn = NewSyncConn(netConn, p.rBufSize, p.wBufSize)
 	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
-	p.conn.OnOpen()
 
+	p.conn.OnOpen()
 	for service.IsRunning() {
 		if err := p.conn.TriggerRead(); err != nil {
 			p.conn.OnError(err)
 			break
 		}
 	}
+	p.conn.OnClose()
 }
 
 // OnStop ...

@@ -6,40 +6,6 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// // ISyncServer ...
-// type ISyncServer interface {
-// 	Open() error
-// 	Run() error
-// 	Close() error
-// }
-
-// // SyncServerTCP ...
-// type SyncServerTCP struct {
-// 	network  string
-// 	addr     string
-// 	listener net.Listener
-// }
-
-// // Open ...
-// func (p *SyncServerTCP) Open() (e error) {
-// 	p.listener, e = net.Listen(p.network, p.addr)
-// 	return
-// }
-
-// // Run ...
-// func (p *SyncServerTCP) Run() error {
-// 	for {
-// 		conn, err := p.listener.Accept()
-
-// 		if err == nil {
-// 			go onConnRun(NewTCPStreamConn(conn), conn.RemoteAddr())
-// 		} else {
-
-// 			break
-// 		}
-// 	}
-// }
-
 // SyncServerAdapter ...
 type SyncServerAdapter struct {
 	network  string
@@ -57,7 +23,7 @@ func NewSyncServerAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-	return NewRunnableService(&SyncClientAdapter{
+	return NewRunnableService(&SyncServerAdapter{
 		network:  network,
 		addr:     addr,
 		rBufSize: rBufSize,
@@ -82,23 +48,35 @@ func (p *SyncServerAdapter) runAsTCPServer(service *RunnableService) {
 		return
 	}
 
-	// for service.IsRunning() {
-	// 	conn, e := listener.Accept()
+	for service.IsRunning() {
+		tcpConn, e := listener.Accept()
 
-	// 	if e != nil {
-	// 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
-	// 	} else {
-	// 		//go onConnRun(NewTCPStreamConn(conn), conn.RemoteAddr())
-	// 	}
-	// }
+		if e != nil {
+			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
+		} else {
+			go func(netConn net.Conn) {
+				conn := NewSyncConn(netConn, p.rBufSize, p.wBufSize)
+				conn.SetNext(NewStreamConn(conn, p.receiver))
+				conn.OnOpen()
+				for {
+					if err := conn.TriggerRead(); err != nil {
+						conn.OnError(err)
+						break
+					}
+				}
+				conn.Close()
+				conn.OnClose()
+			}(tcpConn)
+		}
+	}
 
 	if e = listener.Close(); e != nil {
 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
 	}
 }
 
-// OnClose ...
-func (p *SyncServerAdapter) OnClose(_ *RunnableService) {
+// OnStop ...
+func (p *SyncServerAdapter) OnStop(_ *RunnableService) {
 
 }
 
