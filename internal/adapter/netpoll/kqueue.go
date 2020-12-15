@@ -114,13 +114,13 @@ func (p *Poller) RegisterFD(fd int) error {
 	return err
 }
 
-// UnregisterFD ...
-func (p *Poller) UnregisterFD(fd int) error {
+// UnregisteredFD ...
+func (p *Poller) UnregisteredFD(fd int) error {
 	return nil
 }
 
-// WatchWrite ...
-func (p *Poller) WatchWrite(fd int) error {
+// AddWrite ...
+func (p *Poller) AddWrite(fd int) error {
 	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Flags:  unix.EV_ADD,
@@ -129,8 +129,8 @@ func (p *Poller) WatchWrite(fd int) error {
 	return err
 }
 
-// UnwatchWrite ...
-func (p *Poller) UnwatchWrite(fd int) error {
+// DelWrite ...
+func (p *Poller) DelWrite(fd int) error {
 	_, err := unix.Kevent(p.pollFD, []unix.Kevent_t{{
 		Ident:  uint64(fd),
 		Flags:  unix.EV_DELETE,

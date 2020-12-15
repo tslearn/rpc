@@ -136,8 +136,8 @@ func (p *Poller) RegisterFD(fd int) error {
 	)
 }
 
-// UnregisterFD ...
-func (p *Poller) UnregisterFD(fd int) error {
+// UnregisteredFD ...
+func (p *Poller) UnregisteredFD(fd int) error {
 	return unix.EpollCtl(
 		p.pollFD,
 		unix.EPOLL_CTL_DEL,
@@ -146,8 +146,8 @@ func (p *Poller) UnregisterFD(fd int) error {
 	)
 }
 
-// WatchWrite ...
-func (p *Poller) WatchWrite(fd int) error {
+// AddWrite ...
+func (p *Poller) AddWrite(fd int) error {
 	return unix.EpollCtl(
 		p.pollFD,
 		unix.EPOLL_CTL_ADD,
@@ -156,8 +156,8 @@ func (p *Poller) WatchWrite(fd int) error {
 	)
 }
 
-// UnwatchWrite ...
-func (p *Poller) UnwatchWrite(fd int) error {
+// DelWrite ...
+func (p *Poller) DelWrite(fd int) error {
 	return unix.EpollCtl(
 		p.pollFD,
 		unix.EPOLL_CTL_MOD,

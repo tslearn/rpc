@@ -101,7 +101,7 @@ func (p *Channel) onFDClose(fd int) {
 
 // CloseFD ...
 func (p *Channel) CloseFD(fd int) error {
-	if e := p.poller.UnregisterFD(fd); e != nil {
+	if e := p.poller.UnregisteredFD(fd); e != nil {
 		return e
 	}
 
@@ -112,13 +112,13 @@ func (p *Channel) CloseFD(fd int) error {
 	return nil
 }
 
-// SetWatchWrite ...
-func (p *Channel) SetWatchWrite(fd int, isWatch bool) error {
+// SetWriteFD ...
+func (p *Channel) SetWriteFD(fd int, isWatch bool) error {
 	if isWatch {
-		return p.poller.WatchWrite(fd)
+		return p.poller.AddWrite(fd)
 	}
 
-	return p.poller.UnwatchWrite(fd)
+	return p.poller.DelWrite(fd)
 }
 
 // GetActiveConnCount ...
