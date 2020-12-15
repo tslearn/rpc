@@ -74,7 +74,7 @@ func (p *XConn) OnReadReady() bool {
 			return false
 		}
 	} else {
-		p.OnReadBytes(p.rBuf[:n])
+		p.next.OnReadBytes(p.rBuf[:n])
 	}
 
 	return true
@@ -85,7 +85,7 @@ func (p *XConn) doWrite() bool {
 
 	// fill buffer
 	for p.wEndPos < len(p.wBuf) {
-		if n := p.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
+		if n := p.next.OnFillWrite(p.wBuf[p.wEndPos:]); n > 0 {
 			p.wEndPos += n
 		} else {
 			isFillFinish = true
@@ -140,16 +140,6 @@ func (p *XConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-// OnReadBytes ...
-func (p *XConn) OnReadBytes(b []byte) {
-	p.next.OnReadBytes(b)
-}
-
-// OnFillWrite ...
-func (p *XConn) OnFillWrite(b []byte) int {
-	return p.next.OnFillWrite(b)
-}
-
 // Close ...
 func (p *XConn) Close() {
 	p.Lock()
@@ -177,4 +167,14 @@ func (p *XConn) RemoteAddr() net.Addr {
 // GetFD ...
 func (p *XConn) GetFD() int {
 	return p.fd
+}
+
+// OnReadBytes ...
+func (p *XConn) OnReadBytes(b []byte) {
+	panic("kernel error, this code should not be called")
+}
+
+// OnFillWrite ...
+func (p *XConn) OnFillWrite(b []byte) int {
+	panic("kernel error, this code should not be called")
 }

@@ -54,16 +54,6 @@ func (p *SyncConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
-// OnReadBytes ...
-func (p *SyncConn) OnReadBytes(b []byte) {
-	p.next.OnReadBytes(b)
-}
-
-// OnFillWrite ...
-func (p *SyncConn) OnFillWrite(b []byte) int {
-	return p.next.OnFillWrite(b)
-}
-
 // Close ...
 func (p *SyncConn) Close() {
 	p.Lock()
@@ -94,7 +84,7 @@ func (p *SyncConn) OnReadReady() bool {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		return false
 	}
-	p.OnReadBytes(p.rBuf[:n])
+	p.next.OnReadBytes(p.rBuf[:n])
 	return true
 }
 
@@ -109,7 +99,7 @@ func (p *SyncConn) OnWriteReady() {
 		bufLen := 0
 
 		for !isTriggerFinish && bufLen < len(p.wBuf) {
-			if n := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
+			if n := p.next.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
 				bufLen += n
 			} else {
 				isTriggerFinish = true
@@ -125,6 +115,16 @@ func (p *SyncConn) OnWriteReady() {
 			}
 		}
 	}
+}
+
+// OnReadBytes ...
+func (p *SyncConn) OnReadBytes(b []byte) {
+	panic("kernel error, this code should not be called")
+}
+
+// OnFillWrite ...
+func (p *SyncConn) OnFillWrite(b []byte) int {
+	panic("kernel error, this code should not be called")
 }
 
 // GetFD ...
