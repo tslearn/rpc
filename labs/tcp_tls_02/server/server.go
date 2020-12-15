@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net"
 )
@@ -16,7 +18,20 @@ func main() {
 		log.Println(err)
 		return
 	}
-	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	certBytes, err := ioutil.ReadFile("../cert/ca/ca.pem")
+	if err != nil {
+		panic("Unable to read cert.pem")
+	}
+	clientCertPool := x509.NewCertPool()
+	ok := clientCertPool.AppendCertsFromPEM(certBytes)
+	if !ok {
+		panic("failed to parse root certificate")
+	}
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCertPool,
+	}
 	ln, err := tls.Listen("tcp", ":443", config)
 	if err != nil {
 		log.Println(err)

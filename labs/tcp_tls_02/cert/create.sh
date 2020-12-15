@@ -144,4 +144,4 @@ EOF
 
 initCA ${CURRENT_DIR}/ca
 makeSSLAuthorFiles ${CURRENT_DIR}/ca ${CURRENT_DIR}/server server "127.0.0.1" "localhost"
-
+makeSSLAuthorFiles ${CURRENT_DIR}/ca ${CURRENT_DIR}/client client "" ""

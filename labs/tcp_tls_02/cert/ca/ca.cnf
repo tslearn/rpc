@@ -1,0 +1,16 @@
+[ req ]
+ default_bits           = 2048
+ distinguished_name     = req_distinguished_name
+ prompt                 = no
+[ req_distinguished_name ]
+ C                      = CN
+ ST                     = X Province
+ L                      = X City
+ O                      = X Company
+ OU                     = IT
+ CN                     = www.example.com
+[ v3_ca ]
+keyUsage = critical, keyCertSign, cRLSign
+basicConstraints = critical, CA:TRUE, pathlen:2
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
