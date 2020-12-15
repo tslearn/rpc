@@ -45,7 +45,7 @@ func main() {
 		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
-	serverAdapter := adapter.NewXServerAdapter(
+	serverAdapter := adapter.NewSyncServerAdapter(
 		"tcp", "0.0.0.0:8080", 1200, 1200, &receiver{},
 	)
 	serverAdapter.Open()

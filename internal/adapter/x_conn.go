@@ -116,15 +116,13 @@ func (p *XConn) doWrite() bool {
 }
 
 // OnWriteReady ...
-func (p *XConn) OnWriteReady() bool {
+func (p *XConn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
 	if err := p.setWatchWrite(!p.doWrite()); err != nil {
 		p.OnError(err)
 	}
-
-	return true
 }
 
 // OnOpen ...
@@ -150,16 +148,6 @@ func (p *XConn) OnReadBytes(b []byte) {
 // OnFillWrite ...
 func (p *XConn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
-}
-
-// TriggerWrite ...
-func (p *XConn) TriggerWrite() {
-	p.Lock()
-	defer p.Unlock()
-
-	if err := p.setWatchWrite(!p.doWrite()); err != nil {
-		p.OnError(err)
-	}
 }
 
 // Close ...

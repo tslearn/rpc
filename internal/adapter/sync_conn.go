@@ -64,35 +64,6 @@ func (p *SyncConn) OnFillWrite(b []byte) int {
 	return p.next.OnFillWrite(b)
 }
 
-// TriggerWrite ...
-func (p *SyncConn) TriggerWrite() {
-	p.Lock()
-	defer p.Unlock()
-
-	isTriggerFinish := false
-
-	for !isTriggerFinish {
-		bufLen := 0
-
-		for !isTriggerFinish && bufLen < len(p.wBuf) {
-			if n := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
-				bufLen += n
-			} else {
-				isTriggerFinish = true
-			}
-		}
-
-		start := 0
-		for start < bufLen {
-			if n, e := p.netConn.Write(p.wBuf[start:bufLen]); e != nil {
-				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
-			} else {
-				start += n
-			}
-		}
-	}
-}
-
 // Close ...
 func (p *SyncConn) Close() {
 	p.Lock()
@@ -128,8 +99,32 @@ func (p *SyncConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *SyncConn) OnWriteReady() bool {
-	panic("kernel error, this code should not be called")
+func (p *SyncConn) OnWriteReady() {
+	p.Lock()
+	defer p.Unlock()
+
+	isTriggerFinish := false
+
+	for !isTriggerFinish {
+		bufLen := 0
+
+		for !isTriggerFinish && bufLen < len(p.wBuf) {
+			if n := p.OnFillWrite(p.wBuf[bufLen:]); n > 0 {
+				bufLen += n
+			} else {
+				isTriggerFinish = true
+			}
+		}
+
+		start := 0
+		for start < bufLen {
+			if n, e := p.netConn.Write(p.wBuf[start:bufLen]); e != nil {
+				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+			} else {
+				start += n
+			}
+		}
+	}
 }
 
 // GetFD ...

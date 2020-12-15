@@ -153,11 +153,6 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 	return copyBytes
 }
 
-// TriggerWrite ...
-func (p *StreamConn) TriggerWrite() {
-	p.prev.TriggerWrite()
-}
-
 // Close ...
 func (p *StreamConn) Close() {
 	if atomic.CompareAndSwapInt32(
@@ -192,7 +187,7 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 		p.writeCH <- stream
 	}()
 
-	p.TriggerWrite()
+	p.prev.OnWriteReady()
 }
 
 // OnReadReady ...
@@ -201,7 +196,7 @@ func (p *StreamConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *StreamConn) OnWriteReady() bool {
+func (p *StreamConn) OnWriteReady() {
 	panic("kernel error, this code should not be called")
 }
 

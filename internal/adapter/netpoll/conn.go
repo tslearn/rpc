@@ -12,13 +12,12 @@ type Conn interface {
 	OnClose()
 	OnError(err *base.Error)
 	OnReadReady() bool
-	OnWriteReady() bool
+	OnWriteReady()
 	OnReadBytes(b []byte)
 	OnFillWrite(b []byte) int
 
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	GetFD() int
-	TriggerWrite()
 	Close()
 }
