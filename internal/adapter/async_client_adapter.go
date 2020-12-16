@@ -7,8 +7,8 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// SyncClientAdapter ...
-type SyncClientAdapter struct {
+// AsyncClientAdapter ...
+type AsyncClientAdapter struct {
 	network   string
 	addr      string
 	tlsConfig *tls.Config
@@ -18,8 +18,8 @@ type SyncClientAdapter struct {
 	conn      *NetConn
 }
 
-// NewSyncClientAdapter ...
-func NewSyncClientAdapter(
+// NewAsyncClientAdapter ...
+func NewAsyncClientAdapter(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
@@ -39,7 +39,7 @@ func NewSyncClientAdapter(
 }
 
 // OnRun ...
-func (p *SyncClientAdapter) OnRun(service *RunnableService) {
+func (p *AsyncClientAdapter) OnRun(service *RunnableService) {
 	switch p.network {
 	case "tcp":
 		p.runAsTCPClient(service)
@@ -48,7 +48,7 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 	}
 }
 
-func (p *SyncClientAdapter) runAsTCPClient(service *RunnableService) {
+func (p *AsyncClientAdapter) runAsTCPClient(service *RunnableService) {
 	netConn := net.Conn(nil)
 	e := error(nil)
 
@@ -76,7 +76,7 @@ func (p *SyncClientAdapter) runAsTCPClient(service *RunnableService) {
 }
 
 // OnStop ...
-func (p *SyncClientAdapter) OnStop(service *RunnableService) {
+func (p *AsyncClientAdapter) OnStop(service *RunnableService) {
 	// if OnStop is caused by Close(), don't close the conn again
 	if p.conn != nil {
 		if service.IsRunning() {
@@ -87,6 +87,6 @@ func (p *SyncClientAdapter) OnStop(service *RunnableService) {
 }
 
 // Close ...
-func (p *SyncClientAdapter) Close() {
+func (p *AsyncClientAdapter) Close() {
 	p.conn.Close()
 }
