@@ -54,7 +54,7 @@ func main() {
 		panic(err)
 	}
 
-	serverAdapter := adapter.NewXServerAdapter(
+	serverAdapter := adapter.NewSyncServerAdapter(
 		"tcp", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
 	)
 

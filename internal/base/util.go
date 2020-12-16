@@ -2,6 +2,7 @@ package base
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -267,8 +268,26 @@ func GetTLSServerConfig(certFile string, keyFile string) (*tls.Config, error) {
 }
 
 // GetTLSClientConfig ...
-func GetTLSClientConfig(verify bool) (*tls.Config, error) {
+func GetTLSClientConfig(
+	verifyServerCert bool,
+	caFiles []string,
+) (*tls.Config, error) {
+	caPool := (*x509.CertPool)(nil)
+
+	if len(caFiles) > 0 {
+		caPool = x509.NewCertPool()
+
+		for _, caFile := range caFiles {
+			if caCert, e := ioutil.ReadFile(caFile); e == nil {
+				caPool.AppendCertsFromPEM(caCert)
+			} else {
+				return nil, e
+			}
+		}
+	}
+
 	return &tls.Config{
-		InsecureSkipVerify: !verify,
+		InsecureSkipVerify: !verifyServerCert,
+		RootCAs:            caPool,
 	}, nil
 }

@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 
 	"github.com/rpccloud/rpc/internal/errors"
@@ -41,11 +42,21 @@ func (p *SyncServerAdapter) OnRun(service *RunnableService) {
 	switch p.network {
 	case "tcp":
 		p.runAsTCPServer(service)
+	default:
+		panic("not implemented")
 	}
 }
 
 func (p *SyncServerAdapter) runAsTCPServer(service *RunnableService) {
-	listener, e := net.Listen(p.network, p.addr)
+	listener := net.Listener(nil)
+	e := error(nil)
+
+	if p.tlsConfig == nil {
+		listener, e = net.Listen(p.network, p.addr)
+	} else {
+		fmt.Println("TLS")
+		listener, e = tls.Listen(p.network, p.addr, p.tlsConfig)
+	}
 
 	if e != nil {
 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
