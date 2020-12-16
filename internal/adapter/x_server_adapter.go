@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"crypto/tls"
 	"net"
 	"runtime"
 	"strings"
@@ -24,6 +25,7 @@ type XServerAdapter struct {
 func NewXServerAdapter(
 	network string,
 	addr string,
+	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
 	receiver IReceiver,

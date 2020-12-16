@@ -2,11 +2,12 @@ package test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"testing"
-	"time"
 )
 
 type serverReceiver struct {
@@ -75,7 +76,7 @@ func (p *clientReceiver) OnConnError(
 func BenchmarkDebug(b *testing.B) {
 	go func() {
 		serverAdapter := adapter.NewXServerAdapter(
-			"tcp", "0.0.0.0:8080", 1200, 1200, &serverReceiver{},
+			"tcp", "0.0.0.0:8080", nil, 1200, 1200, &serverReceiver{},
 		)
 		serverAdapter.Open()
 	}()
@@ -84,7 +85,7 @@ func BenchmarkDebug(b *testing.B) {
 
 	cReceiver := &clientReceiver{streamCH: make(chan *core.Stream)}
 	clientAdapter := adapter.NewSyncClientAdapter(
-		"tcp", "0.0.0.0:8080", 1200, 1200, cReceiver,
+		"tcp", "0.0.0.0:8080", nil, 1200, 1200, cReceiver,
 	)
 
 	go func() {

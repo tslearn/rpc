@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"crypto/tls"
 	"net"
 
 	"github.com/rpccloud/rpc/internal/errors"
@@ -8,27 +9,30 @@ import (
 
 // SyncServerAdapter ...
 type SyncServerAdapter struct {
-	network  string
-	addr     string
-	rBufSize int
-	wBufSize int
-	receiver IReceiver
+	network   string
+	addr      string
+	rBufSize  int
+	wBufSize  int
+	tlsConfig *tls.Config
+	receiver  IReceiver
 }
 
 // NewSyncServerAdapter ...
 func NewSyncServerAdapter(
 	network string,
 	addr string,
+	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
 	return NewRunnableService(&SyncServerAdapter{
-		network:  network,
-		addr:     addr,
-		rBufSize: rBufSize,
-		wBufSize: wBufSize,
-		receiver: receiver,
+		network:   network,
+		addr:      addr,
+		tlsConfig: tlsConfig,
+		rBufSize:  rBufSize,
+		wBufSize:  wBufSize,
+		receiver:  receiver,
 	})
 }
 

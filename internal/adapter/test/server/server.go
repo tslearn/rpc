@@ -45,8 +45,18 @@ func main() {
 		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
-	serverAdapter := adapter.NewXServerAdapter(
-		"tcp", "0.0.0.0:8080", 1200, 1200, &receiver{},
+	tlsConfig, err := base.GetTLSServerConfig(
+		"../cert/server.pem",
+		"../cert/server-key.pem",
 	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	serverAdapter := adapter.NewXServerAdapter(
+		"tcp", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
+	)
+
 	serverAdapter.Open()
 }
