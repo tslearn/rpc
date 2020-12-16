@@ -45,17 +45,17 @@ func main() {
 		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
-	tlsConfig, err := base.GetTLSServerConfig(
-		"../cert/server.pem",
-		"../cert/server-key.pem",
-	)
+	// tlsConfig, err := base.GetTLSServerConfig(
+	// 	"../cert/server.pem",
+	// 	"../cert/server-key.pem",
+	// )
 
-	if err != nil {
-		panic(err)
-	}
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	serverAdapter := adapter.NewAsyncServerAdapter(
-		"tcp", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
+	serverAdapter := adapter.NewSyncServerAdapter(
+		"tcp", "0.0.0.0:8080", nil, 1200, 1200, &receiver{},
 	)
 
 	serverAdapter.Open()

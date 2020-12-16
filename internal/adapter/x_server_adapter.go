@@ -18,7 +18,6 @@ type XServerAdapter struct {
 	rBufSize int
 	wBufSize int
 	receiver IReceiver
-	manager  *netpoll.Manager
 }
 
 // NewXServerAdapter ...
@@ -36,35 +35,46 @@ func NewXServerAdapter(
 		rBufSize: rBufSize,
 		wBufSize: wBufSize,
 		receiver: receiver,
-		manager:  nil,
 	})
 }
 
 // OnRun ...
 func (p *XServerAdapter) OnRun(service *RunnableService) {
-	p.manager = netpoll.NewManager(
-		p.network,
-		p.addr, func(err *base.Error) {
+	if manager := netpoll.NewManager(
+		func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		},
-		p.GetConnectFunc(),
 		base.MaxInt(runtime.NumCPU()/2, 1),
-	)
-
-	if p.manager == nil {
+	); manager == nil {
 		return
-	}
-
-	for service.IsRunning() {
-		time.Sleep(50 * time.Millisecond)
+	} else if listener := netpoll.NewTCPListener(
+		p.network,
+		p.addr,
+		func(fd int, localAddr net.Addr, remoteAddr net.Addr) {
+			channel := manager.AllocChannel()
+			fnConnect := p.GetConnectFunc()
+			if conn := fnConnect(channel, fd, localAddr, remoteAddr); conn != nil {
+				channel.AddConn(conn)
+			}
+		},
+		func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		},
+	); listener == nil {
+		manager.Close()
+		return
+	} else {
+		for service.IsRunning() {
+			time.Sleep(50 * time.Millisecond)
+		}
+		listener.Close()
+		manager.Close()
 	}
 }
 
 // OnStop ...
 func (p *XServerAdapter) OnStop(_ *RunnableService) {
-	if p.manager != nil {
-		p.manager.Close()
-	}
+	// do nothing
 }
 
 // Close ...

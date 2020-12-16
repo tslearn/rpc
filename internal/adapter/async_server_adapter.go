@@ -2,10 +2,12 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"reflect"
+	"runtime"
 
+	"github.com/rpccloud/rpc/internal/adapter/netpoll"
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
@@ -17,7 +19,7 @@ import (
 // 	return int(pfdVal.FieldByName("Sysfd").Int())
 // }
 
-func tcpFD(conn net.Conn, isTLS bool) int {
+func parseFD(conn net.Conn, isTLS bool) int {
 	if !isTLS {
 		c := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
 		fdVal := c.FieldByName("fd")
@@ -40,6 +42,7 @@ type AsyncServerAdapter struct {
 	wBufSize  int
 	tlsConfig *tls.Config
 	receiver  IReceiver
+	manager   *netpoll.Manager
 }
 
 // NewAsyncServerAdapter ...
@@ -51,6 +54,7 @@ func NewAsyncServerAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
+
 	return NewRunnableService(&AsyncServerAdapter{
 		network:   network,
 		addr:      addr,
@@ -63,15 +67,30 @@ func NewAsyncServerAdapter(
 
 // OnRun ...
 func (p *AsyncServerAdapter) OnRun(service *RunnableService) {
+	manager := netpoll.NewManager(
+		func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		},
+		base.MaxInt(runtime.NumCPU()/2, 1),
+	)
+
+	if manager == nil {
+		return
+	}
+	defer manager.Close()
+
 	switch p.network {
 	case "tcp":
-		p.runAsTCPServer(service)
+		p.runAsTCPServer(manager, service)
 	default:
 		panic("not implemented")
 	}
 }
 
-func (p *AsyncServerAdapter) runAsTCPServer(service *RunnableService) {
+func (p *AsyncServerAdapter) runAsTCPServer(
+	manager *netpoll.Manager,
+	service *RunnableService,
+) {
 	listener := net.Listener(nil)
 	e := error(nil)
 
@@ -94,25 +113,16 @@ func (p *AsyncServerAdapter) runAsTCPServer(service *RunnableService) {
 		} else {
 			conn := NewNetConn(tcpConn, p.rBufSize, p.wBufSize)
 			conn.SetNext(NewStreamConn(conn, p.receiver))
-			fmt.Println(tcpFD(tcpConn, p.tlsConfig != nil))
-			conn.SetFD(tcpFD(tcpConn, p.tlsConfig != nil))
-			// go func(netConn net.Conn) {
-
-			// 	// conn.OnOpen()
-			// 	// for {
-			// 	// 	if ok := conn.OnReadReady(); !ok {
-			// 	// 		break
-			// 	// 	}
-			// 	// }
-			// 	// conn.Close()
-			// 	// conn.OnClose()
-			// }(tcpConn)
+			conn.SetFD(parseFD(tcpConn, p.tlsConfig != nil))
+			manager.AllocChannel().AddConn(conn)
 		}
 	}
 
 	if e = listener.Close(); e != nil {
 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
 	}
+
+	listener.Close()
 }
 
 // OnStop ...
