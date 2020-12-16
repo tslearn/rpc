@@ -9,9 +9,10 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// SyncConn ...
-type SyncConn struct {
+// NetConn ...
+type NetConn struct {
 	isRunning bool
+	fd        int
 	netConn   net.Conn
 	next      netpoll.Conn
 	rBuf      []byte
@@ -19,14 +20,15 @@ type SyncConn struct {
 	sync.Mutex
 }
 
-// NewSyncConn ...
-func NewSyncConn(
+// NewNetConn ...
+func NewNetConn(
 	netConn net.Conn,
 	rBufSize int,
 	wBufSize int,
-) *SyncConn {
-	return &SyncConn{
+) *NetConn {
+	return &NetConn{
 		isRunning: true,
+		fd:        0,
 		netConn:   netConn,
 		next:      nil,
 		rBuf:      make([]byte, rBufSize),
@@ -35,27 +37,27 @@ func NewSyncConn(
 }
 
 // SetNext ...
-func (p *SyncConn) SetNext(next netpoll.Conn) {
+func (p *NetConn) SetNext(next netpoll.Conn) {
 	p.next = next
 }
 
 // OnOpen ...
-func (p *SyncConn) OnOpen() {
+func (p *NetConn) OnOpen() {
 	p.next.OnOpen()
 }
 
 // OnClose ...
-func (p *SyncConn) OnClose() {
+func (p *NetConn) OnClose() {
 	p.next.OnClose()
 }
 
 // OnError ...
-func (p *SyncConn) OnError(err *base.Error) {
+func (p *NetConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
 // Close ...
-func (p *SyncConn) Close() {
+func (p *NetConn) Close() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -68,17 +70,17 @@ func (p *SyncConn) Close() {
 }
 
 // LocalAddr ...
-func (p *SyncConn) LocalAddr() net.Addr {
+func (p *NetConn) LocalAddr() net.Addr {
 	return p.netConn.LocalAddr()
 }
 
 // RemoteAddr ...
-func (p *SyncConn) RemoteAddr() net.Addr {
+func (p *NetConn) RemoteAddr() net.Addr {
 	return p.netConn.RemoteAddr()
 }
 
 // OnReadReady ...
-func (p *SyncConn) OnReadReady() bool {
+func (p *NetConn) OnReadReady() bool {
 	n, e := p.netConn.Read(p.rBuf)
 	if e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
@@ -89,7 +91,7 @@ func (p *SyncConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *SyncConn) OnWriteReady() {
+func (p *NetConn) OnWriteReady() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -118,16 +120,21 @@ func (p *SyncConn) OnWriteReady() {
 }
 
 // OnReadBytes ...
-func (p *SyncConn) OnReadBytes(b []byte) {
+func (p *NetConn) OnReadBytes(b []byte) {
 	panic("kernel error, this code should not be called")
 }
 
 // OnFillWrite ...
-func (p *SyncConn) OnFillWrite(b []byte) int {
+func (p *NetConn) OnFillWrite(b []byte) int {
 	panic("kernel error, this code should not be called")
 }
 
 // GetFD ...
-func (p *SyncConn) GetFD() int {
-	panic("kernel error, this code should not be called")
+func (p *NetConn) GetFD() int {
+	return p.fd
+}
+
+// SetFD ...
+func (p *NetConn) SetFD(fd int) {
+	p.fd = fd
 }

@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 
 	"github.com/rpccloud/rpc/internal/errors"
@@ -16,7 +15,7 @@ type SyncClientAdapter struct {
 	rBufSize  int
 	wBufSize  int
 	receiver  IReceiver
-	conn      *SyncConn
+	conn      *NetConn
 }
 
 // NewSyncClientAdapter ...
@@ -53,10 +52,8 @@ func (p *SyncClientAdapter) runAsTCPClient(service *RunnableService) {
 	e := error(nil)
 
 	if p.tlsConfig == nil {
-		fmt.Println("NO TLS")
 		netConn, e = net.Dial(p.network, p.addr)
 	} else {
-		fmt.Println("TLS")
 		netConn, e = tls.Dial(p.network, p.addr, p.tlsConfig)
 	}
 
@@ -65,7 +62,7 @@ func (p *SyncClientAdapter) runAsTCPClient(service *RunnableService) {
 		return
 	}
 
-	p.conn = NewSyncConn(netConn, p.rBufSize, p.wBufSize)
+	p.conn = NewNetConn(netConn, p.rBufSize, p.wBufSize)
 	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
 
 	p.conn.OnOpen()
