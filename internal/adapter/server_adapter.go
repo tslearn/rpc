@@ -104,7 +104,6 @@ type ServerWebSocket struct {
 
 // NewServerWebSocket ...
 func NewServerWebSocket(
-	network string,
 	addr string,
 	tlsConfig *tls.Config,
 	onConnect func(conn net.Conn),
@@ -133,10 +132,6 @@ func NewServerWebSocket(
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  20 * time.Second,
 		Handler:      mux,
-	}
-
-	if network == "wss" {
-		ret.server.TLSConfig = tlsConfig
 	}
 
 	if tlsConfig == nil {
@@ -278,7 +273,7 @@ func (p *ServerAdapter) OnOpen(service *RunnableService) {
 	case "ws":
 		fallthrough
 	case "wss":
-		p.server = NewServerWebSocket(p.network, p.addr, p.tlsConfig, p.onConnect, func(err *base.Error) {
+		p.server = NewServerWebSocket(p.addr, p.tlsConfig, p.onConnect, func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		})
 	default:
