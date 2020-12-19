@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"reflect"
@@ -156,7 +155,6 @@ func NewServerWebSocket(
 
 // Serve ...
 func (p *ServerWebSocket) Serve(service *RunnableService) {
-	fmt.Println(p)
 	if server := p.server; server != nil {
 		if e := server.Serve(p.listener); e != nil {
 			p.onError(errors.ErrTemp.AddDebug(e.Error()))
@@ -291,7 +289,6 @@ func (p *ServerAdapter) OnOpen(service *RunnableService) {
 // OnRun ...
 func (p *ServerAdapter) OnRun(service *RunnableService) {
 	if server := p.server; server != (IServer)(nil) {
-		fmt.Println(server, server != nil, p.server != nil)
 		server.Serve(service)
 	}
 }
