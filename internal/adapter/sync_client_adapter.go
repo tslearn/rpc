@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
@@ -16,6 +17,28 @@ type SyncClientAdapter struct {
 	wBufSize  int
 	receiver  IReceiver
 	conn      *NetConn
+}
+
+// NewSyncClientTCP ...
+func NewSyncClientTCP(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+) (net.Conn, *base.Error) {
+	ret := net.Conn(nil)
+	e := error(nil)
+
+	if tlsConfig == nil {
+		ret, e = net.Dial(network, addr)
+	} else {
+		ret, e = tls.Dial(network, addr, tlsConfig)
+	}
+
+	if e != nil {
+		return nil, errors.ErrTemp.AddDebug(e.Error())
+	}
+
+	return ret, nil
 }
 
 // NewSyncClientAdapter ...
@@ -38,41 +61,37 @@ func NewSyncClientAdapter(
 	})
 }
 
-// OnRun ...
-func (p *SyncClientAdapter) OnRun(service *RunnableService) {
+// OnOpen ...
+func (p *SyncClientAdapter) OnOpen(service *RunnableService) {
+	netConn := (net.Conn)(nil)
+	err := (*base.Error)(nil)
+
 	switch p.network {
 	case "tcp":
-		p.runAsTCPClient(service)
+		netConn, err = NewSyncClientTCP(p.network, p.addr, p.tlsConfig)
 	default:
 		panic("not implemented")
 	}
-}
 
-func (p *SyncClientAdapter) runAsTCPClient(service *RunnableService) {
-	netConn := net.Conn(nil)
-	e := error(nil)
-
-	if p.tlsConfig == nil {
-		netConn, e = net.Dial(p.network, p.addr)
-	} else {
-		netConn, e = tls.Dial(p.network, p.addr, p.tlsConfig)
-	}
-
-	if e != nil {
-		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
+	if err != nil {
+		p.receiver.OnConnError(nil, err)
 		return
 	}
 
 	p.conn = NewNetConn(netConn, p.rBufSize, p.wBufSize)
 	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
-
 	p.conn.OnOpen()
-	for service.IsRunning() {
-		if ok := p.conn.OnReadReady(); !ok {
-			break
+}
+
+// OnRun ...
+func (p *SyncClientAdapter) OnRun(service *RunnableService) {
+	if conn := p.conn; conn != nil {
+		for service.IsRunning() {
+			if ok := p.conn.OnReadReady(); !ok {
+				break
+			}
 		}
 	}
-	p.conn.OnClose()
 }
 
 // OnStop ...
@@ -88,5 +107,7 @@ func (p *SyncClientAdapter) OnStop(service *RunnableService) {
 
 // Close ...
 func (p *SyncClientAdapter) Close() {
-	p.conn.Close()
+	if conn := p.conn; conn != nil {
+		conn.Close()
+	}
 }

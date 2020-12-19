@@ -1,26 +1,30 @@
 package adapter
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
 // IRunnable ...
 type IRunnable interface {
+	OnOpen(*RunnableService)
 	OnRun(*RunnableService)
 	OnStop(*RunnableService)
 
 	Close()
 }
 
-const serviceRunning = int32(1)
-const serviceClosing = int32(2)
+const serviceLoading = int32(1)
+const serviceRunning = int32(2)
+const serviceClosing = int32(3)
 const serviceClosed = int32(0)
 
 // RunnableService ...
 type RunnableService struct {
 	status   int32
 	runnable IRunnable
+	sync.Mutex
 }
 
 // NewRunnableService ...
@@ -33,9 +37,23 @@ func NewRunnableService(runnable IRunnable) *RunnableService {
 
 // Open ...
 func (p *RunnableService) Open() bool {
-	if atomic.CompareAndSwapInt32(&p.status, serviceClosed, serviceRunning) {
+	if atomic.CompareAndSwapInt32(&p.status, serviceClosed, serviceLoading) {
+		func() {
+			p.Lock()
+			defer p.Unlock()
+			p.runnable.OnOpen(p)
+		}()
+
+		atomic.StoreInt32(&p.status, serviceRunning)
 		p.runnable.OnRun(p)
-		p.runnable.OnStop(p)
+		atomic.StoreInt32(&p.status, serviceClosing)
+
+		func() {
+			p.Lock()
+			defer p.Unlock()
+			p.runnable.OnStop(p)
+		}()
+
 		atomic.StoreInt32(&p.status, serviceClosed)
 		return true
 	}
@@ -44,18 +62,33 @@ func (p *RunnableService) Open() bool {
 }
 
 // Close ...
-func (p *RunnableService) Close() bool {
-	if atomic.CompareAndSwapInt32(&p.status, serviceRunning, serviceClosing) {
-		p.runnable.Close()
-
-		for p.IsClosing() {
-			time.Sleep(50 * time.Millisecond)
+func (p *RunnableService) Close() {
+	for {
+		if atomic.CompareAndSwapInt32(&p.status,
+			serviceRunning,
+			serviceClosing,
+		) {
+			func() {
+				p.Lock()
+				defer p.Unlock()
+				p.runnable.Close()
+			}()
+		} else {
+			switch atomic.LoadInt32(&p.status) {
+			case serviceClosed:
+				return
+			case serviceRunning:
+				continue
+			default:
+				time.Sleep(50 * time.Millisecond)
+			}
 		}
-
-		return true
 	}
+}
 
-	return false
+// IsLoading ...
+func (p *RunnableService) IsLoading() bool {
+	return atomic.LoadInt32(&p.status) == serviceLoading
 }
 
 // IsRunning ...

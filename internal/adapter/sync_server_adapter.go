@@ -36,6 +36,11 @@ func NewSyncServerAdapter(
 	})
 }
 
+// OnOpen ...
+func (p *SyncServerAdapter) OnOpen(service *RunnableService) {
+	panic("not implemented")
+}
+
 // OnRun ...
 func (p *SyncServerAdapter) OnRun(service *RunnableService) {
 	switch p.network {

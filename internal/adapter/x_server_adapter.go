@@ -18,6 +18,8 @@ type XServerAdapter struct {
 	rBufSize int
 	wBufSize int
 	receiver IReceiver
+
+	manager *netpoll.Manager
 }
 
 // NewXServerAdapter ...
@@ -36,6 +38,11 @@ func NewXServerAdapter(
 		wBufSize: wBufSize,
 		receiver: receiver,
 	})
+}
+
+// OnOpen ...
+func (p *XServerAdapter) OnOpen(service *RunnableService) {
+	panic("not implemented")
 }
 
 // OnRun ...

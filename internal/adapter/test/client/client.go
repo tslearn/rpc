@@ -44,14 +44,14 @@ func (p *receiver) OnConnError(
 }
 
 func testReceiver() {
-	tlsConfig, err := base.GetTLSClientConfig(true, []string{"../cert/ca.pem"})
-	if err != nil {
-		panic(err)
-	}
+	// tlsConfig, err := base.GetTLSClientConfig(true, []string{"../cert/ca.pem"})
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
 	clientAdapter := adapter.NewSyncClientAdapter(
-		"tcp", "127.0.0.1:8080", tlsConfig, 1200, 1200, clientReceiver,
+		"tcp", "127.0.0.1:8080", nil, 1200, 1200, clientReceiver,
 	)
 
 	go func() {
