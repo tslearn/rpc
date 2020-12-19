@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"time"
 
+	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -43,6 +45,7 @@ type AsyncServerAdapter struct {
 	wBufSize  int
 	tlsConfig *tls.Config
 	receiver  IReceiver
+	server    ICloseable
 	manager   *netpoll.Manager
 }
 
@@ -55,7 +58,6 @@ func NewAsyncServerAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-
 	return NewRunnableService(&AsyncServerAdapter{
 		network:   network,
 		addr:      addr,
@@ -84,6 +86,7 @@ func (p *AsyncServerAdapter) OnRun(service *RunnableService) {
 	case "tcp":
 		p.runAsTCPServer(manager, service)
 	default:
+		p.server = NewEmptyCloseable()
 		panic("not implemented")
 	}
 }
@@ -93,8 +96,32 @@ func (p *AsyncServerAdapter) runAsWebsocketServer(
 	service *RunnableService,
 ) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/")
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		wsConn, _, _, e := ws.UpgradeHTTP(r, w)
 
+		if e != nil {
+			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
+		} else {
+			conn := NewNetConn(wsConn, p.rBufSize, p.wBufSize)
+			conn.SetNext(NewStreamConn(conn, p.receiver))
+			conn.SetFD(parseFD(wsConn, p.tlsConfig != nil))
+			manager.AllocChannel().AddConn(conn)
+		}
+	})
+
+	srv := &http.Server{
+		Addr:         p.addr,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  20 * time.Second,
+		Handler:      mux,
+	}
+
+	if p.network == "wss" {
+		srv.TLSConfig = p.tlsConfig
+	}
+
+	srv.ListenAndServe()
 }
 
 func (p *AsyncServerAdapter) runAsTCPServer(
@@ -142,5 +169,5 @@ func (p *AsyncServerAdapter) OnStop(_ *RunnableService) {
 
 // Close ...
 func (p *AsyncServerAdapter) Close() {
-	// do nothing
+	p.server.Close()
 }
