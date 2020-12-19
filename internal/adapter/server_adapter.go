@@ -26,8 +26,8 @@ func parseFD(conn net.Conn, isTLS bool) int {
 	}
 }
 
-// IAsyncServer ...
-type IAsyncServer interface {
+// IServer ...
+type IServer interface {
 	Serve(
 		service *RunnableService,
 		onConnect func(conn net.Conn),
@@ -36,16 +36,18 @@ type IAsyncServer interface {
 	Close(onError func(err *base.Error))
 }
 
-type AsyncServerTCP struct {
+// ServerTCP ...
+type ServerTCP struct {
 	listener net.Listener
 }
 
-func NewAsyncServerTCP(
+// NewServerTCP ...
+func NewServerTCP(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
-) (*AsyncServerTCP, *base.Error) {
-	ret := &AsyncServerTCP{}
+) (*ServerTCP, *base.Error) {
+	ret := &ServerTCP{}
 	e := error(nil)
 
 	if tlsConfig == nil {
@@ -61,7 +63,8 @@ func NewAsyncServerTCP(
 	return ret, nil
 }
 
-func (p *AsyncServerTCP) Serve(
+// Serve ...
+func (p *ServerTCP) Serve(
 	service *RunnableService,
 	onConnect func(conn net.Conn),
 	onError func(err *base.Error),
@@ -77,7 +80,8 @@ func (p *AsyncServerTCP) Serve(
 	}
 }
 
-func (p *AsyncServerTCP) Close(onError func(err *base.Error)) {
+// Close ...
+func (p *ServerTCP) Close(onError func(err *base.Error)) {
 	if listener := p.listener; listener != nil {
 		p.listener = nil
 		if e := listener.Close(); e != nil {
@@ -86,17 +90,25 @@ func (p *AsyncServerTCP) Close(onError func(err *base.Error)) {
 	}
 }
 
-// AsyncServerAdapter ...
-type AsyncServerAdapter struct {
-	network   string
-	addr      string
-	rBufSize  int
-	wBufSize  int
-	tlsConfig *tls.Config
-	receiver  IReceiver
-
-	server  IAsyncServer
-	manager *netpoll.Manager
+// NewSyncServerAdapter ...
+func NewSyncServerAdapter(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+	rBufSize int,
+	wBufSize int,
+	receiver IReceiver,
+) *RunnableService {
+	return NewRunnableService(&ServerAdapter{
+		network:   network,
+		addr:      addr,
+		tlsConfig: tlsConfig,
+		rBufSize:  rBufSize,
+		wBufSize:  wBufSize,
+		receiver:  receiver,
+		manager:   nil,
+		server:    nil,
+	})
 }
 
 // NewAsyncServerAdapter ...
@@ -108,41 +120,70 @@ func NewAsyncServerAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-	return NewRunnableService(&AsyncServerAdapter{
+	manager := netpoll.NewManager(
+		func(err *base.Error) {
+			receiver.OnConnError(nil, err)
+		},
+		base.MaxInt(runtime.NumCPU()/2, 1),
+	)
+
+	if manager == nil {
+		return nil
+	}
+
+	return NewRunnableService(&ServerAdapter{
 		network:   network,
 		addr:      addr,
 		tlsConfig: tlsConfig,
 		rBufSize:  rBufSize,
 		wBufSize:  wBufSize,
 		receiver:  receiver,
+		manager:   manager,
+		server:    nil,
 	})
 }
 
-func (p *AsyncServerAdapter) onConnect(conn net.Conn) {
-	netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
-	netConn.SetNext(NewStreamConn(netConn, p.receiver))
-	netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
-	p.manager.AllocChannel().AddConn(netConn)
+// ServerAdapter ...
+type ServerAdapter struct {
+	network   string
+	addr      string
+	rBufSize  int
+	wBufSize  int
+	tlsConfig *tls.Config
+	receiver  IReceiver
+	manager   *netpoll.Manager
+	server    IServer
+}
+
+func (p *ServerAdapter) onConnect(conn net.Conn) {
+	if p.manager == nil { // Sync
+		go func() {
+			netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
+			netConn.SetNext(NewStreamConn(netConn, p.receiver))
+			netConn.OnOpen()
+			for {
+				if ok := netConn.OnReadReady(); !ok {
+					break
+				}
+			}
+			netConn.OnClose()
+			netConn.Close()
+		}()
+	} else { // Async
+		netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
+		netConn.SetNext(NewStreamConn(netConn, p.receiver))
+		netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
+		p.manager.AllocChannel().AddConn(netConn)
+	}
 }
 
 // OnOpen ...
-func (p *AsyncServerAdapter) OnOpen(service *RunnableService) {
-	p.manager = netpoll.NewManager(
-		func(err *base.Error) {
-			p.receiver.OnConnError(nil, err)
-		},
-		base.MaxInt(runtime.NumCPU()/2, 1),
-	)
-
-	if p.manager == nil {
-		return
-	}
-
+func (p *ServerAdapter) OnOpen(service *RunnableService) {
 	err := (*base.Error)(nil)
 
 	switch p.network {
 	case "tcp":
-		p.server, err = NewAsyncServerTCP(p.network, p.addr, p.tlsConfig)
+		p.server, err = NewServerTCP(p.network, p.addr, p.tlsConfig)
 	// case "ws":
 	// 	fallthrough
 	// case "wss":
@@ -157,58 +198,21 @@ func (p *AsyncServerAdapter) OnOpen(service *RunnableService) {
 }
 
 // OnRun ...
-func (p *AsyncServerAdapter) OnRun(service *RunnableService) {
-	p.server.Serve(service, p.onConnect, func(err *base.Error) {
-		p.receiver.OnConnError(nil, err)
-	})
+func (p *ServerAdapter) OnRun(service *RunnableService) {
+	if server := p.server; server != nil {
+		server.Serve(service, p.onConnect, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		})
+	}
 }
 
-// func (p *AsyncServerAdapter) runAsWebsocketServer(
-// 	manager *netpoll.Manager,
-// 	service *RunnableService,
-// ) {
-// 	mux := http.NewServeMux()
-// 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		wsConn, _, _, e := ws.UpgradeHTTP(r, w)
-
-// 		if e != nil {
-// 			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
-// 		} else {
-
-// 		}
-// 	})
-
-// 	srv := &http.Server{
-// 		Addr:         p.addr,
-// 		ReadTimeout:  10 * time.Second,
-// 		WriteTimeout: 10 * time.Second,
-// 		IdleTimeout:  20 * time.Second,
-// 		Handler:      mux,
-// 	}
-
-// 	if p.network == "wss" {
-// 		srv.TLSConfig = p.tlsConfig
-// 	}
-
-// 	atomic.StorePointer(&p.server, unsafe.Pointer(srv))
-// 	srv.ListenAndServe()
-
-// 	ln, e := net.Listen("tcp", p.addr)
-// 	if e != nil {
-// 		p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(e.Error()))
-// 		return
-// 	}
-
-// 	srv.Serve(ln)
-// }
-
 // OnStop ...
-func (p *AsyncServerAdapter) OnStop(_ *RunnableService) {
+func (p *ServerAdapter) OnStop(_ *RunnableService) {
 
 }
 
 // Close ...
-func (p *AsyncServerAdapter) Close() {
+func (p *ServerAdapter) Close() {
 	if server := p.server; server != nil {
 		p.server = nil
 		p.server.Close(func(err *base.Error) {

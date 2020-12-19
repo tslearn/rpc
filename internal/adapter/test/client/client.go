@@ -50,7 +50,7 @@ func testReceiver() {
 	}
 
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
-	clientAdapter := adapter.NewSyncClientAdapter(
+	clientAdapter := adapter.NewClientAdapter(
 		"tcp", "127.0.0.1:8080", tlsConfig, 1200, 1200, clientReceiver,
 	)
 

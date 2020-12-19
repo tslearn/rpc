@@ -8,8 +8,8 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// SyncClientAdapter ...
-type SyncClientAdapter struct {
+// ClientAdapter ...
+type ClientAdapter struct {
 	network   string
 	addr      string
 	tlsConfig *tls.Config
@@ -41,8 +41,8 @@ func NewSyncClientTCP(
 	return ret, nil
 }
 
-// NewSyncClientAdapter ...
-func NewSyncClientAdapter(
+// NewClientAdapter ...
+func NewClientAdapter(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
@@ -50,7 +50,7 @@ func NewSyncClientAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-	return NewRunnableService(&SyncClientAdapter{
+	return NewRunnableService(&ClientAdapter{
 		network:   network,
 		addr:      addr,
 		tlsConfig: tlsConfig,
@@ -62,7 +62,7 @@ func NewSyncClientAdapter(
 }
 
 // OnOpen ...
-func (p *SyncClientAdapter) OnOpen(service *RunnableService) {
+func (p *ClientAdapter) OnOpen(service *RunnableService) {
 	netConn := (net.Conn)(nil)
 	err := (*base.Error)(nil)
 
@@ -84,7 +84,7 @@ func (p *SyncClientAdapter) OnOpen(service *RunnableService) {
 }
 
 // OnRun ...
-func (p *SyncClientAdapter) OnRun(service *RunnableService) {
+func (p *ClientAdapter) OnRun(service *RunnableService) {
 	if conn := p.conn; conn != nil {
 		for service.IsRunning() {
 			if ok := p.conn.OnReadReady(); !ok {
@@ -95,7 +95,7 @@ func (p *SyncClientAdapter) OnRun(service *RunnableService) {
 }
 
 // OnStop ...
-func (p *SyncClientAdapter) OnStop(service *RunnableService) {
+func (p *ClientAdapter) OnStop(service *RunnableService) {
 	// if OnStop is caused by Close(), don't close the conn again
 	if p.conn != nil {
 		if service.IsRunning() {
@@ -106,7 +106,7 @@ func (p *SyncClientAdapter) OnStop(service *RunnableService) {
 }
 
 // Close ...
-func (p *SyncClientAdapter) Close() {
+func (p *ClientAdapter) Close() {
 	if conn := p.conn; conn != nil {
 		conn.Close()
 	}

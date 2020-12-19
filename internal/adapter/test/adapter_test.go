@@ -84,7 +84,7 @@ func BenchmarkDebug(b *testing.B) {
 	time.Sleep(time.Second)
 
 	cReceiver := &clientReceiver{streamCH: make(chan *core.Stream)}
-	clientAdapter := adapter.NewSyncClientAdapter(
+	clientAdapter := adapter.NewClientAdapter(
 		"tcp", "0.0.0.0:8080", nil, 1200, 1200, cReceiver,
 	)
 
