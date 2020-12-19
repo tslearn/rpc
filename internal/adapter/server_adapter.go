@@ -3,9 +3,12 @@ package adapter
 import (
 	"crypto/tls"
 	"net"
+	"net/http"
 	"reflect"
 	"runtime"
+	"time"
 
+	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/adapter/netpoll"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -28,17 +31,15 @@ func parseFD(conn net.Conn, isTLS bool) int {
 
 // IServer ...
 type IServer interface {
-	Serve(
-		service *RunnableService,
-		onConnect func(conn net.Conn),
-		onError func(err *base.Error),
-	)
+	Serve(service *RunnableService)
 	Close(onError func(err *base.Error))
 }
 
 // ServerTCP ...
 type ServerTCP struct {
-	listener net.Listener
+	listener  net.Listener
+	onConnect func(conn net.Conn)
+	onError   func(err *base.Error)
 }
 
 // NewServerTCP ...
@@ -46,9 +47,15 @@ func NewServerTCP(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
-) (*ServerTCP, *base.Error) {
-	ret := &ServerTCP{}
+	onConnect func(conn net.Conn),
+	onError func(err *base.Error),
+) *ServerTCP {
 	e := error(nil)
+
+	ret := &ServerTCP{
+		onConnect: onConnect,
+		onError:   onError,
+	}
 
 	if tlsConfig == nil {
 		ret.listener, e = net.Listen(network, addr)
@@ -57,25 +64,22 @@ func NewServerTCP(
 	}
 
 	if e != nil {
-		return nil, errors.ErrTemp.AddDebug(e.Error())
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
 	}
 
-	return ret, nil
+	return ret
 }
 
 // Serve ...
-func (p *ServerTCP) Serve(
-	service *RunnableService,
-	onConnect func(conn net.Conn),
-	onError func(err *base.Error),
-) {
+func (p *ServerTCP) Serve(service *RunnableService) {
 	for service.IsRunning() {
 		tcpConn, e := p.listener.Accept()
 
 		if e != nil {
-			onError(errors.ErrTemp.AddDebug(e.Error()))
+			p.onError(errors.ErrTemp.AddDebug(e.Error()))
 		} else {
-			onConnect(tcpConn)
+			p.onConnect(tcpConn)
 		}
 	}
 }
@@ -85,6 +89,81 @@ func (p *ServerTCP) Close(onError func(err *base.Error)) {
 	if listener := p.listener; listener != nil {
 		p.listener = nil
 		if e := listener.Close(); e != nil {
+			onError(errors.ErrTemp.AddDebug(e.Error()))
+		}
+	}
+}
+
+// ServerWebSocket ...
+type ServerWebSocket struct {
+	listener  net.Listener
+	server    *http.Server
+	onConnect func(conn net.Conn)
+	onError   func(err *base.Error)
+}
+
+// NewServerWebSocket ...
+func NewServerWebSocket(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+	onConnect func(conn net.Conn),
+	onError func(err *base.Error),
+) *ServerWebSocket {
+	ret := &ServerWebSocket{
+		onConnect: onConnect,
+		onError:   onError,
+	}
+	e := error(nil)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		conn, _, _, e := ws.UpgradeHTTP(r, w)
+
+		if e != nil {
+			onError(errors.ErrTemp.AddDebug(e.Error()))
+		} else {
+			onConnect(conn)
+		}
+	})
+
+	ret.server = &http.Server{
+		Addr:         addr,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  20 * time.Second,
+		Handler:      mux,
+	}
+
+	if network == "wss" {
+		ret.server.TLSConfig = tlsConfig
+	}
+
+	ret.listener, e = net.Listen("tcp", addr)
+
+	if e != nil {
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
+	}
+
+	return ret
+}
+
+// Serve ...
+func (p *ServerWebSocket) Serve(service *RunnableService) {
+	if server := p.server; server != nil {
+		if e := p.server.Serve(p.listener); e != nil {
+			p.onError(errors.ErrTemp.AddDebug(e.Error()))
+		}
+	}
+}
+
+// Close ...
+func (p *ServerWebSocket) Close(onError func(err *base.Error)) {
+	if server := p.server; server != nil {
+		p.server = nil
+		p.listener = nil
+		if e := server.Close(); e != nil {
 			onError(errors.ErrTemp.AddDebug(e.Error()))
 		}
 	}
@@ -179,30 +258,26 @@ func (p *ServerAdapter) onConnect(conn net.Conn) {
 
 // OnOpen ...
 func (p *ServerAdapter) OnOpen(service *RunnableService) {
-	err := (*base.Error)(nil)
-
 	switch p.network {
 	case "tcp":
-		p.server, err = NewServerTCP(p.network, p.addr, p.tlsConfig)
-	// case "ws":
-	// 	fallthrough
-	// case "wss":
-	// 	p.server, err = NewAsyncServerWebsocket(p.network, p.addr, p.tlsConfig)
+		p.server = NewServerTCP(p.network, p.addr, p.tlsConfig, p.onConnect, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		})
+	case "ws":
+		fallthrough
+	case "wss":
+		p.server = NewServerWebSocket(p.network, p.addr, p.tlsConfig, p.onConnect, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		})
 	default:
 		panic("not implemented")
-	}
-
-	if err != nil {
-		p.receiver.OnConnError(nil, err)
 	}
 }
 
 // OnRun ...
 func (p *ServerAdapter) OnRun(service *RunnableService) {
 	if server := p.server; server != nil {
-		server.Serve(service, p.onConnect, func(err *base.Error) {
-			p.receiver.OnConnError(nil, err)
-		})
+		server.Serve(service)
 	}
 }
 
