@@ -3,6 +3,7 @@ package adapter
 import (
 	"crypto/tls"
 	"net"
+	"net/http"
 	"reflect"
 	"runtime"
 
@@ -85,6 +86,15 @@ func (p *AsyncServerAdapter) OnRun(service *RunnableService) {
 	default:
 		panic("not implemented")
 	}
+}
+
+func (p *AsyncServerAdapter) runAsWebsocketServer(
+	manager *netpoll.Manager,
+	service *RunnableService,
+) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/")
+
 }
 
 func (p *AsyncServerAdapter) runAsTCPServer(
