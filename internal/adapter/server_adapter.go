@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"reflect"
@@ -49,7 +50,7 @@ func NewServerTCP(
 	tlsConfig *tls.Config,
 	onConnect func(conn net.Conn),
 	onError func(err *base.Error),
-) *ServerTCP {
+) IServer {
 	e := error(nil)
 
 	ret := &ServerTCP{
@@ -109,7 +110,7 @@ func NewServerWebSocket(
 	tlsConfig *tls.Config,
 	onConnect func(conn net.Conn),
 	onError func(err *base.Error),
-) *ServerWebSocket {
+) IServer {
 	ret := &ServerWebSocket{
 		onConnect: onConnect,
 		onError:   onError,
@@ -139,7 +140,11 @@ func NewServerWebSocket(
 		ret.server.TLSConfig = tlsConfig
 	}
 
-	ret.listener, e = net.Listen("tcp", addr)
+	if tlsConfig == nil {
+		ret.listener, e = net.Listen("tcp", addr)
+	} else {
+		ret.listener, e = tls.Listen("tcp", addr, tlsConfig)
+	}
 
 	if e != nil {
 		onError(errors.ErrTemp.AddDebug(e.Error()))
@@ -151,8 +156,9 @@ func NewServerWebSocket(
 
 // Serve ...
 func (p *ServerWebSocket) Serve(service *RunnableService) {
+	fmt.Println(p)
 	if server := p.server; server != nil {
-		if e := p.server.Serve(p.listener); e != nil {
+		if e := server.Serve(p.listener); e != nil {
 			p.onError(errors.ErrTemp.AddDebug(e.Error()))
 		}
 	}
@@ -251,7 +257,15 @@ func (p *ServerAdapter) onConnect(conn net.Conn) {
 	} else { // Async
 		netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
 		netConn.SetNext(NewStreamConn(netConn, p.receiver))
-		netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
+
+		if p.network == "tcp" {
+			netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
+		} else if p.network == "wss" {
+			netConn.SetFD(parseFD(conn, true))
+		} else {
+			netConn.SetFD(parseFD(conn, false))
+		}
+
 		p.manager.AllocChannel().AddConn(netConn)
 	}
 }
@@ -276,7 +290,8 @@ func (p *ServerAdapter) OnOpen(service *RunnableService) {
 
 // OnRun ...
 func (p *ServerAdapter) OnRun(service *RunnableService) {
-	if server := p.server; server != nil {
+	if server := p.server; server != (IServer)(nil) {
+		fmt.Println(server, server != nil, p.server != nil)
 		server.Serve(service)
 	}
 }

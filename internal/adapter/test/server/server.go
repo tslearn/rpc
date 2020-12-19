@@ -55,7 +55,7 @@ func main() {
 	}
 
 	serverAdapter := adapter.NewAsyncServerAdapter(
-		"tcp", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
+		"wss", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
 	)
 
 	serverAdapter.Open()

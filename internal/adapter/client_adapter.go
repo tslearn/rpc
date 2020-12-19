@@ -1,30 +1,24 @@
 package adapter
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
+	"net/url"
 
+	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// ClientAdapter ...
-type ClientAdapter struct {
-	network   string
-	addr      string
-	tlsConfig *tls.Config
-	rBufSize  int
-	wBufSize  int
-	receiver  IReceiver
-	conn      *NetConn
-}
-
-// NewSyncClientTCP ...
-func NewSyncClientTCP(
+// NewClientTCP ...
+func NewClientTCP(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
-) (net.Conn, *base.Error) {
+	onError func(err *base.Error),
+) net.Conn {
 	ret := net.Conn(nil)
 	e := error(nil)
 
@@ -35,10 +29,47 @@ func NewSyncClientTCP(
 	}
 
 	if e != nil {
-		return nil, errors.ErrTemp.AddDebug(e.Error())
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
 	}
 
-	return ret, nil
+	return ret
+}
+
+// NewClientWebsocket ...
+func NewClientWebsocket(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+	onError func(err *base.Error),
+) net.Conn {
+	dialer := &ws.Dialer{}
+
+	if network == "wss" {
+		dialer.TLSConfig = tlsConfig
+	}
+
+	u := url.URL{Scheme: network, Host: addr, Path: "/"}
+	conn, _, _, e := dialer.Dial(context.Background(), u.String())
+
+	fmt.Println("DDDD", e)
+	if e != nil {
+		onError(errors.ErrTemp.AddDebug(e.Error()))
+		return nil
+	}
+
+	return conn
+}
+
+// ClientAdapter ...
+type ClientAdapter struct {
+	network   string
+	addr      string
+	tlsConfig *tls.Config
+	rBufSize  int
+	wBufSize  int
+	receiver  IReceiver
+	conn      *NetConn
 }
 
 // NewClientAdapter ...
@@ -64,17 +95,23 @@ func NewClientAdapter(
 // OnOpen ...
 func (p *ClientAdapter) OnOpen(service *RunnableService) {
 	netConn := (net.Conn)(nil)
-	err := (*base.Error)(nil)
 
 	switch p.network {
 	case "tcp":
-		netConn, err = NewSyncClientTCP(p.network, p.addr, p.tlsConfig)
+		netConn = NewClientTCP(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		})
+	case "ws":
+		fallthrough
+	case "wss":
+		netConn = NewClientWebsocket(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
+			p.receiver.OnConnError(nil, err)
+		})
 	default:
 		panic("not implemented")
 	}
 
-	if err != nil {
-		p.receiver.OnConnError(nil, err)
+	if netConn == nil {
 		return
 	}
 
