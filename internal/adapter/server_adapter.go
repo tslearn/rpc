@@ -178,6 +178,7 @@ func NewSyncServerAdapter(
 	receiver IReceiver,
 ) *RunnableService {
 	return NewRunnableService(&ServerAdapter{
+		isAsync:   false,
 		network:   network,
 		addr:      addr,
 		tlsConfig: tlsConfig,
@@ -198,31 +199,22 @@ func NewAsyncServerAdapter(
 	wBufSize int,
 	receiver IReceiver,
 ) *RunnableService {
-	manager := netpoll.NewManager(
-		func(err *base.Error) {
-			receiver.OnConnError(nil, err)
-		},
-		base.MaxInt(runtime.NumCPU()/2, 1),
-	)
-
-	if manager == nil {
-		return nil
-	}
-
 	return NewRunnableService(&ServerAdapter{
+		isAsync:   true,
 		network:   network,
 		addr:      addr,
 		tlsConfig: tlsConfig,
 		rBufSize:  rBufSize,
 		wBufSize:  wBufSize,
 		receiver:  receiver,
-		manager:   manager,
+		manager:   nil,
 		server:    nil,
 	})
 }
 
 // ServerAdapter ...
 type ServerAdapter struct {
+	isAsync   bool
 	network   string
 	addr      string
 	rBufSize  int
@@ -234,7 +226,22 @@ type ServerAdapter struct {
 }
 
 func (p *ServerAdapter) onConnect(conn net.Conn) {
-	if p.manager == nil { // Sync
+	if p.isAsync { // Async
+		if manager := p.manager; manager != nil {
+			netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
+			netConn.SetNext(NewStreamConn(netConn, p.receiver))
+
+			if p.network == "tcp" {
+				netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
+			} else if p.network == "wss" {
+				netConn.SetFD(parseFD(conn, true))
+			} else {
+				netConn.SetFD(parseFD(conn, false))
+			}
+
+			p.manager.AllocChannel().AddConn(netConn)
+		}
+	} else { // Sync
 		go func() {
 			netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
 			netConn.SetNext(NewStreamConn(netConn, p.receiver))
@@ -247,24 +254,24 @@ func (p *ServerAdapter) onConnect(conn net.Conn) {
 			netConn.OnClose()
 			netConn.Close()
 		}()
-	} else { // Async
-		netConn := NewNetConn(conn, p.rBufSize, p.wBufSize)
-		netConn.SetNext(NewStreamConn(netConn, p.receiver))
-
-		if p.network == "tcp" {
-			netConn.SetFD(parseFD(conn, p.tlsConfig != nil))
-		} else if p.network == "wss" {
-			netConn.SetFD(parseFD(conn, true))
-		} else {
-			netConn.SetFD(parseFD(conn, false))
-		}
-
-		p.manager.AllocChannel().AddConn(netConn)
 	}
 }
 
 // OnOpen ...
 func (p *ServerAdapter) OnOpen(service *RunnableService) {
+	if p.isAsync {
+		p.manager = netpoll.NewManager(
+			func(err *base.Error) {
+				p.receiver.OnConnError(nil, err)
+			},
+			base.MaxInt(runtime.NumCPU()/2, 1),
+		)
+
+		if p.manager == nil {
+			return
+		}
+	}
+
 	switch p.network {
 	case "tcp":
 		p.server = NewServerTCP(p.network, p.addr, p.tlsConfig, p.onConnect, func(err *base.Error) {
@@ -283,21 +290,29 @@ func (p *ServerAdapter) OnOpen(service *RunnableService) {
 
 // OnRun ...
 func (p *ServerAdapter) OnRun(service *RunnableService) {
-	if server := p.server; server != (IServer)(nil) {
+	if server := p.server; server != nil {
 		server.Serve(service)
 	}
 }
 
 // OnStop ...
-func (p *ServerAdapter) OnStop(_ *RunnableService) {
+func (p *ServerAdapter) OnStop(service *RunnableService) {
+	// if OnStop is caused by Close(), don't close again
+	if service.IsRunning() {
+		p.Close()
+	}
 
+	if manager := p.manager; manager != nil {
+		p.manager = nil
+		manager.Close()
+	}
 }
 
 // Close ...
 func (p *ServerAdapter) Close() {
 	if server := p.server; server != nil {
 		p.server = nil
-		p.server.Close(func(err *base.Error) {
+		server.Close(func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		})
 	}

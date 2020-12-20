@@ -133,12 +133,9 @@ func (p *ClientAdapter) OnRun(service *RunnableService) {
 
 // OnStop ...
 func (p *ClientAdapter) OnStop(service *RunnableService) {
-	// if OnStop is caused by Close(), don't close the conn again
-	if p.conn != nil {
-		if service.IsRunning() {
-			p.conn.Close()
-		}
-		p.conn = nil
+	// if OnStop is caused by Close(), don't close again
+	if service.IsRunning() {
+		p.Close()
 	}
 }
 

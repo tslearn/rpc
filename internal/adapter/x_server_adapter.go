@@ -13,13 +13,14 @@ import (
 
 // XServerAdapter ...
 type XServerAdapter struct {
-	network  string
-	addr     string
-	rBufSize int
-	wBufSize int
-	receiver IReceiver
-
-	manager *netpoll.Manager
+	network   string
+	addr      string
+	tlsConfig *tls.Config
+	rBufSize  int
+	wBufSize  int
+	receiver  IReceiver
+	manager   *netpoll.Manager
+	listener  *netpoll.TCPListener
 }
 
 // NewXServerAdapter ...
@@ -32,56 +33,78 @@ func NewXServerAdapter(
 	receiver IReceiver,
 ) *RunnableService {
 	return NewRunnableService(&XServerAdapter{
-		network:  network,
-		addr:     addr,
-		rBufSize: rBufSize,
-		wBufSize: wBufSize,
-		receiver: receiver,
+		network:   network,
+		addr:      addr,
+		tlsConfig: tlsConfig,
+		rBufSize:  rBufSize,
+		wBufSize:  wBufSize,
+		receiver:  receiver,
+		manager:   nil,
+		listener:  nil,
 	})
+}
+
+func (p *XServerAdapter) onConnect(fd int, lAddr net.Addr, rAddr net.Addr) {
+	channel := p.manager.AllocChannel()
+	conn := NewXConn(channel, fd, lAddr, rAddr, p.rBufSize, p.wBufSize)
+
+	switch p.network {
+	case "tcp":
+		if p.tlsConfig == nil {
+			conn.SetNext(NewStreamConn(conn, p.receiver))
+		} else {
+			panic("not implemented")
+		}
+	default:
+		panic("not implemented")
+	}
+
+	channel.AddConn(conn)
 }
 
 // OnOpen ...
 func (p *XServerAdapter) OnOpen(service *RunnableService) {
-	panic("not implemented")
-}
-
-// OnRun ...
-func (p *XServerAdapter) OnRun(service *RunnableService) {
-	if manager := netpoll.NewManager(
+	p.manager = netpoll.NewManager(
 		func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		},
 		base.MaxInt(runtime.NumCPU()/2, 1),
-	); manager == nil {
+	)
+
+	if p.manager == nil {
 		return
-	} else if listener := netpoll.NewTCPListener(
+	}
+
+	p.listener = netpoll.NewTCPListener(
 		p.network,
 		p.addr,
-		func(fd int, localAddr net.Addr, remoteAddr net.Addr) {
-			channel := manager.AllocChannel()
-			fnConnect := p.GetConnectFunc()
-			if conn := fnConnect(channel, fd, localAddr, remoteAddr); conn != nil {
-				channel.AddConn(conn)
-			}
-		},
+		p.onConnect,
 		func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		},
-	); listener == nil {
-		manager.Close()
-		return
-	} else {
+	)
+}
+
+// OnRun ...
+func (p *XServerAdapter) OnRun(service *RunnableService) {
+	if listener := p.listener; listener != nil {
 		for service.IsRunning() {
 			time.Sleep(50 * time.Millisecond)
 		}
-		listener.Close()
-		manager.Close()
 	}
 }
 
 // OnStop ...
 func (p *XServerAdapter) OnStop(_ *RunnableService) {
-	// do nothing
+	if listener := p.listener; listener != nil {
+		p.listener = nil
+		listener.Close()
+	}
+
+	if manager := p.manager; manager != nil {
+		p.manager = nil
+		manager.Close()
+	}
 }
 
 // Close ...
