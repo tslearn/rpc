@@ -5,14 +5,14 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 )
 
-const u63Mask = 0x8000000000000000
-
+// Channel ...
 type Channel struct {
 	seq       uint64
 	retTimeNS int64
 	retStream *core.Stream
 }
 
+// In ...
 func (p *Channel) In(id uint64) (bool, *core.Stream) {
 	if id > p.seq {
 		p.seq = id
@@ -24,6 +24,7 @@ func (p *Channel) In(id uint64) (bool, *core.Stream) {
 	}
 }
 
+// Out ...
 func (p *Channel) Out(stream *core.Stream) bool {
 	id := stream.GetCallbackID()
 
@@ -40,12 +41,14 @@ func (p *Channel) Out(stream *core.Stream) bool {
 	}
 }
 
+// Timeout ...
 func (p *Channel) Timeout(nowNS int64, timeout int64) {
 	if p.retTimeNS > 0 && nowNS-p.retTimeNS > timeout {
 		p.Clean()
 	}
 }
 
+// Clean ...
 func (p *Channel) Clean() {
 	p.retTimeNS = 0
 	if p.retStream != nil {
