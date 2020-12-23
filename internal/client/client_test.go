@@ -3,13 +3,14 @@ package client
 import (
 	"encoding/binary"
 	"fmt"
+	"net"
+	"testing"
+	"time"
+
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/internal/adapter/tcp"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/server"
-	"net"
-	"testing"
-	"time"
 )
 
 func TestClient_Debug(t *testing.T) {
@@ -42,11 +43,11 @@ func (p *testFuncCache) Get(fnString string) rpc.ActionCacheFunc {
 		return func(rt rpc.Runtime, stream *rpc.Stream, fn interface{}) int {
 			if !stream.IsReadFinish() {
 				return -1
-			} else {
-				stream.SetWritePosToBodyStart()
-				fn.(func(rpc.Runtime) rpc.Return)(rt)
-				return 0
 			}
+
+			stream.SetWritePosToBodyStart()
+			fn.(func(rpc.Runtime) rpc.Return)(rt)
+			return 0
 		}
 	default:
 		return nil

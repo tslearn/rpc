@@ -1,4 +1,4 @@
-package gateway
+package client
 
 import (
 	"time"
@@ -6,15 +6,9 @@ import (
 
 // Config ...
 type Config struct {
-	maxSessions     int
 	numOfChannels   int
 	transLimit      int
-	rBufSize        int
-	wBufSize        int
-	readTimeout     time.Duration
-	writeTimeout    time.Duration
 	heartbeat       time.Duration
-	cacheTimeout    time.Duration
 	requestTimeout  time.Duration
 	requestInterval time.Duration
 }
@@ -22,65 +16,60 @@ type Config struct {
 // GetDefaultConfig ...
 func GetDefaultConfig() *Config {
 	return &Config{
-		maxSessions:     10240000,
 		numOfChannels:   48,
 		transLimit:      4 * 1024 * 1024,
 		rBufSize:        1200,
 		wBufSize:        1200,
-		readTimeout:     8 * time.Second,
-		writeTimeout:    3 * time.Second,
 		heartbeat:       5 * time.Second,
-		cacheTimeout:    10 * time.Second,
 		requestTimeout:  16 * time.Second,
 		requestInterval: 3 * time.Second,
 	}
 }
 
-//
-//// MaxSessions ...
-//func (p *Config) MaxSessions() int {
-//    return p.maxSessions
-//}
-//
-//// NumOfChannels ...
-//func (p *Config) NumOfChannels() int {
-//    return p.numOfChannels
-//}
-//
-//// TransLimit ...
-//func (p *Config) TransLimit() int {
-//    return p.transLimit
-//}
-//
-//// ReadTimeout ...
-//func (p *Config) ReadTimeout() time.Duration {
-//    return p.readTimeout
-//}
-//
-//// WriteTimeout ...
-//func (p *Config) WriteTimeout() time.Duration {
-//    return p.writeTimeout
-//}
-//
-//// Heartbeat ...
-//func (p *Config) Heartbeat() time.Duration {
-//    return p.heartbeat
-//}
-//
-//// CacheTimeout ...
-//func (p *Config) CacheTimeout() time.Duration {
-//    return p.cacheTimeout
-//}
-//
-//// RequestTimeout ...
-//func (p *Config) RequestTimeout() time.Duration {
-//    return p.requestTimeout
-//}
-//
-//// RequestInterval ...
-//func (p *Config) RequestInterval() time.Duration {
-//    return p.requestInterval
-//}
+// MaxSessions ...
+func (p *Config) MaxSessions() int {
+	return p.maxSessions
+}
+
+// NumOfChannels ...
+func (p *Config) NumOfChannels() int {
+	return p.numOfChannels
+}
+
+// TransLimit ...
+func (p *Config) TransLimit() int {
+	return p.transLimit
+}
+
+// ReadTimeout ...
+func (p *Config) ReadTimeout() time.Duration {
+	return p.readTimeout
+}
+
+// WriteTimeout ...
+func (p *Config) WriteTimeout() time.Duration {
+	return p.writeTimeout
+}
+
+// Heartbeat ...
+func (p *Config) Heartbeat() time.Duration {
+	return p.heartbeat
+}
+
+// CacheTimeout ...
+func (p *Config) CacheTimeout() time.Duration {
+	return p.cacheTimeout
+}
+
+// RequestTimeout ...
+func (p *Config) RequestTimeout() time.Duration {
+	return p.requestTimeout
+}
+
+// RequestInterval ...
+func (p *Config) RequestInterval() time.Duration {
+	return p.requestInterval
+}
 
 //
 //func (p *SessionConfig) WriteToStream(stream *core.Stream) {

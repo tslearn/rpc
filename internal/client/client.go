@@ -1,101 +1,101 @@
 package client
 
 import (
+	"crypto/tls"
 	"fmt"
+	"github.com/rpccloud/rpc/internal/adapter"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/rpccloud/rpc/internal"
-	"github.com/rpccloud/rpc/internal/adapter/tcp"
-	"github.com/rpccloud/rpc/internal/adapter/websocket"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/gateway"
-	"net/url"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 const (
-	clientStatusClosed  = int32(0)
-	clientStatusClosing = int32(0)
-	clientStatusRunning = int32(1)
+	clientStatusClosed     = int32(0)
+	clientStatusPreClosing = int32(1)
+	clientStatusClosing    = int32(2)
+	clientStatusRunning    = int32(3)
 )
 
 // Client ...
 type Client struct {
-	status               int32
-	closeCH              chan bool
-	connectString        string
 	sessionString        string
-	conn                 internal.IStreamConn
+	adapter              *adapter.RunnableService
+	conn                 *adapter.StreamConn
 	preSendHead          *SendItem
 	preSendTail          *SendItem
 	channels             []Channel
 	freeChannels         *FreeChannelStack
-	config               gateway.SessionConfig
 	lastTimeoutCheckTime time.Time
 	lastControlSendTime  time.Time
-	sync.Mutex
 }
 
-func newClient(connectString string) (*Client, *base.Error) {
-	adapter := (internal.IClientAdapter)(nil)
-
-	if urlInfo, e := url.Parse(connectString); e != nil {
-		return nil, errors.ErrClientConnectString.AddDebug(e.Error())
-	} else if urlInfo.Scheme == "ws" {
-		adapter = websocket.NewWebsocketClientAdapter(connectString)
-	} else if urlInfo.Scheme == "tcp" {
-		adapter = tcp.NewTCPClientAdapter(urlInfo.Host)
-	} else {
-		return nil, errors.ErrClientConnectString.AddDebug(
-			fmt.Sprintf("unsupported scheme %s", urlInfo.Scheme),
-		)
-	}
-
+func newClient(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+	rBufSize int,
+	wBufSize int,
+) *Client {
 	ret := &Client{
-		status:               clientStatusRunning,
-		closeCH:              make(chan bool, 1),
-		connectString:        connectString,
-		sessionString:        "",
-		conn:                 nil,
+		status:        clientStatusRunning,
+		sessionString: "",
+
 		preSendHead:          nil,
 		preSendTail:          nil,
-		config:               gateway.SessionConfig{},
 		channels:             nil,
 		freeChannels:         nil,
 		lastTimeoutCheckTime: base.TimeNow(),
 		lastControlSendTime:  base.TimeNow(),
 	}
 
-	go func() {
-		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
-			adapter.Open(ret.onConnRun, ret.onError)
+	adapter := adapter.NewClientAdapter(network, addr, tlsConfig, rBufSize, wBufSize, ret)
 
-			if atomic.LoadInt32(&ret.status) == clientStatusRunning {
+	if adapter == nil {
+		return nil
+	}
+
+	go func() {
+		for {
+			switch atomic.LoadInt32(&ret.status) {
+			case clientStatusRunning:
 				time.Sleep(time.Second)
+				adapter.Open()
+				time.Sleep(time.Second)
+			case clientStatusPreClosing:
+				time.Sleep(20 * time.Millisecond)
+			case clientStatusClosing:
+				atomic.StoreInt32(&ret.status, clientStatusClosed)
+				return
 			}
 		}
 	}()
 
 	go func() {
-		for atomic.LoadInt32(&ret.status) == clientStatusRunning {
-			now := base.TimeNow()
-			ret.tryToTimeout(now)
-			ret.tryToDeliverPreSendMessages()
-			ret.tryToSendPing(now)
-			time.Sleep(100 * time.Millisecond)
+		for {
+			switch atomic.LoadInt32(&ret.status) {
+			case clientStatusRunning:
+				now := base.TimeNow()
+				ret.tryToTimeout(now)
+				ret.tryToDeliverPreSendMessages()
+				ret.tryToSendPing(now)
+				time.Sleep(80 * time.Millisecond)
+			case clientStatusPreClosing:
+				adapter.Close()
+				atomic.StoreInt32(&ret.status, clientStatusClosing)
+				return
+			default:
+				panic("internal error")
+			}
 		}
-
-		atomic.StoreInt32(&ret.status, clientStatusClosed)
-		ret.closeCH <- true
 	}()
 
-	return ret, nil
-}
-
-func (p *Client) onError(err *base.Error) {
-	fmt.Println("client onError: ", err)
+	return ret
 }
 
 // Close ...
@@ -103,7 +103,7 @@ func (p *Client) Close() bool {
 	if !atomic.CompareAndSwapInt32(
 		&p.status,
 		clientStatusRunning,
-		clientStatusClosing,
+		clientStatusPreClosing,
 	) {
 		p.onError(errors.ErrClientNotRunning)
 		return false
@@ -127,6 +127,10 @@ func (p *Client) Close() bool {
 
 	<-p.closeCH
 	return true
+}
+
+func (p *Client) onError(err *base.Error) {
+	fmt.Println("client onError: ", err)
 }
 
 func (p *Client) initConn(conn internal.IStreamConn) *base.Error {

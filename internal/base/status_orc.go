@@ -41,7 +41,7 @@ func (p *StatusORC) Open(fn func() bool) bool {
 			return false
 		case orcBitLock | orcStatusClosed:
 			p.mu.Unlock()
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 			p.mu.Lock()
 		default:
 			return false
@@ -64,7 +64,7 @@ func (p *StatusORC) Run(fn func(isRunning func() bool)) bool {
 			return true
 		case orcBitLock | orcStatusReady:
 			p.mu.Unlock()
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 			p.mu.Lock()
 		default:
 			return false
@@ -87,7 +87,7 @@ func (p *StatusORC) Close(fn func()) bool {
 			fn()
 			for p.status&orcBitLock != 0 {
 				p.mu.Unlock()
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 				p.mu.Lock()
 			}
 			return true

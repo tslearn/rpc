@@ -98,7 +98,7 @@ func (p *ClientAdapter) OnOpen(service *RunnableService) {
 
 	switch p.network {
 	case "tcp":
-		netConn = NewClientTCP(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
+		netConn = =(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
 			p.receiver.OnConnError(nil, err)
 		})
 	case "ws":

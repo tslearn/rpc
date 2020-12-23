@@ -15,7 +15,6 @@ import (
 
 const (
 	maxGatewayID         = 0xFFFFFF
-	u32Mask              = 0xFFFFFFFF
 	gatewayStatusRunning = int32(1)
 	gatewayStatusClosing = int32(2)
 	gatewayStatusClosed  = int32(0)
@@ -56,19 +55,21 @@ func NewGateWay(
 		onError:    onError,
 		adapters:   make([]*adapter.RunnableService, 0),
 	}
+
 	ret.slot = router.Plug(ret)
+
 	return ret, nil
 }
 
 func (p *GateWay) generateSessionID() (uint64, *base.Error) {
-	if len(p.sessionMap) > p.config.MaxSessions() {
+	if len(p.sessionMap) > p.config.maxSessions {
 		return 0, errors.ErrGateWaySeedOverflows
 	}
 
 	for {
 		// Case:
 		//      some extreme case may make session id concentration in a special
-		// area. consider the folling: first allocate one million long sessions,
+		// area. consider the following: first allocate a million long sessions,
 		// then allocate lots of short sessions (=2^32 - 1million). because of
 		// the long sessions were still alive. the search of seed will take a
 		// long time. this will case the system jitter
@@ -107,7 +108,7 @@ func (p *GateWay) ListenTCP(
 
 	if atomic.LoadInt32(&p.status) == gatewayStatusClosed {
 		p.adapters = append(p.adapters, adapter.NewSyncServerAdapter(
-			network, addr, tlsConfig, 1200, 1200, p,
+			network, addr, tlsConfig, p.config.rBufSize, p.config.wBufSize, p,
 		))
 	} else {
 		p.onError(0, errors.ErrGatewayAlreadyRunning)

@@ -1,10 +1,12 @@
 package client
 
 import (
-	"github.com/rpccloud/rpc/internal/core"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/core"
 )
 
+// Channel ...
 type Channel struct {
 	id     int
 	seq    uint64
@@ -12,6 +14,7 @@ type Channel struct {
 	client *Client
 }
 
+// OnCallbackStream ...
 func (p *Channel) OnCallbackStream(stream *core.Stream) bool {
 	if p.item != nil {
 		if p.item.Return(stream) {
@@ -23,6 +26,7 @@ func (p *Channel) OnCallbackStream(stream *core.Stream) bool {
 	return false
 }
 
+// OnTimeout ...
 func (p *Channel) OnTimeout(now time.Time) bool {
 	if p.item != nil {
 		if p.item.CheckAndTimeout(now) {

@@ -1,16 +1,18 @@
 package client
 
 import (
+	"sync"
+	"time"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"sync"
-	"time"
 )
 
 const sendItemStatusRunning = int32(1)
 const sendItemStatusFinish = int32(2)
 
+// SendItem ...
 type SendItem struct {
 	id         uint64
 	status     int32
@@ -42,6 +44,7 @@ func newSendItem() *SendItem {
 	return ret
 }
 
+// Return ...
 func (p *SendItem) Return(stream *core.Stream) bool {
 	if stream == nil {
 		return false
@@ -54,6 +57,7 @@ func (p *SendItem) Return(stream *core.Stream) bool {
 	}
 }
 
+// CheckAndTimeout ...
 func (p *SendItem) CheckAndTimeout(now time.Time) bool {
 	if now.Sub(p.startTime) > p.timeout && p.status == sendItemStatusRunning {
 		p.status = sendItemStatusFinish
@@ -71,6 +75,7 @@ func (p *SendItem) CheckAndTimeout(now time.Time) bool {
 	return false
 }
 
+// Release ...
 func (p *SendItem) Release() {
 	p.sendStream.Reset()
 	sendItemCache.Put(p)

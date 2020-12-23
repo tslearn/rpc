@@ -199,3 +199,88 @@ func TestStatusORC_Close(t *testing.T) {
 		assert(o.status).Equal(orcStatusClosed)
 	})
 }
+
+func TestStatusORCParallels(t *testing.T) {
+	t.Run("test open and close", func(t *testing.T) {
+		fnTest := func() (int64, int64, int64) {
+			waitCH := make(chan bool)
+			o := NewStatusORC()
+
+			testCount := 500
+			parallels := 3
+
+			openOK := int64(0)
+			runOK := int64(0)
+			closeOK := int64(0)
+
+			for n := 0; n < parallels; n++ {
+				go func() {
+					for i := 0; i < testCount; i++ {
+						if o.Open(func() bool {
+							time.Sleep(time.Millisecond)
+							return true
+						}) {
+							atomic.AddInt64(&openOK, 1)
+						} else {
+							time.Sleep(time.Millisecond)
+						}
+					}
+					waitCH <- true
+				}()
+
+				go func() {
+					for i := 0; i < testCount; i++ {
+						if o.Run(func(isRunning func() bool) {
+							time.Sleep(2 * time.Millisecond)
+						}) {
+							atomic.AddInt64(&runOK, 1)
+						} else {
+							time.Sleep(2 * time.Millisecond)
+						}
+					}
+					waitCH <- true
+				}()
+
+				go func() {
+					for i := 0; i < testCount; i++ {
+						if o.Close(func() {
+							time.Sleep(time.Millisecond)
+						}) {
+							atomic.AddInt64(&closeOK, 1)
+						} else {
+							time.Sleep(time.Millisecond)
+						}
+					}
+					waitCH <- true
+				}()
+			}
+
+			for n := 0; n < parallels; n++ {
+				<-waitCH
+				<-waitCH
+				<-waitCH
+			}
+
+			if o.Close(func() {}) {
+				closeOK++
+			}
+
+			return openOK, runOK, closeOK
+		}
+
+		waitCH := make(chan bool)
+		for i := 0; i < 200; i++ {
+			go func() {
+				assert := NewAssert(t)
+				openOK, runOK, closeOK := fnTest()
+				assert(openOK).Equal(closeOK)
+				assert(runOK > 0).Equal(true)
+				waitCH <- true
+			}()
+		}
+
+		for i := 0; i < 200; i++ {
+			<-waitCH
+		}
+	})
+}

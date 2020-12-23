@@ -1,10 +1,12 @@
 package client
 
+// FreeChannelStack ...
 type FreeChannelStack struct {
 	items []int
 	pos   int
 }
 
+// NewFreeChannelStack ...
 func NewFreeChannelStack(size int) *FreeChannelStack {
 	return &FreeChannelStack{
 		items: make([]int, size),
@@ -12,6 +14,7 @@ func NewFreeChannelStack(size int) *FreeChannelStack {
 	}
 }
 
+// Push ...
 func (p *FreeChannelStack) Push(v int) bool {
 	if p.pos < len(p.items) {
 		p.items[p.pos] = v
@@ -22,6 +25,7 @@ func (p *FreeChannelStack) Push(v int) bool {
 	return false
 }
 
+// Pop ...
 func (p *FreeChannelStack) Pop() (int, bool) {
 	if p.pos > 0 {
 		p.pos--
