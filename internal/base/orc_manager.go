@@ -36,22 +36,22 @@ func execORCClose(fn func()) {
 	fn()
 }
 
-type StatusORC struct {
+type ORCManager struct {
 	status     int32
 	condStatus int32
 	mu         sync.Mutex
 	cond       sync.Cond
 }
 
-func NewStatusORC() *StatusORC {
-	return &StatusORC{}
+func NewORCManager() *ORCManager {
+	return &ORCManager{}
 }
 
-func (p *StatusORC) isRunning() bool {
+func (p *ORCManager) isRunning() bool {
 	return atomic.LoadInt32(&p.status)&0xFF == orcStatusReady
 }
 
-func (p *StatusORC) setStatus(status int32) {
+func (p *ORCManager) setStatus(status int32) {
 	if status != p.status {
 		atomic.StoreInt32(&p.status, status)
 
@@ -62,7 +62,7 @@ func (p *StatusORC) setStatus(status int32) {
 	}
 }
 
-func (p *StatusORC) waitStatusChange() {
+func (p *ORCManager) waitStatusChange() {
 	if p.condStatus == orcCondNone {
 		p.cond.L = &p.mu
 	}
@@ -71,7 +71,7 @@ func (p *StatusORC) waitStatusChange() {
 	p.cond.Wait()
 }
 
-func (p *StatusORC) Open(fn func() bool) bool {
+func (p *ORCManager) Open(fn func() bool) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (p *StatusORC) Open(fn func() bool) bool {
 	}
 }
 
-func (p *StatusORC) Run(fn func(isRunning func() bool)) bool {
+func (p *ORCManager) Run(fn func(isRunning func() bool)) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -113,7 +113,7 @@ func (p *StatusORC) Run(fn func(isRunning func() bool)) bool {
 	}
 }
 
-func (p *StatusORC) Close(fn func()) bool {
+func (p *ORCManager) Close(fn func()) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

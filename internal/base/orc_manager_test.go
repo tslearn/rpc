@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestStatusORCBasic(t *testing.T) {
+func TestORCManagerBasic(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(orcBitLock).Equal(256)
@@ -15,19 +15,19 @@ func TestStatusORCBasic(t *testing.T) {
 	})
 }
 
-func TestStatusORC_NewStatusORC(t *testing.T) {
+func TestORCManager_NewORCManager(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		assert(o).IsNotNil()
 		assert(o.status).Equal(orcStatusClosed)
 	})
 }
 
-func TestStatusORC_isRunning(t *testing.T) {
+func TestORCManager_isRunning(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusClosed
 		assert(o.isRunning()).IsFalse()
 		o.status = orcBitLock | orcStatusClosed
@@ -39,10 +39,10 @@ func TestStatusORC_isRunning(t *testing.T) {
 	})
 }
 
-func TestStatusORC_Open(t *testing.T) {
+func TestORCManager_Open(t *testing.T) {
 	t.Run("status orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusReady
 		assert(o.Open(func() bool {
 			panic("illegal call here")
@@ -52,7 +52,7 @@ func TestStatusORC_Open(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusReady
 		assert(o.Open(func() bool {
 			panic("illegal call here")
@@ -62,7 +62,7 @@ func TestStatusORC_Open(t *testing.T) {
 
 	t.Run("status orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusClosed
 		callCount := 0
 		assert(o.Open(func() bool {
@@ -82,7 +82,7 @@ func TestStatusORC_Open(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusClosed
 
 		go func() {
@@ -100,10 +100,10 @@ func TestStatusORC_Open(t *testing.T) {
 	})
 }
 
-func TestStatusORC_Run(t *testing.T) {
+func TestORCManager_Run(t *testing.T) {
 	t.Run("status orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusClosed
 		assert(o.Run(func(isRunning func() bool) {
 			panic("illegal call here")
@@ -113,7 +113,7 @@ func TestStatusORC_Run(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusClosed
 		assert(o.Run(func(isRunning func() bool) {
 			panic("illegal call here")
@@ -123,7 +123,7 @@ func TestStatusORC_Run(t *testing.T) {
 
 	t.Run("status orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusReady
 		callCount := 0
 		assert(o.Run(func(isRunning func() bool) {
@@ -135,7 +135,7 @@ func TestStatusORC_Run(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusReady
 
 		go func() {
@@ -150,10 +150,10 @@ func TestStatusORC_Run(t *testing.T) {
 	})
 }
 
-func TestStatusORC_Close(t *testing.T) {
+func TestORCManager_Close(t *testing.T) {
 	t.Run("status orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusClosed
 		assert(o.Close(func() {
 			panic("illegal call here")
@@ -163,7 +163,7 @@ func TestStatusORC_Close(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusClosed
 		assert(o.Close(func() {
 			panic("illegal call here")
@@ -173,7 +173,7 @@ func TestStatusORC_Close(t *testing.T) {
 
 	t.Run("status orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcStatusReady
 		callCount := 0
 		assert(o.Close(func() {
@@ -185,7 +185,7 @@ func TestStatusORC_Close(t *testing.T) {
 
 	t.Run("status orcBitLock | orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
-		o := NewStatusORC()
+		o := NewORCManager()
 		o.status = orcBitLock | orcStatusReady
 
 		go func() {
@@ -200,11 +200,11 @@ func TestStatusORC_Close(t *testing.T) {
 	})
 }
 
-func TestStatusORCParallels(t *testing.T) {
+func TestORCManagerParallels(t *testing.T) {
 	t.Run("test open and close", func(t *testing.T) {
 		fnTest := func() (int64, int64, int64) {
 			waitCH := make(chan bool)
-			o := NewStatusORC()
+			o := NewORCManager()
 
 			testCount := 10000
 			parallels := 4
