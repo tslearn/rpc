@@ -12,55 +12,42 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// IServer ...
-type IServer interface {
-	Open() bool
-	Run() bool
-	Close() bool
-}
-
 // ServerTCP ...
 type ServerTCP struct {
-	network    string
-	addr       string
-	tlsConfig  *tls.Config
-	onConnect  func(conn net.Conn)
-	onError    func(err *base.Error)
+	adapter    *ServerAdapter
 	ln         net.Listener
 	orcManager *base.ORCManager
 }
 
 // NewServerTCP ...
-func NewServerTCP(
-	network string,
-	addr string,
-	tlsConfig *tls.Config,
-	onConnect func(conn net.Conn),
-	onError func(err *base.Error),
-) IServer {
+func NewServerTCP(adapter *ServerAdapter) base.IORCService {
 	return &ServerTCP{
-		network:    network,
-		addr:       addr,
-		tlsConfig:  tlsConfig,
-		onConnect:  onConnect,
-		onError:    onError,
+		adapter:    adapter,
 		ln:         nil,
 		orcManager: base.NewORCManager(),
 	}
 }
 
+// Open ...
 func (p *ServerTCP) Open() bool {
 	return p.orcManager.Open(func() bool {
 		e := error(nil)
-
-		if p.tlsConfig == nil {
-			p.ln, e = net.Listen(p.network, p.addr)
+		adapter := p.adapter
+		if p.adapter.tlsConfig == nil {
+			p.ln, e = net.Listen(adapter.network, adapter.addr)
 		} else {
-			p.ln, e = tls.Listen(p.network, p.addr, p.tlsConfig)
+			p.ln, e = tls.Listen(
+				adapter.network,
+				adapter.addr,
+				adapter.tlsConfig,
+			)
 		}
 
 		if e != nil {
-			p.onError(errors.ErrTemp.AddDebug(e.Error()))
+			adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
 			return false
 		}
 
@@ -68,17 +55,12 @@ func (p *ServerTCP) Open() bool {
 	})
 }
 
-// Serve ...
+// Run ...
 func (p *ServerTCP) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
 		for isRunning() {
 			conn, e := p.ln.Accept()
-
-			if e != nil {
-				p.onError(errors.ErrTemp.AddDebug(e.Error()))
-			} else {
-				p.onConnect(conn)
-			}
+			p.adapter.onConnect(conn, e)
 		}
 	})
 }
@@ -87,67 +69,59 @@ func (p *ServerTCP) Run() bool {
 func (p *ServerTCP) Close() bool {
 	return p.orcManager.Close(func() {
 		if e := p.ln.Close(); e != nil {
-			p.onError(errors.ErrTemp.AddDebug(e.Error()))
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
 		}
+	}, func() {
 		p.ln = nil
 	})
 }
 
 // ServerWebSocket ...
 type ServerWebSocket struct {
-	addr       string
-	tlsConfig  *tls.Config
-	onConnect  func(conn net.Conn)
-	onError    func(err *base.Error)
+	adapter    *ServerAdapter
 	ln         net.Listener
 	server     *http.Server
 	orcManager *base.ORCManager
 }
 
 // NewServerWebSocket ...
-func NewServerWebSocket(
-	addr string,
-	tlsConfig *tls.Config,
-	onConnect func(conn net.Conn),
-	onError func(err *base.Error),
-) IServer {
+func NewServerWebSocket(adapter *ServerAdapter) base.IORCService {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, e := ws.UpgradeHTTP(r, w)
-		if e != nil {
-			onError(errors.ErrTemp.AddDebug(e.Error()))
-		} else {
-			onConnect(conn)
-		}
+		adapter.onConnect(conn, e)
 	})
 
 	return &ServerWebSocket{
-		addr:      addr,
-		tlsConfig: tlsConfig,
-		onConnect: onConnect,
-		onError:   onError,
-		ln:        nil,
+		adapter: adapter,
+		ln:      nil,
 		server: &http.Server{
-			Addr:    addr,
+			Addr:    adapter.addr,
 			Handler: mux,
 		},
 		orcManager: base.NewORCManager(),
 	}
 }
 
-// Serve ...
+// Open ...
 func (p *ServerWebSocket) Open() bool {
 	return p.orcManager.Open(func() bool {
 		e := error(nil)
-
-		if p.tlsConfig == nil {
-			p.ln, e = net.Listen("tcp", p.addr)
+		adapter := p.adapter
+		if adapter.tlsConfig == nil {
+			p.ln, e = net.Listen("tcp", adapter.addr)
 		} else {
-			p.ln, e = tls.Listen("tcp", p.addr, p.tlsConfig)
+			p.ln, e = tls.Listen("tcp", adapter.addr, adapter.tlsConfig)
 		}
 
 		if e != nil {
-			p.onError(errors.ErrTemp.AddDebug(e.Error()))
+			adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
 			return false
 		}
 
@@ -155,13 +129,14 @@ func (p *ServerWebSocket) Open() bool {
 	})
 }
 
-// Serve ...
+// Run ...
 func (p *ServerWebSocket) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
-		for isRunning() {
-			if e := p.server.Serve(p.ln); e != nil {
-				p.onError(errors.ErrTemp.AddDebug(e.Error()))
-			}
+	return p.orcManager.Run(func(_ func() bool) {
+		if e := p.server.Serve(p.ln); e != nil {
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
 		}
 	})
 }
@@ -170,21 +145,26 @@ func (p *ServerWebSocket) Run() bool {
 func (p *ServerWebSocket) Close() bool {
 	return p.orcManager.Close(func() {
 		if e := p.server.Close(); e != nil {
-			p.onError(errors.ErrTemp.AddDebug(e.Error()))
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
 		}
+	}, func() {
 		p.ln = nil
 	})
 }
 
 // ServerAdapter ...
 type ServerAdapter struct {
-	network   string
-	addr      string
-	tlsConfig *tls.Config
-	rBufSize  int
-	wBufSize  int
-	receiver  common.IReceiver
-	server    IServer
+	network    string
+	addr       string
+	tlsConfig  *tls.Config
+	rBufSize   int
+	wBufSize   int
+	receiver   common.IReceiver
+	server     base.IORCService
+	orcManager *base.ORCManager
 }
 
 // NewServerAdapter ...
@@ -196,72 +176,80 @@ func NewServerAdapter(
 	wBufSize int,
 	receiver common.IReceiver,
 ) *ServerAdapter {
-	ret := &ServerAdapter{
-		network:   network,
-		addr:      addr,
-		tlsConfig: tlsConfig,
-		rBufSize:  rBufSize,
-		wBufSize:  wBufSize,
-		receiver:  receiver,
-		server:    nil,
+	return &ServerAdapter{
+		network:    network,
+		addr:       addr,
+		tlsConfig:  tlsConfig,
+		rBufSize:   rBufSize,
+		wBufSize:   wBufSize,
+		receiver:   receiver,
+		server:     nil,
+		orcManager: base.NewORCManager(),
 	}
-
-	switch network {
-	case "tcp4":
-		fallthrough
-	case "tcp6":
-		fallthrough
-	case "tcp":
-		ret.server = NewServerTCP(
-			network,
-			addr,
-			tlsConfig,
-			ret.onConnect,
-			func(err *base.Error) {
-				receiver.OnConnError(nil, err)
-			},
-		)
-	case "ws":
-		fallthrough
-	case "wss":
-		ret.server = NewServerWebSocket(
-			addr,
-			tlsConfig,
-			ret.onConnect,
-			func(err *base.Error) {
-				receiver.OnConnError(nil, err)
-			},
-		)
-	default:
-		panic(fmt.Sprintf("unsupported protocol %s", network))
-	}
-
-	return ret
 }
 
-func (p *ServerAdapter) onConnect(conn net.Conn) {
-	go func() {
-		netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
-		netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
-		netConn.OnOpen()
-		for {
-			if ok := netConn.OnReadReady(); !ok {
-				break
+func (p *ServerAdapter) onConnect(conn net.Conn, e error) {
+	if e != nil {
+		p.receiver.OnConnError(
+			nil,
+			errors.ErrTemp.AddDebug(e.Error()),
+		)
+	} else {
+		go func() {
+			netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
+			netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
+			netConn.OnOpen()
+			for {
+				if ok := netConn.OnReadReady(); !ok {
+					break
+				}
+			}
+			netConn.OnClose()
+			netConn.Close()
+		}()
+	}
+}
+
+// Open ...
+func (p *ServerAdapter) Open() bool {
+	return p.orcManager.Open(func() bool {
+		switch p.network {
+		case "tcp4":
+			fallthrough
+		case "tcp6":
+			fallthrough
+		case "tcp":
+			p.server = NewServerTCP(p)
+			return true
+		case "ws":
+			fallthrough
+		case "wss":
+			p.server = NewServerWebSocket(p)
+			return true
+		default:
+			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
+				fmt.Sprintf("unsupported protocol %s", p.network),
+			))
+			return false
+		}
+	})
+}
+
+// Run ...
+func (p *ServerAdapter) Run() bool {
+	return p.orcManager.Run(func(isRunning func() bool) {
+		for isRunning() {
+			if p.server.Open() {
+				p.server.Run()
+				p.server.Close()
 			}
 		}
-		netConn.OnClose()
-		netConn.Close()
-	}()
+	})
 }
 
-func (p *ServerAdapter) Open() bool {
-	return p.server.Open()
-}
-
-func (p *ServerAdapter) Run() bool {
-	return p.server.Run()
-}
-
+// Close ...
 func (p *ServerAdapter) Close() bool {
-	return p.server.Close()
+	return p.orcManager.Close(nil, func() {
+		p.server = nil
+	})
 }

@@ -7,69 +7,145 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/rpccloud/rpc/internal/adapter/common"
+	"github.com/rpccloud/rpc/internal/errors"
+
 	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// ClientTCP ...
+type ClientTCP struct {
+	adapter    *ClientAdapter
+	conn       net.Conn
+	orcManager *base.ORCManager
+}
+
 // NewClientTCP ...
-func NewClientTCP(
-	network string,
-	addr string,
-	tlsConfig *tls.Config,
-	onError func(err *base.Error),
-) net.Conn {
-	ret := net.Conn(nil)
-	e := error(nil)
-
-	if tlsConfig == nil {
-		ret, e = net.Dial(network, addr)
-	} else {
-		ret, e = tls.Dial(network, addr, tlsConfig)
+func NewClientTCP(adapter *ClientAdapter) base.IORCService {
+	return &ClientTCP{
+		adapter:    adapter,
+		conn:       nil,
+		orcManager: base.NewORCManager(),
 	}
+}
 
-	if e != nil {
-		onError(errors.ErrTemp.AddDebug(e.Error()))
-		return nil
-	}
+// Open ...
+func (p *ClientTCP) Open() bool {
+	return p.orcManager.Open(func() bool {
+		e := error(nil)
+		adapter := p.adapter
+		if adapter.tlsConfig == nil {
+			p.conn, e = net.Dial(adapter.network, adapter.addr)
+		} else {
+			p.conn, e = tls.Dial(
+				adapter.network,
+				adapter.addr,
+				adapter.tlsConfig,
+			)
+		}
 
-	return ret
+		if e != nil {
+			adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
+			return false
+		}
+
+		return true
+	})
+}
+
+// Run ...
+func (p *ClientTCP) Run() bool {
+	return p.orcManager.Run(func(isRunning func() bool) {
+		p.adapter.onConnect(p.conn, nil)
+	})
+}
+
+// Close ...
+func (p *ClientTCP) Close() bool {
+	return p.orcManager.Close(func() {
+		if e := p.conn.Close(); e != nil {
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
+		}
+	}, func() {
+		p.conn = nil
+	})
+}
+
+// ClientWebsocket ...
+type ClientWebsocket struct {
+	adapter    *ClientAdapter
+	conn       net.Conn
+	orcManager *base.ORCManager
 }
 
 // NewClientWebsocket ...
-func NewClientWebsocket(
-	network string,
-	addr string,
-	tlsConfig *tls.Config,
-	onError func(err *base.Error),
-) net.Conn {
-	dialer := &ws.Dialer{}
-
-	if network == "wss" {
-		dialer.TLSConfig = tlsConfig
+func NewClientWebsocket(adapter *ClientAdapter) base.IORCService {
+	return &ClientWebsocket{
+		adapter:    adapter,
+		conn:       nil,
+		orcManager: base.NewORCManager(),
 	}
+}
 
-	u := url.URL{Scheme: network, Host: addr, Path: "/"}
-	conn, _, _, e := dialer.Dial(context.Background(), u.String())
+// Open ...
+func (p *ClientWebsocket) Open() bool {
+	return p.orcManager.Open(func() bool {
+		e := error(nil)
+		adapter := p.adapter
+		dialer := &ws.Dialer{TLSConfig: adapter.tlsConfig}
+		u := url.URL{Scheme: adapter.network, Host: adapter.addr, Path: "/"}
+		p.conn, _, _, e = dialer.Dial(context.Background(), u.String())
 
-	fmt.Println("DDDD", e)
-	if e != nil {
-		onError(errors.ErrTemp.AddDebug(e.Error()))
-		return nil
-	}
+		if e != nil {
+			adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
+			return false
+		}
 
-	return conn
+		return true
+	})
+}
+
+// Run ...
+func (p *ClientWebsocket) Run() bool {
+	return p.orcManager.Run(func(isRunning func() bool) {
+		p.adapter.onConnect(p.conn, nil)
+	})
+}
+
+// Close ...
+func (p *ClientWebsocket) Close() bool {
+	return p.orcManager.Close(func() {
+		if e := p.conn.Close(); e != nil {
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
+		}
+	}, func() {
+		p.conn = nil
+	})
 }
 
 // ClientAdapter ...
 type ClientAdapter struct {
-	network   string
-	addr      string
-	tlsConfig *tls.Config
-	rBufSize  int
-	wBufSize  int
-	receiver  IReceiver
-	conn      *NetConn
+	network    string
+	addr       string
+	tlsConfig  *tls.Config
+	rBufSize   int
+	wBufSize   int
+	receiver   common.IReceiver
+	client     base.IORCService
+	orcManager *base.ORCManager
 }
 
 // NewClientAdapter ...
@@ -79,69 +155,81 @@ func NewClientAdapter(
 	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
-	receiver IReceiver,
-) *RunnableService {
-	return NewRunnableService(&ClientAdapter{
-		network:   network,
-		addr:      addr,
-		tlsConfig: tlsConfig,
-		rBufSize:  rBufSize,
-		wBufSize:  wBufSize,
-		receiver:  receiver,
-		conn:      nil,
+	receiver common.IReceiver,
+) *ClientAdapter {
+	return &ClientAdapter{
+		network:    network,
+		addr:       addr,
+		tlsConfig:  tlsConfig,
+		rBufSize:   rBufSize,
+		wBufSize:   wBufSize,
+		receiver:   receiver,
+		client:     nil,
+		orcManager: base.NewORCManager(),
+	}
+}
+
+func (p *ClientAdapter) onConnect(conn net.Conn, e error) {
+	if e != nil {
+		p.receiver.OnConnError(
+			nil,
+			errors.ErrTemp.AddDebug(e.Error()),
+		)
+	} else {
+		go func() {
+			netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
+			netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
+			netConn.OnOpen()
+			for {
+				if ok := netConn.OnReadReady(); !ok {
+					break
+				}
+			}
+			netConn.OnClose()
+			netConn.Close()
+		}()
+	}
+}
+
+func (p *ClientAdapter) Open() bool {
+	return p.orcManager.Open(func() bool {
+		switch p.network {
+		case "tcp4":
+			fallthrough
+		case "tcp6":
+			fallthrough
+		case "tcp":
+			p.client = NewClientTCP(p)
+			return true
+		case "ws":
+			fallthrough
+		case "wss":
+			p.client = NewClientWebsocket(p)
+			return true
+		default:
+			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
+				fmt.Sprintf("unsupported protocol %s", p.network),
+			))
+			return false
+		}
 	})
 }
 
-// OnOpen ...
-func (p *ClientAdapter) OnOpen(service *RunnableService) {
-	netConn := (net.Conn)(nil)
-
-	switch p.network {
-	case "tcp":
-		netConn = =(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
-			p.receiver.OnConnError(nil, err)
-		})
-	case "ws":
-		fallthrough
-	case "wss":
-		netConn = NewClientWebsocket(p.network, p.addr, p.tlsConfig, func(err *base.Error) {
-			p.receiver.OnConnError(nil, err)
-		})
-	default:
-		panic("not implemented")
-	}
-
-	if netConn == nil {
-		return
-	}
-
-	p.conn = NewNetConn(netConn, p.rBufSize, p.wBufSize)
-	p.conn.SetNext(NewStreamConn(p.conn, p.receiver))
-	p.conn.OnOpen()
-}
-
-// OnRun ...
-func (p *ClientAdapter) OnRun(service *RunnableService) {
-	if conn := p.conn; conn != nil {
-		for service.IsRunning() {
-			if ok := p.conn.OnReadReady(); !ok {
-				break
+// Run ...
+func (p *ClientAdapter) Run() bool {
+	return p.orcManager.Run(func(isRunning func() bool) {
+		for isRunning() {
+			if p.client.Open() {
+				p.client.Run()
+				p.client.Close()
 			}
 		}
-	}
-}
-
-// OnStop ...
-func (p *ClientAdapter) OnStop(service *RunnableService) {
-	// if OnStop is caused by Close(), don't close again
-	if service.IsRunning() {
-		p.Close()
-	}
+	})
 }
 
 // Close ...
-func (p *ClientAdapter) Close() {
-	if conn := p.conn; conn != nil {
-		conn.Close()
-	}
+func (p *ClientAdapter) Close() bool {
+	return p.orcManager.Close(nil, func() {
+		p.client = nil
+	})
 }

@@ -11,7 +11,8 @@ func TestORCManagerBasic(t *testing.T) {
 		assert := NewAssert(t)
 		assert(orcBitLock).Equal(256)
 		assert(orcStatusClosed).Equal(int32(0))
-		assert(orcStatusReady).Equal(int32(1))
+		assert(orcStatusClosing).Equal(int32(1))
+		assert(orcStatusReady).Equal(int32(2))
 	})
 }
 
@@ -40,6 +41,22 @@ func TestORCManager_isRunning(t *testing.T) {
 }
 
 func TestORCManager_Open(t *testing.T) {
+	t.Run("nil func", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+		assert(o.Open(nil)).IsFalse()
+		assert(o.status).Equal(orcStatusClosed)
+	})
+
+	t.Run("panic in func", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+		assert(o.Open(func() bool {
+			panic("error")
+		})).IsFalse()
+		assert(o.status).Equal(orcStatusClosed)
+	})
+
 	t.Run("status orcStatusReady", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
@@ -83,13 +100,13 @@ func TestORCManager_Open(t *testing.T) {
 	t.Run("status orcBitLock | orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
-		o.status = orcBitLock | orcStatusClosed
+		o.status = orcBitLock | orcStatusClosing
 
 		go func() {
 			time.Sleep(300 * time.Millisecond)
 			o.mu.Lock()
 			defer o.mu.Unlock()
-			o.setStatus(o.status & 0xFF)
+			o.setStatus(orcStatusClosed)
 		}()
 
 		assert(o.Open(func() bool {
@@ -101,6 +118,14 @@ func TestORCManager_Open(t *testing.T) {
 }
 
 func TestORCManager_Run(t *testing.T) {
+	t.Run("nil func", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+		o.status = orcStatusReady
+		assert(o.Run(nil)).IsTrue()
+		assert(o.status).Equal(orcStatusReady)
+	})
+
 	t.Run("status orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
@@ -151,11 +176,21 @@ func TestORCManager_Run(t *testing.T) {
 }
 
 func TestORCManager_Close(t *testing.T) {
+	t.Run("nil func", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+		o.status = orcStatusReady
+		assert(o.Close(nil, nil)).IsTrue()
+		assert(o.status).Equal(orcStatusClosed)
+	})
+
 	t.Run("status orcStatusClosed", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
 		o.status = orcStatusClosed
 		assert(o.Close(func() {
+			panic("illegal call here")
+		}, func() {
 			panic("illegal call here")
 		})).IsFalse()
 		assert(o.status).Equal(orcStatusClosed)
@@ -166,6 +201,8 @@ func TestORCManager_Close(t *testing.T) {
 		o := NewORCManager()
 		o.status = orcBitLock | orcStatusClosed
 		assert(o.Close(func() {
+			panic("illegal call here")
+		}, func() {
 			panic("illegal call here")
 		})).IsFalse()
 		assert(o.status).Equal(orcBitLock | orcStatusClosed)
@@ -178,8 +215,10 @@ func TestORCManager_Close(t *testing.T) {
 		callCount := 0
 		assert(o.Close(func() {
 			callCount++
+		}, func() {
+			callCount++
 		})).IsTrue()
-		assert(callCount).Equal(1)
+		assert(callCount).Equal(2)
 		assert(o.status).Equal(orcStatusClosed)
 	})
 
@@ -195,7 +234,7 @@ func TestORCManager_Close(t *testing.T) {
 			o.setStatus(o.status & 0xFF)
 		}()
 
-		assert(o.Close(func() {})).IsTrue()
+		assert(o.Close(nil, nil)).IsTrue()
 		assert(o.status).Equal(orcStatusClosed)
 	})
 }
@@ -245,7 +284,7 @@ func TestORCManagerParallels(t *testing.T) {
 					for i := 0; i < testCount; i++ {
 						if o.Close(func() {
 							time.Sleep(100 * time.Microsecond)
-						}) {
+						}, nil) {
 							atomic.AddInt64(&closeOK, 1)
 						} else {
 							time.Sleep(100 * time.Microsecond)
@@ -261,7 +300,7 @@ func TestORCManagerParallels(t *testing.T) {
 				<-waitCH
 			}
 
-			if o.Close(func() {}) {
+			if o.Close(nil, nil) {
 				closeOK++
 			}
 

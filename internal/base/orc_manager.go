@@ -6,36 +6,58 @@ import (
 )
 
 const (
-	orcBitLock      = 1 << 8
-	orcStatusClosed = int32(0)
-	orcStatusReady  = int32(1)
+	orcBitLock       = 1 << 8
+	orcStatusClosed  = int32(0)
+	orcStatusClosing = int32(1)
+	orcStatusReady   = int32(2)
 
 	orcCondNone = int32(0)
 	orcCondFree = int32(1)
 	orcCondBusy = int32(2)
 )
 
-func execORCOpen(fn func() bool) bool {
+// IORCService ...
+type IORCService interface {
+	Open() bool
+	Run() bool
+	Close() bool
+}
+
+func execORCOpen(fn func() bool) (ret bool) {
 	defer func() {
-		_ = recover()
+		if v := recover(); v != nil {
+			ret = false
+		}
 	}()
-	return fn()
+
+	if fn != nil {
+		return fn()
+	}
+
+	return false
 }
 
 func execORCRun(fn func(isRunning func() bool), isRunning func() bool) {
 	defer func() {
 		_ = recover()
 	}()
-	fn(isRunning)
+
+	if fn != nil {
+		fn(isRunning)
+	}
 }
 
 func execORCClose(fn func()) {
 	defer func() {
 		_ = recover()
 	}()
-	fn()
+
+	if fn != nil {
+		fn()
+	}
 }
 
+// ORCManager ...
 type ORCManager struct {
 	status     int32
 	condStatus int32
@@ -43,6 +65,7 @@ type ORCManager struct {
 	cond       sync.Cond
 }
 
+// NewORCManager ...
 func NewORCManager() *ORCManager {
 	return &ORCManager{}
 }
@@ -71,6 +94,7 @@ func (p *ORCManager) waitStatusChange() {
 	p.cond.Wait()
 }
 
+// Open ...
 func (p *ORCManager) Open(fn func() bool) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -84,7 +108,7 @@ func (p *ORCManager) Open(fn func() bool) bool {
 			}
 
 			return false
-		case orcBitLock | orcStatusClosed:
+		case orcBitLock | orcStatusClosing:
 			p.waitStatusChange()
 		default:
 			return false
@@ -92,6 +116,7 @@ func (p *ORCManager) Open(fn func() bool) bool {
 	}
 }
 
+// Run ...
 func (p *ORCManager) Run(fn func(isRunning func() bool)) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -113,22 +138,27 @@ func (p *ORCManager) Run(fn func(isRunning func() bool)) bool {
 	}
 }
 
-func (p *ORCManager) Close(fn func()) bool {
+// Close ...
+func (p *ORCManager) Close(willClose func(), didClose func()) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	for {
 		switch atomic.LoadInt32(&p.status) {
 		case orcStatusReady:
+			p.setStatus(orcStatusClosing)
+			execORCClose(willClose)
+			execORCClose(didClose)
 			p.setStatus(orcStatusClosed)
-			execORCClose(fn)
 			return true
 		case orcBitLock | orcStatusReady:
-			p.setStatus(orcBitLock | orcStatusClosed)
-			execORCClose(fn)
+			p.setStatus(orcBitLock | orcStatusClosing)
+			execORCClose(willClose)
 			for p.status&orcBitLock != 0 {
 				p.waitStatusChange()
 			}
+			execORCClose(didClose)
+			p.setStatus(orcStatusClosed)
 			return true
 		default:
 			return false

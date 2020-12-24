@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -14,23 +15,23 @@ import (
 type receiver struct {
 }
 
-func (p *receiver) OnConnOpen(streamConn *adapter.StreamConn) {
+func (p *receiver) OnConnOpen(streamConn *common.StreamConn) {
 	fmt.Println("Server: OnConnOpen")
 }
 
-func (p *receiver) OnConnClose(streamConn *adapter.StreamConn) {
+func (p *receiver) OnConnClose(streamConn *common.StreamConn) {
 	fmt.Println("Server: OnConnClose")
 }
 
 func (p *receiver) OnConnReadStream(
-	streamConn *adapter.StreamConn,
+	streamConn *common.StreamConn,
 	stream *core.Stream,
 ) {
 	streamConn.WriteStreamAndRelease(stream)
 }
 
 func (p *receiver) OnConnError(
-	streamConn *adapter.StreamConn,
+	streamConn *common.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
@@ -45,18 +46,20 @@ func main() {
 		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
 	}()
 
-	// tlsConfig, err := base.GetTLSServerConfig(
-	// 	"../cert/server.pem",
-	// 	"../cert/server-key.pem",
-	// )
-
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	serverAdapter := adapter.NewXServerAdapter(
-		"tcp", "0.0.0.0:8080", nil, 1200, 1200, &receiver{},
+	tlsConfig, err := base.GetTLSServerConfig(
+		"../cert/server.pem",
+		"../cert/server-key.pem",
 	)
 
-	serverAdapter.Open()
+	if err != nil {
+		panic(err)
+	}
+
+	serverAdapter := adapter.NewServerAdapter(
+		"tcp", "0.0.0.0:8080", tlsConfig, 1200, 1200, &receiver{},
+	)
+
+	if serverAdapter.Open() {
+		serverAdapter.Run()
+	}
 }

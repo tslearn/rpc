@@ -2,38 +2,38 @@ package main
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"time"
 )
 
 type receiver struct {
 	streamCH   chan *core.Stream
-	streamConn *adapter.StreamConn
+	streamConn *common.StreamConn
 }
 
-func (p *receiver) OnConnOpen(streamConn *adapter.StreamConn) {
+func (p *receiver) OnConnOpen(streamConn *common.StreamConn) {
 	fmt.Println("Client: OnConnOpen")
 	p.streamConn = streamConn
 }
 
-func (p *receiver) OnConnClose(streamConn *adapter.StreamConn) {
+func (p *receiver) OnConnClose(streamConn *common.StreamConn) {
 	fmt.Println("Client: OnConnClose")
 
 	p.streamConn = nil
 }
 
 func (p *receiver) OnConnReadStream(
-	streamConn *adapter.StreamConn,
+	streamConn *common.StreamConn,
 	stream *core.Stream,
 ) {
 	p.streamCH <- stream
 }
 
 func (p *receiver) OnConnError(
-	streamConn *adapter.StreamConn,
+	streamConn *common.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
@@ -43,19 +43,20 @@ func (p *receiver) OnConnError(
 	fmt.Println("Client: OnConnError", err)
 }
 
-func testReceiver() {
-	// tlsConfig, err := base.GetTLSClientConfig(true, []string{"../cert/ca.pem"})
-	// if err != nil {
-	// 	panic(err)
-	// }
+func main() {
+	tlsConfig, err := base.GetTLSClientConfig(true, []string{"../cert/ca.pem"})
+	if err != nil {
+		panic(err)
+	}
 
 	clientReceiver := &receiver{streamCH: make(chan *core.Stream)}
 	clientAdapter := adapter.NewClientAdapter(
-		"tcp", "127.0.0.1:8080", nil, 1200, 1200, clientReceiver,
+		"tcp", "127.0.0.1:8080", tlsConfig, 1200, 1200, clientReceiver,
 	)
 
 	go func() {
 		clientAdapter.Open()
+		clientAdapter.Run()
 	}()
 
 	time.Sleep(time.Second)
@@ -85,10 +86,6 @@ func testReceiver() {
 	}
 
 	fmt.Println("End Test", time.Now().Sub(start))
-	time.Sleep(10 * time.Second)
-}
-
-func main() {
-	testReceiver()
+	clientAdapter.Close()
 	return
 }
