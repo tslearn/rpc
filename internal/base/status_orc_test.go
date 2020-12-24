@@ -1,6 +1,7 @@
 package base
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -89,7 +90,7 @@ func TestStatusORC_Open(t *testing.T) {
 			time.Sleep(300 * time.Millisecond)
 			o.mu.Lock()
 			defer o.mu.Unlock()
-			atomic.StoreInt32(&o.status, o.status&0xFF)
+			o.setStatus(o.status & 0xFF)
 		}()
 
 		assert(o.Open(func() bool {
@@ -142,7 +143,7 @@ func TestStatusORC_Run(t *testing.T) {
 			time.Sleep(300 * time.Millisecond)
 			o.mu.Lock()
 			defer o.mu.Unlock()
-			atomic.StoreInt32(&o.status, o.status&0xFF)
+			o.setStatus(o.status & 0xFF)
 		}()
 
 		assert(o.Run(func(isRunning func() bool) {})).IsTrue()
@@ -192,7 +193,7 @@ func TestStatusORC_Close(t *testing.T) {
 			time.Sleep(300 * time.Millisecond)
 			o.mu.Lock()
 			defer o.mu.Unlock()
-			atomic.StoreInt32(&o.status, o.status&0xFF)
+			o.setStatus(o.status & 0xFF)
 		}()
 
 		assert(o.Close(func() {})).IsTrue()
@@ -206,8 +207,8 @@ func TestStatusORCParallels(t *testing.T) {
 			waitCH := make(chan bool)
 			o := NewStatusORC()
 
-			testCount := 500
-			parallels := 3
+			testCount := 10000
+			parallels := 4
 
 			openOK := int64(0)
 			runOK := int64(0)
@@ -217,12 +218,12 @@ func TestStatusORCParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Open(func() bool {
-							time.Sleep(time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 							return true
 						}) {
 							atomic.AddInt64(&openOK, 1)
 						} else {
-							time.Sleep(time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -231,11 +232,11 @@ func TestStatusORCParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Run(func(isRunning func() bool) {
-							time.Sleep(2 * time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 						}) {
 							atomic.AddInt64(&runOK, 1)
 						} else {
-							time.Sleep(2 * time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -244,11 +245,11 @@ func TestStatusORCParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Close(func() {
-							time.Sleep(time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 						}) {
 							atomic.AddInt64(&closeOK, 1)
 						} else {
-							time.Sleep(time.Millisecond)
+							time.Sleep(100 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -269,17 +270,18 @@ func TestStatusORCParallels(t *testing.T) {
 		}
 
 		waitCH := make(chan bool)
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 30; i++ {
 			go func() {
 				assert := NewAssert(t)
 				openOK, runOK, closeOK := fnTest()
 				assert(openOK).Equal(closeOK)
 				assert(runOK > 0).Equal(true)
+				fmt.Println(openOK, runOK, closeOK)
 				waitCH <- true
 			}()
 		}
 
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 30; i++ {
 			<-waitCH
 		}
 	})
