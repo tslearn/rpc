@@ -176,18 +176,16 @@ func (p *ClientAdapter) onConnect(conn net.Conn, e error) {
 			errors.ErrTemp.AddDebug(e.Error()),
 		)
 	} else {
-		go func() {
-			netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
-			netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
-			netConn.OnOpen()
-			for {
-				if ok := netConn.OnReadReady(); !ok {
-					break
-				}
+		netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
+		netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
+		netConn.OnOpen()
+		for {
+			if ok := netConn.OnReadReady(); !ok {
+				break
 			}
-			netConn.OnClose()
-			netConn.Close()
-		}()
+		}
+		netConn.OnClose()
+		netConn.Close()
 	}
 }
 
