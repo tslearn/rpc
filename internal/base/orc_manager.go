@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	orcBitLock       = 1 << 8
+	orcBitLock = 1 << 8
+
 	orcStatusClosed  = int32(0)
 	orcStatusClosing = int32(1)
 	orcStatusReady   = int32(2)
@@ -100,7 +101,7 @@ func (p *ORCManager) Open(fn func() bool) bool {
 	defer p.mu.Unlock()
 
 	for {
-		switch atomic.LoadInt32(&p.status) {
+		switch p.status {
 		case orcStatusClosed:
 			if execORCOpen(fn) {
 				p.setStatus(orcStatusReady)
@@ -108,6 +109,8 @@ func (p *ORCManager) Open(fn func() bool) bool {
 			}
 
 			return false
+		case orcStatusClosing:
+			p.waitStatusChange()
 		case orcBitLock | orcStatusClosing:
 			p.waitStatusChange()
 		default:
@@ -122,7 +125,7 @@ func (p *ORCManager) Run(fn func(isRunning func() bool)) bool {
 	defer p.mu.Unlock()
 
 	for {
-		switch atomic.LoadInt32(&p.status) {
+		switch p.status {
 		case orcStatusReady:
 			p.setStatus(orcBitLock | orcStatusReady)
 			p.mu.Unlock()
@@ -144,7 +147,7 @@ func (p *ORCManager) Close(willClose func(), didClose func()) bool {
 	defer p.mu.Unlock()
 
 	for {
-		switch atomic.LoadInt32(&p.status) {
+		switch p.status {
 		case orcStatusReady:
 			p.setStatus(orcStatusClosing)
 			execORCClose(willClose)
