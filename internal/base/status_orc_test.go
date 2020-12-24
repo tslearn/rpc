@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -276,7 +275,6 @@ func TestStatusORCParallels(t *testing.T) {
 				openOK, runOK, closeOK := fnTest()
 				assert(openOK).Equal(closeOK)
 				assert(runOK > 0).Equal(true)
-				fmt.Println(openOK, runOK, closeOK)
 				waitCH <- true
 			}()
 		}

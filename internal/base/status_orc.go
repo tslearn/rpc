@@ -15,6 +15,27 @@ const (
 	orcCondBusy = int32(2)
 )
 
+func execORCOpen(fn func() bool) bool {
+	defer func() {
+		_ = recover()
+	}()
+	return fn()
+}
+
+func execORCRun(fn func(isRunning func() bool), isRunning func() bool) {
+	defer func() {
+		_ = recover()
+	}()
+	fn(isRunning)
+}
+
+func execORCClose(fn func()) {
+	defer func() {
+		_ = recover()
+	}()
+	fn()
+}
+
 type StatusORC struct {
 	status     int32
 	condStatus int32
@@ -57,7 +78,7 @@ func (p *StatusORC) Open(fn func() bool) bool {
 	for {
 		switch atomic.LoadInt32(&p.status) {
 		case orcStatusClosed:
-			if fn() {
+			if execORCOpen(fn) {
 				p.setStatus(orcStatusReady)
 				return true
 			}
@@ -80,7 +101,7 @@ func (p *StatusORC) Run(fn func(isRunning func() bool)) bool {
 		case orcStatusReady:
 			p.setStatus(orcBitLock | orcStatusReady)
 			p.mu.Unlock()
-			fn(p.isRunning)
+			execORCRun(fn, p.isRunning)
 			p.mu.Lock()
 			p.setStatus(p.status & 0xFF)
 			return true
@@ -100,11 +121,11 @@ func (p *StatusORC) Close(fn func()) bool {
 		switch atomic.LoadInt32(&p.status) {
 		case orcStatusReady:
 			p.setStatus(orcStatusClosed)
-			fn()
+			execORCClose(fn)
 			return true
 		case orcBitLock | orcStatusReady:
 			p.setStatus(orcBitLock | orcStatusClosed)
-			fn()
+			execORCClose(fn)
 			for p.status&orcBitLock != 0 {
 				p.waitStatusChange()
 			}
