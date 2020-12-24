@@ -2,11 +2,11 @@ package test
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"testing"
 	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )

@@ -189,6 +189,7 @@ func (p *ClientAdapter) onConnect(conn net.Conn, e error) {
 	}
 }
 
+// Open ...
 func (p *ClientAdapter) Open() bool {
 	return p.orcManager.Open(func() bool {
 		switch p.network {
