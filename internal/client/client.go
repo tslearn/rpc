@@ -3,10 +3,11 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/rpccloud/rpc/internal/adapter"
-	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
@@ -24,15 +25,17 @@ const (
 
 // Client ...
 type Client struct {
+	config               Config
 	sessionString        string
-	adapter              *adapter.RunnableService
-	conn                 *adapter.StreamConn
+	adapter              base.IORCService
+	streamConn           *common.StreamConn
 	preSendHead          *SendItem
 	preSendTail          *SendItem
 	channels             []Channel
 	freeChannels         *FreeChannelStack
 	lastTimeoutCheckTime time.Time
 	lastControlSendTime  time.Time
+	orcManager           *base.ORCManager
 }
 
 func newClient(
@@ -43,56 +46,43 @@ func newClient(
 	wBufSize int,
 ) *Client {
 	ret := &Client{
-		status:        clientStatusRunning,
-		sessionString: "",
-
+		sessionString:        "",
+		adapter:              nil,
+		streamConn:           nil,
 		preSendHead:          nil,
 		preSendTail:          nil,
 		channels:             nil,
 		freeChannels:         nil,
 		lastTimeoutCheckTime: base.TimeNow(),
 		lastControlSendTime:  base.TimeNow(),
+		orcManager:           base.NewORCManager(),
 	}
+	ret.config.rBufSize = rBufSize
+	ret.config.wBufSize = wBufSize
+	ret.adapter = adapter.NewClientAdapter(
+		network, addr, tlsConfig, rBufSize, wBufSize, ret,
+	)
 
-	adapter := adapter.NewClientAdapter(network, addr, tlsConfig, rBufSize, wBufSize, ret)
-
-	if adapter == nil {
-		return nil
-	}
-
+	// Start the adapter
+	ret.adapter.Open()
 	go func() {
-		for {
-			switch atomic.LoadInt32(&ret.status) {
-			case clientStatusRunning:
-				time.Sleep(time.Second)
-				adapter.Open()
-				time.Sleep(time.Second)
-			case clientStatusPreClosing:
-				time.Sleep(20 * time.Millisecond)
-			case clientStatusClosing:
-				atomic.StoreInt32(&ret.status, clientStatusClosed)
-				return
-			}
-		}
+		ret.adapter.Run()
 	}()
 
+	// Start the client (send the messages)
+	ret.orcManager.Open(func() bool {
+		return true
+	})
 	go func() {
-		for {
-			switch atomic.LoadInt32(&ret.status) {
-			case clientStatusRunning:
+		ret.orcManager.Run(func(isRunning func() bool) {
+			for isRunning() {
 				now := base.TimeNow()
 				ret.tryToTimeout(now)
 				ret.tryToDeliverPreSendMessages()
 				ret.tryToSendPing(now)
 				time.Sleep(80 * time.Millisecond)
-			case clientStatusPreClosing:
-				adapter.Close()
-				atomic.StoreInt32(&ret.status, clientStatusClosing)
-				return
-			default:
-				panic("internal error")
 			}
-		}
+		})
 	}()
 
 	return ret
@@ -100,33 +90,11 @@ func newClient(
 
 // Close ...
 func (p *Client) Close() bool {
-	if !atomic.CompareAndSwapInt32(
-		&p.status,
-		clientStatusRunning,
-		clientStatusPreClosing,
-	) {
-		p.onError(errors.ErrClientNotRunning)
-		return false
-	}
-
-	err := func() *base.Error {
-		p.Lock()
-		defer p.Unlock()
-
-		if p.conn != nil {
-			return p.conn.Close()
-		} else {
-			return nil
-		}
-	}()
-
-	if err != nil {
-		p.onError(errors.ErrClientNotRunning)
-		return false
-	}
-
-	<-p.closeCH
-	return true
+	return p.orcManager.Close(func() {
+		p.adapter.Close()
+	}, func() {
+		p.adapter = nil
+	})
 }
 
 func (p *Client) onError(err *base.Error) {

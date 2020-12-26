@@ -6,33 +6,35 @@ import (
 
 // Config ...
 type Config struct {
-	maxSessions     int
-	numOfChannels   int
-	transLimit      int
-	rBufSize        int
-	wBufSize        int
-	readTimeout     time.Duration
-	writeTimeout    time.Duration
-	heartbeat       time.Duration
-	cacheTimeout    time.Duration
-	requestTimeout  time.Duration
-	requestInterval time.Duration
+	numOfChannels int
+	transLimit    int
+	heartbeat     time.Duration
+	timeoutRW     time.Duration
+
+	serverMaxSessions     int
+	serverReadBufferSize  int
+	serverWriteBufferSize int
+	serverCacheTimeout    time.Duration
+
+	clientRequestTimeout  time.Duration
+	clientRequestInterval time.Duration
 }
 
 // GetDefaultConfig ...
 func GetDefaultConfig() *Config {
 	return &Config{
-		maxSessions:     10240000,
-		numOfChannels:   48,
-		transLimit:      4 * 1024 * 1024,
-		rBufSize:        1200,
-		wBufSize:        1200,
-		readTimeout:     8 * time.Second,
-		writeTimeout:    3 * time.Second,
-		heartbeat:       5 * time.Second,
-		cacheTimeout:    10 * time.Second,
-		requestTimeout:  16 * time.Second,
-		requestInterval: 3 * time.Second,
+		numOfChannels: 48,
+		transLimit:    4 * 1024 * 1024,
+		heartbeat:     5 * time.Second,
+		timeoutRW:     8 * time.Second,
+
+		serverMaxSessions:     10240000,
+		serverReadBufferSize:  1200,
+		serverWriteBufferSize: 1200,
+		serverCacheTimeout:    12 * time.Second,
+
+		clientRequestTimeout:  16 * time.Second,
+		clientRequestInterval: 3 * time.Second,
 	}
 }
 
@@ -82,18 +84,6 @@ func GetDefaultConfig() *Config {
 //    return p.requestInterval
 //}
 
-//
-//func (p *SessionConfig) WriteToStream(stream *core.Stream) {
-//    stream.WriteInt64(p.numOfChannels)
-//    stream.WriteInt64(p.transLimit)
-//    stream.WriteInt64(int64(p.readTimeout))
-//    stream.WriteInt64(int64(p.writeTimeout))
-//    stream.WriteInt64(int64(p.heartbeat))
-//    stream.WriteInt64(int64(p.cacheTimeout))
-//    stream.WriteInt64(int64(p.requestTimeout))
-//    stream.WriteInt64(int64(p.requestInterval))
-//}
-//
 //func ReadSessionConfig(
 //    stream *core.Stream,
 //) (SessionConfig, *base.Error) {

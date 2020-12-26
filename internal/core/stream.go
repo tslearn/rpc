@@ -181,6 +181,27 @@ func (p *Stream) Release() {
 	streamCache.Put(p)
 }
 
+// Clone ...
+func (p *Stream) Clone() *Stream {
+	ret := NewStream()
+	copy(*(ret.frames[0]), *(p.frames[0]))
+	for i := 1; i < p.writeSeg; i++ {
+		// use gotoNextWriteFrame do not broke the bufferFrames
+		ret.gotoNextWriteFrame()
+		copy(*(ret.frames[i]), *(p.frames[i]))
+	}
+
+	ret.readSeg = p.readSeg
+	ret.readIndex = p.readIndex
+	ret.readFrame = *(ret.frames[ret.readSeg])
+
+	ret.writeSeg = p.writeSeg
+	ret.writeIndex = p.writeIndex
+	ret.writeFrame = *(ret.frames[ret.writeSeg])
+
+	return ret
+}
+
 // GetVersion ...
 func (p *Stream) GetVersion() uint8 {
 	return (*p.frames[0])[streamPosVersion]

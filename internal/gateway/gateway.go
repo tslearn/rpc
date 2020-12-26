@@ -2,12 +2,15 @@ package gateway
 
 import (
 	"crypto/tls"
+	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -23,14 +26,15 @@ const (
 // GateWay ...
 type GateWay struct {
 	id          uint64
+	isFree      bool
 	sessionSeed uint32
-	status      int32
 	slot        internal.IStreamRouterSlot
 	closeCH     chan bool
 	config      *Config
-	sessionMap  map[uint32]*Session
+	sessionMap  map[uint64]*Session
 	onError     func(sessionID uint64, err *base.Error)
-	adapters    []*adapter.RunnableService
+	adapters    []*adapter.ServerAdapter
+	orcManager  *base.ORCManager
 	sync.Mutex
 }
 
@@ -40,29 +44,30 @@ func NewGateWay(
 	config *Config,
 	router internal.IStreamRouter,
 	onError func(sessionID uint64, err *base.Error),
-) (*GateWay, *base.Error) {
+) *GateWay {
 	if id > maxGatewayID {
-		return nil, errors.ErrGateWayIDOverflows
+		panic(fmt.Sprintf("illegal gateway ID %d", id))
 	}
 
 	ret := &GateWay{
 		id:         id,
-		status:     gatewayStatusClosed,
+		isFree:     true,
 		slot:       nil,
 		closeCH:    make(chan bool, 1),
 		config:     config,
-		sessionMap: map[uint32]*Session{},
+		sessionMap: map[uint64]*Session{},
 		onError:    onError,
-		adapters:   make([]*adapter.RunnableService, 0),
+		adapters:   make([]*adapter.ServerAdapter, 0),
+		orcManager: base.NewORCManager(),
 	}
 
 	ret.slot = router.Plug(ret)
 
-	return ret, nil
+	return ret
 }
 
 func (p *GateWay) generateSessionID() (uint64, *base.Error) {
-	if len(p.sessionMap) > p.config.maxSessions {
+	if len(p.sessionMap) > p.config.serverMaxSessions {
 		return 0, errors.ErrGateWaySeedOverflows
 	}
 
@@ -83,8 +88,9 @@ func (p *GateWay) generateSessionID() (uint64, *base.Error) {
 		//      zero seed is not illegal
 		// ---------------------------------------------------------------------
 		if v := atomic.AddUint32(&p.sessionSeed, 941); v != 0 {
-			if _, ok := p.sessionMap[v]; !ok {
-				return p.id<<40 | uint64(v), nil
+			ret := p.id<<40 | uint64(v)
+			if _, ok := p.sessionMap[ret]; !ok {
+				return ret, nil
 			}
 		}
 
@@ -106,9 +112,14 @@ func (p *GateWay) ListenTCP(
 	p.Lock()
 	defer p.Unlock()
 
-	if atomic.LoadInt32(&p.status) == gatewayStatusClosed {
-		p.adapters = append(p.adapters, adapter.NewSyncServerAdapter(
-			network, addr, tlsConfig, p.config.rBufSize, p.config.wBufSize, p,
+	if p.isFree {
+		p.adapters = append(p.adapters, adapter.NewServerAdapter(
+			network,
+			addr,
+			tlsConfig,
+			p.config.serverReadBufferSize,
+			p.config.serverWriteBufferSize,
+			p,
 		))
 	} else {
 		p.onError(0, errors.ErrGatewayAlreadyRunning)
@@ -117,182 +128,62 @@ func (p *GateWay) ListenTCP(
 	return p
 }
 
-// // IsRunning ...
-// func (p *GateWay) IsRunning() bool {
-// 	return
-// }
-
-// func (p *GateWay) onConnRun(conn internal.IStreamConn, addr net.Addr) {
-//     session := (*Session)(nil)
-//     initStream, runError := conn.ReadStream(
-//         p.config.readTimeout,
-//         p.config.transLimit,
-//     )
-
-//     defer func() {
-//         sessionID := uint64(0)
-//         if session != nil {
-//             sessionID = session.id
-//         }
-//         if runError != errors.ErrStreamConnIsClosed {
-//             p.onError(sessionID, runError)
-//         }
-//         if err := conn.Close(); err != nil {
-//             p.onError(sessionID, err)
-//         }
-//     }()
-
-//     // init conn
-//     if runError != nil {
-//         return
-//     } else if initStream.GetCallbackID() != 0 {
-//         initStream.Release()
-//         runError = errors.ErrStream
-//     } else if kind, err := initStream.ReadInt64(); err != nil {
-//         initStream.Release()
-//         runError = err
-//     } else if kind != core.ControlStreamConnectRequest {
-//         initStream.Release()
-//         runError = errors.ErrStream
-//     } else if sessionString, err := initStream.ReadString(); err != nil {
-//         initStream.Release()
-//         runError = errors.ErrStream
-//     } else if !initStream.IsReadFinish() {
-//         initStream.Release()
-//         runError = errors.ErrStream
-//     } else {
-//         // try to find session by session string
-//         sessionArray := strings.Split(sessionString, "-")
-//         if len(sessionArray) == 2 && len(sessionArray[1]) == 32 {
-//             if id, err := strconv.ParseUint(sessionArray[0], 10, 64); err == nil {
-//                 p.Lock()
-//                 if s, ok := p.sessionMap[id]; ok && s.security == sessionArray[1] {
-//                     session = s
-//                 }
-//                 p.Unlock()
-//             }
-//         }
-//         // if session not find by session string, create a new session
-//         if session == nil {
-//             sessionID, err := p.idGenerator.GetID()
-
-//             if err != nil {
-//                 runError = err
-//             } else {
-//                 session = newSession(sessionID, p.config, p.slot)
-//                 p.Lock()
-//                 p.sessionMap[sessionID] = session
-//                 p.Unlock()
-//             }
-//         }
-
-//         if session != nil {
-//             initStream.SetWritePosToBodyStart()
-//             initStream.WriteInt64(core.ControlStreamConnectResponse)
-//             initStream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
-//             p.config.WriteToStream(initStream)
-
-//             if err := conn.WriteStream(
-//                 initStream,
-//                 p.config.writeTimeout,
-//             ); err != nil {
-//                 initStream.Release()
-//                 runError = err
-//                 return
-//             } else {
-//                 initStream.Release()
-//             }
-
-//             // Pump message from client
-//             session.SetConn(conn)
-//             defer session.SetConn(nil)
-
-//             for runError == nil {
-//                 if stream, err := conn.ReadStream(
-//                     p.config.readTimeout,
-//                     p.config.transLimit,
-//                 ); err != nil {
-//                     runError = err
-//                 } else {
-//                     runError = session.StreamIn(stream)
-//                 }
-//             }
-//         } else {
-//             initStream.Release()
-//         }
-//     }
-// }
-
 // Serve ...
 func (p *GateWay) Serve() {
-	waitCH := make(chan bool)
-
-	numOfRunning, err := func() (int, *base.Error) {
+	p.orcManager.Open(func() bool {
 		p.Lock()
 		defer p.Unlock()
 
-		if atomic.LoadInt32(&p.status) != gatewayStatusClosed {
-			return 0, errors.ErrGatewayAlreadyRunning
+		if !p.isFree {
+			p.OnConnError(nil, errors.ErrGatewayAlreadyRunning)
+			return false
 		} else if len(p.adapters) <= 0 {
-			return 0, errors.ErrGatewayNoAvailableAdapters
+			p.OnConnError(nil, errors.ErrGatewayNoAvailableAdapters)
+			return false
 		} else {
-			atomic.StoreInt32(&p.status, gatewayStatusRunning)
-			for _, item := range p.adapters {
-				go func(adapter *adapter.RunnableService) {
-					for {
-						adapter.Open()
-
-						if atomic.LoadInt32(&p.status) == gatewayStatusRunning {
-							time.Sleep(time.Second)
-						} else {
-							waitCH <- true
-							return
-						}
-					}
-				}(item)
-			}
-			return len(p.adapters), nil
+			p.isFree = false
+			return true
 		}
-	}()
+	})
 
-	if err != nil {
-		p.onError(0, err)
-	} else {
-		for i := 0; i < numOfRunning; i++ {
+	// Notice:
+	//      if p.orcManager.Close() is called between Open and Run. Run will not
+	// execute at all.
+	// -------------------------------------------------------------------------
+
+	p.orcManager.Run(func(_ func() bool) {
+		waitCH := make(chan bool)
+		waitCount := 0
+
+		for _, item := range p.adapters {
+			waitCount++
+			go func(adapter *adapter.ServerAdapter) {
+				adapter.Open()
+				adapter.Run()
+				waitCH <- true
+			}(item)
+		}
+
+		for waitCount > 0 {
 			<-waitCH
+			waitCount--
 		}
-
-		p.closeCH <- true
-	}
+	})
 }
 
 // Close ...
 func (p *GateWay) Close() {
-	err := func() *base.Error {
-		p.Lock()
-		defer p.Unlock()
-
-		if atomic.LoadInt32(&p.status) != gatewayStatusRunning {
-			return errors.ErrGatewayNotRunning
-		}
-
-		atomic.StoreInt32(&p.status, gatewayStatusClosing)
-
+	p.orcManager.Close(func() {
 		for _, item := range p.adapters {
-			go func(adapter *adapter.RunnableService) {
+			go func(adapter *adapter.ServerAdapter) {
 				adapter.Close()
 			}(item)
 		}
-
-		return nil
-	}()
-
-	if err != nil {
-		p.onError(0, err)
-	} else {
-		<-p.closeCH
-		atomic.StoreInt32(&p.status, gatewayStatusClosed)
-	}
+	}, func() {
+		p.Lock()
+		defer p.Unlock()
+		p.isFree = true
+	})
 }
 
 // OnStream ...
@@ -305,7 +196,7 @@ func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
 		return errors.ErrStream
 	}
 
-	if session, ok := p.sessionMap[uint32(stream.GetSessionID())]; ok {
+	if session, ok := p.sessionMap[stream.GetSessionID()]; ok {
 		return session.StreamOut(stream)
 	}
 
@@ -313,21 +204,68 @@ func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
 }
 
 // OnConnOpen ...
-func (p *GateWay) OnConnOpen(streamConn *adapter.StreamConn) {
-
+func (p *GateWay) OnConnOpen(streamConn *common.StreamConn) {
+	// ignore this message
+	// we will add some security checks here
 }
 
 // OnConnClose ...
-func (p *GateWay) OnConnClose(streamConn *adapter.StreamConn) {
-
+func (p *GateWay) OnConnClose(streamConn *common.StreamConn) {
+	// All streamConn that is successfully initialized will reset the receiver
+	// to session. If it runs here, it means the streamConn is not correctly
+	// initialized. so ignore this message
 }
 
 // OnConnReadStream ...
-func (p *GateWay) OnConnReadStream(streamConn *adapter.StreamConn, stream *core.Stream) {
+func (p *GateWay) OnConnReadStream(
+	streamConn *common.StreamConn,
+	stream *core.Stream,
+) {
+	stream.Release()
 
+	if stream.GetCallbackID() != 0 {
+		p.OnConnError(streamConn, errors.ErrStream)
+	} else if kind, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(streamConn, errors.ErrStream)
+	} else if kind != core.ControlStreamConnectRequest {
+		p.OnConnError(streamConn, errors.ErrStream)
+	} else if sessionString, err := stream.ReadString(); err != nil {
+		p.OnConnError(streamConn, errors.ErrStream)
+	} else if !stream.IsReadFinish() {
+		p.OnConnError(streamConn, errors.ErrStream)
+	} else {
+		session := (*Session)(nil)
+
+		// try to find session by session string
+		strArray := strings.Split(sessionString, "-")
+		if len(strArray) == 2 && len(strArray[1]) == 32 {
+			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
+				p.Lock()
+				if s, ok := p.sessionMap[id]; ok && s.security == strArray[1] {
+					session = s
+				}
+				p.Unlock()
+			}
+		}
+
+		// if session not find by session string, create a new session
+		if session == nil {
+			if sessionID, err := p.generateSessionID(); err != nil {
+				p.OnConnError(streamConn, errors.ErrStream)
+			} else {
+				session = newSession(sessionID, p)
+				p.Lock()
+				p.sessionMap[sessionID] = session
+				p.Unlock()
+
+				session.Initialized(streamConn)
+			}
+		}
+	}
 }
 
 // OnConnError ...
-func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
+func (p *GateWay) OnConnError(streamConn *common.StreamConn, err *base.Error) {
 	p.onError(0, err)
+	streamConn.Close()
 }

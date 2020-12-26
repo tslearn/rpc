@@ -14,14 +14,12 @@ type Channel struct {
 
 // In ...
 func (p *Channel) In(id uint64) (bool, *core.Stream) {
-	if id > p.seq {
+	if id >= p.seq {
 		p.seq = id
-		return true, nil
-	} else if id == p.seq {
-		return false, p.retStream
-	} else {
-		return false, nil
+		return true, p.retStream
 	}
+
+	return false, nil
 }
 
 // Out ...

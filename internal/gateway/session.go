@@ -1,10 +1,10 @@
 package gateway
 
 import (
+	"fmt"
 	"sync"
 
-	"github.com/rpccloud/rpc/internal"
-	"github.com/rpccloud/rpc/internal/adapter"
+	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -20,9 +20,8 @@ var sessionCache = &sync.Pool{
 type Session struct {
 	id       uint64
 	security string
-	conn     internal.IStreamConn
+	conn     *common.StreamConn
 	gateway  *GateWay
-	slot     internal.IStreamRouterSlot
 	channels []Channel
 	sync.Mutex
 }
@@ -30,27 +29,38 @@ type Session struct {
 func newSession(
 	id uint64,
 	gateway *GateWay,
-	slot internal.IStreamRouterSlot,
 ) *Session {
 	ret := sessionCache.Get().(*Session)
 	ret.id = id
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
 	ret.gateway = gateway
-	ret.slot = slot
-	ret.channels = make([]Channel, gateway.GetConfig().NumOfChannels())
+	ret.channels = make([]Channel, gateway.GetConfig().numOfChannels)
 	return ret
 }
 
-// SetConn ...
-func (p *Session) SetConn(conn internal.IStreamConn) {
+// Initialized ...
+func (p *Session) Initialized(conn *common.StreamConn) {
 	p.Lock()
-	defer p.Unlock()
 	p.conn = conn
+	p.conn.SetReceiver(p)
+	p.Unlock()
+
+	config := p.gateway.config
+	stream := core.NewStream()
+	stream.WriteInt64(core.ControlStreamConnectResponse)
+	stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
+	stream.Write(config.numOfChannels)
+	stream.Write(config.transLimit)
+	stream.Write(int64(config.heartbeat))
+	stream.Write(int64(config.timeoutRW))
+	stream.Write(int64(config.clientRequestTimeout))
+	stream.Write(int64(config.clientRequestInterval))
+	p.conn.WriteStreamAndRelease(stream)
 }
 
 // StreamIn ...
-func (p *Session) StreamIn(stream *core.Stream) *base.Error {
+func (p *Session) StreamIn(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -67,13 +77,18 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 
 	if cbID > 0 {
 		stream.SetSessionID(p.id)
-		if ok, retStream := p.channels[cbID%uint64(len(p.channels))].In(cbID); !ok {
-			return nil
-		} else if retStream != nil {
-			return p.conn.WriteStream(retStream, config.WriteTimeout())
+		channel := p.channels[cbID%uint64(len(p.channels))]
+		if accepted, backStream := channel.In(cbID); !accepted {
+			// ignore accepted
+		} else if backStream != nil {
+			p.conn.WriteStreamAndRelease(backStream.Clone())
+			return
 		} else {
 			keepStream = true
-			return p.slot.SendStream(stream)
+			if err := p.gateway.slot.SendStream(stream); err != nil {
+
+			}
+			return
 		}
 	} else if kind, err := stream.ReadInt64(); err != nil {
 		return err
@@ -82,7 +97,7 @@ func (p *Session) StreamIn(stream *core.Stream) *base.Error {
 		// Send Pong
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
-		return p.conn.WriteStream(stream, config.WriteTimeout())
+		return p.conn.WriteStream(stream, config.writeTimeout)
 	} else {
 		return errors.ErrStream
 	}
@@ -102,7 +117,7 @@ func (p *Session) StreamOut(stream *core.Stream) *base.Error {
 	}
 
 	// write stream
-	return p.conn.WriteStream(stream, p.gateway.GetConfig().WriteTimeout())
+	return p.conn.WriteStream(stream, p.gateway.GetConfig().writeTimeout)
 }
 
 func (p *Session) checkTimeout() {
@@ -123,21 +138,26 @@ func (p *Session) Release() {
 }
 
 // OnConnOpen ...
-func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
+func (p *Session) OnConnOpen(streamConn *common.StreamConn) {
+	// Route to gateway
 	p.gateway.OnConnOpen(streamConn)
 }
 
+// OnConnError ...
+func (p *Session) OnConnError(streamConn *common.StreamConn, err *base.Error) {
+	// Route to gateway
+	p.gateway.OnConnError(streamConn, err)
+}
+
 // OnConnClose ...
-func (p *Session) OnConnClose(streamConn *adapter.StreamConn) {
-	// p.gateway.OnConnClose(streamConn)
+func (p *Session) OnConnClose(streamConn *common.StreamConn) {
+
 }
 
 // OnConnReadStream ...
-func (p *Session) OnConnReadStream(streamConn *adapter.StreamConn, stream *core.Stream) {
+func (p *Session) OnConnReadStream(
+	streamConn *common.StreamConn,
+	stream *core.Stream,
+) {
 
-}
-
-// OnConnError ...
-func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.gateway.onError(p.id, err)
 }

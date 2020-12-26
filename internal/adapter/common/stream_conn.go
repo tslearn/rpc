@@ -43,6 +43,11 @@ func NewStreamConn(prev IConn, receiver IReceiver) *StreamConn {
 	}
 }
 
+// SetReceiver ...
+func (p *StreamConn) SetReceiver(receiver IReceiver) {
+	p.receiver = receiver
+}
+
 // OnOpen ...
 func (p *StreamConn) OnOpen() {
 	atomic.StoreInt32(&p.status, streamConnStatusRunning)

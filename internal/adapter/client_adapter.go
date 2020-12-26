@@ -218,17 +218,18 @@ func (p *ClientAdapter) Open() bool {
 func (p *ClientAdapter) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
 		for isRunning() {
-			if p.client.Open() {
-				p.client.Run()
-				p.client.Close()
-			}
+			p.client.Open()
+			p.client.Run()
+			p.client.Close()
 		}
 	})
 }
 
 // Close ...
 func (p *ClientAdapter) Close() bool {
-	return p.orcManager.Close(nil, func() {
+	return p.orcManager.Close(func() {
+		p.client.Close()
+	}, func() {
 		p.client = nil
 	})
 }

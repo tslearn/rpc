@@ -249,7 +249,9 @@ func (p *ServerAdapter) Run() bool {
 
 // Close ...
 func (p *ServerAdapter) Close() bool {
-	return p.orcManager.Close(nil, func() {
+	return p.orcManager.Close(func() {
+		p.server.Close()
+	}, func() {
 		p.server = nil
 	})
 }
