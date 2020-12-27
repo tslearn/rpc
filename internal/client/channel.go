@@ -14,8 +14,8 @@ type Channel struct {
 	client *Client
 }
 
-// OnCallbackStream ...
-func (p *Channel) OnCallbackStream(stream *core.Stream) bool {
+// ReceiveStream ...
+func (p *Channel) ReceiveStream(stream *core.Stream) bool {
 	if p.item != nil {
 		if p.item.Return(stream) {
 			p.free()

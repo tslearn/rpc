@@ -6,10 +6,10 @@ import (
 
 // Config ...
 type Config struct {
-	numOfChannels int
-	transLimit    int
-	heartbeat     time.Duration
-	timeoutRW     time.Duration
+	numOfChannels    int
+	transLimit       int
+	heartbeat        time.Duration
+	heartbeatTimeout time.Duration
 
 	serverMaxSessions     int
 	serverReadBufferSize  int
@@ -23,10 +23,10 @@ type Config struct {
 // GetDefaultConfig ...
 func GetDefaultConfig() *Config {
 	return &Config{
-		numOfChannels: 48,
-		transLimit:    4 * 1024 * 1024,
-		heartbeat:     5 * time.Second,
-		timeoutRW:     8 * time.Second,
+		numOfChannels:    48,
+		transLimit:       4 * 1024 * 1024,
+		heartbeat:        5 * time.Second,
+		heartbeatTimeout: 8 * time.Second,
 
 		serverMaxSessions:     10240000,
 		serverReadBufferSize:  1200,

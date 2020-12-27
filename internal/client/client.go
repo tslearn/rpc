@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -14,26 +15,20 @@ import (
 	"github.com/rpccloud/rpc/internal/gateway"
 )
 
-const (
-	clientStatusClosed     = int32(0)
-	clientStatusPreClosing = int32(1)
-	clientStatusClosing    = int32(2)
-	clientStatusRunning    = int32(3)
-)
-
 // Client ...
 type Client struct {
-	config               Config
-	sessionString        string
-	adapter              base.IORCService
-	streamConn           *common.StreamConn
-	preSendHead          *SendItem
-	preSendTail          *SendItem
-	channels             []Channel
-	freeChannels         *FreeChannelStack
-	lastTimeoutCheckTime time.Time
-	lastControlSendTime  time.Time
-	orcManager           *base.ORCManager
+	config         *Config
+	sessionString  string
+	adapter        *adapter.ClientAdapter
+	streamConn     *common.StreamConn
+	preSendHead    *SendItem
+	preSendTail    *SendItem
+	channels       []Channel
+	freeChannels   *FreeChannelStack
+	lastCheckTime  time.Time
+	lastActiveTime time.Time
+	orcManager     *base.ORCManager
+	sync.Mutex
 }
 
 func newClient(
@@ -44,16 +39,17 @@ func newClient(
 	wBufSize int,
 ) *Client {
 	ret := &Client{
-		sessionString:        "",
-		adapter:              nil,
-		streamConn:           nil,
-		preSendHead:          nil,
-		preSendTail:          nil,
-		channels:             nil,
-		freeChannels:         nil,
-		lastTimeoutCheckTime: base.TimeNow(),
-		lastControlSendTime:  base.TimeNow(),
-		orcManager:           base.NewORCManager(),
+		config:         &Config{},
+		sessionString:  "",
+		adapter:        nil,
+		streamConn:     nil,
+		preSendHead:    nil,
+		preSendTail:    nil,
+		channels:       nil,
+		freeChannels:   nil,
+		lastCheckTime:  base.TimeNow(),
+		lastActiveTime: base.TimeNow(),
+		orcManager:     base.NewORCManager(),
 	}
 	ret.config.rBufSize = rBufSize
 	ret.config.wBufSize = wBufSize
@@ -71,14 +67,16 @@ func newClient(
 	ret.orcManager.Open(func() bool {
 		return true
 	})
+
 	go func() {
 		ret.orcManager.Run(func(isRunning func() bool) {
 			for isRunning() {
+				time.Sleep(80 * time.Millisecond)
+
 				now := base.TimeNow()
 				ret.tryToTimeout(now)
 				ret.tryToDeliverPreSendMessages()
 				ret.tryToSendPing(now)
-				time.Sleep(80 * time.Millisecond)
 			}
 		})
 	}()
@@ -99,7 +97,154 @@ func (p *Client) onError(err *base.Error) {
 	fmt.Println("client onError: ", err)
 }
 
-func (p *Client) initConn(conn internal.IStreamConn) *base.Error {
+// OnConnOpen ...
+func (p *Client) OnConnOpen(streamConn *common.StreamConn) {
+	p.Lock()
+	defer p.Unlock()
+
+	stream := core.NewStream()
+	stream.SetCallbackID(0)
+	stream.WriteInt64(core.ControlStreamConnectRequest)
+	stream.WriteString(p.sessionString)
+	streamConn.WriteStreamAndRelease(stream)
+	p.lastActiveTime = base.TimeNow()
+	//
+	//if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
+	//    return err
+	//} else if backStream, err = conn.ReadStream(3*time.Second, 1024); err != nil {
+	//    return err
+	//} else if backStream.GetCallbackID() != 0 {
+	//    return errors.ErrStream
+	//} else if kind, err := backStream.ReadInt64(); err != nil {
+	//    return err
+	//} else if kind != core.ControlStreamConnectResponse {
+	//    return errors.ErrStream
+	//} else if sessionString, err := backStream.ReadString(); err != nil {
+	//    return err
+	//} else if config, err := gateway.ReadSessionConfig(backStream); err != nil {
+	//    return err
+	//} else if !backStream.IsReadFinish() {
+	//    return errors.ErrStream
+	//} else {
+	//    p.Lock()
+	//    defer p.Unlock()
+	//
+	//    if sessionString != p.sessionString {
+	//        // new session
+	//        p.sessionString = sessionString
+	//        p.config = config
+	//        p.channels = make([]Channel, config.NumOfChannels())
+	//        p.freeChannels = NewFreeChannelStack(int(config.NumOfChannels()))
+	//        for i := 0; i < len(p.channels); i++ {
+	//            p.channels[i].id = i
+	//            p.channels[i].client = p
+	//            p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
+	//            p.channels[i].item = nil
+	//            p.freeChannels.Push(i)
+	//        }
+	//    } else if !p.config.Equals(&config) {
+	//        // old session, but config changes
+	//        p.sessionString = ""
+	//        return errors.ErrClientConfigChanges
+	//    } else {
+	//        // old session
+	//    }
+	//
+	//    return nil
+	//}
+}
+
+// OnConnClose ...
+func (p *Client) OnConnClose(_ *common.StreamConn) {
+	p.Lock()
+	defer p.Unlock()
+	p.streamConn = nil
+}
+
+// OnConnReadStream ...
+func (p *Client) OnConnReadStream(
+	streamConn *common.StreamConn,
+	stream *core.Stream,
+) {
+	p.Lock()
+	defer p.Unlock()
+
+	callbackID := stream.GetCallbackID()
+
+	if p.streamConn == nil {
+		p.streamConn = streamConn
+
+		if callbackID != 0 {
+			p.OnConnError(streamConn, errors.ErrStream)
+		} else if kind, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if kind != core.ControlStreamConnectResponse {
+			p.OnConnError(streamConn, errors.ErrStream)
+		} else if sessionString, err := stream.ReadString(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if numOfChannels, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if transLimit, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if heartbeat, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if requestTimeout, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if requestInterval, err := stream.ReadInt64(); err != nil {
+			p.OnConnError(streamConn, err)
+		} else if !stream.IsReadFinish() {
+			p.OnConnError(streamConn, errors.ErrStream)
+		} else {
+			if sessionString != p.sessionString {
+				// new session
+				p.sessionString = sessionString
+
+				// update config
+				p.config.numOfChannels = int(numOfChannels)
+				p.config.transLimit = int(transLimit)
+				p.config.heartbeat = time.Duration(heartbeat)
+				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout)
+				p.config.requestTimeout = time.Duration(requestTimeout)
+				p.config.requestInterval = time.Duration(requestInterval)
+
+				numOfChannels := p.config.numOfChannels
+				p.channels = make([]Channel, numOfChannels)
+				p.freeChannels = NewFreeChannelStack(numOfChannels)
+				for i := 0; i < len(p.channels); i++ {
+					p.channels[i].id = i
+					p.channels[i].client = p
+					p.channels[i].seq = uint64(numOfChannels) + uint64(i)
+					p.channels[i].item = nil
+					p.freeChannels.Push(i)
+				}
+			} else {
+				// config and channels have already initialized. so ignore this
+			}
+		}
+
+		stream.Release()
+	} else {
+		if callbackID == 0 {
+			p.OnConnError(streamConn, errors.ErrStream)
+			stream.Release()
+		} else if p.channels != nil {
+			p.channels[callbackID%uint64(len(p.channels))].ReceiveStream(stream)
+		} else {
+			// ignore
+			stream.Release()
+		}
+	}
+}
+
+// OnConnError ...
+func (p *Client) OnConnError(streamConn *common.StreamConn, err *base.Error) {
+	p.onError(err)
+	streamConn.Close()
+}
+
+func (p *Client) initConn(streamConn *common.StreamConn) *base.Error {
 	sendStream := core.NewStream()
 	backStream := (*core.Stream)(nil)
 
@@ -165,16 +310,16 @@ func (p *Client) setConn(conn internal.IStreamConn) {
 	p.conn = conn
 }
 
-func (p *Client) onCallbackStream(stream *core.Stream, callbackID uint64) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.channels != nil {
-		if chSize := uint64(len(p.channels)); chSize > 0 {
-			p.channels[callbackID%chSize].OnCallbackStream(stream)
-		}
-	}
-}
+//func (p *Client) onReceiveStream(stream *core.Stream, callbackID uint64) {
+//    p.Lock()
+//    defer p.Unlock()
+//
+//    if p.channels != nil {
+//        if chSize := uint64(len(p.channels)); chSize > 0 {
+//            p.channels[callbackID%chSize].OnCallbackStream(stream)
+//        }
+//    }
+//}
 
 func (p *Client) onConnRun(conn internal.IStreamConn) {
 	// init conn
