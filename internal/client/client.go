@@ -12,7 +12,6 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"github.com/rpccloud/rpc/internal/gateway"
 )
 
 // Client ...
@@ -27,6 +26,7 @@ type Client struct {
 	freeChannels   *FreeChannelStack
 	lastCheckTime  time.Time
 	lastActiveTime time.Time
+	lastPingTime   time.Time
 	orcManager     *base.ORCManager
 	sync.Mutex
 }
@@ -74,9 +74,12 @@ func newClient(
 				time.Sleep(80 * time.Millisecond)
 
 				now := base.TimeNow()
+
+				ret.Lock()
 				ret.tryToTimeout(now)
 				ret.tryToDeliverPreSendMessages()
 				ret.tryToSendPing(now)
+				ret.Unlock()
 			}
 		})
 	}()
@@ -107,51 +110,6 @@ func (p *Client) OnConnOpen(streamConn *common.StreamConn) {
 	stream.WriteInt64(core.ControlStreamConnectRequest)
 	stream.WriteString(p.sessionString)
 	streamConn.WriteStreamAndRelease(stream)
-	p.lastActiveTime = base.TimeNow()
-	//
-	//if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
-	//    return err
-	//} else if backStream, err = conn.ReadStream(3*time.Second, 1024); err != nil {
-	//    return err
-	//} else if backStream.GetCallbackID() != 0 {
-	//    return errors.ErrStream
-	//} else if kind, err := backStream.ReadInt64(); err != nil {
-	//    return err
-	//} else if kind != core.ControlStreamConnectResponse {
-	//    return errors.ErrStream
-	//} else if sessionString, err := backStream.ReadString(); err != nil {
-	//    return err
-	//} else if config, err := gateway.ReadSessionConfig(backStream); err != nil {
-	//    return err
-	//} else if !backStream.IsReadFinish() {
-	//    return errors.ErrStream
-	//} else {
-	//    p.Lock()
-	//    defer p.Unlock()
-	//
-	//    if sessionString != p.sessionString {
-	//        // new session
-	//        p.sessionString = sessionString
-	//        p.config = config
-	//        p.channels = make([]Channel, config.NumOfChannels())
-	//        p.freeChannels = NewFreeChannelStack(int(config.NumOfChannels()))
-	//        for i := 0; i < len(p.channels); i++ {
-	//            p.channels[i].id = i
-	//            p.channels[i].client = p
-	//            p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
-	//            p.channels[i].item = nil
-	//            p.freeChannels.Push(i)
-	//        }
-	//    } else if !p.config.Equals(&config) {
-	//        // old session, but config changes
-	//        p.sessionString = ""
-	//        return errors.ErrClientConfigChanges
-	//    } else {
-	//        // old session
-	//    }
-	//
-	//    return nil
-	//}
 }
 
 // OnConnClose ...
@@ -222,12 +180,22 @@ func (p *Client) OnConnReadStream(
 			} else {
 				// config and channels have already initialized. so ignore this
 			}
+
+			now := base.TimeNow()
+			p.lastActiveTime = now
+			p.lastPingTime = now
 		}
 
 		stream.Release()
 	} else {
 		if callbackID == 0 {
-			p.OnConnError(streamConn, errors.ErrStream)
+			if kind, err := stream.ReadInt64(); err != nil {
+				p.OnConnError(streamConn, err)
+			} else if kind != core.ControlStreamConnectResponse {
+				p.OnConnError(streamConn, errors.ErrStream)
+			} else {
+				p.lastActiveTime = base.TimeNow()
+			}
 			stream.Release()
 		} else if p.channels != nil {
 			p.channels[callbackID%uint64(len(p.channels))].ReceiveStream(stream)
@@ -244,162 +212,27 @@ func (p *Client) OnConnError(streamConn *common.StreamConn, err *base.Error) {
 	streamConn.Close()
 }
 
-func (p *Client) initConn(streamConn *common.StreamConn) *base.Error {
-	sendStream := core.NewStream()
-	backStream := (*core.Stream)(nil)
-
-	defer func() {
-		sendStream.Release()
-		if backStream != nil {
-			backStream.Release()
-		}
-	}()
-
-	sendStream.SetCallbackID(0)
-	sendStream.WriteInt64(core.ControlStreamConnectRequest)
-	sendStream.WriteString(p.sessionString)
-
-	if err := conn.WriteStream(sendStream, 3*time.Second); err != nil {
-		return err
-	} else if backStream, err = conn.ReadStream(3*time.Second, 1024); err != nil {
-		return err
-	} else if backStream.GetCallbackID() != 0 {
-		return errors.ErrStream
-	} else if kind, err := backStream.ReadInt64(); err != nil {
-		return err
-	} else if kind != core.ControlStreamConnectResponse {
-		return errors.ErrStream
-	} else if sessionString, err := backStream.ReadString(); err != nil {
-		return err
-	} else if config, err := gateway.ReadSessionConfig(backStream); err != nil {
-		return err
-	} else if !backStream.IsReadFinish() {
-		return errors.ErrStream
-	} else {
-		p.Lock()
-		defer p.Unlock()
-
-		if sessionString != p.sessionString {
-			// new session
-			p.sessionString = sessionString
-			p.config = config
-			p.channels = make([]Channel, config.NumOfChannels())
-			p.freeChannels = NewFreeChannelStack(int(config.NumOfChannels()))
-			for i := 0; i < len(p.channels); i++ {
-				p.channels[i].id = i
-				p.channels[i].client = p
-				p.channels[i].seq = uint64(config.NumOfChannels()) + uint64(i)
-				p.channels[i].item = nil
-				p.freeChannels.Push(i)
-			}
-		} else if !p.config.Equals(&config) {
-			// old session, but config changes
-			p.sessionString = ""
-			return errors.ErrClientConfigChanges
-		} else {
-			// old session
-		}
-
-		return nil
-	}
-}
-
-func (p *Client) setConn(conn internal.IStreamConn) {
-	p.Lock()
-	defer p.Unlock()
-	p.conn = conn
-}
-
-//func (p *Client) onReceiveStream(stream *core.Stream, callbackID uint64) {
-//    p.Lock()
-//    defer p.Unlock()
-//
-//    if p.channels != nil {
-//        if chSize := uint64(len(p.channels)); chSize > 0 {
-//            p.channels[callbackID%chSize].OnCallbackStream(stream)
-//        }
-//    }
-//}
-
-func (p *Client) onConnRun(conn internal.IStreamConn) {
-	// init conn
-	if err := p.initConn(conn); err != nil {
-		p.onError(err)
-		return
-	}
-
-	err := (*base.Error)(nil)
-	p.setConn(conn)
-
-	defer func() {
-		p.setConn(nil)
-
-		if err != nil {
-			p.onError(err)
-		}
-
-		if err := conn.Close(); err != nil {
-			p.onError(err)
-		}
-	}()
-
-	// receive messages
-	for atomic.LoadInt32(&p.status) == clientStatusRunning {
-		if stream, e := conn.ReadStream(
-			p.config.ReadTimeout(),
-			p.config.TransLimit(),
-		); e != nil {
-			if e != errors.ErrStreamConnIsClosed {
-				err = e
-			}
-			return
-		} else if callbackID := stream.GetCallbackID(); callbackID > 0 {
-			p.onCallbackStream(stream, callbackID)
-		} else if kind, e := stream.ReadInt64(); e != nil {
-			err = e
-			return
-		} else if kind == core.ControlStreamPong {
-			// ignore
-		} else {
-			// broadcast message is not supported now
-			err = errors.ErrStream
-			return
-		}
-	}
-}
-
 func (p *Client) tryToSendPing(now time.Time) {
 	p.Lock()
 	defer p.Unlock()
 
-	deltaTime := now.Sub(p.lastControlSendTime)
-
-	if p.conn == nil {
+	if p.streamConn == nil {
 		return
-	} else if deltaTime < p.config.Heartbeat() {
+	} else if now.Sub(p.lastPingTime) < p.config.heartbeat {
 		return
 	} else {
 		// Send Ping
-		p.lastControlSendTime = now
-		sendStream := core.NewStream()
-		defer sendStream.Release()
-		sendStream.SetCallbackID(0)
-		sendStream.WriteInt64(core.ControlStreamPing)
-		if err := p.conn.WriteStream(
-			sendStream,
-			p.config.WriteTimeout(),
-		); err != nil {
-			p.onError(err)
-		}
+		p.lastPingTime = now
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(core.ControlStreamPing)
+		p.streamConn.WriteStreamAndRelease(stream)
 	}
 }
 
 func (p *Client) tryToTimeout(now time.Time) {
-	p.Lock()
-	defer p.Unlock()
-
-	if now.Sub(p.lastTimeoutCheckTime) > 800*time.Millisecond {
-		p.lastTimeoutCheckTime = now
+	if now.Sub(p.lastCheckTime) > 800*time.Millisecond {
+		p.lastCheckTime = now
 
 		// sweep pre send list
 		preValidItem := (*SendItem)(nil)
@@ -435,52 +268,35 @@ func (p *Client) tryToTimeout(now time.Time) {
 }
 
 func (p *Client) tryToDeliverPreSendMessages() {
-	p.Lock()
-	defer p.Unlock()
-
-	for p.tryToDeliverPreSendOneMessage() {
-	}
-}
-
-func (p *Client) tryToDeliverPreSendOneMessage() bool {
-	if atomic.LoadInt32(&p.status) != clientStatusRunning { // not running
-		return false
-	} else if p.conn == nil { // not connected
-		return false
-	} else if p.preSendHead == nil { // preSend queue is empty
-		return false
-	} else if p.channels == nil {
-		return false
-	} else if channelID, ok := p.freeChannels.Pop(); !ok {
-		return false
-	} else {
-		channel := &p.channels[channelID]
-
-		// get and set the send item
-		item := p.preSendHead
-		if item == p.preSendTail {
-			p.preSendHead = nil
-			p.preSendTail = nil
+	for {
+		if p.streamConn == nil { // not running
+			return
+		} else if p.preSendHead == nil { // preSend queue is empty
+			return
+		} else if p.channels == nil {
+			return
+		} else if channelID, ok := p.freeChannels.Pop(); !ok {
+			return
 		} else {
-			p.preSendHead = p.preSendHead.next
+			channel := &p.channels[channelID]
+
+			// get and set the send item
+			item := p.preSendHead
+			if item == p.preSendTail {
+				p.preSendHead = nil
+				p.preSendTail = nil
+			} else {
+				p.preSendHead = p.preSendHead.next
+			}
+
+			item.id = atomic.LoadUint64(&channel.seq)
+			item.next = nil
+			item.sendStream.SetCallbackID(item.id)
+			channel.item = item
+
+			p.streamConn.WriteStreamAndRelease(item.sendStream.Clone())
+			item.sendTime = base.TimeNow()
 		}
-
-		item.id = atomic.LoadUint64(&channel.seq)
-		item.next = nil
-		item.sendStream.SetCallbackID(item.id)
-		channel.item = item
-
-		// try to send
-		if err := p.conn.WriteStream(
-			item.sendStream,
-			p.config.WriteTimeout(),
-		); err != nil {
-			p.onError(err)
-			return false
-		}
-
-		item.sendTime = base.TimeNow()
-		return true
 	}
 }
 
