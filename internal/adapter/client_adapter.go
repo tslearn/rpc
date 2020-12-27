@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+    "time"
 
-	"github.com/rpccloud/rpc/internal/adapter/common"
+    "github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/errors"
 
 	"github.com/gobwas/ws"
@@ -218,9 +219,16 @@ func (p *ClientAdapter) Open() bool {
 func (p *ClientAdapter) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
 		for isRunning() {
+		    start := base.TimeNow()
 			p.client.Open()
 			p.client.Run()
 			p.client.Close()
+
+		    if isRunning() {
+                if delta := base.TimeNow().Sub(start); delta < time.Second {
+                    time.Sleep(time.Second - delta)
+                }
+            }
 		}
 	})
 }

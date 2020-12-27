@@ -218,7 +218,7 @@ func (p *GateWay) OnConnReadStream(
 	streamConn *common.StreamConn,
 	stream *core.Stream,
 ) {
-	stream.Release()
+	defer stream.Release()
 
 	if stream.GetCallbackID() != 0 {
 		p.OnConnError(streamConn, errors.ErrStream)
