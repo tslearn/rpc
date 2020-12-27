@@ -70,7 +70,6 @@ func main() {
 	for i := 0; i < 1000000; i++ {
 		stream := core.NewStream()
 		stream.WriteInt64(12)
-		stream.BuildStreamCheck()
 		clientReceiver.streamConn.WriteStreamAndRelease(stream)
 		s := <-clientReceiver.streamCH
 		s.SetReadPosToBodyStart()

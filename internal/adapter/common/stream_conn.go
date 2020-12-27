@@ -71,6 +71,12 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 		if p.readHeadPos == 0 { // fast cache
 			if bytesLen := len(b); bytesLen >= core.StreamHeadSize {
 				streamLength := int(core.GetStreamLengthByHeadBuffer(b))
+
+				if streamLength < core.StreamHeadSize {
+					p.receiver.OnConnError(p, errors.ErrStream)
+					return
+				}
+
 				if bytesLen == streamLength {
 					stream := core.NewStream()
 					stream.PutBytesTo(b, 0)
@@ -188,6 +194,7 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 			}
 		}()
 
+		stream.BuildStreamCheck()
 		p.writeCH <- stream
 	}()
 
