@@ -17,10 +17,7 @@ import (
 )
 
 const (
-	maxGatewayID         = 0xFFFFFF
-	gatewayStatusRunning = int32(1)
-	gatewayStatusClosing = int32(2)
-	gatewayStatusClosed  = int32(0)
+	maxGatewayID = 0xFFFFFF
 )
 
 // GateWay ...
@@ -204,13 +201,13 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 }
 
 // OnConnOpen ...
-func (p *GateWay) OnConnOpen(streamConn *common.StreamConn) {
+func (p *GateWay) OnConnOpen(_ *common.StreamConn) {
 	// ignore this message
 	// we will add some security checks here
 }
 
 // OnConnClose ...
-func (p *GateWay) OnConnClose(streamConn *common.StreamConn) {
+func (p *GateWay) OnConnClose(_ *common.StreamConn) {
 	// All streamConn that is successfully initialized will reset the receiver
 	// to session. If it runs here, it means the streamConn is not correctly
 	// initialized. so ignore this message
