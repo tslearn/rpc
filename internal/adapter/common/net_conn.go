@@ -117,12 +117,12 @@ func (p *NetConn) OnWriteReady() {
 }
 
 // OnReadBytes ...
-func (p *NetConn) OnReadBytes(b []byte) {
+func (p *NetConn) OnReadBytes(_ []byte) {
 	panic("kernel error, this code should not be called")
 }
 
 // OnFillWrite ...
-func (p *NetConn) OnFillWrite(b []byte) int {
+func (p *NetConn) OnFillWrite(_ []byte) int {
 	panic("kernel error, this code should not be called")
 }
 
@@ -132,6 +132,6 @@ func (p *NetConn) GetFD() int {
 }
 
 // SetFD ...
-func (p *NetConn) SetFD(fd int) {
+func (p *NetConn) SetFD(_ int) {
 	panic("kernel error, this code should not be called")
 }
