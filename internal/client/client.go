@@ -8,8 +8,6 @@ import (
 
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/adapter/common"
-
-	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
