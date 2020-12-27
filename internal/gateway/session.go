@@ -59,73 +59,25 @@ func (p *Session) Initialized(conn *common.StreamConn) {
 	p.conn.WriteStreamAndRelease(stream)
 }
 
-// StreamIn ...
-func (p *Session) StreamIn(stream *core.Stream) {
+// WriteStreamAndRelease ...
+func (p *Session) WriteStreamAndRelease(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
-
-	keepStream := false
-
-	defer func() {
-		if !keepStream {
-			stream.Release()
-		}
-	}()
-
-	cbID := stream.GetCallbackID()
-	config := p.gateway.GetConfig()
-
-	if cbID > 0 {
-		stream.SetSessionID(p.id)
-		channel := p.channels[cbID%uint64(len(p.channels))]
-		if accepted, backStream := channel.In(cbID); !accepted {
-			// ignore accepted
-		} else if backStream != nil {
-			p.conn.WriteStreamAndRelease(backStream.Clone())
-			return
-		} else {
-			keepStream = true
-			if err := p.gateway.slot.SendStream(stream); err != nil {
-
-			}
-			return
-		}
-	} else if kind, err := stream.ReadInt64(); err != nil {
-		return err
-	} else if kind == core.ControlStreamPing {
-		p.checkTimeout()
-		// Send Pong
-		stream.SetWritePosToBodyStart()
-		stream.WriteInt64(core.ControlStreamPong)
-		return p.conn.WriteStream(stream, config.writeTimeout)
-	} else {
-		return errors.ErrStream
-	}
-}
-
-// StreamOut ...
-func (p *Session) StreamOut(stream *core.Stream) *base.Error {
-	p.Lock()
-	defer p.Unlock()
-	cbID := stream.GetCallbackID()
 
 	// record stream
-	if cbID > 0 {
-		if ok := p.channels[cbID%uint64(len(p.channels))].Out(stream); !ok {
-			return nil
-		}
-	}
-
-	// write stream
-	return p.conn.WriteStream(stream, p.gateway.GetConfig().writeTimeout)
-}
-
-func (p *Session) checkTimeout() {
-	nowNS := base.TimeNow().UnixNano()
-	for i := 0; i < len(p.channels); i++ {
-		p.channels[i].Timeout(nowNS, int64(p.gateway.GetConfig().cacheTimeout))
+	if p.channels[stream.GetCallbackID()%uint64(len(p.channels))].Out(stream) {
+		p.conn.WriteStreamAndRelease(stream)
+	} else {
+		stream.Release()
 	}
 }
+
+// func (p *Session) checkTimeout() {
+// 	nowNS := base.TimeNow().UnixNano()
+// 	for i := 0; i < len(p.channels); i++ {
+// 		p.channels[i].Timeout(nowNS, int64(p.gateway.GetConfig().cacheTimeout))
+// 	}
+// }
 
 // Release ...
 func (p *Session) Release() {
@@ -151,7 +103,7 @@ func (p *Session) OnConnError(streamConn *common.StreamConn, err *base.Error) {
 
 // OnConnClose ...
 func (p *Session) OnConnClose(streamConn *common.StreamConn) {
-
+	//p.gateway.OnConnClose(streamConn)
 }
 
 // OnConnReadStream ...
@@ -159,5 +111,41 @@ func (p *Session) OnConnReadStream(
 	streamConn *common.StreamConn,
 	stream *core.Stream,
 ) {
+	p.Lock()
+	defer p.Unlock()
 
+	keepStream := false
+
+	defer func() {
+		if !keepStream {
+			stream.Release()
+		}
+	}()
+
+	cbID := stream.GetCallbackID()
+
+	if cbID > 0 {
+		stream.SetSessionID(p.id)
+		channel := p.channels[cbID%uint64(len(p.channels))]
+		if accepted, backStream := channel.In(cbID); accepted {
+			keepStream = true
+			if err := p.gateway.slot.SendStreamToRouter(stream); err != nil {
+				p.OnConnError(streamConn, err)
+			}
+		} else if backStream != nil {
+			// do not release the backStream, so we need to clone it
+			p.conn.WriteStreamAndRelease(backStream.Clone())
+		} else {
+			// ignore
+		}
+	} else if kind, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(streamConn, err)
+	} else if kind == core.ControlStreamPing {
+		keepStream = true
+		stream.SetWritePosToBodyStart()
+		stream.WriteInt64(core.ControlStreamPong)
+		p.conn.WriteStreamAndRelease(stream)
+	} else {
+		p.OnConnError(streamConn, errors.ErrStream)
+	}
 }

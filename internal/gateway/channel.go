@@ -14,12 +14,15 @@ type Channel struct {
 
 // In ...
 func (p *Channel) In(id uint64) (bool, *core.Stream) {
-	if id >= p.seq {
+	if id > p.seq {
+		p.Clean()
 		p.seq = id
-		return true, p.retStream
+		return true, nil
+	} else if id == p.seq {
+		return false, p.retStream
+	} else {
+		return false, nil
 	}
-
-	return false, nil
 }
 
 // Out ...
@@ -27,7 +30,7 @@ func (p *Channel) Out(stream *core.Stream) bool {
 	id := stream.GetCallbackID()
 
 	if id == p.seq {
-		if p.retTimeNS != 0 {
+		if p.retTimeNS == 0 {
 			p.retTimeNS = base.TimeNow().UnixNano()
 			p.retStream = stream
 		}

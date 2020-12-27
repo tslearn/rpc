@@ -8,12 +8,12 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"github.com/rpccloud/rpc/internal/router"
 )
 
 const (
@@ -28,7 +28,7 @@ type GateWay struct {
 	id          uint64
 	isFree      bool
 	sessionSeed uint32
-	slot        internal.IStreamRouterSlot
+	slot        router.IRouteSender
 	closeCH     chan bool
 	config      *Config
 	sessionMap  map[uint64]*Session
@@ -42,7 +42,7 @@ type GateWay struct {
 func NewGateWay(
 	id uint64,
 	config *Config,
-	router internal.IStreamRouter,
+	router router.IRouter,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
 	if id > maxGatewayID {
@@ -103,8 +103,8 @@ func (p *GateWay) GetConfig() *Config {
 	return p.config
 }
 
-// ListenTCP ...
-func (p *GateWay) ListenTCP(
+// Listen ...
+func (p *GateWay) Listen(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
@@ -186,21 +186,21 @@ func (p *GateWay) Close() {
 	})
 }
 
-// OnStream ...
-func (p *GateWay) OnStream(stream *core.Stream) *base.Error {
+// ReceiveStreamFromRouter ...
+func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 	p.Lock()
 	defer p.Unlock()
-	defer stream.Release()
 
 	if !stream.IsDirectionOut() {
+		stream.Release()
 		return errors.ErrStream
+	} else if session, ok := p.sessionMap[stream.GetSessionID()]; ok {
+		session.WriteStreamAndRelease(stream)
+		return nil
+	} else {
+		stream.Release()
+		return errors.ErrGateWaySessionNotFound
 	}
-
-	if session, ok := p.sessionMap[stream.GetSessionID()]; ok {
-		return session.StreamOut(stream)
-	}
-
-	return errors.ErrGateWaySessionNotFound
 }
 
 // OnConnOpen ...

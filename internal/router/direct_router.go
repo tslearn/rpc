@@ -1,38 +1,42 @@
 package router
 
 import (
-	"github.com/rpccloud/rpc/internal"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
 
-type DirectRouterSlot struct {
-	receiverPtr *internal.IStreamReceiver
+// DirectRouterSender ...
+type DirectRouterSender struct {
+	receiver IRouteReceiver
 }
 
-func (p *DirectRouterSlot) SendStream(stream *core.Stream) *base.Error {
-	return (*p.receiverPtr).OnStream(stream)
+// SendStreamToRouter ...
+func (p *DirectRouterSender) SendStreamToRouter(
+	stream *core.Stream,
+) *base.Error {
+	return p.receiver.ReceiveStreamFromRouter(stream)
 }
 
+// DirectRouter ...
 type DirectRouter struct {
-	receivers []internal.IStreamReceiver
+	receivers []IRouteReceiver
 }
 
-func NewDirectRouter() internal.IStreamRouter {
+// NewDirectRouter ...
+func NewDirectRouter() IRouter {
 	return &DirectRouter{
-		receivers: make([]internal.IStreamReceiver, 2),
+		receivers: make([]IRouteReceiver, 2),
 	}
 }
 
-func (p *DirectRouter) Plug(
-	receiver internal.IStreamReceiver,
-) internal.IStreamRouterSlot {
+// Plug ...
+func (p *DirectRouter) Plug(receiver IRouteReceiver) IRouteSender {
 	if p.receivers[0] == nil {
 		p.receivers[0] = receiver
-		return &DirectRouterSlot{receiverPtr: &p.receivers[1]}
+		return &DirectRouterSender{receiver: p.receivers[1]}
 	} else if p.receivers[1] == nil {
 		p.receivers[1] = receiver
-		return &DirectRouterSlot{receiverPtr: &p.receivers[0]}
+		return &DirectRouterSender{receiver: p.receivers[0]}
 	} else {
 		panic("DirectRouter can only be plugged twice")
 	}

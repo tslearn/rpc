@@ -1,18 +1,21 @@
 package server
 
 import (
-	"github.com/rpccloud/rpc/internal"
+	"time"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"time"
+	"github.com/rpccloud/rpc/internal/router"
 )
 
+// RPCProcessor ...
 type RPCProcessor struct {
 	processor *core.Processor
 }
 
+// NewRPCProcessor ...
 func NewRPCProcessor(
-	router internal.IStreamRouter,
+	router router.IRouter,
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
@@ -22,9 +25,8 @@ func NewRPCProcessor(
 	mountServices []*core.ServiceMeta,
 ) (*RPCProcessor, *base.Error) {
 	ret := &RPCProcessor{}
-	slot := router.Plug(ret)
-
-	if processor, err := core.NewProcessor(
+	routeSender := router.Plug(ret)
+	processor, err := core.NewProcessor(
 		numOfThreads,
 		maxNodeDepth,
 		maxCallDepth,
@@ -34,21 +36,25 @@ func NewRPCProcessor(
 		mountServices,
 		func(stream *core.Stream) {
 			stream.SetDirectionOut()
-			_ = slot.SendStream(stream)
+			_ = routeSender.SendStreamToRouter(stream)
 		},
-	); err != nil {
+	)
+
+	if err != nil {
 		return nil, err
-	} else {
-		ret.processor = processor
-		return ret, nil
 	}
+
+	ret.processor = processor
+	return ret, nil
 }
 
-func (p *RPCProcessor) OnStream(stream *core.Stream) *base.Error {
+// ReceiveStreamFromRouter ...
+func (p *RPCProcessor) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 	p.processor.PutStream(stream)
 	return nil
 }
 
+// Close ...
 func (p *RPCProcessor) Close() {
 	p.processor.Close()
 }

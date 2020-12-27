@@ -1,23 +1,25 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
-	"github.com/rpccloud/rpc/internal"
+	"path"
+	"runtime"
+	"sync"
+	"time"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/router"
-	"path"
-	"runtime"
-	"sync"
-	"time"
 )
 
+// Server ...
 type Server struct {
 	isRunning        bool
 	processor        *RPCProcessor
-	router           internal.IStreamRouter
+	router           router.IRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
@@ -29,8 +31,8 @@ type Server struct {
 	sync.Mutex
 }
 
+// NewServer ...
 func NewServer() *Server {
-	config := gateway.GetDefaultSessionConfig()
 	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
@@ -45,8 +47,8 @@ func NewServer() *Server {
 		mountServices:    make([]*core.ServiceMeta, 0),
 	}
 	ret.gateway = gateway.NewGateWay(
-		gateway.NewSingleGenerator(),
-		&config,
+		0,
+		gateway.GetDefaultConfig(),
 		ret.router,
 		ret.onError,
 	)
@@ -57,13 +59,13 @@ func (p *Server) onError(sessionID uint64, err *base.Error) {
 	fmt.Println("server onError: ", sessionID, err)
 }
 
-func (p *Server) ListenWebSocket(addr string) *Server {
-	p.gateway.ListenWebSocket(addr)
-	return p
-}
-
-func (p *Server) ListenTCP(addr string) *Server {
-	p.gateway.ListenTCP(addr)
+// Listen ...
+func (p *Server) Listen(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+) *Server {
+	p.gateway.Listen(network, addr, tlsConfig)
 	return p
 }
 
@@ -202,6 +204,7 @@ func (p *Server) Serve() {
 	}
 }
 
+// Close ...
 func (p *Server) Close() {
 	p.Lock()
 	defer p.Unlock()
