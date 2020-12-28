@@ -7,6 +7,8 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 )
 
+const ErrNetClosingSuffix = "use of closed network connection"
+
 // IConn ...
 type IConn interface {
 	OnOpen()

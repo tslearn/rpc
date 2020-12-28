@@ -10,8 +10,6 @@ import (
     "github.com/rpccloud/rpc/internal/errors"
 )
 
-const ErrNetClosingSuffix = "use of closed network connection"
-
 // NetConn ...
 type NetConn struct {
     isServer  bool
