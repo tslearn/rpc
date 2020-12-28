@@ -2,9 +2,9 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/rpccloud/rpc/internal/adapter"
 	"sync"
 
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -20,7 +20,7 @@ var sessionCache = &sync.Pool{
 type Session struct {
 	id       uint64
 	security string
-	conn     *common.StreamConn
+	conn     *adapter.StreamConn
 	gateway  *GateWay
 	channels []Channel
 	sync.Mutex
@@ -40,7 +40,7 @@ func newSession(
 }
 
 // Initialized ...
-func (p *Session) Initialized(conn *common.StreamConn) {
+func (p *Session) Initialized(conn *adapter.StreamConn) {
 	p.Lock()
 	p.conn = conn
 	p.conn.SetReceiver(p)
@@ -84,25 +84,25 @@ func (p *Session) Release() {
 }
 
 // OnConnOpen ...
-func (p *Session) OnConnOpen(streamConn *common.StreamConn) {
+func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	// Route to gateway
 	p.gateway.OnConnOpen(streamConn)
 }
 
 // OnConnError ...
-func (p *Session) OnConnError(streamConn *common.StreamConn, err *base.Error) {
+func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 	// Route to gateway
 	p.gateway.OnConnError(streamConn, err)
 }
 
 // OnConnClose ...
-func (p *Session) OnConnClose(_ *common.StreamConn) {
+func (p *Session) OnConnClose(_ *adapter.StreamConn) {
 	//p.gateway.OnConnClose(streamConn)
 }
 
 // OnConnReadStream ...
 func (p *Session) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	p.Lock()

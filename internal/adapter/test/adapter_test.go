@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
@@ -14,23 +13,23 @@ import (
 type serverReceiver struct {
 }
 
-func (p *serverReceiver) OnConnOpen(streamConn *common.StreamConn) {
+func (p *serverReceiver) OnConnOpen(streamConn *adapter.StreamConn) {
 	fmt.Println("Server: OnConnOpen")
 }
 
-func (p *serverReceiver) OnConnClose(streamConn *common.StreamConn) {
+func (p *serverReceiver) OnConnClose(streamConn *adapter.StreamConn) {
 	fmt.Println("Server: OnConnClose")
 }
 
 func (p *serverReceiver) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	streamConn.WriteStreamAndRelease(stream)
 }
 
 func (p *serverReceiver) OnConnError(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
@@ -42,29 +41,29 @@ func (p *serverReceiver) OnConnError(
 
 type clientReceiver struct {
 	streamCH   chan *core.Stream
-	streamConn *common.StreamConn
+	streamConn *adapter.StreamConn
 }
 
-func (p *clientReceiver) OnConnOpen(streamConn *common.StreamConn) {
+func (p *clientReceiver) OnConnOpen(streamConn *adapter.StreamConn) {
 	fmt.Println("Client: OnConnOpen")
 	p.streamConn = streamConn
 }
 
-func (p *clientReceiver) OnConnClose(streamConn *common.StreamConn) {
+func (p *clientReceiver) OnConnClose(streamConn *adapter.StreamConn) {
 	fmt.Println("Client: OnConnClose")
 
 	p.streamConn = nil
 }
 
 func (p *clientReceiver) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	p.streamCH <- stream
 }
 
 func (p *clientReceiver) OnConnError(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {

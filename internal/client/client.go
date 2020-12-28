@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -19,7 +18,7 @@ type Client struct {
 	config         *Config
 	sessionString  string
 	adapter        *adapter.ClientAdapter
-	streamConn     *common.StreamConn
+	streamConn     *adapter.StreamConn
 	preSendHead    *SendItem
 	preSendTail    *SendItem
 	channels       []Channel
@@ -101,7 +100,7 @@ func (p *Client) onError(err *base.Error) {
 }
 
 // OnConnOpen ...
-func (p *Client) OnConnOpen(streamConn *common.StreamConn) {
+func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -113,7 +112,7 @@ func (p *Client) OnConnOpen(streamConn *common.StreamConn) {
 }
 
 // OnConnClose ...
-func (p *Client) OnConnClose(_ *common.StreamConn) {
+func (p *Client) OnConnClose(_ *adapter.StreamConn) {
 	p.Lock()
 	defer p.Unlock()
 	p.streamConn = nil
@@ -121,7 +120,7 @@ func (p *Client) OnConnClose(_ *common.StreamConn) {
 
 // OnConnReadStream ...
 func (p *Client) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	p.Lock()
@@ -208,7 +207,7 @@ func (p *Client) OnConnReadStream(
 }
 
 // OnConnError ...
-func (p *Client) OnConnError(streamConn *common.StreamConn, err *base.Error) {
+func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 	p.onError(err)
 	streamConn.Close()
 }

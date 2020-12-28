@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"time"
@@ -11,29 +10,29 @@ import (
 
 type receiver struct {
 	streamCH   chan *core.Stream
-	streamConn *common.StreamConn
+	streamConn *adapter.StreamConn
 }
 
-func (p *receiver) OnConnOpen(streamConn *common.StreamConn) {
+func (p *receiver) OnConnOpen(streamConn *adapter.StreamConn) {
 	fmt.Println("Client: OnConnOpen")
 	p.streamConn = streamConn
 }
 
-func (p *receiver) OnConnClose(streamConn *common.StreamConn) {
+func (p *receiver) OnConnClose(streamConn *adapter.StreamConn) {
 	fmt.Println("Client: OnConnClose")
 
 	p.streamConn = nil
 }
 
 func (p *receiver) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	p.streamCH <- stream
 }
 
 func (p *receiver) OnConnError(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {

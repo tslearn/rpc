@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/adapter/common"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -15,23 +14,23 @@ import (
 type receiver struct {
 }
 
-func (p *receiver) OnConnOpen(streamConn *common.StreamConn) {
+func (p *receiver) OnConnOpen(streamConn *adapter.StreamConn) {
 	fmt.Println("Server: OnConnOpen")
 }
 
-func (p *receiver) OnConnClose(streamConn *common.StreamConn) {
+func (p *receiver) OnConnClose(streamConn *adapter.StreamConn) {
 	fmt.Println("Server: OnConnClose")
 }
 
 func (p *receiver) OnConnReadStream(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
 	streamConn.WriteStreamAndRelease(stream)
 }
 
 func (p *receiver) OnConnError(
-	streamConn *common.StreamConn,
+	streamConn *adapter.StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
