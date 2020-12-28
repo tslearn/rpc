@@ -11,7 +11,7 @@ import (
 // NetConn ...
 type NetConn struct {
 	isRunning bool
-	netConn   net.Conn
+	conn      net.Conn
 	next      IConn
 	rBuf      []byte
 	wBuf      []byte
@@ -26,7 +26,7 @@ func NewNetConn(
 ) *NetConn {
 	return &NetConn{
 		isRunning: true,
-		netConn:   netConn,
+		conn:      netConn,
 		next:      nil,
 		rBuf:      make([]byte, rBufSize),
 		wBuf:      make([]byte, wBufSize),
@@ -60,7 +60,7 @@ func (p *NetConn) Close() {
 
 	if p.isRunning {
 		p.isRunning = false
-		if e := p.netConn.Close(); e != nil {
+		if e := p.conn.Close(); e != nil {
 			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		}
 	}
@@ -68,17 +68,17 @@ func (p *NetConn) Close() {
 
 // LocalAddr ...
 func (p *NetConn) LocalAddr() net.Addr {
-	return p.netConn.LocalAddr()
+	return p.conn.LocalAddr()
 }
 
 // RemoteAddr ...
 func (p *NetConn) RemoteAddr() net.Addr {
-	return p.netConn.RemoteAddr()
+	return p.conn.RemoteAddr()
 }
 
 // OnReadReady ...
 func (p *NetConn) OnReadReady() bool {
-	n, e := p.netConn.Read(p.rBuf)
+	n, e := p.conn.Read(p.rBuf)
 	if e != nil {
 		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 		return false
@@ -107,7 +107,7 @@ func (p *NetConn) OnWriteReady() {
 
 		start := 0
 		for start < bufLen {
-			if n, e := p.netConn.Write(p.wBuf[start:bufLen]); e != nil {
+			if n, e := p.conn.Write(p.wBuf[start:bufLen]); e != nil {
 				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
 			} else {
 				start += n
