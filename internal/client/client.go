@@ -191,7 +191,7 @@ func (p *Client) OnConnReadStream(
 		if callbackID == 0 {
 			if kind, err := stream.ReadInt64(); err != nil {
 				p.OnConnError(streamConn, err)
-			} else if kind != core.ControlStreamConnectResponse {
+			} else if kind != core.ControlStreamPong {
 				p.OnConnError(streamConn, errors.ErrStream)
 			} else {
 				p.lastActiveTime = base.TimeNow()
