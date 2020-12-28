@@ -78,7 +78,7 @@ func (p *Session) Release() {
 	p.Lock()
 	defer p.Unlock()
 	for i := 0; i < len(p.channels); i++ {
-		p.channels[i].Clean()
+		(&p.channels[i]).Clean()
 	}
 	sessionCache.Put(p)
 }

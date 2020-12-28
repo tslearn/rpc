@@ -198,7 +198,8 @@ func (p *Client) OnConnReadStream(
 			}
 			stream.Release()
 		} else if p.channels != nil {
-			p.channels[callbackID%uint64(len(p.channels))].ReceiveStream(stream)
+			channel := &p.channels[callbackID%uint64(len(p.channels))]
+			channel.ReceiveStream(stream)
 		} else {
 			// ignore
 			stream.Release()
@@ -213,9 +214,6 @@ func (p *Client) OnConnError(streamConn *common.StreamConn, err *base.Error) {
 }
 
 func (p *Client) tryToSendPing(now time.Time) {
-	p.Lock()
-	defer p.Unlock()
-
 	if p.streamConn == nil {
 		return
 	} else if now.Sub(p.lastPingTime) < p.config.heartbeat {
@@ -262,7 +260,7 @@ func (p *Client) tryToTimeout(now time.Time) {
 
 		// sweep the channels
 		for i := 0; i < len(p.channels); i++ {
-			p.channels[i].OnTimeout(now)
+			(&p.channels[i]).OnTimeout(now)
 		}
 	}
 }
