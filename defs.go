@@ -68,5 +68,5 @@ type ActionCacheFunc = core.ActionCacheFunc
 // GetRandString ...
 var GetRandString = base.GetRandString
 
-// TimeNow
+// TimeNow ...
 var TimeNow = base.TimeNow

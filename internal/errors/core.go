@@ -140,7 +140,7 @@ var (
 		"numOfThreads is wrong",
 	)
 
-	// ErrNumOfThreadsIsWrong ... *
+	// ErrThreadBufferSizeIsWrong ... *
 	ErrThreadBufferSizeIsWrong = base.DefineConfigError(
 		(generalErrorSeg<<16)|20,
 		base.ErrorLevelFatal,
