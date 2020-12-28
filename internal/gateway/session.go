@@ -60,14 +60,14 @@ func (p *Session) Initialized(conn *common.StreamConn) {
 }
 
 // WriteStreamAndRelease ...
-func (p *Session) WriteStreamAndRelease(stream *core.Stream) {
+func (p *Session) OutStream(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
 
 	// record stream
 	channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
 	if channel.Out(stream) {
-		p.conn.WriteStreamAndRelease(stream)
+		p.conn.WriteStreamAndRelease(stream.Clone())
 	} else {
 		stream.Release()
 	}
@@ -96,7 +96,7 @@ func (p *Session) OnConnError(streamConn *common.StreamConn, err *base.Error) {
 }
 
 // OnConnClose ...
-func (p *Session) OnConnClose(streamConn *common.StreamConn) {
+func (p *Session) OnConnClose(_ *common.StreamConn) {
 	//p.gateway.OnConnClose(streamConn)
 }
 

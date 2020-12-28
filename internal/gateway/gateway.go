@@ -192,7 +192,7 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 		stream.Release()
 		return errors.ErrStream
 	} else if session, ok := p.sessionMap[stream.GetSessionID()]; ok {
-		session.WriteStreamAndRelease(stream)
+		session.OutStream(stream)
 		return nil
 	} else {
 		stream.Release()
