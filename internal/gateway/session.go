@@ -129,7 +129,7 @@ func (p *Session) OnConnReadStream(
 		channel := p.channels[cbID%uint64(len(p.channels))]
 		if accepted, backStream := channel.In(cbID); accepted {
 			keepStream = true
-			if err := p.gateway.slot.SendStreamToRouter(stream); err != nil {
+			if err := p.gateway.routerSender.SendStreamToRouter(stream); err != nil {
 				p.OnConnError(streamConn, err)
 			}
 		} else if backStream != nil {

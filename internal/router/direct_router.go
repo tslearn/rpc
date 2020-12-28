@@ -7,14 +7,14 @@ import (
 
 // DirectRouterSender ...
 type DirectRouterSender struct {
-	receiver IRouteReceiver
+	receiver *IRouteReceiver
 }
 
 // SendStreamToRouter ...
 func (p *DirectRouterSender) SendStreamToRouter(
 	stream *core.Stream,
 ) *base.Error {
-	return p.receiver.ReceiveStreamFromRouter(stream)
+	return (*p.receiver).ReceiveStreamFromRouter(stream)
 }
 
 // DirectRouter ...
@@ -33,10 +33,10 @@ func NewDirectRouter() IRouter {
 func (p *DirectRouter) Plug(receiver IRouteReceiver) IRouteSender {
 	if p.receivers[0] == nil {
 		p.receivers[0] = receiver
-		return &DirectRouterSender{receiver: p.receivers[1]}
+		return &DirectRouterSender{receiver: &p.receivers[1]}
 	} else if p.receivers[1] == nil {
 		p.receivers[1] = receiver
-		return &DirectRouterSender{receiver: p.receivers[0]}
+		return &DirectRouterSender{receiver: &p.receivers[0]}
 	} else {
 		panic("DirectRouter can only be plugged twice")
 	}

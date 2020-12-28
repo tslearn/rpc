@@ -22,16 +22,16 @@ const (
 
 // GateWay ...
 type GateWay struct {
-	id          uint64
-	isFree      bool
-	sessionSeed uint32
-	slot        router.IRouteSender
-	closeCH     chan bool
-	config      *Config
-	sessionMap  map[uint64]*Session
-	onError     func(sessionID uint64, err *base.Error)
-	adapters    []*adapter.ServerAdapter
-	orcManager  *base.ORCManager
+	id           uint64
+	isFree       bool
+	sessionSeed  uint32
+	routerSender router.IRouteSender
+	closeCH      chan bool
+	config       *Config
+	sessionMap   map[uint64]*Session
+	onError      func(sessionID uint64, err *base.Error)
+	adapters     []*adapter.ServerAdapter
+	orcManager   *base.ORCManager
 	sync.Mutex
 }
 
@@ -47,18 +47,18 @@ func NewGateWay(
 	}
 
 	ret := &GateWay{
-		id:         id,
-		isFree:     true,
-		slot:       nil,
-		closeCH:    make(chan bool, 1),
-		config:     config,
-		sessionMap: map[uint64]*Session{},
-		onError:    onError,
-		adapters:   make([]*adapter.ServerAdapter, 0),
-		orcManager: base.NewORCManager(),
+		id:           id,
+		isFree:       true,
+		routerSender: nil,
+		closeCH:      make(chan bool, 1),
+		config:       config,
+		sessionMap:   map[uint64]*Session{},
+		onError:      onError,
+		adapters:     make([]*adapter.ServerAdapter, 0),
+		orcManager:   base.NewORCManager(),
 	}
 
-	ret.slot = router.Plug(ret)
+	ret.routerSender = router.Plug(ret)
 
 	return ret
 }
@@ -143,11 +143,11 @@ func (p *GateWay) Serve() {
 		}
 	})
 
+	// -------------------------------------------------------------------------
 	// Notice:
 	//      if p.orcManager.Close() is called between Open and Run. Run will not
 	// execute at all.
 	// -------------------------------------------------------------------------
-
 	p.orcManager.Run(func(_ func() bool) {
 		waitCH := make(chan bool)
 		waitCount := 0
