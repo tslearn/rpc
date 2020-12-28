@@ -65,19 +65,13 @@ func (p *Session) WriteStreamAndRelease(stream *core.Stream) {
 	defer p.Unlock()
 
 	// record stream
-	if p.channels[stream.GetCallbackID()%uint64(len(p.channels))].Out(stream) {
+	channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
+	if channel.Out(stream) {
 		p.conn.WriteStreamAndRelease(stream)
 	} else {
 		stream.Release()
 	}
 }
-
-// func (p *Session) checkTimeout() {
-// 	nowNS := base.TimeNow().UnixNano()
-// 	for i := 0; i < len(p.channels); i++ {
-// 		p.channels[i].Timeout(nowNS, int64(p.gateway.GetConfig().cacheTimeout))
-// 	}
-// }
 
 // Release ...
 func (p *Session) Release() {
@@ -126,7 +120,7 @@ func (p *Session) OnConnReadStream(
 
 	if cbID > 0 {
 		stream.SetSessionID(p.id)
-		channel := p.channels[cbID%uint64(len(p.channels))]
+		channel := &p.channels[cbID%uint64(len(p.channels))]
 		if accepted, backStream := channel.In(cbID); accepted {
 			keepStream = true
 			if err := p.gateway.routerSender.SendStreamToRouter(stream); err != nil {
