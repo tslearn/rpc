@@ -2,11 +2,14 @@ package common
 
 import (
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
+
+const ErrNetClosingSuffix = "use of closed network connection"
 
 // NetConn ...
 type NetConn struct {
@@ -53,6 +56,18 @@ func (p *NetConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
+func (p *NetConn) isReportError(e error) bool {
+	if p.isRunning {
+		return true
+	}
+
+	if strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
+		return false
+	}
+
+	return true
+}
+
 // Close ...
 func (p *NetConn) Close() {
 	p.Lock()
@@ -80,7 +95,14 @@ func (p *NetConn) RemoteAddr() net.Addr {
 func (p *NetConn) OnReadReady() bool {
 	n, e := p.conn.Read(p.rBuf)
 	if e != nil {
-		p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		p.Lock()
+		isReportError := p.isReportError(e)
+		p.Unlock()
+
+		if isReportError {
+			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+		}
+
 		return false
 	}
 	p.next.OnReadBytes(p.rBuf[:n])
