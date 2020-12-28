@@ -196,7 +196,7 @@ func (p *ServerAdapter) onConnect(conn net.Conn, e error) {
 		)
 	} else {
 		go func() {
-			netConn := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
+			netConn := common.NewNetConn(true, conn, p.rBufSize, p.wBufSize)
 			netConn.SetNext(common.NewStreamConn(netConn, p.receiver))
 			netConn.OnOpen()
 			for {

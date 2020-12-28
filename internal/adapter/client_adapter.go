@@ -174,7 +174,7 @@ func NewClientAdapter(
 }
 
 func (p *ClientAdapter) CreateNetConn(conn net.Conn) *common.NetConn {
-    ret := common.NewNetConn(conn, p.rBufSize, p.wBufSize)
+    ret := common.NewNetConn(false, conn, p.rBufSize, p.wBufSize)
     ret.SetNext(common.NewStreamConn(ret, p.receiver))
     return ret
 }
