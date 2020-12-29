@@ -2,12 +2,13 @@ package adapter
 
 import (
 	"crypto/tls"
-	"github.com/gobwas/ws"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/gobwas/ws"
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // ServerTCP ...
@@ -18,7 +19,7 @@ type ServerTCP struct {
 }
 
 // NewServerTCP ...
-func NewServerTCP(adapter *ServerAdapter) base.IORCService {
+func NewServerTCP(adapter *ServerAdapter) *ServerTCP {
 	return &ServerTCP{
 		adapter:    adapter,
 		ln:         nil,
@@ -94,7 +95,7 @@ type ServerWebSocket struct {
 }
 
 // NewServerWebSocket ...
-func NewServerWebSocket(adapter *ServerAdapter) base.IORCService {
+func NewServerWebSocket(adapter *ServerAdapter) *ServerWebSocket {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, e := ws.UpgradeHTTP(r, w)

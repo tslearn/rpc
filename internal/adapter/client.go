@@ -3,11 +3,12 @@ package adapter
 import (
 	"context"
 	"crypto/tls"
+	"net"
+	"net/url"
+
 	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"net"
-	"net/url"
 )
 
 // ClientTCP ...
@@ -18,7 +19,7 @@ type ClientTCP struct {
 }
 
 // NewClientTCP ...
-func NewClientTCP(adapter *ClientAdapter) base.IORCService {
+func NewClientTCP(adapter *ClientAdapter) *ClientTCP {
 	return &ClientTCP{
 		adapter:    adapter,
 		conn:       nil,
@@ -83,7 +84,7 @@ type ClientWebsocket struct {
 }
 
 // NewClientWebsocket ...
-func NewClientWebsocket(adapter *ClientAdapter) base.IORCService {
+func NewClientWebsocket(adapter *ClientAdapter) *ClientWebsocket {
 	return &ClientWebsocket{
 		adapter:    adapter,
 		conn:       nil,
