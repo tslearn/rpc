@@ -2,14 +2,12 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
-	"net"
-	"net/http"
-	"strings"
-
 	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
+	"net"
+	"net/http"
+	"strings"
 )
 
 // ServerTCP ...
@@ -162,106 +160,5 @@ func (p *ServerWebSocket) Close() bool {
 		}
 	}, func() {
 		p.ln = nil
-	})
-}
-
-// ServerAdapter ...
-type ServerAdapter struct {
-	network    string
-	addr       string
-	tlsConfig  *tls.Config
-	rBufSize   int
-	wBufSize   int
-	receiver   IReceiver
-	server     base.IORCService
-	orcManager *base.ORCManager
-}
-
-// NewServerAdapter ...
-func NewServerAdapter(
-	network string,
-	addr string,
-	tlsConfig *tls.Config,
-	rBufSize int,
-	wBufSize int,
-	receiver IReceiver,
-) *ServerAdapter {
-	return &ServerAdapter{
-		network:    network,
-		addr:       addr,
-		tlsConfig:  tlsConfig,
-		rBufSize:   rBufSize,
-		wBufSize:   wBufSize,
-		receiver:   receiver,
-		server:     nil,
-		orcManager: base.NewORCManager(),
-	}
-}
-
-func (p *ServerAdapter) onConnect(conn net.Conn, e error) {
-	if e != nil {
-		p.receiver.OnConnError(
-			nil,
-			errors.ErrTemp.AddDebug(e.Error()),
-		)
-	} else {
-		go func() {
-			netConn := NewNetConn(true, conn, p.rBufSize, p.wBufSize)
-			netConn.SetNext(NewStreamConn(netConn, p.receiver))
-			netConn.OnOpen()
-			for {
-				if ok := netConn.OnReadReady(); !ok {
-					break
-				}
-			}
-			netConn.OnClose()
-			netConn.Close()
-		}()
-	}
-}
-
-// Open ...
-func (p *ServerAdapter) Open() bool {
-	return p.orcManager.Open(func() bool {
-		switch p.network {
-		case "tcp4":
-			fallthrough
-		case "tcp6":
-			fallthrough
-		case "tcp":
-			p.server = NewServerTCP(p)
-			return true
-		case "ws":
-			fallthrough
-		case "wss":
-			p.server = NewServerWebSocket(p)
-			return true
-		default:
-			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-				fmt.Sprintf("unsupported protocol %s", p.network),
-			))
-			return false
-		}
-	})
-}
-
-// Run ...
-func (p *ServerAdapter) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
-		for isRunning() {
-			if p.server.Open() {
-				p.server.Run()
-				p.server.Close()
-			}
-		}
-	})
-}
-
-// Close ...
-func (p *ServerAdapter) Close() bool {
-	return p.orcManager.Close(func() {
-		p.server.Close()
-	}, func() {
-		p.server = nil
 	})
 }
