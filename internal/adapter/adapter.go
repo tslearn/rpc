@@ -3,10 +3,11 @@ package adapter
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // ClientAdapter ...
@@ -42,6 +43,7 @@ func NewClientAdapter(
 	}
 }
 
+// CreateNetConn ...
 func (p *ClientAdapter) CreateNetConn(conn net.Conn) *NetConn {
 	ret := NewNetConn(false, conn, p.rBufSize, p.wBufSize)
 	ret.SetNext(NewStreamConn(ret, p.receiver))

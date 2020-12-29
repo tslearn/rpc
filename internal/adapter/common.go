@@ -7,6 +7,7 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 )
 
+// ErrNetClosingSuffix ...
 const ErrNetClosingSuffix = "use of closed network connection"
 
 // IConn ...
