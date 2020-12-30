@@ -10,10 +10,6 @@ import (
 	"sync/atomic"
 )
 
-var readFD = unix.Read
-var writeFD = unix.Write
-var closeFD = unix.Close
-
 func getTCPSockAddr(
 	network string,
 	addr string,
@@ -184,7 +180,7 @@ func (p *Channel) onFDWrite(fd int) {
 
 func (p *Channel) onFDClose(fd int) {
 	if conn, ok := p.connMap[fd]; ok {
-		if e := closeFD(fd); e != nil {
+		if e := unix.Close(fd); e != nil {
 			conn.OnError(errors.ErrKqueueSystem.AddDebug(e.Error()))
 		} else {
 			delete(p.connMap, fd)
