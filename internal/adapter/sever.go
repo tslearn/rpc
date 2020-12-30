@@ -85,15 +85,15 @@ func (p *ServerTCP) Run() bool {
 			conn, e := p.ln.Accept()
 
 			if e != nil {
-				if !isRunning() &&
-					strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
-					return
-				}
+				isCloseErr := !isRunning() &&
+					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
 
-				p.adapter.receiver.OnConnError(
-					nil,
-					errors.ErrTemp.AddDebug(e.Error()),
-				)
+				if !isCloseErr {
+					p.adapter.receiver.OnConnError(
+						nil,
+						errors.ErrTemp.AddDebug(e.Error()),
+					)
+				}
 			} else {
 				runSyncConn(p.adapter, conn)
 			}

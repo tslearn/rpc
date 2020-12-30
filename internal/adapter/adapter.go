@@ -137,12 +137,12 @@ func (p *ServerAdapter) Open() bool {
 			fallthrough
 		case "tcp":
 			p.server = NewServerTCP(p)
-			return true
+			return p.server.Open()
 		case "ws":
 			fallthrough
 		case "wss":
 			p.server = NewServerWebSocket(p)
-			return true
+			return p.server.Open()
 		default:
 			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
 				fmt.Sprintf("unsupported protocol %s", p.network),
@@ -155,12 +155,7 @@ func (p *ServerAdapter) Open() bool {
 // Run ...
 func (p *ServerAdapter) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
-		for isRunning() {
-			if p.server.Open() {
-				p.server.Run()
-				p.server.Close()
-			}
-		}
+		p.server.Run()
 	})
 }
 
