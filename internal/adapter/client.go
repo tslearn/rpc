@@ -49,7 +49,9 @@ func (p *ClientTCP) Open() bool {
 			return false
 		}
 
-		p.conn = adapter.CreateNetConn(conn)
+		p.conn = NewNetConn(false, conn, adapter.rBufSize, adapter.wBufSize)
+		p.conn.SetNext(NewStreamConn(p.conn, p.adapter.receiver))
+
 		return true
 	})
 }
@@ -108,7 +110,8 @@ func (p *ClientWebsocket) Open() bool {
 			return false
 		}
 
-		p.conn = adapter.CreateNetConn(conn)
+		p.conn = NewNetConn(false, conn, adapter.rBufSize, adapter.wBufSize)
+		p.conn.SetNext(NewStreamConn(p.conn, p.adapter.receiver))
 
 		return true
 	})

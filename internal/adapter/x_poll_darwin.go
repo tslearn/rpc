@@ -131,7 +131,7 @@ func (p *Poller) RegisterFD(fd int) error {
 }
 
 // UnregisteredFD ...
-func (p *Poller) UnregisteredFD(fd int) error {
+func (p *Poller) UnregisteredFD(_ int) error {
 	return nil
 }
 

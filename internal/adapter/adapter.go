@@ -3,7 +3,6 @@ package adapter
 import (
 	"crypto/tls"
 	"fmt"
-	"net"
 	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
@@ -41,13 +40,6 @@ func NewClientAdapter(
 		client:     nil,
 		orcManager: base.NewORCManager(),
 	}
-}
-
-// CreateNetConn ...
-func (p *ClientAdapter) CreateNetConn(conn net.Conn) *NetConn {
-	ret := NewNetConn(false, conn, p.rBufSize, p.wBufSize)
-	ret.SetNext(NewStreamConn(ret, p.receiver))
-	return ret
 }
 
 // Open ...
@@ -132,28 +124,6 @@ func NewServerAdapter(
 		receiver:   receiver,
 		server:     nil,
 		orcManager: base.NewORCManager(),
-	}
-}
-
-func (p *ServerAdapter) onConnect(conn net.Conn, e error) {
-	if e != nil {
-		p.receiver.OnConnError(
-			nil,
-			errors.ErrTemp.AddDebug(e.Error()),
-		)
-	} else {
-		go func() {
-			netConn := NewNetConn(true, conn, p.rBufSize, p.wBufSize)
-			netConn.SetNext(NewStreamConn(netConn, p.receiver))
-			netConn.OnOpen()
-			for {
-				if ok := netConn.OnReadReady(); !ok {
-					break
-				}
-			}
-			netConn.OnClose()
-			netConn.Close()
-		}()
 	}
 }
 

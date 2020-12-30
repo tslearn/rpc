@@ -54,6 +54,30 @@ func (p *ServerTCP) Open() bool {
 	})
 }
 
+func runSyncConn(
+	adapter *ServerAdapter,
+	conn net.Conn,
+) {
+	netConn := NewNetConn(
+		true,
+		conn,
+		adapter.rBufSize,
+		adapter.wBufSize,
+	)
+	netConn.SetNext(NewStreamConn(netConn, adapter.receiver))
+
+	go func() {
+		netConn.OnOpen()
+		for {
+			if ok := netConn.OnReadReady(); !ok {
+				break
+			}
+		}
+		netConn.OnClose()
+		netConn.Close()
+	}()
+}
+
 // Run ...
 func (p *ServerTCP) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
@@ -65,9 +89,14 @@ func (p *ServerTCP) Run() bool {
 					strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
 					return
 				}
-			}
 
-			p.adapter.onConnect(conn, e)
+				p.adapter.receiver.OnConnError(
+					nil,
+					errors.ErrTemp.AddDebug(e.Error()),
+				)
+			} else {
+				runSyncConn(p.adapter, conn)
+			}
 		}
 	})
 }
@@ -99,7 +128,15 @@ func NewServerWebSocket(adapter *ServerAdapter) *ServerWebSocket {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, e := ws.UpgradeHTTP(r, w)
-		adapter.onConnect(conn, e)
+
+		if e != nil {
+			adapter.receiver.OnConnError(
+				nil,
+				errors.ErrTemp.AddDebug(e.Error()),
+			)
+		} else {
+			runSyncConn(adapter, conn)
+		}
 	})
 
 	return &ServerWebSocket{

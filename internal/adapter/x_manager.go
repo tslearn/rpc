@@ -1,3 +1,5 @@
+// +build linux darwin
+
 package adapter
 
 import (
@@ -89,17 +91,17 @@ func sockAddrToTCPAddr(sa unix.Sockaddr) *net.TCPAddr {
 	return nil
 }
 
-func sockAddrToUDPAddr(sa unix.Sockaddr) *net.UDPAddr {
-	ip, zone := sockAddrToIPAndZone(sa)
-
-	switch sa := sa.(type) {
-	case *unix.SockaddrInet4:
-		return &net.UDPAddr{IP: ip, Port: sa.Port}
-	case *unix.SockaddrInet6:
-		return &net.UDPAddr{IP: ip, Port: sa.Port, Zone: zone}
-	}
-	return nil
-}
+//func sockAddrToUDPAddr(sa unix.Sockaddr) *net.UDPAddr {
+//	ip, zone := sockAddrToIPAndZone(sa)
+//
+//	switch sa := sa.(type) {
+//	case *unix.SockaddrInet4:
+//		return &net.UDPAddr{IP: ip, Port: sa.Port}
+//	case *unix.SockaddrInet6:
+//		return &net.UDPAddr{IP: ip, Port: sa.Port, Zone: zone}
+//	}
+//	return nil
+//}
 
 // Channel ...
 type Channel struct {
