@@ -27,7 +27,7 @@ func NewClientService(adapter *Adapter) base.IORCService {
 	case "ws":
 		fallthrough
 	case "wss":
-		return &SyncClientService{
+		return &syncClientService{
 			adapter:    adapter,
 			conn:       nil,
 			orcManager: base.NewORCManager(),
@@ -238,14 +238,14 @@ func (p *syncWSServerService) Close() bool {
 	})
 }
 
-type SyncClientService struct {
+type syncClientService struct {
 	adapter    *Adapter
 	conn       *NetConn
 	orcManager *base.ORCManager
 	sync.Mutex
 }
 
-func (p *SyncClientService) openConn() bool {
+func (p *syncClientService) openConn() bool {
 	p.Lock()
 	defer p.Unlock()
 
@@ -290,7 +290,7 @@ func (p *SyncClientService) openConn() bool {
 	return true
 }
 
-func (p *SyncClientService) closeConn() {
+func (p *syncClientService) closeConn() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -300,14 +300,14 @@ func (p *SyncClientService) closeConn() {
 }
 
 // Open ...
-func (p *SyncClientService) Open() bool {
+func (p *syncClientService) Open() bool {
 	return p.orcManager.Open(func() bool {
 		return true
 	})
 }
 
 // Run ...
-func (p *SyncClientService) Run() bool {
+func (p *syncClientService) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
 		for isRunning() {
 			start := base.TimeNow()
@@ -337,7 +337,7 @@ func (p *SyncClientService) Run() bool {
 }
 
 // Close ...
-func (p *SyncClientService) Close() bool {
+func (p *syncClientService) Close() bool {
 	return p.orcManager.Close(func() {
 		p.closeConn()
 	}, func() {
