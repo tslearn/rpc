@@ -15,7 +15,7 @@ import (
 
 // ClientTCP ...
 type ClientTCP struct {
-	adapter    *ClientAdapter
+	adapter    *Adapter
 	conn       *NetConn
 	orcManager *base.ORCManager
 
@@ -23,7 +23,7 @@ type ClientTCP struct {
 }
 
 // NewClientTCP ...
-func NewClientTCP(adapter *ClientAdapter) *ClientTCP {
+func NewClientTCP(adapter *Adapter) *ClientTCP {
 	return &ClientTCP{
 		adapter:    adapter,
 		conn:       nil,
@@ -116,14 +116,14 @@ func (p *ClientTCP) Close() bool {
 
 // ClientWebsocket ...
 type ClientWebsocket struct {
-	adapter    *ClientAdapter
+	adapter    *Adapter
 	conn       *NetConn
 	orcManager *base.ORCManager
 	sync.Mutex
 }
 
 // NewClientWebsocket ...
-func NewClientWebsocket(adapter *ClientAdapter) *ClientWebsocket {
+func NewClientWebsocket(adapter *Adapter) *ClientWebsocket {
 	return &ClientWebsocket{
 		adapter:    adapter,
 		conn:       nil,

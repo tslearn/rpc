@@ -17,7 +17,7 @@ import (
 type Client struct {
 	config         *Config
 	sessionString  string
-	adapter        *adapter.ClientAdapter
+	adapter        *adapter.Adapter
 	streamConn     *adapter.StreamConn
 	preSendHead    *SendItem
 	preSendTail    *SendItem

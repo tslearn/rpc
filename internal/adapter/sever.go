@@ -13,20 +13,20 @@ import (
 
 // ServerX ...
 type ServerX struct {
-	adapter    *ServerAdapter
+	adapter    *Adapter
 	ln         net.Listener
 	orcManager *base.ORCManager
 }
 
 // ServerTCP ...
 type ServerTCP struct {
-	adapter    *ServerAdapter
+	adapter    *Adapter
 	ln         net.Listener
 	orcManager *base.ORCManager
 }
 
 // NewServerTCP ...
-func NewServerTCP(adapter *ServerAdapter) *ServerTCP {
+func NewServerTCP(adapter *Adapter) *ServerTCP {
 	return &ServerTCP{
 		adapter:    adapter,
 		ln:         nil,
@@ -62,7 +62,7 @@ func (p *ServerTCP) Open() bool {
 }
 
 func runSyncConn(
-	adapter *ServerAdapter,
+	adapter *Adapter,
 	conn net.Conn,
 ) {
 	netConn := NewNetConn(
@@ -124,14 +124,14 @@ func (p *ServerTCP) Close() bool {
 
 // ServerWebSocket ...
 type ServerWebSocket struct {
-	adapter    *ServerAdapter
+	adapter    *Adapter
 	ln         net.Listener
 	server     *http.Server
 	orcManager *base.ORCManager
 }
 
 // NewServerWebSocket ...
-func NewServerWebSocket(adapter *ServerAdapter) *ServerWebSocket {
+func NewServerWebSocket(adapter *Adapter) *ServerWebSocket {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, e := ws.UpgradeHTTP(r, w)

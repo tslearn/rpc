@@ -3,21 +3,20 @@ package adapter
 import (
 	"crypto/tls"
 	"fmt"
-	"time"
-
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// ClientAdapter ...
-type ClientAdapter struct {
+// Adapter ...
+type Adapter struct {
+	isClient   bool
 	network    string
 	addr       string
 	tlsConfig  *tls.Config
 	rBufSize   int
 	wBufSize   int
 	receiver   IReceiver
-	client     base.IORCService
+	service    base.IORCService
 	orcManager *base.ORCManager
 }
 
@@ -29,81 +28,18 @@ func NewClientAdapter(
 	rBufSize int,
 	wBufSize int,
 	receiver IReceiver,
-) *ClientAdapter {
-	return &ClientAdapter{
+) *Adapter {
+	return &Adapter{
+		isClient:   true,
 		network:    network,
 		addr:       addr,
 		tlsConfig:  tlsConfig,
 		rBufSize:   rBufSize,
 		wBufSize:   wBufSize,
 		receiver:   receiver,
-		client:     nil,
+		service:    nil,
 		orcManager: base.NewORCManager(),
 	}
-}
-
-// Open ...
-func (p *ClientAdapter) Open() bool {
-	return p.orcManager.Open(func() bool {
-		switch p.network {
-		case "tcp4":
-			fallthrough
-		case "tcp6":
-			fallthrough
-		case "tcp":
-			p.client = NewClientTCP(p)
-			return true
-		case "ws":
-			fallthrough
-		case "wss":
-			p.client = NewClientWebsocket(p)
-			return true
-		default:
-			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-				fmt.Sprintf("unsupported protocol %s", p.network),
-			))
-			return false
-		}
-	})
-}
-
-// Run ...
-func (p *ClientAdapter) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
-		for isRunning() {
-			start := base.TimeNow()
-			p.client.Open()
-			p.client.Run()
-			p.client.Close()
-
-			if isRunning() {
-				if delta := base.TimeNow().Sub(start); delta < time.Second {
-					time.Sleep(time.Second - delta)
-				}
-			}
-		}
-	})
-}
-
-// Close ...
-func (p *ClientAdapter) Close() bool {
-	return p.orcManager.Close(func() {
-		p.client.Close()
-	}, func() {
-		p.client = nil
-	})
-}
-
-// ServerAdapter ...
-type ServerAdapter struct {
-	network    string
-	addr       string
-	tlsConfig  *tls.Config
-	rBufSize   int
-	wBufSize   int
-	receiver   IReceiver
-	server     base.IORCService
-	orcManager *base.ORCManager
 }
 
 // NewServerAdapter ...
@@ -114,21 +50,22 @@ func NewServerAdapter(
 	rBufSize int,
 	wBufSize int,
 	receiver IReceiver,
-) *ServerAdapter {
-	return &ServerAdapter{
+) *Adapter {
+	return &Adapter{
+		isClient:   false,
 		network:    network,
 		addr:       addr,
 		tlsConfig:  tlsConfig,
 		rBufSize:   rBufSize,
 		wBufSize:   wBufSize,
 		receiver:   receiver,
-		server:     nil,
+		service:    nil,
 		orcManager: base.NewORCManager(),
 	}
 }
 
 // Open ...
-func (p *ServerAdapter) Open() bool {
+func (p *Adapter) Open() bool {
 	return p.orcManager.Open(func() bool {
 		switch p.network {
 		case "tcp4":
@@ -136,13 +73,22 @@ func (p *ServerAdapter) Open() bool {
 		case "tcp6":
 			fallthrough
 		case "tcp":
-			p.server = NewServerTCP(p)
-			return p.server.Open()
+			if p.isClient {
+				p.service = NewClientTCP(p)
+			} else {
+				p.service = NewServerTCP(p)
+			}
+
+			return p.service.Open()
 		case "ws":
 			fallthrough
 		case "wss":
-			p.server = NewServerWebSocket(p)
-			return p.server.Open()
+			if p.isClient {
+				p.service = NewClientWebsocket(p)
+			} else {
+				p.service = NewServerWebSocket(p)
+			}
+			return p.service.Open()
 		default:
 			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
 				fmt.Sprintf("unsupported protocol %s", p.network),
@@ -153,17 +99,17 @@ func (p *ServerAdapter) Open() bool {
 }
 
 // Run ...
-func (p *ServerAdapter) Run() bool {
+func (p *Adapter) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
-		p.server.Run()
+		p.service.Run()
 	})
 }
 
 // Close ...
-func (p *ServerAdapter) Close() bool {
+func (p *Adapter) Close() bool {
 	return p.orcManager.Close(func() {
-		p.server.Close()
+		p.service.Close()
 	}, func() {
-		p.server = nil
+		p.service = nil
 	})
 }

@@ -29,7 +29,7 @@ type GateWay struct {
 	config       *Config
 	sessionMap   map[uint64]*Session
 	onError      func(sessionID uint64, err *base.Error)
-	adapters     []*adapter.ServerAdapter
+	adapters     []*adapter.Adapter
 	orcManager   *base.ORCManager
 	sync.Mutex
 }
@@ -53,7 +53,7 @@ func NewGateWay(
 		config:       config,
 		sessionMap:   map[uint64]*Session{},
 		onError:      onError,
-		adapters:     make([]*adapter.ServerAdapter, 0),
+		adapters:     make([]*adapter.Adapter, 0),
 		orcManager:   base.NewORCManager(),
 	}
 
@@ -153,7 +153,7 @@ func (p *GateWay) Serve() {
 
 		for _, item := range p.adapters {
 			waitCount++
-			go func(adapter *adapter.ServerAdapter) {
+			go func(adapter *adapter.Adapter) {
 				adapter.Open()
 				adapter.Run()
 				waitCH <- true
@@ -171,7 +171,7 @@ func (p *GateWay) Serve() {
 func (p *GateWay) Close() {
 	p.orcManager.Close(func() {
 		for _, item := range p.adapters {
-			go func(adapter *adapter.ServerAdapter) {
+			go func(adapter *adapter.Adapter) {
 				adapter.Close()
 			}(item)
 		}
