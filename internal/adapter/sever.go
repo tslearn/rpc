@@ -11,6 +11,13 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// ServerX ...
+type ServerX struct {
+	adapter    *ServerAdapter
+	ln         net.Listener
+	orcManager *base.ORCManager
+}
+
 // ServerTCP ...
 type ServerTCP struct {
 	adapter    *ServerAdapter
