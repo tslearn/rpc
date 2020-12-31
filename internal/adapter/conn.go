@@ -354,6 +354,11 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	p.prev.OnWriteReady()
 }
 
+// SetNext ...
+func (p *StreamConn) SetNext(conn IConn) {
+	panic("kernel error, this code should not be called")
+}
+
 // OnReadReady ...
 func (p *StreamConn) OnReadReady() bool {
 	panic("kernel error, this code should not be called")

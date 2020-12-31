@@ -47,10 +47,18 @@ func NewServerService(adapter *Adapter) base.IORCService {
 	case "tcp6":
 		fallthrough
 	case "tcp":
-		return &syncTCPServerService{
-			adapter:    adapter,
-			ln:         nil,
-			orcManager: base.NewORCManager(),
+		if adapter.tlsConfig == nil {
+			return &asyncTCPServerService{
+				adapter:    adapter,
+				ln:         nil,
+				orcManager: base.NewORCManager(),
+			}
+		} else {
+			return &syncTCPServerService{
+				adapter:    adapter,
+				ln:         nil,
+				orcManager: base.NewORCManager(),
+			}
 		}
 	case "ws":
 		fallthrough
@@ -65,7 +73,14 @@ func NewServerService(adapter *Adapter) base.IORCService {
 					errors.ErrTemp.AddDebug(e.Error()),
 				)
 			} else {
-				runSyncConn(adapter, conn)
+				syncConn := NewNetConn(
+					true,
+					conn,
+					adapter.rBufSize,
+					adapter.wBufSize,
+				)
+				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
+				runIConnOnServer(syncConn)
 			}
 		})
 
@@ -86,27 +101,43 @@ func NewServerService(adapter *Adapter) base.IORCService {
 	}
 }
 
-func runSyncConn(adapter *Adapter, conn net.Conn) {
-	netConn := NewNetConn(
-		true,
-		conn,
-		adapter.rBufSize,
-		adapter.wBufSize,
-	)
-	netConn.SetNext(NewStreamConn(netConn, adapter.receiver))
+//func runSyncConn(conn net.Conn) {
+//    netConn := NewNetConn(
+//        true,
+//        conn,
+//        adapter.rBufSize,
+//        adapter.wBufSize,
+//    )
+//    netConn.SetNext(NewStreamConn(netConn, adapter.receiver))
+//
+//    go func() {
+//        netConn.OnOpen()
+//        for {
+//            if ok := netConn.OnReadReady(); !ok {
+//                break
+//            }
+//        }
+//        netConn.OnClose()
+//        netConn.Close()
+//    }()
+//}
 
+func runIConnOnServer(conn IConn) {
 	go func() {
-		netConn.OnOpen()
+		conn.OnOpen()
 		for {
-			if ok := netConn.OnReadReady(); !ok {
+			if ok := conn.OnReadReady(); !ok {
 				break
 			}
 		}
-		netConn.OnClose()
-		netConn.Close()
+		conn.OnClose()
+		conn.Close()
 	}()
 }
 
+// -----------------------------------------------------------------------------
+// syncTCPServerService
+// -----------------------------------------------------------------------------
 type syncTCPServerService struct {
 	adapter    *Adapter
 	ln         net.Listener
@@ -143,6 +174,7 @@ func (p *syncTCPServerService) Open() bool {
 // Run ...
 func (p *syncTCPServerService) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
+		adapter := p.adapter
 		for isRunning() {
 			conn, e := p.ln.Accept()
 
@@ -151,13 +183,20 @@ func (p *syncTCPServerService) Run() bool {
 					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
 
 				if !isCloseErr {
-					p.adapter.receiver.OnConnError(
+					adapter.receiver.OnConnError(
 						nil,
 						errors.ErrTemp.AddDebug(e.Error()),
 					)
 				}
 			} else {
-				runSyncConn(p.adapter, conn)
+				syncConn := NewNetConn(
+					true,
+					conn,
+					adapter.rBufSize,
+					adapter.wBufSize,
+				)
+				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
+				runIConnOnServer(syncConn)
 			}
 		}
 	})
@@ -177,7 +216,52 @@ func (p *syncTCPServerService) Close() bool {
 	})
 }
 
-// SyncWebSocketServerService ...
+// -----------------------------------------------------------------------------
+// asyncTCPServerService
+// -----------------------------------------------------------------------------
+type asyncTCPServerService struct {
+	adapter    *Adapter
+	ln         *XListener
+	orcManager *base.ORCManager
+}
+
+func (p *asyncTCPServerService) Open() bool {
+	return p.orcManager.Open(func() bool {
+		adapter := p.adapter
+
+		p.ln = NewXListener(
+			adapter.network,
+			adapter.addr,
+			func(conn IConn) {
+				conn.SetNext(NewStreamConn(conn, adapter.receiver))
+				runIConnOnServer(conn)
+			},
+			func(err *base.Error) {
+				adapter.receiver.OnConnError(nil, err)
+			},
+			adapter.rBufSize,
+			adapter.wBufSize,
+		)
+
+		return p.ln != nil
+	})
+}
+
+func (p *asyncTCPServerService) Run() bool {
+	return true
+}
+
+func (p *asyncTCPServerService) Close() bool {
+	return p.orcManager.Close(func() {
+		p.ln.Close()
+	}, func() {
+		p.ln = nil
+	})
+}
+
+// -----------------------------------------------------------------------------
+// syncWSServerService
+// -----------------------------------------------------------------------------
 type syncWSServerService struct {
 	adapter    *Adapter
 	ln         net.Listener
@@ -238,6 +322,9 @@ func (p *syncWSServerService) Close() bool {
 	})
 }
 
+// -----------------------------------------------------------------------------
+// syncClientService
+// -----------------------------------------------------------------------------
 type syncClientService struct {
 	adapter    *Adapter
 	conn       *NetConn

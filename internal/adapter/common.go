@@ -20,6 +20,7 @@ type IConn interface {
 	OnReadBytes(b []byte)
 	OnFillWrite(b []byte) int
 
+	SetNext(conn IConn)
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	GetFD() int

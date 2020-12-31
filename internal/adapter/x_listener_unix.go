@@ -7,7 +7,12 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"golang.org/x/sys/unix"
 	"net"
+	"runtime"
 )
+
+func getChannelSize() int {
+	return int(runtime.NumCgoCall())
+}
 
 func listen(network string, addr string) (int, net.Addr, error) {
 	if sockAddr, family, netAddr, err := getTCPSockAddr(
@@ -34,38 +39,85 @@ func listen(network string, addr string) (int, net.Addr, error) {
 	}
 }
 
-// TCPListener ...
-type TCPListener struct {
+// XListener ...
+type XListener struct {
 	network    string
 	addr       string
-	onAccept   func(fd int, localAddr net.Addr, remoteAddr net.Addr)
+	onAccept   func(conn IConn)
 	onError    func(err *base.Error)
+	rBufSize   int
+	wBufSize   int
 	lnFD       int
 	lnAddr     net.Addr
-	poller     *Poller
+	mainPoller *Poller
+	channels   []*Channel
+	curChannel *Channel
+	curRemains uint64
 	orcManager *base.ORCManager
 }
 
-// NewTCPListener ...
-func NewTCPListener(
+// NewXListener ...
+func NewXListener(
 	network string,
 	addr string,
-	onAccept func(fd int, localAddr net.Addr, remoteAddr net.Addr),
+	onAccept func(conn IConn),
 	onError func(err *base.Error),
-) *TCPListener {
-	return &TCPListener{
+	rBufSize int,
+	wBufSize int,
+) *XListener {
+	channelSize := getChannelSize()
+
+	ret := &XListener{
 		network:    network,
 		addr:       addr,
 		onAccept:   onAccept,
 		onError:    onError,
+		rBufSize:   rBufSize,
+		wBufSize:   wBufSize,
 		lnFD:       0,
 		lnAddr:     nil,
-		poller:     nil,
+		mainPoller: nil,
+		channels:   make([]*Channel, channelSize),
+		curChannel: nil,
+		curRemains: 0,
 		orcManager: base.NewORCManager(),
 	}
+
+	for i := 0; i < channelSize; i++ {
+		channel := NewChannel(onError)
+
+		if channel != nil {
+			ret.channels[i] = channel
+		} else {
+			// clean up and return nil
+			for j := 0; j < i; j++ {
+				ret.channels[j].Close()
+				ret.channels[j] = nil
+			}
+			return nil
+		}
+	}
+
+	return ret
 }
 
-func (p *TCPListener) Open() bool {
+func (p *XListener) allocChannel() *Channel {
+	if p.curRemains <= 0 {
+		maxConn := int64(-1)
+		for i := 0; i < len(p.channels); i++ {
+			if connCount := p.channels[i].GetActiveConnCount(); connCount > maxConn {
+				p.curChannel = p.channels[i]
+				maxConn = connCount
+			}
+		}
+		p.curRemains = 256
+	}
+
+	p.curRemains--
+	return p.curChannel
+}
+
+func (p *XListener) Open() bool {
 	return p.orcManager.Open(func() bool {
 		if lnFD, lnAddr, e := listen(p.network, p.addr); e != nil {
 			p.onError(errors.ErrTCPListener.AddDebug(e.Error()))
@@ -81,7 +133,14 @@ func (p *TCPListener) Open() bool {
 						}
 					} else {
 						if remoteAddr := sockAddrToTCPAddr(sa); remoteAddr != nil {
-							p.onAccept(connFD, p.lnAddr, remoteAddr)
+							p.onAccept(NewXConn(
+								p.allocChannel(),
+								connFD,
+								p.lnAddr,
+								remoteAddr,
+								p.rBufSize,
+								p.wBufSize,
+							))
 						} else {
 							_ = unix.Close(connFD)
 						}
@@ -100,26 +159,41 @@ func (p *TCPListener) Open() bool {
 		} else {
 			p.lnFD = lnFD
 			p.lnAddr = lnAddr
-			p.poller = poller
+			p.mainPoller = poller
 			return true
 		}
 	})
 }
 
-func (p *TCPListener) Run() bool {
+func (p *XListener) Run() bool {
 	return true
 }
 
 // Close ...
-func (p *TCPListener) Close() bool {
+func (p *XListener) Close() bool {
 	return p.orcManager.Close(func() {
 		if e := unix.Close(p.lnFD); e != nil {
 			p.onError(errors.ErrTemp.AddDebug(e.Error()))
 		}
-		p.poller.Close()
+		p.mainPoller.Close()
+
+		// cl
+		waitCH := make(chan bool)
+		channelSize := len(p.channels)
+
+		for i := 0; i < channelSize; i++ {
+			go func(idx int) {
+				p.channels[idx].Close()
+				waitCH <- true
+			}(i)
+		}
+
+		for i := 0; i < channelSize; i++ {
+			<-waitCH
+		}
 	}, func() {
 		p.lnFD = 0
 		p.lnAddr = nil
-		p.poller = nil
+		p.mainPoller = nil
 	})
 }

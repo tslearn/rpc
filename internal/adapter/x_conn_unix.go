@@ -117,13 +117,16 @@ func (p *XConn) doWrite() bool {
 }
 
 // OnWriteReady ...
-func (p *XConn) OnWriteReady() {
+func (p *XConn) OnWriteReady() bool {
 	p.Lock()
 	defer p.Unlock()
 
 	if err := p.setWatchWrite(!p.doWrite()); err != nil {
 		p.OnError(err)
+		return false
 	}
+
+	return true
 }
 
 // OnOpen ...
