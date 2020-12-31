@@ -155,7 +155,6 @@ func (p *XConn) Close() {
 		}
 		p.isRunning = false
 	}
-
 }
 
 // LocalAddr ...
