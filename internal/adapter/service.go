@@ -101,27 +101,6 @@ func NewServerService(adapter *Adapter) base.IORCService {
 	}
 }
 
-//func runSyncConn(conn net.Conn) {
-//    netConn := NewNetConn(
-//        true,
-//        conn,
-//        adapter.rBufSize,
-//        adapter.wBufSize,
-//    )
-//    netConn.SetNext(NewStreamConn(netConn, adapter.receiver))
-//
-//    go func() {
-//        netConn.OnOpen()
-//        for {
-//            if ok := netConn.OnReadReady(); !ok {
-//                break
-//            }
-//        }
-//        netConn.OnClose()
-//        netConn.Close()
-//    }()
-//}
-
 func runIConnOnServer(conn IConn) {
 	go func() {
 		conn.OnOpen()
@@ -243,7 +222,11 @@ func (p *asyncTCPServerService) Open() bool {
 			adapter.wBufSize,
 		)
 
-		return p.ln != nil
+		if p.ln == nil {
+			return false
+		}
+
+		return p.ln.Open()
 	})
 }
 
