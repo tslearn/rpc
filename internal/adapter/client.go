@@ -81,7 +81,6 @@ func (p *ClientTCP) Run() bool {
 		for isRunning() {
 			start := base.TimeNow()
 
-			// do not use p.conn, because closeConn may set it to nil
 			if p.openConn() {
 				p.conn.OnOpen()
 				for {
@@ -120,6 +119,7 @@ type ClientWebsocket struct {
 	adapter    *ClientAdapter
 	conn       *NetConn
 	orcManager *base.ORCManager
+	sync.Mutex
 }
 
 // NewClientWebsocket ...
@@ -131,25 +131,41 @@ func NewClientWebsocket(adapter *ClientAdapter) *ClientWebsocket {
 	}
 }
 
+func (p *ClientWebsocket) openConn() bool {
+	p.Lock()
+	defer p.Unlock()
+
+	adapter := p.adapter
+	dialer := &ws.Dialer{TLSConfig: adapter.tlsConfig}
+	u := url.URL{Scheme: adapter.network, Host: adapter.addr, Path: "/"}
+	conn, _, _, e := dialer.Dial(context.Background(), u.String())
+
+	if e != nil {
+		adapter.receiver.OnConnError(
+			nil,
+			errors.ErrTemp.AddDebug(e.Error()),
+		)
+		return false
+	}
+
+	p.conn = NewNetConn(false, conn, adapter.rBufSize, adapter.wBufSize)
+	p.conn.SetNext(NewStreamConn(p.conn, p.adapter.receiver))
+
+	return true
+}
+
+func (p *ClientWebsocket) closeConn() {
+	p.Lock()
+	defer p.Unlock()
+
+	if conn := p.conn; conn != nil {
+		conn.Close()
+	}
+}
+
 // Open ...
 func (p *ClientWebsocket) Open() bool {
 	return p.orcManager.Open(func() bool {
-		adapter := p.adapter
-		dialer := &ws.Dialer{TLSConfig: adapter.tlsConfig}
-		u := url.URL{Scheme: adapter.network, Host: adapter.addr, Path: "/"}
-		conn, _, _, e := dialer.Dial(context.Background(), u.String())
-
-		if e != nil {
-			adapter.receiver.OnConnError(
-				nil,
-				errors.ErrTemp.AddDebug(e.Error()),
-			)
-			return false
-		}
-
-		p.conn = NewNetConn(false, conn, adapter.rBufSize, adapter.wBufSize)
-		p.conn.SetNext(NewStreamConn(p.conn, p.adapter.receiver))
-
 		return true
 	})
 }
@@ -157,20 +173,35 @@ func (p *ClientWebsocket) Open() bool {
 // Run ...
 func (p *ClientWebsocket) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
-		p.conn.OnOpen()
-		for {
-			if ok := p.conn.OnReadReady(); !ok {
-				break
+		start := base.TimeNow()
+
+		if p.openConn() {
+			p.conn.OnOpen()
+			for {
+				if ok := p.conn.OnReadReady(); !ok {
+					break
+				}
 			}
+			p.conn.OnClose()
+
+			p.closeConn()
 		}
-		p.conn.OnClose()
+
+		sleepInterval := 100 * time.Millisecond
+		runningTime := base.TimeNow().Sub(start)
+		sleepCount := (3*time.Second - runningTime) / sleepInterval
+
+		for isRunning() && sleepCount > 0 {
+			time.Sleep(sleepInterval)
+			sleepCount--
+		}
 	})
 }
 
 // Close ...
 func (p *ClientWebsocket) Close() bool {
 	return p.orcManager.Close(func() {
-		p.conn.Close()
+		p.closeConn()
 	}, func() {
 		p.conn = nil
 	})
