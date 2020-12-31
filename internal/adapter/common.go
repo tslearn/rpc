@@ -16,7 +16,7 @@ type IConn interface {
 	OnClose()
 	OnError(err *base.Error)
 	OnReadReady() bool
-	OnWriteReady()
+	OnWriteReady() bool
 	OnReadBytes(b []byte)
 	OnFillWrite(b []byte) int
 

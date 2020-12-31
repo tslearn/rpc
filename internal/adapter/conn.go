@@ -110,7 +110,7 @@ func (p *NetConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *NetConn) OnWriteReady() {
+func (p *NetConn) OnWriteReady() bool {
 	p.Lock()
 	defer p.Unlock()
 
@@ -131,11 +131,16 @@ func (p *NetConn) OnWriteReady() {
 		for start < bufLen {
 			if n, e := p.conn.Write(p.wBuf[start:bufLen]); e != nil {
 				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+				return false
+			} else if n == 0 {
+				return false
 			} else {
 				start += n
 			}
 		}
 	}
+
+	return true
 }
 
 // OnReadBytes ...
@@ -355,7 +360,7 @@ func (p *StreamConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *StreamConn) OnWriteReady() {
+func (p *StreamConn) OnWriteReady() bool {
 	panic("kernel error, this code should not be called")
 }
 

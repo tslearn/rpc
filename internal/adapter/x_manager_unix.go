@@ -293,31 +293,3 @@ func (p *Manager) AllocChannel() *Channel {
 	p.curRemains--
 	return p.curChannel
 }
-
-const tcpListenerStatusRunning = 1
-const tcpListenerStatusClosed = 0
-
-func listen(network string, addr string) (int, net.Addr, error) {
-	if sockAddr, family, netAddr, err := getTCPSockAddr(
-		network, addr,
-	); err != nil {
-		return 0, nil, err
-	} else if fd, err := sysSocket(
-		family, unix.SOCK_STREAM, unix.IPPROTO_TCP,
-	); err != nil {
-		return 0, nil, err
-	} else if err := unix.SetsockoptInt(
-		fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1,
-	); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else if err := unix.Bind(fd, sockAddr); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else if err := unix.Listen(fd, 128); err != nil {
-		_ = unix.Close(fd)
-		return 0, nil, err
-	} else {
-		return fd, netAddr, nil
-	}
-}
