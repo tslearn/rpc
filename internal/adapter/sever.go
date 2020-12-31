@@ -175,13 +175,15 @@ func (p *ServerWebSocket) Open() bool {
 
 // Run ...
 func (p *ServerWebSocket) Run() bool {
-	return p.orcManager.Run(func(_ func() bool) {
-		if e := p.server.Serve(p.ln); e != nil {
-			if e != http.ErrServerClosed {
-				p.adapter.receiver.OnConnError(
-					nil,
-					errors.ErrTemp.AddDebug(e.Error()),
-				)
+	return p.orcManager.Run(func(isRunning func() bool) {
+		for isRunning() {
+			if e := p.server.Serve(p.ln); e != nil {
+				if e != http.ErrServerClosed {
+					p.adapter.receiver.OnConnError(
+						nil,
+						errors.ErrTemp.AddDebug(e.Error()),
+					)
+				}
 			}
 		}
 	})

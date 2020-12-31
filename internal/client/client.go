@@ -52,15 +52,17 @@ func newClient(
 	}
 	ret.config.rBufSize = rBufSize
 	ret.config.wBufSize = wBufSize
-	ret.adapter = adapter.NewClientAdapter(
+	clientAdapter := adapter.NewClientAdapter(
 		network, addr, tlsConfig, rBufSize, wBufSize, ret,
 	)
 
 	// Start the adapter
-	ret.adapter.Open()
+	clientAdapter.Open()
 	go func() {
-		ret.adapter.Run()
+		clientAdapter.Run()
 	}()
+
+	ret.adapter = clientAdapter
 
 	// Start the client (send the messages)
 	ret.orcManager.Open(func() bool {
