@@ -61,13 +61,11 @@ func (p *SendItem) Return(stream *core.Stream) bool {
 func (p *SendItem) CheckAndTimeout(now time.Time) bool {
 	if now.Sub(p.startTime) > p.timeout && p.status == sendItemStatusRunning {
 		p.status = sendItemStatusFinish
-
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
 		stream.WriteUint64(errors.ErrClientTimeout.GetCode())
 		stream.WriteString(errors.ErrClientTimeout.GetMessage())
-		stream.WriteString("")
 		p.returnCH <- stream
 		return true
 	}
