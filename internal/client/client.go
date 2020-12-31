@@ -73,9 +73,7 @@ func newClient(
 		ret.orcManager.Run(func(isRunning func() bool) {
 			for isRunning() {
 				time.Sleep(80 * time.Millisecond)
-
 				now := base.TimeNow()
-
 				ret.Lock()
 				ret.tryToTimeout(now)
 				ret.tryToDeliverPreSendMessages()
