@@ -2,9 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // Adapter ...
@@ -67,34 +65,17 @@ func NewServerAdapter(
 // Open ...
 func (p *Adapter) Open() bool {
 	return p.orcManager.Open(func() bool {
-		switch p.network {
-		case "tcp4":
-			fallthrough
-		case "tcp6":
-			fallthrough
-		case "tcp":
-			if p.isClient {
-				p.service = NewClientTCP(p)
-			} else {
-				p.service = NewServerTCP(p)
-			}
+		if p.isClient {
+			p.service = NewClientService(p)
+		} else {
+			p.service = NewServerService(p)
+		}
 
-			return p.service.Open()
-		case "ws":
-			fallthrough
-		case "wss":
-			if p.isClient {
-				p.service = NewClientWebsocket(p)
-			} else {
-				p.service = NewServerWebSocket(p)
-			}
-			return p.service.Open()
-		default:
-			p.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-				fmt.Sprintf("unsupported protocol %s", p.network),
-			))
+		if p.service == nil {
 			return false
 		}
+
+		return p.service.Open()
 	})
 }
 
