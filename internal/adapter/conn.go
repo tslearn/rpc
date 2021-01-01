@@ -181,7 +181,7 @@ type StreamConn struct {
 	writeStream *core.Stream
 	writePos    int
 
-	activeTime time.Time
+	activeTimeNS int64
 }
 
 // NewStreamConn ...
@@ -246,7 +246,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 		p.readStream.PutBytes(writeBuf)
 		if p.readStream.GetWritePos() == streamLength {
 			if p.readStream.CheckStream() {
-				p.activeTime = base.TimeNow()
+				atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
 				p.receiver.OnConnReadStream(p, p.readStream)
 				p.readStream = nil
 			} else {
@@ -328,6 +328,10 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	}()
 
 	p.prev.OnWriteReady()
+}
+
+func (p *StreamConn) IsActive(nowNS int64, timeout time.Duration) bool {
+	return nowNS-atomic.LoadInt64(&p.activeTimeNS) < int64(timeout)
 }
 
 // SetNext ...
