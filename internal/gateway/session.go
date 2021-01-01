@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/rpccloud/rpc/internal/adapter"
 
@@ -18,41 +19,77 @@ var sessionCache = &sync.Pool{
 }
 
 type SessionList struct {
-	head *Session
+	manager    *SessionManager
+	sessionMap map[uint64]*Session
+	head       *Session
 	sync.Mutex
 }
 
-func (p *SessionList) Add(session *Session) {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.head != nil {
-		p.head.prev = session
+func NewSessionList(manager *SessionManager) *SessionList {
+	return &SessionList{
+		manager:    manager,
+		sessionMap: map[uint64]*Session{},
+		head:       nil,
 	}
-
-	session.prev = nil
-	session.next = p.head
-	p.head = session
 }
 
-func (p *SessionList) Remove(session *Session) {
+func (p *SessionList) Get(id uint64) (*Session, bool) {
 	p.Lock()
 	defer p.Unlock()
 
-	if session.prev != nil {
-		session.prev.next = session.next
+	ret, ok := p.sessionMap[id]
+	return ret, ok
+}
+
+func (p *SessionList) Add(session *Session) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if _, exist := p.sessionMap[session.id]; !exist {
+		p.sessionMap[session.id] = session
+
+		if p.head != nil {
+			p.head.prev = session
+		}
+
+		session.prev = nil
+		session.next = p.head
+		p.head = session
+
+		atomic.AddInt64(&p.manager.totalSessions, 1)
+		return true
 	}
 
-	if session.next != nil {
-		session.next.prev = session.prev
+	return false
+}
+
+func (p *SessionList) Remove(id uint64) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if session, exist := p.sessionMap[id]; exist {
+		delete(p.sessionMap, id)
+
+		if session.prev != nil {
+			session.prev.next = session.next
+		}
+
+		if session.next != nil {
+			session.next.prev = session.prev
+		}
+
+		if session == p.head {
+			p.head = session.next
+		}
+
+		session.prev = nil
+		session.next = nil
+
+		atomic.AddInt64(&p.manager.totalSessions, -1)
+		return true
 	}
 
-	if session == p.head {
-		p.head = session.next
-	}
-
-	session.prev = nil
-	session.next = nil
+	return false
 }
 
 func (p *SessionList) TimeCheck(nowNS int64) {
@@ -69,72 +106,46 @@ func (p *SessionList) TimeCheck(nowNS int64) {
 const sessionManagerVectorSize = 256
 
 type SessionManager struct {
-	sessionMap map[uint64]*Session
-	listVector [sessionManagerVectorSize]SessionList
-	curIndex   uint64
+	totalSessions int64
+	curIndex      uint64
+	listVector    []*SessionList
 	sync.Mutex
 }
 
 func NewSessionManager() *SessionManager {
-	return &SessionManager{
-		sessionMap: map[uint64]*Session{},
-		curIndex:   0,
+	ret := &SessionManager{
+		totalSessions: 0,
+		curIndex:      0,
+		listVector:    make([]*SessionList, sessionManagerVectorSize),
 	}
+
+	for i := 0; i < sessionManagerVectorSize; i++ {
+		ret.listVector[i] = NewSessionList(ret)
+	}
+
+	return ret
 }
 
-func (p *SessionManager) Size() int {
-	p.Lock()
-	defer p.Unlock()
-
-	return len(p.sessionMap)
+func (p *SessionManager) TotalSessions() int64 {
+	return atomic.LoadInt64(&p.totalSessions)
 }
 
 func (p *SessionManager) Get(id uint64) (*Session, bool) {
-	p.Lock()
-	defer p.Unlock()
-
-	ret, ok := p.sessionMap[id]
-	return ret, ok
+	return p.listVector[id%sessionManagerVectorSize].Get(id)
 }
 
 func (p *SessionManager) Add(session *Session) bool {
-	p.Lock()
-	_, exist := p.sessionMap[session.id]
-	if !exist {
-		p.sessionMap[session.id] = session
-	}
-	p.Unlock()
-
-	if exist {
-		return false
-	}
-
-	p.listVector[session.id%sessionManagerVectorSize].Add(session)
-	return true
+	return p.listVector[session.id%sessionManagerVectorSize].Add(session)
 }
 
 func (p *SessionManager) Remove(id uint64) bool {
-	p.Lock()
-	session, exist := p.sessionMap[id]
-	if exist {
-		delete(p.sessionMap, id)
-	}
-	p.Unlock()
-
-	if !exist {
-		return false
-	}
-
-	p.listVector[id%sessionManagerVectorSize].Remove(session)
-	return true
+	return p.listVector[id%sessionManagerVectorSize].Remove(id)
 }
 
+// thread unsafe
 func (p *SessionManager) TimeCheck(nowNS int64) {
-	p.Lock()
-	list := &p.listVector[p.curIndex%sessionManagerVectorSize]
 	p.curIndex++
-	p.Unlock()
-	list.TimeCheck(nowNS)
+	p.listVector[p.curIndex%sessionManagerVectorSize].TimeCheck(nowNS)
 }
 
 // Session ...

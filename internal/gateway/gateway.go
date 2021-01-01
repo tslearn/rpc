@@ -213,7 +213,7 @@ func (p *GateWay) OnConnReadStream(
 
 		// if session not find by session string, create a new session
 		if session == nil {
-			if p.sessionManager.Size() >= p.config.serverMaxSessions {
+			if p.sessionManager.TotalSessions() >= int64(p.config.serverMaxSessions) {
 				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 			} else {
 				session = newSession(p.generateSessionID(), p)
