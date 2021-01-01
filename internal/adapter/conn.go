@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -179,6 +180,8 @@ type StreamConn struct {
 	readStream  *core.Stream
 	writeStream *core.Stream
 	writePos    int
+
+	activeTime time.Time
 }
 
 // NewStreamConn ...
@@ -221,34 +224,6 @@ func (p *StreamConn) OnError(err *base.Error) {
 // OnReadBytes ...
 func (p *StreamConn) OnReadBytes(b []byte) {
 	if p.readStream == nil {
-		if p.readHeadPos == 0 { // fast cache
-			if bytesLen := len(b); bytesLen >= core.StreamHeadSize {
-				streamLength := int(core.GetStreamLengthByHeadBuffer(b))
-
-				if streamLength < core.StreamHeadSize {
-					p.receiver.OnConnError(p, errors.ErrStream)
-					return
-				}
-
-				if bytesLen == streamLength {
-					stream := core.NewStream()
-					stream.PutBytesTo(b, 0)
-					p.receiver.OnConnReadStream(p, stream)
-					return
-				} else if bytesLen > streamLength {
-					stream := core.NewStream()
-					stream.PutBytesTo(b, 0)
-					p.receiver.OnConnReadStream(p, stream)
-					p.OnReadBytes(b[streamLength:])
-					return
-				} else {
-					p.readStream = core.NewStream()
-					p.readStream.PutBytesTo(b, 0)
-					return
-				}
-			}
-		}
-
 		if p.readHeadPos < core.StreamHeadSize {
 			copyBytes := copy(p.readHeadBuf[p.readHeadPos:], b)
 			p.readHeadPos += copyBytes
@@ -271,6 +246,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 		p.readStream.PutBytes(writeBuf)
 		if p.readStream.GetWritePos() == streamLength {
 			if p.readStream.CheckStream() {
+				p.activeTime = base.TimeNow()
 				p.receiver.OnConnReadStream(p, p.readStream)
 				p.readStream = nil
 			} else {
