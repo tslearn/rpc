@@ -149,13 +149,14 @@ func (p *SessionManager) TimeCheck(nowNS int64) {
 
 // Session ...
 type Session struct {
-	id       uint64
-	security string
-	conn     *adapter.StreamConn
-	gateway  *GateWay
-	channels []Channel
-	prev     *Session
-	next     *Session
+	id         uint64
+	security   string
+	conn       *adapter.StreamConn
+	idleTimeNS int64
+	gateway    *GateWay
+	channels   []Channel
+	prev       *Session
+	next       *Session
 	sync.Mutex
 }
 
@@ -167,32 +168,51 @@ func newSession(
 	ret.id = id
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
+	ret.idleTimeNS = base.TimeNow().UnixNano()
 	ret.gateway = gateway
 	ret.channels = make([]Channel, gateway.GetConfig().numOfChannels)
 	return ret
 }
 
-func (p *Session) TimeCheck(nowNS int64) {
-	fmt.Println("Session TimeCheck")
+func (p *Session) Close() {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.conn != nil {
+		p.conn.Close()
+	}
+
+	if p.channels != nil {
+		for i := 0; i < len(p.channels); i++ {
+			p.channels[i].Clean()
+		}
+	}
 }
 
-// Initialized ...
-func (p *Session) Initialized(conn *adapter.StreamConn) {
+func (p *Session) TimeCheck(nowNS int64) {
 	p.Lock()
-	p.conn = conn
-	p.conn.SetReceiver(p)
-	p.Unlock()
+	defer p.Unlock()
 
-	config := p.gateway.config
-	stream := core.NewStream()
-	stream.WriteInt64(core.ControlStreamConnectResponse)
-	stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-	stream.Write(config.numOfChannels)
-	stream.Write(config.transLimit)
-	stream.Write(int64(config.heartbeat))
-	stream.Write(int64(config.heartbeatTimeout))
-	stream.Write(int64(config.clientRequestInterval))
-	p.conn.WriteStreamAndRelease(stream)
+	if p.conn != nil {
+		// conn timeout
+		if !p.conn.IsActive(nowNS, p.gateway.config.heartbeatTimeout) {
+			p.conn.Close()
+		}
+	} else {
+		// session timeout
+		if nowNS-p.idleTimeNS > int64(p.gateway.config.serverSessionTimeout) {
+			p.Close()
+			p.gateway.sessionManager.Remove(p.id)
+		}
+	}
+
+	// channel timeout
+	for i := 0; i < len(p.channels); i++ {
+		p.channels[i].TimeCheck(
+			nowNS,
+			int64(p.gateway.config.serverCacheTimeout),
+		)
+	}
 }
 
 // WriteStreamAndRelease ...
@@ -221,8 +241,21 @@ func (p *Session) Release() {
 
 // OnConnOpen ...
 func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
-	// Route to gateway
-	p.gateway.OnConnOpen(streamConn)
+	p.Lock()
+	p.conn = streamConn
+	p.conn.SetReceiver(p)
+	p.Unlock()
+
+	config := p.gateway.config
+	stream := core.NewStream()
+	stream.WriteInt64(core.ControlStreamConnectResponse)
+	stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
+	stream.Write(config.numOfChannels)
+	stream.Write(config.transLimit)
+	stream.Write(int64(config.heartbeat))
+	stream.Write(int64(config.heartbeatTimeout))
+	stream.Write(int64(config.clientRequestInterval))
+	p.conn.WriteStreamAndRelease(stream)
 }
 
 // OnConnError ...
@@ -234,6 +267,10 @@ func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 // OnConnClose ...
 func (p *Session) OnConnClose(_ *adapter.StreamConn) {
 	//p.gateway.OnConnClose(streamConn)
+	p.Lock()
+	p.conn = nil
+	p.idleTimeNS = base.TimeNow().UnixNano()
+	p.Unlock()
 }
 
 // OnConnReadStream ...

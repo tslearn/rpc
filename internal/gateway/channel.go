@@ -42,8 +42,8 @@ func (p *Channel) Out(stream *core.Stream) bool {
 	}
 }
 
-// Timeout ...
-func (p *Channel) Timeout(nowNS int64, timeout int64) {
+// TimeCheck ...
+func (p *Channel) TimeCheck(nowNS int64, timeout int64) {
 	if p.retTimeNS > 0 && nowNS-p.retTimeNS > timeout {
 		p.Clean()
 	}

@@ -12,6 +12,7 @@ type Config struct {
 	heartbeatTimeout time.Duration
 
 	serverMaxSessions     int
+	serverSessionTimeout  time.Duration
 	serverReadBufferSize  int
 	serverWriteBufferSize int
 	serverCacheTimeout    time.Duration
@@ -28,6 +29,7 @@ func GetDefaultConfig() *Config {
 		heartbeatTimeout: 8 * time.Second,
 
 		serverMaxSessions:     10240000,
+		serverSessionTimeout:  60 * time.Second,
 		serverReadBufferSize:  1200,
 		serverWriteBufferSize: 1200,
 		serverCacheTimeout:    10 * time.Second,

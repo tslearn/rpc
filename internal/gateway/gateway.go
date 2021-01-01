@@ -232,7 +232,7 @@ func (p *GateWay) OnConnReadStream(
 			} else {
 				session = newSession(p.generateSessionID(), p)
 				p.sessionManager.Add(session)
-				session.Initialized(streamConn)
+				session.OnConnOpen(streamConn)
 			}
 		}
 	}
