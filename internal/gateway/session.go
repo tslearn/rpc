@@ -103,11 +103,10 @@ func (p *SessionList) TimeCheck(nowNS int64) {
 	}
 }
 
-const sessionManagerVectorSize = 256
+const sessionManagerVectorSize = 1024
 
 type SessionManager struct {
 	totalSessions int64
-	curIndex      uint64
 	listVector    []*SessionList
 	sync.Mutex
 }
@@ -115,7 +114,6 @@ type SessionManager struct {
 func NewSessionManager() *SessionManager {
 	ret := &SessionManager{
 		totalSessions: 0,
-		curIndex:      0,
 		listVector:    make([]*SessionList, sessionManagerVectorSize),
 	}
 
@@ -144,8 +142,9 @@ func (p *SessionManager) Remove(id uint64) bool {
 
 // thread unsafe
 func (p *SessionManager) TimeCheck(nowNS int64) {
-	p.curIndex++
-	p.listVector[p.curIndex%sessionManagerVectorSize].TimeCheck(nowNS)
+	for i := 0; i < sessionManagerVectorSize; i++ {
+		p.listVector[i].TimeCheck(nowNS)
+	}
 }
 
 // Session ...

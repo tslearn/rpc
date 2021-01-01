@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
@@ -119,7 +120,7 @@ func (p *GateWay) Serve() {
 	//      if p.orcManager.Close() is called between Open and Run. Run will not
 	// execute at all.
 	// -------------------------------------------------------------------------
-	p.orcManager.Run(func(_ func() bool) {
+	p.orcManager.Run(func(isRunning func() bool) {
 		waitCH := make(chan bool)
 		waitCount := 0
 
@@ -130,6 +131,19 @@ func (p *GateWay) Serve() {
 				adapter.Run()
 				waitCH <- true
 			}(item)
+		}
+
+		for isRunning() {
+			now := base.TimeNow()
+			p.sessionManager.TimeCheck(now.UnixNano())
+
+			sleepInterval := 100 * time.Millisecond
+			runningTime := base.TimeNow().Sub(now)
+			sleepCount := (time.Second - runningTime) / sleepInterval
+			for isRunning() && sleepCount > 0 {
+				time.Sleep(sleepInterval)
+				sleepCount--
+			}
 		}
 
 		for waitCount > 0 {
