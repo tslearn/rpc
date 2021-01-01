@@ -12,6 +12,5 @@ type Config struct {
 	wBufSize         int
 	heartbeat        time.Duration
 	heartbeatTimeout time.Duration
-	requestTimeout   time.Duration
 	requestInterval  time.Duration
 }

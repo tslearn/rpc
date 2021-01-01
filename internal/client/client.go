@@ -147,8 +147,6 @@ func (p *Client) OnConnReadStream(
 			p.OnConnError(streamConn, err)
 		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
 			p.OnConnError(streamConn, err)
-		} else if requestTimeout, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
 		} else if requestInterval, err := stream.ReadInt64(); err != nil {
 			p.OnConnError(streamConn, err)
 		} else if !stream.IsReadFinish() {
@@ -163,7 +161,6 @@ func (p *Client) OnConnReadStream(
 				p.config.transLimit = int(transLimit)
 				p.config.heartbeat = time.Duration(heartbeat)
 				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout)
-				p.config.requestTimeout = time.Duration(requestTimeout)
 				p.config.requestInterval = time.Duration(requestInterval)
 
 				numOfChannels := p.config.numOfChannels

@@ -54,7 +54,6 @@ func (p *Session) Initialized(conn *adapter.StreamConn) {
 	stream.Write(config.transLimit)
 	stream.Write(int64(config.heartbeat))
 	stream.Write(int64(config.heartbeatTimeout))
-	stream.Write(int64(config.clientRequestTimeout))
 	stream.Write(int64(config.clientRequestInterval))
 	p.conn.WriteStreamAndRelease(stream)
 }
