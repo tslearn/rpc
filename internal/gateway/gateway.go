@@ -21,16 +21,16 @@ const (
 
 // GateWay ...
 type GateWay struct {
-	id           uint64
-	isFree       bool
-	sessionSeed  uint32
-	routerSender router.IRouteSender
-	closeCH      chan bool
-	config       *Config
-	sessionMap   map[uint64]*Session
-	onError      func(sessionID uint64, err *base.Error)
-	adapters     []*adapter.Adapter
-	orcManager   *base.ORCManager
+	id             uint64
+	isFree         bool
+	sessionSeed    uint64
+	routerSender   router.IRouteSender
+	closeCH        chan bool
+	config         *Config
+	sessionManager *SessionManager
+	onError        func(sessionID uint64, err *base.Error)
+	adapters       []*adapter.Adapter
+	orcManager     *base.ORCManager
 	sync.Mutex
 }
 
@@ -46,15 +46,15 @@ func NewGateWay(
 	}
 
 	ret := &GateWay{
-		id:           id,
-		isFree:       true,
-		routerSender: nil,
-		closeCH:      make(chan bool, 1),
-		config:       config,
-		sessionMap:   map[uint64]*Session{},
-		onError:      onError,
-		adapters:     make([]*adapter.Adapter, 0),
-		orcManager:   base.NewORCManager(),
+		id:             id,
+		isFree:         true,
+		routerSender:   nil,
+		closeCH:        make(chan bool, 1),
+		config:         config,
+		sessionManager: NewSessionManager(),
+		onError:        onError,
+		adapters:       make([]*adapter.Adapter, 0),
+		orcManager:     base.NewORCManager(),
 	}
 
 	ret.routerSender = router.Plug(ret)
@@ -62,36 +62,8 @@ func NewGateWay(
 	return ret
 }
 
-func (p *GateWay) generateSessionID() (uint64, *base.Error) {
-	if len(p.sessionMap) > p.config.serverMaxSessions {
-		return 0, errors.ErrGateWaySeedOverflows
-	}
-
-	for {
-		// Case:
-		//      some extreme case may make session id concentration in a special
-		// area. consider the following: first allocate a million long sessions,
-		// then allocate lots of short sessions (=2^32 - 1million). because of
-		// the long sessions were still alive. the search of seed will take a
-		// long time. this will case the system jitter
-		// ---------------------------------------------------------------------
-		// Solution:
-		//      seed increases several intervals (must be prime number)
-		// each time, when the seed is conflict we simple add 1 to avoid
-		// conflict area.
-		// ---------------------------------------------------------------------
-		// Notice:
-		//      zero seed is not illegal
-		// ---------------------------------------------------------------------
-		if v := atomic.AddUint32(&p.sessionSeed, 941); v != 0 {
-			ret := p.id<<40 | uint64(v)
-			if _, ok := p.sessionMap[ret]; !ok {
-				return ret, nil
-			}
-		}
-
-		atomic.AddUint32(&p.sessionSeed, 1)
-	}
+func (p *GateWay) generateSessionID() uint64 {
+	return p.id<<40 | (atomic.AddUint64(&p.sessionSeed, 1) & 0xFFFFFFFFFF)
 }
 
 // GetConfig ...
@@ -184,13 +156,10 @@ func (p *GateWay) Close() {
 
 // ReceiveStreamFromRouter ...
 func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
-	p.Lock()
-	defer p.Unlock()
-
 	if !stream.IsDirectionOut() {
 		stream.Release()
 		return errors.ErrStream
-	} else if session, ok := p.sessionMap[stream.GetSessionID()]; ok {
+	} else if session, ok := p.sessionManager.Get(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 		return nil
 	} else {
@@ -236,24 +205,19 @@ func (p *GateWay) OnConnReadStream(
 		strArray := strings.Split(sessionString, "-")
 		if len(strArray) == 2 && len(strArray[1]) == 32 {
 			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
-				p.Lock()
-				if s, ok := p.sessionMap[id]; ok && s.security == strArray[1] {
+				if s, ok := p.sessionManager.Get(id); ok && s.security == strArray[1] {
 					session = s
 				}
-				p.Unlock()
 			}
 		}
 
 		// if session not find by session string, create a new session
 		if session == nil {
-			if sessionID, err := p.generateSessionID(); err != nil {
-				p.OnConnError(streamConn, errors.ErrStream)
+			if p.sessionManager.Size() >= p.config.serverMaxSessions {
+				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 			} else {
-				session = newSession(sessionID, p)
-				p.Lock()
-				p.sessionMap[sessionID] = session
-				p.Unlock()
-
+				session = newSession(p.generateSessionID(), p)
+				p.sessionManager.Add(session)
 				session.Initialized(streamConn)
 			}
 		}
