@@ -1,11 +1,13 @@
 package base
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
 	"testing"
+	"time"
 	"unsafe"
 )
 
@@ -185,6 +187,71 @@ func TestConvertOrdinalToString(t *testing.T) {
 		assert(ConvertOrdinalToString(4)).Equal("4th")
 		assert(ConvertOrdinalToString(10)).Equal("10th")
 		assert(ConvertOrdinalToString(100)).Equal("100th")
+	})
+}
+
+func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
+	t.Run("test isRunning return true", func(t *testing.T) {
+		waitCH := make(chan bool)
+		for i := 0; i < 1000; i++ {
+			go func() {
+				assert := NewAssert(t)
+				startTime := TimeNow()
+				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
+					return true
+				}, 500*time.Millisecond)
+				interval := TimeNow().Sub(startTime)
+				fmt.Println(interval)
+				assert(interval > 480*time.Millisecond).IsTrue()
+				assert(interval < 580*time.Millisecond).IsTrue()
+				waitCH <- true
+			}()
+		}
+		for i := 0; i < 1000; i++ {
+			<-waitCH
+		}
+	})
+
+	t.Run("test isRunning return false 1", func(t *testing.T) {
+		waitCH := make(chan bool)
+		for i := 0; i < 1000; i++ {
+			go func() {
+				assert := NewAssert(t)
+				startTime := TimeNow()
+				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
+					return false
+				}, 500*time.Millisecond)
+				interval := TimeNow().Sub(startTime)
+				assert(interval >= 0).IsTrue()
+				assert(interval < 80*time.Millisecond).IsTrue()
+				waitCH <- true
+			}()
+		}
+		for i := 0; i < 1000; i++ {
+			<-waitCH
+		}
+	})
+
+	t.Run("test isRunning return false 2", func(t *testing.T) {
+		waitCH := make(chan bool)
+		for i := 0; i < 1000; i++ {
+			go func() {
+				assert := NewAssert(t)
+				startTime := TimeNow()
+				count := 0
+				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
+					count++
+					return count < 3
+				}, 500*time.Millisecond)
+				interval := TimeNow().Sub(startTime)
+				assert(interval >= 180*time.Millisecond).IsTrue()
+				assert(interval < 280*time.Millisecond).IsTrue()
+				waitCH <- true
+			}()
+		}
+		for i := 0; i < 1000; i++ {
+			<-waitCH
+		}
 	})
 }
 

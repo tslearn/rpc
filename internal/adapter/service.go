@@ -380,7 +380,7 @@ func (p *syncClientService) Open() bool {
 func (p *syncClientService) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) {
 		for isRunning() {
-			start := base.TimeNow()
+			startNS := base.TimeNow().UnixNano()
 
 			if p.openConn() {
 				p.conn.OnOpen()
@@ -394,14 +394,7 @@ func (p *syncClientService) Run() bool {
 				p.closeConn()
 			}
 
-			sleepInterval := 100 * time.Millisecond
-			runningTime := base.TimeNow().Sub(start)
-			sleepCount := (3*time.Second - runningTime) / sleepInterval
-
-			for isRunning() && sleepCount > 0 {
-				time.Sleep(sleepInterval)
-				sleepCount--
-			}
+			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, 3*time.Second)
 		}
 	})
 }

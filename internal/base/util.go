@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -230,6 +231,21 @@ func ReadFromFile(filePath string) (string, error) {
 
 	// for windows, remove \r
 	return strings.Replace(string(ret), "\r", "", -1), nil
+}
+
+// WaitAtLeastDurationWhenRunning ...
+func WaitAtLeastDurationWhenRunning(
+	startNS int64,
+	isRunning func() bool,
+	duration time.Duration,
+) {
+	sleepTime := 100 * time.Millisecond
+	runNS := TimeNow().UnixNano() - startNS
+	sleepCount := (duration - time.Duration(runNS) + sleepTime/2) / sleepTime
+	for isRunning() && sleepCount > 0 {
+		time.Sleep(sleepTime)
+		sleepCount--
+	}
 }
 
 // GetTLSServerConfig ...

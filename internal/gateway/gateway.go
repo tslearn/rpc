@@ -131,16 +131,9 @@ func (p *GateWay) Serve() {
 		}
 
 		for isRunning() {
-			now := base.TimeNow()
-			p.sessionManager.TimeCheck(now.UnixNano())
-
-			sleepInterval := 100 * time.Millisecond
-			runningTime := base.TimeNow().Sub(now)
-			sleepCount := (time.Second - runningTime) / sleepInterval
-			for isRunning() && sleepCount > 0 {
-				time.Sleep(sleepInterval)
-				sleepCount--
-			}
+			startNS := base.TimeNow().UnixNano()
+			p.sessionManager.TimeCheck(startNS)
+			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, time.Second)
 		}
 
 		for waitCount > 0 {
