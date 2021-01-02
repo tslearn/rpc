@@ -152,7 +152,7 @@ func TestGetFileLine(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		fileLine1 := GetFileLine(0)
-		assert(strings.Contains(fileLine1, "util_test.go")).IsTrue()
+		assert(strings.Contains(fileLine1, "base_test.go")).IsTrue()
 	})
 }
 
@@ -161,7 +161,7 @@ func TestAddFileLine(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := AddFileLine("", 0)
 		assert(strings.HasPrefix(v1, " ")).IsFalse()
-		assert(strings.Contains(v1, "util_test.go")).IsTrue()
+		assert(strings.Contains(v1, "base_test.go")).IsTrue()
 	})
 
 	t.Run("skip overflow", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestAddFileLine(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := AddFileLine("header", 0)
 		assert(strings.HasPrefix(v1, "header ")).IsTrue()
-		assert(strings.Contains(v1, "util_test.go")).IsTrue()
+		assert(strings.Contains(v1, "base_test.go")).IsTrue()
 	})
 }
 
