@@ -203,21 +203,22 @@ func TestRpcAssert_IsNil(t *testing.T) {
 	t.Run("arguments is not nil", func(t *testing.T) {
 		assert := NewAssert(t)
 		source := ""
+		getFL := GetFileLine
 
 		assert(testFailHelper(func(o func(_ ...interface{}) *Assert) {
-			func() { o([]interface{}{}).IsNil(); source = GetFileLine(0) }()
+			func() { o([]interface{}{}).IsNil(); source = getFL(0) }()
 		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
 
 		assert(testFailHelper(func(o func(_ ...interface{}) *Assert) {
-			func() { o(map[string]interface{}{}).IsNil(); source = GetFileLine(0) }()
+			func() { o(map[string]interface{}{}).IsNil(); source = getFL(0) }()
 		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
 
 		assert(testFailHelper(func(o func(_ ...interface{}) *Assert) {
-			func() { o(uintptr(0)).IsNil(); source = GetFileLine(0) }()
+			func() { o(uintptr(0)).IsNil(); source = getFL(0) }()
 		})).Equal(true, "\t1st argument is not nil\n\t"+source+"\n")
 
 		assert(testFailHelper(func(o func(_ ...interface{}) *Assert) {
-			func() { o(nil, 0).IsNil(); source = GetFileLine(0) }()
+			func() { o(nil, 0).IsNil(); source = getFL(0) }()
 		})).Equal(true, "\t2nd argument is not nil\n\t"+source+"\n")
 	})
 
