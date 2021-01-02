@@ -22,7 +22,7 @@ const (
 
 // GateWay ...
 type GateWay struct {
-	id             uint64
+	id             uint32
 	isFree         bool
 	sessionSeed    uint64
 	routerSender   router.IRouteSender
@@ -37,7 +37,7 @@ type GateWay struct {
 
 // NewGateWay ...
 func NewGateWay(
-	id uint64,
+	id uint32,
 	config *Config,
 	router router.IRouter,
 	onError func(sessionID uint64, err *base.Error),
@@ -49,6 +49,7 @@ func NewGateWay(
 	ret := &GateWay{
 		id:             id,
 		isFree:         true,
+		sessionSeed:    1,
 		routerSender:   nil,
 		closeCH:        make(chan bool, 1),
 		config:         config,
@@ -61,10 +62,6 @@ func NewGateWay(
 	ret.routerSender = router.Plug(ret)
 
 	return ret
-}
-
-func (p *GateWay) generateSessionID() uint64 {
-	return p.id<<40 | (atomic.AddUint64(&p.sessionSeed, 1) & 0xFFFFFFFFFF)
 }
 
 // GetConfig ...
@@ -230,7 +227,7 @@ func (p *GateWay) OnConnReadStream(
 			if p.sessionManager.TotalSessions() >= int64(p.config.serverMaxSessions) {
 				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 			} else {
-				session = newSession(p.generateSessionID(), p)
+				session = newSession(atomic.AddUint64(&p.sessionSeed, 1), p)
 				p.sessionManager.Add(session)
 				session.OnConnOpen(streamConn)
 			}

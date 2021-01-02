@@ -292,6 +292,7 @@ func (p *Session) OnConnReadStream(
 	cbID := stream.GetCallbackID()
 
 	if cbID > 0 {
+		stream.SetGatewayID(p.gateway.id)
 		stream.SetSessionID(p.id)
 		channel := &p.channels[cbID%uint64(len(p.channels))]
 		if accepted, backStream := channel.In(cbID); accepted {
