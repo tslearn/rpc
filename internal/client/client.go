@@ -15,18 +15,17 @@ import (
 
 // Client ...
 type Client struct {
-	config         *Config
-	sessionString  string
-	adapter        *adapter.Adapter
-	streamConn     *adapter.StreamConn
-	preSendHead    *SendItem
-	preSendTail    *SendItem
-	channels       []Channel
-	freeChannels   *FreeChannelStack
-	lastCheckTime  time.Time
-	lastActiveTime time.Time
-	lastPingTime   time.Time
-	orcManager     *base.ORCManager
+	config        *Config
+	sessionString string
+	adapter       *adapter.Adapter
+	conn          *adapter.StreamConn
+	preSendHead   *SendItem
+	preSendTail   *SendItem
+	channels      []Channel
+	freeChannels  *FreeChannelStack
+	lastCheckTime time.Time
+	lastPingTime  time.Time
+	orcManager    *base.ORCManager
 	sync.Mutex
 }
 
@@ -38,17 +37,16 @@ func newClient(
 	wBufSize int,
 ) *Client {
 	ret := &Client{
-		config:         &Config{},
-		sessionString:  "",
-		adapter:        nil,
-		streamConn:     nil,
-		preSendHead:    nil,
-		preSendTail:    nil,
-		channels:       nil,
-		freeChannels:   nil,
-		lastCheckTime:  base.TimeNow(),
-		lastActiveTime: base.TimeNow(),
-		orcManager:     base.NewORCManager(),
+		config:        &Config{},
+		sessionString: "",
+		adapter:       nil,
+		conn:          nil,
+		preSendHead:   nil,
+		preSendTail:   nil,
+		channels:      nil,
+		freeChannels:  nil,
+		lastCheckTime: base.TimeNow(),
+		orcManager:    base.NewORCManager(),
 	}
 	ret.config.rBufSize = rBufSize
 	ret.config.wBufSize = wBufSize
@@ -115,7 +113,7 @@ func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 func (p *Client) OnConnClose(_ *adapter.StreamConn) {
 	p.Lock()
 	defer p.Unlock()
-	p.streamConn = nil
+	p.conn = nil
 }
 
 // OnConnReadStream ...
@@ -128,8 +126,8 @@ func (p *Client) OnConnReadStream(
 
 	callbackID := stream.GetCallbackID()
 
-	if p.streamConn == nil {
-		p.streamConn = streamConn
+	if p.conn == nil {
+		p.conn = streamConn
 
 		if callbackID != 0 {
 			p.OnConnError(streamConn, errors.ErrStream)
@@ -178,7 +176,6 @@ func (p *Client) OnConnReadStream(
 			}
 
 			now := base.TimeNow()
-			p.lastActiveTime = now
 			p.lastPingTime = now
 		}
 
@@ -190,7 +187,7 @@ func (p *Client) OnConnReadStream(
 			} else if kind != core.ControlStreamPong {
 				p.OnConnError(streamConn, errors.ErrStream)
 			} else {
-				p.lastActiveTime = base.TimeNow()
+				// ignore
 			}
 			stream.Release()
 		} else if p.channels != nil {
@@ -210,7 +207,7 @@ func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 }
 
 func (p *Client) tryToSendPing(now time.Time) {
-	if p.streamConn == nil {
+	if p.conn == nil {
 		return
 	} else if now.Sub(p.lastPingTime) < p.config.heartbeat {
 		return
@@ -220,7 +217,7 @@ func (p *Client) tryToSendPing(now time.Time) {
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
 		stream.WriteInt64(core.ControlStreamPing)
-		p.streamConn.WriteStreamAndRelease(stream)
+		p.conn.WriteStreamAndRelease(stream)
 	}
 }
 
@@ -258,12 +255,19 @@ func (p *Client) tryToTimeout(now time.Time) {
 		for i := 0; i < len(p.channels); i++ {
 			(&p.channels[i]).OnTimeout(now)
 		}
+
+		// check conn timeout
+		if p.conn != nil {
+			if p.conn.IsActive(now.UnixNano(), p.config.heartbeatTimeout) {
+				p.conn.Close()
+			}
+		}
 	}
 }
 
 func (p *Client) tryToDeliverPreSendMessages() {
 	for {
-		if p.streamConn == nil { // not running
+		if p.conn == nil { // not running
 			return
 		} else if p.preSendHead == nil { // preSend queue is empty
 			return
@@ -288,7 +292,7 @@ func (p *Client) tryToDeliverPreSendMessages() {
 			item.sendStream.SetCallbackID(item.id)
 			channel.item = item
 
-			p.streamConn.WriteStreamAndRelease(item.sendStream.Clone())
+			p.conn.WriteStreamAndRelease(item.sendStream.Clone())
 			item.sendTime = base.TimeNow()
 		}
 	}
@@ -327,9 +331,9 @@ func (p *Client) SendMessage(
 		p.preSendTail.next = item
 		p.preSendTail = item
 	}
-	p.Unlock()
 
 	p.tryToDeliverPreSendMessages()
+	p.Unlock()
 
 	// wait for response
 	retStream := <-item.returnCH
