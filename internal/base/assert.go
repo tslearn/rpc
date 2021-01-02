@@ -6,43 +6,33 @@ import (
 )
 
 // Assert ...
-type Assert interface {
-	Fail(reason string)
-	Equal(args ...interface{})
-	IsNil()
-	IsNotNil()
-	IsTrue()
-	IsFalse()
+type Assert struct {
+	t    interface{ Fail() }
+	args []interface{}
 }
 
-// NewAssert create new assert class
-func NewAssert(t interface{ Fail() }) func(args ...interface{}) Assert {
-	return func(args ...interface{}) Assert {
-		return &rpcAssert{
+// NewAssert ...
+func NewAssert(t interface{ Fail() }) func(args ...interface{}) *Assert {
+	return func(args ...interface{}) *Assert {
+		return &Assert{
 			t:    t,
 			args: args,
 		}
 	}
 }
 
-// rpcAssert ...
-type rpcAssert struct {
-	t    interface{ Fail() }
-	args []interface{}
-}
-
-func (p *rpcAssert) fail(reason string) {
+func (p *Assert) fail(reason string) {
 	Log(fmt.Sprintf("\t%s\n\t%s\n", reason, GetFileLine(2)))
 	p.t.Fail()
 }
 
 // Fail ...
-func (p *rpcAssert) Fail(reason string) {
+func (p *Assert) Fail(reason string) {
 	p.fail(reason)
 }
 
 // Equals ...
-func (p *rpcAssert) Equal(args ...interface{}) {
+func (p *Assert) Equal(args ...interface{}) {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else if len(p.args) != len(args) {
@@ -54,8 +44,12 @@ func (p *rpcAssert) Equal(args ...interface{}) {
 					p.fail(fmt.Sprintf(
 						"%s argment does not equal\n\twant:\n%s\n\tgot:\n%s",
 						ConvertOrdinalToString(uint(i+1)),
-						AddPrefixPerLine(fmt.Sprintf("%T(%v)", args[i], args[i]), "\t"),
-						AddPrefixPerLine(fmt.Sprintf("%T(%v)", p.args[i], p.args[i]), "\t"),
+						AddPrefixPerLine(fmt.Sprintf(
+							"%T(%v)", args[i], args[i]), "\t",
+						),
+						AddPrefixPerLine(fmt.Sprintf(
+							"%T(%v)", p.args[i], p.args[i]), "\t",
+						),
 					))
 				}
 			}
@@ -64,7 +58,7 @@ func (p *rpcAssert) Equal(args ...interface{}) {
 }
 
 // IsNil ...
-func (p *rpcAssert) IsNil() {
+func (p *Assert) IsNil() {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else {
@@ -80,7 +74,7 @@ func (p *rpcAssert) IsNil() {
 }
 
 // IsNotNil ...
-func (p *rpcAssert) IsNotNil() {
+func (p *Assert) IsNotNil() {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else {
@@ -96,7 +90,7 @@ func (p *rpcAssert) IsNotNil() {
 }
 
 // IsTrue ...
-func (p *rpcAssert) IsTrue() {
+func (p *Assert) IsTrue() {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else {
@@ -112,7 +106,7 @@ func (p *rpcAssert) IsTrue() {
 }
 
 // IsFalse ...
-func (p *rpcAssert) IsFalse() {
+func (p *Assert) IsFalse() {
 	if len(p.args) < 1 {
 		p.fail("arguments is empty")
 	} else {
