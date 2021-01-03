@@ -4,6 +4,7 @@ package base
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -296,7 +297,11 @@ func GetTLSClientConfig(
 
 		for _, caFile := range caFiles {
 			if caCert, e := ioutil.ReadFile(caFile); e == nil {
-				caPool.AppendCertsFromPEM(caCert)
+				if !caPool.AppendCertsFromPEM(caCert) {
+					return nil, errors.New(
+						fmt.Sprintf("%s is not a valid certificate", caFile),
+					)
+				}
 			} else {
 				return nil, e
 			}

@@ -1,10 +1,13 @@
 package base
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -283,6 +286,108 @@ func TestReadFromFile(t *testing.T) {
 		_ = ioutil.WriteFile("./tmp_file", []byte("hello"), 0666)
 		assert(ReadFromFile("./tmp_file")).Equal("hello", nil)
 		_ = os.Remove("./tmp_file")
+	})
+}
+
+func TestGetTLSServerConfig(t *testing.T) {
+	_, currFile, _, _ := runtime.Caller(0)
+	currDir := path.Dir(currFile)
+
+	t.Run("cert or key error", func(t *testing.T) {
+		assert := NewAssert(t)
+		ret, e := GetTLSServerConfig(
+			path.Join(currDir, "_cert_", "error.crt"),
+			path.Join(currDir, "_cert_", "error.key"),
+		)
+		assert(ret).IsNil()
+		assert(e).IsNotNil()
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		ret, e := GetTLSServerConfig(
+			path.Join(currDir, "_cert_", "test.crt"),
+			path.Join(currDir, "_cert_", "test.key"),
+		)
+		cert, _ := tls.LoadX509KeyPair(
+			path.Join(currDir, "_cert_", "test.crt"),
+			path.Join(currDir, "_cert_", "test.key"),
+		)
+		assert(ret).IsNotNil()
+		assert(ret).Equal(&tls.Config{
+			Certificates: []tls.Certificate{cert},
+			// Causes servers to use Go's default ciphersuite preferences,
+			// which are tuned to avoid attacks. Does nothing on clients.
+			PreferServerCipherSuites: true,
+			// Only use curves which have assembly implementations
+			CurvePreferences: []tls.CurveID{
+				tls.CurveP256,
+				tls.X25519, // Go 1.8 only
+			},
+			MinVersion: tls.VersionTLS12,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, // Go 1.8 only
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,   // Go 1.8 only
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
+		})
+		assert(e).IsNil()
+	})
+}
+
+func TestGetTLSClientConfig(t *testing.T) {
+	_, currFile, _, _ := runtime.Caller(0)
+	currDir := path.Dir(currFile)
+
+	t.Run("ca error 01", func(t *testing.T) {
+		assert := NewAssert(t)
+		ret, e := GetTLSClientConfig(
+			true,
+			[]string{path.Join(currDir, "_cert_", "not_exist.ca")},
+		)
+		assert(ret).IsNil()
+		assert(e).IsNotNil()
+	})
+
+	t.Run("ca error 02", func(t *testing.T) {
+		assert := NewAssert(t)
+		ret, e := GetTLSClientConfig(
+			true,
+			[]string{
+				path.Join(currDir, "_cert_", "ca.crt"),
+				path.Join(currDir, "_cert_", "test.crt"),
+				path.Join(currDir, "_cert_", "error.crt"),
+			},
+		)
+
+		assert(ret).IsNil()
+		assert(e).IsNotNil()
+		if e != nil {
+			assert(strings.HasSuffix(
+				e.Error(),
+				"error.crt is not a valid certificate",
+			)).IsTrue()
+		}
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		ret, e := GetTLSClientConfig(
+			true,
+			[]string{
+				path.Join(currDir, "_cert_", "ca.crt"),
+				path.Join(currDir, "_cert_", "test.crt"),
+			},
+		)
+		assert(ret).IsNotNil()
+		if ret != nil {
+			assert(ret.InsecureSkipVerify).IsFalse()
+			assert(len(ret.RootCAs.Subjects())).Equal(2)
+		}
+		assert(e).IsNil()
 	})
 }
 
