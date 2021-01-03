@@ -1,9 +1,11 @@
+// Package core ...
 package core
 
 import (
+	"reflect"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
-	"reflect"
 )
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {

@@ -338,12 +338,12 @@ func (p *Stream) SetSourceID(v uint32) {
 	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosSourceID:], v)
 }
 
-// GetSessionID ...
+// GetGatewayID ...
 func (p *Stream) GetGatewayID() uint32 {
 	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosGatewayID:])
 }
 
-// SetSessionID ...
+// SetGatewayID ...
 func (p *Stream) SetGatewayID(v uint32) {
 	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosGatewayID:], v)
 }
@@ -1313,62 +1313,62 @@ func (p *Stream) write(v interface{}, depth int) string {
 		return StreamWriteIsNil
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	case bool:
-		p.WriteBool(v.(bool))
+		p.WriteBool(v)
 		return StreamWriteOK
 	case int:
-		p.WriteInt64(int64(v.(int)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int8:
-		p.WriteInt64(int64(v.(int8)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int16:
-		p.WriteInt64(int64(v.(int16)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int32:
-		p.WriteInt64(int64(v.(int32)))
+		p.WriteInt64(int64(v))
 		return StreamWriteOK
 	case int64:
-		p.WriteInt64(v.(int64))
+		p.WriteInt64(v)
 		return StreamWriteOK
 	case uint:
-		p.WriteUint64(uint64(v.(uint)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint8:
-		p.WriteUint64(uint64(v.(uint8)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint16:
-		p.WriteUint64(uint64(v.(uint16)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint32:
-		p.WriteUint64(uint64(v.(uint32)))
+		p.WriteUint64(uint64(v))
 		return StreamWriteOK
 	case uint64:
-		p.WriteUint64(v.(uint64))
+		p.WriteUint64(v)
 		return StreamWriteOK
 	case float32:
-		p.WriteFloat64(float64(v.(float32)))
+		p.WriteFloat64(float64(v))
 		return StreamWriteOK
 	case float64:
-		p.WriteFloat64(v.(float64))
+		p.WriteFloat64(v)
 		return StreamWriteOK
 	case string:
-		p.WriteString(v.(string))
+		p.WriteString(v)
 		return StreamWriteOK
 	case Bytes:
-		p.WriteBytes(v.(Bytes))
+		p.WriteBytes(v)
 		return StreamWriteOK
 	case Array:
-		return p.writeArray(v.(Array), depth)
+		return p.writeArray(v, depth)
 	case Map:
-		return p.writeMap(v.(Map), depth)
+		return p.writeMap(v, depth)
 	case RTArray:
-		return p.writeRTArray(v.(RTArray))
+		return p.writeRTArray(v)
 	case RTMap:
-		return p.writeRTMap(v.(RTMap))
+		return p.writeRTMap(v)
 	case RTValue:
-		return p.writeRTValue(v.(RTValue))
+		return p.writeRTValue(v)
 	default:
 		return StreamWriteIsNotSupported
 	}

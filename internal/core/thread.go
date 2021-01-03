@@ -2,8 +2,6 @@ package core
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -13,6 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
 )
 
 var (
@@ -182,8 +183,8 @@ func newThread(
 			closeTimeout:    timeout,
 			sequence:        1<<48 + (rand.Uint64()%(1<<56)/2)*2,
 			rtStream:        NewStream(),
-			cacheArrayItems: make([]posRecord, numOfArray, numOfArray),
-			cacheMapItems:   make([]mapItem, numOfMap, numOfMap),
+			cacheArrayItems: make([]posRecord, numOfArray),
+			cacheMapItems:   make([]mapItem, numOfMap),
 		}
 
 		thread.top = &thread.rootFrame
@@ -231,15 +232,17 @@ func (p *rpcThread) Close() bool {
 func (p *rpcThread) lock(rtID uint64) *rpcThread {
 	lockPtr := &p.top.lockStatus
 	for !atomic.CompareAndSwapUint64(lockPtr, rtID, rtID+1) {
-		currStatus := atomic.LoadUint64(lockPtr)
-		for currStatus == rtID || currStatus == rtID+1 {
-			runtime.Gosched()
-			if atomic.CompareAndSwapUint64(lockPtr, rtID, rtID+1) {
-				return p
-			}
+		curStatus := atomic.LoadUint64(lockPtr)
+
+		if curStatus != rtID && curStatus != rtID+1 {
+			return nil
 		}
 
-		return nil
+		if atomic.CompareAndSwapUint64(lockPtr, rtID, rtID+1) {
+			return p
+		}
+
+		runtime.Gosched()
 	}
 
 	return p
