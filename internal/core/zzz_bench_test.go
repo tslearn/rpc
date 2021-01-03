@@ -41,7 +41,8 @@ func testWithRPCBenchmark(
 			runtime.GC()
 			b.ResetTimer()
 			b.ReportAllocs()
-			b.N = testCount
+			bNPtr := &b.N
+			*bNPtr = testCount
 			b.SetParallelism(32)
 
 			b.RunParallel(func(pb *testing.PB) {
