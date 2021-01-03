@@ -137,11 +137,6 @@ type Stream struct {
 	bufferFrames [streamFrameArrayInitSize]*[]byte
 }
 
-// GetStreamLengthByHeadBuffer ... TODO test
-func GetStreamLengthByHeadBuffer(b []byte) uint32 {
-	return binary.LittleEndian.Uint32(b[streamPosLength:])
-}
-
 // NewStream ...
 func NewStream() *Stream {
 	return streamCache.Get().(*Stream)
@@ -186,7 +181,7 @@ func (p *Stream) Release() {
 func (p *Stream) Clone() *Stream {
 	ret := NewStream()
 	copy(*(ret.frames[0]), *(p.frames[0]))
-	for i := 1; i < p.writeSeg; i++ {
+	for i := 1; i <= p.writeSeg; i++ {
 		// use gotoNextWriteFrame do not broke the bufferFrames
 		ret.gotoNextWriteFrame()
 		copy(*(ret.frames[i]), *(p.frames[i]))
@@ -198,6 +193,7 @@ func (p *Stream) Clone() *Stream {
 
 	ret.writeSeg = p.writeSeg
 	ret.writeIndex = p.writeIndex
+
 	ret.writeFrame = *(ret.frames[ret.writeSeg])
 
 	return ret
@@ -578,8 +574,8 @@ func (p *Stream) GetBufferUnsafe() []byte {
 	return p.GetBuffer()
 }
 
-// PeekBufferSlice ... TODO test
-func (p *Stream) PeekBufferSlice(pos int, max int) ([]byte, bool) {
+// PeekBufferSlice ...
+func (p *Stream) PeekBufferSlice(pos int, max int) (ret []byte, isFinish bool) {
 	if pos < 0 || max <= 0 {
 		return nil, true
 	}
@@ -589,7 +585,8 @@ func (p *Stream) PeekBufferSlice(pos int, max int) ([]byte, bool) {
 
 	if peekSeg < p.writeSeg {
 		peekEnd := base.MinInt(peekIndex+max, streamBlockSize)
-		return (*p.frames[peekSeg])[peekIndex:peekEnd], false
+		return (*p.frames[peekSeg])[peekIndex:peekEnd],
+			peekSeg*streamBlockSize+peekEnd >= p.GetWritePos()
 	} else if peekSeg == p.writeSeg {
 		if peekIndex < p.writeIndex {
 			peekEnd := base.MinInt(peekIndex+max, p.writeIndex)

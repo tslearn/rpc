@@ -626,6 +626,27 @@ func TestStream_Release(t *testing.T) {
 	})
 }
 
+func TestStream_Clone(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		totalBytes := 1600
+		buffer := make([]byte, totalBytes)
+		for i := 0; i < len(buffer); i++ {
+			buffer[i] = byte(i)
+		}
+
+		for i := 0; i < totalBytes; i++ {
+			v := NewStream()
+			v.PutBytes(buffer[:i])
+			c := v.Clone()
+			assert(v.GetBuffer()).Equal(c.GetBuffer())
+			assert(v.readSeg).Equal(c.readSeg)
+			assert(v.readIndex).Equal(c.readIndex)
+			v.Release()
+		}
+	})
+}
+
 func TestStream_GetVersion(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -1511,6 +1532,62 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 			stream.PutBytes(bytes[:i])
 			assert(stream.GetBufferUnsafe()[streamPosBody:]).Equal(bytes[:i])
 			stream.Release()
+		}
+	})
+}
+
+func TestStream_PeekBufferSlice(t *testing.T) {
+	t.Run("pos < 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := NewStream()
+		assert(stream.PeekBufferSlice(-1, 10)).Equal(nil, true)
+		stream.Release()
+	})
+
+	t.Run("pos > stream length", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := NewStream()
+		for i := stream.GetWritePos(); i < 1200; i++ {
+			assert(stream.PeekBufferSlice(i, 10)).Equal(nil, true)
+		}
+		stream.Release()
+	})
+
+	t.Run("max < 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := NewStream()
+		assert(stream.PeekBufferSlice(0, -1)).Equal(nil, true)
+		stream.Release()
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		totalBytes := 700
+		buffer := make([]byte, totalBytes)
+		for i := 0; i < totalBytes; i++ {
+			buffer[i] = byte(i)
+		}
+
+		for i := streamPosBody; i < totalBytes; i += 97 {
+			v := NewStream()
+			v.PutBytesTo(buffer[:i], 0)
+
+			for j := 0; j < i; j += 93 {
+				for k := 0; j+k <= i; k++ {
+					bytes, isFinish := v.PeekBufferSlice(j, k)
+					if k == 0 {
+						assert(bytes, isFinish).Equal(nil, true)
+					} else {
+						maxJ := ((j / streamBlockSize) + 1) * streamBlockSize
+						assert(bytes, isFinish).Equal(
+							buffer[j:base.MinInt(j+k, maxJ)],
+							j+len(bytes) == i,
+						)
+					}
+				}
+			}
+
+			v.Release()
 		}
 	})
 }
