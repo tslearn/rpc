@@ -1,11 +1,11 @@
 package adapter
 
 // TCPListener ...
-type TCPListener struct {
+type XListener struct {
 }
 
-// NewTCPListener ...
-func NewTCPListener(
+// NewXListener ...
+func NewXListener(
 	network string,
 	addr string,
 	onAccept func(fd int, localAddr net.Addr, remoteAddr net.Addr),
@@ -15,7 +15,7 @@ func NewTCPListener(
 }
 
 // Close ...
-func (p *TCPListener) Close() {
+func (p *XListener) Close() {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		tcpListenerStatusRunning,
