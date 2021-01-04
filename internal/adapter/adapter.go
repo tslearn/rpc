@@ -1,3 +1,4 @@
+// Package adapter ...
 package adapter
 
 import (
