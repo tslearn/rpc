@@ -19,8 +19,8 @@ type testSingleReceiver struct {
 func newTestSingleReceiver() *testSingleReceiver {
 	return &testSingleReceiver{
 		streamConn: nil,
-		errCH:      make(chan *base.Error),
-		streamCH:   make(chan *core.Stream),
+		errCH:      make(chan *base.Error, 1024),
+		streamCH:   make(chan *core.Stream, 1024),
 	}
 }
 
@@ -63,11 +63,12 @@ func (p *testSingleReceiver) OnConnError(
 ) {
 	p.Lock()
 	defer p.Unlock()
-	if p.streamConn != nil && p.streamConn == streamConn {
-		p.errCH <- err
-	} else {
+
+	if p.streamConn != nil && p.streamConn != streamConn {
 		panic("error")
 	}
+
+	p.errCH <- err
 }
 
 func (p *testSingleReceiver) GetStream() *core.Stream {

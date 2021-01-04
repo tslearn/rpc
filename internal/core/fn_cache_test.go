@@ -11,52 +11,52 @@ import (
 )
 
 func TestBuildFuncCache(t *testing.T) {
-	_, currFile, _, _ := runtime.Caller(0)
-	currDir := path.Dir(currFile)
+	_, curFile, _, _ := runtime.Caller(0)
+	curDir := path.Dir(curFile)
 	defer func() {
-		_ = os.RemoveAll(path.Join(path.Dir(currFile), "_tmp_"))
+		_ = os.RemoveAll(path.Join(path.Dir(curFile), "_tmp_"))
 	}()
 
 	t.Run("duplicate kind", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "_tmp_/duplicate-kind.go")
+		filePath := path.Join(curDir, "_tmp_/duplicate-kind.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"A", "A"})).
 			Equal(errors.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
 	})
 
 	t.Run("illegal kind", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "_tmp_/illegal-kind.go")
+		filePath := path.Join(curDir, "_tmp_/illegal-kind.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"T", "A"})).
 			Equal(errors.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
 	})
 
 	t.Run("mkdir error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "fn_cache_test.go", "error.go")
+		filePath := path.Join(curDir, "fn_cache_test.go", "error.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
 			Equal(errors.ErrCacheMkdirAll)
 	})
 
 	t.Run("write to file error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "_snapshot_")
+		filePath := path.Join(curDir, "_snapshot_")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
 			Equal(errors.ErrCacheWriteFile)
 	})
 
 	t.Run("kinds is empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "_tmp_/test-cache-01.go")
-		snapPath := path.Join(currDir, "_snapshot_/test-cache-01.snapshot")
+		filePath := path.Join(curDir, "_tmp_/test-cache-01.go")
+		snapPath := path.Join(curDir, "_snapshot_/test-cache-01.snapshot")
 		assert(buildFuncCache("pkgName", filePath, []string{})).IsNil()
 		assert(base.ReadFromFile(filePath)).Equal(base.ReadFromFile(snapPath))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		filePath := path.Join(currDir, "_tmp_/test-cache-02.go")
-		snapPath := path.Join(currDir, "_snapshot_/test-cache-02.snapshot")
+		filePath := path.Join(curDir, "_tmp_/test-cache-02.go")
+		snapPath := path.Join(curDir, "_snapshot_/test-cache-02.snapshot")
 		assert(buildFuncCache("pkgName", filePath, []string{
 			"",
 			"BIUFSXAMVYZ",

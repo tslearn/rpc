@@ -404,15 +404,15 @@ func TestProcessor_PutStream(t *testing.T) {
 
 func TestProcessor_BuildCache(t *testing.T) {
 	_, file, _, _ := runtime.Caller(0)
-	currDir := path.Dir(file)
+	curDir := path.Dir(file)
 	defer func() {
 		_ = os.RemoveAll(path.Join(path.Dir(file), "_tmp_"))
 	}()
 
 	t.Run("services is empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		tmpFile := path.Join(currDir, "_tmp_/test-processor-01.go")
-		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-01.snapshot")
+		tmpFile := path.Join(curDir, "_tmp_/test-processor-01.go")
+		snapshotFile := path.Join(curDir, "_snapshot_/test-processor-01.snapshot")
 		processor, _ := NewProcessor(
 			freeGroups,
 			2,
@@ -430,8 +430,8 @@ func TestProcessor_BuildCache(t *testing.T) {
 
 	t.Run("service is not empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		tmpFile := path.Join(currDir, "_tmp_/test-processor-02.go")
-		snapshotFile := path.Join(currDir, "_snapshot_/test-processor-02.snapshot")
+		tmpFile := path.Join(curDir, "_tmp_/test-processor-02.go")
+		snapshotFile := path.Join(curDir, "_snapshot_/test-processor-02.snapshot")
 		processor, _ := NewProcessor(
 			freeGroups,
 			2,

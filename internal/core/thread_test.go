@@ -415,7 +415,7 @@ func TestRpcThread_pushFrame(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testReply(true, nil, nil,
 			func(rt Runtime) Return {
-				currFrame := rt.thread.top
+				curFrame := rt.thread.top
 				rtArray := rt.NewRTArray(7)
 				rtMap := rt.NewRTMap(7)
 				_ = rtArray.Append("hello")
@@ -424,7 +424,7 @@ func TestRpcThread_pushFrame(t *testing.T) {
 				parentRTWritePos := rt.thread.rtStream.GetWritePos()
 				rt.thread.pushFrame()
 				newFrame := rt.thread.top
-				assert(newFrame.next).Equal(currFrame)
+				assert(newFrame.next).Equal(curFrame)
 				assert(newFrame.cacheArrayItemsPos).Equal(uint32(7))
 				assert(newFrame.cacheMapItemsPos).Equal(uint32(7))
 				assert(newFrame.cacheArrayEntryPos).Equal(uint32(1))
@@ -450,14 +450,14 @@ func TestRpcThread_popFrame(t *testing.T) {
 					return rt.Reply(true)
 				}
 
-				currFrame := rt.thread.top
-				cacheArrayItemsPos := currFrame.cacheArrayItemsPos
-				cacheMapItemsPos := currFrame.cacheMapItemsPos
-				cacheArrayEntryPos := currFrame.cacheArrayEntryPos
-				cacheMapEntryPos := currFrame.cacheMapEntryPos
+				curFrame := rt.thread.top
+				cacheArrayItemsPos := curFrame.cacheArrayItemsPos
+				cacheMapItemsPos := curFrame.cacheMapItemsPos
+				cacheArrayEntryPos := curFrame.cacheArrayEntryPos
+				cacheMapEntryPos := curFrame.cacheMapEntryPos
 				parentRTWritePos := rt.thread.rtStream.GetWritePos()
 				ret := rt.Reply(rt.Call("#.test:Eval", v-1))
-				assert(rt.thread.top).Equal(currFrame)
+				assert(rt.thread.top).Equal(curFrame)
 				assert(rt.thread.top.cacheArrayItemsPos).Equal(cacheArrayItemsPos)
 				assert(rt.thread.top.cacheMapItemsPos).Equal(cacheMapItemsPos)
 				assert(rt.thread.top.cacheArrayEntryPos).Equal(cacheArrayEntryPos)

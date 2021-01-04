@@ -60,10 +60,10 @@ func TestLog(t *testing.T) {
 func TestSetLogWriter(t *testing.T) {
 	t.Run("writer is nil", func(t *testing.T) {
 		assert := NewAssert(t)
-		currHelper := (*logHelper)(atomic.LoadPointer(&logWriter))
+		curHelper := (*logHelper)(atomic.LoadPointer(&logWriter))
 		SetLogWriter(nil)
 		defer SetLogWriter(os.Stdout)
-		assert((*logHelper)(atomic.LoadPointer(&logWriter))).Equal(currHelper)
+		assert((*logHelper)(atomic.LoadPointer(&logWriter))).Equal(curHelper)
 	})
 
 	t.Run("writer is not nil", func(t *testing.T) {

@@ -281,14 +281,14 @@ func TestReadFromFile(t *testing.T) {
 }
 
 func TestGetTLSServerConfig(t *testing.T) {
-	_, currFile, _, _ := runtime.Caller(0)
-	currDir := path.Dir(currFile)
+	_, curFile, _, _ := runtime.Caller(0)
+	curDir := path.Dir(curFile)
 
 	t.Run("cert or key error", func(t *testing.T) {
 		assert := NewAssert(t)
 		ret, e := GetTLSServerConfig(
-			path.Join(currDir, "_cert_", "error.crt"),
-			path.Join(currDir, "_cert_", "error.key"),
+			path.Join(curDir, "_cert_", "error.crt"),
+			path.Join(curDir, "_cert_", "error.key"),
 		)
 		assert(ret).IsNil()
 		assert(e).IsNotNil()
@@ -297,12 +297,12 @@ func TestGetTLSServerConfig(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		ret, e := GetTLSServerConfig(
-			path.Join(currDir, "_cert_", "test.crt"),
-			path.Join(currDir, "_cert_", "test.key"),
+			path.Join(curDir, "_cert_", "test.crt"),
+			path.Join(curDir, "_cert_", "test.key"),
 		)
 		cert, _ := tls.LoadX509KeyPair(
-			path.Join(currDir, "_cert_", "test.crt"),
-			path.Join(currDir, "_cert_", "test.key"),
+			path.Join(curDir, "_cert_", "test.crt"),
+			path.Join(curDir, "_cert_", "test.key"),
 		)
 		assert(ret).IsNotNil()
 		assert(ret).Equal(&tls.Config{
@@ -330,14 +330,14 @@ func TestGetTLSServerConfig(t *testing.T) {
 }
 
 func TestGetTLSClientConfig(t *testing.T) {
-	_, currFile, _, _ := runtime.Caller(0)
-	currDir := path.Dir(currFile)
+	_, curFile, _, _ := runtime.Caller(0)
+	curDir := path.Dir(curFile)
 
 	t.Run("ca error 01", func(t *testing.T) {
 		assert := NewAssert(t)
 		ret, e := GetTLSClientConfig(
 			true,
-			[]string{path.Join(currDir, "_cert_", "not_exist.ca")},
+			[]string{path.Join(curDir, "_cert_", "not_exist.ca")},
 		)
 		assert(ret).IsNil()
 		assert(e).IsNotNil()
@@ -348,9 +348,9 @@ func TestGetTLSClientConfig(t *testing.T) {
 		ret, e := GetTLSClientConfig(
 			true,
 			[]string{
-				path.Join(currDir, "_cert_", "ca.crt"),
-				path.Join(currDir, "_cert_", "test.crt"),
-				path.Join(currDir, "_cert_", "error.crt"),
+				path.Join(curDir, "_cert_", "ca.crt"),
+				path.Join(curDir, "_cert_", "test.crt"),
+				path.Join(curDir, "_cert_", "error.crt"),
 			},
 		)
 
@@ -369,8 +369,8 @@ func TestGetTLSClientConfig(t *testing.T) {
 		ret, e := GetTLSClientConfig(
 			true,
 			[]string{
-				path.Join(currDir, "_cert_", "ca.crt"),
-				path.Join(currDir, "_cert_", "test.crt"),
+				path.Join(curDir, "_cert_", "ca.crt"),
+				path.Join(curDir, "_cert_", "test.crt"),
 			},
 		)
 		assert(ret).IsNotNil()
