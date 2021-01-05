@@ -72,7 +72,23 @@ func NewORCManager() *ORCManager {
 }
 
 func (p *ORCManager) isRunning() bool {
-	return atomic.LoadInt32(&p.status)&0xFF == orcStatusReady
+	switch atomic.LoadInt32(&p.status) & 0xFF {
+	case orcStatusReady:
+		return true
+	case orcStatusClosing:
+		return func() bool {
+			p.mu.Lock()
+			defer p.mu.Unlock()
+
+			for p.status&0xFF == orcStatusClosing {
+				p.waitStatusChange()
+			}
+
+			return p.status&0xFF == orcStatusReady
+		}()
+	default:
+		return false
+	}
 }
 
 func (p *ORCManager) setStatus(status int32) {
