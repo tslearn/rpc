@@ -68,6 +68,24 @@ var (
 		"",
 	)
 
+	ErrConnClose = base.DefineNetError(
+		(adapterErrorSeg<<16)|30,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrConnRead = base.DefineNetError(
+		(adapterErrorSeg<<16)|31,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrConnWrite = base.DefineNetError(
+		(adapterErrorSeg<<16)|32,
+		base.ErrorLevelFatal,
+		"",
+	)
+
 	// ErrKqueueSystem  ...
 	ErrKqueueSystem = base.DefineNetError(
 		(adapterErrorSeg<<16)|2,
@@ -85,6 +103,12 @@ var (
 	// ErrTCPListener  ...
 	ErrTCPListener = base.DefineNetError(
 		(adapterErrorSeg<<16)|4,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrOnFillWriteFatal = base.DefineKernelError(
+		(adapterErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
 		"",
 	)

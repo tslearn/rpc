@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/core"
 	"io"
 	"net"
@@ -70,7 +69,7 @@ func (p *NetConn) Close() {
 	if p.isRunning {
 		p.isRunning = false
 		if e := p.conn.Close(); e != nil {
-			p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+			p.OnError(errors.ErrConnClose.AddDebug(e.Error()))
 		}
 	}
 }
@@ -91,7 +90,7 @@ func (p *NetConn) OnReadReady() bool {
 	if e != nil {
 		if p.isServer {
 			if e != io.EOF {
-				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+				p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
 			}
 		} else {
 			p.Lock()
@@ -100,7 +99,7 @@ func (p *NetConn) OnReadReady() bool {
 			p.Unlock()
 
 			if !ignoreReport {
-				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+				p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
 			}
 		}
 
@@ -131,7 +130,7 @@ func (p *NetConn) OnWriteReady() bool {
 		start := 0
 		for start < bufLen {
 			if n, e := p.conn.Write(p.wBuf[start:bufLen]); e != nil {
-				p.OnError(errors.ErrTemp.AddDebug(e.Error()))
+				p.OnError(errors.ErrConnWrite.AddDebug(e.Error()))
 				return false
 			} else if n == 0 {
 				return false
@@ -276,7 +275,9 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 	peekBuf, finish := p.writeStream.PeekBufferSlice(p.writePos, len(b))
 
 	if len(peekBuf) <= 0 {
-		p.OnError(errors.ErrTemp.AddDebug("OnFillWrite internal error"))
+		p.OnError(
+			errors.ErrOnFillWriteFatal.AddDebug("OnFillWrite internal error"),
+		)
 		return 0
 	}
 
@@ -318,9 +319,7 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	func() {
 		defer func() {
-			if v := recover(); v != nil {
-				p.OnError(errors.ErrTemp.AddDebug(fmt.Sprintf("%v", v)))
-			}
+			recover()
 		}()
 
 		stream.BuildStreamCheck()
