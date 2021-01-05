@@ -33,9 +33,12 @@ func NewClientService(adapter *Adapter) base.IORCService {
 			orcManager: base.NewORCManager(),
 		}
 	default:
-		adapter.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-			fmt.Sprintf("unsupported protocol %s", adapter.network),
-		))
+		adapter.receiver.OnConnError(
+			nil,
+			errors.ErrUnsupportedProtocol.AddDebug(
+				fmt.Sprintf("unsupported protocol %s", adapter.network),
+			),
+		)
 		return nil
 	}
 }
@@ -63,40 +66,19 @@ func NewServerService(adapter *Adapter) base.IORCService {
 	case "ws":
 		fallthrough
 	case "wss":
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			conn, _, _, e := ws.UpgradeHTTP(r, w)
-
-			if e != nil {
-				adapter.receiver.OnConnError(
-					nil,
-					errors.ErrTemp.AddDebug(e.Error()),
-				)
-			} else {
-				syncConn := NewNetConn(
-					true,
-					conn,
-					adapter.rBufSize,
-					adapter.wBufSize,
-				)
-				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
-				runIConnOnServer(syncConn)
-			}
-		})
-
 		return &syncWSServerService{
-			adapter: adapter,
-			ln:      nil,
-			server: &http.Server{
-				Addr:    adapter.addr,
-				Handler: mux,
-			},
+			adapter:    adapter,
+			ln:         nil,
+			server:     nil,
 			orcManager: base.NewORCManager(),
 		}
 	default:
-		adapter.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-			fmt.Sprintf("unsupported protocol %s", adapter.network),
-		))
+		adapter.receiver.OnConnError(
+			nil,
+			errors.ErrUnsupportedProtocol.AddDebug(
+				fmt.Sprintf("unsupported protocol %s", adapter.network),
+			),
+		)
 		return nil
 	}
 }
@@ -141,7 +123,7 @@ func (p *syncTCPServerService) Open() bool {
 		if e != nil {
 			adapter.receiver.OnConnError(
 				nil,
-				errors.ErrTemp.AddDebug(e.Error()),
+				errors.ErrSyncTCPServerServiceListen.AddDebug(e.Error()),
 			)
 			return false
 		}
@@ -164,7 +146,7 @@ func (p *syncTCPServerService) Run() bool {
 				if !isCloseErr {
 					adapter.receiver.OnConnError(
 						nil,
-						errors.ErrTemp.AddDebug(e.Error()),
+						errors.ErrSyncTCPServerServiceAccept.AddDebug(e.Error()),
 					)
 				}
 			} else {
@@ -187,7 +169,7 @@ func (p *syncTCPServerService) Close() bool {
 		if e := p.ln.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
-				errors.ErrTemp.AddDebug(e.Error()),
+				errors.ErrSyncTCPServerServiceClose.AddDebug(e.Error()),
 			)
 		}
 	}, func() {
@@ -257,6 +239,33 @@ func (p *syncWSServerService) Open() bool {
 	return p.orcManager.Open(func() bool {
 		e := error(nil)
 		adapter := p.adapter
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			conn, _, _, e := ws.UpgradeHTTP(r, w)
+
+			if e != nil {
+				adapter.receiver.OnConnError(
+					nil,
+					errors.ErrSyncWSServerServiceUpgrade.AddDebug(e.Error()),
+				)
+			} else {
+				syncConn := NewNetConn(
+					true,
+					conn,
+					adapter.rBufSize,
+					adapter.wBufSize,
+				)
+				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
+				runIConnOnServer(syncConn)
+			}
+		})
+
+		p.server = &http.Server{
+			Addr:    adapter.addr,
+			Handler: mux,
+		}
+
 		if adapter.tlsConfig == nil {
 			p.ln, e = net.Listen("tcp", adapter.addr)
 		} else {
@@ -266,7 +275,7 @@ func (p *syncWSServerService) Open() bool {
 		if e != nil {
 			adapter.receiver.OnConnError(
 				nil,
-				errors.ErrTemp.AddDebug(e.Error()),
+				errors.ErrSyncWSServerServiceListen.AddDebug(e.Error()),
 			)
 			return false
 		}
@@ -283,7 +292,7 @@ func (p *syncWSServerService) Run() bool {
 				if e != http.ErrServerClosed {
 					p.adapter.receiver.OnConnError(
 						nil,
-						errors.ErrTemp.AddDebug(e.Error()),
+						errors.ErrSyncWSServerServiceServe.AddDebug(e.Error()),
 					)
 				}
 			}
@@ -297,10 +306,11 @@ func (p *syncWSServerService) Close() bool {
 		if e := p.server.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
-				errors.ErrTemp.AddDebug(e.Error()),
+				errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
 			)
 		}
 	}, func() {
+		p.server = nil
 		p.ln = nil
 	})
 }
@@ -341,16 +351,19 @@ func (p *syncClientService) openConn() bool {
 		u := url.URL{Scheme: adapter.network, Host: adapter.addr, Path: "/"}
 		conn, _, _, e = dialer.Dial(context.Background(), u.String())
 	default:
-		adapter.receiver.OnConnError(nil, errors.ErrTemp.AddDebug(
-			fmt.Sprintf("unsupported protocol %s", adapter.network),
-		))
+		adapter.receiver.OnConnError(
+			nil,
+			errors.ErrUnsupportedProtocol.AddDebug(
+				fmt.Sprintf("unsupported protocol %s", adapter.network),
+			),
+		)
 		return false
 	}
 
 	if e != nil {
 		adapter.receiver.OnConnError(
 			nil,
-			errors.ErrTemp.AddDebug(e.Error()),
+			errors.ErrSyncClientServiceDial.AddDebug(e.Error()),
 		)
 		return false
 	}

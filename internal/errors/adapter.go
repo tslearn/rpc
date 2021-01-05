@@ -14,11 +14,58 @@ var (
 		"",
 	)
 
-	// ErrStreamConnIsClosed ... *
-	ErrStreamConnIsClosed = base.DefineNetError(
-		(adapterErrorSeg<<16)|1,
-		base.ErrorLevelWarn,
-		"stream conn is closed",
+	ErrUnsupportedProtocol = base.DefineNetError(
+		(adapterErrorSeg<<16)|21,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncTCPServerServiceListen = base.DefineNetError(
+		(adapterErrorSeg<<16)|22,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncTCPServerServiceAccept = base.DefineNetError(
+		(adapterErrorSeg<<16)|23,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncTCPServerServiceClose = base.DefineNetError(
+		(adapterErrorSeg<<16)|24,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncWSServerServiceListen = base.DefineNetError(
+		(adapterErrorSeg<<16)|25,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncWSServerServiceUpgrade = base.DefineNetError(
+		(adapterErrorSeg<<16)|26,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncWSServerServiceServe = base.DefineNetError(
+		(adapterErrorSeg<<16)|27,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncWSServerServiceClose = base.DefineNetError(
+		(adapterErrorSeg<<16)|28,
+		base.ErrorLevelFatal,
+		"",
+	)
+
+	ErrSyncClientServiceDial = base.DefineNetError(
+		(adapterErrorSeg<<16)|29,
+		base.ErrorLevelFatal,
+		"",
 	)
 
 	// ErrKqueueSystem  ...
@@ -39,116 +86,6 @@ var (
 	ErrTCPListener = base.DefineNetError(
 		(adapterErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
-		"",
-	)
-)
-
-const eventConnErrorSeg = 2101
-
-var (
-	// ErrEventConnReadBufferIsTooSmall ...
-	ErrEventConnReadBufferIsTooSmall = base.DefineConfigError(
-		(eventConnErrorSeg<<16)|1,
-		base.ErrorLevelFatal,
-		"event conn read buffer is too small",
-	)
-
-	// ErrEventConnRead ...
-	ErrEventConnRead = base.DefineConfigError(
-		(eventConnErrorSeg<<16)|2,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrEventConnReadLimit ...
-	ErrEventConnReadLimit = base.DefineConfigError(
-		(eventConnErrorSeg<<16)|3,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrEventConnWriteStream ...
-	ErrEventConnWriteStream = base.DefineNetError(
-		(eventConnErrorSeg<<16)|4,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrEventConnClose ...
-	ErrEventConnClose = base.DefineNetError(
-		(eventConnErrorSeg<<16)|5,
-		base.ErrorLevelWarn,
-		"",
-	)
-)
-
-const tcpServerAdapterErrorSeg = 2102
-
-var (
-	// ErrTCPServerAdapterAlreadyRunning ...
-	ErrTCPServerAdapterAlreadyRunning = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|1,
-		base.ErrorLevelWarn,
-		"it is already running",
-	)
-
-	// ErrTCPServerAdapterNotRunning ...
-	ErrTCPServerAdapterNotRunning = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|2,
-		base.ErrorLevelWarn,
-		"it is not running",
-	)
-
-	// ErrTCPServerAdapterListen ...
-	ErrTCPServerAdapterListen = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|3,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrTCPServerAdapterAccept ...
-	ErrTCPServerAdapterAccept = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|4,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrTCPServerAdapterClose ...
-	ErrTCPServerAdapterClose = base.DefineNetError(
-		(tcpServerAdapterErrorSeg<<16)|5,
-		base.ErrorLevelWarn,
-		"",
-	)
-)
-
-const tcpClientAdapterErrorSeg = 2103
-
-var (
-	// ErrTCPClientAdapterAlreadyRunning ...
-	ErrTCPClientAdapterAlreadyRunning = base.DefineNetError(
-		(tcpClientAdapterErrorSeg<<16)|1,
-		base.ErrorLevelWarn,
-		"it is already running",
-	)
-
-	// ErrTCPClientAdapterNotRunning ...
-	ErrTCPClientAdapterNotRunning = base.DefineNetError(
-		(tcpClientAdapterErrorSeg<<16)|2,
-		base.ErrorLevelWarn,
-		"it is not running",
-	)
-
-	// ErrTCPClientAdapterDial ...
-	ErrTCPClientAdapterDial = base.DefineNetError(
-		(tcpClientAdapterErrorSeg<<16)|3,
-		base.ErrorLevelWarn,
-		"",
-	)
-
-	// ErrTCPClientAdapterClose ...
-	ErrTCPClientAdapterClose = base.DefineNetError(
-		(tcpClientAdapterErrorSeg<<16)|4,
-		base.ErrorLevelWarn,
 		"",
 	)
 )
