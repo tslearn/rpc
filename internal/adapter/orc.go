@@ -14,6 +14,13 @@ const (
 	orcStatusClosing = 2
 )
 
+// IORCService ...
+type IORCService interface {
+	Open() bool
+	Run() bool
+	Close() bool
+}
+
 // ORCManager ...
 type ORCManager struct {
 	sequence     uint64
