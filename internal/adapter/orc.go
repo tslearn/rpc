@@ -7,7 +7,7 @@ import (
 
 const (
 	orcLockBit    = 1 << 2
-	orcStatusMask = 0x03
+	orcStatusMask = orcLockBit - 1
 
 	orcStatusClosed  = 0
 	orcStatusReady   = 1
@@ -21,7 +21,7 @@ const (
 // ORCManager ...
 type ORCManager struct {
 	sequence   uint64
-	condStatus int32
+	isCondWait bool
 	mu         sync.Mutex
 	cond       sync.Cond
 }
@@ -76,24 +76,24 @@ func (p *ORCManager) setStatus(status uint64) {
 		baseSequence := p.getBaseSequence()
 
 		if status == orcStatusClosed {
-			atomic.StoreUint64(&p.sequence, baseSequence+8)
+			atomic.StoreUint64(&p.sequence, baseSequence+status+8)
 		} else {
-			atomic.StoreUint64(&p.sequence, status)
+			atomic.StoreUint64(&p.sequence, baseSequence+status)
 		}
 
-		if p.condStatus == orcCondBusy {
-			p.condStatus = orcCondFree
+		if p.isCondWait {
+			p.isCondWait = false
 			p.cond.Broadcast()
 		}
 	}
 }
 
 func (p *ORCManager) waitStatusChange() {
-	if p.condStatus == orcCondNone {
+	if p.cond.L == nil {
 		p.cond.L = &p.mu
 	}
 
-	p.condStatus = orcCondBusy
+	p.isCondWait = true
 	p.cond.Wait()
 }
 
