@@ -12,18 +12,14 @@ const (
 	orcStatusClosed  = 0
 	orcStatusReady   = 1
 	orcStatusClosing = 2
-
-	orcCondNone = 0
-	orcCondFree = 1
-	orcCondBusy = 2
 )
 
 // ORCManager ...
 type ORCManager struct {
-	sequence   uint64
-	isCondWait bool
-	mu         sync.Mutex
-	cond       sync.Cond
+	sequence     uint64
+	isWaitChange bool
+	mu           sync.Mutex
+	cond         sync.Cond
 }
 
 // NewORCManager ...
@@ -81,8 +77,8 @@ func (p *ORCManager) setStatus(status uint64) {
 			atomic.StoreUint64(&p.sequence, baseSequence+status)
 		}
 
-		if p.isCondWait {
-			p.isCondWait = false
+		if p.isWaitChange {
+			p.isWaitChange = false
 			p.cond.Broadcast()
 		}
 	}
@@ -93,7 +89,7 @@ func (p *ORCManager) waitStatusChange() {
 		p.cond.L = &p.mu
 	}
 
-	p.isCondWait = true
+	p.isWaitChange = true
 	p.cond.Wait()
 }
 
