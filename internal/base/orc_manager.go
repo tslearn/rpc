@@ -107,12 +107,10 @@ func (p *ORCManager) Open(onOpen func() bool) bool {
 
 	for {
 		switch p.getStatus() {
-		case orcStatusClosing:
-			p.waitStatusChange()
 		case orcStatusClosing | orcLockBit:
 			p.waitStatusChange()
 		case orcStatusClosed:
-			if onOpen() {
+			if onOpen != nil && onOpen() {
 				p.setStatus(orcStatusReady)
 				return true
 			}
@@ -137,7 +135,12 @@ func (p *ORCManager) Run(
 			p.setStatus(orcStatusReady | orcLockBit)
 
 			ret := func() bool {
+				if onRun == nil {
+					return false
+				}
+
 				isRunningFn := p.getRunningFn()
+
 				// open the lock and then call didRun.
 				// at last lock again
 				p.mu.Unlock()
@@ -150,8 +153,6 @@ func (p *ORCManager) Run(
 
 			return ret
 		case orcStatusReady | orcLockBit:
-			p.waitStatusChange()
-		case orcStatusClosing:
 			p.waitStatusChange()
 		case orcStatusClosing | orcLockBit:
 			p.waitStatusChange()
@@ -170,7 +171,7 @@ func (p *ORCManager) Close(willClose func() bool, didClose func()) bool {
 		switch p.getStatus() {
 		case orcStatusReady:
 			p.setStatus(orcStatusClosing)
-			if willClose() {
+			if willClose != nil && willClose() {
 				if didClose != nil {
 					didClose()
 				}
@@ -182,7 +183,7 @@ func (p *ORCManager) Close(willClose func() bool, didClose func()) bool {
 			return false
 		case orcStatusReady | orcLockBit:
 			p.setStatus(orcStatusClosing | orcLockBit)
-			if willClose() {
+			if willClose != nil && willClose() {
 				for p.getStatus()&orcLockBit != 0 {
 					p.waitStatusChange()
 				}
