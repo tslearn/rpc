@@ -122,9 +122,7 @@ func (p *ORCManager) Open(onOpen func() bool) bool {
 }
 
 // Run ...
-func (p *ORCManager) Run(
-	onRun func(isRunning func() bool) bool,
-) bool {
+func (p *ORCManager) Run(onRun func(isRunning func() bool) bool) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
