@@ -101,7 +101,7 @@ func (p *ORCManager) waitStatusChange() {
 }
 
 // Open ...
-func (p *ORCManager) Open(willOpen func() bool, didOpen func()) bool {
+func (p *ORCManager) Open(onOpen func() bool) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -112,11 +112,8 @@ func (p *ORCManager) Open(willOpen func() bool, didOpen func()) bool {
 		case orcStatusClosing | orcLockBit:
 			p.waitStatusChange()
 		case orcStatusClosed:
-			if willOpen() {
+			if onOpen() {
 				p.setStatus(orcStatusReady)
-				if didOpen != nil {
-					didOpen()
-				}
 				return true
 			}
 			return false
@@ -128,8 +125,7 @@ func (p *ORCManager) Open(willOpen func() bool, didOpen func()) bool {
 
 // Run ...
 func (p *ORCManager) Run(
-	willRun func() bool,
-	didRun func(isRunning func() bool),
+	onRun func(isRunning func() bool) bool,
 ) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -137,28 +133,22 @@ func (p *ORCManager) Run(
 	for {
 		switch p.getStatus() {
 		case orcStatusReady:
-			if willRun() {
-				// add lock bit
-				p.setStatus(orcStatusReady | orcLockBit)
+			// add lock bit
+			p.setStatus(orcStatusReady | orcLockBit)
+
+			ret := func() bool {
 				isRunningFn := p.getRunningFn()
+				// open the lock and then call didRun.
+				// at last lock again
+				p.mu.Unlock()
+				defer p.mu.Lock()
+				return onRun(isRunningFn)
+			}()
 
-				if didRun != nil {
-					func() {
-						// open the lock and then call didRun.
-						// at last lock again
-						p.mu.Unlock()
-						defer p.mu.Lock()
-						didRun(isRunningFn)
-					}()
-				}
+			// clear lock bit
+			p.setStatus(p.getStatus() & orcStatusMask)
 
-				// delete lock bit
-				p.setStatus(p.getStatus() & orcStatusMask)
-
-				return true
-			}
-
-			return false
+			return ret
 		case orcStatusReady | orcLockBit:
 			p.waitStatusChange()
 		case orcStatusClosing:
