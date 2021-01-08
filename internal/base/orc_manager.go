@@ -62,10 +62,6 @@ func (p *ORCManager) getRunningFn() func() bool {
 					return true
 				case orcStatusReady | orcLockBit:
 					return true
-				case orcStatusClosing:
-					p.waitStatusChange()
-				case orcStatusClosing | orcLockBit:
-					p.waitStatusChange()
 				default:
 					return false
 				}
@@ -107,6 +103,8 @@ func (p *ORCManager) Open(onOpen func() bool) bool {
 
 	for {
 		switch p.getStatus() {
+		case orcStatusClosing:
+			p.waitStatusChange()
 		case orcStatusClosing | orcLockBit:
 			p.waitStatusChange()
 		case orcStatusClosed:
@@ -151,8 +149,6 @@ func (p *ORCManager) Run(onRun func(isRunning func() bool) bool) bool {
 
 			return ret
 		case orcStatusReady | orcLockBit:
-			p.waitStatusChange()
-		case orcStatusClosing | orcLockBit:
 			p.waitStatusChange()
 		default:
 			return false

@@ -23,7 +23,41 @@ func TestORCManager_NewORCManager(t *testing.T) {
 		o := NewORCManager()
 		assert(o).IsNotNil()
 		assert(o.getStatus()).Equal(uint64(orcStatusClosed))
+		assert(o.isWaitChange).Equal(false)
+		assert(o.cond.L == nil).IsTrue()
 	})
+}
+
+func TestORCManager_getBaseSequence(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+
+		for i := uint64(0); i < 10; i++ {
+			for j := uint64(0); j < 8; j++ {
+				atomic.StoreUint64(&o.sequence, i*8+j)
+				assert(o.getBaseSequence()).Equal(i * 8)
+			}
+		}
+	})
+}
+
+func TestORCManager_getStatus(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		o := NewORCManager()
+
+		for i := uint64(0); i < 10; i++ {
+			for j := uint64(0); j < 8; j++ {
+				atomic.StoreUint64(&o.sequence, i*8+j)
+				assert(o.getStatus()).Equal(j)
+			}
+		}
+	})
+}
+
+func TestORCManager_getRunningFn(t *testing.T) {
+
 }
 
 func TestORCManager_isRunning(t *testing.T) {
