@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 	"unsafe"
 )
 
@@ -24,7 +25,7 @@ func TestSyncTCPServerService_Open(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "error", nil, 1200, 1200, receiver,
 			),
 			ln:         nil,
@@ -39,7 +40,7 @@ func TestSyncTCPServerService_Open(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "0.0.0.0:65432", nil, 1200, 1200, receiver,
 			),
 			ln:         nil,
@@ -62,7 +63,7 @@ func TestSyncTCPServerService_Open(t *testing.T) {
 			panic(e)
 		}
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "0.0.0.0:65432", tlsConfig, 1200, 1200, receiver,
 			),
 			ln:         nil,
@@ -74,14 +75,55 @@ func TestSyncTCPServerService_Open(t *testing.T) {
 	})
 }
 
-//func TestSyncTCPServerService_Run(t *testing.T) {
-//    _, curFile, _, _ := runtime.Caller(0)
-//    curDir := path.Dir(curFile)
-//
-//    t.Run("test tcp", func(t *testing.T) {
-//
-//    })
-//}
+func TestSyncTCPServerService_Run(t *testing.T) {
+	//_, curFile, _, _ := runtime.Caller(0)
+	//curDir := path.Dir(curFile)
+
+	t.Run("test tcp", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		fnStartClient := func(network string, addr string) {
+			receiver := newTestSingleReceiver()
+			client := &syncClientService{
+				adapter: NewClientAdapter(
+					network, addr, nil, 1200, 1200, receiver,
+				),
+				conn:       nil,
+				orcManager: base.NewORCManager(),
+			}
+			client.Open()
+			go func() {
+				assert(client.Run()).IsTrue()
+			}()
+			for client.conn == nil {
+				time.Sleep(50 * time.Millisecond)
+			}
+			client.Close()
+		}
+
+		receiver := newTestSingleReceiver()
+		server := &syncTCPServerService{
+			adapter: NewServerAdapter(
+				"tcp", "0.0.0.0:65432", nil, 1200, 1200, receiver,
+			),
+			ln:         nil,
+			orcManager: base.NewORCManager(),
+		}
+		assert(server.Open()).IsTrue()
+		go func() {
+			assert(server.Run()).IsTrue()
+		}()
+
+		fnStartClient("tcp", "0.0.0.0:65432")
+
+		server.Close()
+		assert(receiver.GetError()).IsNil()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+}
 
 func TestSyncTCPServerService_Close(t *testing.T) {
 	_, curFile, _, _ := runtime.Caller(0)
@@ -91,7 +133,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "0.0.0.0:65432", nil, 1200, 1200, receiver,
 			),
 			ln:         nil,
@@ -114,7 +156,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "0.0.0.0:65432", nil, 1200, 1200, receiver,
 			),
 			ln:         nil,
@@ -136,7 +178,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 			panic(e)
 		}
 		v := &syncTCPServerService{
-			adapter: NewClientAdapter(
+			adapter: NewServerAdapter(
 				"tcp", "0.0.0.0:65432", tlsConfig, 1200, 1200, receiver,
 			),
 			ln:         nil,

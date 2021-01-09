@@ -10,6 +10,11 @@ import (
 )
 
 type testSingleReceiver struct {
+	onOpenCount   int
+	onCloseCount  int
+	onErrorCount  int
+	onStreamCount int
+
 	streamConn *StreamConn
 	errCH      chan *base.Error
 	streamCH   chan *core.Stream
@@ -27,6 +32,7 @@ func newTestSingleReceiver() *testSingleReceiver {
 func (p *testSingleReceiver) OnConnOpen(streamConn *StreamConn) {
 	p.Lock()
 	defer p.Unlock()
+	p.onOpenCount++
 	if p.streamConn == nil {
 		p.streamConn = streamConn
 	} else {
@@ -37,6 +43,7 @@ func (p *testSingleReceiver) OnConnOpen(streamConn *StreamConn) {
 func (p *testSingleReceiver) OnConnClose(streamConn *StreamConn) {
 	p.Lock()
 	defer p.Unlock()
+	p.onCloseCount++
 	if p.streamConn != nil && p.streamConn == streamConn {
 		p.streamConn = nil
 	} else {
@@ -50,6 +57,7 @@ func (p *testSingleReceiver) OnConnReadStream(
 ) {
 	p.Lock()
 	defer p.Unlock()
+	p.onStreamCount++
 	if p.streamConn != nil && p.streamConn == streamConn {
 		p.streamCH <- stream
 	} else {
@@ -63,12 +71,36 @@ func (p *testSingleReceiver) OnConnError(
 ) {
 	p.Lock()
 	defer p.Unlock()
-
+	p.onErrorCount++
 	if p.streamConn != nil && p.streamConn != streamConn {
 		panic("error")
 	}
 
 	p.errCH <- err
+}
+
+func (p *testSingleReceiver) GetOnOpenCount() int {
+	p.Lock()
+	defer p.Unlock()
+	return p.onOpenCount
+}
+
+func (p *testSingleReceiver) GetOnCloseCount() int {
+	p.Lock()
+	defer p.Unlock()
+	return p.onCloseCount
+}
+
+func (p *testSingleReceiver) GetOnStreamCount() int {
+	p.Lock()
+	defer p.Unlock()
+	return p.onStreamCount
+}
+
+func (p *testSingleReceiver) GetOnErrorCount() int {
+	p.Lock()
+	defer p.Unlock()
+	return p.onErrorCount
 }
 
 func (p *testSingleReceiver) GetStream() *core.Stream {
