@@ -76,7 +76,12 @@ func (p *testSingleReceiver) GetStream() *core.Stream {
 }
 
 func (p *testSingleReceiver) GetError() *base.Error {
-	return <-p.errCH
+	select {
+	case ret := <-p.errCH:
+		return ret
+	default:
+		return nil
+	}
 }
 
 func TestAdapter(t *testing.T) {
