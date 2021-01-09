@@ -364,6 +364,7 @@ func TestORCManager_Close(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
 		o.setStatus(orcStatusReady | orcLockBit)
+		callCount := 0
 
 		go func() {
 			time.Sleep(300 * time.Millisecond)
@@ -373,8 +374,12 @@ func TestORCManager_Close(t *testing.T) {
 		}()
 
 		assert(o.Close(func() bool {
+			callCount++
 			return true
-		}, nil)).IsTrue()
+		}, func() {
+			callCount++
+		})).IsTrue()
+		assert(callCount).Equal(2)
 		assert(o.getStatus()).Equal(uint64(orcStatusClosed))
 	})
 }
