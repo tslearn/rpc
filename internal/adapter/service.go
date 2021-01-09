@@ -318,6 +318,13 @@ func (p *syncWSServerService) Close() bool {
 			)
 		}
 
+		if e := p.server.Close(); e != nil {
+			p.adapter.receiver.OnConnError(
+				nil,
+				errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
+			)
+		}
+
 		return true
 	}, func() {
 		p.server = nil
