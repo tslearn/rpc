@@ -112,15 +112,15 @@ func (p *Adapter) Open() bool {
 
 // Run ...
 func (p *Adapter) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
-		p.service.Run()
+	return p.orcManager.Run(func(isRunning func() bool) bool {
+		return p.service.Run()
 	})
 }
 
 // Close ...
 func (p *Adapter) Close() bool {
-	return p.orcManager.Close(func() {
-		p.service.Close()
+	return p.orcManager.Close(func() bool {
+		return p.service.Close()
 	}, func() {
 		p.service = nil
 	})

@@ -134,7 +134,7 @@ func (p *syncTCPServerService) Open() bool {
 
 // Run ...
 func (p *syncTCPServerService) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
+	return p.orcManager.Run(func(isRunning func() bool) bool {
 		adapter := p.adapter
 		for isRunning() {
 			conn, e := p.ln.Accept()
@@ -160,18 +160,22 @@ func (p *syncTCPServerService) Run() bool {
 				runIConnOnServer(syncConn)
 			}
 		}
+
+		return true
 	})
 }
 
 // Close ...
 func (p *syncTCPServerService) Close() bool {
-	return p.orcManager.Close(func() {
+	return p.orcManager.Close(func() bool {
 		if e := p.ln.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
 				errors.ErrSyncTCPServerServiceClose.AddDebug(e.Error()),
 			)
 		}
+
+		return true
 	}, func() {
 		p.ln = nil
 	})
@@ -217,8 +221,9 @@ func (p *asyncTCPServerService) Run() bool {
 }
 
 func (p *asyncTCPServerService) Close() bool {
-	return p.orcManager.Close(func() {
+	return p.orcManager.Close(func() bool {
 		p.ln.Close()
+		return true
 	}, func() {
 		p.ln = nil
 	})
@@ -286,8 +291,9 @@ func (p *syncWSServerService) Open() bool {
 
 // Run ...
 func (p *syncWSServerService) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
+	return p.orcManager.Run(func(isRunning func() bool) bool {
 		for isRunning() {
+			startNS := base.TimeNow().UnixNano()
 			if e := p.server.Serve(p.ln); e != nil {
 				if e != http.ErrServerClosed {
 					p.adapter.receiver.OnConnError(
@@ -296,19 +302,24 @@ func (p *syncWSServerService) Run() bool {
 					)
 				}
 			}
+			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, time.Second)
 		}
+
+		return true
 	})
 }
 
 // Close ...
 func (p *syncWSServerService) Close() bool {
-	return p.orcManager.Close(func() {
+	return p.orcManager.Close(func() bool {
 		if e := p.server.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
 				errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
 			)
 		}
+
+		return true
 	}, func() {
 		p.server = nil
 		p.ln = nil
@@ -391,7 +402,7 @@ func (p *syncClientService) Open() bool {
 
 // Run ...
 func (p *syncClientService) Run() bool {
-	return p.orcManager.Run(func(isRunning func() bool) {
+	return p.orcManager.Run(func(isRunning func() bool) bool {
 		for isRunning() {
 			startNS := base.TimeNow().UnixNano()
 
@@ -409,13 +420,16 @@ func (p *syncClientService) Run() bool {
 
 			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, 3*time.Second)
 		}
+
+		return true
 	})
 }
 
 // Close ...
 func (p *syncClientService) Close() bool {
-	return p.orcManager.Close(func() {
+	return p.orcManager.Close(func() bool {
 		p.closeConn()
+		return true
 	}, func() {
 		p.conn = nil
 	})

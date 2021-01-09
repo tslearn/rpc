@@ -171,7 +171,7 @@ func (p *XListener) Run() bool {
 
 // Close ...
 func (p *XListener) Close() bool {
-	return p.orcManager.Close(func() {
+	return p.orcManager.Close(func() bool {
 		if e := unix.Close(p.lnFD); e != nil {
 			p.onError(errors.ErrTemp.AddDebug(e.Error()))
 		}
@@ -191,6 +191,7 @@ func (p *XListener) Close() bool {
 		for i := 0; i < channelSize; i++ {
 			<-waitCH
 		}
+		return true
 	}, func() {
 		p.lnFD = 0
 		p.lnAddr = nil
