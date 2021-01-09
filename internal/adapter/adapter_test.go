@@ -72,7 +72,7 @@ func (p *testSingleReceiver) OnConnError(
 	p.Lock()
 	defer p.Unlock()
 	p.onErrorCount++
-	if p.streamConn != nil && p.streamConn != streamConn {
+	if streamConn != nil && p.streamConn != streamConn {
 		panic("error")
 	}
 

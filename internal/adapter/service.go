@@ -138,7 +138,6 @@ func (p *syncTCPServerService) Run() bool {
 		adapter := p.adapter
 		for isRunning() {
 			conn, e := p.ln.Accept()
-
 			if e != nil {
 				isCloseErr := !isRunning() &&
 					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
@@ -418,7 +417,11 @@ func (p *syncClientService) Run() bool {
 				p.closeConn()
 			}
 
-			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, 3*time.Second)
+			base.WaitAtLeastDurationWhenRunning(
+				startNS,
+				isRunning,
+				3*time.Second,
+			)
 		}
 
 		return true
