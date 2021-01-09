@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"crypto/tls"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -12,9 +13,9 @@ import (
 	"unsafe"
 )
 
-func getFieldPointer(ptr interface{}, fileName string) unsafe.Pointer {
+func getFieldPointer(ptr interface{}, fieldName string) unsafe.Pointer {
 	val := reflect.Indirect(reflect.ValueOf(ptr))
-	return unsafe.Pointer(val.FieldByName(fileName).UnsafeAddr())
+	return unsafe.Pointer(val.FieldByName(fieldName).UnsafeAddr())
 }
 
 func TestSyncTCPServerService_Open(t *testing.T) {
@@ -76,52 +77,75 @@ func TestSyncTCPServerService_Open(t *testing.T) {
 }
 
 func TestSyncTCPServerService_Run(t *testing.T) {
-	//_, curFile, _, _ := runtime.Caller(0)
-	//curDir := path.Dir(curFile)
+	fnTest := func(isTLS bool, fakeError bool) (*testSingleReceiver, bool) {
+		_, curFile, _, _ := runtime.Caller(0)
+		curDir := path.Dir(curFile)
 
-	t.Run("test tcp run error", func(t *testing.T) {
-		assert := base.NewAssert(t)
+		tlsClientConfig := (*tls.Config)(nil)
+		tlsServerConfig := (*tls.Config)(nil)
+
+		if isTLS {
+			tlsServerConfig, _ = base.GetTLSServerConfig(
+				path.Join(curDir, "_cert_", "server.crt"),
+				path.Join(curDir, "_cert_", "server.key"),
+			)
+			tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
+				path.Join(curDir, "_cert_", "ca.crt"),
+			})
+		}
+
 		waitCH := make(chan bool)
-		serverReceiver := newTestSingleReceiver()
+		runOK := false
+		receiver := newTestSingleReceiver()
 		server := &syncTCPServerService{
 			adapter: NewServerAdapter(
-				"tcp", "0.0.0.0:65432", nil, 1200, 1200, serverReceiver,
+				"tcp", "127.0.0.1:65432", tlsServerConfig,
+				1200, 1200, receiver,
 			),
 			ln:         nil,
 			orcManager: base.NewORCManager(),
 		}
 		server.Open()
 		go func() {
-			tcpLn := server.ln.(*net.TCPListener)
-			fdPtr := (*unsafe.Pointer)(getFieldPointer(tcpLn, "fd"))
+			fdPtr := (*unsafe.Pointer)(nil)
+			if isTLS {
+				lnPtr := (*net.Listener)(getFieldPointer(server.ln, "Listener"))
+				fdPtr = (*unsafe.Pointer)(getFieldPointer(*lnPtr, "fd"))
+			} else {
+				fdPtr = (*unsafe.Pointer)(getFieldPointer(server.ln, "fd"))
+			}
+
 			originFD := *fdPtr
-			*fdPtr = nil
+			if fakeError {
+				*fdPtr = nil
+			}
+
 			waitCH <- true
+
 			go func() {
-				for {
-					if err := serverReceiver.GetError(); err != nil {
-						assert(err).Equal(
-							errors.ErrSyncTCPServerServiceAccept.AddDebug(
-								"invalid argument",
-							),
-						)
-						break
-					} else {
+				if fakeError {
+					for receiver.GetOnErrorCount() == 0 {
+						time.Sleep(50 * time.Millisecond)
+					}
+				} else {
+					for receiver.GetOnOpenCount() == 0 {
 						time.Sleep(50 * time.Millisecond)
 					}
 				}
+
 				*fdPtr = originFD
 				waitCH <- true
 			}()
 
-			assert(server.Run()).IsTrue()
+			runOK = server.Run()
 		}()
 
+		// Start client
 		<-waitCH
 		go func() {
 			client := &syncClientService{
 				adapter: NewClientAdapter(
-					"tcp", "0.0.0.0:65432", nil,
+					"tcp", "127.0.0.1:65432", tlsClientConfig,
 					1200, 1200, newTestSingleReceiver(),
 				),
 				conn:       nil,
@@ -132,57 +156,78 @@ func TestSyncTCPServerService_Run(t *testing.T) {
 				client.Run()
 			}()
 
-			for serverReceiver.GetOnErrorCount() == 0 {
-				time.Sleep(50 * time.Millisecond)
+			// wait server signal ...
+			if fakeError {
+				for receiver.GetOnErrorCount() == 0 {
+					time.Sleep(50 * time.Millisecond)
+				}
+			} else {
+				for receiver.GetOnOpenCount() == 0 {
+					time.Sleep(50 * time.Millisecond)
+				}
 			}
+			// close
 			client.Close()
 		}()
 
 		<-waitCH
 		server.Close()
 
-		assert(serverReceiver.GetOnOpenCount()).Equal(0)
-		assert(serverReceiver.GetOnCloseCount()).Equal(0)
-		assert(serverReceiver.GetOnStreamCount()).Equal(0)
-		assert(serverReceiver.GetOnErrorCount() > 0).IsTrue()
+		for receiver.GetOnOpenCount() != receiver.GetOnCloseCount() {
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		return receiver, runOK
+	}
+
+	t.Run("test tcp run error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := fnTest(false, true)
+
+		assert(runOK).Equal(true)
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncTCPServerServiceAccept.AddDebug(
+				"invalid argument",
+			),
+		)
+		assert(receiver.GetOnOpenCount()).Equal(0)
+		assert(receiver.GetOnCloseCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount() > 0).IsTrue()
 	})
 
 	t.Run("test tcp", func(t *testing.T) {
-		fnStartClient := func(network string, addr string) {
-			receiver := newTestSingleReceiver()
-			client := &syncClientService{
-				adapter: NewClientAdapter(
-					network, addr, nil, 1200, 1200, receiver,
-				),
-				conn:       nil,
-				orcManager: base.NewORCManager(),
-			}
-			client.Open()
-			go func() {
-				client.Run()
-			}()
-			for client.conn == nil {
-				time.Sleep(50 * time.Millisecond)
-			}
-			client.Close()
-		}
-
 		assert := base.NewAssert(t)
-		receiver := newTestSingleReceiver()
-		server := &syncTCPServerService{
-			adapter: NewServerAdapter(
-				"tcp", "0.0.0.0:65432", nil, 1200, 1200, receiver,
-			),
-			ln:         nil,
-			orcManager: base.NewORCManager(),
-		}
-		assert(server.Open()).IsTrue()
-		go func() {
-			assert(server.Run()).IsTrue()
-		}()
+		receiver, runOK := fnTest(false, false)
+		assert(runOK).Equal(true)
+		assert(receiver.GetError()).IsNil()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
 
-		fnStartClient("tcp", "0.0.0.0:65432")
-		server.Close()
+	t.Run("test tls run error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := fnTest(true, true)
+
+		assert(runOK).Equal(true)
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncTCPServerServiceAccept.AddDebug(
+				"invalid argument",
+			),
+		)
+		assert(receiver.GetOnOpenCount()).Equal(0)
+		assert(receiver.GetOnCloseCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount() > 0).IsTrue()
+	})
+
+	t.Run("test tls", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := fnTest(true, false)
+		assert(runOK).Equal(true)
+
 		assert(receiver.GetError()).IsNil()
 		assert(receiver.GetOnOpenCount()).Equal(1)
 		assert(receiver.GetOnCloseCount()).Equal(1)
