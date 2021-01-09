@@ -50,18 +50,10 @@ func NewServerService(adapter *Adapter) base.IORCService {
 	case "tcp6":
 		fallthrough
 	case "tcp":
-		if adapter.tlsConfig == nil {
-			return &asyncTCPServerService{
-				adapter:    adapter,
-				ln:         nil,
-				orcManager: base.NewORCManager(),
-			}
-		} else {
-			return &syncTCPServerService{
-				adapter:    adapter,
-				ln:         nil,
-				orcManager: base.NewORCManager(),
-			}
+		return &syncTCPServerService{
+			adapter:    adapter,
+			ln:         nil,
+			orcManager: base.NewORCManager(),
 		}
 	case "ws":
 		fallthrough

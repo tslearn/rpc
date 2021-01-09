@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -49,9 +48,7 @@ func SyncServerTestOpen(
 		network, addr, tlsServerConfig, 1200, 1200, receiver,
 	))
 	openOK := v.Open()
-	fmt.Println("AAA")
 	v.Close()
-	fmt.Println("BBB")
 	return receiver, openOK
 }
 
