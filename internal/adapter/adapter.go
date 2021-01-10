@@ -97,9 +97,9 @@ func NewServerAdapter(
 func (p *Adapter) Open() bool {
 	return p.orcManager.Open(func() bool {
 		if p.isClient {
-			p.service = NewClientService(p)
+			p.service = NewSyncClientService(p)
 		} else {
-			p.service = NewServerService(p)
+			p.service = NewSyncServerService(p)
 		}
 
 		if p.service == nil {

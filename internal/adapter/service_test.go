@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -44,7 +45,7 @@ func SyncServerTestOpen(
 
 	receiver := newTestSingleReceiver()
 
-	v := NewServerService(NewServerAdapter(
+	v := NewSyncServerService(NewServerAdapter(
 		network, addr, tlsServerConfig, 1200, 1200, receiver,
 	))
 	openOK := v.Open()
@@ -76,22 +77,25 @@ func SyncServerTestRun(
 	waitCH := make(chan bool)
 	runOK := false
 	receiver := newTestSingleReceiver()
-	server := &syncTCPServerService{
-		adapter: NewServerAdapter(
-			network, "127.0.0.1:65432", tlsServerConfig,
-			1200, 1200, receiver,
-		),
-		ln:         nil,
-		orcManager: base.NewORCManager(),
-	}
+	server := NewSyncServerService(NewServerAdapter(
+		network, "127.0.0.1:65432", tlsServerConfig,
+		1200, 1200, receiver,
+	))
 	server.Open()
+	ln := (net.Listener)(nil)
+	if network == "tcp" {
+		ln = server.(*syncTCPServerService).ln
+	} else {
+		ln = server.(*syncWSServerService).ln
+	}
 	go func() {
 		fdPtr := (*unsafe.Pointer)(nil)
 		if isTLS {
-			lnPtr := (*net.Listener)(getFieldPointer(server.ln, "Listener"))
+			lnPtr := (*net.Listener)(getFieldPointer(ln, "Listener"))
 			fdPtr = (*unsafe.Pointer)(getFieldPointer(*lnPtr, "fd"))
 		} else {
-			fdPtr = (*unsafe.Pointer)(getFieldPointer(server.ln, "fd"))
+			fmt.Println(server.(*syncWSServerService).ln)
+			fdPtr = (*unsafe.Pointer)(getFieldPointer(ln, "fd"))
 		}
 
 		originFD := *fdPtr
@@ -122,14 +126,10 @@ func SyncServerTestRun(
 	// Start client
 	<-waitCH
 	go func() {
-		client := &syncClientService{
-			adapter: NewClientAdapter(
-				network, "127.0.0.1:65432", tlsClientConfig,
-				1200, 1200, newTestSingleReceiver(),
-			),
-			conn:       nil,
-			orcManager: base.NewORCManager(),
-		}
+		client := NewSyncClientService(NewClientAdapter(
+			network, "127.0.0.1:65432", tlsClientConfig,
+			1200, 1200, newTestSingleReceiver(),
+		))
 		client.Open()
 		go func() {
 			client.Run()
@@ -177,7 +177,7 @@ func SyncServerTestClose(
 	}
 
 	receiver := newTestSingleReceiver()
-	v := NewServerService(NewServerAdapter(
+	v := NewSyncServerService(NewServerAdapter(
 		network, "127.0.0.1:65432", tlsServerConfig, 1200, 1200, receiver,
 	))
 	v.Open()
@@ -361,9 +361,93 @@ func TestSyncWSServerService_Open(t *testing.T) {
 }
 
 func TestSyncWSServerService_Run(t *testing.T) {
+	t.Run("ws run error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := SyncServerTestRun("ws", false, true)
 
+		assert(runOK).Equal(true)
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncWSServerServiceServe.AddDebug(
+				"invalid argument",
+			),
+		)
+		assert(receiver.GetOnOpenCount()).Equal(0)
+		assert(receiver.GetOnCloseCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount() > 0).IsTrue()
+	})
+
+	t.Run("ws run ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := SyncServerTestRun("ws", false, false)
+		assert(runOK).Equal(true)
+		fmt.Println(receiver.GetError())
+		assert(receiver.GetError()).IsNil()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+
+	t.Run("tls run error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := SyncServerTestRun("tcp", true, true)
+
+		assert(runOK).Equal(true)
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncTCPServerServiceAccept.AddDebug(
+				"invalid argument",
+			),
+		)
+		assert(receiver.GetOnOpenCount()).Equal(0)
+		assert(receiver.GetOnCloseCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount() > 0).IsTrue()
+	})
+
+	t.Run("tls run ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, runOK := SyncServerTestRun("tcp", true, false)
+		assert(runOK).Equal(true)
+
+		assert(receiver.GetError()).IsNil()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
 }
 
 func TestSyncWSServerService_Close(t *testing.T) {
+	t.Run("ws close error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, ok := SyncServerTestClose("ws", false, true)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncWSServerServiceClose.AddDebug("invalid argument"),
+		)
+	})
 
+	t.Run("ws close ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, ok := SyncServerTestClose("ws", false, false)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).IsNil()
+	})
+
+	t.Run("wss close error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, ok := SyncServerTestClose("wss", true, true)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).Equal(
+			errors.ErrSyncWSServerServiceClose.AddDebug("invalid argument"),
+		)
+	})
+
+	t.Run("wss close ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, ok := SyncServerTestClose("wss", true, false)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).IsNil()
+	})
 }

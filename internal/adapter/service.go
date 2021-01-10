@@ -16,7 +16,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-func NewClientService(adapter *Adapter) base.IORCService {
+func NewSyncClientService(adapter *Adapter) base.IORCService {
 	switch adapter.network {
 	case "tcp4":
 		fallthrough
@@ -43,7 +43,7 @@ func NewClientService(adapter *Adapter) base.IORCService {
 	}
 }
 
-func NewServerService(adapter *Adapter) base.IORCService {
+func NewSyncServerService(adapter *Adapter) base.IORCService {
 	switch adapter.network {
 	case "tcp4":
 		fallthrough
@@ -173,61 +173,14 @@ func (p *syncTCPServerService) Close() bool {
 }
 
 // -----------------------------------------------------------------------------
-// asyncTCPServerService
-// -----------------------------------------------------------------------------
-type asyncTCPServerService struct {
-	adapter    *Adapter
-	ln         *XListener
-	orcManager *base.ORCManager
-}
-
-func (p *asyncTCPServerService) Open() bool {
-	return p.orcManager.Open(func() bool {
-		adapter := p.adapter
-
-		p.ln = NewXListener(
-			adapter.network,
-			adapter.addr,
-			func(conn IConn) {
-				conn.SetNext(NewStreamConn(conn, adapter.receiver))
-				runIConnOnServer(conn)
-			},
-			func(err *base.Error) {
-				adapter.receiver.OnConnError(nil, err)
-			},
-			adapter.rBufSize,
-			adapter.wBufSize,
-		)
-
-		if p.ln == nil {
-			return false
-		}
-
-		return p.ln.Open()
-	})
-}
-
-func (p *asyncTCPServerService) Run() bool {
-	return true
-}
-
-func (p *asyncTCPServerService) Close() bool {
-	return p.orcManager.Close(func() bool {
-		p.ln.Close()
-		return true
-	}, func() {
-		p.ln = nil
-	})
-}
-
-// -----------------------------------------------------------------------------
 // syncWSServerService
 // -----------------------------------------------------------------------------
 type syncWSServerService struct {
-	adapter    *Adapter
-	ln         net.Listener
-	server     *http.Server
-	orcManager *base.ORCManager
+	needToCloseListener bool
+	adapter             *Adapter
+	ln                  net.Listener
+	server              *http.Server
+	orcManager          *base.ORCManager
 }
 
 // Open ...
@@ -276,6 +229,7 @@ func (p *syncWSServerService) Open() bool {
 			return false
 		}
 
+		p.needToCloseListener = true
 		return true
 	})
 }
@@ -285,6 +239,7 @@ func (p *syncWSServerService) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) bool {
 		for isRunning() {
 			startNS := base.TimeNow().UnixNano()
+			p.needToCloseListener = false
 			if e := p.server.Serve(p.ln); e != nil {
 				if e != http.ErrServerClosed {
 					p.adapter.receiver.OnConnError(
@@ -310,16 +265,17 @@ func (p *syncWSServerService) Close() bool {
 			)
 		}
 
-		if e := p.server.Close(); e != nil {
-			p.adapter.receiver.OnConnError(
-				nil,
-				errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
-			)
-		}
-
 		return true
 	}, func() {
 		p.server = nil
+		if p.needToCloseListener {
+			if e := p.ln.Close(); e != nil {
+				p.adapter.receiver.OnConnError(
+					nil,
+					errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
+				)
+			}
+		}
 		p.ln = nil
 	})
 }
