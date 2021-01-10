@@ -185,7 +185,6 @@ type syncWSServerService struct {
 // Open ...
 func (p *syncWSServerService) Open() bool {
 	return p.orcManager.Open(func() bool {
-		e := error(nil)
 		adapter := p.adapter
 
 		mux := http.NewServeMux()
@@ -213,6 +212,8 @@ func (p *syncWSServerService) Open() bool {
 			Addr:    adapter.addr,
 			Handler: mux,
 		}
+
+		e := error(nil)
 
 		if adapter.tlsConfig == nil {
 			p.ln, e = net.Listen("tcp", adapter.addr)
@@ -262,9 +263,6 @@ func (p *syncWSServerService) Close() bool {
 			)
 		}
 
-		return true
-	}, func() {
-		p.server = nil
 		if e := p.ln.Close(); e != nil {
 			if !strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
 				p.adapter.receiver.OnConnError(
@@ -273,6 +271,10 @@ func (p *syncWSServerService) Close() bool {
 				)
 			}
 		}
+
+		return true
+	}, func() {
+		p.server = nil
 		p.ln = nil
 	})
 }

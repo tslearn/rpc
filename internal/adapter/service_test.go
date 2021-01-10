@@ -5,9 +5,11 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
+	"net/http"
 	"path"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
@@ -82,7 +84,7 @@ func SyncServerTestRun(
 	))
 	server.Open()
 	ln := (net.Listener)(nil)
-	if network == "tcp" {
+	if strings.HasPrefix(network, "tcp") {
 		ln = server.(*syncTCPServerService).ln
 	} else {
 		ln = server.(*syncWSServerService).ln
@@ -123,29 +125,42 @@ func SyncServerTestRun(
 
 	// Start client
 	<-waitCH
-	go func() {
-		client := NewSyncClientService(NewClientAdapter(
-			network, "127.0.0.1:65432", tlsClientConfig,
-			1200, 1200, newTestSingleReceiver(),
-		))
-		client.Open()
-		go func() {
-			client.Run()
-		}()
-
-		// wait server signal ...
-		if fakeError {
-			for receiver.GetOnErrorCount() == 0 {
-				time.Sleep(50 * time.Millisecond)
-			}
-		} else {
-			for receiver.GetOnOpenCount() == 0 {
-				time.Sleep(50 * time.Millisecond)
-			}
+	if !strings.HasPrefix(network, "tcp") && fakeError {
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsClientConfig,
+			},
 		}
-		// close
-		client.Close()
-	}()
+		if isTLS {
+			_, _ = client.Get("https://127.0.0.1:65432")
+		} else {
+			_, _ = client.Get("http://127.0.0.1:65432")
+		}
+	} else {
+		go func() {
+			client := NewSyncClientService(NewClientAdapter(
+				network, "127.0.0.1:65432", tlsClientConfig,
+				1200, 1200, newTestSingleReceiver(),
+			))
+			client.Open()
+			go func() {
+				client.Run()
+			}()
+
+			// wait server signal ...
+			if fakeError {
+				for receiver.GetOnErrorCount() == 0 {
+					time.Sleep(50 * time.Millisecond)
+				}
+			} else {
+				for receiver.GetOnOpenCount() == 0 {
+					time.Sleep(50 * time.Millisecond)
+				}
+			}
+			// close
+			client.Close()
+		}()
+	}
 
 	<-waitCH
 	server.Close()
@@ -180,9 +195,15 @@ func SyncServerTestClose(
 	))
 	v.Open()
 
+	go func() {
+		v.Run()
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
 	fdPtr := (*unsafe.Pointer)(nil)
 	ln := (net.Listener)(nil)
-	if network == "tcp" {
+	if strings.HasPrefix(network, "tcp") {
 		ln = v.(*syncTCPServerService).ln
 	} else {
 		ln = v.(*syncWSServerService).ln
@@ -200,10 +221,22 @@ func SyncServerTestClose(
 		*fdPtr = nil
 	}
 
-	closeOK := v.Close()
-	*fdPtr = originFD
-	_ = ln.Close()
+	waitCH := make(chan bool, 1)
+	closeOK := false
+	go func() {
+		closeOK = v.Close()
+		waitCH <- true
+	}()
 
+	if fakeError {
+		for receiver.GetOnErrorCount() == 0 {
+			time.Sleep(50 * time.Millisecond)
+		}
+		*fdPtr = originFD
+		_ = ln.Close()
+	}
+
+	<-waitCH
 	return receiver, closeOK
 }
 
@@ -413,6 +446,7 @@ func TestSyncWSServerService_Run(t *testing.T) {
 		assert(receiver.GetOnStreamCount()).Equal(0)
 		assert(receiver.GetOnErrorCount()).Equal(0)
 	})
+
 }
 
 func TestSyncWSServerService_Close(t *testing.T) {
