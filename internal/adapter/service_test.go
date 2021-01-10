@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -94,7 +93,6 @@ func SyncServerTestRun(
 			lnPtr := (*net.Listener)(getFieldPointer(ln, "Listener"))
 			fdPtr = (*unsafe.Pointer)(getFieldPointer(*lnPtr, "fd"))
 		} else {
-			fmt.Println(server.(*syncWSServerService).ln)
 			fdPtr = (*unsafe.Pointer)(getFieldPointer(ln, "fd"))
 		}
 
@@ -381,7 +379,6 @@ func TestSyncWSServerService_Run(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, runOK := SyncServerTestRun("ws", false, false)
 		assert(runOK).Equal(true)
-		fmt.Println(receiver.GetError())
 		assert(receiver.GetError()).IsNil()
 		assert(receiver.GetOnOpenCount()).Equal(1)
 		assert(receiver.GetOnCloseCount()).Equal(1)

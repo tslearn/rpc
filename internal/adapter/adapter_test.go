@@ -75,7 +75,6 @@ func (p *testSingleReceiver) OnConnError(
 	if streamConn != nil && p.streamConn != streamConn {
 		panic("error")
 	}
-
 	p.errCH <- err
 }
 

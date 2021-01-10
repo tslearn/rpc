@@ -176,11 +176,10 @@ func (p *syncTCPServerService) Close() bool {
 // syncWSServerService
 // -----------------------------------------------------------------------------
 type syncWSServerService struct {
-	needToCloseListener bool
-	adapter             *Adapter
-	ln                  net.Listener
-	server              *http.Server
-	orcManager          *base.ORCManager
+	adapter    *Adapter
+	ln         net.Listener
+	server     *http.Server
+	orcManager *base.ORCManager
 }
 
 // Open ...
@@ -229,7 +228,6 @@ func (p *syncWSServerService) Open() bool {
 			return false
 		}
 
-		p.needToCloseListener = true
 		return true
 	})
 }
@@ -239,7 +237,6 @@ func (p *syncWSServerService) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) bool {
 		for isRunning() {
 			startNS := base.TimeNow().UnixNano()
-			p.needToCloseListener = false
 			if e := p.server.Serve(p.ln); e != nil {
 				if e != http.ErrServerClosed {
 					p.adapter.receiver.OnConnError(
@@ -268,8 +265,8 @@ func (p *syncWSServerService) Close() bool {
 		return true
 	}, func() {
 		p.server = nil
-		if p.needToCloseListener {
-			if e := p.ln.Close(); e != nil {
+		if e := p.ln.Close(); e != nil {
+			if !strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
 				p.adapter.receiver.OnConnError(
 					nil,
 					errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
