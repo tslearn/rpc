@@ -75,16 +75,28 @@ func NewSyncServerService(adapter *Adapter) base.IORCService {
 	}
 }
 
-func runIConnOnServer(conn IConn) {
-	go func() {
-		conn.OnOpen()
-		for {
-			if ok := conn.OnReadReady(); !ok {
-				break
-			}
+func runIConn(conn IConn) {
+	conn.OnOpen()
+	for {
+		if ok := conn.OnReadReady(); !ok {
+			break
 		}
-		conn.OnClose()
-		conn.Close()
+	}
+	conn.OnClose()
+}
+
+func runNetConnOnServers(adapter *Adapter, netConn net.Conn) {
+	go func() {
+		syncConn := NewNetConn(
+			true,
+			netConn,
+			adapter.rBufSize,
+			adapter.wBufSize,
+		)
+		syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
+
+		runIConn(syncConn)
+		syncConn.Close()
 	}()
 }
 
@@ -141,14 +153,7 @@ func (p *syncTCPServerService) Run() bool {
 					)
 				}
 			} else {
-				syncConn := NewNetConn(
-					true,
-					conn,
-					adapter.rBufSize,
-					adapter.wBufSize,
-				)
-				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
-				runIConnOnServer(syncConn)
+				runNetConnOnServers(adapter, conn)
 			}
 		}
 
@@ -197,14 +202,7 @@ func (p *syncWSServerService) Open() bool {
 					errors.ErrSyncWSServerServiceUpgrade.AddDebug(e.Error()),
 				)
 			} else {
-				syncConn := NewNetConn(
-					true,
-					conn,
-					adapter.rBufSize,
-					adapter.wBufSize,
-				)
-				syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
-				runIConnOnServer(syncConn)
+				runNetConnOnServers(adapter, conn)
 			}
 		})
 

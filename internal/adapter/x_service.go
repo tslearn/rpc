@@ -20,7 +20,17 @@ func (p *asyncTCPServerService) Open() bool {
 			adapter.addr,
 			func(conn IConn) {
 				conn.SetNext(NewStreamConn(conn, adapter.receiver))
-				runIConnOnServer(conn)
+
+				go func() {
+					conn.OnOpen()
+					for {
+						if ok := conn.OnReadReady(); !ok {
+							break
+						}
+					}
+					conn.OnClose()
+					conn.Close()
+				}()
 			},
 			func(err *base.Error) {
 				adapter.receiver.OnConnError(nil, err)
