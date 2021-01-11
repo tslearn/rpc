@@ -68,7 +68,7 @@ func newClient(
 	})
 
 	go func() {
-		ret.orcManager.Run(func(isRunning func() bool) {
+		ret.orcManager.Run(func(isRunning func() bool) bool {
 			for isRunning() {
 				time.Sleep(80 * time.Millisecond)
 				now := base.TimeNow()
@@ -78,6 +78,8 @@ func newClient(
 				ret.tryToSendPing(now)
 				ret.Unlock()
 			}
+
+			return true
 		})
 	}()
 
@@ -86,8 +88,8 @@ func newClient(
 
 // Close ...
 func (p *Client) Close() bool {
-	return p.orcManager.Close(func() {
-		p.adapter.Close()
+	return p.orcManager.Close(func() bool {
+		return p.adapter.Close()
 	}, func() {
 		p.adapter = nil
 	})

@@ -117,7 +117,7 @@ func (p *GateWay) Serve() {
 	//      if p.orcManager.Close() is called between Open and Run. Run will not
 	// execute at all.
 	// -------------------------------------------------------------------------
-	p.orcManager.Run(func(isRunning func() bool) {
+	p.orcManager.Run(func(isRunning func() bool) bool {
 		waitCH := make(chan bool)
 		waitCount := 0
 
@@ -140,17 +140,18 @@ func (p *GateWay) Serve() {
 			<-waitCH
 			waitCount--
 		}
+
+		return true
 	})
 }
 
 // Close ...
 func (p *GateWay) Close() {
-	p.orcManager.Close(func() {
-		for _, item := range p.adapters {
-			go func(adapter *adapter.Adapter) {
-				adapter.Close()
-			}(item)
+	p.orcManager.Close(func() bool {
+		for _, adapter := range p.adapters {
+			adapter.Close()
 		}
+		return true
 	}, func() {
 		p.Lock()
 		defer p.Unlock()
