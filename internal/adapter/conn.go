@@ -334,7 +334,7 @@ func (p *StreamConn) IsActive(nowNS int64, timeout time.Duration) bool {
 }
 
 // SetNext ...
-func (p *StreamConn) SetNext(conn IConn) {
+func (p *StreamConn) SetNext(_ IConn) {
 	panic("kernel error, this code should not be called")
 }
 
