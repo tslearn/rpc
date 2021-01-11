@@ -358,14 +358,7 @@ func (p *syncClientService) Run() bool {
 			startNS := base.TimeNow().UnixNano()
 
 			if p.openConn() {
-				p.conn.OnOpen()
-				for {
-					if ok := p.conn.OnReadReady(); !ok {
-						break
-					}
-				}
-				p.conn.OnClose()
-
+				runIConn(p.conn)
 				p.closeConn()
 			}
 
