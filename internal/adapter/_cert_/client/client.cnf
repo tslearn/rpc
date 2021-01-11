@@ -1,0 +1,17 @@
+[ req ]
+ default_bits           = 2048
+ distinguished_name     = req_distinguished_name
+ prompt                 = no
+[ req_distinguished_name ]
+ C                      = CN
+ ST                     = X Province
+ L                      = X City
+ O                      = X Company
+ OU                     = IT
+ CN                     = client
+[ v3_req ]
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+basicConstraints = critical, CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always

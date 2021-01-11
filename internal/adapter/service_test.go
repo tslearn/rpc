@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
+	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
@@ -238,6 +239,59 @@ func SyncServerTestClose(
 
 	<-waitCH
 	return receiver, closeOK
+}
+
+func SyncClientTest(
+	isTLS bool,
+	serverNetwork string,
+	clientNetwork string,
+	addr string,
+) (*testSingleReceiver, *syncClientService) {
+	_, curFile, _, _ := runtime.Caller(0)
+	curDir := path.Dir(curFile)
+
+	tlsClientConfig := (*tls.Config)(nil)
+	tlsServerConfig := (*tls.Config)(nil)
+
+	if isTLS {
+		tlsServerConfig, _ = base.GetTLSServerConfig(
+			path.Join(curDir, "_cert_", "server", "server.crt"),
+			path.Join(curDir, "_cert_", "server", "server.key"),
+		)
+		tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
+			path.Join(curDir, "_cert_", "ca", "ca.crt"),
+		})
+	}
+
+	server := NewSyncServerService(NewServerAdapter(
+		serverNetwork, addr, tlsServerConfig,
+		1200, 1200, newTestSingleReceiver(),
+	))
+	server.Open()
+	defer server.Close()
+	go func() {
+		server.Run()
+	}()
+
+	clientReceiver := newTestSingleReceiver()
+	client := &syncClientService{
+		adapter: NewClientAdapter(
+			clientNetwork, addr, tlsClientConfig,
+			1200, 1200, clientReceiver,
+		),
+		orcManager: base.NewORCManager(),
+	}
+	client.Open()
+	go func() {
+		for clientReceiver.GetOnOpenCount() == 0 &&
+			clientReceiver.GetOnErrorCount() == 0 {
+			time.Sleep(50 * time.Millisecond)
+		}
+		client.Close()
+	}()
+	client.Run()
+
+	return clientReceiver, client
 }
 
 func TestSyncTCPServerService_Open(t *testing.T) {
@@ -484,5 +538,46 @@ func TestSyncWSServerService_Close(t *testing.T) {
 }
 
 func TestSyncClientService_openConn(t *testing.T) {
+	addr := "localhost:65432"
 
+	t.Run("test tcp4", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, client := SyncClientTest(false, "tcp4", "tcp4", addr)
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(client.conn).IsNil()
+	})
+
+	t.Run("test tcp4 tls", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, client := SyncClientTest(true, "tcp4", "tcp4", addr)
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(client.conn).IsNil()
+	})
+
+	t.Run("test tcp6", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, client := SyncClientTest(false, "tcp6", "tcp6", addr)
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(client.conn).IsNil()
+	})
+
+	t.Run("test tcp6", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver, client := SyncClientTest(true, "tcp6", "tcp6", "[::1]:65432")
+		fmt.Println(receiver.GetError())
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+		assert(receiver.GetOnStreamCount()).Equal(0)
+		assert(client.conn).IsNil()
+	})
 }
