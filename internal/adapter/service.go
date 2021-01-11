@@ -77,7 +77,10 @@ func NewSyncServerService(adapter *Adapter) base.IORCService {
 
 func runIConn(conn IConn) {
 	conn.OnOpen()
-	for conn.OnReadReady() {
+	for {
+		if !conn.OnReadReady() {
+			break
+		}
 	}
 	conn.OnClose()
 }

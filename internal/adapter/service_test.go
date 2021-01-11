@@ -297,6 +297,87 @@ func SyncClientTest(
 	return clientReceiver, client
 }
 
+func TestNewSyncClientService(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for _, network := range []string{
+			"tcp", "tcp4", "tcp6", "ws", "wss",
+		} {
+			adapter := NewClientAdapter(
+				network, "localhost", nil, 1200, 1200, newTestSingleReceiver(),
+			)
+
+			service := NewSyncClientService(adapter).(*syncClientService)
+
+			assert(service.adapter).Equal(adapter)
+			assert(service.conn).IsNil()
+			assert(service.orcManager).IsNotNil()
+		}
+	})
+
+	t.Run("protocol error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		receiver := newTestSingleReceiver()
+		adapter := NewClientAdapter(
+			"err", "localhost", nil, 1200, 1200, receiver,
+		)
+
+		service := NewSyncClientService(adapter)
+		assert(service).IsNil()
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).
+			Equal(errors.ErrUnsupportedProtocol.AddDebug(
+				"unsupported protocol err",
+			))
+	})
+}
+
+func TestNewSyncServerService(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for _, network := range []string{"tcp", "tcp4", "tcp6"} {
+			adapter := NewClientAdapter(
+				network, "localhost", nil, 1200, 1200, newTestSingleReceiver(),
+			)
+
+			service := NewSyncServerService(adapter).(*syncTCPServerService)
+			assert(service.adapter).Equal(adapter)
+			assert(service.ln).IsNil()
+			assert(service.orcManager).IsNotNil()
+		}
+
+		for _, network := range []string{"ws", "wss"} {
+			adapter := NewClientAdapter(
+				network, "localhost", nil, 1200, 1200, newTestSingleReceiver(),
+			)
+
+			service := NewSyncServerService(adapter).(*syncWSServerService)
+			assert(service.adapter).Equal(adapter)
+			assert(service.ln).IsNil()
+			assert(service.server).IsNil()
+			assert(service.orcManager).IsNotNil()
+		}
+	})
+
+	t.Run("protocol error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		receiver := newTestSingleReceiver()
+		adapter := NewClientAdapter(
+			"err", "localhost", nil, 1200, 1200, receiver,
+		)
+
+		service := NewSyncServerService(adapter)
+		assert(service).IsNil()
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).
+			Equal(errors.ErrUnsupportedProtocol.AddDebug(
+				"unsupported protocol err",
+			))
+	})
+}
+
 func TestSyncTCPServerService_Open(t *testing.T) {
 	t.Run("tcp open error", func(t *testing.T) {
 		receiver, ok := SyncServerTestOpen("tcp", false, true)
