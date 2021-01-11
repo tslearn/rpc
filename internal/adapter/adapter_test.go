@@ -1,12 +1,16 @@
 package adapter
 
 import (
+	"crypto/tls"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"net"
+	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type testSingleReceiver struct {
@@ -116,7 +120,73 @@ func (p *testSingleReceiver) GetError() *base.Error {
 }
 
 func TestAdapter(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
+	type testItem struct {
+		network string
+		isTLS   bool
+		e       error
+	}
+
+	fnTest := func(isTLS bool, network string) {
+		assert := base.NewAssert(t)
+		_, curFile, _, _ := runtime.Caller(0)
+		curDir := path.Dir(curFile)
+
+		tlsClientConfig := (*tls.Config)(nil)
+		tlsServerConfig := (*tls.Config)(nil)
+
+		if isTLS {
+			tlsServerConfig, _ = base.GetTLSServerConfig(
+				path.Join(curDir, "_cert_", "server", "server.pem"),
+				path.Join(curDir, "_cert_", "server", "server-key.pem"),
+			)
+			tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
+				path.Join(curDir, "_cert_", "ca", "ca.pem"),
+			})
+		}
+
+		clientReceiver := newTestSingleReceiver()
+		clientAdapter := NewClientAdapter(
+			network, "localhost:65432", tlsClientConfig,
+			1200, 1200, clientReceiver,
+		)
+		serverReceiver := newTestSingleReceiver()
+		serverAdapter := NewServerAdapter(
+			network, "localhost:65432", tlsServerConfig,
+			1200, 1200, serverReceiver,
+		)
+
+		waitCH := make(chan bool)
+		assert(serverAdapter.Open()).IsTrue()
+		go func() {
+			assert(serverAdapter.Run()).IsTrue()
+		}()
+
+		assert(clientAdapter.Open()).IsTrue()
+		go func() {
+			for clientReceiver.GetOnOpenCount() == 0 &&
+				clientReceiver.GetOnErrorCount() == 0 {
+				time.Sleep(50 * time.Millisecond)
+			}
+			assert(clientAdapter.Close()).IsTrue()
+			waitCH <- true
+		}()
+
+		clientAdapter.Run()
+		<-waitCH
+		assert(serverAdapter.Close()).IsTrue()
+
+		assert(clientReceiver.GetOnOpenCount()).Equal(1)
+		assert(clientReceiver.GetOnCloseCount()).Equal(1)
+		assert(clientReceiver.GetOnErrorCount()).Equal(0)
+		assert(clientReceiver.GetOnStreamCount()).Equal(0)
+
+		assert(serverReceiver.GetOnOpenCount()).Equal(1)
+		assert(serverReceiver.GetOnCloseCount()).Equal(1)
+		assert(serverReceiver.GetOnErrorCount()).Equal(0)
+		assert(serverReceiver.GetOnStreamCount()).Equal(0)
+	}
+
+	t.Run("test basic", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(ErrNetClosingSuffix).Equal("use of closed network connection")
 
@@ -142,5 +212,34 @@ func TestAdapter(t *testing.T) {
 		e = conn.Close()
 		assert(e).IsNotNil()
 		assert(strings.HasSuffix(e.Error(), ErrNetClosingSuffix)).IsTrue()
+	})
+
+	t.Run("test", func(t *testing.T) {
+		for _, it := range []testItem{
+			{network: "tcp", isTLS: false},
+			{network: "tcp", isTLS: true},
+			{network: "tcp4", isTLS: false},
+			{network: "tcp4", isTLS: true},
+			{network: "tcp6", isTLS: false},
+			{network: "tcp6", isTLS: true},
+			{network: "ws", isTLS: false},
+			{network: "wss", isTLS: true},
+		} {
+			fnTest(it.isTLS, it.network)
+		}
+	})
+
+	t.Run("open return false", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		assert(NewClientAdapter(
+			"err", "localhost:65432", nil,
+			1200, 1200, newTestSingleReceiver(),
+		).Open()).IsFalse()
+
+		assert(NewServerAdapter(
+			"err", "localhost:65432", nil,
+			1200, 1200, newTestSingleReceiver(),
+		).Open()).IsFalse()
 	})
 }
