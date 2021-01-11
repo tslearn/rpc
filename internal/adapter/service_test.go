@@ -482,3 +482,7 @@ func TestSyncWSServerService_Close(t *testing.T) {
 		assert(receiver.GetError()).IsNil()
 	})
 }
+
+func TestSyncClientService_openConn(t *testing.T) {
+
+}
