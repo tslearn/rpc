@@ -1,11 +1,10 @@
-package test
+package adapter
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
@@ -13,23 +12,23 @@ import (
 type serverReceiver struct {
 }
 
-func (p *serverReceiver) OnConnOpen(streamConn *adapter.StreamConn) {
+func (p *serverReceiver) OnConnOpen(_ *StreamConn) {
 	fmt.Println("Server: OnConnOpen")
 }
 
-func (p *serverReceiver) OnConnClose(streamConn *adapter.StreamConn) {
+func (p *serverReceiver) OnConnClose(_ *StreamConn) {
 	fmt.Println("Server: OnConnClose")
 }
 
 func (p *serverReceiver) OnConnReadStream(
-	streamConn *adapter.StreamConn,
+	streamConn *StreamConn,
 	stream *core.Stream,
 ) {
 	streamConn.WriteStreamAndRelease(stream)
 }
 
 func (p *serverReceiver) OnConnError(
-	streamConn *adapter.StreamConn,
+	streamConn *StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
@@ -41,29 +40,29 @@ func (p *serverReceiver) OnConnError(
 
 type clientReceiver struct {
 	streamCH   chan *core.Stream
-	streamConn *adapter.StreamConn
+	streamConn *StreamConn
 }
 
-func (p *clientReceiver) OnConnOpen(streamConn *adapter.StreamConn) {
+func (p *clientReceiver) OnConnOpen(streamConn *StreamConn) {
 	fmt.Println("Client: OnConnOpen")
 	p.streamConn = streamConn
 }
 
-func (p *clientReceiver) OnConnClose(streamConn *adapter.StreamConn) {
+func (p *clientReceiver) OnConnClose(_ *StreamConn) {
 	fmt.Println("Client: OnConnClose")
 
 	p.streamConn = nil
 }
 
 func (p *clientReceiver) OnConnReadStream(
-	streamConn *adapter.StreamConn,
+	_ *StreamConn,
 	stream *core.Stream,
 ) {
 	p.streamCH <- stream
 }
 
 func (p *clientReceiver) OnConnError(
-	streamConn *adapter.StreamConn,
+	streamConn *StreamConn,
 	err *base.Error,
 ) {
 	if streamConn != nil {
@@ -75,7 +74,7 @@ func (p *clientReceiver) OnConnError(
 
 func BenchmarkDebug(b *testing.B) {
 	go func() {
-		serverAdapter := adapter.NewServerAdapter(
+		serverAdapter := NewServerAdapter(
 			"tcp", "0.0.0.0:8080", nil, 1200, 1200, &serverReceiver{},
 		)
 		serverAdapter.Open()
@@ -85,7 +84,7 @@ func BenchmarkDebug(b *testing.B) {
 	time.Sleep(time.Second)
 
 	cReceiver := &clientReceiver{streamCH: make(chan *core.Stream)}
-	clientAdapter := adapter.NewClientAdapter(
+	clientAdapter := NewClientAdapter(
 		"tcp", "0.0.0.0:8080", nil, 1200, 1200, cReceiver,
 	)
 
