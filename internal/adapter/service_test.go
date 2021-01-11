@@ -540,7 +540,7 @@ func TestSyncWSServerService_Close(t *testing.T) {
 	})
 }
 
-func TestSyncClientService_openConn(t *testing.T) {
+func TestSyncClientService(t *testing.T) {
 	type testItem struct {
 		network string
 		isTLS   bool
