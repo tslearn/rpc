@@ -255,11 +255,11 @@ func SyncClientTest(
 
 	if isTLS {
 		tlsServerConfig, _ = base.GetTLSServerConfig(
-			path.Join(curDir, "_cert_", "server", "server.crt"),
-			path.Join(curDir, "_cert_", "server", "server.key"),
+			path.Join(curDir, "_cert_", "server", "server.pem"),
+			path.Join(curDir, "_cert_", "server", "server-key.pem"),
 		)
 		tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
-			path.Join(curDir, "_cert_", "ca", "ca.crt"),
+			path.Join(curDir, "_cert_", "ca", "ca.pem"),
 		})
 	}
 
@@ -538,46 +538,94 @@ func TestSyncWSServerService_Close(t *testing.T) {
 }
 
 func TestSyncClientService_openConn(t *testing.T) {
+	type testItem struct {
+		network string
+		isTLS   bool
+		e       error
+	}
 	addr := "localhost:65432"
 
-	t.Run("test tcp4", func(t *testing.T) {
+	t.Run("tcp4 ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		receiver, client := SyncClientTest(false, "tcp4", "tcp4", addr)
-		assert(receiver.GetOnOpenCount()).Equal(1)
-		assert(receiver.GetOnCloseCount()).Equal(1)
-		assert(receiver.GetOnErrorCount()).Equal(0)
-		assert(receiver.GetOnStreamCount()).Equal(0)
-		assert(client.conn).IsNil()
+
+		for _, it := range []testItem{
+			{network: "tcp", isTLS: false},
+			{network: "tcp", isTLS: true},
+			{network: "tcp4", isTLS: false},
+			{network: "tcp4", isTLS: true},
+			{network: "tcp6", isTLS: false},
+			{network: "tcp6", isTLS: true},
+			{network: "ws", isTLS: false},
+			{network: "wss", isTLS: true},
+		} {
+			receiver, client := SyncClientTest(
+				it.isTLS, it.network, it.network, addr,
+			)
+			assert(receiver.GetOnOpenCount()).Equal(1)
+			assert(receiver.GetOnCloseCount()).Equal(1)
+			assert(receiver.GetOnErrorCount()).Equal(0)
+			assert(receiver.GetOnStreamCount()).Equal(0)
+			assert(client.conn).IsNil()
+		}
 	})
 
-	t.Run("test tcp4 tls", func(t *testing.T) {
+	t.Run("tcp4 addr error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		receiver, client := SyncClientTest(true, "tcp4", "tcp4", addr)
-		assert(receiver.GetOnOpenCount()).Equal(1)
-		assert(receiver.GetOnCloseCount()).Equal(1)
-		assert(receiver.GetOnErrorCount()).Equal(0)
-		assert(receiver.GetOnStreamCount()).Equal(0)
-		assert(client.conn).IsNil()
+
+		for _, it := range []testItem{
+			{network: "tcp", isTLS: false},
+			{network: "tcp", isTLS: true},
+			{network: "tcp4", isTLS: false},
+			{network: "tcp4", isTLS: true},
+			{network: "tcp6", isTLS: false},
+			{network: "tcp6", isTLS: true},
+			{network: "ws", isTLS: false},
+			{network: "wss", isTLS: true},
+		} {
+			receiver, client := SyncClientTest(
+				it.isTLS, it.network, it.network, "addr-error",
+			)
+			if it.network == "ws" || it.network == "wss" {
+				assert(receiver.GetError()).
+					Equal(errors.ErrSyncClientServiceDial.AddDebug(
+						"dial tcp: lookup addr-error: no such host",
+					))
+			} else {
+				assert(receiver.GetError()).
+					Equal(errors.ErrSyncClientServiceDial.AddDebug(fmt.Sprintf(
+						"dial %s: address addr-error: missing port in address",
+						it.network,
+					)))
+			}
+
+			assert(receiver.GetOnOpenCount()).Equal(0)
+			assert(receiver.GetOnCloseCount()).Equal(0)
+			assert(receiver.GetOnErrorCount()).Equal(1)
+			assert(receiver.GetOnStreamCount()).Equal(0)
+			assert(client.conn).IsNil()
+		}
 	})
 
-	t.Run("test tcp6", func(t *testing.T) {
+	t.Run("unsupported protocol", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		receiver, client := SyncClientTest(false, "tcp6", "tcp6", addr)
-		assert(receiver.GetOnOpenCount()).Equal(1)
-		assert(receiver.GetOnCloseCount()).Equal(1)
-		assert(receiver.GetOnErrorCount()).Equal(0)
-		assert(receiver.GetOnStreamCount()).Equal(0)
-		assert(client.conn).IsNil()
-	})
 
-	t.Run("test tcp6", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		receiver, client := SyncClientTest(true, "tcp6", "tcp6", "[::1]:65432")
-		fmt.Println(receiver.GetError())
-		assert(receiver.GetOnOpenCount()).Equal(1)
-		assert(receiver.GetOnCloseCount()).Equal(1)
-		assert(receiver.GetOnErrorCount()).Equal(0)
-		assert(receiver.GetOnStreamCount()).Equal(0)
-		assert(client.conn).IsNil()
+		for _, it := range []testItem{
+			{network: "err", isTLS: false},
+			{network: "err", isTLS: true},
+		} {
+			receiver, client := SyncClientTest(
+				it.isTLS, "tcp", it.network, addr,
+			)
+
+			assert(receiver.GetError()).
+				Equal(errors.ErrUnsupportedProtocol.AddDebug(
+					"unsupported protocol err",
+				))
+			assert(receiver.GetOnOpenCount()).Equal(0)
+			assert(receiver.GetOnCloseCount()).Equal(0)
+			assert(receiver.GetOnErrorCount()).Equal(1)
+			assert(receiver.GetOnStreamCount()).Equal(0)
+			assert(client.conn).IsNil()
+		}
 	})
 }
