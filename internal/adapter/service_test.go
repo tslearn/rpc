@@ -40,8 +40,8 @@ func SyncServerTestOpen(
 
 	if isTLS {
 		tlsServerConfig, _ = base.GetTLSServerConfig(
-			path.Join(curDir, "_cert_", "server.crt"),
-			path.Join(curDir, "_cert_", "server.key"),
+			path.Join(curDir, "_cert_", "server", "server.pem"),
+			path.Join(curDir, "_cert_", "server", "server-key.pem"),
 		)
 	}
 
@@ -68,11 +68,11 @@ func SyncServerTestRun(
 
 	if isTLS {
 		tlsServerConfig, _ = base.GetTLSServerConfig(
-			path.Join(curDir, "_cert_", "server.crt"),
-			path.Join(curDir, "_cert_", "server.key"),
+			path.Join(curDir, "_cert_", "server", "server.pem"),
+			path.Join(curDir, "_cert_", "server", "server-key.pem"),
 		)
 		tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
-			path.Join(curDir, "_cert_", "ca.crt"),
+			path.Join(curDir, "_cert_", "ca", "ca.pem"),
 		})
 	}
 
@@ -185,8 +185,8 @@ func SyncServerTestClose(
 
 	if isTLS {
 		tlsServerConfig, _ = base.GetTLSServerConfig(
-			path.Join(curDir, "_cert_", "server.crt"),
-			path.Join(curDir, "_cert_", "server.key"),
+			path.Join(curDir, "_cert_", "server", "server.pem"),
+			path.Join(curDir, "_cert_", "server", "server-key.pem"),
 		)
 	}
 
@@ -281,6 +281,8 @@ func SyncClientTest(
 		),
 		orcManager: base.NewORCManager(),
 	}
+
+	waitCH := make(chan bool)
 	client.Open()
 	go func() {
 		for clientReceiver.GetOnOpenCount() == 0 &&
@@ -288,9 +290,10 @@ func SyncClientTest(
 			time.Sleep(50 * time.Millisecond)
 		}
 		client.Close()
+		waitCH <- true
 	}()
 	client.Run()
-
+	<-waitCH
 	return clientReceiver, client
 }
 
