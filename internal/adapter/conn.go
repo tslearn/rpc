@@ -164,7 +164,6 @@ func (p *NetConn) SetFD(_ int) {
 }
 
 const streamConnStatusRunning = int32(1)
-const streamConnStatusClosing = int32(2)
 const streamConnStatusClosed = int32(0)
 
 // StreamConn ...
@@ -186,7 +185,7 @@ type StreamConn struct {
 // NewStreamConn ...
 func NewStreamConn(prev IConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
-		status:      streamConnStatusClosed,
+		status:      streamConnStatusRunning,
 		prev:        prev,
 		receiver:    receiver,
 		writeCH:     make(chan *core.Stream, 16),
@@ -205,14 +204,12 @@ func (p *StreamConn) SetReceiver(receiver IReceiver) {
 
 // OnOpen ...
 func (p *StreamConn) OnOpen() {
-	atomic.StoreInt32(&p.status, streamConnStatusRunning)
 	p.receiver.OnConnOpen(p)
 }
 
 // OnClose ...
 func (p *StreamConn) OnClose() {
 	p.receiver.OnConnClose(p)
-	atomic.StoreInt32(&p.status, streamConnStatusClosed)
 }
 
 // OnError ...
@@ -298,7 +295,7 @@ func (p *StreamConn) Close() {
 	if atomic.CompareAndSwapInt32(
 		&p.status,
 		streamConnStatusRunning,
-		streamConnStatusClosing,
+		streamConnStatusClosed,
 	) {
 		close(p.writeCH)
 		p.prev.Close()
