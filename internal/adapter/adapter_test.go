@@ -2,8 +2,10 @@ package adapter
 
 import (
 	"crypto/tls"
+	systemErrors "errors"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"io"
 	"net"
 	"path"
 	"runtime"
@@ -12,6 +14,87 @@ import (
 	"testing"
 	"time"
 )
+
+type testNetConn struct {
+	readBuf   []byte
+	readPos   int
+	writeBuf  []byte
+	writePos  int
+	maxWrite  int
+	isRunning bool
+	errCH     chan error
+}
+
+func newTestNetConn(readBuf []byte, maxWrite int) *testNetConn {
+	return &testNetConn{
+		readBuf:   readBuf,
+		readPos:   0,
+		writeBuf:  make([]byte, 1024),
+		writePos:  0,
+		maxWrite:  maxWrite,
+		isRunning: true,
+		errCH:     make(chan error, 1024),
+	}
+}
+
+func (p *testNetConn) Read(b []byte) (n int, err error) {
+	if p.readPos >= len(p.readBuf) {
+		p.errCH <- io.EOF
+		return -1, io.EOF
+	}
+
+	n = copy(b, p.readBuf[p.readPos:])
+	p.readPos += n
+	return n, nil
+}
+
+func (p *testNetConn) Write(b []byte) (n int, err error) {
+	if p.writePos >= len(p.writeBuf) {
+		p.errCH <- io.EOF
+		return -1, io.EOF
+	}
+
+	if len(b) > p.maxWrite {
+		b = b[:p.maxWrite]
+	}
+
+	n = copy(p.writeBuf[p.writePos:], b)
+	p.writePos += n
+
+	return n, nil
+}
+
+func (p *testNetConn) Close() error {
+	if !p.isRunning {
+		e := systemErrors.New("close error")
+		p.errCH <- e
+		return e
+	}
+	p.isRunning = false
+	return nil
+}
+
+func (p *testNetConn) LocalAddr() net.Addr {
+	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.12")
+	return ret
+}
+
+func (p *testNetConn) RemoteAddr() net.Addr {
+	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.11")
+	return ret
+}
+
+func (p *testNetConn) SetDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetReadDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
+	panic("not implemented")
+}
 
 type testSingleReceiver struct {
 	onOpenCount   int
