@@ -24,7 +24,6 @@ func TestNewServerNetConn(t *testing.T) {
 func TestNewClientNetConn(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-
 		conn := &net.TCPConn{}
 		v := NewClientNetConn(conn, 1024, 2048)
 		assert(v.isServer).IsFalse()
@@ -37,5 +36,12 @@ func TestNewClientNetConn(t *testing.T) {
 }
 
 func TestNetConn_SetNext(t *testing.T) {
-
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServerNetConn(&net.TCPConn{}, 1024, 2048)
+		v.SetNext(v)
+		assert(v.next).Equal(v)
+		v.SetNext(nil)
+		assert(v.next == nil).IsTrue()
+	})
 }
