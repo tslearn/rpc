@@ -160,16 +160,6 @@ func (p *NetConn) OnFillWrite(_ []byte) int {
 	panic("kernel error, this code should not be called")
 }
 
-// GetFD ...
-func (p *NetConn) GetFD() int {
-	panic("kernel error, this code should not be called")
-}
-
-// SetFD ...
-func (p *NetConn) SetFD(_ int) {
-	panic("kernel error, this code should not be called")
-}
-
 const streamConnStatusRunning = int32(1)
 const streamConnStatusClosed = int32(0)
 
@@ -349,10 +339,5 @@ func (p *StreamConn) OnReadReady() bool {
 
 // OnWriteReady ...
 func (p *StreamConn) OnWriteReady() bool {
-	panic("kernel error, this code should not be called")
-}
-
-// GetFD ...
-func (p *StreamConn) GetFD() int {
 	panic("kernel error, this code should not be called")
 }

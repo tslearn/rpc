@@ -24,7 +24,6 @@ type IConn interface {
 	SetNext(conn IConn)
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
-	GetFD() int
 	Close()
 }
 
