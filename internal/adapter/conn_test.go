@@ -132,3 +132,48 @@ func TestNetConn_Close(t *testing.T) {
 			Equal(errors.ErrConnClose.AddDebug("close error"))
 	})
 }
+
+func TestNetConn_LocalAddr(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.12:8080")
+		v := NewServerNetConn(newTestNetConn(nil, 10), 1024, 2048)
+		assert(v.LocalAddr()).Equal(expectedAddr)
+	})
+}
+
+func TestNetConn_RemoteAddr(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.11:8081")
+		v := NewServerNetConn(newTestNetConn(nil, 10), 1024, 2048)
+		assert(v.RemoteAddr()).Equal(expectedAddr)
+	})
+}
+
+func TestNetConn_OnReadReady(t *testing.T) {
+	t.Run("server error io.EOF", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServerNetConn(newTestNetConn(nil, 10), 1024, 2048)
+		assert(v.OnReadReady()).IsFalse()
+	})
+
+	t.Run("server error closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn(nil, 10)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		v := NewServerNetConn(netConn, 1024, 2048)
+		v.SetNext(streamConn)
+		netConn.isRunning = false
+		assert(v.OnReadReady()).IsFalse()
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).
+			Equal(errors.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+	})
+
+	t.Run("server ok", func(t *testing.T) {
+
+	})
+}

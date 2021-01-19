@@ -95,18 +95,18 @@ func (p *NetConn) RemoteAddr() net.Addr {
 func (p *NetConn) OnReadReady() bool {
 	n, e := p.conn.Read(p.rBuf)
 	if e != nil {
-		if p.isServer {
-			if e != io.EOF {
+		if e != io.EOF {
+			if p.isServer {
 				p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
-			}
-		} else {
-			p.Lock()
-			ignoreReport := (!p.isRunning) &&
-				strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
-			p.Unlock()
+			} else {
+				p.Lock()
+				ignoreReport := (!p.isRunning) &&
+					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
+				p.Unlock()
 
-			if !ignoreReport {
-				p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
+				if !ignoreReport {
+					p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
+				}
 			}
 		}
 

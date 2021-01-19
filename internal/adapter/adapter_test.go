@@ -38,6 +38,12 @@ func newTestNetConn(readBuf []byte, maxWrite int) *testNetConn {
 }
 
 func (p *testNetConn) Read(b []byte) (n int, err error) {
+	if !p.isRunning {
+		e := systemErrors.New(ErrNetClosingSuffix)
+		p.errCH <- e
+		return -1, e
+	}
+
 	if p.readPos >= len(p.readBuf) {
 		p.errCH <- io.EOF
 		return -1, io.EOF
@@ -49,6 +55,12 @@ func (p *testNetConn) Read(b []byte) (n int, err error) {
 }
 
 func (p *testNetConn) Write(b []byte) (n int, err error) {
+	if !p.isRunning {
+		e := systemErrors.New(ErrNetClosingSuffix)
+		p.errCH <- e
+		return -1, e
+	}
+
 	if p.writePos >= len(p.writeBuf) {
 		p.errCH <- io.EOF
 		return -1, io.EOF
@@ -75,12 +87,12 @@ func (p *testNetConn) Close() error {
 }
 
 func (p *testNetConn) LocalAddr() net.Addr {
-	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.12")
+	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.12:8080")
 	return ret
 }
 
 func (p *testNetConn) RemoteAddr() net.Addr {
-	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.11")
+	ret, _ := net.ResolveTCPAddr("tcp", "127.0.0.11:8081")
 	return ret
 }
 
