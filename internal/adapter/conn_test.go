@@ -321,8 +321,8 @@ func TestNetConn_OnFillWrite(t *testing.T) {
 func TestStreamConnBasic(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(streamConnStatusRunning).Equal(1)
-		assert(streamConnStatusClosed).Equal(0)
+		assert(streamConnStatusRunning).Equal(int32(1))
+		assert(streamConnStatusClosed).Equal(int32(0))
 	})
 }
 
