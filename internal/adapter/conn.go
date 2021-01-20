@@ -271,6 +271,10 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 		}
 	}
 
+	if p.writeStream == nil {
+		return 0
+	}
+
 	peekBuf, finish := p.writeStream.PeekBufferSlice(p.writePos, len(b))
 
 	if len(peekBuf) <= 0 {
@@ -334,15 +338,15 @@ func (p *StreamConn) IsActive(nowNS int64, timeout time.Duration) bool {
 
 // SetNext ...
 func (p *StreamConn) SetNext(_ IConn) {
-	panic("kernel error, this code should not be called")
+	panic("kernel error: it should not be called")
 }
 
 // OnReadReady ...
 func (p *StreamConn) OnReadReady() bool {
-	panic("kernel error, this code should not be called")
+	panic("kernel error: it should not be called")
 }
 
 // OnWriteReady ...
 func (p *StreamConn) OnWriteReady() bool {
-	panic("kernel error, this code should not be called")
+	panic("kernel error: it should not be called")
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestNewServerNetConn(t *testing.T) {
@@ -313,6 +314,209 @@ func TestNetConn_OnFillWrite(t *testing.T) {
 
 		assert(base.RunWithCatchPanic(func() {
 			v.OnFillWrite(nil)
+		})).Equal("kernel error: it should not be called")
+	})
+}
+
+func TestStreamConnBasic(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(streamConnStatusRunning).Equal(1)
+		assert(streamConnStatusClosed).Equal(0)
+	})
+}
+
+func TestNewStreamConn(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		prev := NewServerNetConn(nil, 1024, 1024)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(prev, receiver)
+		assert(v.status).Equal(streamConnStatusRunning)
+		assert(v.prev).Equal(prev)
+		assert(v.receiver).Equal(receiver)
+		assert(len(v.writeCH)).Equal(0)
+		assert(cap(v.writeCH)).Equal(16)
+		assert(v.readHeadPos).Equal(0)
+		assert(len(v.readHeadBuf)).Equal(core.StreamHeadSize)
+		assert(cap(v.readHeadBuf)).Equal(core.StreamHeadSize)
+		assert(v.readStream).IsNil()
+		assert(v.writeStream).IsNil()
+		assert(v.writePos).Equal(0)
+	})
+}
+
+func TestStreamConn_SetReceiver(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		initReceiver := newTestSingleReceiver()
+		changeReceiver := newTestSingleReceiver()
+		v := NewStreamConn(nil, initReceiver)
+		v.SetReceiver(changeReceiver)
+		assert(v.receiver).Equal(changeReceiver)
+	})
+}
+
+func TestStreamConn_OnOpen(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(nil, receiver)
+		v.OnOpen()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+}
+
+func TestStreamConn_OnClose(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(nil, receiver)
+		v.OnOpen()
+		v.OnClose()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+}
+
+func TestStreamConn_OnError(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(nil, receiver)
+		v.OnOpen()
+		v.OnError(errors.ErrStream)
+		v.OnClose()
+		assert(receiver.GetOnOpenCount()).Equal(1)
+		assert(receiver.GetOnCloseCount()).Equal(1)
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).Equal(errors.ErrStream)
+	})
+}
+
+func TestStreamConn_Close(t *testing.T) {
+	t.Run("close ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		prev := NewServerNetConn(newTestNetConn(nil, 10), 1024, 1024)
+		v := NewStreamConn(prev, nil)
+		v.Close()
+
+		assert(base.RunWithCatchPanic(func() {
+			v.writeCH <- core.NewStream()
+		})).IsNotNil()
+		assert(prev.isRunning).IsFalse()
+	})
+
+	t.Run("it has already been closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		prev := NewServerNetConn(newTestNetConn(nil, 10), 1024, 1024)
+		v := NewStreamConn(prev, nil)
+		v.status = streamConnStatusClosed
+		v.Close()
+		assert(base.RunWithCatchPanic(func() {
+			v.writeCH <- core.NewStream()
+		})).IsNil()
+		assert(prev.isRunning).IsTrue()
+	})
+}
+
+func TestStreamConn_LocalAddr(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.12:8080")
+		prev := NewServerNetConn(newTestNetConn(nil, 10), 1024, 1024)
+		v := NewStreamConn(prev, nil)
+		assert(v.LocalAddr()).Equal(expectedAddr)
+	})
+}
+
+func TestStreamConn_RemoteAddr(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.11:8081")
+		prev := NewServerNetConn(newTestNetConn(nil, 10), 1024, 1024)
+		v := NewStreamConn(prev, nil)
+		assert(v.RemoteAddr()).Equal(expectedAddr)
+	})
+}
+
+func TestStreamConn_WriteStreamAndRelease(t *testing.T) {
+	t.Run("write ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		conn := newTestNetConn(nil, 10)
+		netConn := NewServerNetConn(conn, 1024, 1024)
+		v := NewStreamConn(netConn, newTestSingleReceiver())
+		netConn.SetNext(v)
+		v.OnOpen()
+		v.WriteStreamAndRelease(core.NewStream())
+		retStream := core.NewStream()
+		retStream.BuildStreamCheck()
+		assert(conn.writeBuf[:conn.writePos]).
+			Equal(retStream.GetBuffer())
+	})
+
+	t.Run("write error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		conn := newTestNetConn(nil, 10)
+		netConn := NewServerNetConn(conn, 1024, 1024)
+		v := NewStreamConn(netConn, newTestSingleReceiver())
+		netConn.SetNext(v)
+		v.OnOpen()
+		v.Close()
+		v.WriteStreamAndRelease(core.NewStream())
+		retStream := core.NewStream()
+		retStream.BuildStreamCheck()
+		assert(conn.writeBuf[:conn.writePos]).Equal([]byte{})
+	})
+}
+
+func TestStreamConn_IsActive(t *testing.T) {
+	t.Run("active true", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		nowNS := base.TimeNow().UnixNano()
+		v := NewStreamConn(nil, nil)
+		v.activeTimeNS = nowNS
+		assert(v.IsActive(nowNS, time.Second)).IsTrue()
+	})
+
+	t.Run("active true", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		now := base.TimeNow()
+		v := NewStreamConn(nil, nil)
+		v.activeTimeNS = now.Add(-time.Second).UnixNano()
+		assert(v.IsActive(now.UnixNano(), time.Second)).IsFalse()
+	})
+}
+
+func TestStreamConn_SetNext(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStreamConn(nil, nil)
+		assert(base.RunWithCatchPanic(func() {
+			v.SetNext(nil)
+		})).Equal("kernel error: it should not be called")
+	})
+}
+
+func TestStreamConn_OnReadReady(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStreamConn(nil, nil)
+		assert(base.RunWithCatchPanic(func() {
+			v.OnReadReady()
+		})).Equal("kernel error: it should not be called")
+	})
+}
+
+func TestStreamConn_OnWriteReady(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStreamConn(nil, nil)
+		assert(base.RunWithCatchPanic(func() {
+			v.OnWriteReady()
 		})).Equal("kernel error: it should not be called")
 	})
 }
