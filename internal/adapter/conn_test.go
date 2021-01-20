@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"net"
 	"testing"
@@ -174,6 +175,144 @@ func TestNetConn_OnReadReady(t *testing.T) {
 	})
 
 	t.Run("server ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		stream.BuildStreamCheck()
+		netConn := newTestNetConn(stream.GetBuffer(), 10)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		v := NewServerNetConn(netConn, 1024, 2048)
+		v.SetNext(streamConn)
+		assert(v.OnReadReady()).IsTrue()
+		assert(receiver.GetOnStreamCount()).Equal(1)
+		assert(receiver.GetStream().GetBuffer()).Equal(stream.GetBuffer())
+	})
 
+	t.Run("client error io.EOF", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewClientNetConn(newTestNetConn(nil, 10), 1024, 2048)
+		assert(v.OnReadReady()).IsFalse()
+	})
+
+	t.Run("client error use of closed conn when running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn(nil, 10)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		v := NewClientNetConn(netConn, 1024, 2048)
+		v.SetNext(streamConn)
+		netConn.isRunning = false
+		assert(v.OnReadReady()).IsFalse()
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).
+			Equal(errors.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+	})
+
+	t.Run("client error use of closed conn when closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn(nil, 10)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		v := NewClientNetConn(netConn, 1024, 2048)
+		v.SetNext(streamConn)
+		v.isRunning = false
+		netConn.isRunning = false
+		assert(v.OnReadReady()).IsFalse()
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+}
+
+func TestNetConn_OnWriteReady(t *testing.T) {
+	t.Run("nothing to write", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		netConn := newTestNetConn(nil, 10)
+		v := NewClientNetConn(netConn, 1024, 2048)
+		v.SetNext(streamConn)
+		assert(v.OnWriteReady()).IsTrue()
+		assert(netConn.writePos).Equal(0)
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for write := 1; write < 200; write += 10 {
+			stream := core.NewStream()
+			for i := 0; i < write; i++ {
+				stream.PutBytes([]byte{43})
+			}
+			exceptBuf := stream.GetBuffer()
+
+			for writeBufSize := 1; writeBufSize < 300; writeBufSize += 10 {
+				for maxWrite := 1; maxWrite < 400; maxWrite += 10 {
+					receiver := newTestSingleReceiver()
+					streamConn := NewStreamConn(nil, receiver)
+					streamConn.writeCH <- stream.Clone()
+					netConn := newTestNetConn(nil, maxWrite)
+					v := NewClientNetConn(netConn, 1024, writeBufSize)
+					v.SetNext(streamConn)
+					assert(v.OnWriteReady()).IsTrue()
+					assert(netConn.writeBuf[:netConn.writePos]).Equal(exceptBuf)
+				}
+			}
+
+			stream.Release()
+		}
+	})
+
+	t.Run("write error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		streamConn.writeCH <- stream.Clone()
+		netConn := newTestNetConn(nil, 10)
+		netConn.isRunning = false
+		v := NewClientNetConn(netConn, 1024, 1024)
+		v.SetNext(streamConn)
+		assert(v.OnWriteReady()).IsFalse()
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).
+			Equal(errors.ErrConnWrite.AddDebug(ErrNetClosingSuffix))
+	})
+
+	t.Run("write zero", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		streamConn.writeCH <- stream.Clone()
+		netConn := newTestNetConn(nil, 0)
+		v := NewClientNetConn(netConn, 1024, 1024)
+		v.SetNext(streamConn)
+		assert(v.OnWriteReady()).IsFalse()
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+}
+
+func TestNetConn_OnReadBytes(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewClientNetConn(newTestNetConn(nil, 10), 1024, 1024)
+
+		assert(base.RunWithCatchPanic(func() {
+			v.OnReadBytes(nil)
+		})).Equal("kernel error: it should not be called")
+	})
+}
+
+func TestNetConn_OnFillWrite(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewClientNetConn(newTestNetConn(nil, 10), 1024, 1024)
+
+		assert(base.RunWithCatchPanic(func() {
+			v.OnFillWrite(nil)
+		})).Equal("kernel error: it should not be called")
 	})
 }

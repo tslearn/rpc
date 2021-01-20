@@ -112,6 +112,7 @@ func (p *NetConn) OnReadReady() bool {
 
 		return false
 	}
+
 	p.next.OnReadBytes(p.rBuf[:n])
 	return true
 }
@@ -152,12 +153,12 @@ func (p *NetConn) OnWriteReady() bool {
 
 // OnReadBytes ...
 func (p *NetConn) OnReadBytes(_ []byte) {
-	panic("kernel error, this code should not be called")
+	panic("kernel error: it should not be called")
 }
 
 // OnFillWrite ...
 func (p *NetConn) OnFillWrite(_ []byte) int {
-	panic("kernel error, this code should not be called")
+	panic("kernel error: it should not be called")
 }
 
 const streamConnStatusRunning = int32(1)
@@ -232,24 +233,28 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 		p.readHeadPos = 0
 	}
 
-	if byteLen := len(b); byteLen > 0 {
+	if byteLen := len(b); byteLen >= 0 {
 		streamLength := int(p.readStream.GetLength())
 		remains := streamLength - p.readStream.GetWritePos()
-		writeBuf := b[:base.MinInt(byteLen, remains)]
-		p.readStream.PutBytes(writeBuf)
-		if p.readStream.GetWritePos() == streamLength {
-			if p.readStream.CheckStream() {
-				atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
-				p.receiver.OnConnReadStream(p, p.readStream)
-				p.readStream = nil
-			} else {
-				p.receiver.OnConnError(p, errors.ErrStream)
-				return
+		if remains >= 0 {
+			writeBuf := b[:base.MinInt(byteLen, remains)]
+			p.readStream.PutBytes(writeBuf)
+			if p.readStream.GetWritePos() == streamLength {
+				if p.readStream.CheckStream() {
+					atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
+					p.receiver.OnConnReadStream(p, p.readStream)
+					p.readStream = nil
+				} else {
+					p.receiver.OnConnError(p, errors.ErrStream)
+					return
+				}
 			}
-		}
 
-		if byteLen > len(writeBuf) {
-			p.OnReadBytes(b[:len(writeBuf)])
+			if byteLen > len(writeBuf) {
+				p.OnReadBytes(b[:len(writeBuf)])
+			}
+		} else {
+			p.OnError(errors.ErrStream)
 		}
 	}
 }
