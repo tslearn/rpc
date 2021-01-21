@@ -20,17 +20,19 @@ type testNetConn struct {
 	readPos   int
 	writeBuf  []byte
 	writePos  int
+	maxRead   int
 	maxWrite  int
 	isRunning bool
 	errCH     chan error
 }
 
-func newTestNetConn(readBuf []byte, maxWrite int) *testNetConn {
+func newTestNetConn(readBuf []byte, maxRead int, maxWrite int) *testNetConn {
 	return &testNetConn{
 		readBuf:   readBuf,
 		readPos:   0,
 		writeBuf:  make([]byte, 1024),
 		writePos:  0,
+		maxRead:   maxRead,
 		maxWrite:  maxWrite,
 		isRunning: true,
 		errCH:     make(chan error, 1024),
@@ -47,6 +49,10 @@ func (p *testNetConn) Read(b []byte) (n int, err error) {
 	if p.readPos >= len(p.readBuf) {
 		p.errCH <- io.EOF
 		return -1, io.EOF
+	}
+
+	if len(b) > p.maxRead {
+		b = b[:p.maxRead]
 	}
 
 	n = copy(b, p.readBuf[p.readPos:])
