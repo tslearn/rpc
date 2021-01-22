@@ -471,7 +471,91 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 }
 
 func TestStreamConn_OnFillWrite(t *testing.T) {
+	t.Run("no stream", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		buf := make([]byte, 1024)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(nil, receiver)
+		v.OnOpen()
+		assert(v.OnFillWrite(buf)).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
 
+	t.Run("streamConn is closed", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		buf := make([]byte, 1024)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(
+			NewServerNetConn(newTestNetConn(nil, 10, 10), 10, 10),
+			receiver,
+		)
+		v.OnOpen()
+		v.Close()
+		assert(v.OnFillWrite(buf)).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(0)
+	})
+
+	t.Run("emulate peek kernel error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		buf := make([]byte, 1024)
+		receiver := newTestSingleReceiver()
+		v := NewStreamConn(
+			NewServerNetConn(newTestNetConn(nil, 10, 10), 10, 10),
+			receiver,
+		)
+		v.OnOpen()
+		v.writeStream = core.NewStream()
+		v.writePos = v.writeStream.GetWritePos()
+		assert(v.OnFillWrite(buf)).Equal(0)
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).Equal(errors.ErrOnFillWriteFatal)
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for streams := 1; streams < 2; streams++ {
+			for bufSize := 1; bufSize < 2; bufSize += 10 {
+				receiver := newTestSingleReceiver()
+				v := NewStreamConn(
+					NewServerNetConn(newTestNetConn(nil, 10, 10), 10, 10),
+					receiver,
+				)
+				v.OnOpen()
+
+				buffer := make([]byte, 0)
+				for i := 0; i < streams; i++ {
+					stream := core.NewStream()
+					rand.Seed(base.TimeNow().UnixNano())
+					for j := 0; j < rand.Int()%20; j++ {
+						stream.PutBytes([]byte{12})
+					}
+					buffer = append(buffer, stream.GetBuffer()...)
+					v.writeCH <- stream
+				}
+
+				fillBytes := 1
+				start := 0
+
+				for start < len(buffer) {
+					if start+fillBytes < len(buffer) {
+						b := make([]byte, fillBytes)
+						assert(v.OnFillWrite(b)).Equal(fillBytes)
+						assert(b).Equal(buffer[start : start+fillBytes])
+					} else {
+						b := make([]byte, fillBytes)
+						assert(v.OnFillWrite(b)).Equal(len(buffer) - start)
+						assert(b[:len(buffer)-start]).Equal(buffer[start:])
+						break
+					}
+
+					start += fillBytes
+					fillBytes++
+				}
+
+				assert(receiver.GetOnErrorCount()).Equal(0)
+			}
+		}
+	})
 }
 
 func TestStreamConn_Close(t *testing.T) {
