@@ -397,6 +397,49 @@ func TestStreamConn_OnError(t *testing.T) {
 	})
 }
 
+func TestStreamConn_OnReadBytes(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+
+	})
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for streams := 1; streams < 5; streams++ {
+			buffer := make([]byte, 0)
+
+			for i := 0; i < streams; i++ {
+				stream := core.NewStream()
+				stream.BuildStreamCheck()
+				buffer = append(buffer, stream.GetBuffer()...)
+			}
+
+			for readBufSize := 1; readBufSize < 200; readBufSize += 10 {
+				for maxRead := 1; maxRead < 200; maxRead += 10 {
+					receiver := newTestSingleReceiver()
+					conn := newTestNetConn(buffer, maxRead, 1024)
+					netConn := NewServerNetConn(conn, readBufSize, 1024)
+					streamConn := NewStreamConn(netConn, receiver)
+					netConn.SetNext(streamConn)
+					runIConn(netConn)
+					assert(receiver.GetOnStreamCount()).Equal(streams)
+					expectBuffer := make([]byte, 0)
+
+					for i := 0; i < streams; i++ {
+						expectBuffer = append(
+							expectBuffer,
+							receiver.GetStream().GetBuffer()...,
+						)
+					}
+					assert(expectBuffer).Equal(buffer)
+				}
+			}
+		}
+	})
+}
+
+func TestStreamConn_OnFillWrite(t *testing.T) {
+
+}
+
 func TestStreamConn_Close(t *testing.T) {
 	t.Run("close ok", func(t *testing.T) {
 		assert := base.NewAssert(t)

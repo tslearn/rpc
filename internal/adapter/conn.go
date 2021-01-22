@@ -251,7 +251,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 			}
 
 			if byteLen > len(writeBuf) {
-				p.OnReadBytes(b[:len(writeBuf)])
+				p.OnReadBytes(b[len(writeBuf):])
 			}
 		} else {
 			p.OnError(errors.ErrStream)
