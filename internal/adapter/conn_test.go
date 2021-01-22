@@ -4,6 +4,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"math/rand"
 	"net"
 	"testing"
 	"time"
@@ -240,18 +241,26 @@ func TestNetConn_OnWriteReady(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
+
 		for write := 1; write < 200; write += 10 {
+			rand.Seed(base.TimeNow().UnixNano())
+			numOfStream := rand.Int()%5 + 1
 			stream := core.NewStream()
 			for i := 0; i < write; i++ {
 				stream.PutBytes([]byte{43})
 			}
-			exceptBuf := stream.GetBuffer()
+			exceptBuf := make([]byte, 0)
+			for i := 0; i < numOfStream; i++ {
+				exceptBuf = append(exceptBuf, stream.GetBuffer()...)
+			}
 
-			for writeBufSize := 1; writeBufSize < 300; writeBufSize += 10 {
-				for maxWrite := 1; maxWrite < 400; maxWrite += 10 {
+			for writeBufSize := 1; writeBufSize < 200; writeBufSize += 10 {
+				for maxWrite := 1; maxWrite < 200; maxWrite += 10 {
 					receiver := newTestSingleReceiver()
 					streamConn := NewStreamConn(nil, receiver)
-					streamConn.writeCH <- stream.Clone()
+					for i := 0; i < numOfStream; i++ {
+						streamConn.writeCH <- stream.Clone()
+					}
 					netConn := newTestNetConn(nil, 10, maxWrite)
 					v := NewClientNetConn(netConn, 1024, writeBufSize)
 					v.SetNext(streamConn)
