@@ -110,6 +110,6 @@ var (
 	ErrOnFillWriteFatal = base.DefineKernelError(
 		(adapterErrorSeg<<16)|5,
 		base.ErrorLevelFatal,
-		"",
+		"kernel error",
 	)
 )

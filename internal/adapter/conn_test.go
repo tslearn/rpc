@@ -398,9 +398,31 @@ func TestStreamConn_OnError(t *testing.T) {
 }
 
 func TestStreamConn_OnReadBytes(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-
+	t.Run("stream length error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		streamConn.OnReadBytes(core.NewStream().GetBuffer())
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).Equal(errors.ErrStream)
 	})
+
+	t.Run("stream check error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestSingleReceiver()
+		streamConn := NewStreamConn(nil, receiver)
+		streamConn.OnOpen()
+		stream := core.NewStream()
+		stream.PutBytes([]byte{12})
+		stream.BuildStreamCheck()
+		errBuffer := stream.GetBuffer()
+		errBuffer[len(errBuffer)-1] = 11
+		streamConn.OnReadBytes(errBuffer)
+		assert(receiver.GetOnErrorCount()).Equal(1)
+		assert(receiver.GetError()).Equal(errors.ErrStream)
+	})
+
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for streams := 1; streams < 5; streams++ {
@@ -408,6 +430,9 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 
 			for i := 0; i < streams; i++ {
 				stream := core.NewStream()
+				for j := 0; j < i; j++ {
+					stream.PutBytes([]byte{12})
+				}
 				stream.BuildStreamCheck()
 				buffer = append(buffer, stream.GetBuffer()...)
 			}

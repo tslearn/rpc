@@ -279,7 +279,7 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 
 	if len(peekBuf) <= 0 {
 		p.OnError(
-			errors.ErrOnFillWriteFatal.AddDebug("OnFillWrite internal error"),
+			errors.ErrOnFillWriteFatal,
 		)
 		return 0
 	}

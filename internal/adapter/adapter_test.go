@@ -30,7 +30,7 @@ func newTestNetConn(readBuf []byte, maxRead int, maxWrite int) *testNetConn {
 	return &testNetConn{
 		readBuf:   readBuf,
 		readPos:   0,
-		writeBuf:  make([]byte, 1024),
+		writeBuf:  make([]byte, 40960),
 		writePos:  0,
 		maxRead:   maxRead,
 		maxWrite:  maxWrite,
