@@ -7,13 +7,6 @@ import (
 const adapterErrorSeg = 2000
 
 var (
-	// ErrTemp ... *
-	ErrTemp = base.DefineNetError(
-		(adapterErrorSeg<<16)|1000,
-		base.ErrorLevelWarn,
-		"",
-	)
-
 	ErrUnsupportedProtocol = base.DefineNetError(
 		(adapterErrorSeg<<16)|21,
 		base.ErrorLevelFatal,
@@ -82,27 +75,6 @@ var (
 
 	ErrConnWrite = base.DefineNetError(
 		(adapterErrorSeg<<16)|32,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	// ErrKqueueSystem  ...
-	ErrKqueueSystem = base.DefineNetError(
-		(adapterErrorSeg<<16)|2,
-		base.ErrorLevelFatal,
-		"",
-	)
-
-	// ErrKqueueNotRunning ...
-	ErrKqueueNotRunning = base.DefineNetError(
-		(adapterErrorSeg<<16)|3,
-		base.ErrorLevelFatal,
-		"it is not running",
-	)
-
-	// ErrTCPListener  ...
-	ErrTCPListener = base.DefineNetError(
-		(adapterErrorSeg<<16)|4,
 		base.ErrorLevelFatal,
 		"",
 	)
