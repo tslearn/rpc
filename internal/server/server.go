@@ -200,7 +200,7 @@ func (p *Server) Serve() {
 	if err != nil {
 		p.onError(0, err)
 	} else {
-		p.gateway.Serve()
+		p.gateway.Open()
 	}
 }
 

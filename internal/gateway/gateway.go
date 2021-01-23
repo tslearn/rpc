@@ -94,8 +94,8 @@ func (p *GateWay) Listen(
 	return p
 }
 
-// Serve ...
-func (p *GateWay) Serve() {
+// Open ...
+func (p *GateWay) Open() {
 	p.orcManager.Open(func() bool {
 		p.Lock()
 		defer p.Unlock()
