@@ -17,18 +17,105 @@ import (
 )
 
 const (
-	maxGatewayID = 0xFFFFFF
+	maxGatewayID             = 0xFFFFFF
+	sessionManagerVectorSize = 1024
 )
+
+type SessionMap struct {
+	gateway    *GateWay
+	sessionMap map[uint64]*Session
+	head       *Session
+	sync.Mutex
+}
+
+func NewSessionMap(gateway *GateWay) *SessionMap {
+	return &SessionMap{
+		gateway:    gateway,
+		sessionMap: map[uint64]*Session{},
+		head:       nil,
+	}
+}
+
+func (p *SessionMap) Get(id uint64) (*Session, bool) {
+	p.Lock()
+	defer p.Unlock()
+
+	ret, ok := p.sessionMap[id]
+	return ret, ok
+}
+
+func (p *SessionMap) Add(session *Session) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if _, exist := p.sessionMap[session.id]; !exist {
+		p.sessionMap[session.id] = session
+
+		if p.head != nil {
+			p.head.prev = session
+		}
+
+		session.prev = nil
+		session.next = p.head
+		p.head = session
+
+		atomic.AddInt64(&p.gateway.totalSessions, 1)
+		return true
+	}
+
+	return false
+}
+
+func (p *SessionMap) Remove(id uint64) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if session, exist := p.sessionMap[id]; exist {
+		delete(p.sessionMap, id)
+
+		if session.prev != nil {
+			session.prev.next = session.next
+		}
+
+		if session.next != nil {
+			session.next.prev = session.prev
+		}
+
+		if session == p.head {
+			p.head = session.next
+		}
+
+		session.prev = nil
+		session.next = nil
+
+		atomic.AddInt64(&p.gateway.totalSessions, -1)
+		return true
+	}
+
+	return false
+}
+
+func (p *SessionMap) TimeCheck(nowNS int64) {
+	p.Lock()
+	defer p.Unlock()
+
+	node := p.head
+	for node != nil {
+		node.TimeCheck(nowNS)
+		node = node.next
+	}
+}
 
 // GateWay ...
 type GateWay struct {
 	id             uint32
 	isFree         bool
 	sessionSeed    uint64
+	totalSessions  int64
+	sessionMapList []*SessionMap
 	routerSender   router.IRouteSender
 	closeCH        chan bool
 	config         *Config
-	sessionManager *SessionManager
 	onError        func(sessionID uint64, err *base.Error)
 	adapters       []*adapter.Adapter
 	orcManager     *base.ORCManager
@@ -50,18 +137,46 @@ func NewGateWay(
 		id:             id,
 		isFree:         true,
 		sessionSeed:    1,
+		totalSessions:  0,
+		sessionMapList: make([]*SessionMap, sessionManagerVectorSize),
 		routerSender:   nil,
 		closeCH:        make(chan bool, 1),
 		config:         config,
-		sessionManager: NewSessionManager(),
 		onError:        onError,
 		adapters:       make([]*adapter.Adapter, 0),
 		orcManager:     base.NewORCManager(),
 	}
 
+	for i := 0; i < sessionManagerVectorSize; i++ {
+		ret.sessionMapList[i] = NewSessionMap(ret)
+	}
+
 	ret.routerSender = router.Plug(ret)
 
 	return ret
+}
+
+func (p *GateWay) TotalSessions() int64 {
+	return atomic.LoadInt64(&p.totalSessions)
+}
+
+func (p *GateWay) Get(id uint64) (*Session, bool) {
+	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
+}
+
+func (p *GateWay) Add(session *Session) bool {
+	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
+}
+
+func (p *GateWay) Remove(id uint64) bool {
+	return p.sessionMapList[id%sessionManagerVectorSize].Remove(id)
+}
+
+// thread unsafe
+func (p *GateWay) TimeCheck(nowNS int64) {
+	for i := 0; i < sessionManagerVectorSize; i++ {
+		p.sessionMapList[i].TimeCheck(nowNS)
+	}
 }
 
 // GetConfig ...
@@ -132,7 +247,7 @@ func (p *GateWay) Open() {
 
 		for isRunning() {
 			startNS := base.TimeNow().UnixNano()
-			p.sessionManager.TimeCheck(startNS)
+			p.TimeCheck(startNS)
 			base.WaitAtLeastDurationWhenRunning(startNS, isRunning, time.Second)
 		}
 
@@ -164,7 +279,7 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 	if !stream.IsDirectionOut() {
 		stream.Release()
 		return errors.ErrStream
-	} else if session, ok := p.sessionManager.Get(stream.GetSessionID()); ok {
+	} else if session, ok := p.Get(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 		return nil
 	} else {
@@ -210,7 +325,7 @@ func (p *GateWay) OnConnReadStream(
 		strArray := strings.Split(sessionString, "-")
 		if len(strArray) == 2 && len(strArray[1]) == 32 {
 			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
-				if s, ok := p.sessionManager.Get(id); ok && s.security == strArray[1] {
+				if s, ok := p.Get(id); ok && s.security == strArray[1] {
 					session = s
 				}
 			}
@@ -218,11 +333,11 @@ func (p *GateWay) OnConnReadStream(
 
 		// if session not find by session string, create a new session
 		if session == nil {
-			if p.sessionManager.TotalSessions() >= int64(p.config.serverMaxSessions) {
+			if p.TotalSessions() >= int64(p.config.serverMaxSessions) {
 				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 			} else {
 				session = newSession(atomic.AddUint64(&p.sessionSeed, 1), p)
-				p.sessionManager.Add(session)
+				p.Add(session)
 				session.OnConnOpen(streamConn)
 			}
 		}

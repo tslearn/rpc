@@ -2,10 +2,8 @@ package gateway
 
 import (
 	"fmt"
-	"sync"
-	"sync/atomic"
-
 	"github.com/rpccloud/rpc/internal/adapter"
+	"sync"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -16,135 +14,6 @@ var sessionCache = &sync.Pool{
 	New: func() interface{} {
 		return &Session{}
 	},
-}
-
-type SessionList struct {
-	manager    *SessionManager
-	sessionMap map[uint64]*Session
-	head       *Session
-	sync.Mutex
-}
-
-func NewSessionList(manager *SessionManager) *SessionList {
-	return &SessionList{
-		manager:    manager,
-		sessionMap: map[uint64]*Session{},
-		head:       nil,
-	}
-}
-
-func (p *SessionList) Get(id uint64) (*Session, bool) {
-	p.Lock()
-	defer p.Unlock()
-
-	ret, ok := p.sessionMap[id]
-	return ret, ok
-}
-
-func (p *SessionList) Add(session *Session) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if _, exist := p.sessionMap[session.id]; !exist {
-		p.sessionMap[session.id] = session
-
-		if p.head != nil {
-			p.head.prev = session
-		}
-
-		session.prev = nil
-		session.next = p.head
-		p.head = session
-
-		atomic.AddInt64(&p.manager.totalSessions, 1)
-		return true
-	}
-
-	return false
-}
-
-func (p *SessionList) Remove(id uint64) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if session, exist := p.sessionMap[id]; exist {
-		delete(p.sessionMap, id)
-
-		if session.prev != nil {
-			session.prev.next = session.next
-		}
-
-		if session.next != nil {
-			session.next.prev = session.prev
-		}
-
-		if session == p.head {
-			p.head = session.next
-		}
-
-		session.prev = nil
-		session.next = nil
-
-		atomic.AddInt64(&p.manager.totalSessions, -1)
-		return true
-	}
-
-	return false
-}
-
-func (p *SessionList) TimeCheck(nowNS int64) {
-	p.Lock()
-	defer p.Unlock()
-
-	node := p.head
-	for node != nil {
-		node.TimeCheck(nowNS)
-		node = node.next
-	}
-}
-
-const sessionManagerVectorSize = 1024
-
-type SessionManager struct {
-	totalSessions int64
-	listVector    []*SessionList
-	sync.Mutex
-}
-
-func NewSessionManager() *SessionManager {
-	ret := &SessionManager{
-		totalSessions: 0,
-		listVector:    make([]*SessionList, sessionManagerVectorSize),
-	}
-
-	for i := 0; i < sessionManagerVectorSize; i++ {
-		ret.listVector[i] = NewSessionList(ret)
-	}
-
-	return ret
-}
-
-func (p *SessionManager) TotalSessions() int64 {
-	return atomic.LoadInt64(&p.totalSessions)
-}
-
-func (p *SessionManager) Get(id uint64) (*Session, bool) {
-	return p.listVector[id%sessionManagerVectorSize].Get(id)
-}
-
-func (p *SessionManager) Add(session *Session) bool {
-	return p.listVector[session.id%sessionManagerVectorSize].Add(session)
-}
-
-func (p *SessionManager) Remove(id uint64) bool {
-	return p.listVector[id%sessionManagerVectorSize].Remove(id)
-}
-
-// thread unsafe
-func (p *SessionManager) TimeCheck(nowNS int64) {
-	for i := 0; i < sessionManagerVectorSize; i++ {
-		p.listVector[i].TimeCheck(nowNS)
-	}
 }
 
 // Session ...
@@ -202,7 +71,7 @@ func (p *Session) TimeCheck(nowNS int64) {
 		// session timeout
 		if nowNS-p.idleTimeNS > int64(p.gateway.config.serverSessionTimeout) {
 			p.Close()
-			p.gateway.sessionManager.Remove(p.id)
+			p.gateway.Remove(p.id)
 		}
 	}
 
