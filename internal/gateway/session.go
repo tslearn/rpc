@@ -84,7 +84,7 @@ func (p *Session) TimeCheck(nowNS int64) {
 	}
 }
 
-// WriteStreamAndRelease ...
+// OutStream ...
 func (p *Session) OutStream(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
