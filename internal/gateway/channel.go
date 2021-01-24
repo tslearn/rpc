@@ -33,8 +33,9 @@ func (p *Channel) Out(stream *core.Stream) (canOut bool) {
 		if p.backTimeNS == 0 {
 			p.backTimeNS = base.TimeNow().UnixNano()
 			p.backStream = stream
+			return true
 		}
-		return true
+		return false
 	} else if id == 0 {
 		return true
 	} else {
