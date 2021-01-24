@@ -29,7 +29,7 @@ func GetDefaultConfig() *Config {
 		heartbeatTimeout: 8 * time.Second,
 
 		serverMaxSessions:     10240000,
-		serverSessionTimeout:  60 * time.Second,
+		serverSessionTimeout:  120 * time.Second,
 		serverReadBufferSize:  1200,
 		serverWriteBufferSize: 1200,
 		serverCacheTimeout:    10 * time.Second,
