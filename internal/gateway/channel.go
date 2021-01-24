@@ -7,32 +7,32 @@ import (
 
 // Channel ...
 type Channel struct {
-	seq       uint64
-	retTimeNS int64
-	retStream *core.Stream
+	sequence   uint64
+	backTimeNS int64
+	backStream *core.Stream
 }
 
 // In ...
-func (p *Channel) In(id uint64) (bool, *core.Stream) {
-	if id > p.seq {
+func (p *Channel) In(id uint64) (canIn bool, backStream *core.Stream) {
+	if id > p.sequence {
 		p.Clean()
-		p.seq = id
+		p.sequence = id
 		return true, nil
-	} else if id == p.seq {
-		return false, p.retStream
+	} else if id == p.sequence {
+		return false, p.backStream
 	} else {
 		return false, nil
 	}
 }
 
 // Out ...
-func (p *Channel) Out(stream *core.Stream) bool {
+func (p *Channel) Out(stream *core.Stream) (canOut bool) {
 	id := stream.GetCallbackID()
 
-	if id == p.seq {
-		if p.retTimeNS == 0 {
-			p.retTimeNS = base.TimeNow().UnixNano()
-			p.retStream = stream
+	if id == p.sequence {
+		if p.backTimeNS == 0 {
+			p.backTimeNS = base.TimeNow().UnixNano()
+			p.backStream = stream
 		}
 		return true
 	} else if id == 0 {
@@ -44,16 +44,16 @@ func (p *Channel) Out(stream *core.Stream) bool {
 
 // TimeCheck ...
 func (p *Channel) TimeCheck(nowNS int64, timeout int64) {
-	if p.retTimeNS > 0 && nowNS-p.retTimeNS > timeout {
+	if p.backTimeNS > 0 && nowNS-p.backTimeNS > timeout {
 		p.Clean()
 	}
 }
 
 // Clean ...
 func (p *Channel) Clean() {
-	p.retTimeNS = 0
-	if p.retStream != nil {
-		p.retStream.Release()
-		p.retStream = nil
+	p.backTimeNS = 0
+	if p.backStream != nil {
+		p.backStream.Release()
+		p.backStream = nil
 	}
 }
