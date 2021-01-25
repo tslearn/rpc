@@ -83,10 +83,6 @@ func (p *GateWay) Add(session *Session) bool {
 	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
 }
 
-func (p *GateWay) Remove(id uint64) bool {
-	return p.sessionMapList[id%sessionManagerVectorSize].Remove(id)
-}
-
 // thread unsafe
 func (p *GateWay) TimeCheck(nowNS int64) {
 	for i := 0; i < sessionManagerVectorSize; i++ {

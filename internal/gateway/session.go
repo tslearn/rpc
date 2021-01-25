@@ -56,19 +56,7 @@ func (p *Session) TimeCheck(nowNS int64) {
 		} else {
 			// session timeout
 			if nowNS-p.activeTimeNS > int64(gw.config.serverSessionTimeout) {
-				gw.Remove(p.id)
-
-				// release session
-				p.id = 0
-				p.gateway = nil
-				p.security = ""
-				for i := 0; i < len(p.channels); i++ {
-					(&p.channels[i]).Clean()
-				}
 				p.activeTimeNS = 0
-				p.prev = nil
-				p.next = nil
-				sessionCache.Put(p)
 			}
 		}
 
@@ -94,6 +82,20 @@ func (p *Session) OutStream(stream *core.Stream) {
 	} else {
 		stream.Release()
 	}
+}
+
+func (p *Session) Release() {
+	p.id = 0
+	p.gateway = nil
+	p.security = ""
+	p.conn = nil
+	for i := 0; i < len(p.channels); i++ {
+		(&p.channels[i]).Clean()
+	}
+	p.activeTimeNS = 0
+	p.prev = nil
+	p.next = nil
+	sessionCache.Put(p)
 }
 
 // OnConnOpen ...
@@ -219,35 +221,6 @@ func (p *SessionPool) Add(session *Session) bool {
 	return false
 }
 
-func (p *SessionPool) Remove(id uint64) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if session, exist := p.idMap[id]; exist {
-		delete(p.idMap, id)
-
-		if session.prev != nil {
-			session.prev.next = session.next
-		}
-
-		if session.next != nil {
-			session.next.prev = session.prev
-		}
-
-		if session == p.head {
-			p.head = session.next
-		}
-
-		session.prev = nil
-		session.next = nil
-
-		atomic.AddInt64(&p.gateway.totalSessions, -1)
-		return true
-	}
-
-	return false
-}
-
 func (p *SessionPool) TimeCheck(nowNS int64) {
 	p.Lock()
 	defer p.Unlock()
@@ -255,6 +228,27 @@ func (p *SessionPool) TimeCheck(nowNS int64) {
 	node := p.head
 	for node != nil {
 		node.TimeCheck(nowNS)
+
+		if node.activeTimeNS == 0 {
+			delete(p.idMap, node.id)
+
+			if node.prev != nil {
+				node.prev.next = node.next
+			}
+
+			if node.next != nil {
+				node.next.prev = node.prev
+			}
+
+			if node == p.head {
+				p.head = node.next
+			}
+
+			atomic.AddInt64(&p.gateway.totalSessions, -1)
+
+			node.Release()
+		}
+
 		node = node.next
 	}
 }

@@ -132,7 +132,7 @@ func TestSession_TimeCheck(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, _ := prepareTestSession()
 		session.gateway.config.serverSessionTimeout = time.Second
-		session.TimeCheck(base.TimeNow().UnixNano())
+		session.gateway.TimeCheck(base.TimeNow().UnixNano())
 		assert(session.gateway.TotalSessions()).Equal(int64(1))
 	})
 
@@ -142,7 +142,7 @@ func TestSession_TimeCheck(t *testing.T) {
 		gw := session.gateway
 		gw.config.serverSessionTimeout = 10 * time.Millisecond
 		time.Sleep(20 * time.Millisecond)
-		session.TimeCheck(base.TimeNow().UnixNano())
+		gw.TimeCheck(base.TimeNow().UnixNano())
 		assert(gw.TotalSessions()).Equal(int64(0))
 	})
 
