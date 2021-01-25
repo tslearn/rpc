@@ -43,21 +43,6 @@ func NewSession(id uint64, gateway *GateWay) *Session {
 	return ret
 }
 
-func (p *Session) Close() {
-	p.Lock()
-	defer p.Unlock()
-
-	if p.conn != nil {
-		p.conn.Close()
-	}
-
-	if p.channels != nil {
-		for i := 0; i < len(p.channels); i++ {
-			p.channels[i].Clean()
-		}
-	}
-}
-
 func (p *Session) TimeCheck(nowNS int64) {
 	p.Lock()
 	defer p.Unlock()
@@ -70,8 +55,23 @@ func (p *Session) TimeCheck(nowNS int64) {
 	} else {
 		// session timeout
 		if nowNS-p.activeTimeNS > int64(p.gateway.config.serverSessionTimeout) {
-			p.Close()
 			p.gateway.Remove(p.id)
+
+			// release session
+			p.id = 0
+			p.gateway = nil
+			p.security = ""
+			if p.conn != nil {
+				p.conn.Close()
+				p.conn = nil
+			}
+			for i := 0; i < len(p.channels); i++ {
+				(&p.channels[i]).Clean()
+			}
+			p.activeTimeNS = 0
+			p.prev = nil
+			p.next = nil
+			sessionCache.Put(p)
 		}
 	}
 
@@ -96,16 +96,6 @@ func (p *Session) OutStream(stream *core.Stream) {
 	} else {
 		stream.Release()
 	}
-}
-
-// Release ...
-func (p *Session) Release() {
-	p.Lock()
-	defer p.Unlock()
-	for i := 0; i < len(p.channels); i++ {
-		(&p.channels[i]).Clean()
-	}
-	sessionCache.Put(p)
 }
 
 // OnConnOpen ...
