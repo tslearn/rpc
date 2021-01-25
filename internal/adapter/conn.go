@@ -166,32 +166,31 @@ const streamConnStatusClosed = int32(0)
 
 // StreamConn ...
 type StreamConn struct {
-	status   int32
-	prev     IConn
-	receiver IReceiver
-	writeCH  chan *core.Stream
-
-	readHeadPos int
-	readHeadBuf []byte
-	readStream  *core.Stream
-	writeStream *core.Stream
-	writePos    int
-
+	status       int32
+	prev         IConn
+	receiver     IReceiver
+	writeCH      chan *core.Stream
+	readHeadPos  int
+	readHeadBuf  []byte
+	readStream   *core.Stream
+	writeStream  *core.Stream
+	writePos     int
 	activeTimeNS int64
 }
 
 // NewStreamConn ...
 func NewStreamConn(prev IConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
-		status:      streamConnStatusRunning,
-		prev:        prev,
-		receiver:    receiver,
-		writeCH:     make(chan *core.Stream, 16),
-		readHeadPos: 0,
-		readHeadBuf: make([]byte, core.StreamHeadSize),
-		readStream:  nil,
-		writeStream: nil,
-		writePos:    0,
+		status:       streamConnStatusRunning,
+		prev:         prev,
+		receiver:     receiver,
+		writeCH:      make(chan *core.Stream, 16),
+		readHeadPos:  0,
+		readHeadBuf:  make([]byte, core.StreamHeadSize),
+		readStream:   nil,
+		writeStream:  nil,
+		writePos:     0,
+		activeTimeNS: base.TimeNow().UnixNano(),
 	}
 }
 
