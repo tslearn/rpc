@@ -47,36 +47,38 @@ func (p *Session) TimeCheck(nowNS int64) {
 	p.Lock()
 	defer p.Unlock()
 
-	if p.conn != nil {
-		// conn timeout
-		if !p.conn.IsActive(nowNS, p.gateway.config.heartbeatTimeout) {
-			p.conn.Close()
-		}
-	} else {
-		// session timeout
-		if nowNS-p.activeTimeNS > int64(p.gateway.config.serverSessionTimeout) {
-			p.gateway.Remove(p.id)
-
-			// release session
-			p.id = 0
-			p.gateway = nil
-			p.security = ""
-			for i := 0; i < len(p.channels); i++ {
-				(&p.channels[i]).Clean()
+	if gw := p.gateway; gw != nil {
+		if p.conn != nil {
+			// conn timeout
+			if !p.conn.IsActive(nowNS, gw.config.heartbeatTimeout) {
+				p.conn.Close()
 			}
-			p.activeTimeNS = 0
-			p.prev = nil
-			p.next = nil
-			sessionCache.Put(p)
-		}
-	}
+		} else {
+			// session timeout
+			if nowNS-p.activeTimeNS > int64(gw.config.serverSessionTimeout) {
+				gw.Remove(p.id)
 
-	// channel timeout
-	for i := 0; i < len(p.channels); i++ {
-		p.channels[i].TimeCheck(
-			nowNS,
-			int64(p.gateway.config.serverCacheTimeout),
-		)
+				// release session
+				p.id = 0
+				p.gateway = nil
+				p.security = ""
+				for i := 0; i < len(p.channels); i++ {
+					(&p.channels[i]).Clean()
+				}
+				p.activeTimeNS = 0
+				p.prev = nil
+				p.next = nil
+				sessionCache.Put(p)
+			}
+		}
+
+		// channel timeout
+		for i := 0; i < len(p.channels); i++ {
+			p.channels[i].TimeCheck(
+				nowNS,
+				int64(gw.config.serverCacheTimeout),
+			)
+		}
 	}
 }
 
