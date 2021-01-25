@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"sync"
+	"sync/atomic"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -184,5 +185,90 @@ func (p *Session) OnConnReadStream(
 		p.conn.WriteStreamAndRelease(stream)
 	} else {
 		p.OnConnError(streamConn, errors.ErrStream)
+	}
+}
+
+type SessionPool struct {
+	gateway *GateWay
+	idMap   map[uint64]*Session
+	head    *Session
+	sync.Mutex
+}
+
+func NewSessionMap(gateway *GateWay) *SessionPool {
+	return &SessionPool{
+		gateway: gateway,
+		idMap:   map[uint64]*Session{},
+		head:    nil,
+	}
+}
+
+func (p *SessionPool) Get(id uint64) (*Session, bool) {
+	p.Lock()
+	defer p.Unlock()
+
+	ret, ok := p.idMap[id]
+	return ret, ok
+}
+
+func (p *SessionPool) Add(session *Session) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if _, exist := p.idMap[session.id]; !exist {
+		p.idMap[session.id] = session
+
+		if p.head != nil {
+			p.head.prev = session
+		}
+
+		session.prev = nil
+		session.next = p.head
+		p.head = session
+
+		atomic.AddInt64(&p.gateway.totalSessions, 1)
+		return true
+	}
+
+	return false
+}
+
+func (p *SessionPool) Remove(id uint64) bool {
+	p.Lock()
+	defer p.Unlock()
+
+	if session, exist := p.idMap[id]; exist {
+		delete(p.idMap, id)
+
+		if session.prev != nil {
+			session.prev.next = session.next
+		}
+
+		if session.next != nil {
+			session.next.prev = session.prev
+		}
+
+		if session == p.head {
+			p.head = session.next
+		}
+
+		session.prev = nil
+		session.next = nil
+
+		atomic.AddInt64(&p.gateway.totalSessions, -1)
+		return true
+	}
+
+	return false
+}
+
+func (p *SessionPool) TimeCheck(nowNS int64) {
+	p.Lock()
+	defer p.Unlock()
+
+	node := p.head
+	for node != nil {
+		node.TimeCheck(nowNS)
+		node = node.next
 	}
 }

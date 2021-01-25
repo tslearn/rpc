@@ -21,98 +21,13 @@ const (
 	sessionManagerVectorSize = 1024
 )
 
-type SessionMap struct {
-	gateway    *GateWay
-	sessionMap map[uint64]*Session
-	head       *Session
-	sync.Mutex
-}
-
-func NewSessionMap(gateway *GateWay) *SessionMap {
-	return &SessionMap{
-		gateway:    gateway,
-		sessionMap: map[uint64]*Session{},
-		head:       nil,
-	}
-}
-
-func (p *SessionMap) Get(id uint64) (*Session, bool) {
-	p.Lock()
-	defer p.Unlock()
-
-	ret, ok := p.sessionMap[id]
-	return ret, ok
-}
-
-func (p *SessionMap) Add(session *Session) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if _, exist := p.sessionMap[session.id]; !exist {
-		p.sessionMap[session.id] = session
-
-		if p.head != nil {
-			p.head.prev = session
-		}
-
-		session.prev = nil
-		session.next = p.head
-		p.head = session
-
-		atomic.AddInt64(&p.gateway.totalSessions, 1)
-		return true
-	}
-
-	return false
-}
-
-func (p *SessionMap) Remove(id uint64) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if session, exist := p.sessionMap[id]; exist {
-		delete(p.sessionMap, id)
-
-		if session.prev != nil {
-			session.prev.next = session.next
-		}
-
-		if session.next != nil {
-			session.next.prev = session.prev
-		}
-
-		if session == p.head {
-			p.head = session.next
-		}
-
-		session.prev = nil
-		session.next = nil
-
-		atomic.AddInt64(&p.gateway.totalSessions, -1)
-		return true
-	}
-
-	return false
-}
-
-func (p *SessionMap) TimeCheck(nowNS int64) {
-	p.Lock()
-	defer p.Unlock()
-
-	node := p.head
-	for node != nil {
-		node.TimeCheck(nowNS)
-		node = node.next
-	}
-}
-
 // GateWay ...
 type GateWay struct {
 	id             uint32
 	isFree         bool
 	sessionSeed    uint64
 	totalSessions  int64
-	sessionMapList []*SessionMap
+	sessionMapList []*SessionPool
 	routerSender   router.IRouteSender
 	closeCH        chan bool
 	config         *Config
@@ -138,7 +53,7 @@ func NewGateWay(
 		isFree:         true,
 		sessionSeed:    1,
 		totalSessions:  0,
-		sessionMapList: make([]*SessionMap, sessionManagerVectorSize),
+		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
 		routerSender:   nil,
 		closeCH:        make(chan bool, 1),
 		config:         config,
