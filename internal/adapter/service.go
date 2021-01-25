@@ -277,7 +277,7 @@ func (p *syncWSServerService) Close() bool {
 // -----------------------------------------------------------------------------
 type syncClientService struct {
 	adapter    *Adapter
-	conn       *NetConn
+	conn       *SyncConn
 	orcManager *base.ORCManager
 	sync.Mutex
 }

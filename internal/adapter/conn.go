@@ -13,8 +13,8 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-// NetConn ...
-type NetConn struct {
+// SyncConn ...
+type SyncConn struct {
 	isServer  bool
 	isRunning bool
 	conn      net.Conn
@@ -25,8 +25,8 @@ type NetConn struct {
 }
 
 // NewServerNetConn ...
-func NewServerNetConn(netConn net.Conn, rBufSize int, wBufSize int) *NetConn {
-	return &NetConn{
+func NewServerNetConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
+	return &SyncConn{
 		isServer:  true,
 		isRunning: true,
 		conn:      netConn,
@@ -37,8 +37,8 @@ func NewServerNetConn(netConn net.Conn, rBufSize int, wBufSize int) *NetConn {
 }
 
 // NewClientNetConn ...
-func NewClientNetConn(netConn net.Conn, rBufSize int, wBufSize int) *NetConn {
-	return &NetConn{
+func NewClientNetConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
+	return &SyncConn{
 		isServer:  false,
 		isRunning: true,
 		conn:      netConn,
@@ -49,27 +49,27 @@ func NewClientNetConn(netConn net.Conn, rBufSize int, wBufSize int) *NetConn {
 }
 
 // SetNext ...
-func (p *NetConn) SetNext(next IConn) {
+func (p *SyncConn) SetNext(next IConn) {
 	p.next = next
 }
 
 // OnOpen ...
-func (p *NetConn) OnOpen() {
+func (p *SyncConn) OnOpen() {
 	p.next.OnOpen()
 }
 
 // OnClose ...
-func (p *NetConn) OnClose() {
+func (p *SyncConn) OnClose() {
 	p.next.OnClose()
 }
 
 // OnError ...
-func (p *NetConn) OnError(err *base.Error) {
+func (p *SyncConn) OnError(err *base.Error) {
 	p.next.OnError(err)
 }
 
 // Close ...
-func (p *NetConn) Close() {
+func (p *SyncConn) Close() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -82,17 +82,17 @@ func (p *NetConn) Close() {
 }
 
 // LocalAddr ...
-func (p *NetConn) LocalAddr() net.Addr {
+func (p *SyncConn) LocalAddr() net.Addr {
 	return p.conn.LocalAddr()
 }
 
 // RemoteAddr ...
-func (p *NetConn) RemoteAddr() net.Addr {
+func (p *SyncConn) RemoteAddr() net.Addr {
 	return p.conn.RemoteAddr()
 }
 
 // OnReadReady ...
-func (p *NetConn) OnReadReady() bool {
+func (p *SyncConn) OnReadReady() bool {
 	n, e := p.conn.Read(p.rBuf)
 	if e != nil {
 		if e != io.EOF {
@@ -118,7 +118,7 @@ func (p *NetConn) OnReadReady() bool {
 }
 
 // OnWriteReady ...
-func (p *NetConn) OnWriteReady() bool {
+func (p *SyncConn) OnWriteReady() bool {
 	p.Lock()
 	defer p.Unlock()
 
@@ -152,12 +152,12 @@ func (p *NetConn) OnWriteReady() bool {
 }
 
 // OnReadBytes ...
-func (p *NetConn) OnReadBytes(_ []byte) {
+func (p *SyncConn) OnReadBytes(_ []byte) {
 	panic("kernel error: it should not be called")
 }
 
 // OnFillWrite ...
-func (p *NetConn) OnFillWrite(_ []byte) int {
+func (p *SyncConn) OnFillWrite(_ []byte) int {
 	panic("kernel error: it should not be called")
 }
 
