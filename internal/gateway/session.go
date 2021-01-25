@@ -39,7 +39,7 @@ func newSession(
 	ret.conn = nil
 	ret.idleTimeNS = base.TimeNow().UnixNano()
 	ret.gateway = gateway
-	ret.channels = make([]Channel, gateway.GetConfig().numOfChannels)
+	ret.channels = make([]Channel, gateway.config.numOfChannels)
 	return ret
 }
 

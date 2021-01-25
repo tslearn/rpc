@@ -179,11 +179,6 @@ func (p *GateWay) TimeCheck(nowNS int64) {
 	}
 }
 
-// GetConfig ...
-func (p *GateWay) GetConfig() *Config {
-	return p.config
-}
-
 // Listen ...
 func (p *GateWay) Listen(
 	network string,
