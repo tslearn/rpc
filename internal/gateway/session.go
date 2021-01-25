@@ -19,26 +19,23 @@ var sessionCache = &sync.Pool{
 
 // Session ...
 type Session struct {
-	id         uint64
-	security   string
-	conn       *adapter.StreamConn
-	idleTimeNS int64
-	gateway    *GateWay
-	channels   []Channel
-	prev       *Session
-	next       *Session
+	id           uint64
+	gateway      *GateWay
+	security     string
+	conn         *adapter.StreamConn
+	channels     []Channel
+	activeTimeNS int64
+	prev         *Session
+	next         *Session
 	sync.Mutex
 }
 
-func newSession(
-	id uint64,
-	gateway *GateWay,
-) *Session {
+func newSession(id uint64, gateway *GateWay) *Session {
 	ret := sessionCache.Get().(*Session)
 	ret.id = id
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
-	ret.idleTimeNS = base.TimeNow().UnixNano()
+	ret.activeTimeNS = base.TimeNow().UnixNano()
 	ret.gateway = gateway
 	ret.channels = make([]Channel, gateway.config.numOfChannels)
 	return ret
@@ -70,7 +67,7 @@ func (p *Session) TimeCheck(nowNS int64) {
 		}
 	} else {
 		// session timeout
-		if nowNS-p.idleTimeNS > int64(p.gateway.config.serverSessionTimeout) {
+		if nowNS-p.activeTimeNS > int64(p.gateway.config.serverSessionTimeout) {
 			p.Close()
 			p.gateway.Remove(p.id)
 		}
@@ -128,21 +125,6 @@ func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	p.conn.WriteStreamAndRelease(stream)
 }
 
-// OnConnError ...
-func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	// Route to gateway
-	p.gateway.OnConnError(streamConn, err)
-}
-
-// OnConnClose ...
-func (p *Session) OnConnClose(_ *adapter.StreamConn) {
-	//p.gateway.OnConnClose(streamConn)
-	p.Lock()
-	p.conn = nil
-	p.idleTimeNS = base.TimeNow().UnixNano()
-	p.Unlock()
-}
-
 // OnConnReadStream ...
 func (p *Session) OnConnReadStream(
 	streamConn *adapter.StreamConn,
@@ -183,9 +165,23 @@ func (p *Session) OnConnReadStream(
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
 		p.conn.WriteStreamAndRelease(stream)
+		p.activeTimeNS = base.TimeNow().UnixNano()
 	} else {
 		p.OnConnError(streamConn, errors.ErrStream)
 	}
+}
+
+// OnConnError ...
+func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
+	// Route to gateway
+	p.gateway.OnConnError(streamConn, err)
+}
+
+// OnConnClose ...
+func (p *Session) OnConnClose(_ *adapter.StreamConn) {
+	p.Lock()
+	p.conn = nil
+	p.Unlock()
 }
 
 type SessionPool struct {
