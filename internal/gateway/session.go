@@ -61,10 +61,6 @@ func (p *Session) TimeCheck(nowNS int64) {
 			p.id = 0
 			p.gateway = nil
 			p.security = ""
-			if p.conn != nil {
-				p.conn.Close()
-				p.conn = nil
-			}
 			for i := 0; i < len(p.channels); i++ {
 				(&p.channels[i]).Clean()
 			}
