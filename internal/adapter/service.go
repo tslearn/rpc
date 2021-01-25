@@ -87,7 +87,7 @@ func runIConn(conn IConn) {
 
 func runNetConnOnServers(adapter *Adapter, conn net.Conn) {
 	go func() {
-		syncConn := NewServerNetConn(conn, adapter.rBufSize, adapter.wBufSize)
+		syncConn := NewServerSyncConn(conn, adapter.rBufSize, adapter.wBufSize)
 		syncConn.SetNext(NewStreamConn(syncConn, adapter.receiver))
 
 		runIConn(syncConn)
@@ -325,7 +325,7 @@ func (p *syncClientService) openConn() bool {
 		return false
 	}
 
-	p.conn = NewClientNetConn(conn, adapter.rBufSize, adapter.wBufSize)
+	p.conn = NewClientSyncConn(conn, adapter.rBufSize, adapter.wBufSize)
 	p.conn.SetNext(NewStreamConn(p.conn, p.adapter.receiver))
 	return true
 }

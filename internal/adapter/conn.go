@@ -24,8 +24,8 @@ type SyncConn struct {
 	sync.Mutex
 }
 
-// NewServerNetConn ...
-func NewServerNetConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
+// NewServerSyncConn ...
+func NewServerSyncConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
 	return &SyncConn{
 		isServer:  true,
 		isRunning: true,
@@ -36,8 +36,8 @@ func NewServerNetConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
 	}
 }
 
-// NewClientNetConn ...
-func NewClientNetConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
+// NewClientSyncConn ...
+func NewClientSyncConn(netConn net.Conn, rBufSize int, wBufSize int) *SyncConn {
 	return &SyncConn{
 		isServer:  false,
 		isRunning: true,
