@@ -3,9 +3,61 @@ package gateway
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/router"
+	"net"
 	"testing"
 	"time"
 )
+
+type testNetConn struct {
+	errCH   chan error
+	closeCH chan bool
+}
+
+func newTestNetConn() *testNetConn {
+	return &testNetConn{
+		errCH:   make(chan error, 1024),
+		closeCH: make(chan bool, 1024),
+	}
+}
+
+func (p *testNetConn) Read(_ []byte) (n int, err error) {
+	panic("not implemented")
+}
+
+func (p *testNetConn) Write(_ []byte) (n int, err error) {
+	panic("not implemented")
+}
+
+func (p *testNetConn) Close() error {
+	p.closeCH <- true
+	return nil
+}
+
+func (p *testNetConn) LocalAddr() net.Addr {
+	panic("not implemented")
+}
+
+func (p *testNetConn) RemoteAddr() net.Addr {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetReadDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func prepareTestSession() {
+	//netConn := newTestNetConn()
+	//serverConn := adapter.NewServerNetConn()
+
+}
 
 func TestNewSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
@@ -28,4 +80,8 @@ func TestNewSession(t *testing.T) {
 		assert(v.prev).IsNil()
 		assert(v.next).IsNil()
 	})
+}
+
+func TestSession_TimeCheck(t *testing.T) {
+
 }
