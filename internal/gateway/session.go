@@ -30,14 +30,16 @@ type Session struct {
 	sync.Mutex
 }
 
-func newSession(id uint64, gateway *GateWay) *Session {
+func NewSession(id uint64, gateway *GateWay) *Session {
 	ret := sessionCache.Get().(*Session)
 	ret.id = id
+	ret.gateway = gateway
 	ret.security = base.GetRandString(32)
 	ret.conn = nil
-	ret.activeTimeNS = base.TimeNow().UnixNano()
-	ret.gateway = gateway
 	ret.channels = make([]Channel, gateway.config.numOfChannels)
+	ret.activeTimeNS = base.TimeNow().UnixNano()
+	ret.prev = nil
+	ret.next = nil
 	return ret
 }
 
