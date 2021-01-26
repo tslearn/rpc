@@ -93,11 +93,11 @@ func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	stream := core.NewStream()
 	stream.WriteInt64(core.ControlStreamConnectResponse)
 	stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-	stream.Write(config.numOfChannels)
-	stream.Write(config.transLimit)
-	stream.Write(int64(config.heartbeat))
-	stream.Write(int64(config.heartbeatTimeout))
-	stream.Write(int64(config.clientRequestInterval))
+	stream.WriteInt64(int64(config.numOfChannels))
+	stream.WriteInt64(int64(config.transLimit))
+	stream.WriteInt64(int64(config.heartbeat))
+	stream.WriteInt64(int64(config.heartbeatTimeout))
+	stream.WriteInt64(int64(config.clientRequestInterval))
 	p.conn.WriteStreamAndRelease(stream)
 }
 

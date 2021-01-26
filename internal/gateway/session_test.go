@@ -6,6 +6,7 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/router"
 	"net"
+	"strings"
 	"testing"
 	"time"
 )
@@ -238,5 +239,36 @@ func TestSession_OutStream(t *testing.T) {
 		}
 
 		assert(netConn.writeBuffer).Equal(exceptBuffer)
+	})
+}
+
+func TestSession_OnConnOpen(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, netConn := prepareTestSession()
+		streamConn := adapter.NewStreamConn(syncConn, session)
+		syncConn.SetNext(streamConn)
+		session.OnConnOpen(streamConn)
+
+		stream := core.NewStream()
+		stream.PutBytesTo(netConn.writeBuffer, 0)
+
+		cfg := session.gateway.config
+
+		assert(stream.ReadInt64()).
+			Equal(int64(core.ControlStreamConnectResponse), nil)
+		connStr, err := stream.ReadString()
+		assert(err).IsNil()
+		connStrArr := strings.Split(connStr, "-")
+		assert(len(connStrArr)).Equal(2)
+		assert(connStrArr[0]).Equal("11")
+		assert(len(connStrArr[1])).Equal(32)
+		assert(stream.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
+		assert(stream.ReadInt64()).Equal(int64(cfg.transLimit), nil)
+		assert(stream.ReadInt64()).Equal(int64(cfg.heartbeat), nil)
+		assert(stream.ReadInt64()).Equal(int64(cfg.heartbeatTimeout), nil)
+		assert(stream.ReadInt64()).Equal(int64(cfg.clientRequestInterval), nil)
+		assert(stream.IsReadFinish()).IsTrue()
+		assert(stream.CheckStream()).IsTrue()
 	})
 }
