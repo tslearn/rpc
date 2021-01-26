@@ -112,13 +112,15 @@ func TestChannel_Clean(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Channel{sequence: 10, backTimeNS: 1, backStream: nil}
 		v.Clean()
-		assert(v.backTimeNS, v.backStream).Equal(int64(0), nil)
+		assert(v.sequence, v.backTimeNS, v.backStream).
+			Equal(uint64(10), int64(0), nil)
 	})
 
 	t.Run("backStream is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Channel{sequence: 10, backTimeNS: 1, backStream: core.NewStream()}
 		v.Clean()
-		assert(v.backTimeNS, v.backStream).Equal(int64(0), nil)
+		assert(v.sequence, v.backTimeNS, v.backStream).
+			Equal(uint64(10), int64(0), nil)
 	})
 }

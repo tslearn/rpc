@@ -11,14 +11,14 @@ import (
 )
 
 type testNetConn struct {
-	writeCH   chan []byte
-	isRunning bool
+	writeBuffer []byte
+	isRunning   bool
 }
 
 func newTestNetConn() *testNetConn {
 	return &testNetConn{
-		isRunning: true,
-		writeCH:   make(chan []byte, 1024),
+		isRunning:   true,
+		writeBuffer: make([]byte, 0),
 	}
 }
 
@@ -27,9 +27,7 @@ func (p *testNetConn) Read(_ []byte) (n int, err error) {
 }
 
 func (p *testNetConn) Write(b []byte) (n int, err error) {
-	buf := make([]byte, len(b))
-	copy(buf, b)
-	p.writeCH <- buf
+	p.writeBuffer = append(p.writeBuffer, b...)
 	return len(b), nil
 }
 
@@ -74,14 +72,6 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	syncConn.SetNext(streamConn)
 	gateway.Add(session)
 	return session, syncConn, netConn
-	//
-	//syncConn.OnOpen()
-	//for {
-	//    if !syncConn.OnReadReady() {
-	//        break
-	//    }
-	//}
-	//syncConn.OnClose()
 }
 
 func TestNewSession(t *testing.T) {
@@ -156,6 +146,8 @@ func TestSession_TimeCheck(t *testing.T) {
 			stream.SetCallbackID(uint64(i) + 1)
 			session.channels[i].In(stream.GetCallbackID())
 			session.channels[i].Out(stream)
+			assert(session.channels[i].backTimeNS > 0).IsTrue()
+			assert(session.channels[i].backStream).IsNotNil()
 		}
 
 		session.gateway.config.serverCacheTimeout = 10 * time.Millisecond
@@ -187,5 +179,64 @@ func TestSession_TimeCheck(t *testing.T) {
 			assert(session.channels[i].backTimeNS).Equal(int64(0))
 			assert(session.channels[i].backStream).IsNil()
 		}
+	})
+}
+
+func TestSession_OutStream(t *testing.T) {
+	t.Run("stream is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, _, netConn := prepareTestSession()
+		session.OutStream(nil)
+		assert(len(netConn.writeBuffer)).Equal(0)
+	})
+
+	t.Run("p.conn is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, _, netConn := prepareTestSession()
+		session.OutStream(core.NewStream())
+		assert(len(netConn.writeBuffer)).Equal(0)
+	})
+
+	t.Run("stream can not out", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, netConn := prepareTestSession()
+		syncConn.OnOpen()
+		// ignore the init stream
+		netConn.writeBuffer = make([]byte, 0)
+
+		for i := 1; i <= len(session.channels); i++ {
+			(&session.channels[i%len(session.channels)]).In(uint64(i))
+		}
+
+		for i := len(session.channels) + 1; i <= 2*len(session.channels); i++ {
+			stream := core.NewStream()
+			stream.SetCallbackID(uint64(i))
+			session.OutStream(stream)
+		}
+
+		assert(len(netConn.writeBuffer)).Equal(0)
+	})
+
+	t.Run("stream can out", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, netConn := prepareTestSession()
+		syncConn.OnOpen()
+		// ignore the init stream
+		netConn.writeBuffer = make([]byte, 0)
+
+		exceptBuffer := make([]byte, 0)
+		for i := 1; i <= len(session.channels); i++ {
+			(&session.channels[i%len(session.channels)]).In(uint64(i))
+		}
+
+		for i := 1; i <= len(session.channels); i++ {
+			stream := core.NewStream()
+			stream.SetCallbackID(uint64(i))
+			stream.BuildStreamCheck()
+			exceptBuffer = append(exceptBuffer, stream.GetBuffer()...)
+			session.OutStream(stream)
+		}
+
+		assert(netConn.writeBuffer).Equal(exceptBuffer)
 	})
 }

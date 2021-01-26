@@ -11,12 +11,6 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
-var sessionCache = &sync.Pool{
-	New: func() interface{} {
-		return &Session{}
-	},
-}
-
 // Session ...
 type Session struct {
 	id           uint64
@@ -31,16 +25,16 @@ type Session struct {
 }
 
 func NewSession(id uint64, gateway *GateWay) *Session {
-	ret := sessionCache.Get().(*Session)
-	ret.id = id
-	ret.gateway = gateway
-	ret.security = base.GetRandString(32)
-	ret.conn = nil
-	ret.channels = make([]Channel, gateway.config.numOfChannels)
-	ret.activeTimeNS = base.TimeNow().UnixNano()
-	ret.prev = nil
-	ret.next = nil
-	return ret
+	return &Session{
+		id:           id,
+		gateway:      gateway,
+		security:     base.GetRandString(32),
+		conn:         nil,
+		channels:     make([]Channel, gateway.config.numOfChannels),
+		activeTimeNS: base.TimeNow().UnixNano(),
+		prev:         nil,
+		next:         nil,
+	}
 }
 
 func (p *Session) TimeCheck(nowNS int64) {
@@ -77,35 +71,23 @@ func (p *Session) OutStream(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
 
-	// record stream
-	channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
-	if channel.Out(stream) {
-		p.conn.WriteStreamAndRelease(stream.Clone())
-	} else {
-		stream.Release()
+	if stream != nil && p.conn != nil {
+		// record stream
+		channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
+		if channel.Out(stream) {
+			p.conn.WriteStreamAndRelease(stream.Clone())
+		} else {
+			stream.Release()
+		}
 	}
-}
-
-func (p *Session) Release() {
-	p.id = 0
-	p.gateway = nil
-	p.security = ""
-	p.conn = nil
-	for i := 0; i < len(p.channels); i++ {
-		(&p.channels[i]).Clean()
-	}
-	p.activeTimeNS = 0
-	p.prev = nil
-	p.next = nil
-	sessionCache.Put(p)
 }
 
 // OnConnOpen ...
 func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	p.Lock()
+	defer p.Unlock()
 	p.conn = streamConn
 	p.conn.SetReceiver(p)
-	p.Unlock()
 
 	config := p.gateway.config
 	stream := core.NewStream()
@@ -174,8 +156,8 @@ func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 // OnConnClose ...
 func (p *Session) OnConnClose(_ *adapter.StreamConn) {
 	p.Lock()
+	defer p.Unlock()
 	p.conn = nil
-	p.Unlock()
 }
 
 type SessionPool struct {
@@ -231,6 +213,7 @@ func (p *SessionPool) TimeCheck(nowNS int64) {
 	for node != nil {
 		node.TimeCheck(nowNS)
 
+		// remove it from the list
 		if node.activeTimeNS == 0 {
 			delete(p.idMap, node.id)
 
@@ -247,8 +230,6 @@ func (p *SessionPool) TimeCheck(nowNS int64) {
 			}
 
 			atomic.AddInt64(&p.gateway.totalSessions, -1)
-
-			node.Release()
 		}
 
 		node = node.next
