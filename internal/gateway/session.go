@@ -109,41 +109,35 @@ func (p *Session) OnConnReadStream(
 	p.Lock()
 	defer p.Unlock()
 
-	keepStream := false
-
-	defer func() {
-		if !keepStream {
-			stream.Release()
-		}
-	}()
-
-	cbID := stream.GetCallbackID()
-
-	if cbID > 0 {
-		stream.SetGatewayID(p.gateway.id)
-		stream.SetSessionID(p.id)
+	if cbID := stream.GetCallbackID(); cbID > 0 {
 		channel := &p.channels[cbID%uint64(len(p.channels))]
 		if accepted, backStream := channel.In(cbID); accepted {
-			keepStream = true
-			if err := p.gateway.routerSender.SendStreamToRouter(stream); err != nil {
+			stream.SetGatewayID(p.gateway.id)
+			stream.SetSessionID(p.id)
+			sender := p.gateway.routerSender
+			// who receives the stream is responsible for releasing it
+			if err := sender.SendStreamToRouter(stream); err != nil {
 				p.OnConnError(streamConn, err)
 			}
 		} else if backStream != nil {
 			// do not release the backStream, so we need to clone it
 			p.conn.WriteStreamAndRelease(backStream.Clone())
+			stream.Release()
 		} else {
-			// ignore
+			// ignore the stream
+			stream.Release()
 		}
 	} else if kind, err := stream.ReadInt64(); err != nil {
 		p.OnConnError(streamConn, err)
-	} else if kind == core.ControlStreamPing {
-		keepStream = true
+		stream.Release()
+	} else if kind == core.ControlStreamPing && stream.IsReadFinish() {
+		p.activeTimeNS = base.TimeNow().UnixNano()
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
 		p.conn.WriteStreamAndRelease(stream)
-		p.activeTimeNS = base.TimeNow().UnixNano()
 	} else {
 		p.OnConnError(streamConn, errors.ErrStream)
+		stream.Release()
 	}
 }
 
