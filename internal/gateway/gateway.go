@@ -28,7 +28,7 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	routerSender   router.IRouteSender
+	routeSender    router.IRouteSender
 	closeCH        chan bool
 	config         *Config
 	onError        func(sessionID uint64, err *base.Error)
@@ -54,7 +54,7 @@ func NewGateWay(
 		sessionSeed:    1,
 		totalSessions:  0,
 		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
-		routerSender:   nil,
+		routeSender:    nil,
 		closeCH:        make(chan bool, 1),
 		config:         config,
 		onError:        onError,
@@ -66,7 +66,7 @@ func NewGateWay(
 		ret.sessionMapList[i] = NewSessionMap(ret)
 	}
 
-	ret.routerSender = router.Plug(ret)
+	ret.routeSender = router.Plug(ret)
 
 	return ret
 }

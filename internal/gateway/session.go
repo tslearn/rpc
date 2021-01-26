@@ -114,14 +114,14 @@ func (p *Session) OnConnReadStream(
 		if accepted, backStream := channel.In(cbID); accepted {
 			stream.SetGatewayID(p.gateway.id)
 			stream.SetSessionID(p.id)
-			sender := p.gateway.routerSender
+			sender := p.gateway.routeSender
 			// who receives the stream is responsible for releasing it
 			if err := sender.SendStreamToRouter(stream); err != nil {
 				p.OnConnError(streamConn, err)
 			}
 		} else if backStream != nil {
 			// do not release the backStream, so we need to clone it
-			p.conn.WriteStreamAndRelease(backStream.Clone())
+			streamConn.WriteStreamAndRelease(backStream.Clone())
 			stream.Release()
 		} else {
 			// ignore the stream
@@ -134,7 +134,7 @@ func (p *Session) OnConnReadStream(
 		p.activeTimeNS = base.TimeNow().UnixNano()
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamPong)
-		p.conn.WriteStreamAndRelease(stream)
+		streamConn.WriteStreamAndRelease(stream)
 	} else {
 		p.OnConnError(streamConn, errors.ErrStream)
 		stream.Release()
