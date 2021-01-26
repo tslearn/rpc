@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -383,13 +382,30 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		syncConn.OnOpen()
 		netConn.writeBuffer = make([]byte, 0)
 		streamConn := adapter.NewStreamConn(syncConn, session)
+		syncConn.SetNext(streamConn)
 		sendStream := core.NewStream()
 		sendStream.WriteInt64(core.ControlStreamPing)
 		session.OnConnReadStream(streamConn, sendStream)
 		backStream := core.NewStream()
-		fmt.Println(netConn.writeBuffer)
 		backStream.PutBytesTo(netConn.writeBuffer, 0)
-		assert(backStream.ReadInt64()).Equal(int64(0), nil)
+		assert(backStream.ReadInt64()).Equal(int64(core.ControlStreamPong), nil)
 		assert(backStream.IsReadFinish()).IsTrue()
+	})
+
+	t.Run("cbID == 0, kind == ControlStreamPing with err", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, _ := prepareTestSession()
+		streamConn := adapter.NewStreamConn(syncConn, session)
+
+		stream := core.NewStream()
+		stream.WriteInt64(core.ControlStreamPing)
+		stream.WriteBool(true)
+
+		err := (*base.Error)(nil)
+		session.gateway.onError = func(sessionID uint64, e *base.Error) {
+			err = e
+		}
+		session.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
 	})
 }
