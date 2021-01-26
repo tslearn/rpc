@@ -23,7 +23,7 @@ type Config struct {
 // GetDefaultConfig ...
 func GetDefaultConfig() *Config {
 	return &Config{
-		numOfChannels:    48,
+		numOfChannels:    32,
 		transLimit:       4 * 1024 * 1024,
 		heartbeat:        5 * time.Second,
 		heartbeatTimeout: 8 * time.Second,

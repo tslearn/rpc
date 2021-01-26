@@ -76,12 +76,12 @@ func TestChannel_Out(t *testing.T) {
 	})
 }
 
-func TestChannel_TimeCheck(t *testing.T) {
+func TestChannel_IsTimeout(t *testing.T) {
 	t.Run("backTimeNS is zero", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Channel{sequence: 10, backTimeNS: 0, backStream: core.NewStream()}
-		v.TimeCheck(base.TimeNow().UnixNano(), int64(time.Second))
-		assert(v.backStream).IsNotNil()
+		assert(v.IsTimeout(base.TimeNow().UnixNano(), int64(time.Second))).
+			IsFalse()
 	})
 
 	t.Run("not timeout", func(t *testing.T) {
@@ -92,8 +92,7 @@ func TestChannel_TimeCheck(t *testing.T) {
 			backTimeNS: nowNS,
 			backStream: core.NewStream(),
 		}
-		v.TimeCheck(nowNS, int64(100*time.Second))
-		assert(v.backStream).IsNotNil()
+		assert(v.IsTimeout(nowNS, int64(100*time.Second))).IsFalse()
 	})
 
 	t.Run("timeout", func(t *testing.T) {
@@ -104,8 +103,7 @@ func TestChannel_TimeCheck(t *testing.T) {
 			backTimeNS: nowNS - 101,
 			backStream: core.NewStream(),
 		}
-		v.TimeCheck(nowNS, 100)
-		assert(v.backStream).IsNil()
+		assert(v.IsTimeout(nowNS, 100)).IsTrue()
 	})
 }
 

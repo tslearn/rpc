@@ -48,24 +48,26 @@ func (p *Session) TimeCheck(nowNS int64) {
 	defer p.Unlock()
 
 	if gw := p.gateway; gw != nil {
+		config := gw.config
+
 		if p.conn != nil {
 			// conn timeout
-			if !p.conn.IsActive(nowNS, gw.config.heartbeatTimeout) {
+			if !p.conn.IsActive(nowNS, config.heartbeatTimeout) {
 				p.conn.Close()
 			}
 		} else {
 			// session timeout
-			if nowNS-p.activeTimeNS > int64(gw.config.serverSessionTimeout) {
+			if nowNS-p.activeTimeNS > int64(config.serverSessionTimeout) {
 				p.activeTimeNS = 0
 			}
 		}
 
 		// channel timeout
+		timeoutNS := int64(config.serverCacheTimeout)
 		for i := 0; i < len(p.channels); i++ {
-			p.channels[i].TimeCheck(
-				nowNS,
-				int64(gw.config.serverCacheTimeout),
-			)
+			if channel := &p.channels[i]; channel.IsTimeout(nowNS, timeoutNS) {
+				channel.Clean()
+			}
 		}
 	}
 }
