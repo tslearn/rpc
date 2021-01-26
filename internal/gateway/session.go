@@ -161,7 +161,7 @@ type SessionPool struct {
 	sync.Mutex
 }
 
-func NewSessionMap(gateway *GateWay) *SessionPool {
+func NewSessionPool(gateway *GateWay) *SessionPool {
 	return &SessionPool{
 		gateway: gateway,
 		idMap:   map[uint64]*Session{},
@@ -180,6 +180,10 @@ func (p *SessionPool) Get(id uint64) (*Session, bool) {
 func (p *SessionPool) Add(session *Session) bool {
 	p.Lock()
 	defer p.Unlock()
+
+	if session == nil {
+		return false
+	}
 
 	if _, exist := p.idMap[session.id]; !exist {
 		p.idMap[session.id] = session

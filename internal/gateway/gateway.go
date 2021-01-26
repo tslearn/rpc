@@ -63,7 +63,7 @@ func NewGateWay(
 	}
 
 	for i := 0; i < sessionManagerVectorSize; i++ {
-		ret.sessionMapList[i] = NewSessionMap(ret)
+		ret.sessionMapList[i] = NewSessionPool(ret)
 	}
 
 	ret.routeSender = router.Plug(ret)

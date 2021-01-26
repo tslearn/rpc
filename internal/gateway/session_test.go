@@ -409,3 +409,148 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert(err).Equal(errors.ErrStream)
 	})
 }
+
+func TestSession_OnConnError(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, _ := prepareTestSession()
+		streamConn := adapter.NewStreamConn(syncConn, session)
+		err := (*base.Error)(nil)
+		session.gateway.onError = func(sessionID uint64, e *base.Error) {
+			err = e
+		}
+		session.OnConnError(streamConn, errors.ErrStream)
+		assert(err).Equal(errors.ErrStream)
+	})
+}
+
+func TestSession_OnConnClose(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, _ := prepareTestSession()
+		streamConn := adapter.NewStreamConn(syncConn, session)
+		session.OnConnOpen(streamConn)
+		assert(session.conn).IsNotNil()
+		session.OnConnClose(streamConn)
+		assert(session.conn).IsNil()
+	})
+}
+
+func TestNewSessionPool(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		gateway := &GateWay{}
+		v := NewSessionPool(gateway)
+		assert(v.gateway).Equal(gateway)
+		assert(len(v.idMap)).Equal(0)
+		assert(v.head).IsNil()
+	})
+}
+
+func TestSessionPool_Add(t *testing.T) {
+	t.Run("session is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewSessionPool(&GateWay{})
+		assert(v.Add(nil)).IsFalse()
+	})
+
+	t.Run("session has already exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewSessionPool(&GateWay{})
+		session := &Session{id: 10}
+		assert(v.Add(session)).IsTrue()
+		assert(v.Add(session)).IsFalse()
+		assert(v.gateway.totalSessions).Equal(int64(1))
+	})
+
+	t.Run("add one session", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewSessionPool(&GateWay{})
+		session := &Session{id: 10}
+		assert(v.Add(session)).IsTrue()
+		assert(v.gateway.totalSessions).Equal(int64(1))
+		assert(v.head).Equal(session)
+		assert(session.prev).Equal(nil)
+		assert(session.next).Equal(nil)
+	})
+
+	t.Run("add two sessions", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewSessionPool(&GateWay{})
+		session1 := &Session{id: 11}
+		session2 := &Session{id: 12}
+		assert(v.Add(session1)).IsTrue()
+		assert(v.Add(session2)).IsTrue()
+		assert(v.gateway.totalSessions).Equal(int64(2))
+		assert(v.head).Equal(session2)
+		assert(session2.prev).Equal(nil)
+		assert(session2.next).Equal(session1)
+		assert(session1.prev).Equal(session2)
+		assert(session1.next).Equal(nil)
+	})
+}
+
+func TestSessionPool_Get(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewSessionPool(&GateWay{})
+		session1 := &Session{id: 11}
+		session2 := &Session{id: 12}
+		assert(v.Add(session1)).IsTrue()
+		assert(v.Add(session2)).IsTrue()
+		assert(v.gateway.totalSessions).Equal(int64(2))
+		assert(v.Get(11)).Equal(session1, true)
+		assert(v.Get(12)).Equal(session2, true)
+		assert(v.Get(10)).Equal(nil, false)
+	})
+}
+
+func TestSessionPool_TimeCheck(t *testing.T) {
+	fnTest := func(pos int) bool {
+		nowNS := base.TimeNow().UnixNano()
+		v := NewSessionPool(&GateWay{config: GetDefaultConfig()})
+
+		s1 := &Session{id: 1, activeTimeNS: nowNS}
+		s2 := &Session{id: 2, activeTimeNS: nowNS}
+		s3 := &Session{id: 3, activeTimeNS: nowNS}
+		v.Add(s3)
+		v.Add(s2)
+		v.Add(s1)
+
+		firstSession := (*Session)(nil)
+		lastSession := (*Session)(nil)
+
+		if pos == 1 {
+			s1.activeTimeNS = 0
+			firstSession = s2
+			lastSession = s3
+		} else if pos == 2 {
+			s2.activeTimeNS = 0
+			firstSession = s1
+			lastSession = s3
+		} else if pos == 3 {
+			s3.activeTimeNS = 0
+			firstSession = s1
+			lastSession = s2
+		} else {
+			v.TimeCheck(nowNS)
+			return v.gateway.totalSessions == 3 && v.head == s1 &&
+				s1.next == s2 && s2.next == s3 && s3.next == nil &&
+				s3.prev == s2 && s2.prev == s1 && s1.prev == nil
+		}
+
+		v.TimeCheck(nowNS)
+
+		return v.gateway.totalSessions == 2 && v.head == firstSession &&
+			firstSession.next == lastSession && lastSession.next == nil &&
+			lastSession.prev == firstSession && firstSession.prev == nil
+	}
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(fnTest(0)).IsTrue()
+		assert(fnTest(1)).IsTrue()
+		assert(fnTest(2)).IsTrue()
+		assert(fnTest(3)).IsTrue()
+	})
+}
