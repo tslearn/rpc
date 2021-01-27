@@ -163,8 +163,8 @@ func (p *GateWay) Open() {
 // Close ...
 func (p *GateWay) Close() {
 	p.orcManager.Close(func() bool {
-		for _, adapter := range p.adapters {
-			adapter.Close()
+		for _, item := range p.adapters {
+			item.Close()
 		}
 		return true
 	}, func() {
