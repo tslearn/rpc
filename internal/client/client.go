@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
@@ -22,7 +21,6 @@ type Client struct {
 	preSendHead   *SendItem
 	preSendTail   *SendItem
 	channels      []Channel
-	freeChannels  *FreeChannelStack
 	lastCheckTime time.Time
 	lastPingTime  time.Time
 	orcManager    *base.ORCManager
@@ -44,7 +42,6 @@ func newClient(
 		preSendHead:   nil,
 		preSendTail:   nil,
 		channels:      nil,
-		freeChannels:  nil,
 		lastCheckTime: base.TimeNow(),
 		orcManager:    base.NewORCManager(),
 	}
@@ -163,15 +160,10 @@ func (p *Client) OnConnReadStream(
 				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout)
 				p.config.requestInterval = time.Duration(requestInterval)
 
-				numOfChannels := p.config.numOfChannels
 				p.channels = make([]Channel, numOfChannels)
-				p.freeChannels = NewFreeChannelStack(numOfChannels)
 				for i := 0; i < len(p.channels); i++ {
-					p.channels[i].id = i
-					p.channels[i].client = p
-					p.channels[i].seq = uint64(numOfChannels) + uint64(i)
-					p.channels[i].item = nil
-					p.freeChannels.Push(i)
+					(&p.channels[i]).sequence = uint64(i)
+					(&p.channels[i]).item = nil
 				}
 			} else {
 				// config and channels have already initialized. so ignore this
@@ -194,7 +186,7 @@ func (p *Client) OnConnReadStream(
 			stream.Release()
 		} else if p.channels != nil {
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
-			channel.ReceiveStream(stream)
+			channel.Free(stream)
 		} else {
 			// ignore
 			stream.Release()
@@ -205,7 +197,9 @@ func (p *Client) OnConnReadStream(
 // OnConnError ...
 func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 	p.onError(err)
-	streamConn.Close()
+	if streamConn != nil {
+		streamConn.Close()
+	}
 }
 
 func (p *Client) tryToSendPing(now time.Time) {
@@ -268,19 +262,21 @@ func (p *Client) tryToTimeout(now time.Time) {
 }
 
 func (p *Client) tryToDeliverPreSendMessages() {
-	for {
-		if p.conn == nil { // not running
-			return
-		} else if p.preSendHead == nil { // preSend queue is empty
-			return
-		} else if p.channels == nil {
-			return
-		} else if channelID, ok := p.freeChannels.Pop(); !ok {
-			return
-		} else {
-			channel := &p.channels[channelID]
+	if p.conn == nil || p.channels == nil {
+		return
+	}
 
-			// get and set the send item
+	findFree := 0
+	channelSize := len(p.channels)
+
+	for findFree < channelSize && p.preSendHead != nil {
+		// find a free channel
+		for p.channels[findFree].item != nil {
+			findFree++
+		}
+
+		if findFree < channelSize {
+			// remove sendItem from linked list
 			item := p.preSendHead
 			if item == p.preSendTail {
 				p.preSendHead = nil
@@ -288,14 +284,10 @@ func (p *Client) tryToDeliverPreSendMessages() {
 			} else {
 				p.preSendHead = p.preSendHead.next
 			}
-
-			item.id = atomic.LoadUint64(&channel.seq)
 			item.next = nil
-			item.sendStream.SetCallbackID(item.id)
-			channel.item = item
 
+			(&p.channels[findFree]).Use(item, len(p.channels))
 			p.conn.WriteStreamAndRelease(item.sendStream.Clone())
-			item.sendTime = base.TimeNow()
 		}
 	}
 }
