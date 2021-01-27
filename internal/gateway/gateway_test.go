@@ -71,14 +71,69 @@ func TestNewGateWay(t *testing.T) {
 func TestGateWay_TotalSessions(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		router := &fakeRouter{}
 		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), router, onError)
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.totalSessions = 54321
 		assert(v.TotalSessions()).Equal(int64(54321))
 	})
 }
 
-func TestGateWay_Get(t *testing.T) {
+func TestGateWay_addSession(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
+		for i := uint64(1); i < 100; i++ {
+			session := NewSession(i, v)
+			assert(v.addSession(session)).IsTrue()
+		}
+
+		for i := uint64(1); i < 100; i++ {
+			session := NewSession(i, v)
+			assert(v.addSession(session)).IsFalse()
+		}
+	})
+}
+
+func TestGateWay_getSession(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		for i := uint64(1); i < 100; i++ {
+			session := NewSession(i, v)
+			assert(v.addSession(session)).IsTrue()
+		}
+
+		for i := uint64(1); i < 100; i++ {
+			s, ok := v.getSession(i)
+			assert(s).IsNotNil()
+			assert(ok).IsTrue()
+		}
+
+		for i := uint64(100); i < 200; i++ {
+			s, ok := v.getSession(i)
+			assert(s).IsNil()
+			assert(ok).IsFalse()
+		}
+	})
+}
+
+func TestGateWay_TimeCheck(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		for i := uint64(1); i <= sessionManagerVectorSize; i++ {
+			session := NewSession(i, v)
+			session.activeTimeNS = 0
+			assert(v.addSession(session)).IsTrue()
+		}
+
+		assert(v.TotalSessions()).Equal(int64(sessionManagerVectorSize))
+		v.TimeCheck(base.TimeNow().UnixNano())
+		assert(v.TotalSessions()).Equal(int64(0))
+	})
 }

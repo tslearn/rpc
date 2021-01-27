@@ -69,12 +69,12 @@ func (p *GateWay) TotalSessions() int64 {
 	return atomic.LoadInt64(&p.totalSessions)
 }
 
-func (p *GateWay) getSession(id uint64) (*Session, bool) {
-	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
-}
-
 func (p *GateWay) addSession(session *Session) bool {
 	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
+}
+
+func (p *GateWay) getSession(id uint64) (*Session, bool) {
+	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
 }
 
 // thread unsafe

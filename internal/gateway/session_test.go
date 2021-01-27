@@ -93,7 +93,7 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
 	streamConn := adapter.NewStreamConn(syncConn, session)
 	syncConn.SetNext(streamConn)
-	gateway.Add(session)
+	gateway.addSession(session)
 	return session, syncConn, netConn
 }
 
