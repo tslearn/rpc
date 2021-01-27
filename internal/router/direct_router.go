@@ -19,14 +19,12 @@ func (p *DirectRouterSender) SendStreamToRouter(
 
 // DirectRouter ...
 type DirectRouter struct {
-	receivers []IRouteReceiver
+	receivers [2]IRouteReceiver
 }
 
 // NewDirectRouter ...
 func NewDirectRouter() IRouter {
-	return &DirectRouter{
-		receivers: make([]IRouteReceiver, 2),
-	}
+	return &DirectRouter{}
 }
 
 // Plug ...

@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"crypto/tls"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,14 +16,13 @@ import (
 )
 
 const (
-	maxGatewayID             = 0xFFFFFF
 	sessionManagerVectorSize = 1024
 )
 
 // GateWay ...
 type GateWay struct {
 	id             uint32
-	isFree         bool
+	isRunning      bool
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
@@ -44,13 +42,9 @@ func NewGateWay(
 	router router.IRouter,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
-	if id > maxGatewayID {
-		panic(fmt.Sprintf("illegal gateway ID %d", id))
-	}
-
 	ret := &GateWay{
 		id:             id,
-		isFree:         true,
+		isRunning:      false,
 		sessionSeed:    1,
 		totalSessions:  0,
 		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
@@ -99,7 +93,7 @@ func (p *GateWay) Listen(
 	p.Lock()
 	defer p.Unlock()
 
-	if p.isFree {
+	if !p.isRunning {
 		p.adapters = append(p.adapters, adapter.NewServerAdapter(
 			network,
 			addr,
@@ -121,14 +115,14 @@ func (p *GateWay) Open() {
 		p.Lock()
 		defer p.Unlock()
 
-		if !p.isFree {
+		if p.isRunning {
 			p.OnConnError(nil, errors.ErrGatewayAlreadyRunning)
 			return false
 		} else if len(p.adapters) <= 0 {
 			p.OnConnError(nil, errors.ErrGatewayNoAvailableAdapters)
 			return false
 		} else {
-			p.isFree = false
+			p.isRunning = true
 			return true
 		}
 	})
@@ -176,7 +170,7 @@ func (p *GateWay) Close() {
 	}, func() {
 		p.Lock()
 		defer p.Unlock()
-		p.isFree = true
+		p.isRunning = false
 	})
 }
 
