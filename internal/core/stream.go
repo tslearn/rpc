@@ -30,8 +30,7 @@ const (
 	streamPosDepth      = 46
 	streamPosBody       = 48
 
-	streamStatusBitDebug     = 0
-	streamStatusBitDirection = 1
+	streamStatusBitDebug = 0
 
 	// StreamHeadSize ...
 	StreamHeadSize = streamPosBody
@@ -222,21 +221,6 @@ func (p *Stream) SetStatusBitDebug() {
 // ClearStatusBitDebug ...
 func (p *Stream) ClearStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDebug) ^ 0xFF
-}
-
-// IsDirectionOut ...
-func (p *Stream) IsDirectionOut() bool {
-	return (*p.frames[0])[streamPosStatusBit]&(1<<streamStatusBitDirection) != 0
-}
-
-// SetDirectionOut ...
-func (p *Stream) SetDirectionOut() {
-	(*p.frames[0])[streamPosStatusBit] |= 1 << streamStatusBitDirection
-}
-
-// SetDirectionIn ...
-func (p *Stream) SetDirectionIn() {
-	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDirection) ^ 0xFF
 }
 
 // GetPriority ...

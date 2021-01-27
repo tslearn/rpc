@@ -171,3 +171,7 @@ func TestGateWay_Listen(t *testing.T) {
 		))
 	})
 }
+
+func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
+
+}

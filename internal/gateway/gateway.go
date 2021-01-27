@@ -175,10 +175,7 @@ func (p *GateWay) Close() {
 }
 
 func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
-	if !stream.IsDirectionOut() {
-		stream.Release()
-		return errors.ErrStream
-	} else if session, ok := p.getSession(stream.GetSessionID()); ok {
+	if session, ok := p.getSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 		return nil
 	} else {
