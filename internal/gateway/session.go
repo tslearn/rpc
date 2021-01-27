@@ -143,8 +143,11 @@ func (p *Session) OnConnReadStream(
 
 // OnConnError ...
 func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	// Route to gateway
-	p.gateway.OnConnError(streamConn, err)
+	p.gateway.onError(p.id, err)
+
+	if streamConn != nil {
+		streamConn.Close()
+	}
 }
 
 // OnConnClose ...

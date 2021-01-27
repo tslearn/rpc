@@ -173,5 +173,64 @@ func TestGateWay_Listen(t *testing.T) {
 }
 
 func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
+	t.Run("session is exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(NewSession(10, v))
+		stream := core.NewStream()
+		stream.SetSessionID(10)
+		assert(v.ReceiveStreamFromRouter(stream)).IsNil()
+	})
 
+	t.Run("session is not exist", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(NewSession(10, v))
+		stream := core.NewStream()
+		stream.SetSessionID(11)
+		assert(v.ReceiveStreamFromRouter(stream)).
+			Equal(errors.ErrGateWaySessionNotFound)
+	})
+}
+
+func TestGateWay_OnConnOpen(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(NewSession(10, v))
+		assert(base.RunWithCatchPanic(func() {
+			v.OnConnOpen(nil)
+		})).IsNil()
+	})
+}
+
+func TestGateWay_OnConnReadStream(t *testing.T) {
+
+}
+
+func TestGateWay_OnConnError(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(NewSession(10, v))
+		assert(base.RunWithCatchPanic(func() {
+			v.OnConnError(nil, errors.ErrStream)
+		})).Equal("kernel error: it should not be called")
+	})
+}
+
+func TestGateWay_OnConnClose(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(NewSession(10, v))
+		assert(base.RunWithCatchPanic(func() {
+			v.OnConnClose(nil)
+		})).Equal("kernel error: it should not be called")
+	})
 }

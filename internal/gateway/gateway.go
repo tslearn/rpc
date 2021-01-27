@@ -190,13 +190,6 @@ func (p *GateWay) OnConnOpen(_ *adapter.StreamConn) {
 	// we will add some security checks here
 }
 
-// OnConnClose ...
-func (p *GateWay) OnConnClose(_ *adapter.StreamConn) {
-	// All streamConn that is successfully initialized will reset the receiver
-	// to session. If it runs here, it means the streamConn is not correctly
-	// initialized. so ignore this message
-}
-
 // OnConnReadStream ...
 func (p *GateWay) OnConnReadStream(
 	streamConn *adapter.StreamConn,
@@ -241,9 +234,11 @@ func (p *GateWay) OnConnReadStream(
 }
 
 // OnConnError ...
-func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.onError(0, err)
-	if streamConn != nil {
-		streamConn.Close()
-	}
+func (p *GateWay) OnConnError(_ *adapter.StreamConn, _ *base.Error) {
+	panic("kernel error: it should not be called")
+}
+
+// OnConnClose ...
+func (p *GateWay) OnConnClose(_ *adapter.StreamConn) {
+	panic("kernel error: it should not be called")
 }
