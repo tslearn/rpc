@@ -12,6 +12,17 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// Config ...
+type Config struct {
+	numOfChannels    int
+	transLimit       int
+	rBufSize         int
+	wBufSize         int
+	heartbeat        time.Duration
+	heartbeatTimeout time.Duration
+	requestInterval  time.Duration
+}
+
 // Client ...
 type Client struct {
 	config        *Config
