@@ -342,5 +342,6 @@ func (p *Client) SendMessage(
 	// wait for response
 	retStream := <-item.returnCH
 	defer retStream.Release()
+
 	return core.ParseResponseStream(retStream)
 }
