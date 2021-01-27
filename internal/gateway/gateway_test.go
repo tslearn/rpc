@@ -7,7 +7,9 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
+	"net"
 	"testing"
+	"time"
 )
 
 type fakeSender struct {
@@ -169,6 +171,84 @@ func TestGateWay_Listen(t *testing.T) {
 			v.config.serverWriteBufferSize,
 			v,
 		))
+	})
+}
+
+func TestGateWay_Open(t *testing.T) {
+	t.Run("it is already running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.isRunning = true
+		v.Open()
+		assert(err).Equal(errors.ErrGatewayAlreadyRunning)
+	})
+
+	t.Run("no valid adapter", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.Open()
+		assert(err).Equal(errors.ErrGatewayNoAvailableAdapter)
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		waitCH := make(chan bool)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(&Session{id: 10})
+		v.Listen("tcp", "127.0.0.1:8000", nil)
+		v.Listen("tcp", "127.0.0.1:8001", nil)
+
+		go func() {
+			for v.TotalSessions() == 1 {
+				time.Sleep(10 * time.Millisecond)
+			}
+			assert(v.isRunning).IsTrue()
+			_, err1 := net.Listen("tcp", "127.0.0.1:8000")
+			_, err2 := net.Listen("tcp", "127.0.0.1:8001")
+			assert(err1).IsNotNil()
+			assert(err2).IsNotNil()
+			v.Close()
+			waitCH <- true
+		}()
+		assert(v.TotalSessions()).Equal(int64(1))
+		v.Open()
+		<-waitCH
+	})
+}
+
+func TestGateWay_Close(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		waitCH := make(chan bool)
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.addSession(&Session{id: 10})
+		v.Listen("tcp", "127.0.0.1:8000", nil)
+
+		go func() {
+			for v.TotalSessions() == 1 {
+				time.Sleep(10 * time.Millisecond)
+			}
+			assert(v.isRunning).IsTrue()
+			v.Close()
+			assert(v.isRunning).IsFalse()
+			ln1, err1 := net.Listen("tcp", "127.0.0.1:8000")
+			ln2, err2 := net.Listen("tcp", "127.0.0.1:8001")
+			assert(err1).IsNil()
+			assert(err2).IsNil()
+			_ = ln1.Close()
+			_ = ln2.Close()
+			waitCH <- true
+		}()
+
+		assert(v.TotalSessions()).Equal(int64(1))
+		v.Open()
+		<-waitCH
 	})
 }
 

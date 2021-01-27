@@ -5,8 +5,8 @@ import "github.com/rpccloud/rpc/internal/base"
 const gatewayErrorSeg = 3001
 
 var (
-	// ErrGatewayNoAvailableAdapters ...
-	ErrGatewayNoAvailableAdapters = base.DefineConfigError(
+	// ErrGatewayNoAvailableAdapter ...
+	ErrGatewayNoAvailableAdapter = base.DefineConfigError(
 		(gatewayErrorSeg<<16)|1,
 		base.ErrorLevelFatal,
 		"no listener is set on the server",

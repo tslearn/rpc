@@ -119,7 +119,7 @@ func (p *GateWay) Open() {
 			p.onError(0, errors.ErrGatewayAlreadyRunning)
 			return false
 		} else if len(p.adapters) <= 0 {
-			p.onError(0, errors.ErrGatewayNoAvailableAdapters)
+			p.onError(0, errors.ErrGatewayNoAvailableAdapter)
 			return false
 		} else {
 			p.isRunning = true
@@ -138,8 +138,8 @@ func (p *GateWay) Open() {
 
 		for _, item := range p.adapters {
 			waitCount++
+			item.Open()
 			go func(adapter *adapter.Adapter) {
-				adapter.Open()
 				adapter.Run()
 				waitCH <- true
 			}(item)
