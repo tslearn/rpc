@@ -69,11 +69,11 @@ func (p *GateWay) TotalSessions() int64 {
 	return atomic.LoadInt64(&p.totalSessions)
 }
 
-func (p *GateWay) Get(id uint64) (*Session, bool) {
+func (p *GateWay) getSession(id uint64) (*Session, bool) {
 	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
 }
 
-func (p *GateWay) Add(session *Session) bool {
+func (p *GateWay) addSession(session *Session) bool {
 	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
 }
 
@@ -179,7 +179,7 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 	if !stream.IsDirectionOut() {
 		stream.Release()
 		return errors.ErrStream
-	} else if session, ok := p.Get(stream.GetSessionID()); ok {
+	} else if session, ok := p.getSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 		return nil
 	} else {
@@ -225,7 +225,7 @@ func (p *GateWay) OnConnReadStream(
 		strArray := strings.Split(sessionString, "-")
 		if len(strArray) == 2 && len(strArray[1]) == 32 {
 			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
-				if s, ok := p.Get(id); ok && s.security == strArray[1] {
+				if s, ok := p.getSession(id); ok && s.security == strArray[1] {
 					session = s
 				}
 			}
@@ -237,7 +237,7 @@ func (p *GateWay) OnConnReadStream(
 				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 			} else {
 				session = NewSession(atomic.AddUint64(&p.sessionSeed, 1), p)
-				p.Add(session)
+				p.addSession(session)
 				session.OnConnOpen(streamConn)
 			}
 		}

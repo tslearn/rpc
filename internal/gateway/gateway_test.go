@@ -54,6 +54,31 @@ func TestNewGateWay(t *testing.T) {
 		assert(len(v.sessionMapList)).Equal(sessionManagerVectorSize)
 		assert(cap(v.sessionMapList)).Equal(sessionManagerVectorSize)
 		assert(v.routeSender).Equal(&fakeSender{receiver: &router.receivers[1]})
-		assert()
+		assert(len(v.closeCH)).Equal(0)
+		assert(cap(v.closeCH)).Equal(1)
+		assert(v.config).Equal(GetDefaultConfig())
+		assert(v.onError).IsNotNil()
+		assert(len(v.adapters)).Equal(0)
+		assert(cap(v.adapters)).Equal(0)
+		assert(v.orcManager).IsNotNil()
+
+		for i := 0; i < sessionManagerVectorSize; i++ {
+			assert(v.sessionMapList[i]).IsNotNil()
+		}
 	})
+}
+
+func TestGateWay_TotalSessions(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		router := &fakeRouter{}
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), router, onError)
+		v.totalSessions = 54321
+		assert(v.TotalSessions()).Equal(int64(54321))
+	})
+}
+
+func TestGateWay_Get(t *testing.T) {
+
 }
