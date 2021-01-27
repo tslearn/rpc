@@ -174,7 +174,6 @@ func (p *GateWay) Close() {
 	})
 }
 
-// ReceiveStreamFromRouter ...
 func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 	if !stream.IsDirectionOut() {
 		stream.Release()

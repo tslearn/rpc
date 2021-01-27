@@ -1,8 +1,11 @@
 package gateway
 
 import (
+	"crypto/tls"
+	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
 	"testing"
 )
@@ -135,5 +138,36 @@ func TestGateWay_TimeCheck(t *testing.T) {
 		assert(v.TotalSessions()).Equal(int64(sessionManagerVectorSize))
 		v.TimeCheck(base.TimeNow().UnixNano())
 		assert(v.TotalSessions()).Equal(int64(0))
+	})
+}
+
+func TestGateWay_Listen(t *testing.T) {
+	t.Run("gateway is running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) {
+			err = e
+		}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.isRunning = true
+		assert(v.Listen("tcp", "0.0.0.0:8080", nil)).Equal(v)
+		assert(err).Equal(errors.ErrGatewayAlreadyRunning)
+	})
+
+	t.Run("gateway is not running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		tlsConfig := &tls.Config{}
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		assert(v.Listen("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
+		assert(len(v.adapters)).Equal(1)
+		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
+			"tcp",
+			"0.0.0.0:8080",
+			tlsConfig,
+			v.config.serverReadBufferSize,
+			v.config.serverWriteBufferSize,
+			v,
+		))
 	})
 }
