@@ -208,18 +208,203 @@ func TestGateWay_OnConnOpen(t *testing.T) {
 }
 
 func TestGateWay_OnConnReadStream(t *testing.T) {
+	t.Run("stream callbackID != 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			v,
+		)
+
+		stream := core.NewStream()
+		stream.SetCallbackID(1)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read kind error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			v,
+		)
+
+		stream := core.NewStream()
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			v,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read session string error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			v,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteBool(true)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read stream is not finish", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			v,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteString("")
+		stream.WriteBool(false)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("max sessions limit", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.config.serverMaxSessions = 1
+		v.addSession(&Session{
+			id:       234,
+			security: "12345678123456781234567812345678",
+		})
+
+		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteString("")
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+
+		assert(err).Equal(errors.ErrGateWaySeedOverflows)
+	})
+
+	t.Run("stream is ok, create new session", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		id := uint64(234)
+		security := "12345678123456781234567812345678"
+		testCollection := map[string]bool{
+			"234-12345678123456781234567812345678":   true,
+			"0234-12345678123456781234567812345678":  true,
+			"":                                       false,
+			"-":                                      false,
+			"-S":                                     false,
+			"-SecurityPasswordSecurityPass":          false,
+			"-SecurityPasswordSecurityPassword":      false,
+			"-SecurityPasswordSecurityPasswordEx":    false,
+			"*-S":                                    false,
+			"*-SecurityPasswordSecurityPassword":     false,
+			"*-SecurityPasswordSecurityPasswordEx":   false,
+			"ABC-S":                                  false,
+			"ABC-SecurityPasswordSecurityPassword":   false,
+			"ABC-SecurityPasswordSecurityPasswordEx": false,
+			"1-S":                                    false,
+			"1-SecurityPasswordSecurityPassword":     false,
+			"1-SecurityPasswordSecurityPasswordEx":   false,
+			"-234-SecurityPasswordSecurityPassword":  false,
+			"234-":                                   false,
+			"234-S":                                  false,
+			"234-SecurityPasswordSecurityPassword":   false,
+			"234-SecurityPasswordSecurityPasswordEx": false,
+			"-234-":                                  false,
+			"-234-234-":                              false,
+			"------":                                 false,
+		}
+
+		for connStr, exist := range testCollection {
+			onError := func(sessionID uint64, e *base.Error) {}
+			v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+			v.addSession(&Session{id: id, security: security})
+
+			syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
+			streamConn := adapter.NewStreamConn(syncConn, v)
+			syncConn.SetNext(streamConn)
+
+			stream := core.NewStream()
+			stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+			stream.WriteString(connStr)
+			stream.BuildStreamCheck()
+			streamConn.OnReadBytes(stream.GetBuffer())
+
+			if exist {
+				assert(v.totalSessions).Equal(int64(1))
+			} else {
+				assert(v.totalSessions).Equal(int64(2))
+			}
+		}
+
+	})
 }
 
 func TestGateWay_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.addSession(NewSession(10, v))
-		assert(base.RunWithCatchPanic(func() {
-			v.OnConnError(nil, errors.ErrStream)
-		})).Equal("kernel error: it should not be called")
+		netConn := newTestNetConn()
+		syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		assert(netConn.isRunning).IsTrue()
+		v.OnConnError(streamConn, errors.ErrStream)
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
 	})
 }
 
