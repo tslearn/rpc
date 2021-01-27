@@ -44,15 +44,12 @@ func newSendItem() *SendItem {
 
 // Return ...
 func (p *SendItem) Return(stream *core.Stream) bool {
-	if stream == nil {
+	if stream == nil || p.status != sendItemStatusRunning {
 		return false
-	} else if p.status != sendItemStatusRunning {
-		stream.Release()
-		return false
-	} else {
-		p.returnCH <- stream
-		return true
 	}
+
+	p.returnCH <- stream
+	return true
 }
 
 // CheckTime ...
