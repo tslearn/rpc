@@ -5,7 +5,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"github.com/rpccloud/rpc/internal/router"
+	"github.com/rpccloud/rpc/internal/route"
 	"net"
 	"strings"
 	"testing"
@@ -83,7 +83,7 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	gateway := NewGateWay(
 		3,
 		GetDefaultConfig(),
-		router.NewDirectRouter(),
+		route.NewDirectRouter(),
 		func(sessionID uint64, err *base.Error) {
 
 		},
@@ -103,7 +103,7 @@ func TestNewSession(t *testing.T) {
 		gateway := NewGateWay(
 			43,
 			GetDefaultConfig(),
-			router.NewDirectRouter(),
+			route.NewDirectRouter(),
 			func(sessionID uint64, err *base.Error) {},
 		)
 		v := NewSession(3, gateway)

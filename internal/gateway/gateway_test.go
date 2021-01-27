@@ -3,12 +3,12 @@ package gateway
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/router"
+	"github.com/rpccloud/rpc/internal/route"
 	"testing"
 )
 
 type fakeSender struct {
-	receiver *router.IRouteReceiver
+	receiver *route.IRouteReceiver
 }
 
 func (p *fakeSender) SendStreamToRouter(stream *core.Stream) *base.Error {
@@ -17,10 +17,11 @@ func (p *fakeSender) SendStreamToRouter(stream *core.Stream) *base.Error {
 
 type fakeRouter struct {
 	isPlugged bool
-	receivers [2]router.IRouteReceiver
+	receivers [2]route.IRouteReceiver
 }
 
-func (p *fakeRouter) Plug(receiver router.IRouteReceiver) router.IRouteSender {
+func (p *fakeRouter) Plug(receiver route.IRouteReceiver) route.IRouteSender {
+	p.isPlugged = true
 	if p.receivers[0] == nil {
 		p.receivers[0] = receiver
 		return &fakeSender{receiver: &p.receivers[1]}
@@ -43,17 +44,16 @@ func TestNewGateWay(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		router := &fakeRouter{}
-		v := NewGateWay(
-			132,
-			GetDefaultConfig(),
-			router,
-			func(sessionID uint64, err *base.Error) {
-
-			},
-		)
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), router, onError)
 		assert(router.isPlugged).Equal(true)
 		assert(v.id).Equal(uint32(132))
 		assert(v.isRunning).Equal(false)
-
+		assert(v.sessionSeed).Equal(uint64(1))
+		assert(v.totalSessions).Equal(int64(0))
+		assert(len(v.sessionMapList)).Equal(sessionManagerVectorSize)
+		assert(cap(v.sessionMapList)).Equal(sessionManagerVectorSize)
+		assert(v.routeSender).Equal(&fakeSender{receiver: &router.receivers[1]})
+		assert()
 	})
 }

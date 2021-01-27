@@ -12,14 +12,14 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/gateway"
-	"github.com/rpccloud/rpc/internal/router"
+	"github.com/rpccloud/rpc/internal/route"
 )
 
 // Server ...
 type Server struct {
 	isRunning        bool
 	processor        *RPCProcessor
-	router           router.IRouter
+	router           route.IRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
@@ -36,7 +36,7 @@ func NewServer() *Server {
 	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
-		router:           router.NewDirectRouter(),
+		router:           route.NewDirectRouter(),
 		gateway:          nil,
 		numOfThreads:     runtime.NumCPU() * 16384,
 		maxNodeDepth:     64,

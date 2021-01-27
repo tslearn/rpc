@@ -12,7 +12,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"github.com/rpccloud/rpc/internal/router"
+	"github.com/rpccloud/rpc/internal/route"
 )
 
 const (
@@ -26,7 +26,7 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	routeSender    router.IRouteSender
+	routeSender    route.IRouteSender
 	closeCH        chan bool
 	config         *Config
 	onError        func(sessionID uint64, err *base.Error)
@@ -39,7 +39,7 @@ type GateWay struct {
 func NewGateWay(
 	id uint32,
 	config *Config,
-	router router.IRouter,
+	router route.IRouter,
 	onError func(sessionID uint64, err *base.Error),
 ) *GateWay {
 	ret := &GateWay{

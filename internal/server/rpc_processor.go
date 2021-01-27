@@ -5,7 +5,7 @@ import (
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/router"
+	"github.com/rpccloud/rpc/internal/route"
 )
 
 // RPCProcessor ...
@@ -15,7 +15,7 @@ type RPCProcessor struct {
 
 // NewRPCProcessor ...
 func NewRPCProcessor(
-	router router.IRouter,
+	router route.IRouter,
 	numOfThreads int,
 	maxNodeDepth int16,
 	maxCallDepth int16,
