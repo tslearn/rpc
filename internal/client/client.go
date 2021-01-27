@@ -25,16 +25,16 @@ type Config struct {
 
 // Client ...
 type Client struct {
-	config        *Config
-	sessionString string
-	adapter       *adapter.Adapter
-	conn          *adapter.StreamConn
-	preSendHead   *SendItem
-	preSendTail   *SendItem
-	channels      []Channel
-	lastCheckTime time.Time
-	lastPingTime  time.Time
-	orcManager    *base.ORCManager
+	config          *Config
+	sessionString   string
+	adapter         *adapter.Adapter
+	conn            *adapter.StreamConn
+	preSendHead     *SendItem
+	preSendTail     *SendItem
+	channels        []Channel
+	lastCheckTimeNS int64
+	lastPingTimeNS  int64
+	orcManager      *base.ORCManager
 	sync.Mutex
 }
 
@@ -46,15 +46,15 @@ func newClient(
 	wBufSize int,
 ) *Client {
 	ret := &Client{
-		config:        &Config{},
-		sessionString: "",
-		adapter:       nil,
-		conn:          nil,
-		preSendHead:   nil,
-		preSendTail:   nil,
-		channels:      nil,
-		lastCheckTime: base.TimeNow(),
-		orcManager:    base.NewORCManager(),
+		config:          &Config{},
+		sessionString:   "",
+		adapter:         nil,
+		conn:            nil,
+		preSendHead:     nil,
+		preSendTail:     nil,
+		channels:        nil,
+		lastCheckTimeNS: base.TimeNow().UnixNano(),
+		orcManager:      base.NewORCManager(),
 	}
 	ret.config.rBufSize = rBufSize
 	ret.config.wBufSize = wBufSize
@@ -79,11 +79,11 @@ func newClient(
 		ret.orcManager.Run(func(isRunning func() bool) bool {
 			for isRunning() {
 				time.Sleep(80 * time.Millisecond)
-				now := base.TimeNow()
+				nowNS := base.TimeNow().UnixNano()
 				ret.Lock()
-				ret.tryToTimeout(now)
+				ret.tryToTimeout(nowNS)
 				ret.tryToDeliverPreSendMessages()
-				ret.tryToSendPing(now)
+				ret.tryToSendPing(nowNS)
 				ret.Unlock()
 			}
 
@@ -180,8 +180,7 @@ func (p *Client) OnConnReadStream(
 				// config and channels have already initialized. so ignore this
 			}
 
-			now := base.TimeNow()
-			p.lastPingTime = now
+			p.lastPingTimeNS = base.TimeNow().UnixNano()
 		}
 
 		stream.Release()
@@ -213,14 +212,14 @@ func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 	}
 }
 
-func (p *Client) tryToSendPing(now time.Time) {
+func (p *Client) tryToSendPing(nowNS int64) {
 	if p.conn == nil {
 		return
-	} else if now.Sub(p.lastPingTime) < p.config.heartbeat {
+	} else if nowNS-p.lastPingTimeNS < int64(p.config.heartbeat) {
 		return
 	} else {
 		// Send Ping
-		p.lastPingTime = now
+		p.lastPingTimeNS = nowNS
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
 		stream.WriteInt64(core.ControlStreamPing)
@@ -228,15 +227,15 @@ func (p *Client) tryToSendPing(now time.Time) {
 	}
 }
 
-func (p *Client) tryToTimeout(now time.Time) {
-	if now.Sub(p.lastCheckTime) > 800*time.Millisecond {
-		p.lastCheckTime = now
+func (p *Client) tryToTimeout(nowNS int64) {
+	if nowNS-p.lastCheckTimeNS > 800*int64(time.Millisecond) {
+		p.lastCheckTimeNS = nowNS
 
 		// sweep pre send list
 		preValidItem := (*SendItem)(nil)
 		item := p.preSendHead
 		for item != nil {
-			if item.CheckAndTimeout(now) {
+			if item.CheckTime(nowNS) {
 				nextItem := item.next
 
 				if preValidItem == nil {
@@ -260,12 +259,12 @@ func (p *Client) tryToTimeout(now time.Time) {
 
 		// sweep the channels
 		for i := 0; i < len(p.channels); i++ {
-			(&p.channels[i]).OnTimeout(now)
+			(&p.channels[i]).CheckTime(nowNS)
 		}
 
 		// check conn timeout
 		if p.conn != nil {
-			if p.conn.IsActive(now.UnixNano(), p.config.heartbeatTimeout) {
+			if p.conn.IsActive(nowNS, p.config.heartbeatTimeout) {
 				p.conn.Close()
 			}
 		}
@@ -312,7 +311,7 @@ func (p *Client) SendMessage(
 	item := newSendItem()
 	defer item.Release()
 
-	item.timeout = timeout
+	item.timeoutNS = int64(timeout)
 
 	// set depth
 	item.sendStream.SetDepth(0)

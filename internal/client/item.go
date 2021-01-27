@@ -1,28 +1,16 @@
 package client
 
 import (
-	"sync"
-	"time"
-
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"sync"
 )
 
-const sendItemStatusRunning = int32(1)
-const sendItemStatusFinish = int32(2)
-
-// SendItem ...
-type SendItem struct {
-	id         uint64
-	status     int32
-	startTime  time.Time
-	sendTime   time.Time
-	timeout    time.Duration
-	returnCH   chan *core.Stream
-	sendStream *core.Stream
-	next       *SendItem
-}
+const (
+	sendItemStatusRunning = int32(1)
+	sendItemStatusFinish  = int32(2)
+)
 
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
@@ -33,13 +21,23 @@ var sendItemCache = &sync.Pool{
 	},
 }
 
+// SendItem ...
+type SendItem struct {
+	status      int32
+	startTimeNS int64
+	sendTimeNS  int64
+	timeoutNS   int64
+	returnCH    chan *core.Stream
+	sendStream  *core.Stream
+	next        *SendItem
+}
+
 func newSendItem() *SendItem {
 	ret := sendItemCache.Get().(*SendItem)
-	ret.id = 0
 	ret.status = sendItemStatusRunning
-	ret.startTime = base.TimeNow()
-	ret.sendTime = time.Time{}
-	ret.timeout = 0
+	ret.startTimeNS = base.TimeNow().UnixNano()
+	ret.sendTimeNS = 0
+	ret.timeoutNS = 0
 	ret.next = nil
 	return ret
 }
@@ -57,9 +55,9 @@ func (p *SendItem) Return(stream *core.Stream) bool {
 	}
 }
 
-// CheckAndTimeout ...
-func (p *SendItem) CheckAndTimeout(now time.Time) bool {
-	if now.Sub(p.startTime) > p.timeout && p.status == sendItemStatusRunning {
+// CheckTime ...
+func (p *SendItem) CheckTime(nowNS int64) bool {
+	if nowNS-p.startTimeNS > p.timeoutNS && p.status == sendItemStatusRunning {
 		p.status = sendItemStatusFinish
 		// return timeout stream
 		stream := core.NewStream()

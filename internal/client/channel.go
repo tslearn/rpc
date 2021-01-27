@@ -2,8 +2,6 @@ package client
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"time"
-
 	"github.com/rpccloud/rpc/internal/core"
 )
 
@@ -16,10 +14,9 @@ type Channel struct {
 func (p *Channel) Use(item *SendItem, channelSize int) bool {
 	if p.item == nil {
 		p.sequence += uint64(channelSize)
-		item.id = p.sequence
 		item.sendStream.SetCallbackID(p.sequence)
 		p.item = item
-		p.item.sendTime = base.TimeNow()
+		p.item.sendTimeNS = base.TimeNow().UnixNano()
 		return true
 	}
 
@@ -35,9 +32,9 @@ func (p *Channel) Free(stream *core.Stream) bool {
 	return false
 }
 
-func (p *Channel) OnTimeout(now time.Time) bool {
+func (p *Channel) CheckTime(nowNS int64) bool {
 	if p.item != nil {
-		if p.item.CheckAndTimeout(now) {
+		if p.item.CheckTime(nowNS) {
 			p.item = nil
 			return true
 		}
