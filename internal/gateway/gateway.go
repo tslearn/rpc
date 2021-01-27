@@ -116,10 +116,10 @@ func (p *GateWay) Open() {
 		defer p.Unlock()
 
 		if p.isRunning {
-			p.OnConnError(nil, errors.ErrGatewayAlreadyRunning)
+			p.onError(0, errors.ErrGatewayAlreadyRunning)
 			return false
 		} else if len(p.adapters) <= 0 {
-			p.OnConnError(nil, errors.ErrGatewayNoAvailableAdapters)
+			p.onError(0, errors.ErrGatewayNoAvailableAdapters)
 			return false
 		} else {
 			p.isRunning = true
@@ -198,15 +198,20 @@ func (p *GateWay) OnConnReadStream(
 	defer stream.Release()
 
 	if stream.GetCallbackID() != 0 {
-		p.OnConnError(streamConn, errors.ErrStream)
+		streamConn.Close()
+		p.onError(0, errors.ErrStream)
 	} else if kind, err := stream.ReadInt64(); err != nil {
-		p.OnConnError(streamConn, errors.ErrStream)
+		streamConn.Close()
+		p.onError(0, errors.ErrStream)
 	} else if kind != core.ControlStreamConnectRequest {
-		p.OnConnError(streamConn, errors.ErrStream)
+		streamConn.Close()
+		p.onError(0, errors.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
-		p.OnConnError(streamConn, errors.ErrStream)
+		streamConn.Close()
+		p.onError(0, errors.ErrStream)
 	} else if !stream.IsReadFinish() {
-		p.OnConnError(streamConn, errors.ErrStream)
+		streamConn.Close()
+		p.onError(0, errors.ErrStream)
 	} else {
 		session := (*Session)(nil)
 
@@ -223,7 +228,8 @@ func (p *GateWay) OnConnReadStream(
 		// if session not find by session string, create a new session
 		if session == nil {
 			if p.TotalSessions() >= int64(p.config.serverMaxSessions) {
-				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
+				streamConn.Close()
+				p.onError(0, errors.ErrGateWaySeedOverflows)
 			} else {
 				session = NewSession(atomic.AddUint64(&p.sessionSeed, 1), p)
 				p.addSession(session)
