@@ -292,7 +292,12 @@ func (p *Client) OnConnReadStream(
 					(&p.channels[i]).item = nil
 				}
 			} else {
-				// config and channels have already initialized. so ignore this
+				// try to resend channel message
+				for i := 0; i < len(p.channels); i++ {
+					if item := (&p.channels[i]).item; item != nil {
+						p.conn.WriteStreamAndRelease(item.sendStream.Clone())
+					}
+				}
 			}
 
 			p.lastPingTimeNS = base.TimeNow().UnixNano()

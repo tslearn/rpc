@@ -360,7 +360,7 @@ func (p *syncClientService) Run() bool {
 			base.WaitAtLeastDurationWhenRunning(
 				startNS,
 				isRunning,
-				3*time.Second,
+				time.Second,
 			)
 		}
 
