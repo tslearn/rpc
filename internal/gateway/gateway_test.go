@@ -54,7 +54,7 @@ func TestNewGateWay(t *testing.T) {
 		assert(router.isPlugged).Equal(true)
 		assert(v.id).Equal(uint32(132))
 		assert(v.isRunning).Equal(false)
-		assert(v.sessionSeed).Equal(uint64(1))
+		assert(v.sessionSeed).Equal(uint64(0))
 		assert(v.totalSessions).Equal(int64(0))
 		assert(len(v.sessionMapList)).Equal(sessionManagerVectorSize)
 		assert(cap(v.sessionMapList)).Equal(sessionManagerVectorSize)
@@ -83,46 +83,56 @@ func TestGateWay_TotalSessions(t *testing.T) {
 	})
 }
 
-func TestGateWay_addSession(t *testing.T) {
+func TestGateWay_AddSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, err *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		for i := uint64(1); i < 100; i++ {
-			session := NewSession(i, v)
-			assert(v.addSession(session)).IsTrue()
+			session := newSession(i, v)
+			assert(v.AddSession(session)).IsTrue()
 		}
 
 		for i := uint64(1); i < 100; i++ {
-			session := NewSession(i, v)
-			assert(v.addSession(session)).IsFalse()
+			session := newSession(i, v)
+			assert(v.AddSession(session)).IsFalse()
 		}
 	})
 }
 
-func TestGateWay_getSession(t *testing.T) {
+func TestGateWay_GetSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, err *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		for i := uint64(1); i < 100; i++ {
-			session := NewSession(i, v)
-			assert(v.addSession(session)).IsTrue()
+			session := newSession(i, v)
+			assert(v.AddSession(session)).IsTrue()
 		}
 
 		for i := uint64(1); i < 100; i++ {
-			s, ok := v.getSession(i)
+			s, ok := v.GetSession(i)
 			assert(s).IsNotNil()
 			assert(ok).IsTrue()
 		}
 
 		for i := uint64(100); i < 200; i++ {
-			s, ok := v.getSession(i)
+			s, ok := v.GetSession(i)
 			assert(s).IsNil()
 			assert(ok).IsFalse()
 		}
+	})
+}
+
+func TestGateWay_CreateSessionID(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(sessionID uint64, err *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		assert(v.CreateSessionID()).Equal(uint64(1))
+		assert(v.CreateSessionID()).Equal(uint64(2))
 	})
 }
 
@@ -132,9 +142,9 @@ func TestGateWay_TimeCheck(t *testing.T) {
 		onError := func(sessionID uint64, err *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		for i := uint64(1); i <= sessionManagerVectorSize; i++ {
-			session := NewSession(i, v)
+			session := newSession(i, v)
 			session.activeTimeNS = 0
-			assert(v.addSession(session)).IsTrue()
+			assert(v.AddSession(session)).IsTrue()
 		}
 
 		assert(v.TotalSessions()).Equal(int64(sessionManagerVectorSize))
@@ -199,7 +209,7 @@ func TestGateWay_Open(t *testing.T) {
 		waitCH := make(chan bool)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(&Session{id: 10})
+		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 		v.Listen("tcp", "127.0.0.1:8001", nil)
 
@@ -227,7 +237,7 @@ func TestGateWay_Close(t *testing.T) {
 		waitCH := make(chan bool)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(&Session{id: 10})
+		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 
 		go func() {
@@ -257,7 +267,7 @@ func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(NewSession(10, v))
+		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(10)
 		assert(v.ReceiveStreamFromRouter(stream)).IsNil()
@@ -267,7 +277,7 @@ func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(NewSession(10, v))
+		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(11)
 		assert(v.ReceiveStreamFromRouter(stream)).
@@ -280,7 +290,7 @@ func TestGateWay_OnConnOpen(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(NewSession(10, v))
+		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnOpen(nil)
 		})).IsNil()
@@ -396,7 +406,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.config.serverMaxSessions = 1
-		v.addSession(&Session{
+		v.AddSession(&Session{
 			id:       234,
 			security: "12345678123456781234567812345678",
 		})
@@ -449,7 +459,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 		for connStr, exist := range testCollection {
 			onError := func(sessionID uint64, e *base.Error) {}
 			v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-			v.addSession(&Session{id: id, security: security, gateway: v})
+			v.AddSession(&Session{id: id, security: security, gateway: v})
 
 			syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
 			streamConn := adapter.NewStreamConn(syncConn, v)
@@ -477,7 +487,7 @@ func TestGateWay_OnConnError(t *testing.T) {
 		err := (*base.Error)(nil)
 		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(NewSession(10, v))
+		v.AddSession(newSession(10, v))
 		netConn := newTestNetConn()
 		syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
 		streamConn := adapter.NewStreamConn(syncConn, v)
@@ -493,7 +503,7 @@ func TestGateWay_OnConnClose(t *testing.T) {
 		assert := base.NewAssert(t)
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-		v.addSession(NewSession(10, v))
+		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnClose(nil)
 		})).IsNil()

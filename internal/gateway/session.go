@@ -3,6 +3,8 @@ package gateway
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -24,16 +26,72 @@ type Session struct {
 	sync.Mutex
 }
 
-func NewSession(id uint64, gateway *GateWay) *Session {
-	return &Session{
-		id:           id,
-		gateway:      gateway,
-		security:     base.GetRandString(32),
-		conn:         nil,
-		channels:     make([]Channel, gateway.config.numOfChannels),
-		activeTimeNS: base.TimeNow().UnixNano(),
-		prev:         nil,
-		next:         nil,
+func InitSession(
+	gw *GateWay,
+	streamConn *adapter.StreamConn,
+	stream *core.Stream,
+) {
+	if stream.GetCallbackID() != 0 {
+		stream.Release()
+		gw.OnConnError(streamConn, errors.ErrStream)
+	} else if kind, err := stream.ReadInt64(); err != nil {
+		stream.Release()
+		gw.OnConnError(streamConn, errors.ErrStream)
+	} else if kind != core.ControlStreamConnectRequest {
+		stream.Release()
+		gw.OnConnError(streamConn, errors.ErrStream)
+	} else if sessionString, err := stream.ReadString(); err != nil {
+		stream.Release()
+		gw.OnConnError(streamConn, errors.ErrStream)
+	} else if !stream.IsReadFinish() {
+		stream.Release()
+		gw.OnConnError(streamConn, errors.ErrStream)
+	} else {
+		session := (*Session)(nil)
+		config := gw.config
+
+		// try to find session by session string
+		strArray := strings.Split(sessionString, "-")
+		if len(strArray) == 2 && len(strArray[1]) == 32 {
+			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
+				if s, ok := gw.GetSession(id); ok && s.security == strArray[1] {
+					session = s
+				}
+			}
+		}
+
+		// if session not find by session string, create a new session
+		if session == nil {
+			if gw.TotalSessions() >= int64(config.serverMaxSessions) {
+				stream.Release()
+				gw.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
+				return
+			}
+
+			session = &Session{
+				id:           gw.CreateSessionID(),
+				gateway:      gw,
+				security:     base.GetRandString(32),
+				conn:         nil,
+				channels:     make([]Channel, config.numOfChannels),
+				activeTimeNS: base.TimeNow().UnixNano(),
+				prev:         nil,
+				next:         nil,
+			}
+
+			gw.AddSession(session)
+		}
+
+		stream.SetWritePosToBodyStart()
+		stream.WriteInt64(core.ControlStreamConnectResponse)
+		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
+		stream.WriteInt64(int64(config.numOfChannels))
+		stream.WriteInt64(int64(config.transLimit))
+		stream.WriteInt64(int64(config.heartbeat))
+		stream.WriteInt64(int64(config.heartbeatTimeout))
+		stream.WriteInt64(int64(config.clientRequestInterval))
+		streamConn.WriteStreamAndRelease(stream)
+		session.OnConnOpen(streamConn)
 	}
 }
 
@@ -88,17 +146,6 @@ func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	defer p.Unlock()
 	p.conn = streamConn
 	p.conn.SetReceiver(p)
-
-	config := p.gateway.config
-	stream := core.NewStream()
-	stream.WriteInt64(core.ControlStreamConnectResponse)
-	stream.WriteString(fmt.Sprintf("%d-%s", p.id, p.security))
-	stream.WriteInt64(int64(config.numOfChannels))
-	stream.WriteInt64(int64(config.transLimit))
-	stream.WriteInt64(int64(config.heartbeat))
-	stream.WriteInt64(int64(config.heartbeatTimeout))
-	stream.WriteInt64(int64(config.clientRequestInterval))
-	p.conn.WriteStreamAndRelease(stream)
 }
 
 // OnConnReadStream ...

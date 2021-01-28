@@ -2,8 +2,6 @@ package gateway
 
 import (
 	"crypto/tls"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -45,7 +43,7 @@ func NewGateWay(
 	ret := &GateWay{
 		id:             id,
 		isRunning:      false,
-		sessionSeed:    1,
+		sessionSeed:    0,
 		totalSessions:  0,
 		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
 		routeSender:    nil,
@@ -69,12 +67,16 @@ func (p *GateWay) TotalSessions() int64 {
 	return atomic.LoadInt64(&p.totalSessions)
 }
 
-func (p *GateWay) addSession(session *Session) bool {
+func (p *GateWay) AddSession(session *Session) bool {
 	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
 }
 
-func (p *GateWay) getSession(id uint64) (*Session, bool) {
+func (p *GateWay) GetSession(id uint64) (*Session, bool) {
 	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
+}
+
+func (p *GateWay) CreateSessionID() uint64 {
+	return atomic.AddUint64(&p.sessionSeed, 1)
 }
 
 // thread unsafe
@@ -175,7 +177,7 @@ func (p *GateWay) Close() {
 }
 
 func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
-	if session, ok := p.getSession(stream.GetSessionID()); ok {
+	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 		return nil
 	} else {
@@ -195,44 +197,7 @@ func (p *GateWay) OnConnReadStream(
 	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
-	defer stream.Release()
-
-	if stream.GetCallbackID() != 0 {
-		p.OnConnError(streamConn, errors.ErrStream)
-	} else if kind, err := stream.ReadInt64(); err != nil {
-		p.OnConnError(streamConn, errors.ErrStream)
-	} else if kind != core.ControlStreamConnectRequest {
-		p.OnConnError(streamConn, errors.ErrStream)
-	} else if sessionString, err := stream.ReadString(); err != nil {
-		p.OnConnError(streamConn, errors.ErrStream)
-	} else if !stream.IsReadFinish() {
-		p.OnConnError(streamConn, errors.ErrStream)
-	} else {
-		session := (*Session)(nil)
-
-		// try to find session by session string
-		strArray := strings.Split(sessionString, "-")
-		if len(strArray) == 2 && len(strArray[1]) == 32 {
-			if id, err := strconv.ParseUint(strArray[0], 10, 64); err == nil {
-				if s, ok := p.getSession(id); ok && s.security == strArray[1] {
-					session = s
-				}
-			}
-		}
-
-		// if session not find by session string, create a new session
-		if session == nil {
-			if p.TotalSessions() >= int64(p.config.serverMaxSessions) {
-				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
-				return
-			}
-
-			session = NewSession(atomic.AddUint64(&p.sessionSeed, 1), p)
-			p.addSession(session)
-		}
-
-		session.OnConnOpen(streamConn)
-	}
+	InitSession(p, streamConn, stream)
 }
 
 // OnConnError ...
