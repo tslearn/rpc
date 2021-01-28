@@ -186,7 +186,7 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
 
 // OnConnOpen ...
 func (p *GateWay) OnConnOpen(_ *adapter.StreamConn) {
-	// ignore this message
+	// ignore
 	// we will add some security checks here
 }
 
@@ -244,5 +244,7 @@ func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 
 // OnConnClose ...
 func (p *GateWay) OnConnClose(_ *adapter.StreamConn) {
-	panic("kernel error: it should not be called")
+	// ignore
+	// streamConn is not attached to a session
+	// If it happens multiple times on one ip, it may be an attack
 }

@@ -496,6 +496,6 @@ func TestGateWay_OnConnClose(t *testing.T) {
 		v.addSession(NewSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnClose(nil)
-		})).Equal("kernel error: it should not be called")
+		})).IsNil()
 	})
 }

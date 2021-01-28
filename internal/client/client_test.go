@@ -19,11 +19,10 @@ func TestClient_Debug(t *testing.T) {
 	rpcClient := newClient("ws", "0.0.0.0:28888", nil, 1200, 1200)
 	for i := 0; i < 10; i++ {
 		go func(idx int) {
-			fmt.Println(rpcClient.SendMessage(3*time.Second, "#.test:SayHello", idx))
+			fmt.Println(rpcClient.SendMessage(2*time.Second, "#.test:SayHello", idx))
 		}(i)
 	}
-
-	time.Sleep(10 * time.Second)
+	time.Sleep(4 * time.Second)
 	rpcClient.Close()
 	rpcServer.Close()
 }
