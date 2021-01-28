@@ -449,7 +449,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 		for connStr, exist := range testCollection {
 			onError := func(sessionID uint64, e *base.Error) {}
 			v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-			v.addSession(&Session{id: id, security: security})
+			v.addSession(&Session{id: id, security: security, gateway: v})
 
 			syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
 			streamConn := adapter.NewStreamConn(syncConn, v)

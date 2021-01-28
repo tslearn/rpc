@@ -224,12 +224,14 @@ func (p *GateWay) OnConnReadStream(
 		if session == nil {
 			if p.TotalSessions() >= int64(p.config.serverMaxSessions) {
 				p.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
-			} else {
-				session = NewSession(atomic.AddUint64(&p.sessionSeed, 1), p)
-				p.addSession(session)
-				session.OnConnOpen(streamConn)
+				return
 			}
+
+			session = NewSession(atomic.AddUint64(&p.sessionSeed, 1), p)
+			p.addSession(session)
 		}
+
+		session.OnConnOpen(streamConn)
 	}
 }
 
