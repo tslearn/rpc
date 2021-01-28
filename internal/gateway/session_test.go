@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -107,6 +108,218 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	syncConn.SetNext(streamConn)
 	gateway.AddSession(session)
 	return session, syncConn, netConn
+}
+
+func TestInitSession(t *testing.T) {
+	t.Run("stream callbackID != 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			gw,
+		)
+
+		stream := core.NewStream()
+		stream.SetCallbackID(1)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read kind error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			gw,
+		)
+
+		stream := core.NewStream()
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			gw,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read session string error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			gw,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteBool(true)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read stream is not finish", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		netConn := newTestNetConn()
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+
+		streamConn := adapter.NewStreamConn(
+			adapter.NewServerSyncConn(netConn, 1200, 1200),
+			gw,
+		)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteString("")
+		stream.WriteBool(false)
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+		assert(netConn.isRunning).IsFalse()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("max sessions limit", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
+		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		gw.config.serverMaxSessions = 1
+		gw.AddSession(&Session{
+			id:       234,
+			security: "12345678123456781234567812345678",
+		})
+
+		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, gw)
+		syncConn.SetNext(streamConn)
+
+		stream := core.NewStream()
+		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.WriteString("")
+		stream.BuildStreamCheck()
+		streamConn.OnReadBytes(stream.GetBuffer())
+
+		assert(err).Equal(errors.ErrGateWaySeedOverflows)
+	})
+
+	t.Run("stream is ok, create new session", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		id := uint64(234)
+		security := "12345678123456781234567812345678"
+		testCollection := map[string]bool{
+			"234-12345678123456781234567812345678":   true,
+			"0234-12345678123456781234567812345678":  true,
+			"":                                       false,
+			"-":                                      false,
+			"-S":                                     false,
+			"-SecurityPasswordSecurityPass":          false,
+			"-SecurityPasswordSecurityPassword":      false,
+			"-SecurityPasswordSecurityPasswordEx":    false,
+			"*-S":                                    false,
+			"*-SecurityPasswordSecurityPassword":     false,
+			"*-SecurityPasswordSecurityPasswordEx":   false,
+			"ABC-S":                                  false,
+			"ABC-SecurityPasswordSecurityPassword":   false,
+			"ABC-SecurityPasswordSecurityPasswordEx": false,
+			"1-S":                                    false,
+			"1-SecurityPasswordSecurityPassword":     false,
+			"1-SecurityPasswordSecurityPasswordEx":   false,
+			"-234-SecurityPasswordSecurityPassword":  false,
+			"234-":                                   false,
+			"234-S":                                  false,
+			"234-SecurityPasswordSecurityPassword":   false,
+			"234-SecurityPasswordSecurityPasswordEx": false,
+			"-234-":                                  false,
+			"-234-234-":                              false,
+			"------":                                 false,
+		}
+
+		for connStr, exist := range testCollection {
+			onError := func(sessionID uint64, e *base.Error) {}
+			gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+			gw.AddSession(&Session{id: id, security: security, gateway: gw})
+			netConn := newTestNetConn()
+			syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
+			streamConn := adapter.NewStreamConn(syncConn, gw)
+			syncConn.SetNext(streamConn)
+
+			stream := core.NewStream()
+			stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+			stream.WriteString(connStr)
+			stream.BuildStreamCheck()
+			streamConn.OnReadBytes(stream.GetBuffer())
+
+			if exist {
+				assert(gw.totalSessions).Equal(int64(1))
+			} else {
+				assert(gw.totalSessions).Equal(int64(2))
+				v, _ := gw.GetSession(1)
+				assert(v.id).Equal(uint64(1))
+				assert(v.gateway).Equal(gw)
+				assert(len(v.security)).Equal(32)
+				assert(v.conn).IsNotNil()
+				assert(len(v.channels)).Equal(GetDefaultConfig().numOfChannels)
+				assert(cap(v.channels)).Equal(GetDefaultConfig().numOfChannels)
+				nowNS := base.TimeNow().UnixNano()
+				assert(nowNS-v.activeTimeNS < int64(time.Second)).IsTrue()
+				assert(nowNS-v.activeTimeNS > 0).IsTrue()
+				assert(v.prev).IsNil()
+				assert(v.next).IsNil()
+
+				rs := core.NewStream()
+				rs.PutBytesTo(netConn.writeBuffer, 0)
+
+				cfg := gw.config
+
+				assert(rs.ReadInt64()).
+					Equal(int64(core.ControlStreamConnectResponse), nil)
+				assert(rs.ReadString()).
+					Equal(fmt.Sprintf("%d-%s", v.id, v.security), nil)
+				assert(rs.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
+				assert(rs.ReadInt64()).Equal(int64(cfg.transLimit), nil)
+				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeat), nil)
+				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeatTimeout), nil)
+				assert(rs.ReadInt64()).Equal(int64(cfg.clientRequestInterval), nil)
+				assert(rs.IsReadFinish()).IsTrue()
+				assert(rs.CheckStream()).IsTrue()
+			}
+		}
+	})
 }
 
 func TestNewSession(t *testing.T) {
@@ -284,26 +497,6 @@ func TestSession_OnConnOpen(t *testing.T) {
 		syncConn.SetNext(streamConn)
 		session.OnConnOpen(streamConn)
 		assert(session.conn).Equal(streamConn)
-		//stream := core.NewStream()
-		//stream.PutBytesTo(netConn.writeBuffer, 0)
-		//
-		//cfg := session.gateway.config
-		//
-		//assert(stream.ReadInt64()).
-		//	Equal(int64(core.ControlStreamConnectResponse), nil)
-		//connStr, err := stream.ReadString()
-		//assert(err).IsNil()
-		//connStrArr := strings.Split(connStr, "-")
-		//assert(len(connStrArr)).Equal(2)
-		//assert(connStrArr[0]).Equal("11")
-		//assert(len(connStrArr[1])).Equal(32)
-		//assert(stream.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
-		//assert(stream.ReadInt64()).Equal(int64(cfg.transLimit), nil)
-		//assert(stream.ReadInt64()).Equal(int64(cfg.heartbeat), nil)
-		//assert(stream.ReadInt64()).Equal(int64(cfg.heartbeatTimeout), nil)
-		//assert(stream.ReadInt64()).Equal(int64(cfg.clientRequestInterval), nil)
-		//assert(stream.IsReadFinish()).IsTrue()
-		//assert(stream.CheckStream()).IsTrue()
 	})
 }
 
