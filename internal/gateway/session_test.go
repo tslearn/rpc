@@ -191,28 +191,6 @@ func TestInitSession(t *testing.T) {
 		assert(err).Equal(errors.ErrStream)
 	})
 
-	t.Run("read stream is not finish", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		netConn := newTestNetConn()
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
-
-		streamConn := adapter.NewStreamConn(
-			adapter.NewServerSyncConn(netConn, 1200, 1200),
-			gw,
-		)
-
-		stream := core.NewStream()
-		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
-		stream.WriteString("")
-		stream.WriteBool(false)
-		stream.BuildStreamCheck()
-		streamConn.OnReadBytes(stream.GetBuffer())
-		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
-	})
-
 	t.Run("max sessions limit", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		err := (*base.Error)(nil)

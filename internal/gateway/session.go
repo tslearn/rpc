@@ -31,20 +31,14 @@ func InitSession(
 	streamConn *adapter.StreamConn,
 	stream *core.Stream,
 ) {
+	defer stream.Release()
 	if stream.GetCallbackID() != 0 {
-		stream.Release()
 		gw.OnConnError(streamConn, errors.ErrStream)
 	} else if kind, err := stream.ReadInt64(); err != nil {
-		stream.Release()
 		gw.OnConnError(streamConn, errors.ErrStream)
 	} else if kind != core.ControlStreamConnectRequest {
-		stream.Release()
 		gw.OnConnError(streamConn, errors.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
-		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
-	} else if !stream.IsReadFinish() {
-		stream.Release()
 		gw.OnConnError(streamConn, errors.ErrStream)
 	} else {
 		session := (*Session)(nil)
@@ -63,7 +57,6 @@ func InitSession(
 		// if session not find by session string, create a new session
 		if session == nil {
 			if gw.TotalSessions() >= int64(config.serverMaxSessions) {
-				stream.Release()
 				gw.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
 				return
 			}
@@ -83,17 +76,19 @@ func InitSession(
 		}
 
 		streamConn.SetReceiver(session)
-
-		stream.SetWritePosToBodyStart()
-		stream.WriteInt64(core.ControlStreamConnectResponse)
-		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
-		stream.WriteInt64(int64(config.numOfChannels))
-		stream.WriteInt64(int64(config.transLimit))
-		stream.WriteInt64(int64(config.heartbeat))
-		stream.WriteInt64(int64(config.heartbeatTimeout))
-		stream.WriteInt64(int64(config.clientRequestInterval))
-		streamConn.WriteStreamAndRelease(stream)
-
+		backStream := core.NewStream()
+		backStream.WriteInt64(core.ControlStreamConnectResponse)
+		backStream.WriteString(fmt.Sprintf(
+			"%d-%s",
+			session.id,
+			session.security,
+		))
+		backStream.WriteInt64(int64(config.numOfChannels))
+		backStream.WriteInt64(int64(config.transLimit))
+		backStream.WriteInt64(int64(config.heartbeat))
+		backStream.WriteInt64(int64(config.heartbeatTimeout))
+		backStream.WriteInt64(int64(config.clientRequestInterval))
+		streamConn.WriteStreamAndRelease(backStream)
 		session.OnConnOpen(streamConn)
 	}
 }
