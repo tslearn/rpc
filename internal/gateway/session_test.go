@@ -297,7 +297,7 @@ func TestInitSession(t *testing.T) {
 				assert(cap(v.channels)).Equal(GetDefaultConfig().numOfChannels)
 				nowNS := base.TimeNow().UnixNano()
 				assert(nowNS-v.activeTimeNS < int64(time.Second)).IsTrue()
-				assert(nowNS-v.activeTimeNS > 0).IsTrue()
+				assert(nowNS-v.activeTimeNS >= 0).IsTrue()
 				assert(v.prev).IsNil()
 				assert(v.next).IsNil()
 
