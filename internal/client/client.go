@@ -16,8 +16,6 @@ import (
 type Config struct {
 	numOfChannels    int
 	transLimit       int
-	rBufSize         int
-	wBufSize         int
 	heartbeat        time.Duration
 	heartbeatTimeout time.Duration
 	requestInterval  time.Duration
@@ -25,16 +23,15 @@ type Config struct {
 
 // Client ...
 type Client struct {
-	config          *Config
-	sessionString   string
-	adapter         *adapter.Adapter
-	conn            *adapter.StreamConn
-	preSendHead     *SendItem
-	preSendTail     *SendItem
-	channels        []Channel
-	lastCheckTimeNS int64
-	lastPingTimeNS  int64
-	orcManager      *base.ORCManager
+	config         *Config
+	sessionString  string
+	adapter        *adapter.Adapter
+	conn           *adapter.StreamConn
+	preSendHead    *SendItem
+	preSendTail    *SendItem
+	channels       []Channel
+	lastPingTimeNS int64
+	orcManager     *base.ORCManager
 	sync.Mutex
 }
 
@@ -46,31 +43,26 @@ func newClient(
 	wBufSize int,
 ) *Client {
 	ret := &Client{
-		config:          &Config{},
-		sessionString:   "",
-		adapter:         nil,
-		conn:            nil,
-		preSendHead:     nil,
-		preSendTail:     nil,
-		channels:        nil,
-		lastCheckTimeNS: base.TimeNow().UnixNano(),
-		orcManager:      base.NewORCManager(),
+		config:        &Config{},
+		sessionString: "",
+		adapter:       nil,
+		conn:          nil,
+		preSendHead:   nil,
+		preSendTail:   nil,
+		channels:      nil,
+		orcManager:    base.NewORCManager(),
 	}
-	ret.config.rBufSize = rBufSize
-	ret.config.wBufSize = wBufSize
+
+	// init adapter
 	clientAdapter := adapter.NewClientAdapter(
 		network, addr, tlsConfig, rBufSize, wBufSize, ret,
 	)
-
-	// Start the adapter
 	clientAdapter.Open()
 	go func() {
 		clientAdapter.Run()
 	}()
-
 	ret.adapter = clientAdapter
 
-	// Start the client (send the messages)
 	ret.orcManager.Open(func() bool {
 		return true
 	})
@@ -78,7 +70,7 @@ func newClient(
 	go func() {
 		ret.orcManager.Run(func(isRunning func() bool) bool {
 			for isRunning() {
-				time.Sleep(80 * time.Millisecond)
+				time.Sleep(time.Second)
 				nowNS := base.TimeNow().UnixNano()
 				ret.Lock()
 				ret.tryToTimeout(nowNS)
@@ -114,47 +106,43 @@ func (p *Client) tryToSendPing(nowNS int64) {
 }
 
 func (p *Client) tryToTimeout(nowNS int64) {
-	if nowNS-p.lastCheckTimeNS > 800*int64(time.Millisecond) {
-		p.lastCheckTimeNS = nowNS
+	// sweep pre send list
+	preValidItem := (*SendItem)(nil)
+	item := p.preSendHead
+	for item != nil {
+		if item.CheckTime(nowNS) {
+			nextItem := item.next
 
-		// sweep pre send list
-		preValidItem := (*SendItem)(nil)
-		item := p.preSendHead
-		for item != nil {
-			if item.CheckTime(nowNS) {
-				nextItem := item.next
-
-				if preValidItem == nil {
-					p.preSendHead = nextItem
-				} else {
-					preValidItem.next = nextItem
-				}
-
-				if item == p.preSendTail {
-					p.preSendTail = preValidItem
-					if p.preSendTail != nil {
-						p.preSendTail.next = nil
-					}
-				}
-
-				item.next = nil
-				item = nextItem
+			if preValidItem == nil {
+				p.preSendHead = nextItem
 			} else {
-				preValidItem = item
-				item = item.next
+				preValidItem.next = nextItem
 			}
-		}
 
-		// sweep the channels
-		for i := 0; i < len(p.channels); i++ {
-			(&p.channels[i]).CheckTime(nowNS)
-		}
-
-		// check conn timeout
-		if p.conn != nil {
-			if p.conn.IsActive(nowNS, p.config.heartbeatTimeout) {
-				p.conn.Close()
+			if item == p.preSendTail {
+				p.preSendTail = preValidItem
+				if p.preSendTail != nil {
+					p.preSendTail.next = nil
+				}
 			}
+
+			item.next = nil
+			item = nextItem
+		} else {
+			preValidItem = item
+			item = item.next
+		}
+	}
+
+	// sweep the channels
+	for i := 0; i < len(p.channels); i++ {
+		(&p.channels[i]).CheckTime(nowNS)
+	}
+
+	// check conn timeout
+	if p.conn != nil {
+		if p.conn.IsActive(nowNS, p.config.heartbeatTimeout) {
+			p.conn.Close()
 		}
 	}
 }
