@@ -91,18 +91,16 @@ func (p *Client) onError(err *base.Error) {
 }
 
 func (p *Client) tryToSendPing(nowNS int64) {
-	if p.conn == nil {
+	if p.conn == nil || nowNS-p.lastPingTimeNS < int64(p.config.heartbeat) {
 		return
-	} else if nowNS-p.lastPingTimeNS < int64(p.config.heartbeat) {
-		return
-	} else {
-		// Send Ping
-		p.lastPingTimeNS = nowNS
-		stream := core.NewStream()
-		stream.SetCallbackID(0)
-		stream.WriteInt64(core.ControlStreamPing)
-		p.conn.WriteStreamAndRelease(stream)
 	}
+
+	// Send Ping
+	p.lastPingTimeNS = nowNS
+	stream := core.NewStream()
+	stream.SetCallbackID(0)
+	stream.WriteInt64(core.ControlStreamPing)
+	p.conn.WriteStreamAndRelease(stream)
 }
 
 func (p *Client) tryToTimeout(nowNS int64) {
