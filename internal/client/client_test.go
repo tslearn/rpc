@@ -15,14 +15,11 @@ func TestClient_Debug(t *testing.T) {
 		rpcServer.SetNumOfThreads(1024).Serve()
 	}()
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	rpcClient := newClient("ws", "0.0.0.0:28888", nil, 1200, 1200)
 	for i := 0; i < 10; i++ {
-		go func(idx int) {
-			fmt.Println(rpcClient.SendMessage(2*time.Second, "#.test:SayHello", idx))
-		}(i)
+		fmt.Println(rpcClient.SendMessage(8*time.Second, "#.test:SayHello", i))
 	}
-	time.Sleep(4 * time.Second)
 	rpcClient.Close()
 	rpcServer.Close()
 }
