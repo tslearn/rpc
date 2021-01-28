@@ -441,8 +441,10 @@ func TestSession_OutStream(t *testing.T) {
 	t.Run("p.conn is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, netConn := prepareTestSession()
-		session.OutStream(core.NewStream())
+		stream := core.NewStream()
+		session.OutStream(stream)
 		assert(len(netConn.writeBuffer)).Equal(0)
+		assert(session.channels[0].backStream).Equal(stream)
 	})
 
 	t.Run("stream can not out", func(t *testing.T) {
