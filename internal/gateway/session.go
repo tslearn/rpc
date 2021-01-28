@@ -82,6 +82,8 @@ func InitSession(
 			gw.AddSession(session)
 		}
 
+		streamConn.SetReceiver(session)
+
 		stream.SetWritePosToBodyStart()
 		stream.WriteInt64(core.ControlStreamConnectResponse)
 		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
@@ -91,6 +93,7 @@ func InitSession(
 		stream.WriteInt64(int64(config.heartbeatTimeout))
 		stream.WriteInt64(int64(config.clientRequestInterval))
 		streamConn.WriteStreamAndRelease(stream)
+
 		session.OnConnOpen(streamConn)
 	}
 }
@@ -145,7 +148,6 @@ func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 	p.Lock()
 	defer p.Unlock()
 	p.conn = streamConn
-	p.conn.SetReceiver(p)
 }
 
 // OnConnReadStream ...
