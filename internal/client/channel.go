@@ -33,11 +33,9 @@ func (p *Channel) Free(stream *core.Stream) bool {
 }
 
 func (p *Channel) CheckTime(nowNS int64) bool {
-	if p.item != nil {
-		if p.item.CheckTime(nowNS) {
-			p.item = nil
-			return true
-		}
+	if p.item != nil && p.item.CheckTime(nowNS) {
+		p.item = nil
+		return true
 	}
 
 	return false
