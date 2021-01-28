@@ -132,10 +132,10 @@ func (p *Session) OutStream(stream *core.Stream) {
 	p.Lock()
 	defer p.Unlock()
 
-	if stream != nil && p.conn != nil {
+	if stream != nil {
 		// record stream
 		channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
-		if channel.Out(stream) {
+		if channel.Out(stream) && p.conn != nil {
 			p.conn.WriteStreamAndRelease(stream.Clone())
 		} else {
 			stream.Release()
