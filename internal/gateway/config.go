@@ -25,8 +25,8 @@ func GetDefaultConfig() *Config {
 	return &Config{
 		numOfChannels:    32,
 		transLimit:       4 * 1024 * 1024,
-		heartbeat:        5 * time.Second,
-		heartbeatTimeout: 9 * time.Second,
+		heartbeat:        4 * time.Second,
+		heartbeatTimeout: 8 * time.Second,
 
 		serverMaxSessions:     10240000,
 		serverSessionTimeout:  120 * time.Second,
