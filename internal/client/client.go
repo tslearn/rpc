@@ -182,7 +182,7 @@ func (p *Client) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *base.Error) {
-	item := newSendItem()
+	item := NewSendItem()
 	defer item.Release()
 
 	item.timeoutNS = int64(timeout)

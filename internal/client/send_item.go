@@ -7,11 +7,6 @@ import (
 	"sync"
 )
 
-const (
-	sendItemStatusRunning = int32(1)
-	sendItemStatusFinish  = int32(2)
-)
-
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &SendItem{
@@ -23,7 +18,7 @@ var sendItemCache = &sync.Pool{
 
 // SendItem ...
 type SendItem struct {
-	status      int32
+	isRunning   bool
 	startTimeNS int64
 	sendTimeNS  int64
 	timeoutNS   int64
@@ -32,9 +27,9 @@ type SendItem struct {
 	next        *SendItem
 }
 
-func newSendItem() *SendItem {
+func NewSendItem() *SendItem {
 	ret := sendItemCache.Get().(*SendItem)
-	ret.status = sendItemStatusRunning
+	ret.isRunning = true
 	ret.startTimeNS = base.TimeNow().UnixNano()
 	ret.sendTimeNS = 0
 	ret.timeoutNS = 0
@@ -44,7 +39,7 @@ func newSendItem() *SendItem {
 
 // Return ...
 func (p *SendItem) Return(stream *core.Stream) bool {
-	if stream == nil || p.status != sendItemStatusRunning {
+	if stream == nil || !p.isRunning {
 		return false
 	}
 
@@ -54,8 +49,9 @@ func (p *SendItem) Return(stream *core.Stream) bool {
 
 // CheckTime ...
 func (p *SendItem) CheckTime(nowNS int64) bool {
-	if nowNS-p.startTimeNS > p.timeoutNS && p.status == sendItemStatusRunning {
-		p.status = sendItemStatusFinish
+	if nowNS-p.startTimeNS > p.timeoutNS && p.isRunning {
+		p.isRunning = false
+
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
