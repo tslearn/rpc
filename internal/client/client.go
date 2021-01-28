@@ -141,7 +141,7 @@ func (p *Client) tryToTimeout(nowNS int64) {
 
 	// check conn timeout
 	if p.conn != nil {
-		if p.conn.IsActive(nowNS, p.config.heartbeatTimeout) {
+		if !p.conn.IsActive(nowNS, p.config.heartbeatTimeout) {
 			p.conn.Close()
 		}
 	}
@@ -233,6 +233,7 @@ func (p *Client) Close() bool {
 
 // OnConnOpen ...
 func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
+	fmt.Println("OnConnOpen", base.GetFileLine(1))
 	p.Lock()
 	defer p.Unlock()
 
@@ -331,6 +332,7 @@ func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 
 // OnConnClose ...
 func (p *Client) OnConnClose(_ *adapter.StreamConn) {
+	fmt.Println("OnConnClose", base.GetFileLine(1))
 	p.Lock()
 	defer p.Unlock()
 	p.conn = nil
