@@ -19,6 +19,5 @@ func TestGetDefaultConfig(t *testing.T) {
 		assert(cfg.serverReadBufferSize).Equal(1200)
 		assert(cfg.serverWriteBufferSize).Equal(1200)
 		assert(cfg.serverCacheTimeout).Equal(10 * time.Second)
-		assert(cfg.clientRequestInterval).Equal(3 * time.Second)
 	})
 }

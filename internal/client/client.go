@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"fmt"
 	"sync"
 	"time"
 
@@ -18,7 +17,6 @@ type Config struct {
 	transLimit       int
 	heartbeat        time.Duration
 	heartbeatTimeout time.Duration
-	requestInterval  time.Duration
 }
 
 // Client ...
@@ -32,6 +30,7 @@ type Client struct {
 	channels       []Channel
 	lastPingTimeNS int64
 	orcManager     *base.ORCManager
+	onError        func(err *base.Error)
 	sync.Mutex
 }
 
@@ -41,6 +40,7 @@ func newClient(
 	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
+	onError func(err *base.Error),
 ) *Client {
 	ret := &Client{
 		config:        &Config{},
@@ -51,6 +51,7 @@ func newClient(
 		preSendTail:   nil,
 		channels:      nil,
 		orcManager:    base.NewORCManager(),
+		onError:       onError,
 	}
 
 	// init adapter
@@ -84,10 +85,6 @@ func newClient(
 	}()
 
 	return ret
-}
-
-func (p *Client) onError(err *base.Error) {
-	fmt.Println("client onError: ", err)
 }
 
 func (p *Client) tryToSendPing(nowNS int64) {
@@ -270,8 +267,6 @@ func (p *Client) OnConnReadStream(
 			p.OnConnError(streamConn, err)
 		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
 			p.OnConnError(streamConn, err)
-		} else if requestInterval, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
 		} else if !stream.IsReadFinish() {
 			p.OnConnError(streamConn, errors.ErrStream)
 		} else {
@@ -284,7 +279,6 @@ func (p *Client) OnConnReadStream(
 				p.config.transLimit = int(transLimit)
 				p.config.heartbeat = time.Duration(heartbeat)
 				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout)
-				p.config.requestInterval = time.Duration(requestInterval)
 
 				p.channels = make([]Channel, numOfChannels)
 				for i := 0; i < len(p.channels); i++ {
@@ -326,7 +320,10 @@ func (p *Client) OnConnReadStream(
 
 // OnConnError ...
 func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.onError(err)
+	if p.onError != nil {
+		p.onError(err)
+	}
+
 	if streamConn != nil {
 		streamConn.Close()
 	}

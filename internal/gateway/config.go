@@ -16,8 +16,6 @@ type Config struct {
 	serverReadBufferSize  int
 	serverWriteBufferSize int
 	serverCacheTimeout    time.Duration
-
-	clientRequestInterval time.Duration
 }
 
 // GetDefaultConfig ...
@@ -33,6 +31,5 @@ func GetDefaultConfig() *Config {
 		serverReadBufferSize:  1200,
 		serverWriteBufferSize: 1200,
 		serverCacheTimeout:    10 * time.Second,
-		clientRequestInterval: 3 * time.Second,
 	}
 }

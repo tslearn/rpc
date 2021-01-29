@@ -91,7 +91,6 @@ func InitSession(
 		stream.WriteInt64(int64(config.transLimit))
 		stream.WriteInt64(int64(config.heartbeat))
 		stream.WriteInt64(int64(config.heartbeatTimeout))
-		stream.WriteInt64(int64(config.clientRequestInterval))
 		streamConn.WriteStreamAndRelease(stream)
 
 		session.OnConnOpen(streamConn)
