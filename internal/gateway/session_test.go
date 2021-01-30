@@ -314,7 +314,6 @@ func TestInitSession(t *testing.T) {
 				assert(rs.ReadInt64()).Equal(int64(cfg.transLimit), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeat), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeatTimeout), nil)
-				assert(rs.ReadInt64()).Equal(int64(cfg.clientRequestInterval), nil)
 				assert(rs.IsReadFinish()).IsTrue()
 				assert(rs.CheckStream()).IsTrue()
 			}

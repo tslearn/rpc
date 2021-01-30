@@ -2,11 +2,12 @@ package client
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -15,41 +16,88 @@ import (
 	"github.com/rpccloud/rpc/internal/server"
 )
 
-func TestClient_Debug(t *testing.T) {
-	userService := rpc.NewService().
-		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
-			time.Sleep(2 * time.Second)
-			return rt.Reply("hello " + name)
-		})
-
-	rpcServer := server.NewServer().Listen("ws", "0.0.0.0:28888", nil)
-	rpcServer.AddService("user", userService, nil)
-
-	go func() {
-		rpcServer.SetNumOfThreads(1024).Serve()
-	}()
-
-	time.Sleep(300 * time.Millisecond)
-	rpcClient := newClient(
-		"ws", "0.0.0.0:28888", nil, 1200, 1200, func(err *base.Error) {},
-	)
-	for i := 0; i < 10; i++ {
-		go func() {
-			fmt.Println(
-				rpcClient.SendMessage(8*time.Second, "#.user:SayHello", "kitty"),
-			)
-		}()
-	}
-
-	// haha, close it
-	time.Sleep(time.Second)
-	rpcClient.conn.Close()
-
-	time.Sleep(10 * time.Second)
-
-	rpcClient.Close()
-	rpcServer.Close()
+type testNetConn struct {
+	writeBuffer []byte
+	isRunning   bool
 }
+
+func newTestNetConn() *testNetConn {
+	return &testNetConn{
+		isRunning:   true,
+		writeBuffer: make([]byte, 0),
+	}
+}
+
+func (p *testNetConn) Read(_ []byte) (n int, err error) {
+	panic("not implemented")
+}
+
+func (p *testNetConn) Write(b []byte) (n int, err error) {
+	p.writeBuffer = append(p.writeBuffer, b...)
+	return len(b), nil
+}
+
+func (p *testNetConn) Close() error {
+	p.isRunning = false
+	return nil
+}
+
+func (p *testNetConn) LocalAddr() net.Addr {
+	panic("not implemented")
+}
+
+func (p *testNetConn) RemoteAddr() net.Addr {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetReadDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
+	panic("not implemented")
+}
+
+//
+//func TestClient_Debug(t *testing.T) {
+//	userService := rpc.NewService().
+//		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
+//			time.Sleep(2 * time.Second)
+//			return rt.Reply("hello " + name)
+//		})
+//
+//	rpcServer := server.NewServer().Listen("ws", "0.0.0.0:28888", nil)
+//	rpcServer.AddService("user", userService, nil)
+//
+//	go func() {
+//		rpcServer.SetNumOfThreads(1024).Serve()
+//	}()
+//
+//	time.Sleep(300 * time.Millisecond)
+//	rpcClient := newClient(
+//		"ws", "0.0.0.0:28888", nil, 1200, 1200, func(err *base.Error) {},
+//	)
+//	for i := 0; i < 10; i++ {
+//		go func() {
+//			fmt.Println(
+//				rpcClient.SendMessage(8*time.Second, "#.user:SayHello", "kitty"),
+//			)
+//		}()
+//	}
+//
+//	// haha, close it
+//	time.Sleep(time.Second)
+//	rpcClient.conn.Close()
+//
+//	time.Sleep(10 * time.Second)
+//
+//	rpcClient.Close()
+//	rpcServer.Close()
+//}
 
 func getTestServer() *server.Server {
 	userService := rpc.NewService().
@@ -145,4 +193,52 @@ func TestNewClient(t *testing.T) {
 		assert(err).Equal(errors.ErrClientTimeout)
 		v.Close()
 	})
+}
+
+func TestClient_tryToSendPing(t *testing.T) {
+	t.Run("p.conn == nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{}
+
+		v.tryToSendPing(1)
+		assert(v.lastPingTimeNS).Equal(int64(0))
+	})
+
+	t.Run("do not need to ping", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: base.TimeNow().UnixNano(),
+			config:         &Config{heartbeat: time.Second},
+		}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+
+		v.tryToSendPing(base.TimeNow().UnixNano())
+		assert(len(netConn.writeBuffer)).Equal(0)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeat: time.Second},
+		}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+
+		v.tryToSendPing(base.TimeNow().UnixNano())
+
+		stream := core.NewStream()
+		stream.PutBytesTo(netConn.writeBuffer, 0)
+		assert(stream.ReadInt64()).Equal(int64(core.ControlStreamPing), nil)
+		assert(stream.IsReadFinish()).IsTrue()
+		assert(stream.CheckStream()).IsTrue()
+	})
+
 }
