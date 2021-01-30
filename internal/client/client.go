@@ -201,7 +201,6 @@ func (p *Client) SendMessage(
 		p.preSendTail.next = item
 		p.preSendTail = item
 	}
-
 	p.tryToDeliverPreSendMessages()
 	p.Unlock()
 
