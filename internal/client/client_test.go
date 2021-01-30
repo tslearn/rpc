@@ -247,15 +247,47 @@ func TestClient_tryToTimeout(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Client{
 			lastPingTimeNS: 10000,
-			config:         &Config{heartbeatTimeout: 10 * time.Millisecond},
+			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
 			channels:       make([]Channel, 1),
 		}
 		item := NewSendItem(int64(5 * time.Millisecond))
 		v.channels[0].Use(item, 1)
 
-		v.tryToTimeout(base.TimeNow().UnixNano())
+		v.tryToTimeout(item.sendTimeNS + int64(4*time.Millisecond))
 		assert(v.channels[0].sequence).Equal(uint64(1))
 		assert(v.channels[0].item).IsNotNil()
+
+		v.tryToTimeout(item.sendTimeNS + int64(10*time.Millisecond))
+		assert(v.channels[0].sequence).Equal(uint64(1))
+		assert(v.channels[0].item).IsNil()
+	})
+
+	t.Run("check if the conn has been swept", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
+			channels:       make([]Channel, 1),
+		}
+
+		// conn is nil
+		v.tryToTimeout(base.TimeNow().UnixNano() + int64(4*time.Millisecond))
+		assert(v.conn).IsNil()
+
+		// set conn
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+
+		// conn is active
+		v.tryToTimeout(base.TimeNow().UnixNano() + int64(4*time.Millisecond))
+		assert(netConn.isRunning).IsTrue()
+
+		// conn is not active
+		v.tryToTimeout(base.TimeNow().UnixNano() + int64(20*time.Millisecond))
+		assert(netConn.isRunning).IsFalse()
 	})
 
 }
