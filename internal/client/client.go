@@ -179,10 +179,8 @@ func (p *Client) SendMessage(
 	target string,
 	args ...interface{},
 ) (interface{}, *base.Error) {
-	item := NewSendItem()
+	item := NewSendItem(int64(timeout))
 	defer item.Release()
-
-	item.timeoutNS = int64(timeout)
 
 	// set depth
 	item.sendStream.SetDepth(0)

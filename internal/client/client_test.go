@@ -240,5 +240,22 @@ func TestClient_tryToSendPing(t *testing.T) {
 		assert(stream.IsReadFinish()).IsTrue()
 		assert(stream.CheckStream()).IsTrue()
 	})
+}
+
+func TestClient_tryToTimeout(t *testing.T) {
+	t.Run("check if the channels has been swept", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeatTimeout: 10 * time.Millisecond},
+			channels:       make([]Channel, 1),
+		}
+		item := NewSendItem(int64(5 * time.Millisecond))
+		v.channels[0].Use(item, 1)
+
+		v.tryToTimeout(base.TimeNow().UnixNano())
+		assert(v.channels[0].sequence).Equal(uint64(1))
+		assert(v.channels[0].item).IsNotNil()
+	})
 
 }

@@ -27,12 +27,12 @@ type SendItem struct {
 	next        *SendItem
 }
 
-func NewSendItem() *SendItem {
+func NewSendItem(timeoutNS int64) *SendItem {
 	ret := sendItemCache.Get().(*SendItem)
 	ret.isRunning = true
 	ret.startTimeNS = base.TimeNow().UnixNano()
 	ret.sendTimeNS = 0
-	ret.timeoutNS = 0
+	ret.timeoutNS = timeoutNS
 	ret.next = nil
 	return ret
 }
