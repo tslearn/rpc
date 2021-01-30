@@ -18,14 +18,14 @@ import (
 )
 
 type testNetConn struct {
-	writeBuffer []byte
-	isRunning   bool
+	writeCH   chan []byte
+	isRunning bool
 }
 
 func newTestNetConn() *testNetConn {
 	return &testNetConn{
-		isRunning:   true,
-		writeBuffer: make([]byte, 0),
+		isRunning: true,
+		writeCH:   make(chan []byte, 1024),
 	}
 }
 
@@ -34,7 +34,9 @@ func (p *testNetConn) Read(_ []byte) (n int, err error) {
 }
 
 func (p *testNetConn) Write(b []byte) (n int, err error) {
-	p.writeBuffer = append(p.writeBuffer, b...)
+	buf := make([]byte, len(b))
+	copy(buf, b)
+	p.writeCH <- buf
 	return len(b), nil
 }
 
@@ -218,7 +220,7 @@ func TestClient_tryToSendPing(t *testing.T) {
 		v.conn = streamConn
 
 		v.tryToSendPing(base.TimeNow().UnixNano())
-		assert(len(netConn.writeBuffer)).Equal(0)
+		assert(len(netConn.writeCH)).Equal(0)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -236,7 +238,7 @@ func TestClient_tryToSendPing(t *testing.T) {
 		v.tryToSendPing(base.TimeNow().UnixNano())
 
 		stream := core.NewStream()
-		stream.PutBytesTo(netConn.writeBuffer, 0)
+		stream.PutBytesTo(<-netConn.writeCH, 0)
 		assert(stream.ReadInt64()).Equal(int64(core.ControlStreamPing), nil)
 		assert(stream.IsReadFinish()).IsTrue()
 		assert(stream.CheckStream()).IsTrue()
@@ -363,6 +365,117 @@ func TestClient_tryToTimeout(t *testing.T) {
 			for i := 0; i < 10; i++ {
 				for j := 0; j <= i; j++ {
 					assert(fnTest(i, j)).IsTrue()
+				}
+			}
+		}
+	})
+}
+
+func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
+	fnTest := func(totalPreItems int, chSize int, chFree int) bool {
+		if chSize < chFree {
+			panic("error")
+		}
+
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
+			channels:       make([]Channel, chSize),
+		}
+
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+		chFreeArr := make([]int, chSize)
+
+		for i := 0; i < len(v.channels); i++ {
+			(&v.channels[i]).sequence = uint64(i)
+			(&v.channels[i]).item = nil
+			chFreeArr[i] = i
+		}
+
+		itemsArray := make([]*SendItem, totalPreItems)
+		for i := 0; i < totalPreItems; i++ {
+			itemsArray[i] = NewSendItem(int64(time.Second))
+			if v.preSendHead == nil {
+				v.preSendHead = itemsArray[i]
+				v.preSendTail = itemsArray[i]
+			} else {
+				v.preSendTail.next = itemsArray[i]
+				v.preSendTail = itemsArray[i]
+			}
+		}
+
+		fnCheck := func(c *Client, arr []*SendItem) bool {
+			if len(arr) == 0 {
+				return c.preSendHead == nil && c.preSendTail == nil
+			}
+
+			if c.preSendHead != arr[0] || c.preSendTail != arr[len(arr)-1] {
+				return false
+			}
+
+			if c.preSendTail.next != nil {
+				return false
+			}
+
+			for i := 0; i < len(arr)-1; i++ {
+				if arr[i].next != arr[i+1] {
+					return false
+				}
+			}
+
+			return true
+		}
+
+		if !fnCheck(v, itemsArray) {
+			panic("error")
+		}
+
+		for len(chFreeArr) > chFree {
+			rand.Seed(base.TimeNow().UnixNano())
+			idx := rand.Int() % len(chFreeArr)
+			(&v.channels[chFreeArr[idx]]).item = NewSendItem(int64(time.Second))
+			chFreeArr = append(chFreeArr[:idx], chFreeArr[idx+1:]...)
+		}
+
+		v.tryToDeliverPreSendMessages()
+
+		return fnCheck(v, itemsArray[base.MinInt(len(itemsArray), chFree):])
+	}
+
+	t.Run("p.conn == nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
+			channels:       make([]Channel, 1),
+			preSendHead:    NewSendItem(0),
+		}
+		v.tryToDeliverPreSendMessages()
+		assert(v.preSendHead).IsNotNil()
+	})
+
+	t.Run("p.channel == nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			lastPingTimeNS: 10000,
+			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
+			conn:           adapter.NewStreamConn(nil, nil),
+			preSendHead:    NewSendItem(0),
+		}
+		v.tryToDeliverPreSendMessages()
+		assert(v.preSendHead).IsNotNil()
+	})
+
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for n := 16; n <= 32; n++ {
+			for i := 0; i < 10; i++ {
+				for j := 0; j <= n; j++ {
+					assert(fnTest(i, n, j)).IsTrue()
 				}
 			}
 		}

@@ -149,7 +149,7 @@ func (p *Client) tryToDeliverPreSendMessages() {
 
 	for findFree < channelSize && p.preSendHead != nil {
 		// find a free channel
-		for p.channels[findFree].item != nil {
+		for findFree < channelSize && p.channels[findFree].item != nil {
 			findFree++
 		}
 
