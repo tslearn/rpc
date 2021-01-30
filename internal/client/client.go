@@ -116,9 +116,6 @@ func (p *Client) tryToTimeout(nowNS int64) {
 
 			if item == p.preSendTail {
 				p.preSendTail = preValidItem
-				if p.preSendTail != nil {
-					p.preSendTail.next = nil
-				}
 			}
 
 			item.next = nil

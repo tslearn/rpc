@@ -7,6 +7,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
+	"math/rand"
 	"net"
 	"sync"
 	"testing"
@@ -243,6 +244,72 @@ func TestClient_tryToSendPing(t *testing.T) {
 }
 
 func TestClient_tryToTimeout(t *testing.T) {
+	fnTest := func(totalItems int, timeoutItems int) bool {
+		v := &Client{
+			config: &Config{heartbeatTimeout: 9 * time.Millisecond},
+		}
+
+		if totalItems < 0 || totalItems < timeoutItems {
+			panic("error")
+		}
+
+		beforeData := make([]*SendItem, totalItems)
+		afterData := make([]*SendItem, totalItems)
+		nowNS := base.TimeNow().UnixNano()
+
+		for i := 0; i < totalItems; i++ {
+			item := NewSendItem(int64(time.Second))
+			item.startTimeNS = nowNS
+
+			if v.preSendTail == nil {
+				v.preSendHead = item
+				v.preSendTail = item
+			} else {
+				v.preSendTail.next = item
+				v.preSendTail = item
+			}
+
+			beforeData[i] = item
+			afterData[i] = item
+		}
+
+		for i := 0; i < timeoutItems; i++ {
+			rand.Seed(time.Now().UnixNano())
+			idx := rand.Int() % len(afterData)
+			afterData[idx].timeoutNS = 0
+			afterData = append(afterData[:idx], afterData[idx+1:]...)
+		}
+
+		fnCheck := func(c *Client, arr []*SendItem) bool {
+			if len(arr) == 0 {
+				return c.preSendHead == nil && c.preSendTail == nil
+			}
+
+			if c.preSendHead != arr[0] || c.preSendTail != arr[len(arr)-1] {
+				return false
+			}
+
+			if c.preSendTail.next != nil {
+				return false
+			}
+
+			for i := 0; i < len(arr)-1; i++ {
+				if arr[i].next != arr[i+1] {
+					return false
+				}
+			}
+
+			return true
+		}
+
+		if !fnCheck(v, beforeData) {
+			return false
+		}
+
+		v.tryToTimeout(nowNS + int64(500*time.Millisecond))
+		return fnCheck(v, afterData)
+	}
+
 	t.Run("check if the channels has been swept", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Client{
@@ -290,4 +357,14 @@ func TestClient_tryToTimeout(t *testing.T) {
 		assert(netConn.isRunning).IsFalse()
 	})
 
+	t.Run("item timeout", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for n := 0; n < 10; n++ {
+			for i := 0; i < 10; i++ {
+				for j := 0; j <= i; j++ {
+					assert(fnTest(i, j)).IsTrue()
+				}
+			}
+		}
+	})
 }
