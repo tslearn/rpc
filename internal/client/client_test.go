@@ -812,6 +812,23 @@ func TestClient_OnConnReadStream(t *testing.T) {
 	})
 
 	t.Run("p.conn != nil, callbackID != 0, 02", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(17)
+		stream.WriteInt64(int64(core.ControlStreamPong))
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		v.channels = make([]Channel, 32)
+		v.onError = func(e *base.Error) { err = e }
+		(&v.channels[17]).sequence = 17
+		(&v.channels[17]).Use(NewSendItem(0), 32)
+		v.OnConnReadStream(streamConn, stream)
+		assert(v.channels[17].item).IsNotNil()
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("p.conn != nil, callbackID != 0, 03", func(t *testing.T) {
 		stream := core.NewStream()
 		stream.SetCallbackID(17 + 32)
 		stream.WriteInt64(int64(core.ControlStreamPong))

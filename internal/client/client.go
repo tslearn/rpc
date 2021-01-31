@@ -205,10 +205,10 @@ func (p *Client) SendMessage(
 	p.Unlock()
 
 	// wait for response
-	retStream := <-item.returnCH
-	defer retStream.Release()
+	backStream := <-item.returnCH
+	defer backStream.Release()
 
-	return core.ParseResponseStream(retStream)
+	return core.ParseResponseStream(backStream)
 }
 
 // Close ...
@@ -325,8 +325,13 @@ func (p *Client) OnConnReadStream(
 			stream.Release()
 		} else if p.channels != nil {
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
-			channel.Free(stream)
-			p.tryToDeliverPreSendMessages()
+			if channel.sequence == callbackID {
+				channel.Free(stream)
+				p.tryToDeliverPreSendMessages()
+			} else {
+				p.OnConnError(streamConn, errors.ErrStream)
+				stream.Release()
+			}
 		} else {
 			// ignore
 			stream.Release()
