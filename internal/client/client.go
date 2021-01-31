@@ -246,22 +246,43 @@ func (p *Client) OnConnReadStream(
 		p.conn = streamConn
 
 		if callbackID != 0 {
+			stream.Release()
 			p.OnConnError(streamConn, errors.ErrStream)
 		} else if kind, err := stream.ReadInt64(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if kind != core.ControlStreamConnectResponse {
+			stream.Release()
 			p.OnConnError(streamConn, errors.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if numOfChannels, err := stream.ReadInt64(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
+		} else if numOfChannels <= 0 {
+			stream.Release()
+			p.OnConnError(streamConn, errors.ErrClientConfig)
 		} else if transLimit, err := stream.ReadInt64(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
+		} else if transLimit <= 0 {
+			stream.Release()
+			p.OnConnError(streamConn, errors.ErrClientConfig)
 		} else if heartbeat, err := stream.ReadInt64(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
+		} else if heartbeat <= 0 {
+			stream.Release()
+			p.OnConnError(streamConn, errors.ErrClientConfig)
 		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
+			stream.Release()
 			p.OnConnError(streamConn, err)
+		} else if heartbeatTimeout <= 0 {
+			stream.Release()
+			p.OnConnError(streamConn, errors.ErrClientConfig)
 		} else if !stream.IsReadFinish() {
+			stream.Release()
 			p.OnConnError(streamConn, errors.ErrStream)
 		} else {
 			if sessionString != p.sessionString {

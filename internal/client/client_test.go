@@ -517,6 +517,252 @@ func TestClient_OnConnOpen(t *testing.T) {
 	})
 }
 
+func TestClient_OnConnReadStream(t *testing.T) {
+	fnTestClient := func() (*Client, *adapter.StreamConn, *testNetConn) {
+		v := &Client{config: &Config{}}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		return v, streamConn, netConn
+	}
+
+	t.Run("p.conn == nil, stream.callbackID == 0", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(12)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read kind error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("kind != core.ControlStreamConnectResponse", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(5432)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read sessionString error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("read numOfChannels error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("numOfChannels config error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(0)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrClientConfig)
+	})
+
+	t.Run("read transLimit error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("transLimit config error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(0)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrClientConfig)
+	})
+
+	t.Run("read heartbeat error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("heartbeat config error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(0)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrClientConfig)
+	})
+
+	t.Run("read heartbeatTimeout error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(int64(time.Second))
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("heartbeatTimeout config error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(int64(time.Second))
+		stream.WriteInt64(0)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrClientConfig)
+	})
+
+	t.Run("stream is not finish", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(int64(time.Second))
+		stream.WriteInt64(int64(2 * time.Second))
+		stream.WriteBool(false)
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(errors.ErrStream)
+	})
+
+	t.Run("ok, sessionString != p.sessionString", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(int64(time.Second))
+		stream.WriteInt64(int64(2 * time.Second))
+		v, streamConn, _ := fnTestClient()
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).IsNil()
+		assert(v.sessionString).Equal("12-87654321876543218765432187654321")
+
+		assert(v.config.numOfChannels).Equal(32)
+		assert(v.config.transLimit).Equal(4 * 1024 * 1024)
+		assert(v.config.heartbeat).Equal(1 * time.Second)
+		assert(v.config.heartbeatTimeout).Equal(2 * time.Second)
+		for i := 0; i < 32; i++ {
+			assert(v.channels[i].sequence).Equal(uint64(i))
+			assert(v.channels[i].item).IsNil()
+		}
+		assert(v.lastPingTimeNS > 0).IsTrue()
+	})
+
+	t.Run("ok, sessionString == p.sessionString", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		stream.SetCallbackID(0)
+		stream.WriteInt64(int64(core.ControlStreamConnectResponse))
+		stream.WriteString("12-87654321876543218765432187654321")
+		stream.WriteInt64(32)
+		stream.WriteInt64(4 * 1024 * 1024)
+		stream.WriteInt64(int64(time.Second))
+		stream.WriteInt64(int64(2 * time.Second))
+		v, streamConn, netConn := fnTestClient()
+		v.channels = make([]Channel, 32)
+		for i := 0; i < 32; i++ {
+			(&v.channels[i]).sequence = uint64(i)
+			(&v.channels[i]).Use(NewSendItem(0), 32)
+		}
+
+		v.sessionString = "12-87654321876543218765432187654321"
+		v.OnConnReadStream(streamConn, stream)
+		assert(len(netConn.writeCH)).Equal(32)
+		assert(v.lastPingTimeNS > 0).IsTrue()
+	})
+}
+
 func TestClient_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
