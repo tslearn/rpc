@@ -1,7 +1,6 @@
 package route
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
 
@@ -11,10 +10,8 @@ type DirectRouterSender struct {
 }
 
 // SendStreamToRouter ...
-func (p *DirectRouterSender) SendStreamToRouter(
-	stream *core.Stream,
-) *base.Error {
-	return (*p.receiver).ReceiveStreamFromRouter(stream)
+func (p *DirectRouterSender) SendStreamToRouter(stream *core.Stream) {
+	(*p.receiver).ReceiveStreamFromRouter(stream)
 }
 
 // DirectRouter ...

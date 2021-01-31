@@ -3,7 +3,6 @@ package route
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
 )
 
@@ -12,37 +11,23 @@ type testReceiver struct {
 	streamCH     chan *core.Stream
 }
 
-func newTestReceiver(emulateError bool) *testReceiver {
+func newTestReceiver() *testReceiver {
 	return &testReceiver{
-		emulateError: emulateError,
-		streamCH:     make(chan *core.Stream, 1024),
+		streamCH: make(chan *core.Stream, 1024),
 	}
 }
 
-func (p *testReceiver) ReceiveStreamFromRouter(s *core.Stream) *base.Error {
-	if p.emulateError {
-		return errors.ErrStream
-	}
-
+func (p *testReceiver) ReceiveStreamFromRouter(s *core.Stream) {
 	p.streamCH <- s
-	return nil
 }
 
 func TestDirectRouterSender_SendStreamToRouter(t *testing.T) {
-	t.Run("ReceiveStreamFromRouter return error", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		receiver := IRouteReceiver(newTestReceiver(true))
-		v := &DirectRouterSender{receiver: &receiver}
-		sendStream := core.NewStream()
-		assert(v.SendStreamToRouter(sendStream)).Equal(errors.ErrStream)
-	})
-
 	t.Run("ReceiveStreamFromRouter return ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		receiver := IRouteReceiver(newTestReceiver(false))
+		receiver := IRouteReceiver(newTestReceiver())
 		v := &DirectRouterSender{receiver: &receiver}
 		sendStream := core.NewStream()
-		assert(v.SendStreamToRouter(sendStream)).Equal(nil)
+		v.SendStreamToRouter(sendStream)
 		assert(len(receiver.(*testReceiver).streamCH)).Equal(1)
 		assert(<-receiver.(*testReceiver).streamCH).Equal(sendStream)
 	})
@@ -60,9 +45,9 @@ func TestDirectRouter_Plug(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewDirectRouter()
-		receiver1 := IRouteReceiver(newTestReceiver(false))
-		receiver2 := IRouteReceiver(newTestReceiver(false))
-		receiver3 := IRouteReceiver(newTestReceiver(false))
+		receiver1 := IRouteReceiver(newTestReceiver())
+		receiver2 := IRouteReceiver(newTestReceiver())
+		receiver3 := IRouteReceiver(newTestReceiver())
 
 		sender1 := v.Plug(receiver1)
 		sender2 := v.Plug(receiver2)

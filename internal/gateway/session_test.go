@@ -76,20 +76,14 @@ type fakeRouteSender struct {
 	streamCH     chan *core.Stream
 }
 
-func newFakeRouteSender(emulateError bool) *fakeRouteSender {
+func newFakeRouteSender() *fakeRouteSender {
 	return &fakeRouteSender{
-		emulateError: emulateError,
-		streamCH:     make(chan *core.Stream, 1024),
+		streamCH: make(chan *core.Stream, 1024),
 	}
 }
 
-func (p *fakeRouteSender) SendStreamToRouter(stream *core.Stream) *base.Error {
-	if p.emulateError {
-		return errors.ErrStream
-	} else {
-		p.streamCH <- stream
-		return nil
-	}
+func (p *fakeRouteSender) SendStreamToRouter(stream *core.Stream) {
+	p.streamCH <- stream
 }
 
 func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
@@ -504,7 +498,7 @@ func TestSession_OnConnOpen(t *testing.T) {
 func TestSession_OnConnReadStream(t *testing.T) {
 	t.Run("cbID > 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fakeSender := newFakeRouteSender(false)
+		fakeSender := newFakeRouteSender()
 		session, syncConn, _ := prepareTestSession()
 		session.gateway.routeSender = fakeSender
 
@@ -516,20 +510,6 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		backStream := <-fakeSender.streamCH
 		assert(backStream.GetGatewayID()).Equal(uint32(3))
 		assert(backStream.GetSessionID()).Equal(uint64(11))
-	})
-
-	t.Run("cbID > 0, accept = true, backStream = nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		fakeSender := newFakeRouteSender(true)
-		session, syncConn, _ := prepareTestSession()
-		session.gateway.routeSender = fakeSender
-
-		streamConn := adapter.NewStreamConn(syncConn, session)
-		stream := core.NewStream()
-		stream.SetCallbackID(10)
-		session.OnConnReadStream(streamConn, stream)
-
-		assert(len(fakeSender.streamCH)).Equal(0)
 	})
 
 	t.Run("cbID > 0, accept = false, backStream != nil", func(t *testing.T) {

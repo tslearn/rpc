@@ -35,7 +35,7 @@ func NewRPCProcessor(
 		closeTimeout,
 		mountServices,
 		func(stream *core.Stream) {
-			_ = routeSender.SendStreamToRouter(stream)
+			routeSender.SendStreamToRouter(stream)
 		},
 	)
 
@@ -48,11 +48,8 @@ func NewRPCProcessor(
 }
 
 // ReceiveStreamFromRouter ...
-func (p *RPCProcessor) ReceiveStreamFromRouter(
-	stream *core.Stream,
-) *base.Error {
+func (p *RPCProcessor) ReceiveStreamFromRouter(stream *core.Stream) {
 	p.processor.PutStream(stream)
-	return nil
 }
 
 // Close ...

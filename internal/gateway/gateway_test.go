@@ -16,8 +16,8 @@ type fakeSender struct {
 	receiver *route.IRouteReceiver
 }
 
-func (p *fakeSender) SendStreamToRouter(stream *core.Stream) *base.Error {
-	return (*p.receiver).ReceiveStreamFromRouter(stream)
+func (p *fakeSender) SendStreamToRouter(stream *core.Stream) {
+	(*p.receiver).ReceiveStreamFromRouter(stream)
 }
 
 type fakeRouter struct {
@@ -265,23 +265,26 @@ func TestGateWay_Close(t *testing.T) {
 func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 	t.Run("session is exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(10)
-		assert(v.ReceiveStreamFromRouter(stream)).IsNil()
+		v.ReceiveStreamFromRouter(stream)
+		assert(err).IsNil()
 	})
 
 	t.Run("session is not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(11)
-		assert(v.ReceiveStreamFromRouter(stream)).
-			Equal(errors.ErrGateWaySessionNotFound)
+		v.ReceiveStreamFromRouter(stream)
+		assert(err).Equal(errors.ErrGateWaySessionNotFound)
 	})
 }
 

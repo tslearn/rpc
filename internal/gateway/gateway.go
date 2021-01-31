@@ -176,13 +176,12 @@ func (p *GateWay) Close() {
 	})
 }
 
-func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
+func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) {
 	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
-		return nil
 	} else {
+		p.onError(stream.GetSessionID(), errors.ErrGateWaySessionNotFound)
 		stream.Release()
-		return errors.ErrGateWaySessionNotFound
 	}
 }
 

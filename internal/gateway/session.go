@@ -162,11 +162,8 @@ func (p *Session) OnConnReadStream(
 		if accepted, backStream := channel.In(cbID); accepted {
 			stream.SetGatewayID(p.gateway.id)
 			stream.SetSessionID(p.id)
-			sender := p.gateway.routeSender
 			// who receives the stream is responsible for releasing it
-			if err := sender.SendStreamToRouter(stream); err != nil {
-				p.OnConnError(streamConn, err)
-			}
+			p.gateway.routeSender.SendStreamToRouter(stream)
 		} else if backStream != nil {
 			// do not release the backStream, so we need to clone it
 			streamConn.WriteStreamAndRelease(backStream.Clone())
