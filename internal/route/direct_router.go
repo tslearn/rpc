@@ -23,7 +23,7 @@ type DirectRouter struct {
 }
 
 // NewDirectRouter ...
-func NewDirectRouter() IRouter {
+func NewDirectRouter() *DirectRouter {
 	return &DirectRouter{}
 }
 
