@@ -65,47 +65,9 @@ func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
 	panic("not implemented")
 }
 
-//
-//func TestClient_Debug(t *testing.T) {
-//	userService := rpc.NewService().
-//		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
-//			time.Sleep(2 * time.Second)
-//			return rt.Reply("hello " + name)
-//		})
-//
-//	rpcServer := server.NewServer().Listen("ws", "0.0.0.0:28888", nil)
-//	rpcServer.AddService("user", userService, nil)
-//
-//	go func() {
-//		rpcServer.SetNumOfThreads(1024).Serve()
-//	}()
-//
-//	time.Sleep(300 * time.Millisecond)
-//	rpcClient := newClient(
-//		"ws", "0.0.0.0:28888", nil, 1200, 1200, func(err *base.Error) {},
-//	)
-//	for i := 0; i < 10; i++ {
-//		go func() {
-//			fmt.Println(
-//				rpcClient.SendMessage(8*time.Second, "#.user:SayHello", "kitty"),
-//			)
-//		}()
-//	}
-//
-//	// haha, close it
-//	time.Sleep(time.Second)
-//	rpcClient.conn.Close()
-//
-//	time.Sleep(10 * time.Second)
-//
-//	rpcClient.Close()
-//	rpcServer.Close()
-//}
-
 func getTestServer() *server.Server {
 	userService := rpc.NewService().
 		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
-			time.Sleep(2 * time.Second)
 			return rt.Reply("hello " + name)
 		}).
 		On("Sleep", func(rt rpc.Runtime, timeNS int64) rpc.Return {
@@ -480,4 +442,50 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestClient_SendMessage(t *testing.T) {
+	t.Run("args error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{
+			channels: make([]Channel, 0),
+		}
+
+		assert(v.SendMessage(time.Second, "#.user:SayHello", make(chan bool))).
+			Equal(nil, errors.ErrUnsupportedValue.AddDebug(
+				"value type(chan bool) is not supported",
+			))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		rpcServer := getTestServer()
+		defer rpcServer.Close()
+
+		rpcClient := newClient(
+			"tcp", "0.0.0.0:8765", nil, 1200, 1200, func(err *base.Error) {},
+		)
+
+		waitCH := make(chan []interface{})
+		for i := 0; i < 300; i++ {
+			go func() {
+				v, err := rpcClient.SendMessage(
+					3*time.Second,
+					"#.user:SayHello",
+					"kitty",
+				)
+				waitCH <- []interface{}{v, err}
+			}()
+		}
+
+		for i := 0; i < 300; i++ {
+			assert(<-waitCH...).Equal("hello kitty", nil)
+		}
+
+		rpcClient.Close()
+	})
+}
+
+func TestClient_Close(t *testing.T) {
+
 }

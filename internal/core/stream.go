@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -40,8 +41,6 @@ const (
 	StreamWriteOverflow = " overflows"
 	// StreamWriteIsNotAvailable ...
 	StreamWriteIsNotAvailable = " is not available"
-	// StreamWriteIsNotSupported ...
-	StreamWriteIsNotSupported = " is not supported"
 	// StreamWriteIsNil ...
 	StreamWriteIsNil = " is nil"
 
@@ -1351,7 +1350,7 @@ func (p *Stream) write(v interface{}, depth int) string {
 	case RTValue:
 		return p.writeRTValue(v)
 	default:
-		return StreamWriteIsNotSupported
+		return fmt.Sprintf(" type(%T) is not supported", v)
 	}
 }
 

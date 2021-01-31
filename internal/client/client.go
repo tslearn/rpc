@@ -187,8 +187,8 @@ func (p *Client) SendMessage(
 	item.sendStream.WriteString("@")
 	// write args
 	for i := 0; i < len(args); i++ {
-		if reason := item.sendStream.Write(args[i]); reason != core.StreamWriteOK {
-			return nil, errors.ErrUnsupportedValue.AddDebug(reason)
+		if eStr := item.sendStream.Write(args[i]); eStr != core.StreamWriteOK {
+			return nil, errors.ErrUnsupportedValue.AddDebug(eStr)
 		}
 	}
 
@@ -305,6 +305,7 @@ func (p *Client) OnConnReadStream(
 		} else if p.channels != nil {
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			channel.Free(stream)
+			p.tryToDeliverPreSendMessages()
 		} else {
 			// ignore
 			stream.Release()

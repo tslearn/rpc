@@ -150,15 +150,15 @@ func TestRuntime_Call(t *testing.T) {
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
 				errArg := make(chan bool)
-				rtValue, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
+				v, s1 := rt.Call("#.test.SayHello", errArg), base.GetFileLine(0)
 				source1 = rt.thread.GetActionNode().path + " " + s1
-				_, err := rtValue.ToString()
+				_, err := v.ToString()
 				ret, s2 := rt.Reply(err), base.GetFileLine(0)
 				source2 = rt.thread.GetActionNode().path + " " + s2
 				return ret
 			}, nil),
 		)).Equal(nil, errors.ErrUnsupportedValue.
-			AddDebug("2nd argument: value is not supported").
+			AddDebug("2nd argument: value type(chan bool) is not supported").
 			AddDebug(source1).AddDebug(source2),
 		)
 	})

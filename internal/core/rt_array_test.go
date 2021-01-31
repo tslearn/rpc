@@ -86,7 +86,9 @@ func TestRTArray_Set(t *testing.T) {
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Set(0, make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+			errors.ErrUnsupportedValue.AddDebug(
+				"value type(chan bool) is not supported",
+			),
 		)
 	})
 
@@ -137,7 +139,9 @@ func TestRTArray_Append(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		assert(v.Append(make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+			errors.ErrUnsupportedValue.AddDebug(
+				"value type(chan bool) is not supported",
+			),
 		)
 		assert(v.Size()).Equal(0)
 	})

@@ -556,7 +556,8 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			errors.ErrUnsupportedValue.AddDebug("value is not supported").
+			errors.ErrUnsupportedValue.
+				AddDebug("value type(chan bool) is not supported").
 				AddDebug("#.test:Eval "+source),
 		)
 	})

@@ -257,7 +257,9 @@ func TestRTMap_Set(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(0)
 		assert(v.Set("name", make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug("value is not supported"),
+			errors.ErrUnsupportedValue.AddDebug(
+				"value type(chan bool) is not supported",
+			),
 		)
 	})
 

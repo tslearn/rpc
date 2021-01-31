@@ -316,7 +316,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 	"array": {
 		{
 			Array{true, true, true, make(chan bool), true},
-			"[3] is not supported",
+			"[3] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthArray(65)[0],
@@ -330,7 +330,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 	"map": {
 		{
 			Map{"0": 0, "1": make(chan bool)},
-			"[\"1\"] is not supported",
+			"[\"1\"] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthMap(65)[0],
@@ -415,7 +415,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		{RTMap{}, "value is not available"},
 		{
 			Array{true, true, true, make(chan bool), true},
-			"value[3] is not supported",
+			"value[3] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthArray(65)[0],
@@ -423,7 +423,7 @@ var streamTestWriteCollections = map[string][][2]interface{}{
 		},
 		{
 			Map{"0": 0, "1": make(chan bool)},
-			"value[\"1\"] is not supported",
+			"value[\"1\"] type(chan bool) is not supported",
 		},
 		{
 			getTestDepthMap(65)[0],
