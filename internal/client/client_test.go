@@ -487,5 +487,64 @@ func TestClient_SendMessage(t *testing.T) {
 }
 
 func TestClient_Close(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		onError := func(err *base.Error) {}
+		v := newClient("tcp", "127.0.0.1:1234", nil, 1200, 1200, onError)
+		assert(v.adapter).IsNotNil()
+		assert(v.Close()).IsTrue()
+		assert(v.adapter).IsNil()
+	})
+}
 
+func TestClient_OnConnOpen(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{sessionString: "123456"}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+
+		v.OnConnOpen(streamConn)
+
+		stream := core.NewStream()
+		stream.PutBytesTo(<-netConn.writeCH, 0)
+		assert(stream.ReadInt64()).
+			Equal(int64(core.ControlStreamConnectRequest), nil)
+		assert(stream.ReadString()).Equal("123456", nil)
+	})
+}
+
+func TestClient_OnConnError(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		v := &Client{sessionString: "123456", onError: func(e *base.Error) {
+			err = e
+		}}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+		v.OnConnError(streamConn, errors.ErrStream)
+		assert(err).Equal(errors.ErrStream)
+		assert(netConn.isRunning).IsFalse()
+	})
+}
+
+func TestClient_OnConnClose(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := &Client{}
+		netConn := newTestNetConn()
+		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
+		streamConn := adapter.NewStreamConn(syncConn, v)
+		syncConn.SetNext(streamConn)
+		v.conn = streamConn
+		v.OnConnClose(streamConn)
+		assert(v.conn).IsNil()
+	})
 }
