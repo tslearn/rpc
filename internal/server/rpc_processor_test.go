@@ -19,13 +19,11 @@ func newTestReceiver() *testReceiver {
 	}
 }
 
-func (p *testReceiver) ReceiveStreamFromRouter(s *core.Stream) *base.Error {
+func (p *testReceiver) ReceiveStreamFromRouter(s *core.Stream) {
 	p.streamCH <- s
-	return nil
 }
 
 func TestNewRPCProcessor(t *testing.T) {
-
 	t.Run("numOfThreads <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewRPCProcessor(
@@ -42,8 +40,11 @@ func TestNewRPCProcessor(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
+		receiver := newTestReceiver()
+		router := route.NewDirectRouter()
+		router.Plug(receiver)
 		v, err := NewRPCProcessor(
-			route.NewDirectRouter(),
+			router,
 			1024,
 			128,
 			128,
@@ -55,5 +56,55 @@ func TestNewRPCProcessor(t *testing.T) {
 		assert(err).IsNil()
 		assert(v).IsNotNil()
 		assert(v.processor).IsNotNil()
+		v.processor.PutStream(core.NewStream())
+		assert(<-receiver.streamCH).IsNotNil()
+		v.Close()
+	})
+}
+
+func TestRPCProcessor_ReceiveStreamFromRouter(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		receiver := newTestReceiver()
+		router := route.NewDirectRouter()
+		router.Plug(receiver)
+		v, err := NewRPCProcessor(
+			router,
+			1024,
+			128,
+			128,
+			4096,
+			nil,
+			3*time.Second,
+			[]*core.ServiceMeta{},
+		)
+		assert(err).IsNil()
+		assert(v).IsNotNil()
+		assert(v.processor).IsNotNil()
+		v.ReceiveStreamFromRouter(core.NewStream())
+		assert(<-receiver.streamCH).IsNotNil()
+		v.Close()
+	})
+}
+
+func TestRPCProcessor_Close(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		router := route.NewDirectRouter()
+		v, err := NewRPCProcessor(
+			router,
+			1024,
+			128,
+			128,
+			4096,
+			nil,
+			3*time.Second,
+			[]*core.ServiceMeta{},
+		)
+		assert(err).IsNil()
+		assert(v).IsNotNil()
+		assert(base.RunWithCatchPanic(func() {
+			v.Close()
+		})).IsNil()
 	})
 }
