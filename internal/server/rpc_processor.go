@@ -48,7 +48,9 @@ func NewRPCProcessor(
 }
 
 // ReceiveStreamFromRouter ...
-func (p *RPCProcessor) ReceiveStreamFromRouter(stream *core.Stream) *base.Error {
+func (p *RPCProcessor) ReceiveStreamFromRouter(
+	stream *core.Stream,
+) *base.Error {
 	p.processor.PutStream(stream)
 	return nil
 }

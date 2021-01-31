@@ -64,10 +64,10 @@ func TestDirectRouter_Plug(t *testing.T) {
 		receiver2 := IRouteReceiver(newTestReceiver(false))
 		receiver3 := IRouteReceiver(newTestReceiver(false))
 
-		assert(v.Plug(receiver1)).
-			Equal(&DirectRouterSender{receiver: &receiver2})
-		assert(v.Plug(receiver2)).
-			Equal(&DirectRouterSender{receiver: &receiver1})
+		sender1 := v.Plug(receiver1)
+		sender2 := v.Plug(receiver2)
+		assert(sender1).Equal(&DirectRouterSender{receiver: &receiver2})
+		assert(sender2).Equal(&DirectRouterSender{receiver: &receiver1})
 
 		assert(base.RunWithCatchPanic(func() {
 			v.Plug(receiver3)
