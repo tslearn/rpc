@@ -2222,7 +2222,7 @@ func TestStream_ReadUnsafeString(t *testing.T) {
 				stream.SetReadPos(i)
 				stream.Write(testData[0])
 
-				notSafe := true
+				var notSafe bool
 				sLen := len(testData[0].(string))
 				if sLen == 0 {
 					notSafe = false

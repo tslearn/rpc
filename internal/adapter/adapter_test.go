@@ -274,6 +274,7 @@ func TestAdapter(t *testing.T) {
 
 		clientAdapter.Run()
 		<-waitCH
+		time.Sleep(100 * time.Millisecond)
 		assert(serverAdapter.Close()).IsTrue()
 
 		assert(clientReceiver.GetOnOpenCount()).Equal(1)

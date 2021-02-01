@@ -322,7 +322,7 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	func() {
 		defer func() {
-			recover()
+			_ = recover()
 		}()
 
 		stream.BuildStreamCheck()

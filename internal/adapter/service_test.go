@@ -203,7 +203,7 @@ func syncServerTestClose(
 
 	time.Sleep(100 * time.Millisecond)
 
-	fdPtr := (*unsafe.Pointer)(nil)
+	var fdPtr *unsafe.Pointer
 	ln := (net.Listener)(nil)
 	if strings.HasPrefix(network, "tcp") {
 		ln = v.(*syncTCPServerService).ln
