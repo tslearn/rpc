@@ -43,7 +43,7 @@ func (p *Channel) Out(stream *core.Stream) (canOut bool) {
 	}
 }
 
-// TimeCheck ...
+// IsTimeout ...
 func (p *Channel) IsTimeout(nowNS int64, timeout int64) bool {
 	return p.backTimeNS > 0 && nowNS-p.backTimeNS > timeout
 }

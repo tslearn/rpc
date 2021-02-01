@@ -1,3 +1,4 @@
+// Package gateway ...
 package gateway
 
 import (
@@ -63,23 +64,27 @@ func NewGateWay(
 	return ret
 }
 
+// TotalSessions ...
 func (p *GateWay) TotalSessions() int64 {
 	return atomic.LoadInt64(&p.totalSessions)
 }
 
+// AddSession ...
 func (p *GateWay) AddSession(session *Session) bool {
 	return p.sessionMapList[session.id%sessionManagerVectorSize].Add(session)
 }
 
+// GetSession ...
 func (p *GateWay) GetSession(id uint64) (*Session, bool) {
 	return p.sessionMapList[id%sessionManagerVectorSize].Get(id)
 }
 
+// CreateSessionID ...
 func (p *GateWay) CreateSessionID() uint64 {
 	return atomic.AddUint64(&p.sessionSeed, 1)
 }
 
-// thread unsafe
+// TimeCheck ...
 func (p *GateWay) TimeCheck(nowNS int64) {
 	for i := 0; i < sessionManagerVectorSize; i++ {
 		p.sessionMapList[i].TimeCheck(nowNS)
@@ -176,6 +181,7 @@ func (p *GateWay) Close() {
 	})
 }
 
+// ReceiveStreamFromRouter ...
 func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) {
 	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)

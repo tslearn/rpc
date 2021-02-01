@@ -2,11 +2,12 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/adapter"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rpccloud/rpc/internal/adapter"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -26,6 +27,7 @@ type Session struct {
 	sync.Mutex
 }
 
+// InitSession ...
 func InitSession(
 	gw *GateWay,
 	streamConn *adapter.StreamConn,
@@ -97,6 +99,7 @@ func InitSession(
 	}
 }
 
+// TimeCheck ...
 func (p *Session) TimeCheck(nowNS int64) {
 	p.Lock()
 	defer p.Unlock()
@@ -202,6 +205,7 @@ func (p *Session) OnConnClose(_ *adapter.StreamConn) {
 	p.conn = nil
 }
 
+// SessionPool ...
 type SessionPool struct {
 	gateway *GateWay
 	idMap   map[uint64]*Session
@@ -209,6 +213,7 @@ type SessionPool struct {
 	sync.Mutex
 }
 
+// NewSessionPool ...
 func NewSessionPool(gateway *GateWay) *SessionPool {
 	return &SessionPool{
 		gateway: gateway,
@@ -217,6 +222,7 @@ func NewSessionPool(gateway *GateWay) *SessionPool {
 	}
 }
 
+// Get ...
 func (p *SessionPool) Get(id uint64) (*Session, bool) {
 	p.Lock()
 	defer p.Unlock()
@@ -225,6 +231,7 @@ func (p *SessionPool) Get(id uint64) (*Session, bool) {
 	return ret, ok
 }
 
+// Add ...
 func (p *SessionPool) Add(session *Session) bool {
 	p.Lock()
 	defer p.Unlock()
@@ -251,6 +258,7 @@ func (p *SessionPool) Add(session *Session) bool {
 	return false
 }
 
+// TimeCheck ...
 func (p *SessionPool) TimeCheck(nowNS int64) {
 	p.Lock()
 	defer p.Unlock()
