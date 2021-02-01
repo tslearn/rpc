@@ -140,6 +140,7 @@ func TestNewClient(t *testing.T) {
 		)
 		// orcStatusReady | orcLockBit = 1 | 1 << 2 = 5
 		assert(adapterOrcManager.sequence % 8).Equal(uint64(5))
+		assert(adapterOrcManager.cond).IsNotNil()
 		assert(v.preSendHead).IsNil()
 		assert(v.preSendTail).IsNil()
 		assert(len(v.channels)).Equal(32)
