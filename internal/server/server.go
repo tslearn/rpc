@@ -26,6 +26,10 @@ const (
 
 var fnNumCPU = runtime.NumCPU
 
+func onReturnStream(stream *core.Stream) {
+	stream.Release()
+}
+
 // Server ...
 type Server struct {
 	isRunning        bool
@@ -57,6 +61,7 @@ func NewServer() *Server {
 		actionCache:      nil,
 		closeTimeout:     defaultCloseTimeout,
 		mountServices:    make([]*core.ServiceMeta, 0),
+		errorHandler:     nil,
 	}
 
 	if ret.numOfThreads > defaultMaxNumOfThreads {
@@ -97,9 +102,15 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+		)
 	} else if numOfThreads <= 0 {
-		p.onError(0, errors.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)),
+		)
 	} else {
 		p.numOfThreads = numOfThreads
 	}
@@ -113,7 +124,10 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+		)
 	} else if threadBufferSize <= 0 {
 		p.onError(
 			0,
@@ -132,7 +146,10 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+		)
 	} else {
 		p.actionCache = actionCache
 	}
@@ -148,7 +165,10 @@ func (p *Server) SetErrorHandler(
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+		)
 	} else {
 		p.errorHandler = onError
 	}
@@ -166,7 +186,10 @@ func (p *Server) AddService(
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(
+			0,
+			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+		)
 	} else {
 		p.mountServices = append(p.mountServices, core.NewServiceMeta(
 			name,
@@ -195,7 +218,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		p.mountServices,
-		func(stream *core.Stream) {},
+		onReturnStream,
 	)
 	defer processor.Close()
 
@@ -210,13 +233,14 @@ func (p *Server) BuildReplyCache() *Server {
 }
 
 // Serve ...
-func (p *Server) Serve() {
+func (p *Server) Open() bool {
+	source := base.GetFileLine(1)
 	err := func() *base.Error {
 		p.Lock()
 		defer p.Unlock()
 
 		if p.isRunning {
-			return errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1))
+			return errors.ErrServerAlreadyRunning.AddDebug(source)
 		} else if processor, err := NewRPCProcessor(
 			p.router,
 			p.numOfThreads,
@@ -237,21 +261,26 @@ func (p *Server) Serve() {
 
 	if err != nil {
 		p.onError(0, err)
+		return false
 	} else {
 		p.gateway.Open()
+		return true
 	}
 }
 
 // Close ...
-func (p *Server) Close() {
+func (p *Server) Close() bool {
 	p.Lock()
 	defer p.Unlock()
 
 	if !p.isRunning {
 		p.onError(0, errors.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
+		return false
 	} else {
 		p.gateway.Close()
 		p.processor.Close()
+		p.processor = nil
 		p.isRunning = false
+		return true
 	}
 }

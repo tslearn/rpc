@@ -79,7 +79,7 @@ func getTestServer() *server.Server {
 	rpcServer.AddService("user", userService, nil)
 
 	go func() {
-		rpcServer.SetNumOfThreads(1024).Serve()
+		rpcServer.SetNumOfThreads(1024).Open()
 	}()
 
 	time.Sleep(100 * time.Millisecond)
