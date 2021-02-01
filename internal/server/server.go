@@ -1,3 +1,4 @@
+// Package server ...
 package server
 
 import (
@@ -157,7 +158,7 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	return p
 }
 
-// SetErrorHandler
+// SetErrorHandler ...
 func (p *Server) SetErrorHandler(
 	onError func(sessionID uint64, err *base.Error),
 ) *Server {
@@ -232,7 +233,7 @@ func (p *Server) BuildReplyCache() *Server {
 	return p
 }
 
-// Serve ...
+// Open ...
 func (p *Server) Open() bool {
 	source := base.GetFileLine(1)
 	err := func() *base.Error {
@@ -262,10 +263,10 @@ func (p *Server) Open() bool {
 	if err != nil {
 		p.onError(0, err)
 		return false
-	} else {
-		p.gateway.Open()
-		return true
 	}
+
+	p.gateway.Open()
+	return true
 }
 
 // Close ...
@@ -276,11 +277,11 @@ func (p *Server) Close() bool {
 	if !p.isRunning {
 		p.onError(0, errors.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
 		return false
-	} else {
-		p.gateway.Close()
-		p.processor.Close()
-		p.processor = nil
-		p.isRunning = false
-		return true
 	}
+
+	p.gateway.Close()
+	p.processor.Close()
+	p.processor = nil
+	p.isRunning = false
+	return true
 }
