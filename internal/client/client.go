@@ -1,3 +1,4 @@
+// Package client ...
 package client
 
 import (
@@ -317,12 +318,13 @@ func (p *Client) OnConnReadStream(
 		if callbackID == 0 {
 			if kind, err := stream.ReadInt64(); err != nil {
 				p.OnConnError(streamConn, err)
+				stream.Release()
 			} else if kind != core.ControlStreamPong {
 				p.OnConnError(streamConn, errors.ErrStream)
+				stream.Release()
 			} else {
-				// ignore
+				stream.Release()
 			}
-			stream.Release()
 		} else if p.channels != nil {
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			if channel.sequence == callbackID {

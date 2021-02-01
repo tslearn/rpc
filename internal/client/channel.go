@@ -11,6 +11,7 @@ type Channel struct {
 	item     *SendItem
 }
 
+// Use ...
 func (p *Channel) Use(item *SendItem, channelSize int) bool {
 	if p.item == nil {
 		p.sequence += uint64(channelSize)
@@ -23,6 +24,7 @@ func (p *Channel) Use(item *SendItem, channelSize int) bool {
 	return false
 }
 
+// Free ...
 func (p *Channel) Free(stream *core.Stream) bool {
 	if item := p.item; item != nil {
 		p.item = nil
@@ -32,6 +34,7 @@ func (p *Channel) Free(stream *core.Stream) bool {
 	return false
 }
 
+// CheckTime ...
 func (p *Channel) CheckTime(nowNS int64) bool {
 	if p.item != nil && p.item.CheckTime(nowNS) {
 		p.item = nil

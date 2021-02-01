@@ -1,10 +1,11 @@
 package client
 
 import (
+	"sync"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/errors"
-	"sync"
 )
 
 var sendItemCache = &sync.Pool{
@@ -27,6 +28,7 @@ type SendItem struct {
 	next        *SendItem
 }
 
+// NewSendItem ...
 func NewSendItem(timeoutNS int64) *SendItem {
 	ret := sendItemCache.Get().(*SendItem)
 	ret.isRunning = true
