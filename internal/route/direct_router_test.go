@@ -35,8 +35,7 @@ func TestDirectRouterSender_SendStreamToRouter(t *testing.T) {
 func TestNewDirectRouter(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewDirectRouter()
-		assert(len(v.receivers)).Equal(2)
+		assert(len(NewDirectRouter().receivers)).Equal(2)
 	})
 }
 
