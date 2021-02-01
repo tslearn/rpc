@@ -112,7 +112,6 @@ func TestNewClient(t *testing.T) {
 		defer testServer.Close()
 
 		assert := base.NewAssert(t)
-		assert(&TestORCManager{}).Equal(&TestORCManager{})
 		onError := func(err *base.Error) {}
 		v := newClient("tcp", "127.0.0.1:8765", nil, 1024, 2048, onError)
 
@@ -141,6 +140,9 @@ func TestNewClient(t *testing.T) {
 		)
 		// orcStatusReady | orcLockBit = 1 | 1 << 2 = 5
 		assert(adapterOrcManager.sequence % 8).Equal(uint64(5))
+		assert(adapterOrcManager.isWaitChange).Equal(false)
+		assert(&adapterOrcManager.mu).IsNotNil()
+		assert(&adapterOrcManager.cond).IsNotNil()
 		assert(v.preSendHead).IsNil()
 		assert(v.preSendTail).IsNil()
 		assert(len(v.channels)).Equal(32)
