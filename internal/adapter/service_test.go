@@ -626,7 +626,6 @@ func TestSyncClientService(t *testing.T) {
 	type testItem struct {
 		network string
 		isTLS   bool
-		e       error
 	}
 	addr := "localhost:65432"
 

@@ -72,8 +72,7 @@ func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
 }
 
 type fakeRouteSender struct {
-	emulateError bool
-	streamCH     chan *core.Stream
+	streamCH chan *core.Stream
 }
 
 func newFakeRouteSender() *fakeRouteSender {

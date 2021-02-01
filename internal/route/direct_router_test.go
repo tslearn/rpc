@@ -7,8 +7,7 @@ import (
 )
 
 type testReceiver struct {
-	emulateError bool
-	streamCH     chan *core.Stream
+	streamCH chan *core.Stream
 }
 
 func newTestReceiver() *testReceiver {

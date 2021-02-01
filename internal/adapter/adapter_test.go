@@ -224,7 +224,6 @@ func TestAdapter(t *testing.T) {
 	type testItem struct {
 		network string
 		isTLS   bool
-		e       error
 	}
 
 	fnTest := func(isTLS bool, network string) {
