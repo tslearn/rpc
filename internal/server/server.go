@@ -2,7 +2,7 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
+	"log"
 	"path"
 	"runtime"
 	"sync"
@@ -14,6 +14,17 @@ import (
 	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/route"
 )
+
+const (
+	defaultMaxNumOfThreads  = 1024 * 1024
+	defaultThreadsPerCPU    = 16384
+	defaultThreadBufferSize = 2048
+	defaultCloseTimeout     = 5 * time.Second
+	defaultMaxNodeDepth     = 128
+	defaultMaxCallDepth     = 128
+)
+
+var fnNumCPU = runtime.NumCPU
 
 // Server ...
 type Server struct {
@@ -28,6 +39,7 @@ type Server struct {
 	actionCache      core.ActionCache
 	closeTimeout     time.Duration
 	mountServices    []*core.ServiceMeta
+	errorHandler     func(sessionID uint64, err *base.Error)
 	sync.Mutex
 }
 
@@ -38,25 +50,35 @@ func NewServer() *Server {
 		processor:        nil,
 		router:           route.NewDirectRouter(),
 		gateway:          nil,
-		numOfThreads:     runtime.NumCPU() * 16384,
-		maxNodeDepth:     64,
-		maxCallDepth:     64,
-		threadBufferSize: 2048,
+		numOfThreads:     fnNumCPU() * defaultThreadsPerCPU,
+		maxNodeDepth:     defaultMaxNodeDepth,
+		maxCallDepth:     defaultMaxCallDepth,
+		threadBufferSize: defaultThreadBufferSize,
 		actionCache:      nil,
-		closeTimeout:     5 * time.Second,
+		closeTimeout:     defaultCloseTimeout,
 		mountServices:    make([]*core.ServiceMeta, 0),
 	}
+
+	if ret.numOfThreads > defaultMaxNumOfThreads {
+		ret.numOfThreads = defaultMaxNumOfThreads
+	}
+
 	ret.gateway = gateway.NewGateWay(
 		0,
 		gateway.GetDefaultConfig(),
 		ret.router,
 		ret.onError,
 	)
+
 	return ret
 }
 
 func (p *Server) onError(sessionID uint64, err *base.Error) {
-	fmt.Println("server onError: ", sessionID, err)
+	if errorHandler := p.errorHandler; errorHandler != nil {
+		errorHandler(sessionID, err)
+	} else {
+		log.Printf("[Server Error (%d)]: %s", sessionID, err.Error())
+	}
 }
 
 // Listen ...
@@ -113,6 +135,22 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
 	} else {
 		p.actionCache = actionCache
+	}
+
+	return p
+}
+
+// SetErrorHandler
+func (p *Server) SetErrorHandler(
+	onError func(sessionID uint64, err *base.Error),
+) *Server {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.isRunning {
+		p.onError(0, errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)))
+	} else {
+		p.errorHandler = onError
 	}
 
 	return p
