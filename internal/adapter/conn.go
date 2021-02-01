@@ -1,13 +1,14 @@
 package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/core"
 	"io"
 	"net"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/core"
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
@@ -331,6 +332,7 @@ func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
 	p.prev.OnWriteReady()
 }
 
+// IsActive ...
 func (p *StreamConn) IsActive(nowNS int64, timeout time.Duration) bool {
 	return nowNS-atomic.LoadInt64(&p.activeTimeNS) < int64(timeout)
 }

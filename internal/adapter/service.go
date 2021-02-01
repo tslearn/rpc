@@ -16,6 +16,7 @@ import (
 	"github.com/rpccloud/rpc/internal/errors"
 )
 
+// NewSyncClientService ...
 func NewSyncClientService(adapter *Adapter) base.IORCService {
 	switch adapter.network {
 	case "tcp4":
@@ -43,6 +44,7 @@ func NewSyncClientService(adapter *Adapter) base.IORCService {
 	}
 }
 
+// NewSyncServerService ...
 func NewSyncServerService(adapter *Adapter) base.IORCService {
 	switch adapter.network {
 	case "tcp4":
