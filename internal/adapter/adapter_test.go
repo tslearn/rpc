@@ -180,7 +180,9 @@ func (p *testSingleReceiver) OnConnError(
 	if streamConn != nil && p.streamConn != streamConn {
 		panic("error")
 	}
-	p.errCH <- err
+	if len(p.errCH) < 1024 {
+		p.errCH <- err
+	}
 }
 
 func (p *testSingleReceiver) GetOnOpenCount() int {

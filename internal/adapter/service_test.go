@@ -110,11 +110,11 @@ func syncServerTestRun(
 		go func() {
 			if fakeError {
 				for receiver.GetOnErrorCount() == 0 {
-					time.Sleep(50 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 				}
 			} else {
 				for receiver.GetOnOpenCount() == 0 {
-					time.Sleep(50 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 				}
 			}
 
@@ -151,18 +151,12 @@ func syncServerTestRun(
 
 			// wait server signal ...
 			if fakeError {
-				// must check err is invalid argument
-				for !reflect.DeepEqual(
-					receiver.PeekError(),
-					errors.ErrSyncTCPServerServiceAccept.AddDebug(
-						"invalid argument",
-					),
-				) {
-					time.Sleep(50 * time.Millisecond)
+				for receiver.GetOnErrorCount() == 0 {
+					time.Sleep(10 * time.Millisecond)
 				}
 			} else {
 				for receiver.GetOnOpenCount() == 0 {
-					time.Sleep(50 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 				}
 			}
 			// close
