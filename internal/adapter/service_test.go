@@ -151,7 +151,13 @@ func syncServerTestRun(
 
 			// wait server signal ...
 			if fakeError {
-				for receiver.GetOnErrorCount() == 0 {
+				// must check err is invalid argument
+				for !reflect.DeepEqual(
+					receiver.PeekError(),
+					errors.ErrSyncTCPServerServiceAccept.AddDebug(
+						"invalid argument",
+					),
+				) {
 					time.Sleep(50 * time.Millisecond)
 				}
 			} else {

@@ -220,6 +220,16 @@ func (p *testSingleReceiver) GetError() *base.Error {
 	}
 }
 
+func (p *testSingleReceiver) PeekError() *base.Error {
+	select {
+	case ret := <-p.errCH:
+		p.errCH <- ret
+		return ret
+	default:
+		return nil
+	}
+}
+
 func TestAdapter(t *testing.T) {
 	type testItem struct {
 		network string
