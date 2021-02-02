@@ -242,7 +242,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		for write := 1; write < 200; write += 10 {
+		for write := 1; write < 200; write += 30 {
 			rand.Seed(base.TimeNow().UnixNano())
 			numOfStream := rand.Int()%5 + 1
 			stream := core.NewStream()
@@ -254,8 +254,8 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 				exceptBuf = append(exceptBuf, stream.GetBuffer()...)
 			}
 
-			for writeBufSize := 1; writeBufSize < 200; writeBufSize += 10 {
-				for maxWrite := 1; maxWrite < 200; maxWrite += 10 {
+			for writeBufSize := 1; writeBufSize < 200; writeBufSize += 30 {
+				for maxWrite := 1; maxWrite < 200; maxWrite += 30 {
 					receiver := newTestSingleReceiver()
 					streamConn := NewStreamConn(nil, receiver)
 					for i := 0; i < numOfStream; i++ {

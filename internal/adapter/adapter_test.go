@@ -265,7 +265,7 @@ func TestAdapter(t *testing.T) {
 		go func() {
 			for clientReceiver.GetOnOpenCount() == 0 &&
 				clientReceiver.GetOnErrorCount() == 0 {
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 			}
 			assert(clientAdapter.Close()).IsTrue()
 			waitCH <- true
@@ -273,7 +273,7 @@ func TestAdapter(t *testing.T) {
 
 		clientAdapter.Run()
 		<-waitCH
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 		assert(serverAdapter.Close()).IsTrue()
 
 		assert(clientReceiver.GetOnOpenCount()).Equal(1)
