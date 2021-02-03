@@ -3,24 +3,17 @@ package adapter
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/errors"
+	"io"
 	"net"
 	"net/http"
 	"path"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
-	"unsafe"
-
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
-
-func getFieldPointer(ptr interface{}, fieldName string) unsafe.Pointer {
-	val := reflect.Indirect(reflect.ValueOf(ptr))
-	return unsafe.Pointer(val.FieldByName(fieldName).UnsafeAddr())
-}
 
 func syncServerTestOpen(
 	network string,
@@ -56,6 +49,33 @@ func syncServerTestOpen(
 	return receiver, openOK
 }
 
+type fakeTestRunListener struct {
+	emulateAcceptError bool
+	emulateCLoseError  bool
+	ln                 net.Listener
+}
+
+func (p *fakeTestRunListener) Accept() (net.Conn, error) {
+	if p.emulateAcceptError {
+		return nil, io.EOF
+	} else {
+		return p.ln.Accept()
+	}
+}
+
+func (p *fakeTestRunListener) Close() error {
+	if p.emulateCLoseError {
+		_ = p.ln.Close()
+		return io.EOF
+	} else {
+		return p.ln.Close()
+	}
+}
+
+func (p *fakeTestRunListener) Addr() net.Addr {
+	return p.ln.Addr()
+}
+
 func syncServerTestRun(
 	network string,
 	isTLS bool,
@@ -85,28 +105,19 @@ func syncServerTestRun(
 		1200, 1200, receiver,
 	))
 	server.Open()
-	ln := (net.Listener)(nil)
-	if strings.HasPrefix(network, "tcp") {
-		ln = server.(*syncTCPServerService).ln
-	} else {
-		ln = server.(*syncWSServerService).ln
+	fakeLN := &fakeTestRunListener{
+		emulateAcceptError: fakeError,
+		emulateCLoseError:  false,
 	}
+	if strings.HasPrefix(network, "tcp") {
+		fakeLN.ln = server.(*syncTCPServerService).ln
+		server.(*syncTCPServerService).ln = fakeLN
+	} else {
+		fakeLN.ln = server.(*syncWSServerService).ln
+		server.(*syncWSServerService).ln = fakeLN
+	}
+
 	go func() {
-		fdPtr := (*unsafe.Pointer)(nil)
-		if isTLS {
-			lnPtr := (*net.Listener)(getFieldPointer(ln, "Listener"))
-			fdPtr = (*unsafe.Pointer)(getFieldPointer(*lnPtr, "fd"))
-		} else {
-			fdPtr = (*unsafe.Pointer)(getFieldPointer(ln, "fd"))
-		}
-
-		originFD := *fdPtr
-		if fakeError {
-			*fdPtr = nil
-		}
-
-		waitCH <- true
-
 		go func() {
 			if fakeError {
 				for receiver.GetOnErrorCount() == 0 {
@@ -118,15 +129,14 @@ func syncServerTestRun(
 				}
 			}
 
-			*fdPtr = originFD
 			waitCH <- true
 		}()
 
 		runOK = server.Run()
+		waitCH <- true
 	}()
 
 	// Start client
-	<-waitCH
 	if !strings.HasPrefix(network, "tcp") && fakeError {
 		client := &http.Client{
 			Transport: &http.Transport{
@@ -171,6 +181,7 @@ func syncServerTestRun(
 		time.Sleep(50 * time.Millisecond)
 	}
 
+	<-waitCH
 	return receiver, runOK
 }
 
@@ -203,24 +214,16 @@ func syncServerTestClose(
 
 	time.Sleep(100 * time.Millisecond)
 
-	var fdPtr *unsafe.Pointer
-	ln := (net.Listener)(nil)
+	fakeLN := &fakeTestRunListener{
+		emulateAcceptError: false,
+		emulateCLoseError:  fakeError,
+	}
 	if strings.HasPrefix(network, "tcp") {
-		ln = v.(*syncTCPServerService).ln
+		fakeLN.ln = v.(*syncTCPServerService).ln
+		v.(*syncTCPServerService).ln = fakeLN
 	} else {
-		ln = v.(*syncWSServerService).ln
-	}
-
-	if isTLS {
-		lnPtr := (*net.Listener)(getFieldPointer(ln, "Listener"))
-		fdPtr = (*unsafe.Pointer)(getFieldPointer(*lnPtr, "fd"))
-	} else {
-		fdPtr = (*unsafe.Pointer)(getFieldPointer(ln, "fd"))
-	}
-	originFD := *fdPtr
-
-	if fakeError {
-		*fdPtr = nil
+		fakeLN.ln = v.(*syncWSServerService).ln
+		v.(*syncWSServerService).ln = fakeLN
 	}
 
 	waitCH := make(chan bool, 1)
@@ -234,8 +237,6 @@ func syncServerTestClose(
 		for receiver.GetOnErrorCount() == 0 {
 			time.Sleep(50 * time.Millisecond)
 		}
-		*fdPtr = originFD
-		_ = ln.Close()
 	}
 
 	<-waitCH
@@ -413,13 +414,9 @@ func TestSyncTCPServerService_Run(t *testing.T) {
 	t.Run("tcp run error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, runOK := syncServerTestRun("tcp", false, true)
-
 		assert(runOK).Equal(true)
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceAccept.AddDebug(
-				"invalid argument",
-			),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -442,11 +439,8 @@ func TestSyncTCPServerService_Run(t *testing.T) {
 		receiver, runOK := syncServerTestRun("tcp", true, true)
 
 		assert(runOK).Equal(true)
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceAccept.AddDebug(
-				"invalid argument",
-			),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -472,7 +466,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		receiver, ok := syncServerTestClose("tcp", false, true)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceClose.AddDebug("invalid argument"),
+			errors.ErrSyncTCPServerServiceClose.AddDebug(io.EOF.Error()),
 		)
 	})
 
@@ -488,7 +482,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		receiver, ok := syncServerTestClose("tcp", true, true)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceClose.AddDebug("invalid argument"),
+			errors.ErrSyncTCPServerServiceClose.AddDebug(io.EOF.Error()),
 		)
 	})
 
@@ -536,11 +530,8 @@ func TestSyncWSServerService_Run(t *testing.T) {
 		receiver, runOK := syncServerTestRun("ws", false, true)
 
 		assert(runOK).Equal(true)
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncWSServerServiceServe.AddDebug(
-				"invalid argument",
-			),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncWSServerServiceServe.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -563,11 +554,8 @@ func TestSyncWSServerService_Run(t *testing.T) {
 		receiver, runOK := syncServerTestRun("tcp", true, true)
 
 		assert(runOK).Equal(true)
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceAccept.AddDebug(
-				"invalid argument",
-			),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -593,9 +581,8 @@ func TestSyncWSServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("ws", false, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncWSServerServiceClose.AddDebug("invalid argument"),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncWSServerServiceClose.AddDebug(io.EOF.Error()))
 	})
 
 	t.Run("ws close ok", func(t *testing.T) {
@@ -609,9 +596,8 @@ func TestSyncWSServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("wss", true, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncWSServerServiceClose.AddDebug("invalid argument"),
-		)
+		assert(receiver.GetError()).
+			Equal(errors.ErrSyncWSServerServiceClose.AddDebug(io.EOF.Error()))
 	})
 
 	t.Run("wss close ok", func(t *testing.T) {
