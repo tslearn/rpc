@@ -1,38 +1,37 @@
 name: Test
 
 on:
-  push:
-    branches:
-      - master
+    push:
+        branches:
+            - master
 
 jobs:
-  test:
-    # We want to define a strategy for our job
-    strategy:
-      # this will contain a matrix of all of the combinations
-      # we wish to test again:
-      matrix:
-        go-version: [1.12]
-        platform: [windows-latest]
+    test:
+        # We want to define a strategy for our job
+        strategy:
+            # this will contain a matrix of all of the combinations
+            # we wish to test again:
+            matrix:
+                go-version: [ 1.12 ]
+                platform: [ windows-latest, ubuntu-latest, macos-latest ]
 
-    # Defines the platform for each test run
-    runs-on: ${{ matrix.platform }}
+        # Defines the platform for each test run
+        runs-on: ${{ matrix.platform }}
 
-    # the steps that will be run through for each version and platform
-    # combination
-    steps:
-      # sets up go based on the version
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+        # the steps that will be run through for each version and platform
+        # combination
+        steps:
+            # sets up go based on the version
+            -   name: Install Go
+                uses: actions/setup-go@v2
+                with:
+                    go-version: ${{ matrix.go-version }}
 
-      # checks out our code locally so we can work with the files
-      - name: Checkout code
-        uses: actions/checkout@v2
+            # checks out our code locally so we can work with the files
+            -   name: Checkout code
+                uses: actions/checkout@v2
 
-      # runs go test ./...
-#      - name: Test and generate coverage report
-#        run: |
-#          go test ./... -v -timeout 30m -race -coverprofile=coverage.txt -covermode=atomic
-
+            # runs go test ./...
+#            -   name: Test and generate coverage report
+#                run: |
+#                    go test ./... -timeout 30m -race -coverprofile=coverage.txt -covermode=atomic
