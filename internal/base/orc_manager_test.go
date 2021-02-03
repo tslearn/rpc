@@ -390,7 +390,7 @@ func TestORCManagerParallels(t *testing.T) {
 			waitCH := make(chan bool)
 			o := NewORCManager()
 
-			testCount := 3000
+			testCount := 1000
 			parallels := 4
 
 			openOK := int64(0)
@@ -401,12 +401,12 @@ func TestORCManagerParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Open(func() bool {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 							return true
 						}) {
 							atomic.AddInt64(&openOK, 1)
 						} else {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -415,12 +415,12 @@ func TestORCManagerParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Run(func(isRunning func() bool) bool {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 							return true
 						}) {
 							atomic.AddInt64(&runOK, 1)
 						} else {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -429,12 +429,12 @@ func TestORCManagerParallels(t *testing.T) {
 				go func() {
 					for i := 0; i < testCount; i++ {
 						if o.Close(func() bool {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 							return true
 						}, nil) {
 							atomic.AddInt64(&closeOK, 1)
 						} else {
-							time.Sleep(100 * time.Microsecond)
+							time.Sleep(10 * time.Microsecond)
 						}
 					}
 					waitCH <- true
@@ -447,7 +447,9 @@ func TestORCManagerParallels(t *testing.T) {
 				<-waitCH
 			}
 
-			if o.Close(nil, nil) {
+			if o.Close(func() bool {
+				return true
+			}, nil) {
 				closeOK++
 			}
 
