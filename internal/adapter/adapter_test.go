@@ -2,7 +2,7 @@ package adapter
 
 import (
 	"crypto/tls"
-	systemErrors "errors"
+	"errors"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 	"io"
@@ -41,7 +41,7 @@ func newTestNetConn(readBuf []byte, maxRead int, maxWrite int) *testNetConn {
 
 func (p *testNetConn) Read(b []byte) (n int, err error) {
 	if !p.isRunning {
-		e := systemErrors.New(ErrNetClosingSuffix)
+		e := errors.New(ErrNetClosingSuffix)
 		p.errCH <- e
 		return -1, e
 	}
@@ -62,7 +62,7 @@ func (p *testNetConn) Read(b []byte) (n int, err error) {
 
 func (p *testNetConn) Write(b []byte) (n int, err error) {
 	if !p.isRunning {
-		e := systemErrors.New(ErrNetClosingSuffix)
+		e := errors.New(ErrNetClosingSuffix)
 		p.errCH <- e
 		return -1, e
 	}
@@ -84,7 +84,7 @@ func (p *testNetConn) Write(b []byte) (n int, err error) {
 
 func (p *testNetConn) Close() error {
 	if !p.isRunning {
-		e := systemErrors.New("close error")
+		e := errors.New("close error")
 		p.errCH <- e
 		return e
 	}

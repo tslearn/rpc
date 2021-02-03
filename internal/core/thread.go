@@ -13,7 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 var (
@@ -293,7 +292,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	frame := p.top
 
 	if frame.retStatus != 0 {
-		value = errors.ErrRuntimeReplyHasBeenCalled
+		value = base.ErrRuntimeReplyHasBeenCalled
 	}
 
 	stream := frame.stream
@@ -306,13 +305,13 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 		return emptyReturn
 	} else if err, ok := value.(*base.Error); ok {
 		if err == nil {
-			err = errors.ErrUnsupportedValue.AddDebug("value is nil")
+			err = base.ErrUnsupportedValue.AddDebug("value is nil")
 		}
 		writeErr = err
 	} else if v, ok := value.(RTValue); ok && v.err != nil {
 		writeErr = v.err
 	} else {
-		writeErr = errors.ErrUnsupportedValue.AddDebug(reason)
+		writeErr = base.ErrUnsupportedValue.AddDebug(reason)
 	}
 
 	frame.retStatus = 2
@@ -377,7 +376,7 @@ func (p *rpcThread) Eval(
 		if v := recover(); v != nil {
 			// write runtime error
 			p.Write(
-				errors.ErrActionPanic.
+				base.ErrActionPanic.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
 					AddDebug(p.GetExecActionDebug()).AddDebug(string(debug.Stack())),
 				0,
@@ -389,7 +388,7 @@ func (p *rpcThread) Eval(
 			if v := recover(); v != nil {
 				// kernel error
 				base.PublishPanic(
-					errors.ErrThreadEvalFatal.AddDebug(fmt.Sprintf("%v", v)).
+					base.ErrThreadEvalFatal.AddDebug(fmt.Sprintf("%v", v)).
 						AddDebug(string(debug.Stack())),
 				)
 			}
@@ -401,7 +400,7 @@ func (p *rpcThread) Eval(
 
 		if frame.retStatus == 0 {
 			p.Write(
-				errors.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()),
+				base.ErrRuntimeExternalReturn.AddDebug(p.GetExecActionDebug()),
 				0,
 				false,
 			)
@@ -426,7 +425,7 @@ func (p *rpcThread) Eval(
 		return p.Write(err, 0, false)
 	} else if actionNode, ok := p.processor.actionsMap[actionPath]; !ok {
 		return p.Write(
-			errors.ErrTargetNotExist.AddDebug(base.ConcatString(
+			base.ErrTargetNotExist.AddDebug(base.ConcatString(
 				"rpc-call: ",
 				actionPath,
 				" does not exist",
@@ -441,7 +440,7 @@ func (p *rpcThread) Eval(
 
 	if frame.depth >= p.processor.maxCallDepth {
 		return p.Write(
-			errors.ErrCallOverflow.
+			base.ErrCallOverflow.
 				AddDebug(base.ConcatString(
 					"call ",
 					actionPath,
@@ -560,10 +559,10 @@ func (p *rpcThread) Eval(
 		if val, err := inStream.Read(); err != nil {
 			return p.Write(err, 0, false)
 		} else if argErrorIndex < 0 {
-			return p.Write(errors.ErrStream, 0, false)
+			return p.Write(base.ErrStream, 0, false)
 		} else if !inStream.HasStatusBitDebug() {
 			return p.Write(
-				errors.ErrArgumentsNotMatch.
+				base.ErrArgumentsNotMatch.
 					AddDebug(base.ConcatString(
 						"rpc-call: ",
 						actionPath,
@@ -574,7 +573,7 @@ func (p *rpcThread) Eval(
 			)
 		} else {
 			return p.Write(
-				errors.ErrArgumentsNotMatch.AddDebug(
+				base.ErrArgumentsNotMatch.AddDebug(
 					fmt.Sprintf(
 						"rpc-call: %s %s argument does not match. want: %s got: %s\n%s",
 						actionPath,

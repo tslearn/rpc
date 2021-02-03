@@ -5,7 +5,6 @@ import (
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 var sendItemCache = &sync.Pool{
@@ -57,8 +56,8 @@ func (p *SendItem) CheckTime(nowNS int64) bool {
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
-		stream.WriteUint64(errors.ErrClientTimeout.GetCode())
-		stream.WriteString(errors.ErrClientTimeout.GetMessage())
+		stream.WriteUint64(base.ErrClientTimeout.GetCode())
+		stream.WriteString(base.ErrClientTimeout.GetMessage())
 		p.returnCH <- stream
 		return true
 	}

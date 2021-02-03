@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"io"
 	"net"
 	"net/http"
@@ -358,7 +357,7 @@ func TestNewSyncClientService(t *testing.T) {
 		assert(service).IsNil()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrUnsupportedProtocol.AddDebug(
+			Equal(base.ErrUnsupportedProtocol.AddDebug(
 				"unsupported protocol err",
 			))
 	})
@@ -403,7 +402,7 @@ func TestNewSyncServerService(t *testing.T) {
 		assert(service).IsNil()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrUnsupportedProtocol.AddDebug(
+			Equal(base.ErrUnsupportedProtocol.AddDebug(
 				"unsupported protocol err",
 			))
 	})
@@ -445,7 +444,7 @@ func TestSyncTCPServerService_Run(t *testing.T) {
 		receiver, runOK := syncServerTestRun("tcp", false, true)
 		assert(runOK).Equal(true)
 		assert(receiver.GetError()).
-			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
+			Equal(base.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -469,7 +468,7 @@ func TestSyncTCPServerService_Run(t *testing.T) {
 
 		assert(runOK).Equal(true)
 		assert(receiver.GetError()).
-			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
+			Equal(base.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -570,7 +569,7 @@ func TestSyncWSServerService_Run(t *testing.T) {
 
 		assert(runOK).Equal(true)
 		assert(receiver.GetError()).
-			Equal(errors.ErrSyncWSServerServiceServe.AddDebug(io.EOF.Error()))
+			Equal(base.ErrSyncWSServerServiceServe.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -594,7 +593,7 @@ func TestSyncWSServerService_Run(t *testing.T) {
 
 		assert(runOK).Equal(true)
 		assert(receiver.GetError()).
-			Equal(errors.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
+			Equal(base.ErrSyncTCPServerServiceAccept.AddDebug(io.EOF.Error()))
 		assert(receiver.GetOnOpenCount()).Equal(0)
 		assert(receiver.GetOnCloseCount()).Equal(0)
 		assert(receiver.GetOnStreamCount()).Equal(0)
@@ -694,12 +693,12 @@ func TestSyncClientService(t *testing.T) {
 			)
 			if it.network == "ws" || it.network == "wss" {
 				assert(receiver.GetError()).
-					Equal(errors.ErrSyncClientServiceDial.AddDebug(
+					Equal(base.ErrSyncClientServiceDial.AddDebug(
 						"dial tcp: lookup addr-error: no such host",
 					))
 			} else {
 				assert(receiver.GetError()).
-					Equal(errors.ErrSyncClientServiceDial.AddDebug(fmt.Sprintf(
+					Equal(base.ErrSyncClientServiceDial.AddDebug(fmt.Sprintf(
 						"dial %s: address addr-error: missing port in address",
 						it.network,
 					)))
@@ -725,7 +724,7 @@ func TestSyncClientService(t *testing.T) {
 			)
 
 			assert(receiver.GetError()).
-				Equal(errors.ErrUnsupportedProtocol.AddDebug(
+				Equal(base.ErrUnsupportedProtocol.AddDebug(
 					"unsupported protocol err",
 				))
 			assert(receiver.GetOnOpenCount()).Equal(0)

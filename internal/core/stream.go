@@ -9,7 +9,6 @@ import (
 	"unsafe"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const (
@@ -1366,7 +1365,7 @@ func (p *Stream) ReadBool() (bool, *base.Error) {
 			return false, nil
 		}
 	}
-	return false, errors.ErrStream
+	return false, base.ErrStream
 }
 
 // ReadFloat64 read a float64
@@ -1406,7 +1405,7 @@ func (p *Stream) ReadFloat64() (float64, *base.Error) {
 			), nil
 		}
 	}
-	return 0, errors.ErrStream
+	return 0, base.ErrStream
 }
 
 // ReadInt64 read a int64
@@ -1478,7 +1477,7 @@ func (p *Stream) ReadInt64() (int64, *base.Error) {
 					9223372036854775808), nil
 		}
 	}
-	return 0, errors.ErrStream
+	return 0, base.ErrStream
 }
 
 // ReadUint64 read a uint64
@@ -1542,7 +1541,7 @@ func (p *Stream) ReadUint64() (uint64, *base.Error) {
 				(uint64(b[8]) << 56), nil
 		}
 	}
-	return 0, errors.ErrStream
+	return 0, base.ErrStream
 }
 
 // ReadString read a string value
@@ -1628,7 +1627,7 @@ func (p *Stream) ReadString() (string, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return "", errors.ErrStream
+	return "", base.ErrStream
 }
 
 func (p *Stream) readUnsafeString() (ret string, safe bool, err *base.Error) {
@@ -1713,7 +1712,7 @@ func (p *Stream) readUnsafeString() (ret string, safe bool, err *base.Error) {
 
 		p.SetReadPos(readStart)
 	}
-	return "", true, errors.ErrStream
+	return "", true, base.ErrStream
 }
 
 // ReadBytes read a Bytes value
@@ -1783,7 +1782,7 @@ func (p *Stream) ReadBytes() (Bytes, *base.Error) {
 		}
 		p.SetReadPos(readStart)
 	}
-	return Bytes{}, errors.ErrStream
+	return Bytes{}, base.ErrStream
 }
 
 // ReadArray ...
@@ -1857,7 +1856,7 @@ func (p *Stream) ReadArray() (Array, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Array{}, errors.ErrStream
+	return Array{}, base.ErrStream
 }
 
 // ReadMap read a Map value
@@ -1935,7 +1934,7 @@ func (p *Stream) ReadMap() (Map, *base.Error) {
 		p.SetReadPos(readStart)
 	}
 
-	return Map{}, errors.ErrStream
+	return Map{}, base.ErrStream
 }
 
 // Read read a generic value
@@ -1949,7 +1948,7 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
-		return nil, errors.ErrStream
+		return nil, base.ErrStream
 	case byte(2):
 		fallthrough
 	case byte(3):
@@ -1971,9 +1970,9 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	case byte(11):
 		return p.ReadUint64()
 	case byte(12):
-		return nil, errors.ErrStream
+		return nil, base.ErrStream
 	case byte(13):
-		return nil, errors.ErrStream
+		return nil, base.ErrStream
 	}
 
 	switch op >> 6 {
@@ -2007,7 +2006,7 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			if p != cs {
 				cs.SetReadPos(cs.GetWritePos())
 				if !cs.writeStreamNext(p) {
-					return RTArray{}, errors.ErrStream
+					return RTArray{}, base.ErrStream
 				}
 			}
 
@@ -2069,15 +2068,15 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 
 					if skip <= 0 {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStream
+						return RTArray{}, base.ErrStream
 					} else if itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStream
+						return RTArray{}, base.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
 					} else if !cs.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
-						return RTArray{}, errors.ErrStream
+						return RTArray{}, base.ErrStream
 					}
 
 					if op>>6 == 2 {
@@ -2098,10 +2097,10 @@ func (p *Stream) ReadRTArray(rt Runtime) (RTArray, *base.Error) {
 			}
 			p.SetReadPos(readStart)
 		}
-		return RTArray{}, errors.ErrStream
+		return RTArray{}, base.ErrStream
 	}
 
-	return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
+	return RTArray{}, base.ErrRuntimeIllegalInCurrentGoroutine.
 		AddDebug(base.GetFileLine(1))
 }
 
@@ -2117,7 +2116,7 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			if p != cs {
 				cs.SetReadPos(cs.GetWritePos())
 				if !cs.writeStreamNext(p) {
-					return RTMap{}, errors.ErrStream
+					return RTMap{}, base.ErrStream
 				}
 			}
 			start := cs.GetReadPos()
@@ -2182,15 +2181,15 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 
 					if skip <= 0 {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStream
+						return RTMap{}, base.ErrStream
 					} else if itemPos+skip > end {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStream
+						return RTMap{}, base.ErrStream
 					} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 						cs.readIndex += skip
 					} else if !cs.SetReadPos(itemPos + skip) {
 						p.SetReadPos(readStart)
-						return RTMap{}, errors.ErrStream
+						return RTMap{}, base.ErrStream
 					}
 
 					if op>>6 == 2 {
@@ -2205,10 +2204,10 @@ func (p *Stream) ReadRTMap(rt Runtime) (RTMap, *base.Error) {
 			}
 			p.SetReadPos(readStart)
 		}
-		return RTMap{}, errors.ErrStream
+		return RTMap{}, base.ErrStream
 	}
 
-	return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine.
+	return RTMap{}, base.ErrRuntimeIllegalInCurrentGoroutine.
 		AddDebug(base.GetFileLine(1))
 }
 
@@ -2219,7 +2218,7 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 		if p != cs {
 			cs.SetReadPos(cs.GetWritePos())
 			if !cs.writeStreamNext(p) {
-				return RTValue{err: errors.ErrStream}, errors.ErrStream
+				return RTValue{err: base.ErrStream}, base.ErrStream
 			}
 		}
 
@@ -2240,11 +2239,11 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 		skip, _ := cs.peekSkip()
 
 		if skip <= 0 {
-			return RTValue{err: errors.ErrStream}, errors.ErrStream
+			return RTValue{err: base.ErrStream}, base.ErrStream
 		} else if cs.isSafetyReadNBytesInCurrentFrame(skip) {
 			cs.readIndex += skip
 		} else if !cs.SetReadPos(startPos + skip) {
-			return RTValue{err: errors.ErrStream}, errors.ErrStream
+			return RTValue{err: base.ErrStream}, base.ErrStream
 		}
 
 		return RTValue{
@@ -2252,11 +2251,11 @@ func (p *Stream) ReadRTValue(rt Runtime) (RTValue, *base.Error) {
 			rt:         rt,
 			pos:        int64(startPos),
 			cacheBytes: nil,
-			cacheError: errors.ErrStream,
+			cacheError: base.ErrStream,
 			cacheSafe:  false,
 		}, nil
 	}
 
-	return RTValue{err: errors.ErrRuntimeIllegalInCurrentGoroutine},
-		errors.ErrRuntimeIllegalInCurrentGoroutine
+	return RTValue{err: base.ErrRuntimeIllegalInCurrentGoroutine},
+		base.ErrRuntimeIllegalInCurrentGoroutine
 }

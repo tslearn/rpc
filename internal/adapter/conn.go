@@ -11,7 +11,6 @@ import (
 	"github.com/rpccloud/rpc/internal/core"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // SyncConn ...
@@ -77,7 +76,7 @@ func (p *SyncConn) Close() {
 	if p.isRunning {
 		p.isRunning = false
 		if e := p.conn.Close(); e != nil {
-			p.OnError(errors.ErrConnClose.AddDebug(e.Error()))
+			p.OnError(base.ErrConnClose.AddDebug(e.Error()))
 		}
 	}
 }
@@ -98,7 +97,7 @@ func (p *SyncConn) OnReadReady() bool {
 	if e != nil {
 		if e != io.EOF {
 			if p.isServer {
-				p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
+				p.OnError(base.ErrConnRead.AddDebug(e.Error()))
 			} else {
 				p.Lock()
 				ignoreReport := (!p.isRunning) &&
@@ -106,7 +105,7 @@ func (p *SyncConn) OnReadReady() bool {
 				p.Unlock()
 
 				if !ignoreReport {
-					p.OnError(errors.ErrConnRead.AddDebug(e.Error()))
+					p.OnError(base.ErrConnRead.AddDebug(e.Error()))
 				}
 			}
 		}
@@ -139,7 +138,7 @@ func (p *SyncConn) OnWriteReady() bool {
 		start := 0
 		for start < bufLen {
 			if n, e := p.conn.Write(p.wBuf[start:bufLen]); e != nil {
-				p.OnError(errors.ErrConnWrite.AddDebug(e.Error()))
+				p.OnError(base.ErrConnWrite.AddDebug(e.Error()))
 				return false
 			} else if n == 0 {
 				return false
@@ -245,7 +244,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 					p.receiver.OnConnReadStream(p, p.readStream)
 					p.readStream = nil
 				} else {
-					p.receiver.OnConnError(p, errors.ErrStream)
+					p.receiver.OnConnError(p, base.ErrStream)
 					return
 				}
 			}
@@ -254,7 +253,7 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 				p.OnReadBytes(b[len(writeBuf):])
 			}
 		} else {
-			p.OnError(errors.ErrStream)
+			p.OnError(base.ErrStream)
 		}
 	}
 }
@@ -279,7 +278,7 @@ func (p *StreamConn) OnFillWrite(b []byte) int {
 
 	if len(peekBuf) <= 0 {
 		p.OnError(
-			errors.ErrOnFillWriteFatal,
+			base.ErrOnFillWriteFatal,
 		)
 		return 0
 	}

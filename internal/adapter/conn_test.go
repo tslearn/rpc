@@ -3,7 +3,6 @@ package adapter
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"net"
 	"testing"
@@ -89,13 +88,13 @@ func TestSyncConn_OnError(t *testing.T) {
 		v := NewServerSyncConn(&net.TCPConn{}, 1024, 2048)
 		v.SetNext(streamConn)
 		v.OnOpen()
-		v.OnError(errors.ErrStream.AddDebug("error"))
+		v.OnError(base.ErrStream.AddDebug("error"))
 		v.OnClose()
 		assert(receiver.GetOnOpenCount()).Equal(1)
 		assert(receiver.GetOnCloseCount()).Equal(1)
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetOnStreamCount()).Equal(0)
-		assert(receiver.GetError()).Equal(errors.ErrStream.AddDebug("error"))
+		assert(receiver.GetError()).Equal(base.ErrStream.AddDebug("error"))
 	})
 }
 
@@ -132,7 +131,7 @@ func TestSyncConn_Close(t *testing.T) {
 		v.Close()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrConnClose.AddDebug("close error"))
+			Equal(base.ErrConnClose.AddDebug("close error"))
 	})
 }
 
@@ -173,7 +172,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert(v.OnReadReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnRead.AddDebug(ErrNetClosingSuffix))
 	})
 
 	t.Run("server ok", func(t *testing.T) {
@@ -209,7 +208,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert(v.OnReadReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnRead.AddDebug(ErrNetClosingSuffix))
 	})
 
 	t.Run("client error use of closed conn when closed", func(t *testing.T) {
@@ -287,7 +286,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 		assert(v.OnWriteReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(errors.ErrConnWrite.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnWrite.AddDebug(ErrNetClosingSuffix))
 	})
 
 	t.Run("write zero", func(t *testing.T) {
@@ -397,12 +396,12 @@ func TestStreamConn_OnError(t *testing.T) {
 		receiver := newTestSingleReceiver()
 		v := NewStreamConn(nil, receiver)
 		v.OnOpen()
-		v.OnError(errors.ErrStream)
+		v.OnError(base.ErrStream)
 		v.OnClose()
 		assert(receiver.GetOnOpenCount()).Equal(1)
 		assert(receiver.GetOnCloseCount()).Equal(1)
 		assert(receiver.GetOnErrorCount()).Equal(1)
-		assert(receiver.GetError()).Equal(errors.ErrStream)
+		assert(receiver.GetError()).Equal(base.ErrStream)
 	})
 }
 
@@ -414,7 +413,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 		streamConn.OnOpen()
 		streamConn.OnReadBytes(core.NewStream().GetBuffer())
 		assert(receiver.GetOnErrorCount()).Equal(1)
-		assert(receiver.GetError()).Equal(errors.ErrStream)
+		assert(receiver.GetError()).Equal(base.ErrStream)
 	})
 
 	t.Run("stream check error", func(t *testing.T) {
@@ -429,7 +428,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 		errBuffer[len(errBuffer)-1] = 11
 		streamConn.OnReadBytes(errBuffer)
 		assert(receiver.GetOnErrorCount()).Equal(1)
-		assert(receiver.GetError()).Equal(errors.ErrStream)
+		assert(receiver.GetError()).Equal(base.ErrStream)
 	})
 
 	t.Run("test", func(t *testing.T) {
@@ -508,7 +507,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 		v.writePos = v.writeStream.GetWritePos()
 		assert(v.OnFillWrite(buf)).Equal(0)
 		assert(receiver.GetOnErrorCount()).Equal(1)
-		assert(receiver.GetError()).Equal(errors.ErrOnFillWriteFatal)
+		assert(receiver.GetError()).Equal(base.ErrOnFillWriteFatal)
 	})
 
 	t.Run("test", func(t *testing.T) {

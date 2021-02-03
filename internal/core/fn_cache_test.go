@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 func TestBuildFuncCache(t *testing.T) {
@@ -21,28 +20,28 @@ func TestBuildFuncCache(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(curDir, "_tmp_/duplicate-kind.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"A", "A"})).
-			Equal(errors.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
+			Equal(base.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
 	})
 
 	t.Run("illegal kind", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(curDir, "_tmp_/illegal-kind.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"T", "A"})).
-			Equal(errors.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
+			Equal(base.ErrFnCacheIllegalKindString.AddDebug("illegal kind T"))
 	})
 
 	t.Run("mkdir error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(curDir, "fn_cache_test.go", "error.go")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
-			Equal(errors.ErrCacheMkdirAll)
+			Equal(base.ErrCacheMkdirAll)
 	})
 
 	t.Run("write to file error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(curDir, "_snapshot_")
 		assert(buildFuncCache("pkgName", filePath, []string{"A"})).
-			Equal(errors.ErrCacheWriteFile)
+			Equal(base.ErrCacheWriteFile)
 	})
 
 	t.Run("kinds is empty", func(t *testing.T) {

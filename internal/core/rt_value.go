@@ -4,7 +4,6 @@ import (
 	"sync/atomic"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // RTValue ...
@@ -25,7 +24,7 @@ func makeRTValue(rt Runtime, record posRecord) RTValue {
 			pos:        record.getPos(),
 			cacheBytes: nil,
 			cacheSafe:  true,
-			cacheError: errors.ErrStream,
+			cacheError: base.ErrStream,
 		}
 	}
 
@@ -52,7 +51,7 @@ func (p RTValue) ToBool() (Bool, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBool()
 	} else {
-		return false, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return false, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -65,7 +64,7 @@ func (p RTValue) ToInt64() (Int64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadInt64()
 	} else {
-		return 0, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return 0, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -78,7 +77,7 @@ func (p RTValue) ToUint64() (Uint64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadUint64()
 	} else {
-		return 0, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return 0, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -91,7 +90,7 @@ func (p RTValue) ToFloat64() (Float64, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadFloat64()
 	} else {
-		return 0, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return 0, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -101,7 +100,7 @@ func (p RTValue) ToString() (String, *base.Error) {
 		return "", p.err
 	} else if p.rt.thread == nil ||
 		atomic.LoadUint64(&p.rt.thread.top.lockStatus) != p.rt.id {
-		return "", errors.ErrRuntimeIllegalInCurrentGoroutine
+		return "", base.ErrRuntimeIllegalInCurrentGoroutine
 	} else {
 		return string(p.cacheBytes), p.cacheError
 	}
@@ -116,7 +115,7 @@ func (p RTValue) ToBytes() (Bytes, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadBytes()
 	} else {
-		return Bytes{}, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return Bytes{}, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -129,7 +128,7 @@ func (p RTValue) ToArray() (Array, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadArray()
 	} else {
-		return Array{}, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return Array{}, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -142,7 +141,7 @@ func (p RTValue) ToRTArray() (RTArray, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTArray(p.rt)
 	} else {
-		return RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return RTArray{}, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -155,7 +154,7 @@ func (p RTValue) ToMap() (Map, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadMap()
 	} else {
-		return Map{}, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return Map{}, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }
 
@@ -168,6 +167,6 @@ func (p RTValue) ToRTMap() (RTMap, *base.Error) {
 		thread.rtStream.SetReadPos(int(p.pos))
 		return thread.rtStream.ReadRTMap(p.rt)
 	} else {
-		return RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine
+		return RTMap{}, base.ErrRuntimeIllegalInCurrentGoroutine
 	}
 }

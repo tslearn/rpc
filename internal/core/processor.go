@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const (
@@ -93,15 +92,15 @@ func NewProcessor(
 	onReturnStream func(stream *Stream),
 ) (*Processor, *base.Error) {
 	if onReturnStream == nil {
-		return nil, errors.ErrProcessorOnReturnStreamIsNil
+		return nil, base.ErrProcessorOnReturnStreamIsNil
 	}
 
 	if numOfThreads <= 0 {
-		return nil, errors.ErrNumOfThreadsIsWrong
+		return nil, base.ErrNumOfThreadsIsWrong
 	} else if maxNodeDepth <= 0 {
-		return nil, errors.ErrMaxNodeDepthIsWrong
+		return nil, base.ErrMaxNodeDepthIsWrong
 	} else if maxCallDepth <= 0 {
-		return nil, errors.ErrProcessorMaxCallDepthIsWrong
+		return nil, base.ErrProcessorMaxCallDepthIsWrong
 	} else {
 		fnError := func(err *base.Error) {
 			defer func() {
@@ -245,7 +244,7 @@ func (p *Processor) Close() bool {
 
 		if len(errList) > 0 {
 			p.fnError(
-				errors.ErrActionCloseTimeout.AddDebug(base.ConcatString(
+				base.ErrActionCloseTimeout.AddDebug(base.ConcatString(
 					"the following actions can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
@@ -316,7 +315,7 @@ func (p *Processor) BuildCache(pkgName string, path string) *base.Error {
 		return buildFuncCache(pkgName, path, fnKinds)
 	}
 
-	return errors.ErrProcessorIsNotRunning
+	return base.ErrProcessorIsNotRunning
 }
 
 func (p *Processor) onUpdateConfig() {
@@ -345,18 +344,18 @@ func (p *Processor) mountNode(
 	fnCache ActionCache,
 ) *base.Error {
 	if nodeMeta == nil {
-		return errors.ErrProcessorNodeMetaIsNil
+		return base.ErrProcessorNodeMetaIsNil
 	} else if !nodeNameRegex.MatchString(nodeMeta.name) {
-		return errors.ErrServiceName.
+		return base.ErrServiceName.
 			AddDebug(fmt.Sprintf("service name %s is illegal", nodeMeta.name)).
 			AddDebug(nodeMeta.fileLine)
 	} else if nodeMeta.service == nil {
-		return errors.ErrServiceIsNil.AddDebug(nodeMeta.fileLine)
+		return base.ErrServiceIsNil.AddDebug(nodeMeta.fileLine)
 	} else {
 		parentNode := p.servicesMap[parentServiceNodePath]
 		servicePath := parentServiceNodePath + "." + nodeMeta.name
 		if parentNode.depth+1 > p.maxNodeDepth { // depth overflows
-			return errors.ErrServiceOverflow.
+			return base.ErrServiceOverflow.
 				AddDebug(fmt.Sprintf(
 					"service path %s overflows (max depth: %d, current depth:%d)",
 					servicePath,
@@ -364,7 +363,7 @@ func (p *Processor) mountNode(
 				)).
 				AddDebug(nodeMeta.fileLine)
 		} else if item, ok := p.servicesMap[servicePath]; ok { // path is occupied
-			return errors.ErrServiceName.
+			return base.ErrServiceName.
 				AddDebug(fmt.Sprintf("duplicated service name %s", nodeMeta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
@@ -419,17 +418,17 @@ func (p *Processor) mountAction(
 	fnCache ActionCache,
 ) *base.Error {
 	if meta == nil {
-		return errors.ErrProcessorActionMetaIsNil
+		return base.ErrProcessorActionMetaIsNil
 	} else if !actionNameRegex.MatchString(meta.name) {
-		return errors.ErrActionName.
+		return base.ErrActionName.
 			AddDebug(fmt.Sprintf("action name %s is illegal", meta.name)).
 			AddDebug(meta.fileLine)
 	} else if meta.handler == nil {
-		return errors.ErrActionHandler.
+		return base.ErrActionHandler.
 			AddDebug("handler is nil").
 			AddDebug(meta.fileLine)
 	} else if fn := reflect.ValueOf(meta.handler); fn.Kind() != reflect.Func {
-		return errors.ErrActionHandler.AddDebug(fmt.Sprintf(
+		return base.ErrActionHandler.AddDebug(fmt.Sprintf(
 			"handler must be func(rt %s, ...) %s",
 			convertTypeToString(runtimeType),
 			convertTypeToString(returnType),
@@ -441,7 +440,7 @@ func (p *Processor) mountAction(
 		actionPath := serviceNode.path + ":" + meta.name
 		if item, ok := p.actionsMap[actionPath]; ok {
 			// check the action path is not occupied
-			return errors.ErrActionName.
+			return base.ErrActionName.
 				AddDebug(base.ConcatString("duplicated action name ", meta.name)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",

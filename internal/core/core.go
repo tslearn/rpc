@@ -5,22 +5,21 @@ import (
 	"reflect"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
-		return "", errors.ErrActionHandler.
+		return "", base.ErrActionHandler.
 			AddDebug("handler must be a function")
 	} else if fn.Type().NumIn() < 1 ||
 		fn.Type().In(0) != reflect.ValueOf(Runtime{}).Type() {
-		return "", errors.ErrActionHandler.AddDebug(base.ConcatString(
+		return "", base.ErrActionHandler.AddDebug(base.ConcatString(
 			"handler 1st argument type must be ",
 			convertTypeToString(runtimeType)),
 		)
 	} else if fn.Type().NumOut() != 1 ||
 		fn.Type().Out(0) != reflect.ValueOf(emptyReturn).Type() {
-		return "", errors.ErrActionHandler.AddDebug(base.ConcatString(
+		return "", base.ErrActionHandler.AddDebug(base.ConcatString(
 			"handler return type must be ",
 			convertTypeToString(returnType),
 		))
@@ -53,7 +52,7 @@ func getFuncKind(fn reflect.Value) (string, *base.Error) {
 			case rtMapType:
 				sb.AppendByte(vkRTMap)
 			default:
-				return "", errors.ErrActionHandler.AddDebug(
+				return "", base.ErrActionHandler.AddDebug(
 					base.ConcatString(
 						"handler ",
 						base.ConvertOrdinalToString(1+uint(i)),
@@ -140,7 +139,7 @@ func MakeRequestStream(
 	for i := 0; i < len(args); i++ {
 		if reason := stream.Write(args[i]); reason != StreamWriteOK {
 			stream.Release()
-			return nil, errors.ErrUnsupportedValue.AddDebug(
+			return nil, base.ErrUnsupportedValue.AddDebug(
 				base.ConcatString(
 					base.ConvertOrdinalToString(uint(i)+2),
 					" argument: ",
@@ -160,7 +159,7 @@ func ParseResponseStream(stream *Stream) (Any, *base.Error) {
 	} else if message, err := stream.ReadString(); err != nil {
 		return nil, err
 	} else if !stream.IsReadFinish() {
-		return nil, errors.ErrStream
+		return nil, base.ErrStream
 	} else {
 		return nil, base.NewError(errCode, message)
 	}

@@ -13,7 +13,6 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // NewSyncClientService ...
@@ -36,7 +35,7 @@ func NewSyncClientService(adapter *Adapter) base.IORCService {
 	default:
 		adapter.receiver.OnConnError(
 			nil,
-			errors.ErrUnsupportedProtocol.AddDebug(
+			base.ErrUnsupportedProtocol.AddDebug(
 				fmt.Sprintf("unsupported protocol %s", adapter.network),
 			),
 		)
@@ -69,7 +68,7 @@ func NewSyncServerService(adapter *Adapter) base.IORCService {
 	default:
 		adapter.receiver.OnConnError(
 			nil,
-			errors.ErrUnsupportedProtocol.AddDebug(
+			base.ErrUnsupportedProtocol.AddDebug(
 				fmt.Sprintf("unsupported protocol %s", adapter.network),
 			),
 		)
@@ -124,7 +123,7 @@ func (p *syncTCPServerService) Open() bool {
 		if e != nil {
 			adapter.receiver.OnConnError(
 				nil,
-				errors.ErrSyncTCPServerServiceListen.AddDebug(e.Error()),
+				base.ErrSyncTCPServerServiceListen.AddDebug(e.Error()),
 			)
 			return false
 		}
@@ -146,7 +145,7 @@ func (p *syncTCPServerService) Run() bool {
 				if !isCloseErr {
 					adapter.receiver.OnConnError(
 						nil,
-						errors.ErrSyncTCPServerServiceAccept.AddDebug(e.Error()),
+						base.ErrSyncTCPServerServiceAccept.AddDebug(e.Error()),
 					)
 					base.WaitAtLeastDurationWhenRunning(
 						base.TimeNow().UnixNano(),
@@ -169,7 +168,7 @@ func (p *syncTCPServerService) Close() bool {
 		if e := p.ln.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
-				errors.ErrSyncTCPServerServiceClose.AddDebug(e.Error()),
+				base.ErrSyncTCPServerServiceClose.AddDebug(e.Error()),
 			)
 		}
 
@@ -201,7 +200,7 @@ func (p *syncWSServerService) Open() bool {
 			if e != nil {
 				adapter.receiver.OnConnError(
 					nil,
-					errors.ErrSyncWSServerServiceUpgrade.AddDebug(e.Error()),
+					base.ErrSyncWSServerServiceUpgrade.AddDebug(e.Error()),
 				)
 			} else {
 				runNetConnOnServers(adapter, conn)
@@ -224,7 +223,7 @@ func (p *syncWSServerService) Open() bool {
 		if e != nil {
 			adapter.receiver.OnConnError(
 				nil,
-				errors.ErrSyncWSServerServiceListen.AddDebug(e.Error()),
+				base.ErrSyncWSServerServiceListen.AddDebug(e.Error()),
 			)
 			return false
 		}
@@ -242,7 +241,7 @@ func (p *syncWSServerService) Run() bool {
 				if e != http.ErrServerClosed {
 					p.adapter.receiver.OnConnError(
 						nil,
-						errors.ErrSyncWSServerServiceServe.AddDebug(e.Error()),
+						base.ErrSyncWSServerServiceServe.AddDebug(e.Error()),
 					)
 				}
 			}
@@ -259,7 +258,7 @@ func (p *syncWSServerService) Close() bool {
 		if e := p.server.Close(); e != nil {
 			p.adapter.receiver.OnConnError(
 				nil,
-				errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
+				base.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
 			)
 		}
 
@@ -267,7 +266,7 @@ func (p *syncWSServerService) Close() bool {
 			if !strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
 				p.adapter.receiver.OnConnError(
 					nil,
-					errors.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
+					base.ErrSyncWSServerServiceClose.AddDebug(e.Error()),
 				)
 			}
 		}
@@ -317,7 +316,7 @@ func (p *syncClientService) openConn() bool {
 	default:
 		adapter.receiver.OnConnError(
 			nil,
-			errors.ErrUnsupportedProtocol.AddDebug(
+			base.ErrUnsupportedProtocol.AddDebug(
 				fmt.Sprintf("unsupported protocol %s", adapter.network),
 			),
 		)
@@ -327,7 +326,7 @@ func (p *syncClientService) openConn() bool {
 	if e != nil {
 		adapter.receiver.OnConnError(
 			nil,
-			errors.ErrSyncClientServiceDial.AddDebug(e.Error()),
+			base.ErrSyncClientServiceDial.AddDebug(e.Error()),
 		)
 		return false
 	}

@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
 	"testing"
 	"time"
@@ -35,7 +34,7 @@ func TestNewRPCProcessor(t *testing.T) {
 			nil,
 			3*time.Second,
 			[]*core.ServiceMeta{},
-		)).Equal(nil, errors.ErrNumOfThreadsIsWrong)
+		)).Equal(nil, base.ErrNumOfThreadsIsWrong)
 	})
 
 	t.Run("test ok", func(t *testing.T) {

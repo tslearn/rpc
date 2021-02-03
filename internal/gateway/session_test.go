@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
 	"net"
 	"testing"
@@ -121,7 +120,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read kind error", func(t *testing.T) {
@@ -140,7 +139,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
@@ -160,7 +159,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read session string error", func(t *testing.T) {
@@ -181,7 +180,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read stream is not finish", func(t *testing.T) {
@@ -203,7 +202,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("max sessions limit", func(t *testing.T) {
@@ -227,7 +226,7 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 
-		assert(err).Equal(errors.ErrGateWaySeedOverflows)
+		assert(err).Equal(base.ErrGateWaySeedOverflows)
 	})
 
 	t.Run("stream is ok, create new session", func(t *testing.T) {
@@ -558,7 +557,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 			err = e
 		}
 		session.OnConnReadStream(streamConn, core.NewStream())
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("cbID == 0, kind == ControlStreamPing", func(t *testing.T) {
@@ -591,7 +590,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 			err = e
 		}
 		session.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 }
 
@@ -604,8 +603,8 @@ func TestSession_OnConnError(t *testing.T) {
 		session.gateway.onError = func(sessionID uint64, e *base.Error) {
 			err = e
 		}
-		session.OnConnError(streamConn, errors.ErrStream)
-		assert(err).Equal(errors.ErrStream)
+		session.OnConnError(streamConn, base.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 }
 

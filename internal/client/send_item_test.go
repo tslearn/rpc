@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
 	"time"
 )
@@ -64,9 +63,9 @@ func TestSendItem_CheckTime(t *testing.T) {
 		stream := <-v.returnCH
 		assert(stream.GetCallbackID()).Equal(uint64(15))
 		assert(stream.ReadUint64()).
-			Equal(errors.ErrClientTimeout.GetCode(), nil)
+			Equal(base.ErrClientTimeout.GetCode(), nil)
 		assert(stream.ReadString()).
-			Equal(errors.ErrClientTimeout.GetMessage(), nil)
+			Equal(base.ErrClientTimeout.GetMessage(), nil)
 		assert(stream.IsReadFinish()).IsTrue()
 	})
 

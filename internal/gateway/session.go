@@ -11,7 +11,6 @@ import (
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // Session ...
@@ -35,19 +34,19 @@ func InitSession(
 ) {
 	if stream.GetCallbackID() != 0 {
 		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
+		gw.OnConnError(streamConn, base.ErrStream)
 	} else if kind, err := stream.ReadInt64(); err != nil {
 		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
+		gw.OnConnError(streamConn, base.ErrStream)
 	} else if kind != core.ControlStreamConnectRequest {
 		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
+		gw.OnConnError(streamConn, base.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
 		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
+		gw.OnConnError(streamConn, base.ErrStream)
 	} else if !stream.IsReadFinish() {
 		stream.Release()
-		gw.OnConnError(streamConn, errors.ErrStream)
+		gw.OnConnError(streamConn, base.ErrStream)
 	} else {
 		session := (*Session)(nil)
 		config := gw.config
@@ -66,7 +65,7 @@ func InitSession(
 		if session == nil {
 			if gw.TotalSessions() >= int64(config.serverMaxSessions) {
 				stream.Release()
-				gw.OnConnError(streamConn, errors.ErrGateWaySeedOverflows)
+				gw.OnConnError(streamConn, base.ErrGateWaySeedOverflows)
 				return
 			}
 
@@ -184,7 +183,7 @@ func (p *Session) OnConnReadStream(
 		stream.WriteInt64(core.ControlStreamPong)
 		streamConn.WriteStreamAndRelease(stream)
 	} else {
-		p.OnConnError(streamConn, errors.ErrStream)
+		p.OnConnError(streamConn, base.ErrStream)
 		stream.Release()
 	}
 }

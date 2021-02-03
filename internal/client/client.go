@@ -9,7 +9,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // Config ...
@@ -189,7 +188,7 @@ func (p *Client) SendMessage(
 	// write args
 	for i := 0; i < len(args); i++ {
 		if eStr := item.sendStream.Write(args[i]); eStr != core.StreamWriteOK {
-			return nil, errors.ErrUnsupportedValue.AddDebug(eStr)
+			return nil, base.ErrUnsupportedValue.AddDebug(eStr)
 		}
 	}
 
@@ -248,13 +247,13 @@ func (p *Client) OnConnReadStream(
 
 		if callbackID != 0 {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrStream)
+			p.OnConnError(streamConn, base.ErrStream)
 		} else if kind, err := stream.ReadInt64(); err != nil {
 			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if kind != core.ControlStreamConnectResponse {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrStream)
+			p.OnConnError(streamConn, base.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
 			stream.Release()
 			p.OnConnError(streamConn, err)
@@ -263,28 +262,28 @@ func (p *Client) OnConnReadStream(
 			p.OnConnError(streamConn, err)
 		} else if numOfChannels <= 0 {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrClientConfig)
+			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if transLimit, err := stream.ReadInt64(); err != nil {
 			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if transLimit <= 0 {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrClientConfig)
+			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if heartbeat, err := stream.ReadInt64(); err != nil {
 			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if heartbeat <= 0 {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrClientConfig)
+			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
 			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if heartbeatTimeout <= 0 {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrClientConfig)
+			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if !stream.IsReadFinish() {
 			stream.Release()
-			p.OnConnError(streamConn, errors.ErrStream)
+			p.OnConnError(streamConn, base.ErrStream)
 		} else {
 			if sessionString != p.sessionString {
 				// new session
@@ -320,7 +319,7 @@ func (p *Client) OnConnReadStream(
 				p.OnConnError(streamConn, err)
 				stream.Release()
 			} else if kind != core.ControlStreamPong {
-				p.OnConnError(streamConn, errors.ErrStream)
+				p.OnConnError(streamConn, base.ErrStream)
 				stream.Release()
 			} else {
 				stream.Release()
@@ -331,7 +330,7 @@ func (p *Client) OnConnReadStream(
 				channel.Free(stream)
 				p.tryToDeliverPreSendMessages()
 			} else {
-				p.OnConnError(streamConn, errors.ErrStream)
+				p.OnConnError(streamConn, base.ErrStream)
 				stream.Release()
 			}
 		} else {

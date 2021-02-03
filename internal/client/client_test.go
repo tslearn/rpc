@@ -6,7 +6,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"net"
 	"sync"
@@ -166,7 +165,7 @@ func TestNewClient(t *testing.T) {
 			"#.user:Sleep",
 			int64(2*time.Second),
 		)
-		assert(err).Equal(errors.ErrClientTimeout)
+		assert(err).Equal(base.ErrClientTimeout)
 		v.Close()
 	})
 }
@@ -463,7 +462,7 @@ func TestClient_SendMessage(t *testing.T) {
 		}
 
 		assert(v.SendMessage(time.Second, "#.user:SayHello", make(chan bool))).
-			Equal(nil, errors.ErrUnsupportedValue.AddDebug(
+			Equal(nil, base.ErrUnsupportedValue.AddDebug(
 				"value type(chan bool) is not supported",
 			))
 	})
@@ -546,7 +545,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read kind error", func(t *testing.T) {
@@ -557,7 +556,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("kind != core.ControlStreamConnectResponse", func(t *testing.T) {
@@ -569,7 +568,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read sessionString error", func(t *testing.T) {
@@ -581,7 +580,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("read numOfChannels error", func(t *testing.T) {
@@ -594,7 +593,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("numOfChannels config error", func(t *testing.T) {
@@ -608,7 +607,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrClientConfig)
+		assert(err).Equal(base.ErrClientConfig)
 	})
 
 	t.Run("read transLimit error", func(t *testing.T) {
@@ -622,7 +621,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("transLimit config error", func(t *testing.T) {
@@ -637,7 +636,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrClientConfig)
+		assert(err).Equal(base.ErrClientConfig)
 	})
 
 	t.Run("read heartbeat error", func(t *testing.T) {
@@ -652,7 +651,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("heartbeat config error", func(t *testing.T) {
@@ -668,7 +667,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrClientConfig)
+		assert(err).Equal(base.ErrClientConfig)
 	})
 
 	t.Run("read heartbeatTimeout error", func(t *testing.T) {
@@ -684,7 +683,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("heartbeatTimeout config error", func(t *testing.T) {
@@ -701,7 +700,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrClientConfig)
+		assert(err).Equal(base.ErrClientConfig)
 	})
 
 	t.Run("stream is not finish", func(t *testing.T) {
@@ -719,7 +718,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v, streamConn, _ := fnTestClient()
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("ok, sessionString != p.sessionString", func(t *testing.T) {
@@ -781,7 +780,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v.conn = streamConn
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("p.conn != nil, callbackID == 0, 02", func(t *testing.T) {
@@ -793,7 +792,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v.conn = streamConn
 		v.onError = func(e *base.Error) { err = e }
 		v.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("p.conn != nil, callbackID == 0, 03", func(t *testing.T) {
@@ -836,7 +835,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		(&v.channels[17]).Use(NewSendItem(0), 32)
 		v.OnConnReadStream(streamConn, stream)
 		assert(v.channels[17].item).IsNotNil()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 
 	t.Run("p.conn != nil, callbackID != 0, 03", func(t *testing.T) {
@@ -861,8 +860,8 @@ func TestClient_OnConnError(t *testing.T) {
 		streamConn := adapter.NewStreamConn(syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
-		v.OnConnError(streamConn, errors.ErrStream)
-		assert(err).Equal(errors.ErrStream)
+		v.OnConnError(streamConn, base.ErrStream)
+		assert(err).Equal(base.ErrStream)
 		assert(netConn.isRunning).IsFalse()
 	})
 }

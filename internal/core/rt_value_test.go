@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
 )
 
@@ -17,20 +16,20 @@ func testWithRTValue(fn func(v RTValue), v interface{}) {
 func TestRTValue_ToBool(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToBool()).
-			Equal(false, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToBool()).
+			Equal(false, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToBool()).
-			Equal(false, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(false, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToBool()).Equal(false, errors.ErrStream)
+			assert(v.ToBool()).Equal(false, base.ErrStream)
 		}, "kitty")
 	})
 
@@ -45,20 +44,20 @@ func TestRTValue_ToBool(t *testing.T) {
 func TestRTValue_ToInt64(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToInt64()).
-			Equal(int64(0), errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToInt64()).
+			Equal(int64(0), base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToInt64()).
-			Equal(int64(0), errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(int64(0), base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToInt64()).Equal(int64(0), errors.ErrStream)
+			assert(v.ToInt64()).Equal(int64(0), base.ErrStream)
 		}, "kitty")
 	})
 
@@ -73,20 +72,20 @@ func TestRTValue_ToInt64(t *testing.T) {
 func TestRTValue_ToUint64(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToUint64()).
-			Equal(uint64(0), errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToUint64()).
+			Equal(uint64(0), base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToUint64()).
-			Equal(uint64(0), errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(uint64(0), base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToUint64()).Equal(uint64(0), errors.ErrStream)
+			assert(v.ToUint64()).Equal(uint64(0), base.ErrStream)
 		}, "kitty")
 	})
 
@@ -101,20 +100,20 @@ func TestRTValue_ToUint64(t *testing.T) {
 func TestRTValue_ToFloat64(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToFloat64()).
-			Equal(float64(0), errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToFloat64()).
+			Equal(float64(0), base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToFloat64()).
-			Equal(float64(0), errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(float64(0), base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToFloat64()).Equal(float64(0), errors.ErrStream)
+			assert(v.ToFloat64()).Equal(float64(0), base.ErrStream)
 		}, "kitty")
 	})
 
@@ -129,20 +128,20 @@ func TestRTValue_ToFloat64(t *testing.T) {
 func TestRTValue_ToString(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToString()).
-			Equal("", errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToString()).
+			Equal("", base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToString()).
-			Equal("", errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal("", base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToString()).Equal("", errors.ErrStream)
+			assert(v.ToString()).Equal("", base.ErrStream)
 		}, true)
 	})
 
@@ -157,20 +156,20 @@ func TestRTValue_ToString(t *testing.T) {
 func TestRTValue_ToBytes(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToBytes()).
-			Equal([]byte{}, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToBytes()).
+			Equal([]byte{}, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToBytes()).
-			Equal([]byte{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal([]byte{}, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToBytes()).Equal([]byte{}, errors.ErrStream)
+			assert(v.ToBytes()).Equal([]byte{}, base.ErrStream)
 		}, true)
 	})
 
@@ -185,20 +184,20 @@ func TestRTValue_ToBytes(t *testing.T) {
 func TestRTValue_ToArray(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToArray()).
-			Equal(Array{}, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToArray()).
+			Equal(Array{}, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToArray()).
-			Equal(Array{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(Array{}, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToArray()).Equal(Array{}, errors.ErrStream)
+			assert(v.ToArray()).Equal(Array{}, base.ErrStream)
 		}, true)
 	})
 
@@ -213,20 +212,20 @@ func TestRTValue_ToArray(t *testing.T) {
 func TestRTValue_ToRTArray(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToRTArray()).
-			Equal(RTArray{}, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToRTArray()).
+			Equal(RTArray{}, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToRTArray()).
-			Equal(RTArray{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(RTArray{}, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToRTArray()).Equal(RTArray{}, errors.ErrStream)
+			assert(v.ToRTArray()).Equal(RTArray{}, base.ErrStream)
 		}, true)
 	})
 
@@ -246,20 +245,20 @@ func TestRTValue_ToRTArray(t *testing.T) {
 func TestRTValue_ToAMap(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToMap()).
-			Equal(Map{}, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToMap()).
+			Equal(Map{}, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToMap()).
-			Equal(Map{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(Map{}, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToMap()).Equal(Map{}, errors.ErrStream)
+			assert(v.ToMap()).Equal(Map{}, base.ErrStream)
 		}, true)
 	})
 
@@ -274,20 +273,20 @@ func TestRTValue_ToAMap(t *testing.T) {
 func TestRTValue_ToRTMap(t *testing.T) {
 	t.Run("err is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(RTValue{err: errors.ErrStream}.ToRTMap()).
-			Equal(RTMap{}, errors.ErrStream)
+		assert(RTValue{err: base.ErrStream}.ToRTMap()).
+			Equal(RTMap{}, base.ErrStream)
 	})
 
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(RTValue{}.ToRTMap()).
-			Equal(RTMap{}, errors.ErrRuntimeIllegalInCurrentGoroutine)
+			Equal(RTMap{}, base.ErrRuntimeIllegalInCurrentGoroutine)
 	})
 
 	t.Run("type error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testWithRTValue(func(v RTValue) {
-			assert(v.ToRTMap()).Equal(RTMap{}, errors.ErrStream)
+			assert(v.ToRTMap()).Equal(RTMap{}, base.ErrStream)
 		}, true)
 	})
 

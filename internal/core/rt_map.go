@@ -5,7 +5,6 @@ import (
 	"unsafe"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 const sizeOfMapItem = int(unsafe.Sizeof(mapItem{}))
@@ -177,13 +176,13 @@ func (p RTMap) Get(key string) RTValue {
 		}
 
 		return RTValue{
-			err: errors.ErrRTMapNameNotFound.
+			err: base.ErrRTMapNameNotFound.
 				AddDebug(fmt.Sprintf("RTMap key %s does not exist", key)),
 		}
 	}
 
 	return RTValue{
-		err: errors.ErrRuntimeIllegalInCurrentGoroutine,
+		err: base.ErrRuntimeIllegalInCurrentGoroutine,
 	}
 }
 
@@ -195,7 +194,7 @@ func (p RTMap) Set(key string, value interface{}) *base.Error {
 		pos := int64(thread.rtStream.GetWritePos())
 
 		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
-			return errors.ErrUnsupportedValue.AddDebug(reason)
+			return base.ErrUnsupportedValue.AddDebug(reason)
 		}
 
 		switch value.(type) {
@@ -208,7 +207,7 @@ func (p RTMap) Set(key string, value interface{}) *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Delete ...
@@ -222,11 +221,11 @@ func (p RTMap) Delete(key string) *base.Error {
 			return nil
 		}
 
-		return errors.ErrRTMapNameNotFound.
+		return base.ErrRTMapNameNotFound.
 			AddDebug(fmt.Sprintf("RTMap key %s does not exist", key))
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // DeleteAll ...
@@ -238,7 +237,7 @@ func (p RTMap) DeleteAll() *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Size ...

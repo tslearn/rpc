@@ -11,7 +11,6 @@ import (
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/route"
 )
@@ -105,12 +104,12 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	if p.isRunning {
 		p.onError(
 			0,
-			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		)
 	} else if numOfThreads <= 0 {
 		p.onError(
 			0,
-			errors.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)),
+			base.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)),
 		)
 	} else {
 		p.numOfThreads = numOfThreads
@@ -127,12 +126,12 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	if p.isRunning {
 		p.onError(
 			0,
-			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		)
 	} else if threadBufferSize <= 0 {
 		p.onError(
 			0,
-			errors.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)),
+			base.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)),
 		)
 	} else {
 		p.threadBufferSize = threadBufferSize
@@ -149,7 +148,7 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	if p.isRunning {
 		p.onError(
 			0,
-			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		)
 	} else {
 		p.actionCache = actionCache
@@ -168,7 +167,7 @@ func (p *Server) SetErrorHandler(
 	if p.isRunning {
 		p.onError(
 			0,
-			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		)
 	} else {
 		p.errorHandler = onError
@@ -189,7 +188,7 @@ func (p *Server) AddService(
 	if p.isRunning {
 		p.onError(
 			0,
-			errors.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
+			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		)
 	} else {
 		p.mountServices = append(p.mountServices, core.NewServiceMeta(
@@ -241,7 +240,7 @@ func (p *Server) Open() bool {
 		defer p.Unlock()
 
 		if p.isRunning {
-			return errors.ErrServerAlreadyRunning.AddDebug(source)
+			return base.ErrServerAlreadyRunning.AddDebug(source)
 		} else if processor, err := NewRPCProcessor(
 			p.router,
 			p.numOfThreads,
@@ -275,7 +274,7 @@ func (p *Server) Close() bool {
 	defer p.Unlock()
 
 	if !p.isRunning {
-		p.onError(0, errors.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
+		p.onError(0, base.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
 		return false
 	}
 

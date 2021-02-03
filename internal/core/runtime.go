@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // Runtime ...
@@ -32,7 +31,7 @@ func (p Runtime) Reply(value interface{}) Return {
 
 	if thread == nil {
 		base.PublishPanic(
-			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+			base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
 		)
 		return emptyReturn
 	}
@@ -46,7 +45,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	thread := p.lock()
 	if thread == nil {
 		return RTValue{
-			err: errors.ErrRuntimeIllegalInCurrentGoroutine.
+			err: base.ErrRuntimeIllegalInCurrentGoroutine.
 				AddDebug(base.GetFileLine(1)),
 		}
 	}
@@ -147,7 +146,7 @@ func (p Runtime) parseResponseStream(stream *Stream) RTValue {
 	} else if message, err := stream.ReadString(); err != nil {
 		return RTValue{err: err}
 	} else if !stream.IsReadFinish() {
-		return RTValue{err: errors.ErrStream}
+		return RTValue{err: base.ErrStream}
 	} else {
 		return RTValue{err: base.NewError(errCode, message)}
 	}

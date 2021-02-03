@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -94,7 +93,7 @@ func TestServer_onError(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
 		assert(base.RunWithCatchPanic(func() {
-			v.onError(12, errors.ErrStream)
+			v.onError(12, base.ErrStream)
 		})).IsNil()
 	})
 
@@ -107,9 +106,9 @@ func TestServer_onError(t *testing.T) {
 			errID = sessionID
 			err = e
 		}
-		v.onError(12, errors.ErrStream)
+		v.onError(12, base.ErrStream)
 		assert(errID).Equal(uint64(12))
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 }
 
@@ -145,7 +144,7 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 		v.isRunning = true
 		_, source := v.SetNumOfThreads(1024), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 	})
 
 	t.Run("numOfThreads == 0", func(t *testing.T) {
@@ -161,7 +160,7 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 
 		_, source := v.SetNumOfThreads(0), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrNumOfThreadsIsWrong.AddDebug(source))
+		assert(err).Equal(base.ErrNumOfThreadsIsWrong.AddDebug(source))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -187,7 +186,7 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 		v.isRunning = true
 		_, source := v.SetThreadBufferSize(1024), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 	})
 
 	t.Run("threadBufferSize == 0", func(t *testing.T) {
@@ -203,7 +202,7 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 
 		_, source := v.SetThreadBufferSize(0), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrThreadBufferSizeIsWrong.AddDebug(source))
+		assert(err).Equal(base.ErrThreadBufferSizeIsWrong.AddDebug(source))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -228,7 +227,7 @@ func TestServer_SetActionCache(t *testing.T) {
 		v.isRunning = true
 		_, source := v.SetActionCache(ac), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 		assert(v.actionCache).IsNil()
 	})
 
@@ -255,7 +254,7 @@ func TestServer_SetErrorHandler(t *testing.T) {
 		v.isRunning = true
 		_, source := v.SetErrorHandler(handler), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -281,7 +280,7 @@ func TestServer_AddService(t *testing.T) {
 		v.isRunning = true
 		_, source := v.AddService("t", service, nil), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -332,7 +331,7 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		}
 		assert(v.BuildReplyCache()).Equal(v)
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrCacheWriteFile)
+		assert(err).Equal(base.ErrCacheWriteFile)
 	})
 }
 
@@ -350,7 +349,7 @@ func TestServer_Open(t *testing.T) {
 		isOpen, source := v.Open(), base.GetFileLine(0)
 		assert(errID).Equal(uint64(0))
 		assert(isOpen).Equal(false)
-		assert(err).Equal(errors.ErrServerAlreadyRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
 	})
 
 	t.Run("processor create error", func(t *testing.T) {
@@ -365,7 +364,7 @@ func TestServer_Open(t *testing.T) {
 		}
 		assert(v.Open()).IsFalse()
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrNumOfThreadsIsWrong)
+		assert(err).Equal(base.ErrNumOfThreadsIsWrong)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -403,7 +402,7 @@ func TestServer_Close(t *testing.T) {
 		isSuccess, source := v.Close(), base.GetFileLine(0)
 		assert(isSuccess).IsFalse()
 		assert(errID).Equal(uint64(0))
-		assert(err).Equal(errors.ErrServerNotRunning.AddDebug(source))
+		assert(err).Equal(base.ErrServerNotRunning.AddDebug(source))
 	})
 
 	t.Run("test ok", func(t *testing.T) {

@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
 	"unsafe"
 )
@@ -54,7 +53,7 @@ func TestRuntime_Reply(t *testing.T) {
 			v := Runtime{}
 			_, source = v.Reply(true), base.GetFileLine(0)
 		})).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
+			base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
 		)
 	})
 
@@ -72,13 +71,13 @@ func TestRuntime_Reply(t *testing.T) {
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
-				err := errors.ErrStream.AddDebug("error")
+				err := base.ErrStream.AddDebug("error")
 				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}, nil),
-		)).Equal(nil, errors.ErrStream.AddDebug("error").AddDebug(source))
+		)).Equal(nil, base.ErrStream.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("test ok (error)", func(t *testing.T) {
@@ -86,13 +85,13 @@ func TestRuntime_Reply(t *testing.T) {
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
-				err := errors.ErrActionCustom.AddDebug("error")
+				err := base.ErrActionCustom.AddDebug("error")
 				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}, nil),
-		)).Equal(nil, errors.ErrActionCustom.AddDebug("error").AddDebug(source))
+		)).Equal(nil, base.ErrActionCustom.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("argument is (*Error)(nil)", func(t *testing.T) {
@@ -107,7 +106,7 @@ func TestRuntime_Reply(t *testing.T) {
 			}, nil),
 		)).Equal(
 			nil,
-			errors.ErrUnsupportedValue.
+			base.ErrUnsupportedValue.
 				AddDebug("value is nil").
 				AddDebug(source),
 		)
@@ -125,7 +124,7 @@ func TestRuntime_Reply(t *testing.T) {
 			}, nil),
 		)).Equal(
 			nil,
-			errors.ErrUnsupportedValue.
+			base.ErrUnsupportedValue.
 				AddDebug("value is nil").
 				AddDebug(source),
 		)
@@ -137,7 +136,7 @@ func TestRuntime_Call(t *testing.T) {
 		assert := base.NewAssert(t)
 		ret, source := Runtime{}.Call("#"), base.GetFileLine(0)
 		assert(ret).Equal(RTValue{
-			err: errors.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
+			err: base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source),
 		})
 	})
 
@@ -156,7 +155,7 @@ func TestRuntime_Call(t *testing.T) {
 				source2 = rt.thread.GetActionNode().path + " " + s2
 				return ret
 			}, nil),
-		)).Equal(nil, errors.ErrUnsupportedValue.
+		)).Equal(nil, base.ErrUnsupportedValue.
 			AddDebug("2nd argument: value type(chan bool) is not supported").
 			AddDebug(source1).AddDebug(source2),
 		)
@@ -185,7 +184,7 @@ func TestRuntime_Call(t *testing.T) {
 				},
 				nil,
 			),
-		)).Equal(nil, errors.ErrCallOverflow.
+		)).Equal(nil, base.ErrCallOverflow.
 			AddDebug("call #.test:SayHello level(1) overflows").
 			AddDebug(source1).AddDebug(source2),
 		)
@@ -347,7 +346,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		v := NewStream()
 		v.WriteInt64(3)
 		assert(testRuntime.parseResponseStream(v)).Equal(
-			RTValue{err: errors.ErrStream},
+			RTValue{err: base.ErrStream},
 		)
 	})
 
@@ -357,7 +356,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		v := NewStream()
 		v.WriteUint64(0)
 		assert(testRuntime.parseResponseStream(v)).Equal(
-			RTValue{err: errors.ErrStream},
+			RTValue{err: base.ErrStream},
 		)
 	})
 
@@ -377,7 +376,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		v.WriteUint64(uint64(base.ErrorTypeSecurity))
 		v.WriteBool(true)
 		assert(testRuntime.parseResponseStream(v)).Equal(
-			RTValue{err: errors.ErrStream},
+			RTValue{err: base.ErrStream},
 		)
 	})
 
@@ -385,11 +384,11 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
-		v.WriteUint64(errors.ErrStream.GetCode())
-		v.WriteString(errors.ErrStream.GetMessage())
+		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
 		assert(testRuntime.parseResponseStream(v)).Equal(
-			RTValue{err: errors.ErrStream},
+			RTValue{err: base.ErrStream},
 		)
 	})
 
@@ -397,10 +396,10 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
-		v.WriteUint64(errors.ErrStream.GetCode())
-		v.WriteString(errors.ErrStream.GetMessage())
+		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteString(base.ErrStream.GetMessage())
 		assert(testRuntime.parseResponseStream(v)).Equal(
-			RTValue{err: errors.ErrStream},
+			RTValue{err: base.ErrStream},
 		)
 	})
 }

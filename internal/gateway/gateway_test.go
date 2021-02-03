@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
 	"net"
 	"testing"
@@ -163,7 +162,7 @@ func TestGateWay_Listen(t *testing.T) {
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.isRunning = true
 		assert(v.Listen("tcp", "0.0.0.0:8080", nil)).Equal(v)
-		assert(err).Equal(errors.ErrGatewayAlreadyRunning)
+		assert(err).Equal(base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("gateway is not running", func(t *testing.T) {
@@ -192,7 +191,7 @@ func TestGateWay_Open(t *testing.T) {
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.isRunning = true
 		v.Open()
-		assert(err).Equal(errors.ErrGatewayAlreadyRunning)
+		assert(err).Equal(base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("no valid adapter", func(t *testing.T) {
@@ -201,7 +200,7 @@ func TestGateWay_Open(t *testing.T) {
 		onError := func(sessionID uint64, e *base.Error) { err = e }
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		v.Open()
-		assert(err).Equal(errors.ErrGatewayNoAvailableAdapter)
+		assert(err).Equal(base.ErrGatewayNoAvailableAdapter)
 	})
 
 	t.Run("test", func(t *testing.T) {
@@ -284,7 +283,7 @@ func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 		stream := core.NewStream()
 		stream.SetSessionID(11)
 		v.ReceiveStreamFromRouter(stream)
-		assert(err).Equal(errors.ErrGateWaySessionNotFound)
+		assert(err).Equal(base.ErrGateWaySessionNotFound)
 	})
 }
 
@@ -329,9 +328,9 @@ func TestGateWay_OnConnError(t *testing.T) {
 		syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
 		streamConn := adapter.NewStreamConn(syncConn, v)
 		assert(netConn.isRunning).IsTrue()
-		v.OnConnError(streamConn, errors.ErrStream)
+		v.OnConnError(streamConn, base.ErrStream)
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(errors.ErrStream)
+		assert(err).Equal(base.ErrStream)
 	})
 }
 

@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"math/rand"
 	"runtime"
 	"sort"
@@ -213,7 +212,7 @@ func TestRTMap_Get(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtMap := RTMap{}
 		assert(rtMap.Get("name").err).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -227,7 +226,7 @@ func TestRTMap_Get(t *testing.T) {
 		assert(v.Get("age").ToUint64()).Equal(uint64(18), nil)
 		assert(v.Get("noKey").ToString()).Equal(
 			"",
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key noKey does not exist"))
+			base.ErrRTMapNameNotFound.AddDebug("RTMap key noKey does not exist"))
 	})
 
 	t.Run("key does not exist", func(t *testing.T) {
@@ -235,10 +234,10 @@ func TestRTMap_Get(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(0)
 		assert(v.Get("name").err).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
+			base.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
 		assert(v.Get("age").err).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key age does not exist"),
+			base.ErrRTMapNameNotFound.AddDebug("RTMap key age does not exist"),
 		)
 	})
 }
@@ -248,7 +247,7 @@ func TestRTMap_Set(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtMap := RTMap{}
 		assert(rtMap.Set("name", "kitty")).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -257,7 +256,7 @@ func TestRTMap_Set(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(0)
 		assert(v.Set("name", make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug(
+			base.ErrUnsupportedValue.AddDebug(
 				"value type(chan bool) is not supported",
 			),
 		)
@@ -278,12 +277,12 @@ func TestRTMap_Set(t *testing.T) {
 		assert(v.Get("age").ToInt64()).Equal(int64(3), nil)
 		assert(v.Get("age").cacheSafe).Equal(true)
 		assert(v.Get("age").cacheBytes).Equal([]byte(nil))
-		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
+		assert(v.Get("age").cacheError).Equal(base.ErrStream)
 		_ = v.Set("age", 6)
 		assert(v.Get("age").ToInt64()).Equal(int64(6), nil)
 		assert(v.Get("age").cacheSafe).Equal(true)
 		assert(v.Get("age").cacheBytes).Equal([]byte(nil))
-		assert(v.Get("age").cacheError).Equal(errors.ErrStream)
+		assert(v.Get("age").cacheError).Equal(base.ErrStream)
 	})
 }
 
@@ -292,7 +291,7 @@ func TestRTMap_Delete(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtMap := RTMap{}
 		assert(rtMap.Delete("name")).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -301,7 +300,7 @@ func TestRTMap_Delete(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(0)
 		assert(v.Delete("name")).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
+			base.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
 	})
 
@@ -312,7 +311,7 @@ func TestRTMap_Delete(t *testing.T) {
 		_ = v.Set("name", "kitty")
 		_ = v.Delete("name")
 		assert(v.Delete("name")).Equal(
-			errors.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
+			base.ErrRTMapNameNotFound.AddDebug("RTMap key name does not exist"),
 		)
 	})
 
@@ -330,7 +329,7 @@ func TestRTMap_DeleteAll(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtMap := RTMap{}
 		assert(rtMap.DeleteAll()).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 

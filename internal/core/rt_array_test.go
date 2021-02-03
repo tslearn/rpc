@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"runtime"
 	"testing"
 )
@@ -40,7 +39,7 @@ func TestRTArray_Get(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
 		assert(rtArray.Get(0).err).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -49,7 +48,7 @@ func TestRTArray_Get(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Get(1).err).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Get(1).err).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
 	})
 
@@ -58,7 +57,7 @@ func TestRTArray_Get(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Get(-1).err).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Get(-1).err).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
 	})
 
@@ -76,7 +75,7 @@ func TestRTArray_Set(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
 		assert(rtArray.Set(0, true)).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -86,7 +85,7 @@ func TestRTArray_Set(t *testing.T) {
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
 		assert(v.Set(0, make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug(
+			base.ErrUnsupportedValue.AddDebug(
 				"value type(chan bool) is not supported",
 			),
 		)
@@ -97,7 +96,7 @@ func TestRTArray_Set(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Set(1, true)).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Set(1, true)).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
 	})
 
@@ -106,7 +105,7 @@ func TestRTArray_Set(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Set(-1, true)).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Set(-1, true)).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
 	})
 
@@ -130,7 +129,7 @@ func TestRTArray_Append(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
 		assert(rtArray.Append(true)).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -139,7 +138,7 @@ func TestRTArray_Append(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		assert(v.Append(make(chan bool))).Equal(
-			errors.ErrUnsupportedValue.AddDebug(
+			base.ErrUnsupportedValue.AddDebug(
 				"value type(chan bool) is not supported",
 			),
 		)
@@ -178,7 +177,7 @@ func TestRTArray_Delete(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
 		assert(rtArray.Delete(0)).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 
@@ -187,7 +186,7 @@ func TestRTArray_Delete(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Delete(1)).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Delete(1)).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index 1 out of range"))
 	})
 
@@ -196,7 +195,7 @@ func TestRTArray_Delete(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTArray(0)
 		_ = v.Append(true)
-		assert(v.Delete(-1)).Equal(errors.ErrRTArrayIndexOverflow.
+		assert(v.Delete(-1)).Equal(base.ErrRTArrayIndexOverflow.
 			AddDebug("RTArray index -1 out of range"))
 	})
 
@@ -245,7 +244,7 @@ func TestRTArray_DeleteAll(t *testing.T) {
 		assert := base.NewAssert(t)
 		rtArray := RTArray{}
 		assert(rtArray.DeleteAll()).Equal(
-			errors.ErrRuntimeIllegalInCurrentGoroutine,
+			base.ErrRuntimeIllegalInCurrentGoroutine,
 		)
 	})
 

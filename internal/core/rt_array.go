@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 )
 
 // RTArray ...
@@ -23,13 +22,13 @@ func (p RTArray) Get(index int) RTValue {
 		}
 
 		return RTValue{
-			err: errors.ErrRTArrayIndexOverflow.
+			err: base.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d out of range", index)),
 		}
 	}
 
 	return RTValue{
-		err: errors.ErrRuntimeIllegalInCurrentGoroutine,
+		err: base.ErrRuntimeIllegalInCurrentGoroutine,
 	}
 }
 
@@ -41,11 +40,11 @@ func (p RTArray) Set(index int, value interface{}) *base.Error {
 		pos := int64(thread.rtStream.GetWritePos())
 
 		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
-			return errors.ErrUnsupportedValue.AddDebug(reason)
+			return base.ErrUnsupportedValue.AddDebug(reason)
 		}
 
 		if index < 0 || index >= len(*p.items) {
-			return errors.ErrRTArrayIndexOverflow.
+			return base.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d out of range", index))
 		}
 
@@ -58,7 +57,7 @@ func (p RTArray) Set(index int, value interface{}) *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Append ...
@@ -69,7 +68,7 @@ func (p RTArray) Append(value interface{}) *base.Error {
 		pos := int64(thread.rtStream.GetWritePos())
 
 		if reason := thread.rtStream.Write(value); reason != StreamWriteOK {
-			return errors.ErrUnsupportedValue.AddDebug(reason)
+			return base.ErrUnsupportedValue.AddDebug(reason)
 		}
 
 		switch value.(type) {
@@ -81,7 +80,7 @@ func (p RTArray) Append(value interface{}) *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Delete ...
@@ -92,7 +91,7 @@ func (p RTArray) Delete(index int) *base.Error {
 		items := *p.items
 		size := len(items)
 		if index < 0 || index >= size {
-			return errors.ErrRTArrayIndexOverflow.
+			return base.ErrRTArrayIndexOverflow.
 				AddDebug(fmt.Sprintf("RTArray index %d out of range", index))
 		}
 
@@ -102,7 +101,7 @@ func (p RTArray) Delete(index int) *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // DeleteAll ...
@@ -113,7 +112,7 @@ func (p RTArray) DeleteAll() *base.Error {
 		return nil
 	}
 
-	return errors.ErrRuntimeIllegalInCurrentGoroutine
+	return base.ErrRuntimeIllegalInCurrentGoroutine
 }
 
 // Size ...

@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/errors"
 	"os"
 	"path"
 	"reflect"
@@ -110,28 +109,28 @@ func TestNewProcessor(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewProcessor(
 			1024, 16, 16, 2048, nil, 5*time.Second, nil, nil,
-		)).Equal(nil, errors.ErrProcessorOnReturnStreamIsNil)
+		)).Equal(nil, base.ErrProcessorOnReturnStreamIsNil)
 	})
 
 	t.Run("numOfThreads <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewProcessor(
 			0, 16, 16, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
-		)).Equal(nil, errors.ErrNumOfThreadsIsWrong)
+		)).Equal(nil, base.ErrNumOfThreadsIsWrong)
 	})
 
 	t.Run("maxNodeDepth <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewProcessor(
 			1024, 0, 16, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
-		)).Equal(nil, errors.ErrMaxNodeDepthIsWrong)
+		)).Equal(nil, base.ErrMaxNodeDepthIsWrong)
 	})
 
 	t.Run("maxCallDepth <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewProcessor(
 			1024, 16, 0, 2048, nil, 5*time.Second, nil, func(stream *Stream) {},
-		)).Equal(nil, errors.ErrProcessorMaxCallDepthIsWrong)
+		)).Equal(nil, base.ErrProcessorMaxCallDepthIsWrong)
 	})
 
 	t.Run("mount service error", func(t *testing.T) {
@@ -139,7 +138,7 @@ func TestNewProcessor(t *testing.T) {
 		assert(NewProcessor(
 			1024, 16, 16, 2048, nil, 5*time.Second,
 			[]*ServiceMeta{nil}, func(stream *Stream) {},
-		)).Equal(nil, errors.ErrProcessorNodeMetaIsNil)
+		)).Equal(nil, base.ErrProcessorNodeMetaIsNil)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -179,8 +178,8 @@ func TestNewProcessor(t *testing.T) {
 		)
 		assert(err).IsNil()
 		assert(processor).IsNotNil()
-		base.PublishPanic(errors.ErrStream)
-		assert(ParseResponseStream(<-streamCH)).Equal(nil, errors.ErrStream)
+		base.PublishPanic(base.ErrStream)
+		assert(ParseResponseStream(<-streamCH)).Equal(nil, base.ErrStream)
 		_ = processor.Close()
 	})
 
@@ -321,7 +320,7 @@ func TestProcessor_Close(t *testing.T) {
 			if count == 1 {
 				assert(ParseResponseStream(<-streamCH)).Equal(
 					nil,
-					errors.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
+					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (1 goroutine)",
 						source,
 					)),
@@ -329,7 +328,7 @@ func TestProcessor_Close(t *testing.T) {
 			} else {
 				assert(ParseResponseStream(<-streamCH)).Equal(
 					nil,
-					errors.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
+					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (%d goroutines)",
 						source, count,
 					)),
@@ -467,7 +466,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 		)
 		processor.Close()
 		assert(processor.BuildCache("pkgName", "")).
-			Equal(errors.ErrProcessorIsNotRunning)
+			Equal(base.ErrProcessorIsNotRunning)
 	})
 }
 
@@ -554,7 +553,7 @@ func TestProcessor_mountNode(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testProcessorMountError([]*ServiceMeta{
 			nil,
-		})).Equal(errors.ErrProcessorNodeMetaIsNil)
+		})).Equal(base.ErrProcessorNodeMetaIsNil)
 	})
 
 	t.Run("service name is illegal", func(t *testing.T) {
@@ -563,7 +562,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name:     "+",
 			service:  NewService(),
 			fileLine: "dbg",
-		}})).Equal(errors.ErrServiceName.
+		}})).Equal(base.ErrServiceName.
 			AddDebug("service name + is illegal").
 			AddDebug("dbg"),
 		)
@@ -575,7 +574,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name:     "abc",
 			service:  nil,
 			fileLine: "dbg",
-		}})).Equal(errors.ErrServiceIsNil.AddDebug("dbg"))
+		}})).Equal(base.ErrServiceIsNil.AddDebug("dbg"))
 	})
 
 	t.Run("depth overflows", func(t *testing.T) {
@@ -586,7 +585,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name:     "s",
 			service:  NewService().AddChildService("s", embedService, nil),
 			fileLine: "dbg",
-		}})).Equal(errors.ErrServiceOverflow.AddDebug(
+		}})).Equal(base.ErrServiceOverflow.AddDebug(
 			"service path #.s.s.s overflows (max depth: 2, current depth:3)",
 		).AddDebug(source))
 	})
@@ -601,7 +600,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name:     "user",
 			service:  NewService(),
 			fileLine: "Debug2",
-		}})).Equal(errors.ErrServiceName.
+		}})).Equal(base.ErrServiceName.
 			AddDebug("duplicated service name user").
 			AddDebug("current:\n\tDebug2\nconflict:\n\tDebug1"),
 		)
@@ -617,7 +616,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name:     "user",
 			service:  NewService(),
 			fileLine: "dbg2",
-		}})).Equal(errors.ErrServiceName.
+		}})).Equal(base.ErrServiceName.
 			AddDebug("duplicated service name user").
 			AddDebug("current:\n\tdbg2\nconflict:\n\tdbg1"),
 		)
@@ -632,7 +631,7 @@ func TestProcessor_mountNode(t *testing.T) {
 				actions:  []*rpcActionMeta{nil},
 			},
 			fileLine: "",
-		}})).Equal(errors.ErrProcessorActionMetaIsNil)
+		}})).Equal(base.ErrProcessorActionMetaIsNil)
 	})
 
 	t.Run("mount children error", func(t *testing.T) {
@@ -644,7 +643,7 @@ func TestProcessor_mountNode(t *testing.T) {
 				actions:  []*rpcActionMeta{},
 			},
 			fileLine: "",
-		}})).Equal(errors.ErrProcessorNodeMetaIsNil)
+		}})).Equal(base.ErrProcessorNodeMetaIsNil)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -694,7 +693,7 @@ func TestProcessor_mountAction(t *testing.T) {
 				actions:  []*rpcActionMeta{nil},
 			},
 			fileLine: "nodeDebug",
-		}})).Equal(errors.ErrProcessorActionMetaIsNil)
+		}})).Equal(base.ErrProcessorActionMetaIsNil)
 	})
 
 	t.Run("name is illegal", func(t *testing.T) {
@@ -711,7 +710,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionName.
+			base.ErrActionName.
 				AddDebug("action name + is illegal").
 				AddDebug("actionDebug"),
 		)
@@ -731,7 +730,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionHandler.
+			base.ErrActionHandler.
 				AddDebug("handler is nil").
 				AddDebug("actionDebug"),
 		)
@@ -751,7 +750,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionHandler.
+			base.ErrActionHandler.
 				AddDebug("handler must be func(rt rpc.Runtime, ...) rpc.Return").
 				AddDebug("actionDebug"),
 		)
@@ -771,7 +770,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionHandler.
+			base.ErrActionHandler.
 				AddDebug("handler 1st argument type must be rpc.Runtime").
 				AddDebug("actionDebug"),
 		)
@@ -791,7 +790,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionHandler.
+			base.ErrActionHandler.
 				AddDebug("handler return type must be rpc.Return").
 				AddDebug("actionDebug"),
 		)
@@ -815,7 +814,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			errors.ErrActionName.
+			base.ErrActionName.
 				AddDebug("duplicated action name login").
 				AddDebug("current:\n\tactionDebug2\nconflict:\n\tactionDebug1"),
 		)

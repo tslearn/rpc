@@ -10,7 +10,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/errors"
 	"github.com/rpccloud/rpc/internal/route"
 )
 
@@ -110,7 +109,7 @@ func (p *GateWay) Listen(
 			p,
 		))
 	} else {
-		p.onError(0, errors.ErrGatewayAlreadyRunning)
+		p.onError(0, base.ErrGatewayAlreadyRunning)
 	}
 
 	return p
@@ -123,10 +122,10 @@ func (p *GateWay) Open() {
 		defer p.Unlock()
 
 		if p.isRunning {
-			p.onError(0, errors.ErrGatewayAlreadyRunning)
+			p.onError(0, base.ErrGatewayAlreadyRunning)
 			return false
 		} else if len(p.adapters) <= 0 {
-			p.onError(0, errors.ErrGatewayNoAvailableAdapter)
+			p.onError(0, base.ErrGatewayNoAvailableAdapter)
 			return false
 		} else {
 			p.isRunning = true
@@ -186,7 +185,7 @@ func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) {
 	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 	} else {
-		p.onError(stream.GetSessionID(), errors.ErrGateWaySessionNotFound)
+		p.onError(stream.GetSessionID(), base.ErrGateWaySessionNotFound)
 		stream.Release()
 	}
 }
