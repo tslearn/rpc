@@ -244,20 +244,11 @@ func syncServerTestClose(
 		v.(*syncWSServerService).ln = fakeLN
 	}
 
-	waitCH := make(chan bool, 1)
-	closeOK := false
-	go func() {
-		closeOK = v.Close()
-		waitCH <- true
-	}()
-
 	if fakeError {
-		for receiver.GetOnErrorCount() == 0 {
-			time.Sleep(50 * time.Millisecond)
-		}
+		_ = fakeLN.ln.Close()
 	}
 
-	<-waitCH
+	closeOK := v.Close()
 	return receiver, closeOK
 }
 
@@ -483,9 +474,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("tcp", false, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceClose.AddDebug(io.EOF.Error()),
-		)
+		assert(receiver.GetOnErrorCount() >= 1).IsTrue()
 	})
 
 	t.Run("tcp close ok", func(t *testing.T) {
@@ -499,9 +488,7 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("tcp", true, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).Equal(
-			errors.ErrSyncTCPServerServiceClose.AddDebug(io.EOF.Error()),
-		)
+		assert(receiver.GetOnErrorCount() >= 1).IsTrue()
 	})
 
 	t.Run("tls close ok", func(t *testing.T) {
@@ -613,8 +600,7 @@ func TestSyncWSServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("ws", false, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).
-			Equal(errors.ErrSyncWSServerServiceClose.AddDebug(io.EOF.Error()))
+		assert(receiver.GetOnErrorCount() >= 1).IsTrue()
 	})
 
 	t.Run("ws close ok", func(t *testing.T) {
@@ -628,8 +614,7 @@ func TestSyncWSServerService_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver, ok := syncServerTestClose("wss", true, true)
 		assert(ok).IsTrue()
-		assert(receiver.GetError()).
-			Equal(errors.ErrSyncWSServerServiceClose.AddDebug(io.EOF.Error()))
+		assert(receiver.GetOnErrorCount() >= 1).IsTrue()
 	})
 
 	t.Run("wss close ok", func(t *testing.T) {
