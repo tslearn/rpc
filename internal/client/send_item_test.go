@@ -57,8 +57,7 @@ func TestSendItem_CheckTime(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(int64(time.Millisecond))
 		v.sendStream.SetCallbackID(15)
-		time.Sleep(10 * time.Millisecond)
-
+		time.Sleep(100 * time.Millisecond)
 		assert(v.CheckTime(base.TimeNow().UnixNano())).IsTrue()
 		assert(v.isRunning).IsFalse()
 		assert(len(v.returnCH)).Equal(1)

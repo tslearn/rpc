@@ -481,7 +481,7 @@ func TestClient_SendMessage(t *testing.T) {
 		for i := 0; i < 300; i++ {
 			go func() {
 				v, err := rpcClient.SendMessage(
-					3*time.Second,
+					6*time.Second,
 					"#.user:SayHello",
 					"kitty",
 				)
