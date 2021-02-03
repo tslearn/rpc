@@ -115,8 +115,16 @@ func TestNewClient(t *testing.T) {
 		onError := func(err *base.Error) {}
 		v := newClient("tcp", "127.0.0.1:8765", nil, 1024, 2048, onError)
 
-		for v.conn == nil {
-			time.Sleep(10 * time.Millisecond)
+		for {
+			v.Lock()
+			conn := v.conn
+			v.Unlock()
+
+			if conn == nil {
+				time.Sleep(10 * time.Millisecond)
+			} else {
+				break
+			}
 		}
 
 		assert(v.config).Equal(&Config{
