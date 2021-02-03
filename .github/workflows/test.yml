@@ -32,6 +32,6 @@ jobs:
                 uses: actions/checkout@v2
 
             # runs go test ./...
-#            -   name: Test and generate coverage report
-#                run: |
-#                    go test ./... -timeout 20m -race -coverprofile=coverage.txt -covermode=atomic
+            -   name: Test and generate coverage report
+                run: |
+                    go test ./... -timeout 20m -race -coverprofile=coverage.txt -covermode=atomic

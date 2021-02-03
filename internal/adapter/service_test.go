@@ -260,8 +260,7 @@ func syncServerTestClose(
 				httpServer, "listeners",
 			))
 			ptrMU.Lock()
-			var fakeListener net.Listener
-			fakeListener = &net.TCPListener{}
+			fakeListener := net.Listener(&net.TCPListener{})
 			(*ptrListeners)[&fakeListener] = struct{}{}
 			ptrMU.Unlock()
 		}
