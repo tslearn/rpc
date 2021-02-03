@@ -1452,7 +1452,7 @@ func TestStream_GetBufferUnsafe(t *testing.T) {
 		for n := 0; n < testEnd; n++ {
 			bytes[n] = byte(n)
 		}
-		for i := 0; i < testEnd; i++ {
+		for i := 0; i < testEnd; i += 7 {
 			stream := NewStream()
 			stream.PutBytes(bytes[:i])
 			assert(stream.GetBufferUnsafe()[streamPosBody:]).Equal(bytes[:i])

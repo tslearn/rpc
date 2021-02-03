@@ -184,7 +184,7 @@ func TestRTMap(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(7)
 		wait := make(chan bool)
-		for i := 0; i < 40; i++ {
+		for i := 0; i < 20; i++ {
 			go func(idx int) {
 				for j := 0; j < 100; j++ {
 					assert(v.Set(fmt.Sprintf("%d-%d", idx, j), idx)).IsNil()
@@ -193,18 +193,18 @@ func TestRTMap(t *testing.T) {
 			}(i)
 			runtime.GC()
 		}
-		for i := 0; i < 40; i++ {
+		for i := 0; i < 20; i++ {
 			<-wait
 		}
-		assert(v.Size()).Equal(4000)
+		assert(v.Size()).Equal(2000)
 		sum := int64(0)
-		for i := 0; i < 40; i++ {
+		for i := 0; i < 20; i++ {
 			for j := 0; j < 100; j++ {
 				v, _ := v.Get(fmt.Sprintf("%d-%d", i, j)).ToInt64()
 				sum += v
 			}
 		}
-		assert(sum).Equal(int64(78000))
+		assert(sum).Equal(int64(19000))
 	})
 }
 
@@ -395,7 +395,7 @@ func TestRTMap_getPosRecord(t *testing.T) {
 	t.Run("key exists", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		for i := 1; i < 600; i++ {
+		for i := 1; i < 600; i += 13 {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap(0)
 
@@ -416,7 +416,7 @@ func TestRTMap_getPosRecord(t *testing.T) {
 	t.Run("key does not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		for i := 1; i < 600; i++ {
+		for i := 1; i < 600; i += 13 {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i, false)

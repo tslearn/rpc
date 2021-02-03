@@ -238,7 +238,7 @@ func TestNewThread(t *testing.T) {
 	t.Run("test eval", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 100; i++ {
 			chBack := make(chan bool, 1)
 			chFinish := make(chan bool, 1)
 			v := newThread(

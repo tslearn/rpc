@@ -158,15 +158,15 @@ func TestRTArray_Append(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTArray(0)
-			for j := int64(0); j < 1000; j++ {
+			for j := int64(0); j < 100; j++ {
 				assert(v.Append(j)).IsNil()
 			}
 
-			assert(v.Size()).Equal(1000)
-			for j := 0; j < 1000; j++ {
+			assert(v.Size()).Equal(100)
+			for j := 0; j < 100; j++ {
 				assert(v.Get(j).ToInt64()).Equal(int64(j), nil)
 			}
 		}
@@ -291,7 +291,7 @@ func TestRTArray_Size(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		for i := 0; i < 500; i++ {
+		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTArray(0)
 			for j := 0; j < i; j++ {
