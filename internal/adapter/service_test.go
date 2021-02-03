@@ -18,18 +18,20 @@ import (
 func syncServerTestOpen(
 	network string,
 	isTLS bool,
-	fakeError bool,
+	fakeAddrError bool,
+	fakeConnectError bool,
 ) (*testSingleReceiver, bool) {
 	_, curFile, _, _ := runtime.Caller(0)
 	curDir := path.Dir(curFile)
 
 	addr := ""
-	if fakeError {
+	if fakeAddrError {
 		addr = "error-addr"
 	} else {
 		addr = "127.0.0.1:65432"
 	}
 
+	tlsClientConfig := (*tls.Config)(nil)
 	tlsServerConfig := (*tls.Config)(nil)
 
 	if isTLS {
@@ -37,6 +39,9 @@ func syncServerTestOpen(
 			path.Join(curDir, "_cert_", "server", "server.pem"),
 			path.Join(curDir, "_cert_", "server", "server-key.pem"),
 		)
+		tlsClientConfig, _ = base.GetTLSClientConfig(true, []string{
+			path.Join(curDir, "_cert_", "ca", "ca.pem"),
+		})
 	}
 
 	receiver := newTestSingleReceiver()
@@ -45,6 +50,32 @@ func syncServerTestOpen(
 		network, addr, tlsServerConfig, 1200, 1200, receiver,
 	))
 	openOK := v.Open()
+	go func() {
+		v.Run()
+	}()
+
+	if (network == "ws" || network == "wss") && fakeConnectError {
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			client := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: tlsClientConfig,
+				},
+			}
+			if isTLS {
+				_, _ = client.Get("https://127.0.0.1:65432")
+			} else {
+				_, _ = client.Get("http://127.0.0.1:65432")
+			}
+		}()
+	}
+
+	if fakeAddrError || fakeConnectError {
+		for receiver.GetOnErrorCount() == 0 {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
 	v.Close()
 	return receiver, openOK
 }
@@ -137,42 +168,29 @@ func syncServerTestRun(
 	}()
 
 	// Start client
-	if !strings.HasPrefix(network, "tcp") && fakeError {
-		client := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsClientConfig,
-			},
-		}
-		if isTLS {
-			_, _ = client.Get("https://127.0.0.1:65432")
-		} else {
-			_, _ = client.Get("http://127.0.0.1:65432")
-		}
-	} else {
+	go func() {
+		client := NewSyncClientService(NewClientAdapter(
+			network, "127.0.0.1:65432", tlsClientConfig,
+			1200, 1200, newTestSingleReceiver(),
+		))
+		client.Open()
 		go func() {
-			client := NewSyncClientService(NewClientAdapter(
-				network, "127.0.0.1:65432", tlsClientConfig,
-				1200, 1200, newTestSingleReceiver(),
-			))
-			client.Open()
-			go func() {
-				client.Run()
-			}()
-
-			// wait server signal ...
-			if fakeError {
-				for receiver.GetOnErrorCount() == 0 {
-					time.Sleep(10 * time.Millisecond)
-				}
-			} else {
-				for receiver.GetOnOpenCount() == 0 {
-					time.Sleep(10 * time.Millisecond)
-				}
-			}
-			// close
-			client.Close()
+			client.Run()
 		}()
-	}
+
+		// wait server signal ...
+		if fakeError {
+			for receiver.GetOnErrorCount() == 0 {
+				time.Sleep(10 * time.Millisecond)
+			}
+		} else {
+			for receiver.GetOnOpenCount() == 0 {
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+		// close
+		client.Close()
+	}()
 
 	<-waitCH
 	server.Close()
@@ -382,28 +400,28 @@ func TestNewSyncServerService(t *testing.T) {
 
 func TestSyncTCPServerService_Open(t *testing.T) {
 	t.Run("tcp open error", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("tcp", false, true)
+		receiver, ok := syncServerTestOpen("tcp", false, true, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsFalse()
 		assert(receiver.GetError()).IsNotNil()
 	})
 
 	t.Run("tcp open ok", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("tcp", false, false)
+		receiver, ok := syncServerTestOpen("tcp", false, false, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).IsNil()
 	})
 
 	t.Run("tls open error", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("tcp", true, true)
+		receiver, ok := syncServerTestOpen("tcp", true, true, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsFalse()
 		assert(receiver.GetError()).IsNotNil()
 	})
 
 	t.Run("tls open ok", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("tcp", false, false)
+		receiver, ok := syncServerTestOpen("tcp", false, false, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).IsNil()
@@ -495,29 +513,43 @@ func TestSyncTCPServerService_Close(t *testing.T) {
 }
 
 func TestSyncWSServerService_Open(t *testing.T) {
-	t.Run("ws open error", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("ws", false, true)
+	t.Run("ws open addr error", func(t *testing.T) {
+		receiver, ok := syncServerTestOpen("ws", false, true, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsFalse()
 		assert(receiver.GetError()).IsNotNil()
 	})
 
+	t.Run("ws open connect error", func(t *testing.T) {
+		receiver, ok := syncServerTestOpen("ws", false, false, true)
+		assert := base.NewAssert(t)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).IsNotNil()
+	})
+
 	t.Run("ws open ok", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("ws", false, false)
+		receiver, ok := syncServerTestOpen("ws", false, false, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).IsNil()
 	})
 
-	t.Run("wss open error", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("wss", true, true)
+	t.Run("wss open addr error", func(t *testing.T) {
+		receiver, ok := syncServerTestOpen("wss", true, true, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsFalse()
 		assert(receiver.GetError()).IsNotNil()
 	})
 
+	t.Run("wss open connect error", func(t *testing.T) {
+		receiver, ok := syncServerTestOpen("wss", true, false, true)
+		assert := base.NewAssert(t)
+		assert(ok).IsTrue()
+		assert(receiver.GetError()).IsNotNil()
+	})
+
 	t.Run("wss open ok", func(t *testing.T) {
-		receiver, ok := syncServerTestOpen("wss", true, false)
+		receiver, ok := syncServerTestOpen("wss", true, false, false)
 		assert := base.NewAssert(t)
 		assert(ok).IsTrue()
 		assert(receiver.GetError()).IsNil()
