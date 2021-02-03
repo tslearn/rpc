@@ -455,7 +455,7 @@ func testReplyWithSource(
 		1,
 		16,
 		16,
-		2048,
+		1024,
 		fnCache,
 		3*time.Second,
 		[]*ServiceMeta{{

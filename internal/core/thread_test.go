@@ -341,7 +341,7 @@ func TestRpcThread_lock(t *testing.T) {
 					go func() {
 						t := rt.thread.lock(rt.id)
 						assert(t).IsNotNil()
-						time.Sleep(100 * time.Millisecond)
+						time.Sleep(30 * time.Millisecond)
 						rt.thread.unlock(rt.id)
 						wait <- true
 					}()
