@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/errors"
 	"testing"
@@ -198,7 +197,6 @@ func TestRuntime_Call(t *testing.T) {
 			testWithProcessorAndRuntime(
 				func(processor *Processor, rt Runtime) Return {
 					rtValue := rt.Call("#.test:SayHello", "ts")
-					fmt.Println(rtValue.ToString())
 					return rt.Reply(rtValue)
 				},
 				nil,

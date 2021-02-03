@@ -448,14 +448,13 @@ func TestRTMap_appendValue(t *testing.T) {
 		v := testRuntime.NewRTMap(0)
 		v.appendValue("name", 1)
 		v.appendValue("name", 2)
-		fmt.Println(*v.items)
 		assert(len(*v.items)).Equal(1)
 		assert((*v.items)[0].pos).Equal(posRecord(2))
 	})
 
 	t.Run("sort ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 50; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i*16, false)
@@ -473,7 +472,7 @@ func TestRTMap_appendValue(t *testing.T) {
 func TestRTMap_sort(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 50; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i*16, false)
