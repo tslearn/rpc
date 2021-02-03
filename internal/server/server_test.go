@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -316,11 +315,7 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		}()
 
 		_ = os.MkdirAll(path.Join(curDir, "cache"), 0555)
-		_ = ioutil.WriteFile(
-			path.Join(curDir, "cache", "rpc_action_cache.go"),
-			[]byte{1, 2, 3, 4},
-			0555,
-		)
+		_ = os.MkdirAll(path.Join(curDir, "cache", "rpc_action_cache.go"), 0555)
 		assert := base.NewAssert(t)
 		err := (*base.Error)(nil)
 		errID := uint64(0)
