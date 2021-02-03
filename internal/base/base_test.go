@@ -2,7 +2,6 @@ package base
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -195,7 +194,6 @@ func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
 					return true
 				}, 500*time.Millisecond)
 				interval := TimeNow().Sub(startTime)
-				fmt.Println(interval)
 				assert(interval > 480*time.Millisecond).IsTrue()
 				assert(interval < 580*time.Millisecond).IsTrue()
 				waitCH <- true

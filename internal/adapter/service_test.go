@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"io"
 	"net"
@@ -690,18 +689,11 @@ func TestSyncClientService(t *testing.T) {
 			receiver, client := syncClientTest(
 				it.isTLS, it.network, it.network, "addr-error",
 			)
-			if it.network == "ws" || it.network == "wss" {
-				assert(receiver.GetError()).
-					Equal(base.ErrSyncClientServiceDial.AddDebug(
-						"dial tcp: lookup addr-error: no such host",
-					))
-			} else {
-				assert(receiver.GetError()).
-					Equal(base.ErrSyncClientServiceDial.AddDebug(fmt.Sprintf(
-						"dial %s: address addr-error: missing port in address",
-						it.network,
-					)))
-			}
+
+			assert(strings.Contains(
+				receiver.GetError().GetMessage(),
+				"dial",
+			)).IsTrue()
 
 			assert(receiver.GetOnOpenCount()).Equal(0)
 			assert(receiver.GetOnCloseCount()).Equal(0)
