@@ -192,11 +192,11 @@ func TestNewThread(t *testing.T) {
 	t.Run("test ok (timeout 1s)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 32; i++ {
-			v := newThread(testProcessor, time.Second, 2048, fnEvalBack, fnEvalFinish)
+			v := newThread(testProcessor, 100*time.Millisecond, 2048, fnEvalBack, fnEvalFinish)
 			assert(v.processor).Equal(testProcessor)
 			assert(v.inputCH).IsNotNil()
 			assert(v.closeCH).IsNotNil()
-			assert(v.closeTimeout).Equal(3 * time.Second)
+			assert(v.closeTimeout).Equal(time.Second)
 			assert(v.top).Equal(&v.rootFrame)
 			assert(v.sequence > 0).Equal(true)
 			assert(v.sequence % 2).Equal(uint64(0))

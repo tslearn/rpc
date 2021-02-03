@@ -166,8 +166,8 @@ func newThread(
 	retCH := make(chan *rpcThread)
 
 	timeout := closeTimeout
-	if timeout < 3*time.Second {
-		timeout = 3 * time.Second
+	if timeout < time.Second {
+		timeout = time.Second
 	}
 
 	inputCH := make(chan *Stream)
