@@ -24,7 +24,7 @@ func TestChannel_Use(t *testing.T) {
 		assert(item.sendStream.GetCallbackID()).Equal(uint64(674))
 		nowNS := base.TimeNow().UnixNano()
 		assert(nowNS-v.item.sendTimeNS < int64(time.Second)).IsTrue()
-		assert(nowNS-v.item.sendTimeNS > 0).IsTrue()
+		assert(nowNS-v.item.sendTimeNS > -int64(time.Second)).IsTrue()
 	})
 }
 
