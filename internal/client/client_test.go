@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -146,7 +147,8 @@ func TestNewClient(t *testing.T) {
 			unsafe.Pointer(testAdapter.orcManager),
 		)
 		// orcStatusReady | orcLockBit = 1 | 1 << 2 = 5
-		assert(adapterOrcManager.sequence % 8).Equal(uint64(5))
+		assert(atomic.LoadUint64(&adapterOrcManager.sequence) % 8).
+			Equal(uint64(5))
 		assert(adapterOrcManager.isWaitChange).Equal(false)
 		assert(&adapterOrcManager.mu).IsNotNil()
 		assert(&adapterOrcManager.cond).IsNotNil()
@@ -155,8 +157,9 @@ func TestNewClient(t *testing.T) {
 		assert(len(v.channels)).Equal(32)
 		assert(v.lastPingTimeNS > 0).IsTrue()
 		// orcStatusReady | orcLockBit = 1 | 1 << 2 = 5
-		assert((*TestORCManager)(unsafe.Pointer(v.orcManager)).sequence % 8).
-			Equal(uint64(5))
+		assert(atomic.LoadUint64(
+			&(*TestORCManager)(unsafe.Pointer(v.orcManager)).sequence,
+		) % 8).Equal(uint64(5))
 		assert(v.onError).IsNotNil()
 
 		// check tryLoop
