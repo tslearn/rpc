@@ -9,11 +9,19 @@ import (
 	"net"
 	"net/http"
 	"path"
+	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+	"unsafe"
 )
+
+func getFieldPointer(ptr interface{}, fieldName string) unsafe.Pointer {
+	val := reflect.Indirect(reflect.ValueOf(ptr))
+	return unsafe.Pointer(val.FieldByName(fieldName).UnsafeAddr())
+}
 
 func syncServerTestOpen(
 	network string,
@@ -246,6 +254,18 @@ func syncServerTestClose(
 
 	if fakeError {
 		_ = fakeLN.ln.Close()
+		if network == "ws" || network == "wss" {
+			httpServer := v.(*syncWSServerService).server
+			ptrMU := (*sync.Mutex)(getFieldPointer(httpServer, "mu"))
+			ptrListeners := (*map[*net.Listener]struct{})(getFieldPointer(
+				httpServer, "listeners",
+			))
+			ptrMU.Lock()
+			var fakeListener net.Listener
+			fakeListener = &net.TCPListener{}
+			(*ptrListeners)[&fakeListener] = struct{}{}
+			ptrMU.Unlock()
+		}
 	}
 
 	closeOK := v.Close()
