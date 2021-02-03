@@ -226,12 +226,6 @@ func syncServerTestClose(
 	))
 	v.Open()
 
-	go func() {
-		v.Run()
-	}()
-
-	time.Sleep(100 * time.Millisecond)
-
 	fakeLN := &fakeTestRunListener{
 		emulateAcceptError: false,
 		emulateCLoseError:  fakeError,
@@ -243,6 +237,12 @@ func syncServerTestClose(
 		fakeLN.ln = v.(*syncWSServerService).ln
 		v.(*syncWSServerService).ln = fakeLN
 	}
+
+	go func() {
+		v.Run()
+	}()
+
+	time.Sleep(100 * time.Millisecond)
 
 	if fakeError {
 		_ = fakeLN.ln.Close()
