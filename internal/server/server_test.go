@@ -371,6 +371,7 @@ func TestServer_Open(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
+		v.numOfThreads = 1024
 		v.Listen("tcp", "0.0.0.0:1234", nil)
 
 		go func() {
@@ -408,6 +409,7 @@ func TestServer_Close(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
+		v.numOfThreads = 1024
 		v.Listen("tcp", "0.0.0.0:1234", nil)
 
 		go func() {
