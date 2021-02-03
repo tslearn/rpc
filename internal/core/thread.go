@@ -305,9 +305,12 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 		return emptyReturn
 	} else if err, ok := value.(*base.Error); ok {
 		if err == nil {
-			err = base.ErrUnsupportedValue.AddDebug("value is nil")
+			writeErr = base.ErrUnsupportedValue.AddDebug("value is nil")
+		} else {
+			writeErr = err
 		}
-		writeErr = err
+	} else if e, ok := value.(error); ok && !base.IsNil(e) {
+		writeErr = base.ErrAction.AddDebug(e.Error())
 	} else if v, ok := value.(RTValue); ok && v.err != nil {
 		writeErr = v.err
 	} else {

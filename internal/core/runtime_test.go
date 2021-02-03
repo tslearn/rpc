@@ -85,13 +85,13 @@ func TestRuntime_Reply(t *testing.T) {
 		source := ""
 		assert(ParseResponseStream(
 			testWithProcessorAndRuntime(func(_ *Processor, rt Runtime) Return {
-				err := base.ErrActionCustom.AddDebug("error")
+				err := base.ErrStream.AddDebug("error")
 				ret, s := rt.Reply(err), base.GetFileLine(0)
 				source = rt.thread.GetActionNode().path + " " + s
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}, nil),
-		)).Equal(nil, base.ErrActionCustom.AddDebug("error").AddDebug(source))
+		)).Equal(nil, base.ErrStream.AddDebug("error").AddDebug(source))
 	})
 
 	t.Run("argument is (*Error)(nil)", func(t *testing.T) {

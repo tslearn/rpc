@@ -60,8 +60,8 @@ var (
 		"",
 	)
 
-	// ErrActionCustom ...
-	ErrActionCustom = DefineActionError(
+	// ErrAction ...
+	ErrAction = DefineActionError(
 		(generalErrorSeg<<16)|9,
 		ErrorLevelError,
 		"",

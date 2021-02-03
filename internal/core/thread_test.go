@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
 	"reflect"
@@ -572,6 +573,22 @@ func TestRpcThread_Write(t *testing.T) {
 		})).Equal(
 			nil,
 			base.ErrUnsupportedValue.AddDebug("value is nil").
+				AddDebug("#.test:Eval "+source),
+		)
+	})
+
+	t.Run("value is custom error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		source := ""
+		assert(testReply(true, nil, nil, func(rt Runtime) Return {
+			thread := rt.thread
+			nilErr := errors.New("custom error")
+			ret, s := thread.Write(nilErr, 0, true), base.GetFileLine(0)
+			source = s
+			return ret
+		})).Equal(
+			nil,
+			base.ErrAction.AddDebug("custom error").
 				AddDebug("#.test:Eval "+source),
 		)
 	})
