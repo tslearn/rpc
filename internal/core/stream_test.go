@@ -588,7 +588,7 @@ func TestStream_Reset(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
 
-		for i := 0; i < streamFrameArrayInitSize*(streamBlockSize+2); i++ {
+		for i := 0; i < streamFrameArrayInitSize*(streamBlockSize+2); i += 7 {
 			assert(len(stream.frames)).Equal(1)
 			assert(cap(stream.frames)).Equal(streamFrameArrayInitSize)
 			assert(stream.readSeg).Equal(0)
@@ -1435,7 +1435,7 @@ func TestStream_GetBuffer(t *testing.T) {
 		for n := 0; n < testEnd; n++ {
 			bytes[n] = byte(n)
 		}
-		for i := 0; i < testEnd; i++ {
+		for i := 0; i < testEnd; i += 7 {
 			stream := NewStream()
 			stream.PutBytes(bytes[:i])
 			assert(stream.GetBuffer()[streamPosBody:]).Equal(bytes[:i])

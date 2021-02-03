@@ -184,27 +184,27 @@ func TestRTMap(t *testing.T) {
 		testRuntime.thread.Reset()
 		v := testRuntime.NewRTMap(7)
 		wait := make(chan bool)
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 40; i++ {
 			go func(idx int) {
-				for j := 0; j < 500; j++ {
+				for j := 0; j < 100; j++ {
 					assert(v.Set(fmt.Sprintf("%d-%d", idx, j), idx)).IsNil()
 				}
 				wait <- true
 			}(i)
 			runtime.GC()
 		}
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 40; i++ {
 			<-wait
 		}
-		assert(v.Size()).Equal(50000)
+		assert(v.Size()).Equal(4000)
 		sum := int64(0)
-		for i := 0; i < 100; i++ {
-			for j := 0; j < 500; j++ {
+		for i := 0; i < 40; i++ {
+			for j := 0; j < 100; j++ {
 				v, _ := v.Get(fmt.Sprintf("%d-%d", i, j)).ToInt64()
 				sum += v
 			}
 		}
-		assert(sum).Equal(int64(2475000))
+		assert(sum).Equal(int64(78000))
 	})
 }
 
@@ -375,7 +375,7 @@ func TestRTMap_Size(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		for i := 0; i < 500; i++ {
+		for i := 0; i < 100; i++ {
 			testRuntime.thread.Reset()
 			v := testRuntime.NewRTMap(0)
 			items := getTestMapItems(i, false)

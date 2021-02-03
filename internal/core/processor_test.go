@@ -219,7 +219,7 @@ func TestNewProcessor(t *testing.T) {
 		assert(<-wait).Equal("$onUnmount called")
 	})
 
-	t.Run("test ok (1M calls)", func(t *testing.T) {
+	t.Run("test ok (10K calls)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		processor := (*Processor)(nil)
 		wait := make(chan bool)
@@ -246,13 +246,13 @@ func TestNewProcessor(t *testing.T) {
 		)
 
 		go func() {
-			for i := 0; i < 1000000; i++ {
+			for i := 0; i < 10000; i++ {
 				stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
 				processor.PutStream(stream)
 			}
 		}()
 
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 10000; i++ {
 			assert(<-wait).IsTrue()
 		}
 
@@ -365,7 +365,7 @@ func TestProcessor_PutStream(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		testCount := 1024000
+		testCount := 10240
 		waitCH := make(chan bool, testCount)
 		processor, _ := NewProcessor(
 			freeGroups*2,
