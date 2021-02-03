@@ -148,6 +148,11 @@ func (p *syncTCPServerService) Run() bool {
 						nil,
 						errors.ErrSyncTCPServerServiceAccept.AddDebug(e.Error()),
 					)
+					base.WaitAtLeastDurationWhenRunning(
+						base.TimeNow().UnixNano(),
+						isRunning,
+						500*time.Millisecond,
+					)
 				}
 			} else {
 				runNetConnOnServers(adapter, conn)
