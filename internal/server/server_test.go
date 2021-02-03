@@ -319,7 +319,7 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		_ = ioutil.WriteFile(
 			path.Join(curDir, "cache", "rpc_action_cache.go"),
 			[]byte{1, 2, 3, 4},
-			0644,
+			0555,
 		)
 		assert := base.NewAssert(t)
 		err := (*base.Error)(nil)
