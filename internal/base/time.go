@@ -188,5 +188,5 @@ func TimeNowISOString() string {
 // IsTimeApproximatelyEqual ...
 func IsTimeApproximatelyEqual(t1 time.Time, t2 time.Time) bool {
 	delta := t1.Sub(t2)
-	return delta < 50*time.Millisecond && delta > -50*time.Millisecond
+	return delta < 100*time.Millisecond && delta > -100*time.Millisecond
 }
