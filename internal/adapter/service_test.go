@@ -301,6 +301,8 @@ func syncClientTest(
 		server.Run()
 	}()
 
+	time.Sleep(100 * time.Millisecond)
+
 	clientReceiver := newTestSingleReceiver()
 	client := &syncClientService{
 		adapter: NewClientAdapter(
@@ -311,19 +313,17 @@ func syncClientTest(
 	}
 
 	client.Open()
+	defer client.Close()
 
-	waitCH := make(chan bool)
 	go func() {
-		for clientReceiver.GetOnOpenCount() == 0 &&
-			clientReceiver.GetOnErrorCount() == 0 {
-			time.Sleep(10 * time.Millisecond)
-		}
-		client.Close()
-		waitCH <- true
+		client.Run()
 	}()
 
-	client.Run()
-	<-waitCH
+	for clientReceiver.GetOnOpenCount() == 0 &&
+		clientReceiver.GetOnErrorCount() == 0 {
+		time.Sleep(10 * time.Millisecond)
+	}
+
 	return clientReceiver, client
 }
 
