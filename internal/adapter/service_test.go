@@ -312,17 +312,21 @@ func syncClientTest(
 
 	client.Open()
 
+	waitCH := make(chan bool)
 	go func() {
-		client.Run()
+		for clientReceiver.GetOnOpenCount() == 0 &&
+			clientReceiver.GetOnErrorCount() == 0 {
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		client.Close()
+
+		waitCH <- true
+
 	}()
 
-	for clientReceiver.GetOnOpenCount() == 0 &&
-		clientReceiver.GetOnErrorCount() == 0 {
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	client.Close()
-
+	client.Run()
+	<-waitCH
 	return clientReceiver, client
 }
 
