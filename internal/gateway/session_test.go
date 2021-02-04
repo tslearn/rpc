@@ -350,9 +350,9 @@ func TestSession_TimeCheck(t *testing.T) {
 	t.Run("p.conn is not active", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
-		session.gateway.config.heartbeatTimeout = 10 * time.Millisecond
+		session.gateway.config.heartbeatTimeout = 1 * time.Millisecond
 		syncConn.OnOpen()
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 		session.TimeCheck(base.TimeNow().UnixNano())
 		assert(netConn.isRunning).IsFalse()
 	})
@@ -369,8 +369,8 @@ func TestSession_TimeCheck(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, _ := prepareTestSession()
 		gw := session.gateway
-		gw.config.serverSessionTimeout = 10 * time.Millisecond
-		time.Sleep(20 * time.Millisecond)
+		gw.config.serverSessionTimeout = 1 * time.Millisecond
+		time.Sleep(30 * time.Millisecond)
 		gw.TimeCheck(base.TimeNow().UnixNano())
 		assert(gw.TotalSessions()).Equal(int64(0))
 	})
@@ -410,8 +410,8 @@ func TestSession_TimeCheck(t *testing.T) {
 			session.channels[i].Out(stream)
 		}
 
-		session.gateway.config.serverCacheTimeout = 10 * time.Millisecond
-		time.Sleep(20 * time.Millisecond)
+		session.gateway.config.serverCacheTimeout = 1 * time.Millisecond
+		time.Sleep(30 * time.Millisecond)
 		session.TimeCheck(base.TimeNow().UnixNano())
 
 		for i := 0; i < session.gateway.config.numOfChannels; i++ {
