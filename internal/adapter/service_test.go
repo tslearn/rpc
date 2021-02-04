@@ -310,18 +310,19 @@ func syncClientTest(
 		orcManager: base.NewORCManager(),
 	}
 
-	waitCH := make(chan bool)
 	client.Open()
 	go func() {
-		for clientReceiver.GetOnOpenCount() == 0 &&
-			clientReceiver.GetOnErrorCount() == 0 {
-			time.Sleep(50 * time.Millisecond)
-		}
-		client.Close()
-		waitCH <- true
+		client.Run()
+
 	}()
-	client.Run()
-	<-waitCH
+
+	for clientReceiver.GetOnOpenCount() == 0 &&
+		clientReceiver.GetOnErrorCount() == 0 {
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	client.Close()
+
 	return clientReceiver, client
 }
 
@@ -647,7 +648,7 @@ func TestSyncClientService(t *testing.T) {
 		network string
 		isTLS   bool
 	}
-	addr := "localhost:65432"
+	addr := "localhost:65437"
 
 	t.Run("tcp4 ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
