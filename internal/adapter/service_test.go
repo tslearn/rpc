@@ -311,9 +311,9 @@ func syncClientTest(
 	}
 
 	client.Open()
+
 	go func() {
 		client.Run()
-
 	}()
 
 	for clientReceiver.GetOnOpenCount() == 0 &&
