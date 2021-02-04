@@ -256,37 +256,43 @@ func TestAdapter(t *testing.T) {
 			})
 		}
 
-		clientReceiver := newTestSingleReceiver()
-		clientAdapter := NewClientAdapter(
-			network, "localhost:65432", tlsClientConfig,
-			1200, 1200, clientReceiver,
-		)
+		waitCH := make(chan bool)
+
 		serverReceiver := newTestSingleReceiver()
 		serverAdapter := NewServerAdapter(
-			network, "localhost:65432", tlsServerConfig,
+			network, "localhost:65431", tlsServerConfig,
 			1200, 1200, serverReceiver,
 		)
-
-		waitCH := make(chan bool)
 		assert(serverAdapter.Open()).IsTrue()
 		go func() {
 			assert(serverAdapter.Run()).IsTrue()
-		}()
-
-		assert(clientAdapter.Open()).IsTrue()
-		go func() {
-			for clientReceiver.GetOnOpenCount() == 0 &&
-				clientReceiver.GetOnErrorCount() == 0 {
-				time.Sleep(10 * time.Millisecond)
-			}
-			assert(clientAdapter.Close()).IsTrue()
 			waitCH <- true
 		}()
 
-		clientAdapter.Run()
-		<-waitCH
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
+
+		clientReceiver := newTestSingleReceiver()
+		clientAdapter := NewClientAdapter(
+			network, "localhost:65431", tlsClientConfig,
+			1200, 1200, clientReceiver,
+		)
+		assert(clientAdapter.Open()).IsTrue()
+		go func() {
+			assert(clientAdapter.Run()).IsTrue()
+			waitCH <- true
+		}()
+
+		for clientReceiver.GetOnOpenCount() == 0 &&
+			clientReceiver.GetOnErrorCount() == 0 {
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		assert(clientAdapter.Close()).IsTrue()
+		time.Sleep(100 * time.Millisecond)
 		assert(serverAdapter.Close()).IsTrue()
+
+		<-waitCH
+		<-waitCH
 
 		assert(clientReceiver.GetOnOpenCount()).Equal(1)
 		assert(clientReceiver.GetOnCloseCount()).Equal(1)
