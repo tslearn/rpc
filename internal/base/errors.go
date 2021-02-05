@@ -1,7 +1,7 @@
 // Package errors ...
 package base
 
-const generalErrorSeg = 1 << 8
+const generalErrorSeg = 0 << 8
 
 var (
 	// ErrStream ...
@@ -166,7 +166,7 @@ var (
 	)
 )
 
-const coreErrorSeg = 2 << 8
+const coreErrorSeg = 1 << 8
 
 var (
 	// ErrFnCacheIllegalKindString ... *
@@ -226,7 +226,7 @@ var (
 	)
 )
 
-const gatewayErrorSeg = 3 << 8
+const gatewayErrorSeg = 2 << 8
 
 var (
 	// ErrGatewayNoAvailableAdapter ...
@@ -258,7 +258,7 @@ var (
 	)
 )
 
-const serverErrorSeg = 4 << 8
+const serverErrorSeg = 3 << 8
 
 var (
 	// ErrServerAlreadyRunning ...
@@ -276,7 +276,7 @@ var (
 	)
 )
 
-const clientErrorSeg = 5 << 8
+const clientErrorSeg = 4 << 8
 
 var (
 	// ErrClientTimeout ...
@@ -294,7 +294,7 @@ var (
 	)
 )
 
-const adapterErrorSeg = 6 << 8
+const adapterErrorSeg = 5 << 8
 
 var (
 	// ErrUnsupportedProtocol ...
