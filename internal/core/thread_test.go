@@ -542,7 +542,7 @@ func TestRpcThread_Write(t *testing.T) {
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] overflows").
-				AddDebug("#.test:Eval "+source),
+				AddDebug("#.test:Eval "+source).Standardize(),
 		)
 	})
 
@@ -558,7 +558,8 @@ func TestRpcThread_Write(t *testing.T) {
 			nil,
 			base.ErrUnsupportedValue.
 				AddDebug("value type(chan bool) is not supported").
-				AddDebug("#.test:Eval "+source),
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
 		)
 	})
 
@@ -572,8 +573,10 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			base.ErrUnsupportedValue.AddDebug("value is nil").
-				AddDebug("#.test:Eval "+source),
+			base.ErrUnsupportedValue.
+				AddDebug("value is nil").
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
 		)
 	})
 
@@ -588,8 +591,10 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			base.ErrAction.AddDebug("custom error").
-				AddDebug("#.test:Eval "+source),
+			base.ErrAction.
+				AddDebug("custom error").
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
 		)
 	})
 
@@ -603,8 +608,10 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			base.ErrUnsupportedValue.AddDebug("value is not available").
-				AddDebug("#.test:Eval "+source),
+			base.ErrUnsupportedValue.
+				AddDebug("value is not available").
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
 		)
 	})
 
@@ -619,7 +626,7 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			base.ErrStream.AddDebug("#.test:Eval "+source),
+			base.ErrStream.AddDebug("#.test:Eval "+source).Standardize(),
 		)
 	})
 
@@ -634,7 +641,9 @@ func TestRpcThread_Write(t *testing.T) {
 			return ret
 		})).Equal(
 			nil,
-			base.ErrRuntimeReplyHasBeenCalled.AddDebug("#.test:Eval "+source),
+			base.ErrRuntimeReplyHasBeenCalled.
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
 		)
 	})
 
@@ -659,7 +668,12 @@ func TestRpcThread_Write(t *testing.T) {
 			ret, s := thread.Write(e, 0, true), base.GetFileLine(0)
 			source = s
 			return ret
-		})).Equal(nil, base.ErrUnsupportedValue.AddDebug("#.test:Eval "+source))
+		})).Equal(
+			nil,
+			base.ErrUnsupportedValue.
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
+		)
 	})
 
 	t.Run("test ok (*Error)", func(t *testing.T) {
@@ -670,7 +684,10 @@ func TestRpcThread_Write(t *testing.T) {
 			ret, s := thread.Write(base.ErrStream, 0, true), base.GetFileLine(0)
 			source = s
 			return ret
-		})).Equal(nil, base.ErrStream.AddDebug("#.test:Eval "+source))
+		})).Equal(
+			nil,
+			base.ErrStream.AddDebug("#.test:Eval "+source).Standardize(),
+		)
 	})
 
 	t.Run("test ok (int64)", func(t *testing.T) {
@@ -736,7 +753,8 @@ func TestRpcThread_Eval(t *testing.T) {
 		}, stream)).Equal(
 			nil,
 			base.ErrTargetNotExist.
-				AddDebug("rpc-call: #.system:Eval does not exist"),
+				AddDebug("rpc-call: #.system:Eval does not exist").
+				Standardize(),
 		)
 	})
 
@@ -750,7 +768,9 @@ func TestRpcThread_Eval(t *testing.T) {
 			return rt.Reply(true)
 		}, stream)).Equal(
 			nil,
-			base.ErrCallOverflow.AddDebug("call #.test:Eval level(17) overflows"),
+			base.ErrCallOverflow.
+				AddDebug("call #.test:Eval level(17) overflows").
+				Standardize(),
 		)
 	})
 
@@ -797,12 +817,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 1st argument does not match. "+
 							"want: rpc.Bool got: rpc.Int64",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -827,12 +847,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 2nd argument does not match. "+
 							"want: rpc.Int64 got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -857,12 +877,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 3rd argument does not match. "+
 							"want: rpc.Uint64 got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -887,12 +907,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 4th argument does not match. "+
 							"want: rpc.Float64 got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -917,12 +937,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 5th argument does not match. "+
 							"want: rpc.String got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -947,12 +967,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 6th argument does not match. "+
 							"want: rpc.Bytes got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -977,12 +997,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 7th argument does not match. "+
 							"want: rpc.Array got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -1007,12 +1027,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 8th argument does not match. "+
 							"want: rpc.Map got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -1062,12 +1082,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 10th argument does not match. "+
 							"want: rpc.RTArray got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -1092,12 +1112,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval 11th argument does not match. "+
 							"want: rpc.RTMap got: rpc.Bool",
-					).AddDebug("#.test:Eval "+source))
+					).AddDebug("#.test:Eval "+source).Standardize())
 			} else {
 				assert(ParseResponseStream(stream)).
 					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
 						"rpc-call: #.test:Eval arguments does not match",
-					))
+					).Standardize())
 			}
 		}
 		fnTest(true, nil)
@@ -1153,12 +1173,19 @@ func TestRpcThread_Eval(t *testing.T) {
 							"want: int16 got: rpc.Bool",
 					).AddDebug("#.test:Eval "+source).
 						AddDebug("#.test:Eval "+source1).
-						AddDebug("#.test:Eval "+source2))
+						AddDebug("#.test:Eval "+source2).
+						Standardize(),
+					)
 			} else {
 				assert(ParseResponseStream(stream)).
-					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
-						"rpc-call: #.test:Eval arguments does not match",
-					).AddDebug("#.test:Eval "+source1).AddDebug("#.test:Eval "+source2))
+					Equal(nil, base.ErrArgumentsNotMatch.
+						AddDebug(
+							"rpc-call: #.test:Eval arguments does not match",
+						).
+						AddDebug("#.test:Eval "+source1).
+						AddDebug("#.test:Eval "+source2).
+						Standardize(),
+					)
 			}
 		}
 		fnTest(true, nil)
@@ -1250,7 +1277,10 @@ func TestRpcThread_Eval(t *testing.T) {
 			})
 		assert(ParseResponseStream(stream)).Equal(
 			nil,
-			base.ErrRuntimeExternalReturn.AddDebug("#.test:Eval "+source))
+			base.ErrRuntimeExternalReturn.
+				AddDebug("#.test:Eval "+source).
+				Standardize(),
+		)
 	})
 
 	t.Run("thread is locked for a while", func(t *testing.T) {

@@ -36,22 +36,22 @@ const (
 	ErrorLevelFatal = ErrorLevel(3)
 )
 
-// ErrorNumber ...
-type ErrorNumber uint32
+// ErrorIndex ...
+type ErrorIndex uint16
 
 var (
 	errorDefineMutex = &sync.Mutex{}
-	errorDefineMap   = map[ErrorNumber]string{}
+	errorDefineMap   = map[ErrorIndex]string{}
 )
 
 // Error ...
 type Error struct {
-	code    uint64
+	code    uint32
 	message string
 }
 
 // NewError ...
-func NewError(code uint64, message string) *Error {
+func NewError(code uint32, message string) *Error {
 	return &Error{
 		code:    code,
 		message: message,
@@ -60,7 +60,7 @@ func NewError(code uint64, message string) *Error {
 
 func defineError(
 	kind ErrorType,
-	num ErrorNumber,
+	index ErrorIndex,
 	level ErrorLevel,
 	message string,
 	source string,
@@ -68,12 +68,12 @@ func defineError(
 	errorDefineMutex.Lock()
 	defer errorDefineMutex.Unlock()
 
-	code := (uint64(kind) << 42) | (uint64(level) << 34) | (uint64(num) << 2)
+	code := (uint32(kind) << 20) | (uint32(level) << 16) | uint32(index)
 
-	if value, ok := errorDefineMap[num]; ok {
+	if value, ok := errorDefineMap[index]; ok {
 		panic(fmt.Sprintf("Error redefined :\n>>> %s\n>>> %s\n", value, source))
 	} else {
-		errorDefineMap[num] = source
+		errorDefineMap[index] = source
 	}
 
 	return &Error{
@@ -83,53 +83,53 @@ func defineError(
 }
 
 // DefineConfigError ...
-func DefineConfigError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeConfig, num, level, msg, GetFileLine(1))
+func DefineConfigError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeConfig, idx, level, msg, GetFileLine(1))
 }
 
 // DefineNetError ...
-func DefineNetError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeNet, num, level, msg, GetFileLine(1))
+func DefineNetError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeNet, idx, level, msg, GetFileLine(1))
 }
 
 // DefineActionError ...
-func DefineActionError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeAction, num, level, msg, GetFileLine(1))
+func DefineActionError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeAction, idx, level, msg, GetFileLine(1))
 }
 
 // DefineDevelopError ...
-func DefineDevelopError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeDevelop, num, level, msg, GetFileLine(1))
+func DefineDevelopError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeDevelop, idx, level, msg, GetFileLine(1))
 }
 
 // DefineKernelError ...
-func DefineKernelError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeKernel, num, level, msg, GetFileLine(1))
+func DefineKernelError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeKernel, idx, level, msg, GetFileLine(1))
 }
 
 // DefineSecurityError ...
-func DefineSecurityError(num ErrorNumber, level ErrorLevel, msg string) *Error {
-	return defineError(ErrorTypeSecurity, num, level, msg, GetFileLine(1))
+func DefineSecurityError(idx ErrorIndex, level ErrorLevel, msg string) *Error {
+	return defineError(ErrorTypeSecurity, idx, level, msg, GetFileLine(1))
 }
 
 // GetCode ...
-func (p *Error) GetCode() uint64 {
-	return p.code
+func (p *Error) GetCode() uint32 {
+	return p.code & 0xFFFFFF
 }
 
 // GetType ...
 func (p *Error) GetType() ErrorType {
-	return ErrorType(p.code >> 42)
+	return ErrorType((p.code >> 20) & 0x0F)
 }
 
 // GetLevel ...
 func (p *Error) GetLevel() ErrorLevel {
-	return ErrorLevel((p.code >> 34) & 0xFF)
+	return ErrorLevel((p.code >> 16) & 0x0F)
 }
 
-// GetNumber ...
-func (p *Error) GetNumber() ErrorNumber {
-	return ErrorNumber((p.code >> 2) & 0xFFFFFFFF)
+// GetIndex ...
+func (p *Error) GetIndex() ErrorIndex {
+	return ErrorIndex(p.code & 0xFFFF)
 }
 
 // GetMessage ...
@@ -139,8 +139,8 @@ func (p *Error) GetMessage() string {
 
 // AddDebug ...
 func (p *Error) AddDebug(debug string) *Error {
-	if p.code%2 == 0 {
-		ret := &Error{code: p.code + 1}
+	if p.code&0xFF000000 == 0 {
+		ret := &Error{code: p.code | 0x01000000}
 		if p.message == "" {
 			ret.message = ConcatString(debug)
 		} else {
@@ -154,6 +154,11 @@ func (p *Error) AddDebug(debug string) *Error {
 	} else {
 		p.message = ConcatString(p.message, "\n", debug)
 	}
+	return p
+}
+
+func (p *Error) Standardize() *Error {
+	p.code &= 0xFFFFFF
 	return p
 }
 
@@ -194,7 +199,7 @@ func (p *Error) Error() string {
 		p.getErrorTypeString(),
 		p.getErrorLevelString(),
 		"[",
-		strconv.FormatUint(uint64(p.GetNumber()), 10),
+		strconv.FormatUint(uint64(p.GetIndex()), 10),
 		"]: ",
 		p.message,
 	)

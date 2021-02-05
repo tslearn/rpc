@@ -45,7 +45,7 @@ func TestSubscribePanic(t *testing.T) {
 }
 
 func TestPublishPanic(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 	t.Run("onPanic goes panic", func(t *testing.T) {
 		assert := NewAssert(t)
 		retCH := make(chan *Error, 1)
@@ -101,7 +101,8 @@ func TestRunWithCatchPanic(t *testing.T) {
 }
 
 func TestRunWithSubscribePanic(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
+
 	t.Run("func with PublishPanic", func(t *testing.T) {
 		assert := NewAssert(t)
 

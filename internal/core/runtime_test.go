@@ -77,7 +77,10 @@ func TestRuntime_Reply(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}, nil),
-		)).Equal(nil, base.ErrStream.AddDebug("error").AddDebug(source))
+		)).Equal(
+			nil,
+			base.ErrStream.AddDebug("error").AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok (error)", func(t *testing.T) {
@@ -91,7 +94,10 @@ func TestRuntime_Reply(t *testing.T) {
 				assert(ret).Equal(emptyReturn)
 				return ret
 			}, nil),
-		)).Equal(nil, base.ErrStream.AddDebug("error").AddDebug(source))
+		)).Equal(
+			nil,
+			base.ErrStream.AddDebug("error").AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("argument is (*Error)(nil)", func(t *testing.T) {
@@ -108,7 +114,8 @@ func TestRuntime_Reply(t *testing.T) {
 			nil,
 			base.ErrUnsupportedValue.
 				AddDebug("value is nil").
-				AddDebug(source),
+				AddDebug(source).
+				Standardize(),
 		)
 	})
 
@@ -126,7 +133,8 @@ func TestRuntime_Reply(t *testing.T) {
 			nil,
 			base.ErrUnsupportedValue.
 				AddDebug("value is nil").
-				AddDebug(source),
+				AddDebug(source).
+				Standardize(),
 		)
 	})
 }
@@ -157,7 +165,7 @@ func TestRuntime_Call(t *testing.T) {
 			}, nil),
 		)).Equal(nil, base.ErrUnsupportedValue.
 			AddDebug("2nd argument: value type(chan bool) is not supported").
-			AddDebug(source1).AddDebug(source2),
+			AddDebug(source1).AddDebug(source2).Standardize(),
 		)
 	})
 
@@ -186,7 +194,7 @@ func TestRuntime_Call(t *testing.T) {
 			),
 		)).Equal(nil, base.ErrCallOverflow.
 			AddDebug("call #.test:SayHello level(1) overflows").
-			AddDebug(source1).AddDebug(source2),
+			AddDebug(source1).AddDebug(source2).Standardize(),
 		)
 	})
 
@@ -350,6 +358,17 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		)
 	})
 
+	t.Run("errCode overflows", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.WriteUint64(1 << 32)
+		v.WriteString(base.ErrStream.GetMessage())
+		assert(testRuntime.parseResponseStream(v)).Equal(
+			RTValue{err: base.ErrStream},
+		)
+	})
+
 	t.Run("Read ret error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
@@ -384,7 +403,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
-		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
 		assert(testRuntime.parseResponseStream(v)).Equal(
@@ -396,7 +415,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
-		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(testRuntime.parseResponseStream(v)).Equal(
 			RTValue{err: base.ErrStream},

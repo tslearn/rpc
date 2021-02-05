@@ -31,7 +31,7 @@ func TestNewError(t *testing.T) {
 }
 
 func TestDefineError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("error redefined", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -54,14 +54,14 @@ func TestDefineError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeAction, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal("source")
 	})
 }
 
 func TestDefineConfigError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -71,14 +71,14 @@ func TestDefineConfigError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeConfig, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
 
 func TestDefineNetError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -88,14 +88,14 @@ func TestDefineNetError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeNet, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
 
 func TestDefineActionError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -105,14 +105,14 @@ func TestDefineActionError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeAction, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
 
 func TestDefineDevelopError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -122,14 +122,14 @@ func TestDefineDevelopError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeDevelop, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
 
 func TestDefineKernelError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -139,14 +139,14 @@ func TestDefineKernelError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeKernel, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
 }
 
 func TestDefineSecurityError(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -156,7 +156,7 @@ func TestDefineSecurityError(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetType(), v1.GetNumber(), v1.GetLevel(), v1.GetMessage()).
+		assert(v1.GetType(), v1.GetIndex(), v1.GetLevel(), v1.GetMessage()).
 			Equal(ErrorTypeSecurity, num, ErrorLevelWarn, "msg")
 		assert(errorDefineMap[num]).Equal(s1)
 	})
@@ -165,12 +165,12 @@ func TestDefineSecurityError(t *testing.T) {
 func TestError_GetCode(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		assert((&Error{code: 123}).GetCode()).Equal(uint64(123))
+		assert((&Error{code: 123}).GetCode()).Equal(uint32(123))
 	})
 }
 
 func TestError_GetType(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test ErrorTypeConfig", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -240,7 +240,7 @@ func TestError_GetType(t *testing.T) {
 }
 
 func TestError_GetLevel(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test ErrorLevelWarn", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -276,8 +276,8 @@ func TestError_GetLevel(t *testing.T) {
 	})
 }
 
-func TestError_GetNumber(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+func TestError_GetIndex(t *testing.T) {
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test with uint32 min", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -287,7 +287,7 @@ func TestError_GetNumber(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetNumber()).Equal(num)
+		assert(v1.GetIndex()).Equal(num)
 	})
 
 	t.Run("test with uint32 max", func(t *testing.T) {
@@ -298,12 +298,12 @@ func TestError_GetNumber(t *testing.T) {
 			delete(errorDefineMap, num)
 			errorDefineMutex.Unlock()
 		}()
-		assert(v1.GetNumber()).Equal(num)
+		assert(v1.GetIndex()).Equal(num)
 	})
 }
 
 func TestError_GetMessage(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -318,7 +318,7 @@ func TestError_GetMessage(t *testing.T) {
 }
 
 func TestError_AddDebug(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test from origin error", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -358,8 +358,16 @@ func TestError_AddDebug(t *testing.T) {
 	})
 }
 
+func TestError_Standardize(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(ErrStream.Standardize()).Equal(ErrStream)
+		assert(ErrAction.AddDebug("").Standardize()).Equal(ErrAction)
+	})
+}
+
 func TestError_getErrorTypeString(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -391,7 +399,7 @@ func TestError_getErrorTypeString(t *testing.T) {
 }
 
 func TestError_getErrorLevelString(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
@@ -418,7 +426,7 @@ func TestError_getErrorLevelString(t *testing.T) {
 }
 
 func TestError_Error(t *testing.T) {
-	num := ErrorNumber(math.MaxUint32)
+	num := ErrorIndex(math.MaxUint16)
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)

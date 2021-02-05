@@ -1,389 +1,389 @@
 // Package errors ...
 package base
 
-const generalErrorSeg = 1000
+const generalErrorSeg = 1 << 8
 
 var (
 	// ErrStream ...
 	ErrStream = DefineSecurityError(
-		(generalErrorSeg<<16)|1,
+		generalErrorSeg|1,
 		ErrorLevelWarn,
 		"stream error",
 	)
 
 	// ErrUnsupportedValue ...
 	ErrUnsupportedValue = DefineDevelopError(
-		(generalErrorSeg<<16)|2,
+		generalErrorSeg|2,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrServiceName ... *
 	ErrServiceName = DefineDevelopError(
-		(generalErrorSeg<<16)|3,
+		generalErrorSeg|3,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrServiceIsNil ... *
 	ErrServiceIsNil = DefineDevelopError(
-		(generalErrorSeg<<16)|4,
+		generalErrorSeg|4,
 		ErrorLevelFatal,
 		"service is nil",
 	)
 
 	// ErrServiceOverflow ... *
 	ErrServiceOverflow = DefineDevelopError(
-		(generalErrorSeg<<16)|5,
+		generalErrorSeg|5,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrActionName ... *
 	ErrActionName = DefineDevelopError(
-		(generalErrorSeg<<16)|6,
+		generalErrorSeg|6,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrActionHandler ... *
 	ErrActionHandler = DefineDevelopError(
-		(generalErrorSeg<<16)|7,
+		generalErrorSeg|7,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrActionCloseTimeout ... *
 	ErrActionCloseTimeout = DefineDevelopError(
-		(generalErrorSeg<<16)|8,
+		generalErrorSeg|8,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrAction ...
 	ErrAction = DefineActionError(
-		(generalErrorSeg<<16)|9,
+		generalErrorSeg|9,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrActionPanic ...
 	ErrActionPanic = DefineDevelopError(
-		(generalErrorSeg<<16)|10,
+		generalErrorSeg|10,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrTargetNotExist ...
 	ErrTargetNotExist = DefineSecurityError(
-		(generalErrorSeg<<16)|11,
+		generalErrorSeg|11,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrCallOverflow ...
 	ErrCallOverflow = DefineSecurityError(
-		(generalErrorSeg<<16)|12,
+		generalErrorSeg|12,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrArgumentsNotMatch ...
 	ErrArgumentsNotMatch = DefineSecurityError(
-		(generalErrorSeg<<16)|13,
+		generalErrorSeg|13,
 		ErrorLevelError,
 		"",
 	)
 
 	// ErrRuntimeIllegalInCurrentGoroutine ...
 	ErrRuntimeIllegalInCurrentGoroutine = DefineDevelopError(
-		(generalErrorSeg<<16)|14,
+		generalErrorSeg|14,
 		ErrorLevelFatal,
 		"Runtime is illegal in current goroutine",
 	)
 
 	// ErrRuntimeReplyHasBeenCalled ...
 	ErrRuntimeReplyHasBeenCalled = DefineDevelopError(
-		(generalErrorSeg<<16)|15,
+		generalErrorSeg|15,
 		ErrorLevelError,
 		"Runtime.Reply has been called before",
 	)
 
 	// ErrRuntimeExternalReturn ...
 	ErrRuntimeExternalReturn = DefineDevelopError(
-		(generalErrorSeg<<16)|16,
+		generalErrorSeg|16,
 		ErrorLevelError,
 		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
 	// ErrRTArrayIndexOverflow ...
 	ErrRTArrayIndexOverflow = DefineDevelopError(
-		(generalErrorSeg<<16)|17,
+		generalErrorSeg|17,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrRTMapNameNotFound ...
 	ErrRTMapNameNotFound = DefineDevelopError(
-		(generalErrorSeg<<16)|18,
+		generalErrorSeg|18,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrNumOfThreadsIsWrong ... *
 	ErrNumOfThreadsIsWrong = DefineConfigError(
-		(generalErrorSeg<<16)|19,
+		generalErrorSeg|19,
 		ErrorLevelFatal,
 		"numOfThreads is wrong",
 	)
 
 	// ErrThreadBufferSizeIsWrong ... *
 	ErrThreadBufferSizeIsWrong = DefineConfigError(
-		(generalErrorSeg<<16)|20,
+		generalErrorSeg|20,
 		ErrorLevelFatal,
 		"threadBufferSize is wrong",
 	)
 
 	// ErrMaxNodeDepthIsWrong ... *
 	ErrMaxNodeDepthIsWrong = DefineConfigError(
-		(generalErrorSeg<<16)|21,
+		generalErrorSeg|21,
 		ErrorLevelFatal,
 		"maxNodeDepth is wrong",
 	)
 
 	// ErrCacheMkdirAll ... *
 	ErrCacheMkdirAll = DefineConfigError(
-		(generalErrorSeg<<16)|22,
+		generalErrorSeg|22,
 		ErrorLevelFatal,
 		"create directory error",
 	)
 
 	// ErrCacheWriteFile ... *
 	ErrCacheWriteFile = DefineConfigError(
-		(generalErrorSeg<<16)|23,
+		generalErrorSeg|23,
 		ErrorLevelFatal,
 		"write to file error",
 	)
 )
 
-const coreErrorSeg = 1001
+const coreErrorSeg = 2 << 8
 
 var (
 	// ErrFnCacheIllegalKindString ... *
 	ErrFnCacheIllegalKindString = DefineKernelError(
-		(coreErrorSeg<<16)|1,
+		coreErrorSeg|1,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrFnCacheDuplicateKindString ... *
 	ErrFnCacheDuplicateKindString = DefineKernelError(
-		(coreErrorSeg<<16)|2,
+		coreErrorSeg|2,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrProcessorOnReturnStreamIsNil ... *
 	ErrProcessorOnReturnStreamIsNil = DefineKernelError(
-		(coreErrorSeg<<16)|3,
+		coreErrorSeg|3,
 		ErrorLevelFatal,
 		"onReturnStream is nil",
 	)
 
 	// ErrProcessorMaxCallDepthIsWrong ... *
 	ErrProcessorMaxCallDepthIsWrong = DefineKernelError(
-		(coreErrorSeg<<16)|4,
+		coreErrorSeg|4,
 		ErrorLevelFatal,
 		"maxCallDepth is wrong",
 	)
 
 	// ErrProcessorNodeMetaIsNil ... *
 	ErrProcessorNodeMetaIsNil = DefineKernelError(
-		(coreErrorSeg<<16)|5,
+		coreErrorSeg|5,
 		ErrorLevelFatal,
 		"node meta is nil",
 	)
 
 	// ErrProcessorActionMetaIsNil ... *
 	ErrProcessorActionMetaIsNil = DefineKernelError(
-		(coreErrorSeg<<16)|6,
+		coreErrorSeg|6,
 		ErrorLevelFatal,
 		"action meta is nil",
 	)
 
 	// ErrThreadEvalFatal ...
 	ErrThreadEvalFatal = DefineKernelError(
-		(coreErrorSeg<<16)|7,
+		coreErrorSeg|7,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrProcessorIsNotRunning ... *
 	ErrProcessorIsNotRunning = DefineKernelError(
-		(coreErrorSeg<<16)|8,
+		coreErrorSeg|8,
 		ErrorLevelFatal,
 		"processor is not running",
 	)
 )
 
-const gatewayErrorSeg = 1002
+const gatewayErrorSeg = 3 << 8
 
 var (
 	// ErrGatewayNoAvailableAdapter ...
 	ErrGatewayNoAvailableAdapter = DefineConfigError(
-		(gatewayErrorSeg<<16)|1,
+		gatewayErrorSeg|1,
 		ErrorLevelFatal,
 		"no listener is set on the server",
 	)
 
 	// ErrGatewayAlreadyRunning ...
 	ErrGatewayAlreadyRunning = DefineConfigError(
-		(gatewayErrorSeg<<16)|2,
+		gatewayErrorSeg|2,
 		ErrorLevelFatal,
 		"it is already running",
 	)
 
 	// ErrGateWaySessionNotFound ...
 	ErrGateWaySessionNotFound = DefineConfigError(
-		(gatewayErrorSeg<<16)|3,
+		gatewayErrorSeg|3,
 		ErrorLevelWarn,
 		"session not found",
 	)
 
 	// ErrGateWaySeedOverflows ...
 	ErrGateWaySeedOverflows = DefineConfigError(
-		(gatewayErrorSeg<<16)|4,
+		gatewayErrorSeg|4,
 		ErrorLevelWarn,
 		"gateway seed overflows",
 	)
 )
 
-const serverErrorSeg = 1003
+const serverErrorSeg = 4 << 8
 
 var (
 	// ErrServerAlreadyRunning ...
 	ErrServerAlreadyRunning = DefineConfigError(
-		(serverErrorSeg<<16)|1,
+		serverErrorSeg|1,
 		ErrorLevelFatal,
 		"it is already running",
 	)
 
 	// ErrServerNotRunning ...
 	ErrServerNotRunning = DefineConfigError(
-		(serverErrorSeg<<16)|2,
+		serverErrorSeg|2,
 		ErrorLevelFatal,
 		"it is not running",
 	)
 )
 
-const clientErrorSeg = 1004
+const clientErrorSeg = 5 << 8
 
 var (
 	// ErrClientTimeout ...
 	ErrClientTimeout = DefineNetError(
-		(clientErrorSeg<<16)|1,
+		clientErrorSeg|1,
 		ErrorLevelWarn,
 		"timeout",
 	)
 
 	// ErrClientConfig ...
 	ErrClientConfig = DefineNetError(
-		(clientErrorSeg<<16)|2,
+		clientErrorSeg|2,
 		ErrorLevelWarn,
 		"client config error",
 	)
 )
 
-const adapterErrorSeg = 2000
+const adapterErrorSeg = 6 << 8
 
 var (
 	// ErrUnsupportedProtocol ...
 	ErrUnsupportedProtocol = DefineNetError(
-		(adapterErrorSeg<<16)|1,
+		adapterErrorSeg|1,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceListen ...
 	ErrSyncTCPServerServiceListen = DefineNetError(
-		(adapterErrorSeg<<16)|2,
+		adapterErrorSeg|2,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceAccept ...
 	ErrSyncTCPServerServiceAccept = DefineNetError(
-		(adapterErrorSeg<<16)|3,
+		adapterErrorSeg|3,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceClose ...
 	ErrSyncTCPServerServiceClose = DefineNetError(
-		(adapterErrorSeg<<16)|4,
+		adapterErrorSeg|4,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceListen ...
 	ErrSyncWSServerServiceListen = DefineNetError(
-		(adapterErrorSeg<<16)|5,
+		adapterErrorSeg|5,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceUpgrade ...
 	ErrSyncWSServerServiceUpgrade = DefineNetError(
-		(adapterErrorSeg<<16)|6,
+		adapterErrorSeg|6,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceServe ...
 	ErrSyncWSServerServiceServe = DefineNetError(
-		(adapterErrorSeg<<16)|7,
+		adapterErrorSeg|7,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceClose ...
 	ErrSyncWSServerServiceClose = DefineNetError(
-		(adapterErrorSeg<<16)|8,
+		adapterErrorSeg|8,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncClientServiceDial ...
 	ErrSyncClientServiceDial = DefineNetError(
-		(adapterErrorSeg<<16)|9,
+		adapterErrorSeg|9,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnClose ...
 	ErrConnClose = DefineNetError(
-		(adapterErrorSeg<<16)|10,
+		adapterErrorSeg|10,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnRead ...
 	ErrConnRead = DefineNetError(
-		(adapterErrorSeg<<16)|11,
+		adapterErrorSeg|11,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnWrite ...
 	ErrConnWrite = DefineNetError(
-		(adapterErrorSeg<<16)|12,
+		adapterErrorSeg|12,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrOnFillWriteFatal ...
 	ErrOnFillWriteFatal = DefineKernelError(
-		(adapterErrorSeg<<16)|13,
+		adapterErrorSeg|13,
 		ErrorLevelFatal,
 		"kernel error",
 	)

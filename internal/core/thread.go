@@ -322,7 +322,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 
 	if debug {
 		msg := writeErr.GetMessage()
-		stream.WriteUint64((writeErr.GetCode()/2)*2 + 1)
+		stream.WriteUint64(uint64(writeErr.GetCode()))
 		if msg == "" {
 			stream.WriteString(base.ConcatString(
 				writeErr.GetMessage(),
@@ -336,7 +336,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 			))
 		}
 	} else {
-		stream.WriteUint64(writeErr.GetCode())
+		stream.WriteUint64(uint64(writeErr.GetCode()))
 		stream.WriteString(writeErr.GetMessage())
 	}
 	return emptyReturn

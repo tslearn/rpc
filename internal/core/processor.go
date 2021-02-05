@@ -107,7 +107,7 @@ func NewProcessor(
 				_ = recover()
 			}()
 			stream := NewStream()
-			stream.WriteUint64(err.GetCode())
+			stream.WriteUint64(uint64(err.GetCode()))
 			stream.WriteString(err.GetMessage())
 			onReturnStream(stream)
 		}

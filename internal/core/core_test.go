@@ -326,6 +326,14 @@ func TestParseResponseStream(t *testing.T) {
 		assert(ParseResponseStream(v)).Equal(true, nil)
 	})
 
+	t.Run("error code overflows", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStream()
+		v.WriteUint64(1 << 32)
+		v.WriteString(base.ErrStream.GetMessage())
+		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
+	})
+
 	t.Run("error message Read error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
@@ -337,7 +345,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -346,7 +354,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(base.ErrStream.GetCode())
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
 	})

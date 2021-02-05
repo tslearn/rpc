@@ -2,6 +2,7 @@
 package core
 
 import (
+	"math"
 	"reflect"
 
 	"github.com/rpccloud/rpc/internal/base"
@@ -156,11 +157,13 @@ func ParseResponseStream(stream *Stream) (Any, *base.Error) {
 		return nil, err
 	} else if errCode == 0 {
 		return stream.Read()
+	} else if errCode > math.MaxUint32 {
+		return nil, base.ErrStream
 	} else if message, err := stream.ReadString(); err != nil {
 		return nil, err
 	} else if !stream.IsReadFinish() {
 		return nil, base.ErrStream
 	} else {
-		return nil, base.NewError(errCode, message)
+		return nil, base.NewError(uint32(errCode), message)
 	}
 }

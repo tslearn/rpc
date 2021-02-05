@@ -323,7 +323,7 @@ func TestProcessor_Close(t *testing.T) {
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (1 goroutine)",
 						source,
-					)),
+					)).Standardize(),
 				)
 			} else {
 				assert(ParseResponseStream(<-streamCH)).Equal(
@@ -331,7 +331,7 @@ func TestProcessor_Close(t *testing.T) {
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (%d goroutines)",
 						source, count,
-					)),
+					)).Standardize(),
 				)
 			}
 			mutex.Unlock()

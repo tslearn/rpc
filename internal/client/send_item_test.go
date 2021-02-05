@@ -63,7 +63,7 @@ func TestSendItem_CheckTime(t *testing.T) {
 		stream := <-v.returnCH
 		assert(stream.GetCallbackID()).Equal(uint64(15))
 		assert(stream.ReadUint64()).
-			Equal(base.ErrClientTimeout.GetCode(), nil)
+			Equal(uint64(base.ErrClientTimeout.GetCode()), nil)
 		assert(stream.ReadString()).
 			Equal(base.ErrClientTimeout.GetMessage(), nil)
 		assert(stream.IsReadFinish()).IsTrue()

@@ -56,7 +56,7 @@ func (p *SendItem) CheckTime(nowNS int64) bool {
 		// return timeout stream
 		stream := core.NewStream()
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
-		stream.WriteUint64(base.ErrClientTimeout.GetCode())
+		stream.WriteUint64(uint64(base.ErrClientTimeout.GetCode()))
 		stream.WriteString(base.ErrClientTimeout.GetMessage())
 		p.returnCH <- stream
 		return true
