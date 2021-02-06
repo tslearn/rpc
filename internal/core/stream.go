@@ -40,8 +40,6 @@ const (
 	StreamWriteOverflow = " overflows"
 	// StreamWriteIsNotAvailable ...
 	StreamWriteIsNotAvailable = " is not available"
-	// StreamWriteIsNil ...
-	StreamWriteIsNil = " is nil"
 
 	// ControlStreamConnectRequest ...
 	ControlStreamConnectRequest = 1
@@ -83,7 +81,7 @@ var (
 		},
 	}
 	readSkipArray = [256]int{
-		-0x01, -0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
+		-0x01, +0x01, +0x01, +0x01, +0x01, +0x09, +0x03, +0x05,
 		+0x09, +0x03, +0x05, +0x09, -0x01, -0x01, +0x01, +0x01,
 		+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
 		+0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01, +0x01,
@@ -612,6 +610,14 @@ func (p *Stream) PutBytesTo(v []byte, pos int) bool {
 
 	p.PutBytes(v)
 	return true
+}
+
+func (p *Stream) WriteNil() {
+	p.writeFrame[p.writeIndex] = 1
+	p.writeIndex++
+	if p.writeIndex == streamBlockSize {
+		p.gotoNextWriteFrame()
+	}
 }
 
 // WriteBool write bool value to stream
@@ -1289,7 +1295,8 @@ func (p *Stream) write(v interface{}, depth int) string {
 	}
 
 	if v == nil {
-		return StreamWriteIsNil
+		p.WriteNil()
+		return StreamWriteOK
 	}
 
 	switch v := v.(type) {
@@ -1353,7 +1360,17 @@ func (p *Stream) write(v interface{}, depth int) string {
 	}
 }
 
-// ReadBool read a bool
+// ReadNil read nil
+func (p *Stream) ReadNil() (interface{}, *base.Error) {
+	if p.CanRead() && p.readFrame[p.readIndex] == 1 {
+		p.gotoNextReadByteUnsafe()
+		return nil, nil
+	}
+
+	return nil, base.ErrStream
+}
+
+// ReadBool read bool
 func (p *Stream) ReadBool() (bool, *base.Error) {
 	if p.CanRead() {
 		switch p.readFrame[p.readIndex] {
@@ -1948,7 +1965,7 @@ func (p *Stream) Read() (ret Any, err *base.Error) {
 	op := p.readFrame[p.readIndex]
 	switch op {
 	case byte(1):
-		return nil, base.ErrStream
+		return p.ReadNil()
 	case byte(2):
 		fallthrough
 	case byte(3):
