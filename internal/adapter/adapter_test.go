@@ -260,7 +260,7 @@ func TestAdapter(t *testing.T) {
 
 		serverReceiver := newTestSingleReceiver()
 		serverAdapter := NewServerAdapter(
-			network, "localhost:65431", tlsServerConfig,
+			false, network, "localhost:65431", tlsServerConfig,
 			1200, 1200, serverReceiver,
 		)
 		assert(serverAdapter.Open()).IsTrue()
@@ -357,7 +357,7 @@ func TestAdapter(t *testing.T) {
 		).Open()).IsFalse()
 
 		assert(NewServerAdapter(
-			"err", "localhost:65432", nil,
+			false, "err", "localhost:65432", nil,
 			1200, 1200, newTestSingleReceiver(),
 		).Open()).IsFalse()
 	})

@@ -166,6 +166,7 @@ const streamConnStatusClosed = int32(0)
 
 // StreamConn ...
 type StreamConn struct {
+	isDebug      bool
 	status       int32
 	prev         IConn
 	receiver     IReceiver
@@ -179,8 +180,9 @@ type StreamConn struct {
 }
 
 // NewStreamConn ...
-func NewStreamConn(prev IConn, receiver IReceiver) *StreamConn {
+func NewStreamConn(isDebug bool, prev IConn, receiver IReceiver) *StreamConn {
 	return &StreamConn{
+		isDebug:      isDebug,
 		status:       streamConnStatusRunning,
 		prev:         prev,
 		receiver:     receiver,
@@ -241,6 +243,10 @@ func (p *StreamConn) OnReadBytes(b []byte) {
 			if p.readStream.GetWritePos() == streamLength {
 				if p.readStream.CheckStream() {
 					atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
+					if p.isDebug {
+						p.readStream.SetStatusBitDebug()
+						p.readStream.BuildStreamCheck()
+					}
 					p.receiver.OnConnReadStream(p, p.readStream)
 					p.readStream = nil
 				} else {

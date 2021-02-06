@@ -128,6 +128,23 @@ func TestServer_Listen(t *testing.T) {
 	})
 }
 
+func TestServer_ListenWithDebug(t *testing.T) {
+	t.Run("gateway is opened", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		errID := uint64(0)
+		v := NewServer()
+		v.errorHandler = func(sessionID uint64, e *base.Error) {
+			errID = sessionID
+			err = e
+		}
+
+		v.ListenWithDebug("tcp", "127.0.0.1:1234", nil)
+		assert(errID).Equal(uint64(0))
+		assert(err).Equal(nil)
+	})
+}
+
 func TestServer_SetNumOfThreads(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)

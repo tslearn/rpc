@@ -53,7 +53,7 @@ func TestSyncConn_OnOpen(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		v := NewServerSyncConn(&net.TCPConn{}, 1024, 2048)
 		v.SetNext(streamConn)
 		v.OnOpen()
@@ -68,7 +68,7 @@ func TestSyncConn_OnClose(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		v := NewServerSyncConn(&net.TCPConn{}, 1024, 2048)
 		v.SetNext(streamConn)
 		v.OnOpen()
@@ -84,7 +84,7 @@ func TestSyncConn_OnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		v := NewServerSyncConn(&net.TCPConn{}, 1024, 2048)
 		v.SetNext(streamConn)
 		v.OnOpen()
@@ -102,7 +102,7 @@ func TestSyncConn_Close(t *testing.T) {
 	t.Run("not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		v := NewServerSyncConn(&net.TCPConn{}, 1024, 2048)
 		v.SetNext(streamConn)
 		v.isRunning = false
@@ -123,7 +123,7 @@ func TestSyncConn_Close(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn(nil, 10, 10)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		v := NewServerSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -164,7 +164,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn(nil, 10, 10)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		v := NewServerSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -181,7 +181,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		stream.BuildStreamCheck()
 		netConn := newTestNetConn(stream.GetBuffer(), 1024, 10)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		v := NewServerSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -200,7 +200,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn(nil, 10, 10)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		v := NewClientSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -215,7 +215,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn(nil, 10, 10)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		v := NewClientSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -230,7 +230,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 	t.Run("nothing to write", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		netConn := newTestNetConn(nil, 10, 10)
 		v := NewClientSyncConn(netConn, 1024, 2048)
 		v.SetNext(streamConn)
@@ -256,7 +256,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 			for writeBufSize := 1; writeBufSize < 200; writeBufSize += 30 {
 				for maxWrite := 1; maxWrite < 200; maxWrite += 30 {
 					receiver := newTestSingleReceiver()
-					streamConn := NewStreamConn(nil, receiver)
+					streamConn := NewStreamConn(false, nil, receiver)
 					for i := 0; i < numOfStream; i++ {
 						streamConn.writeCH <- stream.Clone()
 					}
@@ -276,7 +276,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		streamConn.writeCH <- stream.Clone()
 		netConn := newTestNetConn(nil, 10, 10)
@@ -293,7 +293,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		streamConn.writeCH <- stream.Clone()
 		netConn := newTestNetConn(nil, 10, 0)
@@ -339,7 +339,7 @@ func TestNewStreamConn(t *testing.T) {
 		assert := base.NewAssert(t)
 		prev := NewServerSyncConn(nil, 1024, 1024)
 		receiver := newTestSingleReceiver()
-		v := NewStreamConn(prev, receiver)
+		v := NewStreamConn(false, prev, receiver)
 		assert(v.status).Equal(streamConnStatusRunning)
 		assert(v.prev).Equal(prev)
 		assert(v.receiver).Equal(receiver)
@@ -359,7 +359,7 @@ func TestStreamConn_SetReceiver(t *testing.T) {
 		assert := base.NewAssert(t)
 		initReceiver := newTestSingleReceiver()
 		changeReceiver := newTestSingleReceiver()
-		v := NewStreamConn(nil, initReceiver)
+		v := NewStreamConn(false, nil, initReceiver)
 		v.SetReceiver(changeReceiver)
 		assert(v.receiver).Equal(changeReceiver)
 	})
@@ -369,7 +369,7 @@ func TestStreamConn_OnOpen(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		v := NewStreamConn(nil, receiver)
+		v := NewStreamConn(false, nil, receiver)
 		v.OnOpen()
 		assert(receiver.GetOnOpenCount()).Equal(1)
 		assert(receiver.GetOnCloseCount()).Equal(0)
@@ -381,7 +381,7 @@ func TestStreamConn_OnClose(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		v := NewStreamConn(nil, receiver)
+		v := NewStreamConn(false, nil, receiver)
 		v.OnOpen()
 		v.OnClose()
 		assert(receiver.GetOnOpenCount()).Equal(1)
@@ -394,7 +394,7 @@ func TestStreamConn_OnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		v := NewStreamConn(nil, receiver)
+		v := NewStreamConn(false, nil, receiver)
 		v.OnOpen()
 		v.OnError(base.ErrStream)
 		v.OnClose()
@@ -409,7 +409,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 	t.Run("stream length error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		streamConn.OnReadBytes(core.NewStream().GetBuffer())
 		assert(receiver.GetOnErrorCount()).Equal(1)
@@ -419,7 +419,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 	t.Run("stream check error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := newTestSingleReceiver()
-		streamConn := NewStreamConn(nil, receiver)
+		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
 		stream := core.NewStream()
 		stream.PutBytes([]byte{12})
@@ -441,6 +441,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 				for j := 0; j < i; j++ {
 					stream.PutBytes([]byte{12})
 				}
+				stream.SetStatusBitDebug()
 				stream.BuildStreamCheck()
 				buffer = append(buffer, stream.GetBuffer()...)
 			}
@@ -450,7 +451,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 					receiver := newTestSingleReceiver()
 					conn := newTestNetConn(buffer, maxRead, 1024)
 					netConn := NewServerSyncConn(conn, readBufSize, 1024)
-					streamConn := NewStreamConn(netConn, receiver)
+					streamConn := NewStreamConn(true, netConn, receiver)
 					netConn.SetNext(streamConn)
 					runIConn(netConn)
 					assert(receiver.GetOnStreamCount()).Equal(streams)
@@ -474,7 +475,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 		assert := base.NewAssert(t)
 		buf := make([]byte, 1024)
 		receiver := newTestSingleReceiver()
-		v := NewStreamConn(nil, receiver)
+		v := NewStreamConn(false, nil, receiver)
 		v.OnOpen()
 		assert(v.OnFillWrite(buf)).Equal(0)
 		assert(receiver.GetOnErrorCount()).Equal(0)
@@ -485,6 +486,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 		buf := make([]byte, 1024)
 		receiver := newTestSingleReceiver()
 		v := NewStreamConn(
+			false,
 			NewServerSyncConn(newTestNetConn(nil, 10, 10), 10, 10),
 			receiver,
 		)
@@ -499,6 +501,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 		buf := make([]byte, 1024)
 		receiver := newTestSingleReceiver()
 		v := NewStreamConn(
+			false,
 			NewServerSyncConn(newTestNetConn(nil, 10, 10), 10, 10),
 			receiver,
 		)
@@ -516,6 +519,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 			for bufSize := 1; bufSize < 2; bufSize += 10 {
 				receiver := newTestSingleReceiver()
 				v := NewStreamConn(
+					false,
 					NewServerSyncConn(newTestNetConn(nil, 10, 10), 10, 10),
 					receiver,
 				)
@@ -561,7 +565,7 @@ func TestStreamConn_Close(t *testing.T) {
 	t.Run("close ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		prev := NewServerSyncConn(newTestNetConn(nil, 10, 10), 1024, 1024)
-		v := NewStreamConn(prev, nil)
+		v := NewStreamConn(false, prev, nil)
 		v.Close()
 
 		assert(base.RunWithCatchPanic(func() {
@@ -573,7 +577,7 @@ func TestStreamConn_Close(t *testing.T) {
 	t.Run("it has already been closed", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		prev := NewServerSyncConn(newTestNetConn(nil, 10, 10), 1024, 1024)
-		v := NewStreamConn(prev, nil)
+		v := NewStreamConn(false, prev, nil)
 		v.status = streamConnStatusClosed
 		v.Close()
 		assert(base.RunWithCatchPanic(func() {
@@ -588,7 +592,7 @@ func TestStreamConn_LocalAddr(t *testing.T) {
 		assert := base.NewAssert(t)
 		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.12:8080")
 		prev := NewServerSyncConn(newTestNetConn(nil, 10, 10), 1024, 1024)
-		v := NewStreamConn(prev, nil)
+		v := NewStreamConn(false, prev, nil)
 		assert(v.LocalAddr()).Equal(expectedAddr)
 	})
 }
@@ -598,7 +602,7 @@ func TestStreamConn_RemoteAddr(t *testing.T) {
 		assert := base.NewAssert(t)
 		expectedAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.11:8081")
 		prev := NewServerSyncConn(newTestNetConn(nil, 10, 10), 1024, 1024)
-		v := NewStreamConn(prev, nil)
+		v := NewStreamConn(false, prev, nil)
 		assert(v.RemoteAddr()).Equal(expectedAddr)
 	})
 }
@@ -608,7 +612,7 @@ func TestStreamConn_WriteStreamAndRelease(t *testing.T) {
 		assert := base.NewAssert(t)
 		conn := newTestNetConn(nil, 10, 10)
 		netConn := NewServerSyncConn(conn, 1024, 1024)
-		v := NewStreamConn(netConn, newTestSingleReceiver())
+		v := NewStreamConn(false, netConn, newTestSingleReceiver())
 		netConn.SetNext(v)
 		v.OnOpen()
 		v.WriteStreamAndRelease(core.NewStream())
@@ -622,7 +626,7 @@ func TestStreamConn_WriteStreamAndRelease(t *testing.T) {
 		assert := base.NewAssert(t)
 		conn := newTestNetConn(nil, 10, 10)
 		netConn := NewServerSyncConn(conn, 1024, 1024)
-		v := NewStreamConn(netConn, newTestSingleReceiver())
+		v := NewStreamConn(false, netConn, newTestSingleReceiver())
 		netConn.SetNext(v)
 		v.OnOpen()
 		v.Close()
@@ -637,7 +641,7 @@ func TestStreamConn_IsActive(t *testing.T) {
 	t.Run("active true", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		nowNS := base.TimeNow().UnixNano()
-		v := NewStreamConn(nil, nil)
+		v := NewStreamConn(false, nil, nil)
 		v.activeTimeNS = nowNS
 		assert(v.IsActive(nowNS, time.Second)).IsTrue()
 	})
@@ -645,7 +649,7 @@ func TestStreamConn_IsActive(t *testing.T) {
 	t.Run("active true", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		now := base.TimeNow()
-		v := NewStreamConn(nil, nil)
+		v := NewStreamConn(false, nil, nil)
 		v.activeTimeNS = now.Add(-time.Second).UnixNano()
 		assert(v.IsActive(now.UnixNano(), time.Second)).IsFalse()
 	})
@@ -654,7 +658,7 @@ func TestStreamConn_IsActive(t *testing.T) {
 func TestStreamConn_SetNext(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewStreamConn(nil, nil)
+		v := NewStreamConn(false, nil, nil)
 		assert(base.RunWithCatchPanic(func() {
 			v.SetNext(nil)
 		})).Equal("kernel error: it should not be called")
@@ -664,7 +668,7 @@ func TestStreamConn_SetNext(t *testing.T) {
 func TestStreamConn_OnReadReady(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewStreamConn(nil, nil)
+		v := NewStreamConn(false, nil, nil)
 		assert(base.RunWithCatchPanic(func() {
 			v.OnReadReady()
 		})).Equal("kernel error: it should not be called")
@@ -674,7 +678,7 @@ func TestStreamConn_OnReadReady(t *testing.T) {
 func TestStreamConn_OnWriteReady(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewStreamConn(nil, nil)
+		v := NewStreamConn(false, nil, nil)
 		assert(base.RunWithCatchPanic(func() {
 			v.OnWriteReady()
 		})).Equal("kernel error: it should not be called")

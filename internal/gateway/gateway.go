@@ -101,6 +101,33 @@ func (p *GateWay) Listen(
 
 	if !p.isRunning {
 		p.adapters = append(p.adapters, adapter.NewServerAdapter(
+			false,
+			network,
+			addr,
+			tlsConfig,
+			p.config.serverReadBufferSize,
+			p.config.serverWriteBufferSize,
+			p,
+		))
+	} else {
+		p.onError(0, base.ErrGatewayAlreadyRunning)
+	}
+
+	return p
+}
+
+// ListenWithDebug ...
+func (p *GateWay) ListenWithDebug(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+) *GateWay {
+	p.Lock()
+	defer p.Unlock()
+
+	if !p.isRunning {
+		p.adapters = append(p.adapters, adapter.NewServerAdapter(
+			true,
 			network,
 			addr,
 			tlsConfig,

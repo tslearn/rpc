@@ -37,6 +37,7 @@ type IReceiver interface {
 
 // Adapter ...
 type Adapter struct {
+	isDebug    bool
 	isClient   bool
 	network    string
 	addr       string
@@ -58,6 +59,7 @@ func NewClientAdapter(
 	receiver IReceiver,
 ) *Adapter {
 	return &Adapter{
+		isDebug:    false,
 		isClient:   true,
 		network:    network,
 		addr:       addr,
@@ -72,6 +74,7 @@ func NewClientAdapter(
 
 // NewServerAdapter ...
 func NewServerAdapter(
+	isDebug bool,
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
@@ -80,6 +83,7 @@ func NewServerAdapter(
 	receiver IReceiver,
 ) *Adapter {
 	return &Adapter{
+		isDebug:    isDebug,
 		isClient:   false,
 		network:    network,
 		addr:       addr,

@@ -96,7 +96,7 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	session := newSession(11, gateway)
 	netConn := newTestNetConn()
 	syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
-	streamConn := adapter.NewStreamConn(syncConn, session)
+	streamConn := adapter.NewStreamConn(false, syncConn, session)
 	syncConn.SetNext(streamConn)
 	gateway.AddSession(session)
 	return session, syncConn, netConn
@@ -111,6 +111,7 @@ func TestInitSession(t *testing.T) {
 		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		streamConn := adapter.NewStreamConn(
+			false,
 			adapter.NewServerSyncConn(netConn, 1200, 1200),
 			gw,
 		)
@@ -131,6 +132,7 @@ func TestInitSession(t *testing.T) {
 		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		streamConn := adapter.NewStreamConn(
+			false,
 			adapter.NewServerSyncConn(netConn, 1200, 1200),
 			gw,
 		)
@@ -150,6 +152,7 @@ func TestInitSession(t *testing.T) {
 		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		streamConn := adapter.NewStreamConn(
+			false,
 			adapter.NewServerSyncConn(netConn, 1200, 1200),
 			gw,
 		)
@@ -170,6 +173,7 @@ func TestInitSession(t *testing.T) {
 		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		streamConn := adapter.NewStreamConn(
+			false,
 			adapter.NewServerSyncConn(netConn, 1200, 1200),
 			gw,
 		)
@@ -191,6 +195,7 @@ func TestInitSession(t *testing.T) {
 		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 
 		streamConn := adapter.NewStreamConn(
+			false,
 			adapter.NewServerSyncConn(netConn, 1200, 1200),
 			gw,
 		)
@@ -217,7 +222,7 @@ func TestInitSession(t *testing.T) {
 		})
 
 		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, gw)
+		streamConn := adapter.NewStreamConn(false, syncConn, gw)
 		syncConn.SetNext(streamConn)
 
 		stream := core.NewStream()
@@ -267,7 +272,7 @@ func TestInitSession(t *testing.T) {
 			gw.AddSession(&Session{id: id, security: security, gateway: gw})
 			netConn := newTestNetConn()
 			syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
-			streamConn := adapter.NewStreamConn(syncConn, gw)
+			streamConn := adapter.NewStreamConn(false, syncConn, gw)
 			syncConn.SetNext(streamConn)
 
 			stream := core.NewStream()
@@ -486,7 +491,7 @@ func TestSession_OnConnOpen(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		session.OnConnOpen(streamConn)
 		assert(session.conn).Equal(streamConn)
@@ -500,7 +505,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		session, syncConn, _ := prepareTestSession()
 		session.gateway.routeSender = fakeSender
 
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(10)
 		session.OnConnReadStream(streamConn, stream)
@@ -518,7 +523,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		cacheStream.SetCallbackID(10)
 		cacheStream.BuildStreamCheck()
 
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 
 		(&session.channels[10%len(session.channels)]).In(10)
@@ -536,7 +541,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
 
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		(&session.channels[10%len(session.channels)]).In(10)
 
@@ -552,7 +557,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		err := (*base.Error)(nil)
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		session.gateway.onError = func(sessionID uint64, e *base.Error) {
 			err = e
 		}
@@ -565,7 +570,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		session, syncConn, netConn := prepareTestSession()
 		syncConn.OnOpen()
 		netConn.writeBuffer = make([]byte, 0)
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		sendStream := core.NewStream()
 		sendStream.WriteInt64(core.ControlStreamPing)
@@ -579,7 +584,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 	t.Run("cbID == 0, kind == ControlStreamPing with err", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 
 		stream := core.NewStream()
 		stream.WriteInt64(core.ControlStreamPing)
@@ -598,7 +603,7 @@ func TestSession_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		err := (*base.Error)(nil)
 		session.gateway.onError = func(sessionID uint64, e *base.Error) {
 			err = e
@@ -612,7 +617,7 @@ func TestSession_OnConnClose(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamConn := adapter.NewStreamConn(syncConn, session)
+		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		session.OnConnOpen(streamConn)
 		assert(session.conn).IsNotNil()
 		session.OnConnClose(streamConn)

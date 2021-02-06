@@ -96,6 +96,16 @@ func (p *Server) Listen(
 	return p
 }
 
+// ListenWithDebug ...
+func (p *Server) ListenWithDebug(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+) *Server {
+	p.gateway.ListenWithDebug(network, addr, tlsConfig)
+	return p
+}
+
 // SetNumOfThreads ...
 func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	p.Lock()

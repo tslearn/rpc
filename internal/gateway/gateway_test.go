@@ -173,6 +173,39 @@ func TestGateWay_Listen(t *testing.T) {
 		assert(v.Listen("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
 		assert(len(v.adapters)).Equal(1)
 		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
+			false,
+			"tcp",
+			"0.0.0.0:8080",
+			tlsConfig,
+			v.config.serverReadBufferSize,
+			v.config.serverWriteBufferSize,
+			v,
+		))
+	})
+}
+
+func TestGateWay_ListenWithDebug(t *testing.T) {
+	t.Run("gateway is running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		onError := func(sessionID uint64, e *base.Error) {
+			err = e
+		}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v.isRunning = true
+		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", nil)).Equal(v)
+		assert(err).Equal(base.ErrGatewayAlreadyRunning)
+	})
+
+	t.Run("gateway is not running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		tlsConfig := &tls.Config{}
+		onError := func(sessionID uint64, e *base.Error) {}
+		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
+		assert(len(v.adapters)).Equal(1)
+		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
+			true,
 			"tcp",
 			"0.0.0.0:8080",
 			tlsConfig,
@@ -305,7 +338,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 		onError := func(sessionID uint64, e *base.Error) {}
 		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
 		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 
 		stream := core.NewStream()
@@ -326,7 +359,7 @@ func TestGateWay_OnConnError(t *testing.T) {
 		v.AddSession(newSession(10, v))
 		netConn := newTestNetConn()
 		syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		assert(netConn.isRunning).IsTrue()
 		v.OnConnError(streamConn, base.ErrStream)
 		assert(netConn.isRunning).IsFalse()

@@ -89,6 +89,7 @@ func getTestServer() *server.Server {
 
 func TestNewClient(t *testing.T) {
 	type TestAdapter struct {
+		isDebug    bool
 		isClient   bool
 		network    string
 		addr       string
@@ -190,7 +191,7 @@ func TestClient_tryToSendPing(t *testing.T) {
 		}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 
@@ -206,7 +207,7 @@ func TestClient_tryToSendPing(t *testing.T) {
 		}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 
@@ -321,7 +322,7 @@ func TestClient_tryToTimeout(t *testing.T) {
 		// set conn
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 
@@ -360,7 +361,7 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 		chFreeArr := make([]int, chSize)
@@ -438,7 +439,7 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 		v := &Client{
 			lastPingTimeNS: 10000,
 			config:         &Config{heartbeatTimeout: 9 * time.Millisecond},
-			conn:           adapter.NewStreamConn(nil, nil),
+			conn:           adapter.NewStreamConn(false, nil, nil),
 			preSendHead:    NewSendItem(0),
 		}
 		v.tryToDeliverPreSendMessages()
@@ -516,7 +517,7 @@ func TestClient_OnConnOpen(t *testing.T) {
 		v := &Client{sessionString: "123456"}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 
@@ -535,7 +536,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v := &Client{config: &Config{}}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		return v, streamConn, netConn
 	}
@@ -860,7 +861,7 @@ func TestClient_OnConnError(t *testing.T) {
 		}}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 		v.OnConnError(streamConn, base.ErrStream)
@@ -875,7 +876,7 @@ func TestClient_OnConnClose(t *testing.T) {
 		v := &Client{}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
-		streamConn := adapter.NewStreamConn(syncConn, v)
+		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 		v.OnConnClose(streamConn)
