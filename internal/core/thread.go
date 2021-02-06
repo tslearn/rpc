@@ -575,6 +575,13 @@ func (p *rpcThread) Eval(
 				false,
 			)
 		} else {
+			var typeName string
+			if val == nil {
+				typeName = "<nil>"
+			} else {
+				typeName = convertTypeToString(reflect.ValueOf(val).Type())
+			}
+
 			return p.Write(
 				base.ErrArgumentsNotMatch.AddDebug(
 					fmt.Sprintf(
@@ -582,7 +589,7 @@ func (p *rpcThread) Eval(
 						actionPath,
 						base.ConvertOrdinalToString(uint(argErrorIndex)),
 						convertTypeToString(execActionNode.argTypes[argErrorIndex]),
-						convertTypeToString(reflect.ValueOf(val).Type()),
+						typeName,
 						p.GetExecActionDebug(),
 					)),
 				0,

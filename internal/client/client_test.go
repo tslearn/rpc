@@ -75,7 +75,7 @@ func getTestServer() *server.Server {
 			return rt.Reply(nil)
 		})
 
-	rpcServer := server.NewServer().Listen("tcp", "0.0.0.0:8765", nil)
+	rpcServer := server.NewServer().ListenWithDebug("tcp", "0.0.0.0:8765", nil)
 	rpcServer.AddService("user", userService, nil)
 
 	go func() {
