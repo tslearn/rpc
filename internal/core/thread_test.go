@@ -1194,6 +1194,51 @@ func TestRpcThread_Eval(t *testing.T) {
 		fnTest(false, &testFuncCache{})
 	})
 
+	t.Run("unsupported value <nil>", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		fnTest := func(dbg bool, fnCache ActionCache) {
+			source1 := ""
+			source2 := ""
+			stream, source := testReplyWithSource(dbg, fnCache, nil,
+				func(rt Runtime, hook Bool) Return {
+					actionNode := rt.thread.GetActionNode()
+					actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
+					rtValue, s1 := rt.Call("#.test:Eval", nil), base.GetFileLine(0)
+					ret, s2 := rt.Reply(rtValue), base.GetFileLine(0)
+					source1 = s1
+					source2 = s2
+					return ret
+				}, true)
+
+			if dbg {
+				assert(ParseResponseStream(stream)).
+					Equal(nil, base.ErrArgumentsNotMatch.AddDebug(
+						"rpc-call: #.test:Eval 1st argument does not match. "+
+							"want: int16 got: <nil>",
+					).AddDebug("#.test:Eval "+source).
+						AddDebug("#.test:Eval "+source1).
+						AddDebug("#.test:Eval "+source2).
+						Standardize(),
+					)
+			} else {
+				assert(ParseResponseStream(stream)).
+					Equal(nil, base.ErrArgumentsNotMatch.
+						AddDebug(
+							"rpc-call: #.test:Eval arguments does not match",
+						).
+						AddDebug("#.test:Eval "+source1).
+						AddDebug("#.test:Eval "+source2).
+						Standardize(),
+					)
+			}
+		}
+		fnTest(true, nil)
+		fnTest(false, nil)
+		fnTest(true, &testFuncCache{})
+		fnTest(false, &testFuncCache{})
+	})
+
 	t.Run("call function error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
