@@ -136,6 +136,7 @@ func TestNewClient(t *testing.T) {
 		})
 		assert(len(v.sessionString) >= 34).IsTrue()
 		testAdapter := (*TestAdapter)(unsafe.Pointer(v.adapter))
+		assert(testAdapter.isDebug).IsFalse()
 		assert(testAdapter.isClient).IsTrue()
 		assert(testAdapter.network).Equal("tcp")
 		assert(testAdapter.addr).Equal("127.0.0.1:8765")
