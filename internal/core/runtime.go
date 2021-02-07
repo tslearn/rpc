@@ -41,6 +41,10 @@ func (p Runtime) Reply(value interface{}) Return {
 	return thread.Write(value, 1, true)
 }
 
+//func (p Runtime) Post(gsLink string, args ...interface{}) {
+//
+//}
+
 // Call ...
 func (p Runtime) Call(target string, args ...interface{}) RTValue {
 	thread := p.lock()
