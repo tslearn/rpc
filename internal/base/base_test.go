@@ -2,6 +2,8 @@ package base
 
 import (
 	"crypto/tls"
+	"encoding/base64"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -12,6 +14,87 @@ import (
 	"time"
 	"unsafe"
 )
+
+func TestInitAESCipherAndNonce(t *testing.T) {
+	t.Run("test basic", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(aesCipher).IsNotNil()
+		assert(len(aesNonce)).Equal(12)
+	})
+
+	t.Run("get keyBuffer error", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {
+			saveFNGetRandBytes := fnGetRandBytes
+			fnGetRandBytes = func(_ uint32) ([]byte, error) {
+				return nil, io.EOF
+			}
+			defer func() {
+				fnGetRandBytes = saveFNGetRandBytes
+			}()
+
+			initAESCipherAndNonce()
+		})).Equal(io.EOF.Error())
+	})
+
+	t.Run("get nonceBuffer error", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {
+			saveFNGetRandBytes := fnGetRandBytes
+			fnGetRandBytes = func(n uint32) ([]byte, error) {
+				if n == 12 {
+					return nil, io.EOF
+				}
+
+				return saveFNGetRandBytes(n)
+			}
+			defer func() {
+				fnGetRandBytes = saveFNGetRandBytes
+			}()
+
+			initAESCipherAndNonce()
+		})).Equal(io.EOF.Error())
+	})
+
+	t.Run("block size error", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {
+			saveFNGetRandBytes := fnGetRandBytes
+			fnGetRandBytes = func(n uint32) ([]byte, error) {
+				if n == 32 {
+					return []byte{1, 2, 3, 4, 5, 6, 7}, nil
+				}
+
+				return saveFNGetRandBytes(n)
+			}
+			defer func() {
+				fnGetRandBytes = saveFNGetRandBytes
+			}()
+
+			initAESCipherAndNonce()
+		})).IsNotNil()
+	})
+
+	t.Run("NonceSize error", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(RunWithCatchPanic(func() {
+			saveFNGetRandBytes := fnGetRandBytes
+			fnGetRandBytes = func(n uint32) ([]byte, error) {
+				if n == 12 {
+					return make([]byte, 0), nil
+				}
+
+				return saveFNGetRandBytes(n)
+			}
+			defer func() {
+				fnGetRandBytes = saveFNGetRandBytes
+			}()
+
+			initAESCipherAndNonce()
+		})).IsNotNil()
+	})
+
+}
 
 func TestIsNil(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
@@ -378,6 +461,101 @@ func TestGetTLSClientConfig(t *testing.T) {
 		}
 		assert(e).IsNil()
 	})
+}
+
+func TestEncryptSessionEndpoint(t *testing.T) {
+	t.Run("aesCipher == nil", func(t *testing.T) {
+		saveCipher := aesCipher
+		aesCipher = nil
+		defer func() {
+			aesCipher = saveCipher
+		}()
+
+		assert := NewAssert(t)
+		assert(EncryptSessionEndpoint(1, 32)).Equal("", false)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		v, ok := EncryptSessionEndpoint(1, 32)
+		assert(len(v) > 0).IsTrue()
+		assert(ok).IsTrue()
+		assert(DecryptSessionEndpoint(v)).Equal(uint32(1), uint64(32), true)
+	})
+}
+
+func TestDecryptSessionEndpoint(t *testing.T) {
+	t.Run("aesCipher == nil", func(t *testing.T) {
+		saveCipher := aesCipher
+		aesCipher = nil
+		defer func() {
+			aesCipher = saveCipher
+		}()
+
+		assert := NewAssert(t)
+		assert(DecryptSessionEndpoint("")).Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("base64 decode error", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(DecryptSessionEndpoint("err")).Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("cipher open error", func(t *testing.T) {
+		assert := NewAssert(t)
+		errString := base64.StdEncoding.EncodeToString([]byte{1, 2, 3})
+		assert(DecryptSessionEndpoint(errString)).
+			Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("split arr length error", func(t *testing.T) {
+		assert := NewAssert(t)
+		errString := base64.StdEncoding.EncodeToString(aesCipher.Seal(
+			nil,
+			aesNonce,
+			[]byte("ho-la-la"),
+			nil,
+		))
+		assert(DecryptSessionEndpoint(errString)).
+			Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("gatewayID parse error", func(t *testing.T) {
+		assert := NewAssert(t)
+		errString := base64.StdEncoding.EncodeToString(aesCipher.Seal(
+			nil,
+			aesNonce,
+			[]byte("9876543210-32"),
+			nil,
+		))
+		assert(DecryptSessionEndpoint(errString)).
+			Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("sessionID parse error", func(t *testing.T) {
+		assert := NewAssert(t)
+		errString := base64.StdEncoding.EncodeToString(aesCipher.Seal(
+			nil,
+			aesNonce,
+			[]byte("123-32.5"),
+			nil,
+		))
+		assert(DecryptSessionEndpoint(errString)).
+			Equal(uint32(0), uint64(0), false)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		errString := base64.StdEncoding.EncodeToString(aesCipher.Seal(
+			nil,
+			aesNonce,
+			[]byte("321-123456"),
+			nil,
+		))
+		assert(DecryptSessionEndpoint(errString)).
+			Equal(uint32(321), uint64(123456), true)
+	})
+
 }
 
 func BenchmarkGetFileLine(b *testing.B) {

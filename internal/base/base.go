@@ -2,11 +2,16 @@
 package base
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	cryptoRand "crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"math/rand"
+	mathRand "math/rand"
 	"net"
 	"reflect"
 	"runtime"
@@ -23,7 +28,29 @@ var (
 		"abcdefghijklmnopqrstuvwxyz" +
 		"0123456789" +
 		"+/"
+	fnGetRandBytes = func(n uint32) ([]byte, error) {
+		ret := make([]byte, n)
+		_, e := io.ReadFull(cryptoRand.Reader, ret)
+		return ret, e
+	}
+	aesCipher, aesNonce = initAESCipherAndNonce()
 )
+
+func initAESCipherAndNonce() (cipher.AEAD, []byte) {
+	if keyBuffer, e := fnGetRandBytes(32); e != nil {
+		panic(e.Error())
+	} else if nonceBuffer, e := fnGetRandBytes(12); e != nil {
+		panic(e.Error())
+	} else if block, e := aes.NewCipher(keyBuffer); e != nil {
+		panic(e.Error())
+	} else if gcmCipher, e := cipher.NewGCMWithNonceSize(
+		block, len(nonceBuffer),
+	); e != nil {
+		panic(e.Error())
+	} else {
+		return gcmCipher, nonceBuffer
+	}
+}
 
 // IsNil ...
 func IsNil(val interface{}) (ret bool) {
@@ -126,7 +153,7 @@ func GetRandString(strLen int) string {
 	defer sb.Release()
 
 	for strLen > 0 {
-		rand64 := rand.Uint64()
+		rand64 := mathRand.Uint64()
 		for used := 0; used < 10 && strLen > 0; used++ {
 			sb.AppendByte(base64String[rand64%64])
 			rand64 = rand64 / 64
@@ -259,7 +286,7 @@ func GetTLSServerConfig(certFile string, keyFile string) (*tls.Config, error) {
 
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		// Causes servers to use Go's default ciphersuite preferences,
+		// Causes servers to use Go's default cipher suite preferences,
 		// which are tuned to avoid attacks. Does nothing on clients.
 		PreferServerCipherSuites: true,
 		// Only use curves which have assembly implementations
@@ -312,4 +339,39 @@ func GetTLSClientConfig(
 		InsecureSkipVerify: !verifyServerCert,
 		RootCAs:            caPool,
 	}, nil
+}
+
+func EncryptSessionEndpoint(gatewayID uint32, sessionID uint64) (string, bool) {
+	if aesCipher != nil {
+		return base64.StdEncoding.EncodeToString(aesCipher.Seal(
+			nil,
+			aesNonce,
+			[]byte(fmt.Sprintf("%d-%d", gatewayID, sessionID)),
+			nil,
+		)), true
+	}
+
+	return "", false
+}
+
+func DecryptSessionEndpoint(sessionEndpoint string) (uint32, uint64, bool) {
+	if aesCipher == nil {
+		return 0, 0, false
+	} else if sessionBuf, e := base64.StdEncoding.DecodeString(
+		sessionEndpoint,
+	); e != nil {
+		return 0, 0, false
+	} else if sessionBytes, e := aesCipher.Open(
+		nil, aesNonce, sessionBuf, nil,
+	); e != nil {
+		return 0, 0, false
+	} else if sArr := strings.Split(string(sessionBytes), "-"); len(sArr) != 2 {
+		return 0, 0, false
+	} else if gatewayID, e := strconv.ParseUint(sArr[0], 10, 32); e != nil {
+		return 0, 0, false
+	} else if sessionID, e := strconv.ParseUint(sArr[1], 10, 64); e != nil {
+		return 0, 0, false
+	} else {
+		return uint32(gatewayID), sessionID, true
+	}
 }
