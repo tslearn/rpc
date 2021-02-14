@@ -47,45 +47,48 @@ func (p Runtime) Reply(value interface{}) Return {
 
 // Call ...
 func (p Runtime) Call(target string, args ...interface{}) RTValue {
-	thread := p.lock()
-	if thread == nil {
-		return RTValue{
-			err: base.ErrRuntimeIllegalInCurrentGoroutine.
-				AddDebug(base.GetFileLine(1)),
-		}
-	}
-	defer p.unlock()
-	frame := thread.top
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+		frame := thread.top
 
-	// make stream
-	stream, err := MakeRequestStream(
-		frame.stream.HasStatusBitDebug(),
-		frame.depth+1,
-		target,
-		frame.from,
-		args...,
-	)
-	if err != nil {
-		return RTValue{
-			err: err.AddDebug(base.AddFileLine(thread.GetExecActionNodePath(), 1)),
-		}
-	}
-	defer stream.Release()
-
-	// switch thread frame
-	thread.pushFrame()
-	thread.Eval(stream, func(stream *Stream) {})
-	thread.popFrame()
-
-	// return
-	ret := p.parseResponseStream(stream)
-	if ret.err != nil {
-		ret.err = ret.err.AddDebug(
-			base.AddFileLine(thread.GetExecActionNodePath(), 1),
+		// make stream
+		stream, err := MakeRequestStream(
+			frame.stream.HasStatusBitDebug(),
+			frame.depth+1,
+			target,
+			frame.from,
+			args...,
 		)
+		if err != nil {
+			return RTValue{
+				err: err.AddDebug(
+					base.AddFileLine(thread.GetExecActionNodePath(), 1),
+				),
+			}
+		}
+		defer stream.Release()
+
+		// switch thread frame
+		thread.pushFrame()
+		thread.Eval(stream, func(stream *Stream) {})
+		thread.popFrame()
+
+		// return
+		ret := p.parseResponseStream(stream)
+		if ret.err != nil {
+			ret.err = ret.err.AddDebug(
+				base.AddFileLine(thread.GetExecActionNodePath(), 1),
+			)
+		}
+
+		return ret
 	}
 
-	return ret
+	return RTValue{
+		err: base.ErrRuntimeIllegalInCurrentGoroutine.
+			AddDebug(base.GetFileLine(1)),
+	}
+
 }
 
 // NewRTArray ...
@@ -106,6 +109,23 @@ func (p Runtime) NewRTMap(size int) RTMap {
 	}
 
 	return RTMap{}
+}
+
+// NewRTMap ...
+func (p Runtime) GetPostEndPoint() string {
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+		stream := thread.top.stream
+
+		if ret, ok := base.EncryptSessionEndpoint(
+			stream.GetGatewayID(),
+			stream.GetSessionID(),
+		); ok {
+			return ret
+		}
+	}
+
+	return ""
 }
 
 // GetServiceConfig ...
