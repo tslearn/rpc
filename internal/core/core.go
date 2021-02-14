@@ -8,6 +8,35 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+type IStreamReceiver interface {
+	OnReceiveStream(stream *Stream)
+}
+
+type TestStreamReceiver struct {
+	streamCH chan *Stream
+}
+
+// NewTestStreamReceiver ...
+func NewTestStreamReceiver() *TestStreamReceiver {
+	return &TestStreamReceiver{
+		streamCH: make(chan *Stream, 10240),
+	}
+}
+
+// OnReceiveStream ...
+func (p *TestStreamReceiver) OnReceiveStream(stream *Stream) {
+	p.streamCH <- stream
+}
+
+func (p *TestStreamReceiver) GetStream() *Stream {
+	select {
+	case stream := <-p.streamCH:
+		return stream
+	default:
+		return nil
+	}
+}
+
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
 		return "", base.ErrActionHandler.
@@ -113,6 +142,17 @@ func getFastKey(s string) uint32 {
 	}
 
 	return 0
+}
+
+// MakeErrorStream ...
+func MakeErrorStream(err *base.Error) *Stream {
+	if err != nil {
+		stream := NewStream()
+		stream.WriteUint64(uint64(err.GetCode()))
+		stream.WriteString(err.GetMessage())
+		return stream
+	}
+	return nil
 }
 
 // MakeRequestStream ...
