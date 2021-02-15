@@ -462,7 +462,8 @@ func TestStream(t *testing.T) {
 		assert(streamFrameArrayInitSize).Equal(8)
 		assert(streamPosVersion).Equal(0)
 		assert(streamPosStatusBit).Equal(1)
-		assert(streamPosPriority).Equal(2)
+		assert(streamPosKind).Equal(2)
+		assert(streamPosPriority).Equal(3)
 		assert(streamPosLength).Equal(4)
 		assert(streamPosCheckSum).Equal(8)
 		assert(streamPosCheckSum % 8).Equal(0)
@@ -481,6 +482,11 @@ func TestStream(t *testing.T) {
 		assert(ControlStreamConnectResponse).Equal(2)
 		assert(ControlStreamPing).Equal(3)
 		assert(ControlStreamPong).Equal(4)
+		assert(DataStreamInternalRequest).Equal(5)
+		assert(DataStreamExternalRequest).Equal(6)
+		assert(DataStreamResponse).Equal(7)
+		assert(BoardCastStream).Equal(8)
+		assert(ManagerStreamErrorReport).Equal(9)
 	})
 
 	t.Run("test initStreamFrame0", func(t *testing.T) {
@@ -743,12 +749,38 @@ func TestStream_GetLength(t *testing.T) {
 	})
 }
 
+func TestStream_GetKind(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			kind := uint8(rand.Uint32())
+			v.SetKind(kind)
+			assert(v.GetKind()).Equal(kind)
+			v.Release()
+		}
+	})
+}
+
+func TestStream_SetKind(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		for i := 0; i < 1000; i++ {
+			v := NewStream()
+			kind := uint8(rand.Uint32())
+			v.SetKind(kind)
+			assert(v.GetKind()).Equal(kind)
+			v.Release()
+		}
+	})
+}
+
 func TestStream_GetPriority(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			priority := rand.Uint32()
+			priority := uint8(rand.Uint32())
 			v.SetPriority(priority)
 			assert(v.GetPriority()).Equal(priority)
 			v.Release()
@@ -761,7 +793,7 @@ func TestStream_SetPriority(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			priority := rand.Uint32()
+			priority := uint8(rand.Uint32())
 			v.SetPriority(priority)
 			assert(v.GetPriority()).Equal(priority)
 			v.Release()

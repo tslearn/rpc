@@ -296,6 +296,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	}
 
 	stream := frame.stream
+	stream.SetKind(DataStreamResponse)
 	stream.SetWritePosToBodyStart()
 	stream.WriteUint64(0)
 	writeErr := (*base.Error)(nil)
@@ -318,7 +319,6 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	}
 
 	frame.retStatus = 2
-	stream.SetWritePosToBodyStart()
 
 	if debug {
 		msg := writeErr.GetMessage()

@@ -18,7 +18,8 @@ const (
 
 	streamPosVersion    = 0
 	streamPosStatusBit  = 1
-	streamPosPriority   = 2
+	streamPosKind       = 2
+	streamPosPriority   = 3
 	streamPosLength     = 4
 	streamPosCheckSum   = 8
 	streamPosZoneID     = 16
@@ -57,6 +58,8 @@ const (
 	DataStreamResponse = 7
 	// BoardCastStream ...
 	BoardCastStream = 8
+	// ManagerStreamErrorReport ...
+	ManagerStreamErrorReport = 9
 )
 
 var (
@@ -227,14 +230,24 @@ func (p *Stream) ClearStatusBitDebug() {
 	(*p.frames[0])[streamPosStatusBit] &= (1 << streamStatusBitDebug) ^ 0xFF
 }
 
+// GetKind ...
+func (p *Stream) GetKind() uint8 {
+	return (*p.frames[0])[streamPosKind]
+}
+
+// SetKind ...
+func (p *Stream) SetKind(v uint8) {
+	(*p.frames[0])[streamPosKind] = v
+}
+
 // GetPriority ...
-func (p *Stream) GetPriority() uint32 {
-	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosPriority:])
+func (p *Stream) GetPriority() uint8 {
+	return (*p.frames[0])[streamPosPriority]
 }
 
 // SetPriority ...
-func (p *Stream) SetPriority(v uint32) {
-	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosPriority:], v)
+func (p *Stream) SetPriority(v uint8) {
+	(*p.frames[0])[streamPosPriority] = v
 }
 
 // GetLength ...
