@@ -111,7 +111,7 @@ func (p Runtime) NewRTMap(size int) RTMap {
 	return RTMap{}
 }
 
-// NewRTMap ...
+// GetPostEndPoint ...
 func (p Runtime) GetPostEndPoint() string {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
@@ -163,18 +163,27 @@ func (p Runtime) SetServiceConfig(key string, value Any) bool {
 }
 
 func (p Runtime) parseResponseStream(stream *Stream) RTValue {
-	if errCode, err := stream.ReadUint64(); err != nil {
-		return RTValue{err: err}
-	} else if errCode == 0 {
+	switch stream.GetKind() {
+	case DataStreamResponseOK:
 		ret, _ := stream.ReadRTValue(p)
 		return ret
-	} else if errCode > math.MaxUint32 {
+	case SystemStreamReportError:
+		fallthrough
+	case DataStreamResponseError:
+		if errCode, err := stream.ReadUint64(); err != nil {
+			return RTValue{err: err}
+		} else if errCode == 0 {
+			return RTValue{err: base.ErrStream}
+		} else if errCode > math.MaxUint32 {
+			return RTValue{err: base.ErrStream}
+		} else if message, err := stream.ReadString(); err != nil {
+			return RTValue{err: err}
+		} else if !stream.IsReadFinish() {
+			return RTValue{err: base.ErrStream}
+		} else {
+			return RTValue{err: base.NewError(uint32(errCode), message)}
+		}
+	default:
 		return RTValue{err: base.ErrStream}
-	} else if message, err := stream.ReadString(); err != nil {
-		return RTValue{err: err}
-	} else if !stream.IsReadFinish() {
-		return RTValue{err: base.ErrStream}
-	} else {
-		return RTValue{err: base.NewError(uint32(errCode), message)}
 	}
 }

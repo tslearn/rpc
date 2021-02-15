@@ -352,6 +352,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteInt64(3)
 		assert(testRuntime.parseResponseStream(v)).Equal(
 			RTValue{err: base.ErrStream},
@@ -362,6 +363,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(1 << 32)
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(testRuntime.parseResponseStream(v)).Equal(
@@ -373,6 +375,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(0)
 		assert(testRuntime.parseResponseStream(v)).Equal(
 			RTValue{err: base.ErrStream},
@@ -383,7 +386,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
-		v.WriteUint64(0)
+		v.SetKind(DataStreamResponseOK)
 		v.WriteBool(true)
 		assert(testRuntime.parseResponseStream(v).ToBool()).Equal(true, nil)
 	})
@@ -392,6 +395,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(uint64(base.ErrorTypeSecurity))
 		v.WriteBool(true)
 		assert(testRuntime.parseResponseStream(v)).Equal(
@@ -403,6 +407,7 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
@@ -411,10 +416,35 @@ func TestRuntime_parseResponseStream(t *testing.T) {
 		)
 	})
 
-	t.Run("error stream ok", func(t *testing.T) {
+	t.Run("error stream ok (DataStreamResponseError)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testRuntime.thread.Reset()
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
+		v.WriteString(base.ErrStream.GetMessage())
+		assert(testRuntime.parseResponseStream(v)).Equal(
+			RTValue{err: base.ErrStream},
+		)
+	})
+
+	t.Run("error stream ok (SystemStreamReportError)", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.SetKind(SystemStreamReportError)
+		v.WriteUint64(uint64(base.ErrStream.GetCode()))
+		v.WriteString(base.ErrStream.GetMessage())
+		assert(testRuntime.parseResponseStream(v)).Equal(
+			RTValue{err: base.ErrStream},
+		)
+	})
+
+	t.Run("error stream kind error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		testRuntime.thread.Reset()
+		v := NewStream()
+		v.SetKind(ControlStreamConnectResponse)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(testRuntime.parseResponseStream(v)).Equal(

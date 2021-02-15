@@ -484,9 +484,11 @@ func TestStream(t *testing.T) {
 		assert(ControlStreamPong).Equal(4)
 		assert(DataStreamInternalRequest).Equal(5)
 		assert(DataStreamExternalRequest).Equal(6)
-		assert(DataStreamResponse).Equal(7)
-		assert(BoardCastStream).Equal(8)
-		assert(ManagerStreamErrorReport).Equal(9)
+		assert(DataStreamResponseOK).Equal(7)
+		assert(DataStreamResponseError).Equal(8)
+		assert(DataStreamBoardCast).Equal(9)
+		assert(SystemStreamReportError).Equal(10)
+
 	})
 
 	t.Run("test initStreamFrame0", func(t *testing.T) {

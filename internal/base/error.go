@@ -157,6 +157,7 @@ func (p *Error) AddDebug(debug string) *Error {
 	return p
 }
 
+// Standardize ...
 func (p *Error) Standardize() *Error {
 	p.code &= 0xFFFFFF
 	return p

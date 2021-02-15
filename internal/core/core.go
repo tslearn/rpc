@@ -8,10 +8,12 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+// IStreamReceiver ...
 type IStreamReceiver interface {
 	OnReceiveStream(stream *Stream)
 }
 
+// TestStreamReceiver ...
 type TestStreamReceiver struct {
 	streamCH chan *Stream
 }
@@ -28,6 +30,7 @@ func (p *TestStreamReceiver) OnReceiveStream(stream *Stream) {
 	p.streamCH <- stream
 }
 
+// GetStream ...
 func (p *TestStreamReceiver) GetStream() *Stream {
 	select {
 	case stream := <-p.streamCH:
@@ -144,10 +147,11 @@ func getFastKey(s string) uint32 {
 	return 0
 }
 
-// MakeErrorStream ...
-func MakeErrorStream(err *base.Error) *Stream {
+// MakeSystemErrorStream ...
+func MakeSystemErrorStream(err *base.Error) *Stream {
 	if err != nil {
 		stream := NewStream()
+		stream.SetKind(SystemStreamReportError)
 		stream.WriteUint64(uint64(err.GetCode()))
 		stream.WriteString(err.GetMessage())
 		return stream
@@ -193,17 +197,26 @@ func MakeRequestStream(
 
 // ParseResponseStream ...
 func ParseResponseStream(stream *Stream) (Any, *base.Error) {
-	if errCode, err := stream.ReadUint64(); err != nil {
-		return nil, err
-	} else if errCode == 0 {
+	switch stream.GetKind() {
+	case DataStreamResponseOK:
 		return stream.Read()
-	} else if errCode > math.MaxUint32 {
+	case SystemStreamReportError:
+		fallthrough
+	case DataStreamResponseError:
+		if errCode, err := stream.ReadUint64(); err != nil {
+			return nil, err
+		} else if errCode == 0 {
+			return nil, base.ErrStream
+		} else if errCode > math.MaxUint32 {
+			return nil, base.ErrStream
+		} else if message, err := stream.ReadString(); err != nil {
+			return nil, err
+		} else if !stream.IsReadFinish() {
+			return nil, base.ErrStream
+		} else {
+			return nil, base.NewError(uint32(errCode), message)
+		}
+	default:
 		return nil, base.ErrStream
-	} else if message, err := stream.ReadString(); err != nil {
-		return nil, err
-	} else if !stream.IsReadFinish() {
-		return nil, base.ErrStream
-	} else {
-		return nil, base.NewError(uint32(errCode), message)
 	}
 }

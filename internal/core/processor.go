@@ -106,10 +106,10 @@ func NewProcessor(
 			defer func() {
 				_ = recover()
 			}()
-			stream := NewStream()
-			stream.WriteUint64(uint64(err.GetCode()))
-			stream.WriteString(err.GetMessage())
-			onReturnStream(stream)
+
+			if stream := MakeSystemErrorStream(err); stream != nil {
+				onReturnStream(stream)
+			}
 		}
 
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups

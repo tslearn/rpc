@@ -1,4 +1,3 @@
-// Package errors ...
 package base
 
 const generalErrorSeg = 0 << 8

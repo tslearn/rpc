@@ -341,6 +341,7 @@ func GetTLSClientConfig(
 	}, nil
 }
 
+// EncryptSessionEndpoint ...
 func EncryptSessionEndpoint(gatewayID uint32, sessionID uint64) (string, bool) {
 	if aesCipher != nil {
 		return base64.StdEncoding.EncodeToString(aesCipher.Seal(
@@ -354,6 +355,7 @@ func EncryptSessionEndpoint(gatewayID uint32, sessionID uint64) (string, bool) {
 	return "", false
 }
 
+// DecryptSessionEndpoint ...
 func DecryptSessionEndpoint(sessionEndpoint string) (uint32, uint64, bool) {
 	if aesCipher == nil {
 		return 0, 0, false

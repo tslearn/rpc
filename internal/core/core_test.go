@@ -321,7 +321,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("Read ret ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.WriteUint64(0)
+		v.SetKind(DataStreamResponseOK)
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(true, nil)
 	})

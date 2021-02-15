@@ -95,18 +95,18 @@ type fakeTestRunListener struct {
 func (p *fakeTestRunListener) Accept() (net.Conn, error) {
 	if p.emulateAcceptError {
 		return nil, io.EOF
-	} else {
-		return p.ln.Accept()
 	}
+
+	return p.ln.Accept()
 }
 
 func (p *fakeTestRunListener) Close() error {
 	if p.emulateCLoseError {
 		_ = p.ln.Close()
 		return io.EOF
-	} else {
-		return p.ln.Close()
 	}
+
+	return p.ln.Close()
 }
 
 func (p *fakeTestRunListener) Addr() net.Addr {
