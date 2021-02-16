@@ -247,40 +247,28 @@ func (p *Client) OnConnReadStream(
 		p.conn = streamConn
 
 		if callbackID != 0 {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
 		} else if kind := stream.GetKind(); kind != core.ControlStreamConnectResponse {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
-			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if numOfChannels, err := stream.ReadInt64(); err != nil {
-			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if numOfChannels <= 0 {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if transLimit, err := stream.ReadInt64(); err != nil {
-			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if transLimit <= 0 {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if heartbeat, err := stream.ReadInt64(); err != nil {
-			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if heartbeat <= 0 {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
-			stream.Release()
 			p.OnConnError(streamConn, err)
 		} else if heartbeatTimeout <= 0 {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrClientConfig)
 		} else if !stream.IsReadFinish() {
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
 		} else {
 			if sessionString != p.sessionString {
@@ -314,12 +302,10 @@ func (p *Client) OnConnReadStream(
 	} else {
 		switch stream.GetKind() {
 		case core.ControlStreamPong:
-			if stream.IsReadFinish() {
-				stream.Release()
-			} else {
-				stream.Release()
+			if !stream.IsReadFinish() {
 				p.OnConnError(streamConn, base.ErrStream)
 			}
+			stream.Release()
 		case core.DataStreamResponseOK:
 			fallthrough
 		case core.DataStreamResponseError:
@@ -328,12 +314,11 @@ func (p *Client) OnConnReadStream(
 				channel.Free(stream)
 				p.tryToDeliverPreSendMessages()
 			} else {
-				p.OnConnError(streamConn, base.ErrStream)
 				stream.Release()
 			}
 		default:
-			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
+			stream.Release()
 		}
 	}
 }
