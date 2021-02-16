@@ -226,7 +226,7 @@ func TestInitSession(t *testing.T) {
 		syncConn.SetNext(streamConn)
 
 		stream := core.NewStream()
-		stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+		stream.SetKind(core.ControlStreamConnectRequest)
 		stream.WriteString("")
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
@@ -276,7 +276,7 @@ func TestInitSession(t *testing.T) {
 			syncConn.SetNext(streamConn)
 
 			stream := core.NewStream()
-			stream.WriteInt64(int64(core.ControlStreamConnectRequest))
+			stream.SetKind(core.ControlStreamConnectRequest)
 			stream.WriteString(connStr)
 			stream.BuildStreamCheck()
 			streamConn.OnReadBytes(stream.GetBuffer())
@@ -303,8 +303,8 @@ func TestInitSession(t *testing.T) {
 
 				cfg := gw.config
 
-				assert(rs.ReadInt64()).
-					Equal(int64(core.ControlStreamConnectResponse), nil)
+				assert(rs.GetKind()).
+					Equal(uint8(core.ControlStreamConnectResponse))
 				assert(rs.ReadString()).
 					Equal(fmt.Sprintf("%d-%s", v.id, v.security), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
@@ -438,6 +438,7 @@ func TestSession_OutStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, netConn := prepareTestSession()
 		stream := core.NewStream()
+		stream.SetKind(core.DataStreamResponseOK)
 		session.OutStream(stream)
 		assert(len(netConn.writeBuffer)).Equal(0)
 		assert(session.channels[0].backStream).Equal(stream)
@@ -456,6 +457,7 @@ func TestSession_OutStream(t *testing.T) {
 
 		for i := len(session.channels) + 1; i <= 2*len(session.channels); i++ {
 			stream := core.NewStream()
+			stream.SetKind(core.DataStreamResponseOK)
 			stream.SetCallbackID(uint64(i))
 			session.OutStream(stream)
 		}
@@ -478,6 +480,7 @@ func TestSession_OutStream(t *testing.T) {
 		for i := 1; i <= len(session.channels); i++ {
 			stream := core.NewStream()
 			stream.SetCallbackID(uint64(i))
+			stream.SetKind(core.DataStreamResponseOK)
 			stream.BuildStreamCheck()
 			exceptBuffer = append(exceptBuffer, stream.GetBuffer()...)
 			session.OutStream(stream)
@@ -508,6 +511,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(10)
+		stream.SetKind(core.DataStreamExternalRequest)
 		session.OnConnReadStream(streamConn, stream)
 
 		backStream := <-fakeSender.streamCH
@@ -530,6 +534,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).Out(cacheStream)
 
 		stream := core.NewStream()
+		stream.SetKind(core.DataStreamExternalRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -573,11 +578,11 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		sendStream := core.NewStream()
-		sendStream.WriteInt64(core.ControlStreamPing)
+		sendStream.SetKind(core.ControlStreamPing)
 		session.OnConnReadStream(streamConn, sendStream)
 		backStream := core.NewStream()
 		backStream.PutBytesTo(netConn.writeBuffer, 0)
-		assert(backStream.ReadInt64()).Equal(int64(core.ControlStreamPong), nil)
+		assert(backStream.GetKind()).Equal(uint8(core.ControlStreamPong))
 		assert(backStream.IsReadFinish()).IsTrue()
 	})
 

@@ -95,8 +95,8 @@ func (p *Client) tryToSendPing(nowNS int64) {
 	// Send Ping
 	p.lastPingTimeNS = nowNS
 	stream := core.NewStream()
+	stream.SetKind(core.ControlStreamPing)
 	stream.SetCallbackID(0)
-	stream.WriteInt64(core.ControlStreamPing)
 	p.conn.WriteStreamAndRelease(stream)
 }
 
@@ -179,6 +179,7 @@ func (p *Client) SendMessage(
 	item := NewSendItem(int64(timeout))
 	defer item.Release()
 
+	item.sendStream.SetKind(core.DataStreamExternalRequest)
 	// set depth
 	item.sendStream.SetDepth(0)
 	// write target
@@ -226,8 +227,8 @@ func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 	defer p.Unlock()
 
 	stream := core.NewStream()
+	stream.SetKind(core.ControlStreamConnectRequest)
 	stream.SetCallbackID(0)
-	stream.WriteInt64(core.ControlStreamConnectRequest)
 	stream.WriteString(p.sessionString)
 	streamConn.WriteStreamAndRelease(stream)
 }
@@ -248,10 +249,7 @@ func (p *Client) OnConnReadStream(
 		if callbackID != 0 {
 			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
-		} else if kind, err := stream.ReadInt64(); err != nil {
-			stream.Release()
-			p.OnConnError(streamConn, err)
-		} else if kind != core.ControlStreamConnectResponse {
+		} else if kind := stream.GetKind(); kind != core.ControlStreamConnectResponse {
 			stream.Release()
 			p.OnConnError(streamConn, base.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
@@ -314,17 +312,17 @@ func (p *Client) OnConnReadStream(
 
 		stream.Release()
 	} else {
-		if callbackID == 0 {
-			if kind, err := stream.ReadInt64(); err != nil {
-				p.OnConnError(streamConn, err)
-				stream.Release()
-			} else if kind != core.ControlStreamPong {
-				p.OnConnError(streamConn, base.ErrStream)
+		switch stream.GetKind() {
+		case core.ControlStreamPong:
+			if stream.IsReadFinish() {
 				stream.Release()
 			} else {
 				stream.Release()
+				p.OnConnError(streamConn, base.ErrStream)
 			}
-		} else if p.channels != nil {
+		case core.DataStreamResponseOK:
+			fallthrough
+		case core.DataStreamResponseError:
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			if channel.sequence == callbackID {
 				channel.Free(stream)
@@ -333,9 +331,9 @@ func (p *Client) OnConnReadStream(
 				p.OnConnError(streamConn, base.ErrStream)
 				stream.Release()
 			}
-		} else {
-			// ignore
+		default:
 			stream.Release()
+			p.OnConnError(streamConn, base.ErrStream)
 		}
 	}
 }

@@ -35,10 +35,7 @@ func InitSession(
 	if stream.GetCallbackID() != 0 {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
-	} else if kind, err := stream.ReadInt64(); err != nil {
-		stream.Release()
-		gw.OnConnError(streamConn, base.ErrStream)
-	} else if kind != core.ControlStreamConnectRequest {
+	} else if kind := stream.GetKind(); kind != core.ControlStreamConnectRequest {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
@@ -86,7 +83,7 @@ func InitSession(
 		streamConn.SetReceiver(session)
 
 		stream.SetWritePosToBodyStart()
-		stream.WriteInt64(core.ControlStreamConnectResponse)
+		stream.SetKind(core.ControlStreamConnectResponse)
 		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
 		stream.WriteInt64(int64(config.numOfChannels))
 		stream.WriteInt64(int64(config.transLimit))
@@ -134,11 +131,18 @@ func (p *Session) OutStream(stream *core.Stream) {
 	defer p.Unlock()
 
 	if stream != nil {
-		// record stream
-		channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
-		if channel.Out(stream) && p.conn != nil {
-			p.conn.WriteStreamAndRelease(stream.Clone())
-		} else {
+		switch stream.GetKind() {
+		case core.DataStreamResponseOK:
+			fallthrough
+		case core.DataStreamResponseError:
+			// record stream
+			channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
+			if channel.Out(stream) && p.conn != nil {
+				p.conn.WriteStreamAndRelease(stream.Clone())
+			} else {
+				stream.Release()
+			}
+		default:
 			stream.Release()
 		}
 	}
@@ -159,30 +163,39 @@ func (p *Session) OnConnReadStream(
 	p.Lock()
 	defer p.Unlock()
 
-	if cbID := stream.GetCallbackID(); cbID > 0 {
-		channel := &p.channels[cbID%uint64(len(p.channels))]
-		if accepted, backStream := channel.In(cbID); accepted {
-			stream.SetGatewayID(p.gateway.id)
-			stream.SetSessionID(p.id)
-			// who receives the stream is responsible for releasing it
-			p.gateway.routeSender.SendStreamToRouter(stream)
-		} else if backStream != nil {
-			// do not release the backStream, so we need to clone it
-			streamConn.WriteStreamAndRelease(backStream.Clone())
-			stream.Release()
+	switch stream.GetKind() {
+	case core.ControlStreamPing:
+		if stream.IsReadFinish() {
+			p.activeTimeNS = base.TimeNow().UnixNano()
+			stream.SetKind(core.ControlStreamPong)
+			streamConn.WriteStreamAndRelease(stream)
 		} else {
-			// ignore the stream
+			p.OnConnError(streamConn, base.ErrStream)
 			stream.Release()
 		}
-	} else if kind, err := stream.ReadInt64(); err != nil {
-		p.OnConnError(streamConn, err)
-		stream.Release()
-	} else if kind == core.ControlStreamPing && stream.IsReadFinish() {
-		p.activeTimeNS = base.TimeNow().UnixNano()
-		stream.SetWritePosToBodyStart()
-		stream.WriteInt64(core.ControlStreamPong)
-		streamConn.WriteStreamAndRelease(stream)
-	} else {
+	case core.DataStreamInternalRequest:
+		fallthrough
+	case core.DataStreamExternalRequest:
+		if cbID := stream.GetCallbackID(); cbID > 0 {
+			channel := &p.channels[cbID%uint64(len(p.channels))]
+			if accepted, backStream := channel.In(cbID); accepted {
+				stream.SetGatewayID(p.gateway.id)
+				stream.SetSessionID(p.id)
+				// who receives the stream is responsible for releasing it
+				p.gateway.routeSender.SendStreamToRouter(stream)
+			} else if backStream != nil {
+				// do not release the backStream, so we need to clone it
+				streamConn.WriteStreamAndRelease(backStream.Clone())
+				stream.Release()
+			} else {
+				// ignore the stream
+				stream.Release()
+			}
+		} else {
+			p.OnConnError(streamConn, base.ErrStream)
+			stream.Release()
+		}
+	default:
 		p.OnConnError(streamConn, base.ErrStream)
 		stream.Release()
 	}
