@@ -156,11 +156,12 @@ func MakeSystemErrorStream(err *base.Error) *Stream {
 		stream.WriteString(err.GetMessage())
 		return stream
 	}
+
 	return nil
 }
 
-// MakeRequestStream ...
-func MakeRequestStream(
+// MakeInternalRequestStream ...
+func MakeInternalRequestStream(
 	debug bool,
 	depth uint16,
 	target string,
@@ -168,6 +169,7 @@ func MakeRequestStream(
 	args ...interface{},
 ) (*Stream, *base.Error) {
 	stream := NewStream()
+	stream.SetKind(DataStreamInternalRequest)
 	// set debug bit
 	if debug {
 		stream.SetStatusBitDebug()

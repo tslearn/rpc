@@ -246,7 +246,9 @@ func TestNewProcessor(t *testing.T) {
 
 		go func() {
 			for i := 0; i < 10000; i++ {
-				stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
+				stream, _ := MakeInternalRequestStream(
+					true, 0, "#.test:Eval", "",
+				)
 				processor.PutStream(stream)
 			}
 		}()
@@ -309,7 +311,9 @@ func TestProcessor_Close(t *testing.T) {
 			)
 
 			for i := 0; i < count; i++ {
-				stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
+				stream, _ := MakeInternalRequestStream(
+					true, 0, "#.test:Eval", "",
+				)
 				processor.PutStream(stream)
 				<-waitCH
 			}

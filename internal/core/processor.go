@@ -327,7 +327,7 @@ func (p *Processor) onUpdateConfig() {
 func (p *Processor) invokeSystemAction(name string, path string) bool {
 	actionPath := path + ":$" + name
 	if _, ok := p.actionsMap[actionPath]; ok {
-		stream, _ := MakeRequestStream(true, 0, actionPath, "")
+		stream, _ := MakeInternalRequestStream(true, 0, actionPath, "")
 		defer func() {
 			stream.Release()
 		}()

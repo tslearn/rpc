@@ -52,7 +52,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 		frame := thread.top
 
 		// make stream
-		stream, err := MakeRequestStream(
+		stream, err := MakeInternalRequestStream(
 			frame.stream.HasStatusBitDebug(),
 			frame.depth+1,
 			target,

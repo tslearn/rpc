@@ -17,7 +17,7 @@ func testWithRPCBenchmark(
 	b *testing.B,
 	args ...interface{},
 ) bool {
-	if stream, err := MakeRequestStream(
+	if stream, err := MakeInternalRequestStream(
 		true, 0, "#.test:bench", "", args...,
 	); err == nil {
 		defer stream.Release()

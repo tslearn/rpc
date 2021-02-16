@@ -8,6 +8,41 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+func TestNewTestStreamReceiver(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		assert(v).IsNotNil()
+		assert(cap(v.streamCH)).Equal(10240)
+		assert(len(v.streamCH)).Equal(0)
+	})
+}
+
+func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		v.OnReceiveStream(NewStream())
+		assert(cap(v.streamCH)).Equal(10240)
+		assert(len(v.streamCH)).Equal(1)
+	})
+}
+
+func TestTestStreamReceiver_GetStream(t *testing.T) {
+	t.Run("get nil stream", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		assert(v.GetStream()).IsNil()
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		v.OnReceiveStream(NewStream())
+		assert(v.GetStream()).IsNotNil()
+	})
+}
+
 func TestGetFuncKind(t *testing.T) {
 	assert := base.NewAssert(t)
 
@@ -264,20 +299,34 @@ func TestGetFastKey(t *testing.T) {
 	})
 }
 
+func TestMakeSystemErrorStream(t *testing.T) {
+	t.Run("err is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(MakeSystemErrorStream(nil)).IsNil()
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(ParseResponseStream(MakeSystemErrorStream(base.ErrStream))).
+			Equal(nil, base.ErrStream)
+	})
+}
+
 func TestMakeRequestStream(t *testing.T) {
 	t.Run("write error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(MakeRequestStream(false, 0, "#", "", make(chan bool))).Equal(
-			nil,
-			base.ErrUnsupportedValue.AddDebug(
-				"2nd argument: value type(chan bool) is not supported",
-			),
-		)
+		assert(MakeInternalRequestStream(false, 0, "#", "", make(chan bool))).
+			Equal(
+				nil,
+				base.ErrUnsupportedValue.AddDebug(
+					"2nd argument: value type(chan bool) is not supported",
+				),
+			)
 	})
 
 	t.Run("arguments is empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v, err := MakeRequestStream(false, 2, "#", "from")
+		v, err := MakeInternalRequestStream(false, 2, "#", "from")
 		assert(v).IsNotNil()
 		assert(err).IsNil()
 		assert(v.HasStatusBitDebug()).IsFalse()
@@ -290,7 +339,7 @@ func TestMakeRequestStream(t *testing.T) {
 
 	t.Run("arguments is not empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v, err := MakeRequestStream(true, 5, "#", "from", false)
+		v, err := MakeInternalRequestStream(true, 5, "#", "from", false)
 		assert(v).IsNotNil()
 		assert(err).IsNil()
 		assert(v.HasStatusBitDebug()).IsTrue()
@@ -307,28 +356,23 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("errCode format error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(SystemStreamReportError)
 		v.WriteInt64(3)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
 	})
 
-	t.Run("Read ret error", func(t *testing.T) {
+	t.Run("errCode == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(SystemStreamReportError)
 		v.WriteUint64(0)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
-	})
-
-	t.Run("Read ret ok", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		v := NewStream()
-		v.SetKind(DataStreamResponseOK)
-		v.WriteBool(true)
-		assert(ParseResponseStream(v)).Equal(true, nil)
 	})
 
 	t.Run("error code overflows", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(1 << 32)
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -337,6 +381,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error message Read error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(uint64(base.ErrorTypeSecurity))
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -345,6 +390,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
@@ -354,9 +400,26 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
+		v.SetKind(DataStreamResponseError)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
+	})
+
+	t.Run("kind unsupported", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStream()
+		v.SetKind(DataStreamBoardCast)
+		v.WriteBool(true)
+		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
+	})
+
+	t.Run("Read ret ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewStream()
+		v.SetKind(DataStreamResponseOK)
+		v.WriteBool(true)
+		assert(ParseResponseStream(v)).Equal(true, nil)
 	})
 }
 
@@ -445,7 +508,7 @@ func testWithProcessorAndRuntime(
 	)
 	defer helper.Close()
 
-	stream, _ := MakeRequestStream(true, 0, "#.test:Eval", "")
+	stream, _ := MakeInternalRequestStream(true, 0, "#.test:Eval", "")
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH
 }
@@ -480,7 +543,7 @@ func testReplyWithSource(
 			return <-helper.streamCH, source
 		}
 	}
-	stream, _ := MakeRequestStream(debug, 0, "#.test:Eval", "", args...)
+	stream, _ := MakeInternalRequestStream(debug, 0, "#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamCH, source
 }

@@ -309,7 +309,9 @@ func TestRpcThread_Close(t *testing.T) {
 					fnEvalBack,
 					fnEvalFinish,
 				)
-				s, _ := MakeRequestStream(true, 0, "#.test:Eval", "", false)
+				s, _ := MakeInternalRequestStream(
+					true, 0, "#.test:Eval", "", false,
+				)
 				v.PutStream(s)
 				assert(v.Close()).IsFalse()
 			} else {
@@ -1044,7 +1046,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("9th param error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
-			sendStream, _ := MakeRequestStream(
+			sendStream, _ := MakeInternalRequestStream(
 				dbg, 0, "#.test:Eval", "",
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"},
@@ -1129,7 +1131,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("arguments length not match", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
-			sendStream, _ := MakeRequestStream(
+			sendStream, _ := MakeInternalRequestStream(
 				dbg, 0, "#.test:Eval", "",
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
 				Array{2}, Map{"name": "doggy"}, true, Array{2}, Map{"name": "doggy"},
@@ -1290,7 +1292,9 @@ func TestRpcThread_Eval(t *testing.T) {
 				},
 			)
 			defer processor.Close()
-			sendStream, _ := MakeRequestStream(dbg, 0, "#.test:Eval", "")
+			sendStream, _ := MakeInternalRequestStream(
+				dbg, 0, "#.test:Eval", "",
+			)
 			processor.PutStream(sendStream)
 
 			errCH := make(chan *base.Error)
