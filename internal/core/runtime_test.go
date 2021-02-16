@@ -260,6 +260,25 @@ func TestRuntime_NewRTMap(t *testing.T) {
 	})
 }
 
+func TestRuntime_GetPostEndPoint(t *testing.T) {
+	t.Run("lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := Runtime{}
+		assert(v.GetPostEndPoint()).Equal("")
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := Runtime{thread: testThread}
+		v.thread.top.stream = NewStream()
+		v.thread.top.stream.SetGatewayID(13)
+		v.thread.top.stream.SetSessionID(15)
+		assert(base.DecryptSessionEndpoint(v.GetPostEndPoint())).
+			Equal(uint32(13), uint64(15), true)
+		v.thread.top.stream = nil
+	})
+}
+
 func TestRuntime_GetServiceConfig(t *testing.T) {
 	t.Run("runtime is invalid", func(t *testing.T) {
 		assert := base.NewAssert(t)
