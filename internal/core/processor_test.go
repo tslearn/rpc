@@ -312,7 +312,7 @@ func TestProcessor_Close(t *testing.T) {
 						mutex.Lock()
 						source = rt.thread.GetExecActionDebug()
 						mutex.Unlock()
-						time.Sleep(2 * time.Second)
+						time.Sleep(3 * time.Second)
 						return rt.Reply(true)
 					}),
 					fileLine: "",
