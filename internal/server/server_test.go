@@ -81,31 +81,6 @@ func TestNewServer(t *testing.T) {
 	})
 }
 
-//
-//func TestServer_onError(t *testing.T) {
-//	t.Run("errorHandler == nil", func(t *testing.T) {
-//		assert := base.NewAssert(t)
-//		v := NewServer()
-//		assert(base.RunWithCatchPanic(func() {
-//			v.onError(12, base.ErrStream)
-//		})).IsNil()
-//	})
-//
-//	t.Run("errorHandler != nil", func(t *testing.T) {
-//		assert := base.NewAssert(t)
-//		err := (*base.Error)(nil)
-//		errID := uint64(0)
-//		v := NewServer()
-//		v.errorHandler = func(sessionID uint64, e *base.Error) {
-//			errID = sessionID
-//			err = e
-//		}
-//		v.onError(12, base.ErrStream)
-//		assert(errID).Equal(uint64(12))
-//		assert(err).Equal(base.ErrStream)
-//	})
-//}
-//
 func TestServer_Listen(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -314,7 +289,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !v.isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -343,7 +318,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !v.isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -370,7 +345,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.SetKind(core.DataStreamResponseOK)
 		stream.Write(true)
 
-		for !v.isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -396,7 +371,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !v.isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -422,7 +397,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !v.isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -490,13 +465,8 @@ func TestServer_Open(t *testing.T) {
 		v.Listen("tcp", "0.0.0.0:1234", nil)
 
 		go func() {
-			isRunning := false
-			for !isRunning {
+			for !v.IsRunning() {
 				time.Sleep(10 * time.Millisecond)
-
-				v.Lock()
-				isRunning = v.isRunning
-				v.Unlock()
 			}
 
 			time.Sleep(200 * time.Millisecond)
@@ -504,6 +474,21 @@ func TestServer_Open(t *testing.T) {
 		}()
 
 		assert(v.Open()).IsTrue()
+	})
+}
+
+func TestServer_IsRunning(t *testing.T) {
+	t.Run("not running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer()
+		assert(v.isRunning).IsFalse()
+	})
+
+	t.Run("running", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer()
+		v.isRunning = true
+		assert(v.isRunning).IsTrue()
 	})
 }
 
@@ -530,13 +515,10 @@ func TestServer_Close(t *testing.T) {
 			v.Open()
 		}()
 
-		isRunning := false
-		for !isRunning {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
-			v.Lock()
-			isRunning = v.isRunning
-			v.Unlock()
 		}
+
 		time.Sleep(200 * time.Millisecond)
 		assert(v.Close()).IsTrue()
 		assert(v.isRunning).IsFalse()

@@ -293,6 +293,14 @@ func (p *Server) Open() bool {
 	return ret
 }
 
+// IsRunning ...
+func (p *Server) IsRunning() bool {
+	p.Lock()
+	defer p.Unlock()
+
+	return p.isRunning
+}
+
 // Close ...
 func (p *Server) Close() bool {
 	p.Lock()
