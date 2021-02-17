@@ -8,7 +8,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-func TestNewTestStreamReceiver(t *testing.T) {
+func TestNewTestStreamHub(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewTestStreamHub()
@@ -18,7 +18,7 @@ func TestNewTestStreamReceiver(t *testing.T) {
 	})
 }
 
-func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
+func TestTestStreamHub_OnReceiveStream(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewTestStreamHub()
@@ -28,7 +28,7 @@ func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
 	})
 }
 
-func TestTestStreamReceiver_GetStream(t *testing.T) {
+func TestTestStreamHub_GetStream(t *testing.T) {
 	t.Run("get nil stream", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewTestStreamHub()
@@ -43,7 +43,7 @@ func TestTestStreamReceiver_GetStream(t *testing.T) {
 	})
 }
 
-func TestTestStreamReceiver_WaitStream(t *testing.T) {
+func TestTestStreamHub_WaitStream(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewTestStreamHub()
@@ -52,7 +52,7 @@ func TestTestStreamReceiver_WaitStream(t *testing.T) {
 	})
 }
 
-func TestTestStreamReceiver_TotalStreams(t *testing.T) {
+func TestTestStreamHub_TotalStreams(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewTestStreamHub()
