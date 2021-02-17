@@ -45,23 +45,27 @@ func TestGateWayBasic(t *testing.T) {
 }
 
 func TestNewGateWay(t *testing.T) {
+	t.Run("streamHub is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(base.RunWithCatchPanic(func() {
+			NewGateWay(132, GetDefaultConfig(), nil)
+		})).Equal("streamHub is nil")
+	})
+
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		router := &fakeRouter{}
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), router, onError)
-		assert(router.isPlugged).Equal(true)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		assert(v.id).Equal(uint32(132))
 		assert(v.isRunning).Equal(false)
 		assert(v.sessionSeed).Equal(uint64(0))
 		assert(v.totalSessions).Equal(int64(0))
 		assert(len(v.sessionMapList)).Equal(sessionManagerVectorSize)
 		assert(cap(v.sessionMapList)).Equal(sessionManagerVectorSize)
-		assert(v.routeSender).Equal(&fakeSender{receiver: &router.receivers[1]})
+		assert(v.streamHub).Equal(streamHub)
 		assert(len(v.closeCH)).Equal(0)
 		assert(cap(v.closeCH)).Equal(1)
 		assert(v.config).Equal(GetDefaultConfig())
-		assert(v.onError).IsNotNil()
 		assert(len(v.adapters)).Equal(0)
 		assert(cap(v.adapters)).Equal(0)
 		assert(v.orcManager).IsNotNil()
@@ -75,8 +79,7 @@ func TestNewGateWay(t *testing.T) {
 func TestGateWay_TotalSessions(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		v.totalSessions = 54321
 		assert(v.TotalSessions()).Equal(int64(54321))
 	})
@@ -85,8 +88,7 @@ func TestGateWay_TotalSessions(t *testing.T) {
 func TestGateWay_AddSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 
 		for i := uint64(1); i < 100; i++ {
 			session := newSession(i, v)
@@ -103,8 +105,7 @@ func TestGateWay_AddSession(t *testing.T) {
 func TestGateWay_GetSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 
 		for i := uint64(1); i < 100; i++ {
 			session := newSession(i, v)
@@ -128,8 +129,7 @@ func TestGateWay_GetSession(t *testing.T) {
 func TestGateWay_CreateSessionID(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		assert(v.CreateSessionID()).Equal(uint64(1))
 		assert(v.CreateSessionID()).Equal(uint64(2))
 	})
@@ -138,8 +138,7 @@ func TestGateWay_CreateSessionID(t *testing.T) {
 func TestGateWay_TimeCheck(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, err *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		for i := uint64(1); i <= sessionManagerVectorSize; i++ {
 			session := newSession(i, v)
 			session.activeTimeNS = 0
@@ -155,21 +154,18 @@ func TestGateWay_TimeCheck(t *testing.T) {
 func TestGateWay_Listen(t *testing.T) {
 	t.Run("gateway is running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) {
-			err = e
-		}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		assert(v.Listen("tcp", "0.0.0.0:8080", nil)).Equal(v)
-		assert(err).Equal(base.ErrGatewayAlreadyRunning)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("gateway is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tlsConfig := &tls.Config{}
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		assert(v.Listen("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
 		assert(len(v.adapters)).Equal(1)
 		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
@@ -187,21 +183,18 @@ func TestGateWay_Listen(t *testing.T) {
 func TestGateWay_ListenWithDebug(t *testing.T) {
 	t.Run("gateway is running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) {
-			err = e
-		}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", nil)).Equal(v)
-		assert(err).Equal(base.ErrGatewayAlreadyRunning)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("gateway is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tlsConfig := &tls.Config{}
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
 		assert(len(v.adapters)).Equal(1)
 		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
@@ -219,28 +212,27 @@ func TestGateWay_ListenWithDebug(t *testing.T) {
 func TestGateWay_Open(t *testing.T) {
 	t.Run("it is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		v.Open()
-		assert(err).Equal(base.ErrGatewayAlreadyRunning)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("no valid adapter", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.Open()
-		assert(err).Equal(base.ErrGatewayNoAvailableAdapter)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGatewayNoAvailableAdapter)
 	})
 
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool)
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 		v.Listen("tcp", "127.0.0.1:8001", nil)
@@ -267,8 +259,7 @@ func TestGateWay_Close(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool)
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 
@@ -297,34 +288,33 @@ func TestGateWay_Close(t *testing.T) {
 func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 	t.Run("session is exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(10)
-		v.ReceiveStreamFromRouter(stream)
-		assert(err).IsNil()
+		v.OutStream(stream)
+		assert(streamHub.GetStream()).IsNil()
 	})
 
 	t.Run("session is not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		stream := core.NewStream()
 		stream.SetSessionID(11)
-		v.ReceiveStreamFromRouter(stream)
-		assert(err).Equal(base.ErrGateWaySessionNotFound)
+		v.OutStream(stream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 }
 
 func TestGateWay_OnConnOpen(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnOpen(nil)
@@ -335,8 +325,7 @@ func TestGateWay_OnConnOpen(t *testing.T) {
 func TestGateWay_OnConnReadStream(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
 		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
@@ -353,9 +342,8 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 func TestGateWay_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		netConn := newTestNetConn()
 		syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
@@ -363,15 +351,15 @@ func TestGateWay_OnConnError(t *testing.T) {
 		assert(netConn.isRunning).IsTrue()
 		v.OnConnError(streamConn, base.ErrStream)
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 }
 
 func TestGateWay_OnConnClose(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		onError := func(sessionID uint64, e *base.Error) {}
-		v := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamReceiver())
 		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnClose(nil)

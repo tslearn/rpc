@@ -22,7 +22,7 @@ func testWithRPCBenchmark(
 	); err == nil {
 		defer stream.Release()
 
-		if processor, err := NewProcessor(
+		if processor := NewProcessor(
 			numOfThreads,
 			64,
 			64,
@@ -35,8 +35,8 @@ func testWithRPCBenchmark(
 				fileLine: "",
 				data:     serviceData,
 			}},
-			func(s *Stream) { s.Release() },
-		); err == nil {
+			NewTestStreamReceiver(),
+		); processor != nil {
 			sendBuffer := stream.GetBuffer()
 			runtime.GC()
 			b.ResetTimer()

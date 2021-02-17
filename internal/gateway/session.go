@@ -182,7 +182,7 @@ func (p *Session) OnConnReadStream(
 				stream.SetGatewayID(p.gateway.id)
 				stream.SetSessionID(p.id)
 				// who receives the stream is responsible for releasing it
-				p.gateway.routeSender.SendStreamToRouter(stream)
+				p.gateway.streamHub.OnReceiveStream(stream)
 			} else if backStream != nil {
 				// do not release the backStream, so we need to clone it
 				streamConn.WriteStreamAndRelease(backStream.Clone())
@@ -203,7 +203,10 @@ func (p *Session) OnConnReadStream(
 
 // OnConnError ...
 func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.gateway.onError(p.id, err)
+	errStream := core.MakeSystemErrorStream(err)
+	errStream.SetSessionID(p.id)
+	errStream.SetGatewayID(p.gateway.id)
+	p.gateway.streamHub.OnReceiveStream(errStream)
 
 	if streamConn != nil {
 		streamConn.Close()

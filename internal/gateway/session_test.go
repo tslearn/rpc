@@ -5,7 +5,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/route"
 	"net"
 	"testing"
 	"time"
@@ -70,28 +69,11 @@ func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
 	panic("not implemented")
 }
 
-type fakeRouteSender struct {
-	streamCH chan *core.Stream
-}
-
-func newFakeRouteSender() *fakeRouteSender {
-	return &fakeRouteSender{
-		streamCH: make(chan *core.Stream, 1024),
-	}
-}
-
-func (p *fakeRouteSender) SendStreamToRouter(stream *core.Stream) {
-	p.streamCH <- stream
-}
-
 func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	gateway := NewGateWay(
 		3,
 		GetDefaultConfig(),
-		route.NewDirectRouter(),
-		func(sessionID uint64, err *base.Error) {
-
-		},
+		core.NewTestStreamReceiver(),
 	)
 	session := newSession(11, gateway)
 	netConn := newTestNetConn()
@@ -106,9 +88,8 @@ func TestInitSession(t *testing.T) {
 	t.Run("stream callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
 			false,
@@ -122,15 +103,15 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
 			false,
@@ -143,15 +124,15 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("read session string error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
 			false,
@@ -165,15 +146,15 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("read stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
 			false,
@@ -188,14 +169,14 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("max sessions limit", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		onError := func(sessionID uint64, e *base.Error) { err = e }
-		gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+		streamHub := core.NewTestStreamReceiver()
+		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 		gw.config.serverMaxSessions = 1
 		gw.AddSession(&Session{
 			id:       234,
@@ -212,7 +193,8 @@ func TestInitSession(t *testing.T) {
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 
-		assert(err).Equal(base.ErrGateWaySeedOverflows)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrGateWaySeedOverflows)
 	})
 
 	t.Run("stream is ok, create new session", func(t *testing.T) {
@@ -248,8 +230,9 @@ func TestInitSession(t *testing.T) {
 		}
 
 		for connStr, exist := range testCollection {
-			onError := func(sessionID uint64, e *base.Error) {}
-			gw := NewGateWay(132, GetDefaultConfig(), &fakeRouter{}, onError)
+			gw := NewGateWay(
+				132, GetDefaultConfig(), core.NewTestStreamReceiver(),
+			)
 			gw.AddSession(&Session{id: id, security: security, gateway: gw})
 			netConn := newTestNetConn()
 			syncConn := adapter.NewServerSyncConn(netConn, 1200, 1200)
@@ -305,8 +288,7 @@ func TestNewSession(t *testing.T) {
 		gateway := NewGateWay(
 			43,
 			GetDefaultConfig(),
-			route.NewDirectRouter(),
-			func(sessionID uint64, err *base.Error) {},
+			core.NewTestStreamReceiver(),
 		)
 		v := newSession(3, gateway)
 		assert(v.id).Equal(uint64(3))
@@ -531,19 +513,19 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		stream.SetKind(core.ControlStreamPing)
 		stream.WriteBool(true)
 
-		err := (*base.Error)(nil)
-		session.gateway.onError = func(sessionID uint64, e *base.Error) {
-			err = e
-		}
+		streamHub := core.NewTestStreamReceiver()
+		session.gateway.streamHub = streamHub
 		session.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("cbID > 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fakeSender := newFakeRouteSender()
+
+		streamHub := core.NewTestStreamReceiver()
 		session, syncConn, _ := prepareTestSession()
-		session.gateway.routeSender = fakeSender
+		session.gateway.streamHub = streamHub
 
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
@@ -551,7 +533,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		stream.SetKind(core.DataStreamInternalRequest)
 		session.OnConnReadStream(streamConn, stream)
 
-		backStream := <-fakeSender.streamCH
+		backStream := streamHub.GetStream()
 		assert(backStream.GetGatewayID()).Equal(uint32(3))
 		assert(backStream.GetSessionID()).Equal(uint64(11))
 	})
@@ -598,33 +580,29 @@ func TestSession_OnConnReadStream(t *testing.T) {
 
 	t.Run("cbID == 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		fakeSender := newFakeRouteSender()
 		session, syncConn, _ := prepareTestSession()
-		session.gateway.routeSender = fakeSender
+		streamHub := core.NewTestStreamReceiver()
+		session.gateway.streamHub = streamHub
 
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
 		stream.SetKind(core.DataStreamInternalRequest)
 
-		err := (*base.Error)(nil)
-		session.gateway.onError = func(sessionID uint64, e *base.Error) {
-			err = e
-		}
 		session.OnConnReadStream(streamConn, stream)
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("cbID == 0, kind err", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		err := (*base.Error)(nil)
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		session.gateway.onError = func(sessionID uint64, e *base.Error) {
-			err = e
-		}
+		streamHub := core.NewTestStreamReceiver()
+		session.gateway.streamHub = streamHub
 		session.OnConnReadStream(streamConn, core.NewStream())
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 }
 
@@ -633,12 +611,11 @@ func TestSession_OnConnError(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		err := (*base.Error)(nil)
-		session.gateway.onError = func(sessionID uint64, e *base.Error) {
-			err = e
-		}
+		streamHub := core.NewTestStreamReceiver()
+		session.gateway.streamHub = streamHub
 		session.OnConnError(streamConn, base.ErrStream)
-		assert(err).Equal(base.ErrStream)
+		assert(core.ParseResponseStream(streamHub.GetStream())).
+			Equal(nil, base.ErrStream)
 	})
 }
 

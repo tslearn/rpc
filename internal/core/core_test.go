@@ -43,6 +43,25 @@ func TestTestStreamReceiver_GetStream(t *testing.T) {
 	})
 }
 
+func TestTestStreamReceiver_WaitStream(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		v.streamCH <- NewStream()
+		assert(v.WaitStream()).IsNotNil()
+	})
+}
+
+func TestTestStreamReceiver_TotalStreams(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewTestStreamReceiver()
+		assert(v.TotalStreams()).Equal(0)
+		v.streamCH <- NewStream()
+		assert(v.TotalStreams()).Equal(1)
+	})
+}
+
 func TestGetFuncKind(t *testing.T) {
 	assert := base.NewAssert(t)
 
@@ -424,7 +443,7 @@ func TestParseResponseStream(t *testing.T) {
 }
 
 type testProcessorHelper struct {
-	streamCH  chan *Stream
+	streamHub *TestStreamReceiver
 	processor *Processor
 }
 
@@ -437,19 +456,8 @@ func newTestProcessorHelper(
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 ) *testProcessorHelper {
-	streamCH := make(chan *Stream, 102400)
-	fnOnReturnStream := func(stream *Stream) {
-		select {
-		case streamCH <- stream:
-			return
-		case <-time.After(time.Second):
-			// prevent capture
-			go func() {
-				panic("streamCH is full")
-			}()
-		}
-	}
-	processor, _ := NewProcessor(
+	streamHub := NewTestStreamReceiver()
+	processor := NewProcessor(
 		numOfThreads,
 		maxNodeDepth,
 		maxCallDepth,
@@ -457,17 +465,16 @@ func newTestProcessorHelper(
 		fnCache,
 		closeTimeout,
 		mountServices,
-		fnOnReturnStream,
+		streamHub,
 	)
-
 	return &testProcessorHelper{
-		streamCH:  streamCH,
+		streamHub: streamHub,
 		processor: processor,
 	}
 }
 
 func (p *testProcessorHelper) GetStream() *Stream {
-	return <-p.streamCH
+	return p.streamHub.GetStream()
 }
 
 func (p *testProcessorHelper) GetProcessor() *Processor {
@@ -510,7 +517,7 @@ func testWithProcessorAndRuntime(
 
 	stream, _ := MakeInternalRequestStream(true, 0, "#.test:Eval", "")
 	helper.GetProcessor().PutStream(stream)
-	return <-helper.streamCH
+	return <-helper.streamHub.streamCH
 }
 
 func testReplyWithSource(
@@ -540,12 +547,12 @@ func testReplyWithSource(
 	if len(args) == 1 {
 		if s, ok := args[0].(*Stream); ok {
 			helper.GetProcessor().PutStream(s)
-			return <-helper.streamCH, source
+			return <-helper.streamHub.streamCH, source
 		}
 	}
 	stream, _ := MakeInternalRequestStream(debug, 0, "#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
-	return <-helper.streamCH, source
+	return <-helper.streamHub.streamCH, source
 }
 
 func testReply(

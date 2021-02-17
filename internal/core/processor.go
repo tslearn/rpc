@@ -75,7 +75,7 @@ type Processor struct {
 	readThreadPos     uint64
 	writeThreadPos    uint64
 	panicSubscription *base.PanicSubscription
-	fnError           func(err *base.Error)
+	streamHub         IStreamReceiver
 	closeCH           chan string
 	sync.Mutex
 }
@@ -89,29 +89,28 @@ func NewProcessor(
 	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
-	onReturnStream func(stream *Stream),
-) (*Processor, *base.Error) {
-	if onReturnStream == nil {
-		return nil, base.ErrProcessorOnReturnStreamIsNil
+	streamHub IStreamReceiver,
+) *Processor {
+	if streamHub == nil {
+		panic("streamHub is nil")
 	}
 
 	if numOfThreads <= 0 {
-		return nil, base.ErrNumOfThreadsIsWrong
+		streamHub.OnReceiveStream(
+			MakeSystemErrorStream(base.ErrNumOfThreadsIsWrong),
+		)
+		return nil
 	} else if maxNodeDepth <= 0 {
-		return nil, base.ErrMaxNodeDepthIsWrong
+		streamHub.OnReceiveStream(
+			MakeSystemErrorStream(base.ErrMaxNodeDepthIsWrong),
+		)
+		return nil
 	} else if maxCallDepth <= 0 {
-		return nil, base.ErrProcessorMaxCallDepthIsWrong
+		streamHub.OnReceiveStream(
+			MakeSystemErrorStream(base.ErrProcessorMaxCallDepthIsWrong),
+		)
+		return nil
 	} else {
-		fnError := func(err *base.Error) {
-			defer func() {
-				_ = recover()
-			}()
-
-			if stream := MakeSystemErrorStream(err); stream != nil {
-				onReturnStream(stream)
-			}
-		}
-
 		size := ((numOfThreads + freeGroups - 1) / freeGroups) * freeGroups
 		ret := &Processor{
 			status:         processorStatusRunning,
@@ -123,12 +122,17 @@ func NewProcessor(
 			freeCHArray:    nil,
 			readThreadPos:  0,
 			writeThreadPos: 0,
-			fnError:        fnError,
+			streamHub:      streamHub,
 			closeCH:        make(chan string),
 		}
 
 		// subscribe panic
-		ret.panicSubscription = base.SubscribePanic(fnError)
+		ret.panicSubscription = base.SubscribePanic(func(err *base.Error) {
+			defer func() {
+				_ = recover()
+			}()
+			streamHub.OnReceiveStream(MakeSystemErrorStream(err))
+		})
 
 		// init system thread
 		ret.systemThread = newThread(
@@ -149,7 +153,8 @@ func NewProcessor(
 
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
-				return nil, err
+				streamHub.OnReceiveStream(MakeSystemErrorStream(err))
+				return nil
 			}
 		}
 
@@ -178,7 +183,9 @@ func NewProcessor(
 				ret,
 				closeTimeout,
 				threadBufferSize,
-				onReturnStream,
+				func(stream *Stream) {
+					streamHub.OnReceiveStream(stream)
+				},
 				func(thread *rpcThread) {
 					defer func() {
 						_ = recover()
@@ -193,7 +200,7 @@ func NewProcessor(
 			ret.freeCHArray[i%freeGroups] <- thread
 		}
 
-		return ret, nil
+		return ret
 	}
 }
 
@@ -243,12 +250,12 @@ func (p *Processor) Close() bool {
 		}
 
 		if len(errList) > 0 {
-			p.fnError(
+			p.streamHub.OnReceiveStream(MakeSystemErrorStream(
 				base.ErrActionCloseTimeout.AddDebug(base.ConcatString(
 					"the following actions can not close: \n\t",
 					strings.Join(errList, "\n\t"),
 				)),
-			)
+			))
 		}
 
 		p.unmount("#")

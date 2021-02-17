@@ -40,6 +40,16 @@ func (p *TestStreamReceiver) GetStream() *Stream {
 	}
 }
 
+// WaitStream ...
+func (p *TestStreamReceiver) WaitStream() *Stream {
+	return <-p.streamCH
+}
+
+// TotalStreams ...
+func (p *TestStreamReceiver) TotalStreams() int {
+	return len(p.streamCH)
+}
+
 func getFuncKind(fn reflect.Value) (string, *base.Error) {
 	if fn.Kind() != reflect.Func {
 		return "", base.ErrActionHandler.

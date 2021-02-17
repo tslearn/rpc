@@ -26,12 +26,6 @@ func TestServerBasic(t *testing.T) {
 		assert(defaultMaxNodeDepth).Equal(128)
 		assert(defaultMaxCallDepth).Equal(128)
 		assert(fnNumCPU()).Equal(runtime.NumCPU())
-
-		stream := core.NewStream()
-		stream.PutBytes([]byte{1, 2, 3, 4, 5, 6})
-		assert(stream.GetWritePos() == core.StreamHeadSize).IsFalse()
-		onReturnStream(stream)
-		assert(stream.GetWritePos() == core.StreamHeadSize).IsTrue()
 	})
 }
 
@@ -56,9 +50,9 @@ func TestNewServer(t *testing.T) {
 		assert(v.threadBufferSize).Equal(uint32(2048))
 		assert(v.actionCache).IsNil()
 		assert(v.closeTimeout).Equal(5 * time.Second)
+		assert(v.logHub).IsNil()
 		assert(len(v.mountServices)).Equal(0)
 		assert(cap(v.mountServices)).Equal(0)
-		assert(v.errorHandler).IsNil()
 	})
 
 	t.Run("numOfThreads > defaultMaxNumOfThreads", func(t *testing.T) {
@@ -81,102 +75,80 @@ func TestNewServer(t *testing.T) {
 		assert(v.threadBufferSize).Equal(uint32(2048))
 		assert(v.actionCache).IsNil()
 		assert(v.closeTimeout).Equal(5 * time.Second)
+		assert(v.logHub).IsNil()
 		assert(len(v.mountServices)).Equal(0)
 		assert(cap(v.mountServices)).Equal(0)
-		assert(v.errorHandler).IsNil()
 	})
 }
 
-func TestServer_onError(t *testing.T) {
-	t.Run("errorHandler == nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		v := NewServer()
-		assert(base.RunWithCatchPanic(func() {
-			v.onError(12, base.ErrStream)
-		})).IsNil()
-	})
-
-	t.Run("errorHandler != nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
-		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-		v.onError(12, base.ErrStream)
-		assert(errID).Equal(uint64(12))
-		assert(err).Equal(base.ErrStream)
-	})
-}
-
+//
+//func TestServer_onError(t *testing.T) {
+//	t.Run("errorHandler == nil", func(t *testing.T) {
+//		assert := base.NewAssert(t)
+//		v := NewServer()
+//		assert(base.RunWithCatchPanic(func() {
+//			v.onError(12, base.ErrStream)
+//		})).IsNil()
+//	})
+//
+//	t.Run("errorHandler != nil", func(t *testing.T) {
+//		assert := base.NewAssert(t)
+//		err := (*base.Error)(nil)
+//		errID := uint64(0)
+//		v := NewServer()
+//		v.errorHandler = func(sessionID uint64, e *base.Error) {
+//			errID = sessionID
+//			err = e
+//		}
+//		v.onError(12, base.ErrStream)
+//		assert(errID).Equal(uint64(12))
+//		assert(err).Equal(base.ErrStream)
+//	})
+//}
+//
 func TestServer_Listen(t *testing.T) {
-	t.Run("gateway is opened", func(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		v.Listen("tcp", "127.0.0.1:1234", nil)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(nil)
+		assert(errorHub.GetStream()).IsNil()
 	})
 }
 
 func TestServer_ListenWithDebug(t *testing.T) {
-	t.Run("gateway is opened", func(t *testing.T) {
+	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		v.ListenWithDebug("tcp", "127.0.0.1:1234", nil)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(nil)
+		assert(errorHub.GetStream()).IsNil()
 	})
 }
-
 func TestServer_SetNumOfThreads(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetNumOfThreads(1024), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("numOfThreads == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		_, source := v.SetNumOfThreads(0), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrNumOfThreadsIsWrong.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrNumOfThreadsIsWrong.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -190,35 +162,25 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 func TestServer_SetThreadBufferSize(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetThreadBufferSize(1024), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("threadBufferSize == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
-
+		v.logHub = errorHub
 		_, source := v.SetThreadBufferSize(0), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrThreadBufferSizeIsWrong.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrThreadBufferSizeIsWrong.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -232,18 +194,14 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 func TestServer_SetActionCache(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
-		ac := &testActionCache{}
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		v.isRunning = true
-		_, source := v.SetActionCache(ac), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		_, source := v.SetActionCache(&testActionCache{}), base.GetFileLine(0)
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 		assert(v.actionCache).IsNil()
 	})
 
@@ -256,29 +214,25 @@ func TestServer_SetActionCache(t *testing.T) {
 	})
 }
 
-func TestServer_SetErrorHandler(t *testing.T) {
+func TestServer_SetLogHub(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		handler := func(sessionID uint64, e *base.Error) {}
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		setHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		v.isRunning = true
-		_, source := v.SetErrorHandler(handler), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		_, source := v.SetLogHub(setHub), base.GetFileLine(0)
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		handler := func(sessionID uint64, e *base.Error) {}
 		v := NewServer()
-		v.SetErrorHandler(handler)
-		assert(v.errorHandler).IsNotNil()
+		v.SetLogHub(core.NewTestStreamReceiver())
+		assert(v.logHub).IsNotNil()
 	})
 }
 
@@ -286,17 +240,14 @@ func TestServer_AddService(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		service := core.NewService()
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.AddService("t", service, nil), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -334,49 +285,202 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		_ = os.MkdirAll(path.Join(curDir, "cache"), 0555)
 		_ = os.MkdirAll(path.Join(curDir, "cache", "rpc_action_cache.go"), 0555)
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		assert(v.BuildReplyCache()).Equal(v)
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrCacheWriteFile)
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrCacheWriteFile.Standardize(),
+		)
 	})
+}
+
+func TestServer_OnReceiveStream(t *testing.T) {
+	t.Run("DataStreamInternalRequest", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer().
+			SetNumOfThreads(1024).
+			Listen("tcp", "127.0.0.1:8888", nil)
+
+		errorHub := core.NewTestStreamReceiver()
+		v.logHub = errorHub
+		go func() {
+			v.Open()
+		}()
+
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamInternalRequest)
+		stream.SetDepth(0)
+		stream.WriteString("#.test.Eval")
+		stream.WriteString("@")
+
+		for !v.isRunning {
+			time.Sleep(10 * time.Millisecond)
+		}
+		defer v.Close()
+
+		v.OnReceiveStream(stream)
+
+		assert(core.ParseResponseStream(errorHub.WaitStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
+	})
+
+	t.Run("DataStreamExternalRequest", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer().
+			SetNumOfThreads(1024).
+			Listen("tcp", "127.0.0.1:8888", nil)
+
+		errorHub := core.NewTestStreamReceiver()
+		v.logHub = errorHub
+		go func() {
+			v.Open()
+		}()
+
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamExternalRequest)
+		stream.SetDepth(0)
+		stream.WriteString("#.test.Eval")
+		stream.WriteString("@")
+
+		for !v.isRunning {
+			time.Sleep(10 * time.Millisecond)
+		}
+		defer v.Close()
+
+		v.OnReceiveStream(stream)
+
+		assert(core.ParseResponseStream(errorHub.WaitStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
+	})
+
+	t.Run("DataStreamResponseOK", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer().
+			SetNumOfThreads(1024).
+			Listen("tcp", "127.0.0.1:8888", nil)
+
+		errorHub := core.NewTestStreamReceiver()
+		v.logHub = errorHub
+		go func() {
+			v.Open()
+		}()
+
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamResponseOK)
+		stream.Write(true)
+
+		for !v.isRunning {
+			time.Sleep(10 * time.Millisecond)
+		}
+		defer v.Close()
+		v.OnReceiveStream(stream)
+		assert(core.ParseResponseStream(errorHub.WaitStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
+	})
+
+	t.Run("DataStreamResponseError", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer().
+			SetNumOfThreads(1024).
+			Listen("tcp", "127.0.0.1:8888", nil)
+
+		errorHub := core.NewTestStreamReceiver()
+		v.logHub = errorHub
+		go func() {
+			v.Open()
+		}()
+
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamResponseError)
+		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
+		stream.WriteString(base.ErrStream.GetMessage())
+
+		for !v.isRunning {
+			time.Sleep(10 * time.Millisecond)
+		}
+		defer v.Close()
+		v.OnReceiveStream(stream)
+		assert(core.ParseResponseStream(errorHub.WaitStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
+	})
+
+	t.Run("DataStreamBoardCast", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer().
+			SetNumOfThreads(1024).
+			Listen("tcp", "127.0.0.1:8888", nil)
+
+		errorHub := core.NewTestStreamReceiver()
+		v.logHub = errorHub
+		go func() {
+			v.Open()
+		}()
+
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamBoardCast)
+		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
+		stream.WriteString(base.ErrStream.GetMessage())
+
+		for !v.isRunning {
+			time.Sleep(10 * time.Millisecond)
+		}
+		defer v.Close()
+		v.OnReceiveStream(stream)
+		assert(core.ParseResponseStream(errorHub.WaitStream())).
+			Equal(nil, base.ErrGateWaySessionNotFound)
+	})
+
+	t.Run("SystemStreamReportError log to screen", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer()
+
+		stream := core.NewStream()
+		stream.SetKind(core.SystemStreamReportError)
+		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
+		stream.WriteString(base.ErrStream.GetMessage())
+		v.OnReceiveStream(stream)
+		assert(stream.GetKind() != core.SystemStreamReportError).IsTrue()
+	})
+
+	t.Run("ControlStreamConnectResponse", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := NewServer()
+
+		stream := core.NewStream()
+		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
+		stream.WriteString(base.ErrStream.GetMessage())
+		v.OnReceiveStream(stream)
+		assert(stream.GetKind() != core.ControlStreamConnectResponse).IsTrue()
+	})
+
 }
 
 func TestServer_Open(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		v.isRunning = true
 		isOpen, source := v.Open(), base.GetFileLine(0)
-		assert(errID).Equal(uint64(0))
 		assert(isOpen).Equal(false)
-		assert(err).Equal(base.ErrServerAlreadyRunning.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("processor create error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
 		v.numOfThreads = 0
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		assert(v.Open()).IsFalse()
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrNumOfThreadsIsWrong)
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrNumOfThreadsIsWrong.Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -389,10 +493,12 @@ func TestServer_Open(t *testing.T) {
 			isRunning := false
 			for !isRunning {
 				time.Sleep(10 * time.Millisecond)
+
 				v.Lock()
 				isRunning = v.isRunning
 				v.Unlock()
 			}
+
 			time.Sleep(200 * time.Millisecond)
 			v.Close()
 		}()
@@ -404,17 +510,14 @@ func TestServer_Open(t *testing.T) {
 func TestServer_Close(t *testing.T) {
 	t.Run("server is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		errID := uint64(0)
+		errorHub := core.NewTestStreamReceiver()
 		v := NewServer()
-		v.errorHandler = func(sessionID uint64, e *base.Error) {
-			errID = sessionID
-			err = e
-		}
+		v.logHub = errorHub
 		isSuccess, source := v.Close(), base.GetFileLine(0)
 		assert(isSuccess).IsFalse()
-		assert(errID).Equal(uint64(0))
-		assert(err).Equal(base.ErrServerNotRunning.AddDebug(source))
+		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+			nil, base.ErrServerNotRunning.AddDebug(source).Standardize(),
+		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {

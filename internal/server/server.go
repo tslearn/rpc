@@ -26,14 +26,10 @@ const (
 
 var fnNumCPU = runtime.NumCPU
 
-func onReturnStream(stream *core.Stream) {
-	stream.Release()
-}
-
 // Server ...
 type Server struct {
 	isRunning        bool
-	processor        *RPCProcessor
+	processor        *core.Processor
 	router           route.IRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
@@ -43,7 +39,7 @@ type Server struct {
 	actionCache      core.ActionCache
 	closeTimeout     time.Duration
 	mountServices    []*core.ServiceMeta
-	errorHandler     func(sessionID uint64, err *base.Error)
+	logHub           core.IStreamReceiver
 	sync.Mutex
 }
 
@@ -61,7 +57,6 @@ func NewServer() *Server {
 		actionCache:      nil,
 		closeTimeout:     defaultCloseTimeout,
 		mountServices:    make([]*core.ServiceMeta, 0),
-		errorHandler:     nil,
 	}
 
 	if ret.numOfThreads > defaultMaxNumOfThreads {
@@ -71,19 +66,10 @@ func NewServer() *Server {
 	ret.gateway = gateway.NewGateWay(
 		0,
 		gateway.GetDefaultConfig(),
-		ret.router,
-		ret.onError,
+		ret,
 	)
 
 	return ret
-}
-
-func (p *Server) onError(sessionID uint64, err *base.Error) {
-	if errorHandler := p.errorHandler; errorHandler != nil {
-		errorHandler(sessionID, err)
-	} else {
-		log.Printf("[Server Error (%d)]: %s", sessionID, err.Error())
-	}
 }
 
 // Listen ...
@@ -112,15 +98,13 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else if numOfThreads <= 0 {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else {
 		p.numOfThreads = numOfThreads
 	}
@@ -134,15 +118,13 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else if threadBufferSize <= 0 {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else {
 		p.threadBufferSize = threadBufferSize
 	}
@@ -156,10 +138,9 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else {
 		p.actionCache = actionCache
 	}
@@ -168,19 +149,16 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 }
 
 // SetErrorHandler ...
-func (p *Server) SetErrorHandler(
-	onError func(sessionID uint64, err *base.Error),
-) *Server {
+func (p *Server) SetLogHub(logHub core.IStreamReceiver) *Server {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else {
-		p.errorHandler = onError
+		p.logHub = logHub
 	}
 
 	return p
@@ -196,10 +174,9 @@ func (p *Server) AddService(
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.onError(
-			0,
+		p.OnReceiveStream(core.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
-		)
+		))
 	} else {
 		p.mountServices = append(p.mountServices, core.NewServiceMeta(
 			name,
@@ -220,7 +197,7 @@ func (p *Server) BuildReplyCache() *Server {
 	_, file, _, _ := runtime.Caller(1)
 	buildDir := path.Join(path.Dir(file))
 
-	processor, _ := core.NewProcessor(
+	processor := core.NewProcessor(
 		1,
 		64,
 		64,
@@ -228,7 +205,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		p.mountServices,
-		onReturnStream,
+		core.NewTestStreamReceiver(),
 	)
 	defer processor.Close()
 
@@ -236,23 +213,61 @@ func (p *Server) BuildReplyCache() *Server {
 		"cache",
 		path.Join(buildDir, "cache", "rpc_action_cache.go"),
 	); err != nil {
-		p.onError(0, err)
+		p.OnReceiveStream(core.MakeSystemErrorStream(err))
 	}
 
 	return p
 }
 
+func (p *Server) OnReceiveStream(stream *core.Stream) {
+	if stream != nil {
+		switch stream.GetKind() {
+		case core.DataStreamInternalRequest:
+			fallthrough
+		case core.DataStreamExternalRequest:
+			p.processor.PutStream(stream)
+		case core.DataStreamResponseOK:
+			fallthrough
+		case core.DataStreamResponseError:
+			fallthrough
+		case core.DataStreamBoardCast:
+			p.gateway.OutStream(stream)
+		default:
+			if stream.GetKind() == core.SystemStreamReportError {
+				if p.logHub != nil {
+					p.logHub.OnReceiveStream(stream)
+				} else {
+					// log to screen
+					if _, err := core.ParseResponseStream(stream); err != nil {
+						log.Printf(
+							"[Server Error (%d)]: %s",
+							stream.GetSessionID(),
+							err.Error(),
+						)
+					}
+					stream.Release()
+				}
+			} else {
+				stream.Release()
+			}
+		}
+	}
+}
+
 // Open ...
 func (p *Server) Open() bool {
 	source := base.GetFileLine(1)
-	err := func() *base.Error {
+
+	ret := func() bool {
 		p.Lock()
 		defer p.Unlock()
 
 		if p.isRunning {
-			return base.ErrServerAlreadyRunning.AddDebug(source)
-		} else if processor, err := NewRPCProcessor(
-			p.router,
+			p.OnReceiveStream(core.MakeSystemErrorStream(
+				base.ErrServerAlreadyRunning.AddDebug(source),
+			))
+			return false
+		} else if processor := core.NewProcessor(
 			p.numOfThreads,
 			p.maxNodeDepth,
 			p.maxCallDepth,
@@ -260,22 +275,21 @@ func (p *Server) Open() bool {
 			p.actionCache,
 			p.closeTimeout,
 			p.mountServices,
-		); err != nil {
-			return err
+			p,
+		); processor == nil {
+			return false
 		} else {
 			p.isRunning = true
 			p.processor = processor
-			return nil
+			return true
 		}
 	}()
 
-	if err != nil {
-		p.onError(0, err)
-		return false
+	if ret {
+		p.gateway.Open()
 	}
 
-	p.gateway.Open()
-	return true
+	return ret
 }
 
 // Close ...
@@ -284,7 +298,9 @@ func (p *Server) Close() bool {
 	defer p.Unlock()
 
 	if !p.isRunning {
-		p.onError(0, base.ErrServerNotRunning.AddDebug(base.GetFileLine(1)))
+		p.OnReceiveStream(core.MakeSystemErrorStream(
+			base.ErrServerNotRunning.AddDebug(base.GetFileLine(1)),
+		))
 		return false
 	}
 

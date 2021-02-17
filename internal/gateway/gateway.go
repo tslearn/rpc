@@ -10,7 +10,6 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/route"
 )
 
 const (
@@ -24,10 +23,9 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	routeSender    route.IRouteSender
+	streamHub      core.IStreamReceiver
 	closeCH        chan bool
 	config         *Config
-	onError        func(sessionID uint64, err *base.Error)
 	adapters       []*adapter.Adapter
 	orcManager     *base.ORCManager
 	sync.Mutex
@@ -37,19 +35,21 @@ type GateWay struct {
 func NewGateWay(
 	id uint32,
 	config *Config,
-	router route.IRouter,
-	onError func(sessionID uint64, err *base.Error),
+	streamHub core.IStreamReceiver,
 ) *GateWay {
+	if streamHub == nil {
+		panic("streamHub is nil")
+	}
+
 	ret := &GateWay{
 		id:             id,
 		isRunning:      false,
 		sessionSeed:    0,
 		totalSessions:  0,
 		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
-		routeSender:    nil,
+		streamHub:      streamHub,
 		closeCH:        make(chan bool, 1),
 		config:         config,
-		onError:        onError,
 		adapters:       make([]*adapter.Adapter, 0),
 		orcManager:     base.NewORCManager(),
 	}
@@ -57,8 +57,6 @@ func NewGateWay(
 	for i := 0; i < sessionManagerVectorSize; i++ {
 		ret.sessionMapList[i] = NewSessionPool(ret)
 	}
-
-	ret.routeSender = router.Plug(ret)
 
 	return ret
 }
@@ -110,7 +108,9 @@ func (p *GateWay) Listen(
 			p,
 		))
 	} else {
-		p.onError(0, base.ErrGatewayAlreadyRunning)
+		p.streamHub.OnReceiveStream(
+			core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+		)
 	}
 
 	return p
@@ -136,7 +136,9 @@ func (p *GateWay) ListenWithDebug(
 			p,
 		))
 	} else {
-		p.onError(0, base.ErrGatewayAlreadyRunning)
+		p.streamHub.OnReceiveStream(
+			core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+		)
 	}
 
 	return p
@@ -149,10 +151,14 @@ func (p *GateWay) Open() {
 		defer p.Unlock()
 
 		if p.isRunning {
-			p.onError(0, base.ErrGatewayAlreadyRunning)
+			p.streamHub.OnReceiveStream(
+				core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+			)
 			return false
 		} else if len(p.adapters) <= 0 {
-			p.onError(0, base.ErrGatewayNoAvailableAdapter)
+			p.streamHub.OnReceiveStream(
+				core.MakeSystemErrorStream(base.ErrGatewayNoAvailableAdapter),
+			)
 			return false
 		} else {
 			p.isRunning = true
@@ -207,12 +213,15 @@ func (p *GateWay) Close() {
 	})
 }
 
-// ReceiveStreamFromRouter ...
-func (p *GateWay) ReceiveStreamFromRouter(stream *core.Stream) {
+// OutStream ...
+func (p *GateWay) OutStream(stream *core.Stream) {
 	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 	} else {
-		p.onError(stream.GetSessionID(), base.ErrGateWaySessionNotFound)
+		errStream := core.MakeSystemErrorStream(base.ErrGateWaySessionNotFound)
+		errStream.SetGatewayID(p.id)
+		errStream.SetSessionID(stream.GetSessionID())
+		p.streamHub.OnReceiveStream(errStream)
 		stream.Release()
 	}
 }
@@ -233,7 +242,7 @@ func (p *GateWay) OnConnReadStream(
 
 // OnConnError ...
 func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.onError(0, err)
+	p.streamHub.OnReceiveStream(core.MakeSystemErrorStream(err))
 
 	if streamConn != nil {
 		streamConn.Close()

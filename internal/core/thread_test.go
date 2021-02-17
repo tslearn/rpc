@@ -736,6 +736,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("action path type is not string", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
+		stream.SetKind(DataStreamInternalRequest)
 		stream.SetDepth(3)
 		stream.WriteBytes([]byte("#.test:Eval"))
 		stream.WriteString("")
@@ -1271,8 +1272,12 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("onEvalFinish panic", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
+		streamHub := NewTestStreamReceiver()
+		// make error
+		close(streamHub.streamCH)
+
 		fnTest := func(dbg bool, fnCache ActionCache) {
-			processor, _ := NewProcessor(
+			processor := NewProcessor(
 				1,
 				16,
 				16,
@@ -1287,15 +1292,12 @@ func TestRpcThread_Eval(t *testing.T) {
 					fileLine: "",
 					data:     nil,
 				}},
-				func(stream *Stream) {
-					panic("error")
-				},
+				streamHub,
 			)
 			defer processor.Close()
 			sendStream, _ := MakeInternalRequestStream(
 				dbg, 0, "#.test:Eval", "",
 			)
-			processor.PutStream(sendStream)
 
 			errCH := make(chan *base.Error)
 			subscription := base.SubscribePanic(func(e *base.Error) {
@@ -1303,8 +1305,11 @@ func TestRpcThread_Eval(t *testing.T) {
 			})
 			defer subscription.Close()
 
+			processor.PutStream(sendStream)
+
 			err := <-errCH
-			expectErr := base.ErrThreadEvalFatal.AddDebug("error")
+			expectErr := base.ErrThreadEvalFatal.
+				AddDebug("send on closed channel")
 			assert(err).IsNotNil()
 			assert(strings.HasPrefix(
 				err.GetMessage(),
