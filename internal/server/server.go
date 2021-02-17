@@ -148,7 +148,7 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 	return p
 }
 
-// SetErrorHandler ...
+// SetLogHub ...
 func (p *Server) SetLogHub(logHub core.IStreamReceiver) *Server {
 	p.Lock()
 	defer p.Unlock()
@@ -219,6 +219,7 @@ func (p *Server) BuildReplyCache() *Server {
 	return p
 }
 
+// OnReceiveStream ...
 func (p *Server) OnReceiveStream(stream *core.Stream) {
 	if stream != nil {
 		switch stream.GetKind() {

@@ -5,37 +5,10 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/route"
 	"net"
 	"testing"
 	"time"
 )
-
-type fakeSender struct {
-	receiver *route.IRouteReceiver
-}
-
-func (p *fakeSender) SendStreamToRouter(stream *core.Stream) {
-	(*p.receiver).ReceiveStreamFromRouter(stream)
-}
-
-type fakeRouter struct {
-	isPlugged bool
-	receivers [2]route.IRouteReceiver
-}
-
-func (p *fakeRouter) Plug(receiver route.IRouteReceiver) route.IRouteSender {
-	p.isPlugged = true
-	if p.receivers[0] == nil {
-		p.receivers[0] = receiver
-		return &fakeSender{receiver: &p.receivers[1]}
-	} else if p.receivers[1] == nil {
-		p.receivers[1] = receiver
-		return &fakeSender{receiver: &p.receivers[0]}
-	} else {
-		panic("DirectRouter can only be plugged twice")
-	}
-}
 
 func TestGateWayBasic(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
