@@ -84,7 +84,7 @@ func TestNewServer(t *testing.T) {
 func TestServer_Listen(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.Listen("tcp", "127.0.0.1:1234", nil)
@@ -95,7 +95,7 @@ func TestServer_Listen(t *testing.T) {
 func TestServer_ListenWithDebug(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.ListenWithDebug("tcp", "127.0.0.1:1234", nil)
@@ -105,7 +105,7 @@ func TestServer_ListenWithDebug(t *testing.T) {
 func TestServer_SetNumOfThreads(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -117,7 +117,7 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 
 	t.Run("numOfThreads == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		_, source := v.SetNumOfThreads(0), base.GetFileLine(0)
@@ -137,7 +137,7 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 func TestServer_SetThreadBufferSize(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -149,7 +149,7 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 
 	t.Run("threadBufferSize == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		_, source := v.SetThreadBufferSize(0), base.GetFileLine(0)
@@ -169,7 +169,7 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 func TestServer_SetActionCache(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -192,8 +192,8 @@ func TestServer_SetActionCache(t *testing.T) {
 func TestServer_SetLogHub(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		setHub := core.NewTestStreamReceiver()
-		errorHub := core.NewTestStreamReceiver()
+		setHub := core.NewTestStreamHub()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -206,7 +206,7 @@ func TestServer_SetLogHub(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
-		v.SetLogHub(core.NewTestStreamReceiver())
+		v.SetLogHub(core.NewTestStreamHub())
 		assert(v.logHub).IsNotNil()
 	})
 }
@@ -215,7 +215,7 @@ func TestServer_AddService(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		service := core.NewService()
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -260,7 +260,7 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		_ = os.MkdirAll(path.Join(curDir, "cache"), 0555)
 		_ = os.MkdirAll(path.Join(curDir, "cache", "rpc_action_cache.go"), 0555)
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		assert(v.BuildReplyCache()).Equal(v)
@@ -277,7 +277,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
@@ -306,7 +306,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
@@ -335,7 +335,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
@@ -360,7 +360,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
@@ -386,7 +386,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
@@ -435,7 +435,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 func TestServer_Open(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
@@ -448,7 +448,7 @@ func TestServer_Open(t *testing.T) {
 
 	t.Run("processor create error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.numOfThreads = 0
 		v.logHub = errorHub
@@ -495,7 +495,7 @@ func TestServer_IsRunning(t *testing.T) {
 func TestServer_Close(t *testing.T) {
 	t.Run("server is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamReceiver()
+		errorHub := core.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		isSuccess, source := v.Close(), base.GetFileLine(0)

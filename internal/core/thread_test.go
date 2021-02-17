@@ -13,14 +13,13 @@ import (
 )
 
 var (
-	fnEvalBack   = func(stream *Stream) {}
 	fnEvalFinish = func(thread *rpcThread) {}
 	testThread   = newThread(
 		testProcessor,
 		5*time.Second,
 		2048,
-		func(stream *Stream) {},
-		func(thread *rpcThread) {},
+		NewTestStreamHub(),
+		fnEvalFinish,
 	)
 )
 
@@ -174,7 +173,9 @@ func TestNewRTMap(t *testing.T) {
 func TestNewThread(t *testing.T) {
 	t.Run("processor is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(newThread(nil, 5*time.Second, 2048, fnEvalBack, nil)).IsNil()
+		assert(newThread(
+			nil, 5*time.Second, 2048, NewTestStreamHub(), nil,
+		)).IsNil()
 	})
 
 	t.Run("onEvalBack is nil", func(t *testing.T) {
@@ -185,14 +186,18 @@ func TestNewThread(t *testing.T) {
 
 	t.Run("onEvalFinish is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, nil)).
-			IsNil()
+		assert(newThread(
+			testProcessor, 5*time.Second, 2048, NewTestStreamHub(), nil,
+		)).IsNil()
 	})
 
 	t.Run("test ok (timeout 1s)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 32; i++ {
-			v := newThread(testProcessor, 100*time.Millisecond, 2048, fnEvalBack, fnEvalFinish)
+			v := newThread(
+				testProcessor, 100*time.Millisecond, 2048,
+				NewTestStreamHub(), fnEvalFinish,
+			)
 			assert(v.processor).Equal(testProcessor)
 			assert(v.inputCH).IsNotNil()
 			assert(v.closeCH).IsNotNil()
@@ -202,7 +207,8 @@ func TestNewThread(t *testing.T) {
 			assert(v.sequence % 2).Equal(uint64(0))
 			assert(v.rtStream).IsNotNil()
 			assert(len(v.cacheEntry)).Equal(8)
-			assert(len(v.cacheArrayItems), cap(v.cacheArrayItems)).Equal(128, 128)
+			assert(len(v.cacheArrayItems), cap(v.cacheArrayItems)).
+				Equal(128, 128)
 			assert(len(v.cacheMapItems), cap(v.cacheMapItems)).Equal(32, 32)
 			v.Close()
 			assert(v.closeCH).IsNil()
@@ -216,7 +222,7 @@ func TestNewThread(t *testing.T) {
 				testProcessor,
 				5*time.Second,
 				2048,
-				fnEvalBack,
+				NewTestStreamHub(),
 				fnEvalFinish,
 			)
 			assert(v.processor).Equal(testProcessor)
@@ -228,7 +234,8 @@ func TestNewThread(t *testing.T) {
 			assert(v.sequence % 2).Equal(uint64(0))
 			assert(v.rtStream).IsNotNil()
 			assert(len(v.cacheEntry)).Equal(8)
-			assert(len(v.cacheArrayItems), cap(v.cacheArrayItems)).Equal(128, 128)
+			assert(len(v.cacheArrayItems), cap(v.cacheArrayItems)).
+				Equal(128, 128)
 			assert(len(v.cacheMapItems), cap(v.cacheMapItems)).Equal(32, 32)
 			v.Close()
 			assert(v.closeCH).IsNil()
@@ -239,21 +246,19 @@ func TestNewThread(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		for i := 0; i < 100; i++ {
-			chBack := make(chan bool, 1)
+			streamHub := NewTestStreamHub()
 			chFinish := make(chan bool, 1)
 			v := newThread(
 				testProcessor,
 				5*time.Second,
 				2048,
-				func(stream *Stream) {
-					chBack <- true
-				},
+				streamHub,
 				func(thread *rpcThread) {
 					chFinish <- true
 				},
 			)
 			v.PutStream(NewStream())
-			assert(<-chBack).Equal(true)
+			assert(streamHub.WaitStream()).IsNotNil()
 			assert(<-chFinish).Equal(true)
 			assert(v.sequence > 0).Equal(true)
 			assert(v.sequence % 2).Equal(uint64(0))
@@ -271,7 +276,7 @@ func TestRpcThread_Reset(t *testing.T) {
 			testProcessor,
 			5*time.Second,
 			2048,
-			func(stream *Stream) {},
+			NewTestStreamHub(),
 			func(thread *rpcThread) {},
 		)
 
@@ -293,7 +298,10 @@ func TestRpcThread_Reset(t *testing.T) {
 func TestRpcThread_Close(t *testing.T) {
 	t.Run("close twice", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 3*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.Close()).IsTrue()
 		assert(v.Close()).IsFalse()
 	})
@@ -306,7 +314,7 @@ func TestRpcThread_Close(t *testing.T) {
 					rt.thread.processor,
 					3*time.Second,
 					2048,
-					fnEvalBack,
+					NewTestStreamHub(),
 					fnEvalFinish,
 				)
 				s, _ := MakeInternalRequestStream(
@@ -323,7 +331,10 @@ func TestRpcThread_Close(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 3*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.Close()).IsTrue()
 	})
 }
@@ -473,7 +484,10 @@ func TestRpcThread_popFrame(t *testing.T) {
 func TestRpcThread_GetActionNode(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 3*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.GetActionNode()).Equal(nil)
 		v.Close()
 	})
@@ -490,7 +504,10 @@ func TestRpcThread_GetActionNode(t *testing.T) {
 func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 3*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.GetExecActionNodePath()).Equal("")
 		v.Close()
 	})
@@ -507,7 +524,10 @@ func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 func TestRpcThread_GetExecActionDebug(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 3*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.GetExecActionDebug()).Equal("")
 		v.Close()
 	})
@@ -704,21 +724,30 @@ func TestRpcThread_Write(t *testing.T) {
 func TestRpcThread_PutStream(t *testing.T) {
 	t.Run("thread is close", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 5*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		v.Close()
 		assert(v.PutStream(NewStream())).IsFalse()
 	})
 
 	t.Run("stream is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 5*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		assert(v.PutStream(nil)).IsFalse()
 		v.Close()
 	})
 
 	t.Run("thread has internal error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(
+			testProcessor, 5*time.Second, 2048,
+			NewTestStreamHub(), fnEvalFinish,
+		)
 		v.Close()
 		atomic.StorePointer(&v.closeCH, unsafe.Pointer(v))
 		assert(v.PutStream(NewStream())).IsFalse()
@@ -726,7 +755,7 @@ func TestRpcThread_PutStream(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalBack, fnEvalFinish)
+		v := newThread(testProcessor, 5*time.Second, 2048, NewTestStreamHub(), fnEvalFinish)
 		assert(v.PutStream(NewStream())).IsTrue()
 		v.Close()
 	})
@@ -1272,7 +1301,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("onEvalFinish panic", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		streamHub := NewTestStreamReceiver()
+		streamHub := NewTestStreamHub()
 		// make error
 		close(streamHub.streamCH)
 

@@ -73,7 +73,7 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	gateway := NewGateWay(
 		3,
 		GetDefaultConfig(),
-		core.NewTestStreamReceiver(),
+		core.NewTestStreamHub(),
 	)
 	session := newSession(11, gateway)
 	netConn := newTestNetConn()
@@ -88,7 +88,7 @@ func TestInitSession(t *testing.T) {
 	t.Run("stream callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -110,7 +110,7 @@ func TestInitSession(t *testing.T) {
 	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -131,7 +131,7 @@ func TestInitSession(t *testing.T) {
 	t.Run("read session string error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -153,7 +153,7 @@ func TestInitSession(t *testing.T) {
 	t.Run("read stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -175,7 +175,7 @@ func TestInitSession(t *testing.T) {
 
 	t.Run("max sessions limit", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 		gw.config.serverMaxSessions = 1
 		gw.AddSession(&Session{
@@ -231,7 +231,7 @@ func TestInitSession(t *testing.T) {
 
 		for connStr, exist := range testCollection {
 			gw := NewGateWay(
-				132, GetDefaultConfig(), core.NewTestStreamReceiver(),
+				132, GetDefaultConfig(), core.NewTestStreamHub(),
 			)
 			gw.AddSession(&Session{id: id, security: security, gateway: gw})
 			netConn := newTestNetConn()
@@ -288,7 +288,7 @@ func TestNewSession(t *testing.T) {
 		gateway := NewGateWay(
 			43,
 			GetDefaultConfig(),
-			core.NewTestStreamReceiver(),
+			core.NewTestStreamHub(),
 		)
 		v := newSession(3, gateway)
 		assert(v.id).Equal(uint64(3))
@@ -513,7 +513,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		stream.SetKind(core.ControlStreamPing)
 		stream.WriteBool(true)
 
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 		session.OnConnReadStream(streamConn, stream)
 		assert(core.ParseResponseStream(streamHub.GetStream())).
@@ -523,7 +523,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 	t.Run("cbID > 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		session, syncConn, _ := prepareTestSession()
 		session.gateway.streamHub = streamHub
 
@@ -581,7 +581,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 	t.Run("cbID == 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
@@ -598,7 +598,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 		session.OnConnReadStream(streamConn, core.NewStream())
 		assert(core.ParseResponseStream(streamHub.GetStream())).
@@ -611,7 +611,7 @@ func TestSession_OnConnError(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		streamHub := core.NewTestStreamReceiver()
+		streamHub := core.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 		session.OnConnError(streamConn, base.ErrStream)
 		assert(core.ParseResponseStream(streamHub.GetStream())).

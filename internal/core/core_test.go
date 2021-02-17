@@ -11,7 +11,7 @@ import (
 func TestNewTestStreamReceiver(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		assert(v).IsNotNil()
 		assert(cap(v.streamCH)).Equal(10240)
 		assert(len(v.streamCH)).Equal(0)
@@ -21,7 +21,7 @@ func TestNewTestStreamReceiver(t *testing.T) {
 func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		v.OnReceiveStream(NewStream())
 		assert(cap(v.streamCH)).Equal(10240)
 		assert(len(v.streamCH)).Equal(1)
@@ -31,13 +31,13 @@ func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
 func TestTestStreamReceiver_GetStream(t *testing.T) {
 	t.Run("get nil stream", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		assert(v.GetStream()).IsNil()
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		v.OnReceiveStream(NewStream())
 		assert(v.GetStream()).IsNotNil()
 	})
@@ -46,7 +46,7 @@ func TestTestStreamReceiver_GetStream(t *testing.T) {
 func TestTestStreamReceiver_WaitStream(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		v.streamCH <- NewStream()
 		assert(v.WaitStream()).IsNotNil()
 	})
@@ -55,7 +55,7 @@ func TestTestStreamReceiver_WaitStream(t *testing.T) {
 func TestTestStreamReceiver_TotalStreams(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamReceiver()
+		v := NewTestStreamHub()
 		assert(v.TotalStreams()).Equal(0)
 		v.streamCH <- NewStream()
 		assert(v.TotalStreams()).Equal(1)
@@ -443,7 +443,7 @@ func TestParseResponseStream(t *testing.T) {
 }
 
 type testProcessorHelper struct {
-	streamHub *TestStreamReceiver
+	streamHub *TestStreamHub
 	processor *Processor
 }
 
@@ -456,7 +456,7 @@ func newTestProcessorHelper(
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 ) *testProcessorHelper {
-	streamHub := NewTestStreamReceiver()
+	streamHub := NewTestStreamHub()
 	processor := NewProcessor(
 		numOfThreads,
 		maxNodeDepth,

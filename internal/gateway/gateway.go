@@ -23,7 +23,7 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	streamHub      core.IStreamReceiver
+	streamHub      core.IStreamHub
 	closeCH        chan bool
 	config         *Config
 	adapters       []*adapter.Adapter
@@ -35,7 +35,7 @@ type GateWay struct {
 func NewGateWay(
 	id uint32,
 	config *Config,
-	streamHub core.IStreamReceiver,
+	streamHub core.IStreamHub,
 ) *GateWay {
 	if streamHub == nil {
 		panic("streamHub is nil")

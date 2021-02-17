@@ -39,7 +39,7 @@ type Server struct {
 	actionCache      core.ActionCache
 	closeTimeout     time.Duration
 	mountServices    []*core.ServiceMeta
-	logHub           core.IStreamReceiver
+	logHub           core.IStreamHub
 	sync.Mutex
 }
 
@@ -149,7 +149,7 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 }
 
 // SetLogHub ...
-func (p *Server) SetLogHub(logHub core.IStreamReceiver) *Server {
+func (p *Server) SetLogHub(logHub core.IStreamHub) *Server {
 	p.Lock()
 	defer p.Unlock()
 
@@ -205,7 +205,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		p.mountServices,
-		core.NewTestStreamReceiver(),
+		core.NewTestStreamHub(),
 	)
 	defer processor.Close()
 

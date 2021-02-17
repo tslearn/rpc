@@ -35,7 +35,7 @@ func testWithRPCBenchmark(
 				fileLine: "",
 				data:     serviceData,
 			}},
-			NewTestStreamReceiver(),
+			NewTestStreamHub(),
 		); processor != nil {
 			sendBuffer := stream.GetBuffer()
 			runtime.GC()

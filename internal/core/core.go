@@ -8,30 +8,30 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-// IStreamReceiver ...
-type IStreamReceiver interface {
+// IStreamHub ...
+type IStreamHub interface {
 	OnReceiveStream(stream *Stream)
 }
 
-// TestStreamReceiver ...
-type TestStreamReceiver struct {
+// TestStreamHub ...
+type TestStreamHub struct {
 	streamCH chan *Stream
 }
 
-// NewTestStreamReceiver ...
-func NewTestStreamReceiver() *TestStreamReceiver {
-	return &TestStreamReceiver{
+// NewTestStreamHub ...
+func NewTestStreamHub() *TestStreamHub {
+	return &TestStreamHub{
 		streamCH: make(chan *Stream, 10240),
 	}
 }
 
 // OnReceiveStream ...
-func (p *TestStreamReceiver) OnReceiveStream(stream *Stream) {
+func (p *TestStreamHub) OnReceiveStream(stream *Stream) {
 	p.streamCH <- stream
 }
 
 // GetStream ...
-func (p *TestStreamReceiver) GetStream() *Stream {
+func (p *TestStreamHub) GetStream() *Stream {
 	select {
 	case stream := <-p.streamCH:
 		return stream
@@ -41,12 +41,12 @@ func (p *TestStreamReceiver) GetStream() *Stream {
 }
 
 // WaitStream ...
-func (p *TestStreamReceiver) WaitStream() *Stream {
+func (p *TestStreamHub) WaitStream() *Stream {
 	return <-p.streamCH
 }
 
 // TotalStreams ...
-func (p *TestStreamReceiver) TotalStreams() int {
+func (p *TestStreamHub) TotalStreams() int {
 	return len(p.streamCH)
 }
 

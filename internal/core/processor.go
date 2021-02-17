@@ -75,7 +75,7 @@ type Processor struct {
 	readThreadPos     uint64
 	writeThreadPos    uint64
 	panicSubscription *base.PanicSubscription
-	streamHub         IStreamReceiver
+	streamHub         IStreamHub
 	closeCH           chan string
 	sync.Mutex
 }
@@ -89,7 +89,7 @@ func NewProcessor(
 	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
-	streamHub IStreamReceiver,
+	streamHub IStreamHub,
 ) *Processor {
 	if streamHub == nil {
 		panic("streamHub is nil")
@@ -139,7 +139,7 @@ func NewProcessor(
 			ret,
 			closeTimeout,
 			threadBufferSize,
-			emptyEvalBack,
+			streamHub,
 			emptyEvalFinish,
 		)
 
@@ -183,9 +183,7 @@ func NewProcessor(
 				ret,
 				closeTimeout,
 				threadBufferSize,
-				func(stream *Stream) {
-					streamHub.OnReceiveStream(stream)
-				},
+				streamHub,
 				func(thread *rpcThread) {
 					defer func() {
 						_ = recover()
@@ -338,7 +336,7 @@ func (p *Processor) invokeSystemAction(name string, path string) bool {
 		defer func() {
 			stream.Release()
 		}()
-		p.systemThread.Eval(stream, emptyEvalBack)
+		p.systemThread.Eval(stream, p.streamHub)
 		return true
 	}
 

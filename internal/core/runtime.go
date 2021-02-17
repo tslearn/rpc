@@ -5,6 +5,12 @@ import (
 	"math"
 )
 
+type emptyStreamHub struct{}
+
+func (p *emptyStreamHub) OnReceiveStream(_ *Stream) {}
+
+var evalStreamHub = &emptyStreamHub{}
+
 // Runtime ...
 type Runtime struct {
 	id     uint64
@@ -70,7 +76,7 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 
 		// switch thread frame
 		thread.pushFrame()
-		thread.Eval(stream, func(stream *Stream) {})
+		thread.Eval(stream, evalStreamHub)
 		thread.popFrame()
 
 		// return
