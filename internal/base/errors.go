@@ -108,58 +108,65 @@ var (
 		"Runtime.Reply has been called before",
 	)
 
+	// ErrRuntimePostEndpoint ...
+	ErrRuntimePostEndpoint = DefineDevelopError(
+		generalErrorSeg|16,
+		ErrorLevelFatal,
+		"Runtime.Post endpoint parse error",
+	)
+
 	// ErrRuntimeExternalReturn ...
 	ErrRuntimeExternalReturn = DefineDevelopError(
-		generalErrorSeg|16,
+		generalErrorSeg|17,
 		ErrorLevelError,
 		"action must be return through Runtime.OK or Runtime.Error",
 	)
 
 	// ErrRTArrayIndexOverflow ...
 	ErrRTArrayIndexOverflow = DefineDevelopError(
-		generalErrorSeg|17,
+		generalErrorSeg|18,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrRTMapNameNotFound ...
 	ErrRTMapNameNotFound = DefineDevelopError(
-		generalErrorSeg|18,
+		generalErrorSeg|19,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrNumOfThreadsIsWrong ... *
 	ErrNumOfThreadsIsWrong = DefineConfigError(
-		generalErrorSeg|19,
+		generalErrorSeg|20,
 		ErrorLevelFatal,
 		"numOfThreads is wrong",
 	)
 
 	// ErrThreadBufferSizeIsWrong ... *
 	ErrThreadBufferSizeIsWrong = DefineConfigError(
-		generalErrorSeg|20,
+		generalErrorSeg|21,
 		ErrorLevelFatal,
 		"threadBufferSize is wrong",
 	)
 
 	// ErrMaxNodeDepthIsWrong ... *
 	ErrMaxNodeDepthIsWrong = DefineConfigError(
-		generalErrorSeg|21,
+		generalErrorSeg|22,
 		ErrorLevelFatal,
 		"maxNodeDepth is wrong",
 	)
 
 	// ErrCacheMkdirAll ... *
 	ErrCacheMkdirAll = DefineConfigError(
-		generalErrorSeg|22,
+		generalErrorSeg|23,
 		ErrorLevelFatal,
 		"create directory error",
 	)
 
 	// ErrCacheWriteFile ... *
 	ErrCacheWriteFile = DefineConfigError(
-		generalErrorSeg|23,
+		generalErrorSeg|24,
 		ErrorLevelFatal,
 		"write to file error",
 	)

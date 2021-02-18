@@ -5,12 +5,6 @@ import (
 	"math"
 )
 
-type emptyStreamHub struct{}
-
-func (p *emptyStreamHub) OnReceiveStream(_ *Stream) {}
-
-var evalStreamHub = &emptyStreamHub{}
-
 // Runtime ...
 type Runtime struct {
 	id     uint64
@@ -47,9 +41,43 @@ func (p Runtime) Reply(value interface{}) Return {
 	return thread.Write(value, 1, true)
 }
 
-//func (p Runtime) Post(gsLink string, args ...interface{}) {
-//
-//}
+func (p Runtime) Post(
+	endpoint string,
+	message string,
+	args ...interface{},
+) error {
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+
+		gatewayID, sessionID, ok := base.DecryptSessionEndpoint(endpoint)
+		if !ok {
+			return base.ErrRuntimePostEndpoint
+		}
+
+		stream := NewStream()
+		stream.SetKind(DataStreamBoardCast)
+		stream.SetGatewayID(gatewayID)
+		stream.SetSessionID(sessionID)
+		stream.WriteString(thread.GetExecActionNodePath())
+		stream.WriteString(message)
+		for i := 0; i < len(args); i++ {
+			if reason := stream.Write(args[i]); reason != StreamWriteOK {
+				stream.Release()
+				return base.ErrUnsupportedValue.AddDebug(base.ConcatString(
+					base.ConvertOrdinalToString(uint(i)+2),
+					" argument: ",
+					reason,
+				))
+			}
+		}
+
+		thread.processor.streamHub.OnReceiveStream(stream)
+		return nil
+	}
+
+	return base.ErrRuntimeIllegalInCurrentGoroutine.
+		AddDebug(base.GetFileLine(1))
+}
 
 // Call ...
 func (p Runtime) Call(target string, args ...interface{}) RTValue {
@@ -74,10 +102,12 @@ func (p Runtime) Call(target string, args ...interface{}) RTValue {
 		}
 		defer stream.Release()
 
-		// switch thread frame
-		thread.pushFrame()
-		thread.Eval(stream, evalStreamHub)
-		thread.popFrame()
+		// switch thread frame and eval
+		func() {
+			thread.pushFrame()
+			defer thread.popFrame()
+			thread.Eval(stream, false)
+		}()
 
 		// return
 		ret := p.parseResponseStream(stream)

@@ -139,7 +139,6 @@ func NewProcessor(
 			ret,
 			closeTimeout,
 			threadBufferSize,
-			streamHub,
 			emptyEvalFinish,
 		)
 
@@ -183,7 +182,6 @@ func NewProcessor(
 				ret,
 				closeTimeout,
 				threadBufferSize,
-				streamHub,
 				func(thread *rpcThread) {
 					defer func() {
 						_ = recover()
@@ -336,7 +334,7 @@ func (p *Processor) invokeSystemAction(name string, path string) bool {
 		defer func() {
 			stream.Release()
 		}()
-		p.systemThread.Eval(stream, p.streamHub)
+		p.systemThread.Eval(stream, false)
 		return true
 	}
 

@@ -18,7 +18,6 @@ var (
 		testProcessor,
 		5*time.Second,
 		2048,
-		NewTestStreamHub(),
 		fnEvalFinish,
 	)
 )
@@ -174,29 +173,20 @@ func TestNewThread(t *testing.T) {
 	t.Run("processor is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(newThread(
-			nil, 5*time.Second, 2048, NewTestStreamHub(), nil,
+			nil, 5*time.Second, 2048, nil,
 		)).IsNil()
-	})
-
-	t.Run("onEvalBack is nil", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		assert(newThread(testProcessor, 5*time.Second, 2048, nil, fnEvalFinish)).
-			IsNil()
 	})
 
 	t.Run("onEvalFinish is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(newThread(
-			testProcessor, 5*time.Second, 2048, NewTestStreamHub(), nil,
-		)).IsNil()
+		assert(newThread(testProcessor, 5*time.Second, 2048, nil)).IsNil()
 	})
 
 	t.Run("test ok (timeout 1s)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 32; i++ {
 			v := newThread(
-				testProcessor, 100*time.Millisecond, 2048,
-				NewTestStreamHub(), fnEvalFinish,
+				testProcessor, 100*time.Millisecond, 2048, fnEvalFinish,
 			)
 			assert(v.processor).Equal(testProcessor)
 			assert(v.inputCH).IsNotNil()
@@ -218,13 +208,7 @@ func TestNewThread(t *testing.T) {
 	t.Run("test ok (timeout 5s)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 32; i++ {
-			v := newThread(
-				testProcessor,
-				5*time.Second,
-				2048,
-				NewTestStreamHub(),
-				fnEvalFinish,
-			)
+			v := newThread(testProcessor, 5*time.Second, 2048, fnEvalFinish)
 			assert(v.processor).Equal(testProcessor)
 			assert(v.inputCH).IsNotNil()
 			assert(v.closeCH).IsNotNil()
@@ -247,12 +231,12 @@ func TestNewThread(t *testing.T) {
 
 		for i := 0; i < 100; i++ {
 			streamHub := NewTestStreamHub()
+			testProcessor.streamHub = streamHub
 			chFinish := make(chan bool, 1)
 			v := newThread(
 				testProcessor,
 				5*time.Second,
 				2048,
-				streamHub,
 				func(thread *rpcThread) {
 					chFinish <- true
 				},
@@ -276,7 +260,6 @@ func TestRpcThread_Reset(t *testing.T) {
 			testProcessor,
 			5*time.Second,
 			2048,
-			NewTestStreamHub(),
 			func(thread *rpcThread) {},
 		)
 
@@ -299,8 +282,7 @@ func TestRpcThread_Close(t *testing.T) {
 	t.Run("close twice", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(
-			testProcessor, 3*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
+			testProcessor, 3*time.Second, 2048, fnEvalFinish,
 		)
 		assert(v.Close()).IsTrue()
 		assert(v.Close()).IsFalse()
@@ -311,11 +293,7 @@ func TestRpcThread_Close(t *testing.T) {
 		assert(testReply(true, nil, nil, func(rt Runtime, testThread bool) Return {
 			if testThread {
 				v := newThread(
-					rt.thread.processor,
-					3*time.Second,
-					2048,
-					NewTestStreamHub(),
-					fnEvalFinish,
+					rt.thread.processor, 3*time.Second, 2048, fnEvalFinish,
 				)
 				s, _ := MakeInternalRequestStream(
 					true, 0, "#.test:Eval", "", false,
@@ -331,10 +309,7 @@ func TestRpcThread_Close(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 3*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalFinish)
 		assert(v.Close()).IsTrue()
 	})
 }
@@ -484,10 +459,7 @@ func TestRpcThread_popFrame(t *testing.T) {
 func TestRpcThread_GetActionNode(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 3*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalFinish)
 		assert(v.GetActionNode()).Equal(nil)
 		v.Close()
 	})
@@ -504,10 +476,7 @@ func TestRpcThread_GetActionNode(t *testing.T) {
 func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 3*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalFinish)
 		assert(v.GetExecActionNodePath()).Equal("")
 		v.Close()
 	})
@@ -524,10 +493,7 @@ func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 func TestRpcThread_GetExecActionDebug(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 3*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalFinish)
 		assert(v.GetExecActionDebug()).Equal("")
 		v.Close()
 	})
@@ -724,10 +690,7 @@ func TestRpcThread_Write(t *testing.T) {
 func TestRpcThread_PutStream(t *testing.T) {
 	t.Run("thread is close", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 5*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalFinish)
 		v.Close()
 		assert(v.PutStream(NewStream())).IsFalse()
 	})
@@ -735,8 +698,7 @@ func TestRpcThread_PutStream(t *testing.T) {
 	t.Run("stream is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newThread(
-			testProcessor, 5*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
+			testProcessor, 5*time.Second, 2048, fnEvalFinish,
 		)
 		assert(v.PutStream(nil)).IsFalse()
 		v.Close()
@@ -744,10 +706,7 @@ func TestRpcThread_PutStream(t *testing.T) {
 
 	t.Run("thread has internal error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(
-			testProcessor, 5*time.Second, 2048,
-			NewTestStreamHub(), fnEvalFinish,
-		)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalFinish)
 		v.Close()
 		atomic.StorePointer(&v.closeCH, unsafe.Pointer(v))
 		assert(v.PutStream(NewStream())).IsFalse()
@@ -755,7 +714,7 @@ func TestRpcThread_PutStream(t *testing.T) {
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newThread(testProcessor, 5*time.Second, 2048, NewTestStreamHub(), fnEvalFinish)
+		v := newThread(testProcessor, 5*time.Second, 2048, fnEvalFinish)
 		assert(v.PutStream(NewStream())).IsTrue()
 		v.Close()
 	})

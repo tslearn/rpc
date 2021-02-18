@@ -155,10 +155,9 @@ func newThread(
 	processor *Processor,
 	closeTimeout time.Duration,
 	bufferSize uint32,
-	streamHub IStreamHub,
 	onEvalFinish func(*rpcThread),
 ) *rpcThread {
-	if processor == nil || streamHub == nil || onEvalFinish == nil {
+	if processor == nil || onEvalFinish == nil {
 		return nil
 	}
 
@@ -191,7 +190,7 @@ func newThread(
 		retCH <- thread
 
 		for stream := <-inputCH; stream != nil; stream = <-inputCH {
-			thread.Eval(stream, streamHub)
+			thread.Eval(stream, true)
 			onEvalFinish(thread)
 			thread.Reset()
 		}
@@ -360,10 +359,7 @@ func (p *rpcThread) PutStream(stream *Stream) (ret bool) {
 	return false
 }
 
-func (p *rpcThread) Eval(
-	inStream *Stream,
-	streamHub IStreamHub,
-) Return {
+func (p *rpcThread) Eval(inStream *Stream, needCallback bool) Return {
 	timeStart := base.TimeNow()
 	frame := p.top
 	frame.stream = inStream
@@ -419,7 +415,10 @@ func (p *rpcThread) Eval(
 
 		// callback
 		inStream.SetReadPosToBodyStart()
-		streamHub.OnReceiveStream(inStream)
+
+		if needCallback {
+			p.processor.streamHub.OnReceiveStream(inStream)
+		}
 	}()
 
 	// set exec action node

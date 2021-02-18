@@ -142,6 +142,8 @@ func (p *Session) OutStream(stream *core.Stream) {
 			} else {
 				stream.Release()
 			}
+		case core.DataStreamBoardCast:
+			p.conn.WriteStreamAndRelease(stream)
 		default:
 			stream.Release()
 		}
