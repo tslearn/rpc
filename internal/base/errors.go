@@ -182,13 +182,6 @@ var (
 		"",
 	)
 
-	// ErrProcessorOnReturnStreamIsNil ... *
-	ErrProcessorOnReturnStreamIsNil = DefineKernelError(
-		coreErrorSeg|3,
-		ErrorLevelFatal,
-		"onReturnStream is nil",
-	)
-
 	// ErrProcessorMaxCallDepthIsWrong ... *
 	ErrProcessorMaxCallDepthIsWrong = DefineKernelError(
 		coreErrorSeg|4,
