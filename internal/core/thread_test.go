@@ -490,6 +490,23 @@ func TestRpcThread_GetExecActionNodePath(t *testing.T) {
 	})
 }
 
+func TestRpcThread_GetExecServicePath(t *testing.T) {
+	t.Run("node is nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newThread(testProcessor, 3*time.Second, 2048, fnEvalFinish)
+		assert(v.GetExecServicePath()).Equal("")
+		v.Close()
+	})
+
+	t.Run("node is not nil", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		assert(testReply(true, nil, nil, func(rt Runtime) Return {
+			assert(rt.thread.GetExecServicePath()).Equal("#.test")
+			return rt.Reply(true)
+		})).Equal(true, nil)
+	})
+}
+
 func TestRpcThread_GetExecActionDebug(t *testing.T) {
 	t.Run("node is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)

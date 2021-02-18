@@ -41,11 +41,8 @@ func (p Runtime) Reply(value interface{}) Return {
 	return thread.Write(value, 1, true)
 }
 
-func (p Runtime) Post(
-	endpoint string,
-	message string,
-	args ...interface{},
-) error {
+// Post ...
+func (p Runtime) Post(endpoint string, message string, value Any) error {
 	if thread := p.lock(); thread != nil {
 		defer p.unlock()
 
@@ -58,17 +55,12 @@ func (p Runtime) Post(
 		stream.SetKind(DataStreamBoardCast)
 		stream.SetGatewayID(gatewayID)
 		stream.SetSessionID(sessionID)
-		stream.WriteString(thread.GetExecActionNodePath())
-		stream.WriteString(message)
-		for i := 0; i < len(args); i++ {
-			if reason := stream.Write(args[i]); reason != StreamWriteOK {
-				stream.Release()
-				return base.ErrUnsupportedValue.AddDebug(base.ConcatString(
-					base.ConvertOrdinalToString(uint(i)+2),
-					" argument: ",
-					reason,
-				))
-			}
+		stream.WriteString(thread.GetExecServicePath() + "%" + message)
+		if reason := stream.Write(value); reason != StreamWriteOK {
+			stream.Release()
+			return base.ErrUnsupportedValue.AddDebug(base.ConcatString(
+				reason,
+			))
 		}
 
 		thread.processor.streamHub.OnReceiveStream(stream)

@@ -139,6 +139,62 @@ func TestRuntime_Reply(t *testing.T) {
 	})
 }
 
+func TestRuntime_Post(t *testing.T) {
+	t.Run("thread lock error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		ret, source := Runtime{}.Post("", "Msg", "HI"), base.GetFileLine(0)
+		assert(ret).
+			Equal(base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(source))
+	})
+
+	t.Run("Post EndPoint error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		var e error
+		testWithProcessorAndRuntime(
+			func(processor *Processor, rt Runtime) Return {
+				e = rt.Post("error endpoint", "Msg", "HI")
+				return rt.Reply("ok")
+			},
+			nil,
+		)
+		assert(e).Equal(base.ErrRuntimePostEndpoint)
+	})
+
+	t.Run("Post value not supported", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		var e error
+		testWithProcessorAndRuntime(
+			func(processor *Processor, rt Runtime) Return {
+				e = rt.Post(rt.GetPostEndPoint(), "Msg", make(chan bool))
+				return rt.Reply("ok")
+			},
+			nil,
+		)
+		assert(e).Equal(base.ErrUnsupportedValue.AddDebug(base.ConcatString(
+			"value type(chan bool) is not supported",
+		)))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		var e error
+		stream := testWithProcessorAndRuntime(
+			func(processor *Processor, rt Runtime) Return {
+				e = rt.Post(rt.GetPostEndPoint(), "Msg", "HI")
+				return emptyReturn
+			},
+			nil,
+		)
+		assert(e).IsNil()
+		assert(stream.GetKind()).Equal(uint8(DataStreamBoardCast))
+		assert(stream.GetGatewayID()).Equal(uint32(1234))
+		assert(stream.GetSessionID()).Equal(uint64(5678))
+		assert(stream.Read()).Equal("#.test%Msg", nil)
+		assert(stream.Read()).Equal("HI", nil)
+		assert(stream.IsReadFinish()).IsTrue()
+	})
+}
+
 func TestRuntime_Call(t *testing.T) {
 	t.Run("thread lock error", func(t *testing.T) {
 		assert := base.NewAssert(t)

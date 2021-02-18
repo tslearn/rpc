@@ -19,18 +19,36 @@ type Config struct {
 	heartbeatTimeout time.Duration
 }
 
+// Subscription ...
+type Subscription struct {
+	id        int64
+	client    *Client
+	onMessage func(value core.Any)
+}
+
+// Close ...
+func (p *Subscription) Close() {
+	if p.client != nil {
+		p.client.unsubscribe(p.id)
+		p.id = 0
+		p.onMessage = nil
+		p.client = nil
+	}
+}
+
 // Client ...
 type Client struct {
-	config         *Config
-	sessionString  string
-	adapter        *adapter.Adapter
-	conn           *adapter.StreamConn
-	preSendHead    *SendItem
-	preSendTail    *SendItem
-	channels       []Channel
-	lastPingTimeNS int64
-	orcManager     *base.ORCManager
-	onError        func(err *base.Error)
+	config          *Config
+	sessionString   string
+	adapter         *adapter.Adapter
+	conn            *adapter.StreamConn
+	preSendHead     *SendItem
+	preSendTail     *SendItem
+	channels        []Channel
+	lastPingTimeNS  int64
+	orcManager      *base.ORCManager
+	onError         func(err *base.Error)
+	subscriptionMap map[string][]*Subscription
 	sync.Mutex
 }
 
@@ -43,15 +61,16 @@ func newClient(
 	onError func(err *base.Error),
 ) *Client {
 	ret := &Client{
-		config:        &Config{},
-		sessionString: "",
-		adapter:       nil,
-		conn:          nil,
-		preSendHead:   nil,
-		preSendTail:   nil,
-		channels:      nil,
-		orcManager:    base.NewORCManager(),
-		onError:       onError,
+		config:          &Config{},
+		sessionString:   "",
+		adapter:         nil,
+		conn:            nil,
+		preSendHead:     nil,
+		preSendTail:     nil,
+		channels:        nil,
+		orcManager:      base.NewORCManager(),
+		subscriptionMap: make(map[string][]*Subscription),
+		onError:         onError,
 	}
 
 	// init adapter
@@ -170,8 +189,58 @@ func (p *Client) tryToDeliverPreSendMessages() {
 	}
 }
 
-// SendMessage ...
-func (p *Client) SendMessage(
+// Subscribe ...
+func (p *Client) Subscribe(
+	nodePath string,
+	message string,
+	fn func(value core.Any),
+) *Subscription {
+	p.Lock()
+	defer p.Unlock()
+
+	ret := &Subscription{
+		id:        base.GetSeed(),
+		client:    p,
+		onMessage: fn,
+	}
+	path := nodePath + "%" + message
+	list, ok := p.subscriptionMap[path]
+	if !ok {
+		list = make([]*Subscription, 0)
+	}
+	list = append(list, ret)
+
+	p.subscriptionMap[path] = list
+	return ret
+}
+
+func (p *Client) unsubscribe(id int64) {
+	p.Lock()
+	defer p.Unlock()
+
+	for key, list := range p.subscriptionMap {
+		pos := -1
+		for i := 0; i < len(list); i++ {
+			if list[i].id == id {
+				pos = i
+			}
+		}
+
+		// remove if id exists
+		if pos >= 0 {
+			list = append(list[:pos], list[pos+1:]...)
+		}
+
+		if len(list) > 0 {
+			p.subscriptionMap[key] = list
+		} else {
+			delete(p.subscriptionMap, key)
+		}
+	}
+}
+
+// Send ...
+func (p *Client) Send(
 	timeout time.Duration,
 	target string,
 	args ...interface{},
@@ -301,11 +370,6 @@ func (p *Client) OnConnReadStream(
 		stream.Release()
 	} else {
 		switch stream.GetKind() {
-		case core.ControlStreamPong:
-			if !stream.IsReadFinish() {
-				p.OnConnError(streamConn, base.ErrStream)
-			}
-			stream.Release()
 		case core.DataStreamResponseOK:
 			fallthrough
 		case core.DataStreamResponseError:
@@ -316,6 +380,26 @@ func (p *Client) OnConnReadStream(
 			} else {
 				stream.Release()
 			}
+		case core.DataStreamBoardCast:
+			if actionPath, err := stream.ReadString(); err != nil {
+				p.OnConnError(streamConn, err)
+			} else if value, err := stream.Read(); err != nil {
+				p.OnConnError(streamConn, err)
+			} else if !stream.IsReadFinish() {
+				p.OnConnError(streamConn, base.ErrStream)
+			} else {
+				if list, ok := p.subscriptionMap[actionPath]; ok {
+					for i := 0; i < len(list); i++ {
+						list[i].onMessage(value)
+					}
+				}
+			}
+			stream.Release()
+		case core.ControlStreamPong:
+			if !stream.IsReadFinish() {
+				p.OnConnError(streamConn, base.ErrStream)
+			}
+			stream.Release()
 		default:
 			p.OnConnError(streamConn, base.ErrStream)
 			stream.Release()

@@ -516,6 +516,8 @@ func testWithProcessorAndRuntime(
 	defer helper.Close()
 
 	stream, _ := MakeInternalRequestStream(true, 0, "#.test:Eval", "")
+	stream.SetGatewayID(1234)
+	stream.SetSessionID(5678)
 	helper.GetProcessor().PutStream(stream)
 	return <-helper.streamHub.streamCH
 }

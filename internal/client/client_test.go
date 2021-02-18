@@ -87,6 +87,27 @@ func getTestServer() *server.Server {
 	return rpcServer
 }
 
+func TestSubscription_Close(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		client := &Client{
+			subscriptionMap: make(map[string][]*Subscription),
+		}
+		sub := &Subscription{
+			id:        13,
+			client:    client,
+			onMessage: func(value core.Any) {},
+		}
+		client.subscriptionMap["#.test%Message"] = []*Subscription{sub}
+
+		sub.Close()
+		assert(sub.id).Equal(int64(0))
+		assert(sub.client).Equal(nil)
+		assert(sub.onMessage).Equal(nil)
+		assert(client.subscriptionMap).Equal(map[string][]*Subscription{})
+	})
+}
+
 func TestNewClient(t *testing.T) {
 	type TestAdapter struct {
 		isDebug    bool
@@ -165,7 +186,7 @@ func TestNewClient(t *testing.T) {
 		assert(v.onError).IsNotNil()
 
 		// check tryLoop
-		_, err := v.SendMessage(
+		_, err := v.Send(
 			500*time.Millisecond,
 			"#.user:Sleep",
 			int64(2*time.Second),
@@ -459,14 +480,62 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 	})
 }
 
-func TestClient_SendMessage(t *testing.T) {
+func TestClient_Subscribe(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := newClient(
+			"tcp", "127.0.0.1:8080", nil, 1200, 1200, func(err *base.Error) {},
+		)
+		defer v.Close()
+
+		sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
+		sub2 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
+		sub3 := v.Subscribe("#.test", "Message02", func(value core.Any) {})
+
+		assert(sub1, sub2, sub3).IsNotNil()
+		assert(v.subscriptionMap).Equal(map[string][]*Subscription{
+			"#.test%Message01": {sub1, sub2},
+			"#.test%Message02": {sub3},
+		})
+	})
+}
+
+func TestClient_unsubscribe(t *testing.T) {
+	assert := base.NewAssert(t)
+	v := newClient(
+		"tcp", "127.0.0.1:8080", nil, 1200, 1200, func(err *base.Error) {},
+	)
+	defer v.Close()
+
+	sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
+	sub2 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
+	sub3 := v.Subscribe("#.test", "Message02", func(value core.Any) {})
+
+	assert(v.subscriptionMap).Equal(map[string][]*Subscription{
+		"#.test%Message01": {sub1, sub2},
+		"#.test%Message02": {sub3},
+	})
+	v.unsubscribe(sub1.id)
+	assert(v.subscriptionMap).Equal(map[string][]*Subscription{
+		"#.test%Message01": {sub2},
+		"#.test%Message02": {sub3},
+	})
+	v.unsubscribe(sub2.id)
+	assert(v.subscriptionMap).Equal(map[string][]*Subscription{
+		"#.test%Message02": {sub3},
+	})
+	v.unsubscribe(sub3.id)
+	assert(v.subscriptionMap).Equal(map[string][]*Subscription{})
+}
+
+func TestClient_Send(t *testing.T) {
 	t.Run("args error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Client{
 			channels: make([]Channel, 0),
 		}
 
-		assert(v.SendMessage(time.Second, "#.user:SayHello", make(chan bool))).
+		assert(v.Send(time.Second, "#.user:SayHello", make(chan bool))).
 			Equal(nil, base.ErrUnsupportedValue.AddDebug(
 				"value type(chan bool) is not supported",
 			))
@@ -484,7 +553,7 @@ func TestClient_SendMessage(t *testing.T) {
 		waitCH := make(chan []interface{})
 		for i := 0; i < 300; i++ {
 			go func() {
-				v, err := rpcClient.SendMessage(
+				v, err := rpcClient.Send(
 					6*time.Second,
 					"#.user:SayHello",
 					"kitty",
@@ -534,7 +603,10 @@ func TestClient_OnConnOpen(t *testing.T) {
 
 func TestClient_OnConnReadStream(t *testing.T) {
 	fnTestClient := func() (*Client, *adapter.StreamConn, *testNetConn) {
-		v := &Client{config: &Config{}}
+		v := &Client{
+			config:          &Config{},
+			subscriptionMap: map[string][]*Subscription{},
+		}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
 		streamConn := adapter.NewStreamConn(false, syncConn, v)
@@ -777,18 +849,6 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.lastPingTimeNS > 0).IsTrue()
 	})
 
-	t.Run("p.conn != nil, ControlStreamPong ok", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		err := (*base.Error)(nil)
-		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamPong)
-		v, streamConn, _ := fnTestClient()
-		v.conn = streamConn
-		v.onError = func(e *base.Error) { err = e }
-		v.OnConnReadStream(streamConn, stream)
-		assert(err).IsNil()
-	})
-
 	t.Run("p.conn != nil, ControlStreamPong error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		err := (*base.Error)(nil)
@@ -869,6 +929,74 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		v.conn = streamConn
 		v.OnConnReadStream(streamConn, stream)
 		assert(err).Equal(base.ErrStream)
+	})
+
+	t.Run("DataStreamBoardCast Read path error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamBoardCast)
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(base.ErrStream)
+	})
+
+	t.Run("DataStreamBoardCast Read value error", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamBoardCast)
+		stream.WriteString("#.test%Message")
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(base.ErrStream)
+	})
+
+	t.Run("DataStreamBoardCast Read is not finish", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamBoardCast)
+		stream.WriteString("#.test%Message")
+		stream.WriteBool(true)
+		stream.WriteString("error")
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).Equal(base.ErrStream)
+	})
+
+	t.Run("DataStreamBoardCast ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		stream.SetKind(core.DataStreamBoardCast)
+		stream.WriteString("#.test%Message")
+		stream.WriteString("Hello")
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		var ret core.Any
+		v.Subscribe("#.test", "Message", func(value core.Any) {
+			ret = value
+		})
+		v.OnConnReadStream(streamConn, stream)
+		assert(ret).Equal("Hello")
+	})
+
+	t.Run("ControlStreamPong ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		err := (*base.Error)(nil)
+		stream := core.NewStream()
+		stream.SetKind(core.ControlStreamPong)
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		v.onError = func(e *base.Error) { err = e }
+		v.OnConnReadStream(streamConn, stream)
+		assert(err).IsNil()
 	})
 }
 

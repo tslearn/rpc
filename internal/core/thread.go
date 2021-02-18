@@ -280,6 +280,13 @@ func (p *rpcThread) GetExecActionNodePath() string {
 	return ""
 }
 
+func (p *rpcThread) GetExecServicePath() string {
+	if node := p.GetActionNode(); node != nil && node.service != nil {
+		return node.service.path
+	}
+	return ""
+}
+
 func (p *rpcThread) GetExecActionDebug() string {
 	if node := p.GetActionNode(); node != nil && node.meta != nil {
 		return base.ConcatString(node.path, " ", node.meta.fileLine)

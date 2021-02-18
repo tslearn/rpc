@@ -472,6 +472,33 @@ func TestSession_OutStream(t *testing.T) {
 
 		assert(netConn.writeBuffer).Equal(exceptBuffer)
 	})
+
+	t.Run("stream is DataStreamBoardCast", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		session, syncConn, netConn := prepareTestSession()
+		syncConn.OnOpen()
+		// ignore the init stream
+		netConn.writeBuffer = make([]byte, 0)
+
+		exceptBuffer := make([]byte, 0)
+		for i := 1; i <= len(session.channels); i++ {
+			(&session.channels[i%len(session.channels)]).In(uint64(i))
+		}
+
+		for i := 1; i <= len(session.channels); i++ {
+			stream := core.NewStream()
+			stream.SetGatewayID(1234)
+			stream.SetSessionID(5678)
+			stream.SetKind(core.DataStreamBoardCast)
+			stream.WriteString("#.test%Msg")
+			stream.WriteString("HI")
+			stream.BuildStreamCheck()
+			exceptBuffer = append(exceptBuffer, stream.GetBuffer()...)
+			session.OutStream(stream)
+		}
+
+		assert(netConn.writeBuffer).Equal(exceptBuffer)
+	})
 }
 
 func TestSession_OnConnOpen(t *testing.T) {
