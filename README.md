@@ -35,7 +35,7 @@ $ go fmt ./...
 
 ### calculate lines of code
 ```bash
-$ git ls-files | xargs wc -l
+$ git ls-files -- '*.go' ':!:*_test.go' | xargs wc -l
 ```
 
 
