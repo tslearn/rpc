@@ -14,23 +14,21 @@ import (
 )
 
 func captureLogOutput(fn func()) string {
-	defer log.SetOutput(os.Stderr)
-	r, w, _ := os.Pipe()
-	log.SetOutput(w)
+	if r, w, e := os.Pipe(); e == nil {
+		defer func() {
+			log.SetOutput(os.Stderr)
+			_ = r.Close()
+		}()
+		log.SetOutput(w)
+		fn()
+		_ = w.Close()
 
-	fn()
-
-	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
+		return buf.String()
+	}
 
-	// back to normal state
-	_ = w.Close()
-	return <-outC
+	return ""
 }
 
 func TestNewLogToScreenErrorStreamHub(t *testing.T) {

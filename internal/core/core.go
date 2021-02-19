@@ -14,7 +14,7 @@ type IStreamHub interface {
 	OnReceiveStream(stream *Stream)
 }
 
-// LogToScreenErrorHub ...
+// LogToScreenErrorStreamHub ...
 type LogToScreenErrorStreamHub struct {
 	prefix string
 }
