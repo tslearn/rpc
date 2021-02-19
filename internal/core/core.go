@@ -2,6 +2,7 @@
 package core
 
 import (
+	"log"
 	"math"
 	"reflect"
 
@@ -11,6 +12,38 @@ import (
 // IStreamHub ...
 type IStreamHub interface {
 	OnReceiveStream(stream *Stream)
+}
+
+// LogToScreenErrorHub ...
+type LogToScreenErrorStreamHub struct {
+	prefix string
+}
+
+// NewLogToScreenErrorStreamHub ...
+func NewLogToScreenErrorStreamHub(prefix string) *LogToScreenErrorStreamHub {
+	return &LogToScreenErrorStreamHub{prefix: prefix}
+}
+
+// OnReceiveStream ...
+func (p *LogToScreenErrorStreamHub) OnReceiveStream(stream *Stream) {
+	if stream != nil {
+		switch stream.GetKind() {
+		case DataStreamResponseError:
+			fallthrough
+		case SystemStreamReportError:
+			if _, err := ParseResponseStream(stream); err != nil {
+				log.Printf(
+					"[%s Error <%d-%d>]: %s",
+					p.prefix,
+					stream.GetGatewayID(),
+					stream.GetSessionID(),
+					err.Error(),
+				)
+			}
+		}
+
+		stream.Release()
+	}
 }
 
 // TestStreamHub ...

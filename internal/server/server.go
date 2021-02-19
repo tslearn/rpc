@@ -3,7 +3,6 @@ package server
 
 import (
 	"crypto/tls"
-	"log"
 	"path"
 	"runtime"
 	"sync"
@@ -57,6 +56,7 @@ func NewServer() *Server {
 		actionCache:      nil,
 		closeTimeout:     defaultCloseTimeout,
 		mountServices:    make([]*core.ServiceMeta, 0),
+		logHub:           core.NewLogToScreenErrorStreamHub("Server"),
 	}
 
 	if ret.numOfThreads > defaultMaxNumOfThreads {
@@ -235,19 +235,7 @@ func (p *Server) OnReceiveStream(stream *core.Stream) {
 			p.gateway.OutStream(stream)
 		default:
 			if stream.GetKind() == core.SystemStreamReportError {
-				if p.logHub != nil {
-					p.logHub.OnReceiveStream(stream)
-				} else {
-					// log to screen
-					if _, err := core.ParseResponseStream(stream); err != nil {
-						log.Printf(
-							"[Server Error (%d)]: %s",
-							stream.GetSessionID(),
-							err.Error(),
-						)
-					}
-					stream.Release()
-				}
+				p.logHub.OnReceiveStream(stream)
 			} else {
 				stream.Release()
 			}
