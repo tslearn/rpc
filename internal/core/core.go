@@ -32,13 +32,19 @@ func (p *LogToScreenErrorStreamHub) OnReceiveStream(stream *Stream) {
 			fallthrough
 		case SystemStreamReportError:
 			if _, err := ParseResponseStream(stream); err != nil {
-				log.Printf(
-					"[%s Error <%d-%d>]: %s",
-					p.prefix,
-					stream.GetGatewayID(),
-					stream.GetSessionID(),
-					err.Error(),
-				)
+				gatewayID := stream.GetGatewayID()
+				sessionID := stream.GetSessionID()
+				if gatewayID > 0 || sessionID > 0 {
+					log.Printf(
+						"[%s Error <%d-%d>]: %s",
+						p.prefix,
+						stream.GetGatewayID(),
+						stream.GetSessionID(),
+						err.Error(),
+					)
+				} else {
+					log.Printf("[%s Error]: %s", p.prefix, err.Error())
+				}
 			}
 		}
 

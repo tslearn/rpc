@@ -47,7 +47,7 @@ type Client struct {
 	channels        []Channel
 	lastPingTimeNS  int64
 	orcManager      *base.ORCManager
-	onError         func(err *base.Error)
+	errorHub        core.IStreamHub
 	subscriptionMap map[string][]*Subscription
 	sync.Mutex
 }
@@ -58,7 +58,6 @@ func newClient(
 	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
-	onError func(err *base.Error),
 ) *Client {
 	ret := &Client{
 		config:          &Config{},
@@ -70,7 +69,7 @@ func newClient(
 		channels:        nil,
 		orcManager:      base.NewORCManager(),
 		subscriptionMap: make(map[string][]*Subscription),
-		onError:         onError,
+		errorHub:        core.NewLogToScreenErrorStreamHub("Client"),
 	}
 
 	// init adapter
@@ -104,6 +103,13 @@ func newClient(
 	}()
 
 	return ret
+}
+
+// SetErrorHub ...
+func (p *Client) SetErrorHub(errorHub core.IStreamHub) {
+	p.Lock()
+	defer p.Unlock()
+	p.errorHub = errorHub
 }
 
 func (p *Client) tryToSendPing(nowNS int64) {
@@ -409,9 +415,10 @@ func (p *Client) OnConnReadStream(
 
 // OnConnError ...
 func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	if p.onError != nil {
-		p.onError(err)
-	}
+	errStream := core.MakeSystemErrorStream(err)
+	errStream.SetSessionID(0)
+	errStream.SetGatewayID(0)
+	p.errorHub.OnReceiveStream(errStream)
 
 	if streamConn != nil {
 		streamConn.Close()

@@ -1,10 +1,6 @@
 package core
 
 import (
-	"bytes"
-	"io"
-	"log"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,45 +9,34 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-func captureLogOutput(fn func()) string {
-	if r, w, e := os.Pipe(); e == nil {
-		defer func() {
-			log.SetOutput(os.Stderr)
-			_ = r.Close()
-		}()
-		log.SetOutput(w)
-		fn()
-		_ = w.Close()
-
-		var buf bytes.Buffer
-		_, _ = io.Copy(&buf, r)
-		return buf.String()
-	}
-
-	return ""
-}
-
 func TestNewLogToScreenErrorStreamHub(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(NewLogToScreenErrorStreamHub("Server")).
 			Equal(&LogToScreenErrorStreamHub{prefix: "Server"})
 	})
-
 }
 
 func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
-	t.Run("test CaptureLogOutput", func(t *testing.T) {
+	t.Run("test ok gatewayID == 0 && sessionID == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
+		v := NewLogToScreenErrorStreamHub("Server")
+		stream := NewStream()
+		stream.SetKind(DataStreamResponseError)
+		stream.SetGatewayID(0)
+		stream.SetSessionID(0)
+		stream.WriteUint64(uint64(base.ErrProcessorIsNotRunning.GetCode()))
+		stream.WriteString(base.ErrProcessorIsNotRunning.GetMessage())
 		assert(strings.HasSuffix(
-			captureLogOutput(func() {
-				log.Print("Hello world")
+			base.RunWithLogOutput(func() {
+				v.OnReceiveStream(stream)
 			}),
-			"Hello world\n",
+			"[Server Error]: KernelFatal[264]: "+
+				"processor is not running\n",
 		)).IsTrue()
 	})
 
-	t.Run("test ok", func(t *testing.T) {
+	t.Run("test ok gatewayID > 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewLogToScreenErrorStreamHub("Server")
 		stream := NewStream()
@@ -61,7 +46,7 @@ func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrProcessorIsNotRunning.GetCode()))
 		stream.WriteString(base.ErrProcessorIsNotRunning.GetMessage())
 		assert(strings.HasSuffix(
-			captureLogOutput(func() {
+			base.RunWithLogOutput(func() {
 				v.OnReceiveStream(stream)
 			}),
 			"[Server Error <1234-5678>]: KernelFatal[264]: "+

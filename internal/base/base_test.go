@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path"
@@ -554,6 +555,18 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 		))
 		assert(DecryptSessionEndpoint(errString)).
 			Equal(uint32(321), uint64(123456), true)
+	})
+}
+
+func TestRunWithLogOutput(t *testing.T) {
+	t.Run("test CaptureLogOutput", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(strings.HasSuffix(
+			RunWithLogOutput(func() {
+				log.Print("Hello world")
+			}),
+			"Hello world\n",
+		)).IsTrue()
 	})
 
 }

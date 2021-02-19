@@ -2,6 +2,7 @@
 package base
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	cryptoRand "crypto/rand"
@@ -11,8 +12,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	mathRand "math/rand"
 	"net"
+	"os"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -376,4 +379,20 @@ func DecryptSessionEndpoint(sessionEndpoint string) (uint32, uint64, bool) {
 	} else {
 		return uint32(gatewayID), sessionID, true
 	}
+}
+
+// RunWithLogOutput ...
+func RunWithLogOutput(fn func()) string {
+	r, w, _ := os.Pipe()
+	defer func() {
+		log.SetOutput(os.Stderr)
+		_ = r.Close()
+	}()
+	log.SetOutput(w)
+	fn()
+	_ = w.Close()
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	return buf.String()
 }
