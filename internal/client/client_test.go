@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/tls"
+	"fmt"
 	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
@@ -73,6 +74,11 @@ func getTestServer() *server.Server {
 		On("Sleep", func(rt rpc.Runtime, timeNS int64) rpc.Return {
 			time.Sleep(time.Duration(timeNS))
 			return rt.Reply(nil)
+		}).
+		On("PostMessage", func(rt rpc.Runtime, timeNS int64) rpc.Return {
+			return rt.Reply(
+				rt.Post(rt.GetPostEndPoint(), "@Post", rpc.Array{true, timeNS}),
+			)
 		})
 
 	rpcServer := server.NewServer().ListenWithDebug("tcp", "0.0.0.0:8765", nil)
@@ -481,7 +487,7 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 }
 
 func TestClient_Subscribe(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
+	t.Run("test basic", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := newClient(
 			"tcp", "127.0.0.1:8080", nil, 1200, 1200, func(err *base.Error) {},
@@ -497,6 +503,27 @@ func TestClient_Subscribe(t *testing.T) {
 			"#.test%Message01": {sub1, sub2},
 			"#.test%Message02": {sub3},
 		})
+	})
+
+	t.Run("test message", func(t *testing.T) {
+		assert := base.NewAssert(t)
+
+		rpcServer := getTestServer()
+		defer rpcServer.Close()
+
+		rpcClient := newClient(
+			"tcp", "0.0.0.0:8765", nil, 1200, 1200, func(err *base.Error) {},
+		)
+		defer rpcClient.Close()
+
+		waitCH := make(chan core.Any, 1)
+		rpcClient.Subscribe("#.user", "@Post", func(value core.Any) {
+			waitCH <- value
+		})
+		assert(rpcClient.Send(5*time.Second, "#.user:PostMessage", 2345)).
+			Equal(nil, nil)
+		fmt.Println("OK")
+		assert(<-waitCH).Equal(rpc.Array{true, int64(2345)})
 	})
 }
 
