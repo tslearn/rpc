@@ -293,97 +293,99 @@ var (
 	)
 )
 
-const adapterErrorSeg = 5 << 8
+const goAdapterErrorSeg = 101 << 8
 
 var (
 	// ErrUnsupportedProtocol ...
 	ErrUnsupportedProtocol = DefineNetError(
-		adapterErrorSeg|1,
+		goAdapterErrorSeg|1,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceListen ...
 	ErrSyncTCPServerServiceListen = DefineNetError(
-		adapterErrorSeg|2,
+		goAdapterErrorSeg|2,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceAccept ...
 	ErrSyncTCPServerServiceAccept = DefineNetError(
-		adapterErrorSeg|3,
+		goAdapterErrorSeg|3,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncTCPServerServiceClose ...
 	ErrSyncTCPServerServiceClose = DefineNetError(
-		adapterErrorSeg|4,
+		goAdapterErrorSeg|4,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceListen ...
 	ErrSyncWSServerServiceListen = DefineNetError(
-		adapterErrorSeg|5,
+		goAdapterErrorSeg|5,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceUpgrade ...
 	ErrSyncWSServerServiceUpgrade = DefineNetError(
-		adapterErrorSeg|6,
+		goAdapterErrorSeg|6,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceServe ...
 	ErrSyncWSServerServiceServe = DefineNetError(
-		adapterErrorSeg|7,
+		goAdapterErrorSeg|7,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncWSServerServiceClose ...
 	ErrSyncWSServerServiceClose = DefineNetError(
-		adapterErrorSeg|8,
+		goAdapterErrorSeg|8,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrSyncClientServiceDial ...
 	ErrSyncClientServiceDial = DefineNetError(
-		adapterErrorSeg|9,
+		goAdapterErrorSeg|9,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnClose ...
 	ErrConnClose = DefineNetError(
-		adapterErrorSeg|10,
+		goAdapterErrorSeg|10,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnRead ...
 	ErrConnRead = DefineNetError(
-		adapterErrorSeg|11,
+		goAdapterErrorSeg|11,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrConnWrite ...
 	ErrConnWrite = DefineNetError(
-		adapterErrorSeg|12,
+		goAdapterErrorSeg|12,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrOnFillWriteFatal ...
 	ErrOnFillWriteFatal = DefineKernelError(
-		adapterErrorSeg|13,
+		goAdapterErrorSeg|13,
 		ErrorLevelFatal,
 		"kernel error",
 	)
 )
+
+// const jsAdapterErrorSeg = 102 << 8
