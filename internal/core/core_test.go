@@ -22,7 +22,7 @@ func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewLogToScreenErrorStreamHub("Server")
 		stream := NewStream()
-		stream.SetKind(DataStreamResponseError)
+		stream.SetKind(StreamKindRPCResponseError)
 		stream.SetGatewayID(0)
 		stream.SetSessionID(0)
 		stream.WriteUint64(uint64(base.ErrProcessorIsNotRunning.GetCode()))
@@ -40,7 +40,7 @@ func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewLogToScreenErrorStreamHub("Server")
 		stream := NewStream()
-		stream.SetKind(DataStreamResponseError)
+		stream.SetKind(StreamKindRPCResponseError)
 		stream.SetGatewayID(1234)
 		stream.SetSessionID(5678)
 		stream.WriteUint64(uint64(base.ErrProcessorIsNotRunning.GetCode()))
@@ -422,7 +422,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("errCode format error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(SystemStreamReportError)
+		v.SetKind(StreamKindSystemErrorReport)
 		v.WriteInt64(3)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
 	})
@@ -430,7 +430,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("errCode == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(SystemStreamReportError)
+		v.SetKind(StreamKindSystemErrorReport)
 		v.WriteUint64(0)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
 	})
@@ -438,7 +438,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error code overflows", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamResponseError)
+		v.SetKind(StreamKindRPCResponseError)
 		v.WriteUint64(1 << 32)
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -447,7 +447,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error message Read error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamResponseError)
+		v.SetKind(StreamKindRPCResponseError)
 		v.WriteUint64(uint64(base.ErrorTypeSecurity))
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -456,7 +456,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamResponseError)
+		v.SetKind(StreamKindRPCResponseError)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		v.WriteBool(true)
@@ -466,7 +466,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("error stream ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamResponseError)
+		v.SetKind(StreamKindRPCResponseError)
 		v.WriteUint64(uint64(base.ErrStream.GetCode()))
 		v.WriteString(base.ErrStream.GetMessage())
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
@@ -475,7 +475,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("kind unsupported", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamBoardCast)
+		v.SetKind(StreamKindRPCBoardCast)
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(nil, base.ErrStream)
 	})
@@ -483,7 +483,7 @@ func TestParseResponseStream(t *testing.T) {
 	t.Run("Read ret ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewStream()
-		v.SetKind(DataStreamResponseOK)
+		v.SetKind(StreamKindRPCResponseOK)
 		v.WriteBool(true)
 		assert(ParseResponseStream(v)).Equal(true, nil)
 	})

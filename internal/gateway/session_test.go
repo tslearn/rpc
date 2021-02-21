@@ -98,7 +98,7 @@ func TestInitSession(t *testing.T) {
 		)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectRequest)
+		stream.SetKind(core.StreamKindConnectRequest)
 		stream.SetCallbackID(1)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
@@ -107,7 +107,7 @@ func TestInitSession(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("kind is not ControlStreamConnectRequest", func(t *testing.T) {
+	t.Run("kind is not StreamKindConnectRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
 		streamHub := core.NewTestStreamHub()
@@ -120,7 +120,7 @@ func TestInitSession(t *testing.T) {
 		)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
@@ -141,7 +141,7 @@ func TestInitSession(t *testing.T) {
 		)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectRequest)
+		stream.SetKind(core.StreamKindConnectRequest)
 		stream.WriteBool(true)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
@@ -163,7 +163,7 @@ func TestInitSession(t *testing.T) {
 		)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectRequest)
+		stream.SetKind(core.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.WriteBool(false)
 		stream.BuildStreamCheck()
@@ -188,7 +188,7 @@ func TestInitSession(t *testing.T) {
 		syncConn.SetNext(streamConn)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectRequest)
+		stream.SetKind(core.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
@@ -240,7 +240,7 @@ func TestInitSession(t *testing.T) {
 			syncConn.SetNext(streamConn)
 
 			stream := core.NewStream()
-			stream.SetKind(core.ControlStreamConnectRequest)
+			stream.SetKind(core.StreamKindConnectRequest)
 			stream.WriteString(connStr)
 			stream.BuildStreamCheck()
 			streamConn.OnReadBytes(stream.GetBuffer())
@@ -268,7 +268,7 @@ func TestInitSession(t *testing.T) {
 				cfg := gw.config
 
 				assert(rs.GetKind()).
-					Equal(uint8(core.ControlStreamConnectResponse))
+					Equal(uint8(core.StreamKindConnectResponse))
 				assert(rs.ReadString()).
 					Equal(fmt.Sprintf("%d-%s", v.id, v.security), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
@@ -401,7 +401,7 @@ func TestSession_OutStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, netConn := prepareTestSession()
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamResponseOK)
+		stream.SetKind(core.StreamKindRPCResponseOK)
 		session.OutStream(stream)
 		assert(len(netConn.writeBuffer)).Equal(0)
 		assert(session.channels[0].backStream).Equal(stream)
@@ -420,7 +420,7 @@ func TestSession_OutStream(t *testing.T) {
 
 		for i := 1; i <= len(session.channels); i++ {
 			stream := core.NewStream()
-			stream.SetKind(core.ControlStreamConnectResponse)
+			stream.SetKind(core.StreamKindConnectResponse)
 			stream.SetCallbackID(uint64(i))
 			session.OutStream(stream)
 		}
@@ -441,7 +441,7 @@ func TestSession_OutStream(t *testing.T) {
 
 		for i := len(session.channels) + 1; i <= 2*len(session.channels); i++ {
 			stream := core.NewStream()
-			stream.SetKind(core.DataStreamResponseOK)
+			stream.SetKind(core.StreamKindRPCResponseOK)
 			stream.SetCallbackID(uint64(i))
 			session.OutStream(stream)
 		}
@@ -464,7 +464,7 @@ func TestSession_OutStream(t *testing.T) {
 		for i := 1; i <= len(session.channels); i++ {
 			stream := core.NewStream()
 			stream.SetCallbackID(uint64(i))
-			stream.SetKind(core.DataStreamResponseOK)
+			stream.SetKind(core.StreamKindRPCResponseOK)
 			stream.BuildStreamCheck()
 			exceptBuffer = append(exceptBuffer, stream.GetBuffer()...)
 			session.OutStream(stream)
@@ -473,7 +473,7 @@ func TestSession_OutStream(t *testing.T) {
 		assert(netConn.writeBuffer).Equal(exceptBuffer)
 	})
 
-	t.Run("stream is DataStreamBoardCast", func(t *testing.T) {
+	t.Run("stream is StreamKindRPCBoardCast", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
 		syncConn.OnOpen()
@@ -489,7 +489,7 @@ func TestSession_OutStream(t *testing.T) {
 			stream := core.NewStream()
 			stream.SetGatewayID(1234)
 			stream.SetSessionID(5678)
-			stream.SetKind(core.DataStreamBoardCast)
+			stream.SetKind(core.StreamKindRPCBoardCast)
 			stream.WriteString("#.test%Msg")
 			stream.WriteString("HI")
 			stream.BuildStreamCheck()
@@ -513,7 +513,7 @@ func TestSession_OnConnOpen(t *testing.T) {
 }
 
 func TestSession_OnConnReadStream(t *testing.T) {
-	t.Run("cbID == 0, kind == ControlStreamPing ok", func(t *testing.T) {
+	t.Run("cbID == 0, kind == StreamKindPing ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
 		syncConn.OnOpen()
@@ -521,15 +521,15 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		sendStream := core.NewStream()
-		sendStream.SetKind(core.ControlStreamPing)
+		sendStream.SetKind(core.StreamKindPing)
 		session.OnConnReadStream(streamConn, sendStream)
 		backStream := core.NewStream()
 		backStream.PutBytesTo(netConn.writeBuffer, 0)
-		assert(backStream.GetKind()).Equal(uint8(core.ControlStreamPong))
+		assert(backStream.GetKind()).Equal(uint8(core.StreamKindPong))
 		assert(backStream.IsReadFinish()).IsTrue()
 	})
 
-	t.Run("cbID == 0, kind == ControlStreamPing error", func(t *testing.T) {
+	t.Run("cbID == 0, kind == StreamKindPing error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
 		syncConn.OnOpen()
@@ -537,7 +537,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamPing)
+		stream.SetKind(core.StreamKindPing)
 		stream.WriteBool(true)
 
 		streamHub := core.NewTestStreamHub()
@@ -557,7 +557,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(10)
-		stream.SetKind(core.DataStreamInternalRequest)
+		stream.SetKind(core.StreamKindRPCInternalRequest)
 		session.OnConnReadStream(streamConn, stream)
 
 		backStream := streamHub.GetStream()
@@ -580,7 +580,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).Out(cacheStream)
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamExternalRequest)
+		stream.SetKind(core.StreamKindRPCExternalRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -597,7 +597,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).In(10)
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamExternalRequest)
+		stream.SetKind(core.StreamKindRPCExternalRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -614,7 +614,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.DataStreamInternalRequest)
+		stream.SetKind(core.StreamKindRPCInternalRequest)
 
 		session.OnConnReadStream(streamConn, stream)
 		assert(core.ParseResponseStream(streamHub.GetStream())).

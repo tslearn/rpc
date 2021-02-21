@@ -28,9 +28,9 @@ func NewLogToScreenErrorStreamHub(prefix string) *LogToScreenErrorStreamHub {
 func (p *LogToScreenErrorStreamHub) OnReceiveStream(stream *Stream) {
 	if stream != nil {
 		switch stream.GetKind() {
-		case DataStreamResponseError:
+		case StreamKindRPCResponseError:
 			fallthrough
-		case SystemStreamReportError:
+		case StreamKindSystemErrorReport:
 			if _, err := ParseResponseStream(stream); err != nil {
 				gatewayID := stream.GetGatewayID()
 				sessionID := stream.GetSessionID()
@@ -200,7 +200,7 @@ func getFastKey(s string) uint32 {
 func MakeSystemErrorStream(err *base.Error) *Stream {
 	if err != nil {
 		stream := NewStream()
-		stream.SetKind(SystemStreamReportError)
+		stream.SetKind(StreamKindSystemErrorReport)
 		stream.WriteUint64(uint64(err.GetCode()))
 		stream.WriteString(err.GetMessage())
 		return stream
@@ -218,7 +218,7 @@ func MakeInternalRequestStream(
 	args ...interface{},
 ) (*Stream, *base.Error) {
 	stream := NewStream()
-	stream.SetKind(DataStreamInternalRequest)
+	stream.SetKind(StreamKindRPCInternalRequest)
 	// set debug bit
 	if debug {
 		stream.SetStatusBitDebug()
@@ -249,11 +249,11 @@ func MakeInternalRequestStream(
 // ParseResponseStream ...
 func ParseResponseStream(stream *Stream) (Any, *base.Error) {
 	switch stream.GetKind() {
-	case DataStreamResponseOK:
+	case StreamKindRPCResponseOK:
 		return stream.Read()
-	case SystemStreamReportError:
+	case StreamKindSystemErrorReport:
 		fallthrough
-	case DataStreamResponseError:
+	case StreamKindRPCResponseError:
 		if errCode, err := stream.ReadUint64(); err != nil {
 			return nil, err
 		} else if errCode == 0 {

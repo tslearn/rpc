@@ -35,7 +35,7 @@ func InitSession(
 	if stream.GetCallbackID() != 0 {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
-	} else if kind := stream.GetKind(); kind != core.ControlStreamConnectRequest {
+	} else if kind := stream.GetKind(); kind != core.StreamKindConnectRequest {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
@@ -83,7 +83,7 @@ func InitSession(
 		streamConn.SetReceiver(session)
 
 		stream.SetWritePosToBodyStart()
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
 		stream.WriteInt64(int64(config.numOfChannels))
 		stream.WriteInt64(int64(config.transLimit))
@@ -132,9 +132,9 @@ func (p *Session) OutStream(stream *core.Stream) {
 
 	if stream != nil {
 		switch stream.GetKind() {
-		case core.DataStreamResponseOK:
+		case core.StreamKindRPCResponseOK:
 			fallthrough
-		case core.DataStreamResponseError:
+		case core.StreamKindRPCResponseError:
 			// record stream
 			channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
 			if channel.Out(stream) && p.conn != nil {
@@ -142,7 +142,7 @@ func (p *Session) OutStream(stream *core.Stream) {
 			} else {
 				stream.Release()
 			}
-		case core.DataStreamBoardCast:
+		case core.StreamKindRPCBoardCast:
 			p.conn.WriteStreamAndRelease(stream)
 		default:
 			stream.Release()
@@ -166,18 +166,18 @@ func (p *Session) OnConnReadStream(
 	defer p.Unlock()
 
 	switch stream.GetKind() {
-	case core.ControlStreamPing:
+	case core.StreamKindPing:
 		if stream.IsReadFinish() {
 			p.activeTimeNS = base.TimeNow().UnixNano()
-			stream.SetKind(core.ControlStreamPong)
+			stream.SetKind(core.StreamKindPong)
 			streamConn.WriteStreamAndRelease(stream)
 		} else {
 			p.OnConnError(streamConn, base.ErrStream)
 			stream.Release()
 		}
-	case core.DataStreamInternalRequest:
+	case core.StreamKindRPCInternalRequest:
 		fallthrough
-	case core.DataStreamExternalRequest:
+	case core.StreamKindRPCExternalRequest:
 		if cbID := stream.GetCallbackID(); cbID > 0 {
 			channel := &p.channels[cbID%uint64(len(p.channels))]
 			if accepted, backStream := channel.In(cbID); accepted {

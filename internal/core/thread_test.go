@@ -741,7 +741,7 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("action path type is not string", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := NewStream()
-		stream.SetKind(DataStreamInternalRequest)
+		stream.SetKind(StreamKindRPCInternalRequest)
 		stream.SetDepth(3)
 		stream.WriteBytes([]byte("#.test:Eval"))
 		stream.WriteString("")

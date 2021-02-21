@@ -223,18 +223,18 @@ func (p *Server) BuildReplyCache() *Server {
 func (p *Server) OnReceiveStream(stream *core.Stream) {
 	if stream != nil {
 		switch stream.GetKind() {
-		case core.DataStreamInternalRequest:
+		case core.StreamKindRPCInternalRequest:
 			fallthrough
-		case core.DataStreamExternalRequest:
+		case core.StreamKindRPCExternalRequest:
 			p.processor.PutStream(stream)
-		case core.DataStreamResponseOK:
+		case core.StreamKindRPCResponseOK:
 			fallthrough
-		case core.DataStreamResponseError:
+		case core.StreamKindRPCResponseError:
 			fallthrough
-		case core.DataStreamBoardCast:
+		case core.StreamKindRPCBoardCast:
 			p.gateway.OutStream(stream)
 		default:
-			if stream.GetKind() == core.SystemStreamReportError {
+			if stream.GetKind() == core.StreamKindSystemErrorReport {
 				p.logHub.OnReceiveStream(stream)
 			} else {
 				stream.Release()
