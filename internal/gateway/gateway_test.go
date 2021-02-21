@@ -304,7 +304,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 		syncConn.SetNext(streamConn)
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectRequest)
+		stream.SetKind(core.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())

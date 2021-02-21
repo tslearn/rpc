@@ -52,7 +52,7 @@ func (p Runtime) Post(endpoint string, message string, value Any) error {
 		}
 
 		stream := NewStream()
-		stream.SetKind(DataStreamBoardCast)
+		stream.SetKind(StreamKindRPCBoardCast)
 		stream.SetGatewayID(gatewayID)
 		stream.SetSessionID(sessionID)
 		stream.WriteString(thread.GetExecServicePath() + "%" + message)
@@ -192,12 +192,12 @@ func (p Runtime) SetServiceConfig(key string, value Any) bool {
 
 func (p Runtime) parseResponseStream(stream *Stream) RTValue {
 	switch stream.GetKind() {
-	case DataStreamResponseOK:
+	case StreamKindRPCResponseOK:
 		ret, _ := stream.ReadRTValue(p)
 		return ret
-	case SystemStreamReportError:
+	case StreamKindSystemErrorReport:
 		fallthrough
-	case DataStreamResponseError:
+	case StreamKindRPCResponseError:
 		if errCode, err := stream.ReadUint64(); err != nil {
 			return RTValue{err: err}
 		} else if errCode == 0 {

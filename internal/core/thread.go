@@ -306,7 +306,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	writeErr := (*base.Error)(nil)
 
 	if reason := stream.Write(value); reason == StreamWriteOK {
-		stream.SetKind(DataStreamResponseOK)
+		stream.SetKind(StreamKindRPCResponseOK)
 		frame.retStatus = 1
 		return emptyReturn
 	} else if err, ok := value.(*base.Error); ok {
@@ -324,7 +324,7 @@ func (p *rpcThread) Write(value interface{}, skip uint, debug bool) Return {
 	}
 
 	frame.retStatus = 2
-	stream.SetKind(DataStreamResponseError)
+	stream.SetKind(StreamKindRPCResponseError)
 
 	if debug {
 		msg := writeErr.GetMessage()

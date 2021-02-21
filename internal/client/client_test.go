@@ -252,7 +252,7 @@ func TestClient_tryToSendPing(t *testing.T) {
 
 		stream := core.NewStream()
 		stream.PutBytesTo(<-netConn.writeCH, 0)
-		assert(stream.GetKind()).Equal(uint8(core.ControlStreamPing))
+		assert(stream.GetKind()).Equal(uint8(core.StreamKindPing))
 		assert(stream.IsReadFinish()).IsTrue()
 		assert(stream.CheckStream()).IsTrue()
 	})
@@ -622,7 +622,7 @@ func TestClient_OnConnOpen(t *testing.T) {
 		stream := core.NewStream()
 		stream.PutBytesTo(<-netConn.writeCH, 0)
 		assert(stream.GetKind()).
-			Equal(uint8(core.ControlStreamConnectRequest))
+			Equal(uint8(core.StreamKindConnectRequest))
 		assert(stream.ReadString()).Equal("123456", nil)
 	})
 }
@@ -664,7 +664,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("kind != core.ControlStreamConnectResponse", func(t *testing.T) {
+	t.Run("kind != core.StreamKindConnectResponse", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -681,7 +681,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		v, streamConn, _ := fnTestClient()
 		errorHub := core.NewTestStreamHub()
 		v.errorHub = errorHub
@@ -694,7 +694,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		v, streamConn, _ := fnTestClient()
 		errorHub := core.NewTestStreamHub()
@@ -707,7 +707,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 	t.Run("numOfChannels config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.SetCallbackID(0)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(0)
@@ -723,7 +723,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		v, streamConn, _ := fnTestClient()
@@ -738,7 +738,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(0)
@@ -754,7 +754,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -770,7 +770,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -787,7 +787,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -804,7 +804,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -822,7 +822,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -841,7 +841,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -869,7 +869,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -888,10 +888,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.lastPingTimeNS > 0).IsTrue()
 	})
 
-	t.Run("p.conn != nil, ControlStreamPong error", func(t *testing.T) {
+	t.Run("p.conn != nil, StreamKindPong error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamPong)
+		stream.SetKind(core.StreamKindPong)
 		stream.Write("error")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
@@ -902,11 +902,11 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("p.conn != nil, DataStreamResponseOK ok", func(t *testing.T) {
+	t.Run("p.conn != nil, StreamKindRPCResponseOK ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.DataStreamResponseOK)
+		stream.SetKind(core.StreamKindRPCResponseOK)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -916,11 +916,11 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.channels[17].item).IsNil()
 	})
 
-	t.Run("p.conn != nil, DataStreamResponseOK error", func(t *testing.T) {
+	t.Run("p.conn != nil, StreamKindRPCResponseOK error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(17)
-		stream.SetKind(core.DataStreamResponseOK)
+		stream.SetKind(core.StreamKindRPCResponseOK)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -930,11 +930,11 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.channels[17].item).IsNotNil()
 	})
 
-	t.Run("p.conn != nil, DataStreamResponseError ok", func(t *testing.T) {
+	t.Run("p.conn != nil, StreamKindRPCResponseError ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.DataStreamResponseError)
+		stream.SetKind(core.StreamKindRPCResponseError)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -944,11 +944,11 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.channels[17].item).IsNil()
 	})
 
-	t.Run("p.conn != nil, DataStreamResponseError error", func(t *testing.T) {
+	t.Run("p.conn != nil, StreamKindRPCResponseError error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(17)
-		stream.SetKind(core.DataStreamResponseError)
+		stream.SetKind(core.StreamKindRPCResponseError)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -962,7 +962,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		v, streamConn, _ := fnTestClient()
 		errorHub := core.NewTestStreamHub()
 		v.errorHub = errorHub
@@ -972,10 +972,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("DataStreamBoardCast Read path error", func(t *testing.T) {
+	t.Run("StreamKindRPCBoardCast Read path error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamBoardCast)
+		stream.SetKind(core.StreamKindRPCBoardCast)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		errorHub := core.NewTestStreamHub()
@@ -985,10 +985,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("DataStreamBoardCast Read value error", func(t *testing.T) {
+	t.Run("StreamKindRPCBoardCast Read value error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamBoardCast)
+		stream.SetKind(core.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
@@ -999,10 +999,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("DataStreamBoardCast Read is not finish", func(t *testing.T) {
+	t.Run("StreamKindRPCBoardCast Read is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamBoardCast)
+		stream.SetKind(core.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		stream.WriteBool(true)
 		stream.WriteString("error")
@@ -1015,10 +1015,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("DataStreamBoardCast ok", func(t *testing.T) {
+	t.Run("StreamKindRPCBoardCast ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamBoardCast)
+		stream.SetKind(core.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		stream.WriteString("Hello")
 		v, streamConn, _ := fnTestClient()
@@ -1031,10 +1031,10 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(ret).Equal("Hello")
 	})
 
-	t.Run("ControlStreamPong ok", func(t *testing.T) {
+	t.Run("StreamKindPong ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamPong)
+		stream.SetKind(core.StreamKindPong)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		errorHub := core.NewTestStreamHub()

@@ -271,7 +271,7 @@ func TestServer_BuildReplyCache(t *testing.T) {
 }
 
 func TestServer_OnReceiveStream(t *testing.T) {
-	t.Run("DataStreamInternalRequest", func(t *testing.T) {
+	t.Run("StreamKindRPCInternalRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer().
 			SetNumOfThreads(1024).
@@ -284,7 +284,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamInternalRequest)
+		stream.SetKind(core.StreamKindRPCInternalRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
@@ -300,7 +300,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
-	t.Run("DataStreamExternalRequest", func(t *testing.T) {
+	t.Run("StreamKindRPCExternalRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer().
 			SetNumOfThreads(1024).
@@ -313,7 +313,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamExternalRequest)
+		stream.SetKind(core.StreamKindRPCExternalRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
@@ -329,7 +329,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
-	t.Run("DataStreamResponseOK", func(t *testing.T) {
+	t.Run("StreamKindRPCResponseOK", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer().
 			SetNumOfThreads(1024).
@@ -342,7 +342,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamResponseOK)
+		stream.SetKind(core.StreamKindRPCResponseOK)
 		stream.Write(true)
 
 		for !v.IsRunning() {
@@ -354,7 +354,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
-	t.Run("DataStreamResponseError", func(t *testing.T) {
+	t.Run("StreamKindRPCResponseError", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer().
 			SetNumOfThreads(1024).
@@ -367,7 +367,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamResponseError)
+		stream.SetKind(core.StreamKindRPCResponseError)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
@@ -380,7 +380,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
-	t.Run("DataStreamBoardCast", func(t *testing.T) {
+	t.Run("StreamKindRPCBoardCast", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer().
 			SetNumOfThreads(1024).
@@ -393,7 +393,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.DataStreamBoardCast)
+		stream.SetKind(core.StreamKindRPCBoardCast)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
@@ -406,28 +406,28 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
-	t.Run("SystemStreamReportError log to screen", func(t *testing.T) {
+	t.Run("StreamKindSystemErrorReport log to screen", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
 
 		stream := core.NewStream()
-		stream.SetKind(core.SystemStreamReportError)
+		stream.SetKind(core.StreamKindSystemErrorReport)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 		v.OnReceiveStream(stream)
-		assert(stream.GetKind() != core.SystemStreamReportError).IsTrue()
+		assert(stream.GetKind() != core.StreamKindSystemErrorReport).IsTrue()
 	})
 
-	t.Run("ControlStreamConnectResponse", func(t *testing.T) {
+	t.Run("StreamKindConnectResponse", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
 
 		stream := core.NewStream()
-		stream.SetKind(core.ControlStreamConnectResponse)
+		stream.SetKind(core.StreamKindConnectResponse)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 		v.OnReceiveStream(stream)
-		assert(stream.GetKind() != core.ControlStreamConnectResponse).IsTrue()
+		assert(stream.GetKind() != core.StreamKindConnectResponse).IsTrue()
 	})
 
 }

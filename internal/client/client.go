@@ -120,7 +120,7 @@ func (p *Client) tryToSendPing(nowNS int64) {
 	// Send Ping
 	p.lastPingTimeNS = nowNS
 	stream := core.NewStream()
-	stream.SetKind(core.ControlStreamPing)
+	stream.SetKind(core.StreamKindPing)
 	stream.SetCallbackID(0)
 	p.conn.WriteStreamAndRelease(stream)
 }
@@ -254,7 +254,7 @@ func (p *Client) Send(
 	item := NewSendItem(int64(timeout))
 	defer item.Release()
 
-	item.sendStream.SetKind(core.DataStreamExternalRequest)
+	item.sendStream.SetKind(core.StreamKindRPCExternalRequest)
 	// set depth
 	item.sendStream.SetDepth(0)
 	// write target
@@ -302,7 +302,7 @@ func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 	defer p.Unlock()
 
 	stream := core.NewStream()
-	stream.SetKind(core.ControlStreamConnectRequest)
+	stream.SetKind(core.StreamKindConnectRequest)
 	stream.SetCallbackID(0)
 	stream.WriteString(p.sessionString)
 	streamConn.WriteStreamAndRelease(stream)
@@ -323,7 +323,7 @@ func (p *Client) OnConnReadStream(
 
 		if callbackID != 0 {
 			p.OnConnError(streamConn, base.ErrStream)
-		} else if kind := stream.GetKind(); kind != core.ControlStreamConnectResponse {
+		} else if kind := stream.GetKind(); kind != core.StreamKindConnectResponse {
 			p.OnConnError(streamConn, base.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
 			p.OnConnError(streamConn, err)
@@ -376,9 +376,9 @@ func (p *Client) OnConnReadStream(
 		stream.Release()
 	} else {
 		switch stream.GetKind() {
-		case core.DataStreamResponseOK:
+		case core.StreamKindRPCResponseOK:
 			fallthrough
-		case core.DataStreamResponseError:
+		case core.StreamKindRPCResponseError:
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			if channel.sequence == callbackID {
 				channel.Free(stream)
@@ -386,7 +386,7 @@ func (p *Client) OnConnReadStream(
 			} else {
 				stream.Release()
 			}
-		case core.DataStreamBoardCast:
+		case core.StreamKindRPCBoardCast:
 			if actionPath, err := stream.ReadString(); err != nil {
 				p.OnConnError(streamConn, err)
 			} else if value, err := stream.Read(); err != nil {
@@ -401,7 +401,7 @@ func (p *Client) OnConnReadStream(
 				}
 			}
 			stream.Release()
-		case core.ControlStreamPong:
+		case core.StreamKindPong:
 			if !stream.IsReadFinish() {
 				p.OnConnError(streamConn, base.ErrStream)
 			}
