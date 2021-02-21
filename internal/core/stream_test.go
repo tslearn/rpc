@@ -482,13 +482,11 @@ func TestStream(t *testing.T) {
 		assert(StreamKindConnectResponse).Equal(2)
 		assert(StreamKindPing).Equal(3)
 		assert(StreamKindPong).Equal(4)
-		assert(StreamKindRPCInternalRequest).Equal(5)
-		assert(StreamKindRPCExternalRequest).Equal(6)
-		assert(StreamKindRPCResponseOK).Equal(7)
-		assert(StreamKindRPCResponseError).Equal(8)
-		assert(StreamKindRPCBoardCast).Equal(9)
-		assert(StreamKindSystemErrorReport).Equal(10)
-
+		assert(StreamKindRPCRequest).Equal(5)
+		assert(StreamKindRPCResponseOK).Equal(6)
+		assert(StreamKindRPCResponseError).Equal(7)
+		assert(StreamKindRPCBoardCast).Equal(8)
+		assert(StreamKindSystemErrorReport).Equal(9)
 	})
 
 	t.Run("test initStreamFrame0", func(t *testing.T) {

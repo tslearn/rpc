@@ -254,7 +254,7 @@ func (p *Client) Send(
 	item := NewSendItem(int64(timeout))
 	defer item.Release()
 
-	item.sendStream.SetKind(core.StreamKindRPCExternalRequest)
+	item.sendStream.SetKind(core.StreamKindRPCRequest)
 	// set depth
 	item.sendStream.SetDepth(0)
 	// write target

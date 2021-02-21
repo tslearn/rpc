@@ -175,9 +175,7 @@ func (p *Session) OnConnReadStream(
 			p.OnConnError(streamConn, base.ErrStream)
 			stream.Release()
 		}
-	case core.StreamKindRPCInternalRequest:
-		fallthrough
-	case core.StreamKindRPCExternalRequest:
+	case core.StreamKindRPCRequest:
 		if cbID := stream.GetCallbackID(); cbID > 0 {
 			channel := &p.channels[cbID%uint64(len(p.channels))]
 			if accepted, backStream := channel.In(cbID); accepted {

@@ -284,7 +284,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCInternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
@@ -313,7 +313,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}()
 
 		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCExternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")

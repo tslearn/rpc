@@ -557,7 +557,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(10)
-		stream.SetKind(core.StreamKindRPCInternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 		session.OnConnReadStream(streamConn, stream)
 
 		backStream := streamHub.GetStream()
@@ -580,7 +580,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).Out(cacheStream)
 
 		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCExternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -597,7 +597,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).In(10)
 
 		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCExternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -614,7 +614,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindRPCInternalRequest)
+		stream.SetKind(core.StreamKindRPCRequest)
 
 		session.OnConnReadStream(streamConn, stream)
 		assert(core.ParseResponseStream(streamHub.GetStream())).

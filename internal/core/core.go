@@ -218,7 +218,7 @@ func MakeInternalRequestStream(
 	args ...interface{},
 ) (*Stream, *base.Error) {
 	stream := NewStream()
-	stream.SetKind(StreamKindRPCInternalRequest)
+	stream.SetKind(StreamKindRPCRequest)
 	// set debug bit
 	if debug {
 		stream.SetStatusBitDebug()
