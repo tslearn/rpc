@@ -25,11 +25,11 @@ func TestSendItem_NewSendItem(t *testing.T) {
 	})
 }
 
-func TestSendItem_Return(t *testing.T) {
+func TestSendItem_Back(t *testing.T) {
 	t.Run("stream is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(0)
-		assert(v.Return(nil)).IsFalse()
+		assert(v.Back(nil)).IsFalse()
 		assert(len(v.returnCH)).Equal(0)
 	})
 
@@ -37,7 +37,7 @@ func TestSendItem_Return(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(0)
 		v.isRunning = false
-		assert(v.Return(core.NewStream())).IsFalse()
+		assert(v.Back(core.NewStream())).IsFalse()
 		assert(len(v.returnCH)).Equal(0)
 	})
 
@@ -45,7 +45,7 @@ func TestSendItem_Return(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(0)
 		stream := core.NewStream()
-		assert(v.Return(stream)).IsTrue()
+		assert(v.Back(stream)).IsTrue()
 		assert(len(v.returnCH)).Equal(1)
 		assert(<-v.returnCH).Equal(stream)
 	})

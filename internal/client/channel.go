@@ -28,7 +28,7 @@ func (p *Channel) Use(item *SendItem, channelSize int) bool {
 func (p *Channel) Free(stream *core.Stream) bool {
 	if item := p.item; item != nil {
 		p.item = nil
-		return item.Return(stream)
+		return item.Back(stream)
 	}
 
 	return false
