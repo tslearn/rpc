@@ -39,7 +39,7 @@ func NewSendItem(timeoutNS int64) *SendItem {
 }
 
 // Return ...
-func (p *SendItem) Return(stream *core.Stream) bool {
+func (p *SendItem) Back(stream *core.Stream) bool {
 	if stream == nil || !p.isRunning {
 		return false
 	}

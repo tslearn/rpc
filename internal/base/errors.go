@@ -286,7 +286,7 @@ var (
 	)
 
 	// ErrClientConfig ...
-	ErrClientConfig = DefineNetError(
+	ErrClientConfig = DefineConfigError(
 		clientErrorSeg|2,
 		ErrorLevelWarn,
 		"client config error",
