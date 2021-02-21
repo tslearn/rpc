@@ -223,9 +223,7 @@ func (p *Server) BuildReplyCache() *Server {
 func (p *Server) OnReceiveStream(stream *core.Stream) {
 	if stream != nil {
 		switch stream.GetKind() {
-		case core.StreamKindRPCInternalRequest:
-			fallthrough
-		case core.StreamKindRPCExternalRequest:
+		case core.StreamKindRPCRequest:
 			p.processor.PutStream(stream)
 		case core.StreamKindRPCResponseOK:
 			fallthrough
