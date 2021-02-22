@@ -67,6 +67,7 @@ func newClient(
 		preSendHead:     nil,
 		preSendTail:     nil,
 		channels:        nil,
+		lastPingTimeNS:  0,
 		orcManager:      base.NewORCManager(),
 		subscriptionMap: make(map[string][]*Subscription),
 		errorHub:        core.NewLogToScreenErrorStreamHub("Client"),
@@ -189,7 +190,7 @@ func (p *Client) tryToDeliverPreSendMessages() {
 			}
 			item.next = nil
 
-			(&p.channels[findFree]).Use(item, len(p.channels))
+			(&p.channels[findFree]).Use(item, channelSize)
 			p.conn.WriteStreamAndRelease(item.sendStream.Clone())
 		}
 	}
