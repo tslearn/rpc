@@ -274,7 +274,6 @@ func TestClient_tryToTimeout(t *testing.T) {
 
 		for i := 0; i < totalItems; i++ {
 			item := NewSendItem(int64(time.Second))
-			item.startTimeNS = nowNS
 
 			if v.preSendTail == nil {
 				v.preSendHead = item
