@@ -38,7 +38,7 @@ func NewSendItem(timeoutNS int64) *SendItem {
 	return ret
 }
 
-// Return ...
+// Back ...
 func (p *SendItem) Back(stream *core.Stream) bool {
 	if stream == nil || !p.isRunning {
 		return false

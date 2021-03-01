@@ -92,6 +92,46 @@ func getTestServer() *server.Server {
 	return rpcServer
 }
 
+type TestAdapter struct {
+	isDebug    bool
+	isClient   bool
+	network    string
+	addr       string
+	tlsConfig  *tls.Config
+	rBufSize   int
+	wBufSize   int
+	receiver   adapter.IReceiver
+	service    base.IORCService
+	orcManager *base.ORCManager
+}
+
+func TestDial(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		v := Dial("ws", "localhost")
+		testAdapter := (*TestAdapter)(unsafe.Pointer(v.adapter))
+		assert(testAdapter.network).Equal("ws")
+		assert(testAdapter.addr).Equal("localhost")
+		assert(testAdapter.tlsConfig).Equal(nil)
+		assert(testAdapter.rBufSize).Equal(1500)
+		assert(testAdapter.wBufSize).Equal(1500)
+	})
+}
+
+func TestDialTLS(t *testing.T) {
+	t.Run("test", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		tlsConfig := &tls.Config{}
+		v := DialTLS("ws", "localhost", tlsConfig)
+		testAdapter := (*TestAdapter)(unsafe.Pointer(v.adapter))
+		assert(testAdapter.network).Equal("ws")
+		assert(testAdapter.addr).Equal("localhost")
+		assert(testAdapter.tlsConfig).Equal(tlsConfig)
+		assert(testAdapter.rBufSize).Equal(1500)
+		assert(testAdapter.wBufSize).Equal(1500)
+	})
+}
+
 func TestSubscription_Close(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -114,19 +154,6 @@ func TestSubscription_Close(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	type TestAdapter struct {
-		isDebug    bool
-		isClient   bool
-		network    string
-		addr       string
-		tlsConfig  *tls.Config
-		rBufSize   int
-		wBufSize   int
-		receiver   adapter.IReceiver
-		service    base.IORCService
-		orcManager *base.ORCManager
-	}
-
 	type TestORCManager struct {
 		sequence     uint64
 		isWaitChange bool

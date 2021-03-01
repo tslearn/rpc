@@ -21,13 +21,13 @@ func (p *syncWSClientConn) Read(b []byte) (int, error) {
 
 	if e != nil {
 		return -1, e
-	} else {
-		n := copy(b, msg)
-		if n < len(msg) {
-			p.readBuffer = msg[n:]
-		}
-		return n, nil
 	}
+
+	n := copy(b, msg)
+	if n < len(msg) {
+		p.readBuffer = msg[n:]
+	}
+	return n, nil
 }
 
 func (p *syncWSClientConn) Write(b []byte) (n int, err error) {
@@ -77,13 +77,13 @@ func (p *syncWSServerConn) Read(b []byte) (int, error) {
 
 	if e != nil {
 		return -1, e
-	} else {
-		n := copy(b, msg)
-		if n < len(msg) {
-			p.readBuffer = msg[n:]
-		}
-		return n, nil
 	}
+
+	n := copy(b, msg)
+	if n < len(msg) {
+		p.readBuffer = msg[n:]
+	}
+	return n, nil
 }
 
 func (p *syncWSServerConn) Write(b []byte) (n int, err error) {
