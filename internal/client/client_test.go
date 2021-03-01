@@ -3,7 +3,6 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/rpccloud/rpc"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -67,21 +66,21 @@ func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
 }
 
 func getTestServer() *server.Server {
-	userService := rpc.NewService().
-		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
+	userService := core.NewService().
+		On("SayHello", func(rt core.Runtime, name core.String) core.Return {
 			return rt.Reply("hello " + name)
 		}).
-		On("Sleep", func(rt rpc.Runtime, timeNS int64) rpc.Return {
+		On("Sleep", func(rt core.Runtime, timeNS int64) core.Return {
 			time.Sleep(time.Duration(timeNS))
 			return rt.Reply(nil)
 		}).
-		On("PostMessage", func(rt rpc.Runtime, timeNS int64) rpc.Return {
+		On("PostMessage", func(rt core.Runtime, timeNS int64) core.Return {
 			return rt.Reply(
-				rt.Post(rt.GetPostEndPoint(), "@Post", rpc.Array{true, timeNS}),
+				rt.Post(rt.GetPostEndPoint(), "@Post", core.Array{true, timeNS}),
 			)
 		})
 
-	rpcServer := server.NewServer().ListenWithDebug("tcp", "0.0.0.0:8765", nil)
+	rpcServer := server.NewServer().ListenWithDebug("ws", "0.0.0.0:8765", nil)
 	rpcServer.AddService("user", userService, nil)
 
 	go func() {
@@ -140,7 +139,7 @@ func TestNewClient(t *testing.T) {
 		defer testServer.Close()
 
 		assert := base.NewAssert(t)
-		v := newClient("tcp", "127.0.0.1:8765", nil, 1024, 2048)
+		v := newClient("ws", "127.0.0.1:8765", nil, 1024, 2048)
 
 		for {
 			v.Lock()
@@ -164,7 +163,7 @@ func TestNewClient(t *testing.T) {
 		testAdapter := (*TestAdapter)(unsafe.Pointer(v.adapter))
 		assert(testAdapter.isDebug).IsFalse()
 		assert(testAdapter.isClient).IsTrue()
-		assert(testAdapter.network).Equal("tcp")
+		assert(testAdapter.network).Equal("ws")
 		assert(testAdapter.addr).Equal("127.0.0.1:8765")
 		assert(testAdapter.tlsConfig).Equal(nil)
 		assert(testAdapter.rBufSize).Equal(1024)
@@ -497,7 +496,7 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 func TestClient_Subscribe(t *testing.T) {
 	t.Run("test basic", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newClient("tcp", "127.0.0.1:8080", nil, 1200, 1200)
+		v := newClient("ws", "127.0.0.1:8080", nil, 1200, 1200)
 		defer v.Close()
 
 		sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
@@ -517,7 +516,7 @@ func TestClient_Subscribe(t *testing.T) {
 		rpcServer := getTestServer()
 		defer rpcServer.Close()
 
-		rpcClient := newClient("tcp", "0.0.0.0:8765", nil, 1200, 1200)
+		rpcClient := newClient("ws", "0.0.0.0:8765", nil, 1200, 1200)
 		defer rpcClient.Close()
 
 		waitCH := make(chan core.Any, 1)
@@ -527,13 +526,13 @@ func TestClient_Subscribe(t *testing.T) {
 		assert(rpcClient.Send(5*time.Second, "#.user:PostMessage", 2345)).
 			Equal(nil, nil)
 		fmt.Println("OK")
-		assert(<-waitCH).Equal(rpc.Array{true, int64(2345)})
+		assert(<-waitCH).Equal(core.Array{true, int64(2345)})
 	})
 }
 
 func TestClient_unsubscribe(t *testing.T) {
 	assert := base.NewAssert(t)
-	v := newClient("tcp", "127.0.0.1:8080", nil, 1200, 1200)
+	v := newClient("ws", "127.0.0.1:8080", nil, 1200, 1200)
 	defer v.Close()
 
 	sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
@@ -575,7 +574,7 @@ func TestClient_Send(t *testing.T) {
 		rpcServer := getTestServer()
 		defer rpcServer.Close()
 
-		rpcClient := newClient("tcp", "0.0.0.0:8765", nil, 1200, 1200)
+		rpcClient := newClient("ws", "0.0.0.0:8765", nil, 1200, 1200)
 		defer rpcClient.Close()
 
 		waitCH := make(chan []interface{})
@@ -599,7 +598,7 @@ func TestClient_Send(t *testing.T) {
 func TestClient_Close(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := newClient("tcp", "127.0.0.1:1234", nil, 1200, 1200)
+		v := newClient("ws", "127.0.0.1:1234", nil, 1200, 1200)
 		assert(v.adapter).IsNotNil()
 		assert(v.Close()).IsTrue()
 		assert(v.adapter).IsNil()
