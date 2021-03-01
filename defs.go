@@ -3,6 +3,7 @@ package rpc
 import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/server"
 )
 
 // Bool ...
@@ -64,3 +65,5 @@ type ActionCache = core.ActionCache
 
 // ActionCacheFunc ...
 type ActionCacheFunc = core.ActionCacheFunc
+
+var NewServer = server.NewServer
