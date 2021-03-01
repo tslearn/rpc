@@ -23,13 +23,8 @@ func main() {
 }
 
 func runClient() {
-	time.Sleep(5 * time.Second)
-
-	client, e := rpc.Dial("ws://127.0.0.1:8888")
-	if e != nil {
-		return
-	}
-
+	time.Sleep(3 * time.Second)
+	client := rpc.Dial("ws", "127.0.0.1:8888")
 	fmt.Println(client.Send(3*time.Second, "#.user:SayHello", "world"))
 	client.Close()
 }
