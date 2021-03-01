@@ -3,6 +3,7 @@ package client
 
 import (
 	"crypto/tls"
+	"net/url"
 	"sync"
 	"time"
 
@@ -10,6 +11,14 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
 )
+
+func Dial(connectString string) (*Client, error) {
+	connectURL, e := url.Parse(connectString)
+	if e != nil {
+		return nil, e
+	}
+	return newClient(connectURL.Scheme, connectURL.Host, nil, 1500, 1500), nil
+}
 
 // Config ...
 type Config struct {

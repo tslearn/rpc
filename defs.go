@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/client"
 	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/server"
 )
@@ -67,3 +68,7 @@ type ActionCache = core.ActionCache
 type ActionCacheFunc = core.ActionCacheFunc
 
 var NewServer = server.NewServer
+
+type Client = client.Client
+
+var Dial = client.Dial

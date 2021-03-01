@@ -203,7 +203,7 @@ func (p *syncWSServerService) Open() bool {
 					base.ErrSyncWSServerServiceUpgrade.AddDebug(e.Error()),
 				)
 			} else {
-				runNetConnOnServers(adapter, conn)
+				runNetConnOnServers(adapter, &syncWSServerConn{conn: conn})
 			}
 		})
 
@@ -294,6 +294,7 @@ func (p *syncClientService) openConn() bool {
 
 	var e error
 	var conn net.Conn
+	var wsRawConn net.Conn
 
 	adapter := p.adapter
 	switch adapter.network {
@@ -312,7 +313,8 @@ func (p *syncClientService) openConn() bool {
 	case "wss":
 		dialer := &ws.Dialer{TLSConfig: adapter.tlsConfig}
 		u := url.URL{Scheme: adapter.network, Host: adapter.addr, Path: "/"}
-		conn, _, _, e = dialer.Dial(context.Background(), u.String())
+		wsRawConn, _, _, e = dialer.Dial(context.Background(), u.String())
+		conn = &syncWSClientConn{conn: wsRawConn}
 	default:
 		adapter.receiver.OnConnError(
 			nil,
