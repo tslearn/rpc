@@ -639,7 +639,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		return v, streamConn, netConn
 	}
 
-	t.Run("p.conn == nil, stream.callbackID != 0", func(t *testing.T) {
+	t.Run("conn == nil, stream.callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(12)
@@ -651,7 +651,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("read kind error", func(t *testing.T) {
+	t.Run("conn == nil, kind != StreamKindConnectResponse", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -663,20 +663,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("kind != core.StreamKindConnectResponse", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetCallbackID(0)
-		stream.WriteInt64(5432)
-		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
-		v.errorHub = errorHub
-		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
-			Equal(nil, base.ErrStream)
-	})
-
-	t.Run("read sessionString error", func(t *testing.T) {
+	t.Run("conn == nil, read sessionString error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -689,7 +676,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("read numOfChannels error", func(t *testing.T) {
+	t.Run("conn == nil, read numOfChannels error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -703,7 +690,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("numOfChannels config error", func(t *testing.T) {
+	t.Run("conn == nil, numOfChannels config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetKind(core.StreamKindConnectResponse)
@@ -718,7 +705,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrClientConfig)
 	})
 
-	t.Run("read transLimit error", func(t *testing.T) {
+	t.Run("conn == nil, read transLimit error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -733,7 +720,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("transLimit config error", func(t *testing.T) {
+	t.Run("conn == nil, transLimit config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -749,7 +736,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrClientConfig)
 	})
 
-	t.Run("read heartbeat error", func(t *testing.T) {
+	t.Run("conn == nil, read heartbeat error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -765,7 +752,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("heartbeat config error", func(t *testing.T) {
+	t.Run("conn == nil, heartbeat config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -782,7 +769,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrClientConfig)
 	})
 
-	t.Run("read heartbeatTimeout error", func(t *testing.T) {
+	t.Run("conn == nil, read heartbeatTimeout error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -799,7 +786,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("heartbeatTimeout config error", func(t *testing.T) {
+	t.Run("conn == nil, heartbeatTimeout config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -817,7 +804,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrClientConfig)
 	})
 
-	t.Run("stream is not finish", func(t *testing.T) {
+	t.Run("conn == nil, stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -836,7 +823,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
-	t.Run("ok, sessionString != p.sessionString", func(t *testing.T) {
+	t.Run("conn == nil, sessionString != p.sessionString", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
@@ -864,7 +851,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.lastPingTimeNS > 0).IsTrue()
 	})
 
-	t.Run("ok, sessionString == p.sessionString", func(t *testing.T) {
+	t.Run("conn == nil, sessionString == p.sessionString", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(0)
