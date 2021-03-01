@@ -831,8 +831,8 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
-		stream.WriteInt64(int64(time.Second))
-		stream.WriteInt64(int64(2 * time.Second))
+		stream.WriteInt64(int64(time.Second / time.Millisecond))
+		stream.WriteInt64(int64(2 * time.Second / time.Millisecond))
 		v, streamConn, _ := fnTestClient()
 		errorHub := core.NewTestStreamHub()
 		v.errorHub = errorHub
@@ -859,8 +859,8 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
-		stream.WriteInt64(int64(time.Second))
-		stream.WriteInt64(int64(2 * time.Second))
+		stream.WriteInt64(int64(time.Second / time.Millisecond))
+		stream.WriteInt64(int64(2 * time.Second / time.Millisecond))
 		v, streamConn, netConn := fnTestClient()
 		v.channels = make([]Channel, 32)
 		for i := 0; i < 32; i++ {

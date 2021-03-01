@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
 
@@ -87,8 +88,8 @@ func InitSession(
 		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
 		stream.WriteInt64(int64(config.numOfChannels))
 		stream.WriteInt64(int64(config.transLimit))
-		stream.WriteInt64(int64(config.heartbeat))
-		stream.WriteInt64(int64(config.heartbeatTimeout))
+		stream.WriteInt64(int64(config.heartbeat / time.Millisecond))
+		stream.WriteInt64(int64(config.heartbeatTimeout / time.Millisecond))
 		streamConn.WriteStreamAndRelease(stream)
 
 		session.OnConnOpen(streamConn)

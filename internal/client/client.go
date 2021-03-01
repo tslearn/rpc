@@ -354,8 +354,8 @@ func (p *Client) OnConnReadStream(
 				// update config
 				p.config.numOfChannels = int(numOfChannels)
 				p.config.transLimit = int(transLimit)
-				p.config.heartbeat = time.Duration(heartbeat)
-				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout)
+				p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
+				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
 
 				p.channels = make([]Channel, numOfChannels)
 				for i := 0; i < len(p.channels); i++ {
