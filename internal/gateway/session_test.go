@@ -273,8 +273,10 @@ func TestInitSession(t *testing.T) {
 					Equal(fmt.Sprintf("%d-%s", v.id, v.security), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.transLimit), nil)
-				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeat), nil)
-				assert(rs.ReadInt64()).Equal(int64(cfg.heartbeatTimeout), nil)
+				assert(rs.ReadInt64()).
+					Equal(int64(cfg.heartbeat/time.Millisecond), nil)
+				assert(rs.ReadInt64()).
+					Equal(int64(cfg.heartbeatTimeout/time.Millisecond), nil)
 				assert(rs.IsReadFinish()).IsTrue()
 				assert(rs.CheckStream()).IsTrue()
 			}
