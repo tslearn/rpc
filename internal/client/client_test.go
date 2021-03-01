@@ -639,7 +639,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		return v, streamConn, netConn
 	}
 
-	t.Run("p.conn == nil, stream.callbackID == 0", func(t *testing.T) {
+	t.Run("p.conn == nil, stream.callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
 		stream.SetCallbackID(12)
