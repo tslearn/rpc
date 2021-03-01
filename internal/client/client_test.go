@@ -888,6 +888,18 @@ func TestClient_OnConnReadStream(t *testing.T) {
 			Equal(nil, base.ErrStream)
 	})
 
+	t.Run("p.conn != nil, StreamKindPong ok", func(t *testing.T) {
+		assert := base.NewAssert(t)
+		stream := core.NewStream()
+		stream.SetKind(core.StreamKindPong)
+		v, streamConn, _ := fnTestClient()
+		v.conn = streamConn
+		errorHub := core.NewTestStreamHub()
+		v.errorHub = errorHub
+		v.OnConnReadStream(streamConn, stream)
+		assert(errorHub.GetStream()).IsNil()
+	})
+
 	t.Run("p.conn != nil, StreamKindRPCResponseOK ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		stream := core.NewStream()
@@ -1015,18 +1027,6 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		})
 		v.OnConnReadStream(streamConn, stream)
 		assert(ret).Equal("Hello")
-	})
-
-	t.Run("StreamKindPong ok", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindPong)
-		v, streamConn, _ := fnTestClient()
-		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
-		v.errorHub = errorHub
-		v.OnConnReadStream(streamConn, stream)
-		assert(errorHub.GetStream()).IsNil()
 	})
 }
 
