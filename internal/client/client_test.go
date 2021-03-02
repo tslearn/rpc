@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/core"
@@ -552,7 +551,6 @@ func TestClient_Subscribe(t *testing.T) {
 		})
 		assert(rpcClient.Send(5*time.Second, "#.user:PostMessage", 2345)).
 			Equal(nil, nil)
-		fmt.Println("OK")
 		assert(<-waitCH).Equal(core.Array{true, int64(2345)})
 	})
 }
