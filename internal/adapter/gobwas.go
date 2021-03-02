@@ -2,22 +2,49 @@ package adapter
 
 import (
 	"github.com/gobwas/ws/wsutil"
+	"io"
 	"net"
 	"time"
 )
 
-type syncWSClientConn struct {
-	conn       net.Conn
-	readBuffer []byte
+type syncWSConn struct {
+	conn        net.Conn
+	readBuffer  []byte
+	readBinary  func(rw io.ReadWriter) ([]byte, error)
+	writeBinary func(w io.Writer, p []byte) error
 }
 
-func (p *syncWSClientConn) Read(b []byte) (int, error) {
+func newSyncWSServerConn(conn net.Conn) *syncWSConn {
+	return &syncWSConn{
+		conn:        conn,
+		readBuffer:  nil,
+		readBinary:  wsutil.ReadClientBinary,
+		writeBinary: wsutil.WriteServerBinary,
+	}
+}
+
+func newSyncWSClientConn(conn net.Conn) *syncWSConn {
+	return &syncWSConn{
+		conn:        conn,
+		readBuffer:  nil,
+		readBinary:  wsutil.ReadServerBinary,
+		writeBinary: wsutil.WriteClientBinary,
+	}
+}
+
+func (p *syncWSConn) Read(b []byte) (int, error) {
 	if p.readBuffer != nil {
 		n := copy(b, p.readBuffer)
-		p.readBuffer = nil
+
+		if n < len(p.readBuffer) {
+			p.readBuffer = p.readBuffer[n:]
+		} else {
+			p.readBuffer = nil
+		}
+
 		return n, nil
 	}
-	msg, e := wsutil.ReadServerBinary(p.conn)
+	msg, e := p.readBinary(p.conn)
 
 	if e != nil {
 		return -1, e
@@ -30,90 +57,34 @@ func (p *syncWSClientConn) Read(b []byte) (int, error) {
 	return n, nil
 }
 
-func (p *syncWSClientConn) Write(b []byte) (n int, err error) {
-	err = wsutil.WriteClientBinary(p.conn, b)
+func (p *syncWSConn) Write(b []byte) (n int, err error) {
+	err = p.writeBinary(p.conn, b)
 	if err != nil {
 		return -1, err
 	}
 	return len(b), nil
 }
 
-func (p *syncWSClientConn) Close() error {
+func (p *syncWSConn) Close() error {
 	return p.conn.Close()
 }
 
-func (p *syncWSClientConn) LocalAddr() net.Addr {
+func (p *syncWSConn) LocalAddr() net.Addr {
 	return p.conn.LocalAddr()
 }
 
-func (p *syncWSClientConn) RemoteAddr() net.Addr {
+func (p *syncWSConn) RemoteAddr() net.Addr {
 	return p.conn.RemoteAddr()
 }
 
-func (p *syncWSClientConn) SetDeadline(t time.Time) error {
+func (p *syncWSConn) SetDeadline(t time.Time) error {
 	return p.conn.SetDeadline(t)
 }
 
-func (p *syncWSClientConn) SetReadDeadline(t time.Time) error {
+func (p *syncWSConn) SetReadDeadline(t time.Time) error {
 	return p.conn.SetReadDeadline(t)
 }
 
-func (p *syncWSClientConn) SetWriteDeadline(t time.Time) error {
-	return p.conn.SetWriteDeadline(t)
-}
-
-type syncWSServerConn struct {
-	conn       net.Conn
-	readBuffer []byte
-}
-
-func (p *syncWSServerConn) Read(b []byte) (int, error) {
-	if p.readBuffer != nil {
-		n := copy(b, p.readBuffer)
-		p.readBuffer = nil
-		return n, nil
-	}
-	msg, e := wsutil.ReadClientBinary(p.conn)
-
-	if e != nil {
-		return -1, e
-	}
-
-	n := copy(b, msg)
-	if n < len(msg) {
-		p.readBuffer = msg[n:]
-	}
-	return n, nil
-}
-
-func (p *syncWSServerConn) Write(b []byte) (n int, err error) {
-	err = wsutil.WriteServerBinary(p.conn, b)
-	if err != nil {
-		return -1, err
-	}
-	return len(b), nil
-}
-
-func (p *syncWSServerConn) Close() error {
-	return p.conn.Close()
-}
-
-func (p *syncWSServerConn) LocalAddr() net.Addr {
-	return p.conn.LocalAddr()
-}
-
-func (p *syncWSServerConn) RemoteAddr() net.Addr {
-	return p.conn.RemoteAddr()
-}
-
-func (p *syncWSServerConn) SetDeadline(t time.Time) error {
-	return p.conn.SetDeadline(t)
-}
-
-func (p *syncWSServerConn) SetReadDeadline(t time.Time) error {
-	return p.conn.SetReadDeadline(t)
-}
-
-func (p *syncWSServerConn) SetWriteDeadline(t time.Time) error {
+func (p *syncWSConn) SetWriteDeadline(t time.Time) error {
 	return p.conn.SetWriteDeadline(t)
 }
