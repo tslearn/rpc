@@ -19,17 +19,6 @@ func getTestConnections() (*syncWSConn, *syncWSConn, *http.Server) {
 	httpServerCH := make(chan *http.Server, 1)
 
 	go func() {
-		conn, _, _, e := ws.DefaultDialer.Dial(
-			context.Background(),
-			"ws://127.0.0.1:12345",
-		)
-		if e != nil {
-			panic(e)
-		}
-		clientConnCH <- newSyncWSClientConn(conn)
-	}()
-
-	go func() {
 		server := &http.Server{
 			Addr: ":12345",
 			Handler: http.HandlerFunc(
@@ -42,6 +31,18 @@ func getTestConnections() (*syncWSConn, *syncWSConn, *http.Server) {
 
 		httpServerCH <- server
 		_ = server.ListenAndServe()
+	}()
+
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		conn, _, _, e := ws.DefaultDialer.Dial(
+			context.Background(),
+			"ws://127.0.0.1:12345",
+		)
+		if e != nil {
+			panic(e)
+		}
+		clientConnCH <- newSyncWSClientConn(conn)
 	}()
 
 	return <-clientConnCH, <-serverConnCH, <-httpServerCH
