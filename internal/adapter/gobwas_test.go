@@ -114,7 +114,6 @@ func TestSyncWSConn_Read(t *testing.T) {
 			{10, 3},
 			{4 * 1024 * 1024, 1},
 			{4 * 1024 * 1024, 1500},
-			{16 * 1024 * 1024, 1500},
 		}
 
 		for _, testSuite := range testCollection {
@@ -156,7 +155,6 @@ func TestSyncWSConn_Write(t *testing.T) {
 			{10, 3},
 			{4 * 1024 * 1024, 1},
 			{4 * 1024 * 1024, 1500},
-			{16 * 1024 * 1024, 1500},
 		}
 
 		for _, testSuite := range testCollection {
