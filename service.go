@@ -1,11 +1,6 @@
 package rpc
 
-import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/client"
-	"github.com/rpccloud/rpc/internal/core"
-	"github.com/rpccloud/rpc/internal/server"
-)
+import "github.com/rpccloud/rpc/internal/core"
 
 // Bool ...
 type Bool = core.Bool
@@ -25,14 +20,14 @@ type String = core.String
 // Bytes ...
 type Bytes = core.Bytes
 
-// Any common Any type
-type Any = core.Any
-
 // Array common Array type
 type Array = core.Array
 
 // Map common Map type
 type Map = core.Map
+
+// Any common Any type
+type Any = core.Any
 
 // RTValue ...
 type RTValue = core.RTValue
@@ -55,23 +50,8 @@ type Service = core.Service
 // NewService ...
 var NewService = core.NewService
 
-// Error ...
-type Error = base.Error
-
-// Stream ...
-type Stream = core.Stream
-
 // ActionCache ...
 type ActionCache = core.ActionCache
 
 // ActionCacheFunc ...
 type ActionCacheFunc = core.ActionCacheFunc
-
-// NewServer ...
-var NewServer = server.NewServer
-
-// Client ...
-type Client = client.Client
-
-// Dial ...
-var Dial = client.Dial
