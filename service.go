@@ -1,57 +1,57 @@
 package rpc
 
-import "github.com/rpccloud/rpc/internal/core"
+import "github.com/rpccloud/rpc/internal/rpc"
 
 // Bool ...
-type Bool = core.Bool
+type Bool = rpc.Bool
 
 // Int64 ...
-type Int64 = core.Int64
+type Int64 = rpc.Int64
 
 // Uint64 ...
-type Uint64 = core.Uint64
+type Uint64 = rpc.Uint64
 
 // Float64 ...
-type Float64 = core.Float64
+type Float64 = rpc.Float64
 
 // String ...
-type String = core.String
+type String = rpc.String
 
 // Bytes ...
-type Bytes = core.Bytes
+type Bytes = rpc.Bytes
 
 // Array common Array type
-type Array = core.Array
+type Array = rpc.Array
 
 // Map common Map type
-type Map = core.Map
+type Map = rpc.Map
 
 // Any common Any type
-type Any = core.Any
+type Any = rpc.Any
 
 // RTValue ...
-type RTValue = core.RTValue
+type RTValue = rpc.RTValue
 
 // RTArray ...
-type RTArray = core.RTArray
+type RTArray = rpc.RTArray
 
 // RTMap ...
-type RTMap = core.RTMap
+type RTMap = rpc.RTMap
 
 // Return ...
-type Return = core.Return
+type Return = rpc.Return
 
 // Runtime ...
-type Runtime = core.Runtime
+type Runtime = rpc.Runtime
 
 // Service ...
-type Service = core.Service
+type Service = rpc.Service
 
 // NewService ...
-var NewService = core.NewService
+var NewService = rpc.NewService
 
 // ActionCache ...
-type ActionCache = core.ActionCache
+type ActionCache = rpc.ActionCache
 
 // ActionCacheFunc ...
-type ActionCacheFunc = core.ActionCacheFunc
+type ActionCacheFunc = rpc.ActionCacheFunc

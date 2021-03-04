@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"io"
 	"net"
 	"path"
@@ -122,7 +122,7 @@ type testSingleReceiver struct {
 
 	streamConn *StreamConn
 	errCH      chan *base.Error
-	streamCH   chan *core.Stream
+	streamCH   chan *rpc.Stream
 	sync.Mutex
 }
 
@@ -130,7 +130,7 @@ func newTestSingleReceiver() *testSingleReceiver {
 	return &testSingleReceiver{
 		streamConn: nil,
 		errCH:      make(chan *base.Error, 1024),
-		streamCH:   make(chan *core.Stream, 1024),
+		streamCH:   make(chan *rpc.Stream, 1024),
 	}
 }
 
@@ -158,7 +158,7 @@ func (p *testSingleReceiver) OnConnClose(streamConn *StreamConn) {
 
 func (p *testSingleReceiver) OnConnReadStream(
 	streamConn *StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	p.Lock()
 	defer p.Unlock()
@@ -209,7 +209,7 @@ func (p *testSingleReceiver) GetOnErrorCount() int {
 	return p.onErrorCount
 }
 
-func (p *testSingleReceiver) GetStream() *core.Stream {
+func (p *testSingleReceiver) GetStream() *rpc.Stream {
 	return <-p.streamCH
 }
 

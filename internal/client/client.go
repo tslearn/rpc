@@ -8,7 +8,7 @@ import (
 
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // Dial ...
@@ -33,7 +33,7 @@ type Config struct {
 type Subscription struct {
 	id        int64
 	client    *Client
-	onMessage func(value core.Any)
+	onMessage func(value rpc.Any)
 }
 
 // Close ...
@@ -57,7 +57,7 @@ type Client struct {
 	channels        []Channel
 	lastPingTimeNS  int64
 	orcManager      *base.ORCManager
-	errorHub        core.IStreamHub
+	errorHub        rpc.IStreamHub
 	subscriptionMap map[string][]*Subscription
 	sync.Mutex
 }
@@ -80,7 +80,7 @@ func newClient(
 		lastPingTimeNS:  0,
 		orcManager:      base.NewORCManager(),
 		subscriptionMap: make(map[string][]*Subscription),
-		errorHub:        core.NewLogToScreenErrorStreamHub("Client"),
+		errorHub:        rpc.NewLogToScreenErrorStreamHub("Client"),
 	}
 
 	// init adapter
@@ -117,7 +117,7 @@ func newClient(
 }
 
 // SetErrorHub ...
-func (p *Client) SetErrorHub(errorHub core.IStreamHub) {
+func (p *Client) SetErrorHub(errorHub rpc.IStreamHub) {
 	p.Lock()
 	defer p.Unlock()
 	p.errorHub = errorHub
@@ -130,8 +130,8 @@ func (p *Client) tryToSendPing(nowNS int64) {
 
 	// Send Ping
 	p.lastPingTimeNS = nowNS
-	stream := core.NewStream()
-	stream.SetKind(core.StreamKindPing)
+	stream := rpc.NewStream()
+	stream.SetKind(rpc.StreamKindPing)
 	stream.SetCallbackID(0)
 	p.conn.WriteStreamAndRelease(stream)
 }
@@ -210,7 +210,7 @@ func (p *Client) tryToDeliverPreSendMessages() {
 func (p *Client) Subscribe(
 	nodePath string,
 	message string,
-	fn func(value core.Any),
+	fn func(value rpc.Any),
 ) *Subscription {
 	p.Lock()
 	defer p.Unlock()
@@ -265,7 +265,7 @@ func (p *Client) Send(
 	item := NewSendItem(int64(timeout))
 	defer item.Release()
 
-	item.sendStream.SetKind(core.StreamKindRPCRequest)
+	item.sendStream.SetKind(rpc.StreamKindRPCRequest)
 	// set depth
 	item.sendStream.SetDepth(0)
 	// write target
@@ -274,7 +274,7 @@ func (p *Client) Send(
 	item.sendStream.WriteString("@")
 	// write args
 	for i := 0; i < len(args); i++ {
-		if eStr := item.sendStream.Write(args[i]); eStr != core.StreamWriteOK {
+		if eStr := item.sendStream.Write(args[i]); eStr != rpc.StreamWriteOK {
 			return nil, base.ErrUnsupportedValue.AddDebug(eStr)
 		}
 	}
@@ -295,7 +295,7 @@ func (p *Client) Send(
 	backStream := <-item.returnCH
 	defer backStream.Release()
 
-	return core.ParseResponseStream(backStream)
+	return rpc.ParseResponseStream(backStream)
 }
 
 // Close ...
@@ -312,8 +312,8 @@ func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 	p.Lock()
 	defer p.Unlock()
 
-	stream := core.NewStream()
-	stream.SetKind(core.StreamKindConnectRequest)
+	stream := rpc.NewStream()
+	stream.SetKind(rpc.StreamKindConnectRequest)
 	stream.SetCallbackID(0)
 	stream.WriteString(p.sessionString)
 	streamConn.WriteStreamAndRelease(stream)
@@ -322,7 +322,7 @@ func (p *Client) OnConnOpen(streamConn *adapter.StreamConn) {
 // OnConnReadStream ...
 func (p *Client) OnConnReadStream(
 	streamConn *adapter.StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	p.Lock()
 	defer p.Unlock()
@@ -334,7 +334,7 @@ func (p *Client) OnConnReadStream(
 
 		if callbackID != 0 {
 			p.OnConnError(streamConn, base.ErrStream)
-		} else if kind := stream.GetKind(); kind != core.StreamKindConnectResponse {
+		} else if kind := stream.GetKind(); kind != rpc.StreamKindConnectResponse {
 			p.OnConnError(streamConn, base.ErrStream)
 		} else if sessionString, err := stream.ReadString(); err != nil {
 			p.OnConnError(streamConn, err)
@@ -387,9 +387,9 @@ func (p *Client) OnConnReadStream(
 		stream.Release()
 	} else {
 		switch stream.GetKind() {
-		case core.StreamKindRPCResponseOK:
+		case rpc.StreamKindRPCResponseOK:
 			fallthrough
-		case core.StreamKindRPCResponseError:
+		case rpc.StreamKindRPCResponseError:
 			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			if channel.sequence == callbackID {
 				channel.Free(stream)
@@ -397,7 +397,7 @@ func (p *Client) OnConnReadStream(
 			} else {
 				stream.Release()
 			}
-		case core.StreamKindRPCBoardCast:
+		case rpc.StreamKindRPCBoardCast:
 			if actionPath, err := stream.ReadString(); err != nil {
 				p.OnConnError(streamConn, err)
 			} else if value, err := stream.Read(); err != nil {
@@ -412,7 +412,7 @@ func (p *Client) OnConnReadStream(
 				}
 			}
 			stream.Release()
-		case core.StreamKindPong:
+		case rpc.StreamKindPong:
 			if !stream.IsReadFinish() {
 				p.OnConnError(streamConn, base.ErrStream)
 			}
@@ -426,7 +426,7 @@ func (p *Client) OnConnReadStream(
 
 // OnConnError ...
 func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	errStream := core.MakeSystemErrorStream(err)
+	errStream := rpc.MakeSystemErrorStream(err)
 	errStream.SetSessionID(0)
 	errStream.SetGatewayID(0)
 	p.errorHub.OnReceiveStream(errStream)

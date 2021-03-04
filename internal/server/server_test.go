@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"os"
 	"path"
 	"runtime"
@@ -12,7 +12,7 @@ import (
 
 type testActionCache struct{}
 
-func (p *testActionCache) Get(_ string) core.ActionCacheFunc {
+func (p *testActionCache) Get(_ string) rpc.ActionCacheFunc {
 	return nil
 }
 
@@ -84,7 +84,7 @@ func TestNewServer(t *testing.T) {
 func TestServer_Listen(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.Listen("tcp", "127.0.0.1:1234", nil)
@@ -95,7 +95,7 @@ func TestServer_Listen(t *testing.T) {
 func TestServer_ListenWithDebug(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.ListenWithDebug("tcp", "127.0.0.1:1234", nil)
@@ -105,23 +105,23 @@ func TestServer_ListenWithDebug(t *testing.T) {
 func TestServer_SetNumOfThreads(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetNumOfThreads(1024), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 	})
 
 	t.Run("numOfThreads == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		_, source := v.SetNumOfThreads(0), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrNumOfThreadsIsWrong.AddDebug(source).Standardize(),
 		)
 	})
@@ -137,23 +137,23 @@ func TestServer_SetNumOfThreads(t *testing.T) {
 func TestServer_SetThreadBufferSize(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetThreadBufferSize(1024), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 	})
 
 	t.Run("threadBufferSize == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		_, source := v.SetThreadBufferSize(0), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrThreadBufferSizeIsWrong.AddDebug(source).Standardize(),
 		)
 	})
@@ -169,12 +169,12 @@ func TestServer_SetThreadBufferSize(t *testing.T) {
 func TestServer_SetActionCache(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetActionCache(&testActionCache{}), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 		assert(v.actionCache).IsNil()
@@ -192,13 +192,13 @@ func TestServer_SetActionCache(t *testing.T) {
 func TestServer_SetLogHub(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		setHub := core.NewTestStreamHub()
-		errorHub := core.NewTestStreamHub()
+		setHub := rpc.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.SetLogHub(setHub), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 	})
@@ -206,7 +206,7 @@ func TestServer_SetLogHub(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
-		v.SetLogHub(core.NewTestStreamHub())
+		v.SetLogHub(rpc.NewTestStreamHub())
 		assert(v.logHub).IsNotNil()
 	})
 }
@@ -214,23 +214,23 @@ func TestServer_SetLogHub(t *testing.T) {
 func TestServer_AddService(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		service := core.NewService()
-		errorHub := core.NewTestStreamHub()
+		service := rpc.NewService()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		_, source := v.AddService("t", service, nil), base.GetFileLine(0)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		service := core.NewService()
+		service := rpc.NewService()
 		v := NewServer()
 		_, source := v.AddService("t", service, nil), base.GetFileLine(0)
-		assert(v.mountServices[0]).Equal(core.NewServiceMeta(
+		assert(v.mountServices[0]).Equal(rpc.NewServiceMeta(
 			"t",
 			service,
 			source,
@@ -260,11 +260,11 @@ func TestServer_BuildReplyCache(t *testing.T) {
 		_ = os.MkdirAll(path.Join(curDir, "cache"), 0555)
 		_ = os.MkdirAll(path.Join(curDir, "cache", "rpc_action_cache.go"), 0555)
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		assert(v.BuildReplyCache()).Equal(v)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrCacheWriteFile.Standardize(),
 		)
 	})
@@ -277,14 +277,14 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
 		}()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
@@ -296,7 +296,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 
 		v.OnReceiveStream(stream)
 
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
@@ -306,14 +306,14 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
 		}()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCRequest)
 		stream.SetDepth(0)
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
@@ -325,7 +325,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 
 		v.OnReceiveStream(stream)
 
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
@@ -335,14 +335,14 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
 		}()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCResponseOK)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		stream.Write(true)
 
 		for !v.IsRunning() {
@@ -350,7 +350,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}
 		defer v.Close()
 		v.OnReceiveStream(stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
@@ -360,14 +360,14 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
 		}()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCResponseError)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCResponseError)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
@@ -376,7 +376,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}
 		defer v.Close()
 		v.OnReceiveStream(stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
@@ -386,14 +386,14 @@ func TestServer_OnReceiveStream(t *testing.T) {
 			SetNumOfThreads(1024).
 			Listen("tcp", "127.0.0.1:8888", nil)
 
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.logHub = errorHub
 		go func() {
 			v.Open()
 		}()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCBoardCast)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCBoardCast)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
@@ -402,7 +402,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		}
 		defer v.Close()
 		v.OnReceiveStream(stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 
@@ -410,24 +410,24 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindSystemErrorReport)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindSystemErrorReport)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 		v.OnReceiveStream(stream)
-		assert(stream.GetKind() != core.StreamKindSystemErrorReport).IsTrue()
+		assert(stream.GetKind() != rpc.StreamKindSystemErrorReport).IsTrue()
 	})
 
 	t.Run("StreamKindConnectResponse", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewServer()
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 		v.OnReceiveStream(stream)
-		assert(stream.GetKind() != core.StreamKindConnectResponse).IsTrue()
+		assert(stream.GetKind() != rpc.StreamKindConnectResponse).IsTrue()
 	})
 
 }
@@ -435,25 +435,25 @@ func TestServer_OnReceiveStream(t *testing.T) {
 func TestServer_Open(t *testing.T) {
 	t.Run("server is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		v.isRunning = true
 		isOpen, source := v.Open(), base.GetFileLine(0)
 		assert(isOpen).Equal(false)
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerAlreadyRunning.AddDebug(source).Standardize(),
 		)
 	})
 
 	t.Run("processor create error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.numOfThreads = 0
 		v.logHub = errorHub
 		assert(v.Open()).IsFalse()
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrNumOfThreadsIsWrong.Standardize(),
 		)
 	})
@@ -495,12 +495,12 @@ func TestServer_IsRunning(t *testing.T) {
 func TestServer_Close(t *testing.T) {
 	t.Run("server is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := NewServer()
 		v.logHub = errorHub
 		isSuccess, source := v.Close(), base.GetFileLine(0)
 		assert(isSuccess).IsFalse()
-		assert(core.ParseResponseStream(errorHub.GetStream())).Equal(
+		assert(rpc.ParseResponseStream(errorHub.GetStream())).Equal(
 			nil, base.ErrServerNotRunning.AddDebug(source).Standardize(),
 		)
 	})

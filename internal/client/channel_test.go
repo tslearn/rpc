@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
 )
@@ -32,14 +32,14 @@ func TestChannel_Free(t *testing.T) {
 	t.Run("p.item == nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Channel{sequence: 642, item: nil}
-		assert(v.Free(core.NewStream())).IsFalse()
+		assert(v.Free(rpc.NewStream())).IsFalse()
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		item := NewSendItem(0)
 		v := &Channel{sequence: 642, item: item}
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		assert(len(item.returnCH)).Equal(0)
 		assert(v.Free(stream)).IsTrue()
 		assert(v.item).IsNil()

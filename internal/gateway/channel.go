@@ -2,18 +2,18 @@ package gateway
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // Channel ...
 type Channel struct {
 	sequence   uint64
 	backTimeNS int64
-	backStream *core.Stream
+	backStream *rpc.Stream
 }
 
 // In ...
-func (p *Channel) In(id uint64) (canIn bool, backStream *core.Stream) {
+func (p *Channel) In(id uint64) (canIn bool, backStream *rpc.Stream) {
 	if id > p.sequence {
 		p.Clean()
 		p.sequence = id
@@ -26,7 +26,7 @@ func (p *Channel) In(id uint64) (canIn bool, backStream *core.Stream) {
 }
 
 // Out ...
-func (p *Channel) Out(stream *core.Stream) (canOut bool) {
+func (p *Channel) Out(stream *rpc.Stream) (canOut bool) {
 	id := stream.GetCallbackID()
 
 	if id == p.sequence {

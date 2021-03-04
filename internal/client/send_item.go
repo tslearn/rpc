@@ -4,14 +4,14 @@ import (
 	"sync"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 var sendItemCache = &sync.Pool{
 	New: func() interface{} {
 		return &SendItem{
-			returnCH:   make(chan *core.Stream, 1),
-			sendStream: core.NewStream(),
+			returnCH:   make(chan *rpc.Stream, 1),
+			sendStream: rpc.NewStream(),
 		}
 	},
 }
@@ -22,8 +22,8 @@ type SendItem struct {
 	startTimeNS int64
 	sendTimeNS  int64
 	timeoutNS   int64
-	returnCH    chan *core.Stream
-	sendStream  *core.Stream
+	returnCH    chan *rpc.Stream
+	sendStream  *rpc.Stream
 	next        *SendItem
 }
 
@@ -39,7 +39,7 @@ func NewSendItem(timeoutNS int64) *SendItem {
 }
 
 // Back ...
-func (p *SendItem) Back(stream *core.Stream) bool {
+func (p *SendItem) Back(stream *rpc.Stream) bool {
 	if stream == nil || !p.isRunning {
 		return false
 	}
@@ -54,8 +54,8 @@ func (p *SendItem) CheckTime(nowNS int64) bool {
 		p.isRunning = false
 
 		// return timeout stream
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCResponseError)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCResponseError)
 		stream.SetCallbackID(p.sendStream.GetCallbackID())
 		stream.WriteUint64(uint64(base.ErrClientTimeout.GetCode()))
 		stream.WriteString(base.ErrClientTimeout.GetMessage())

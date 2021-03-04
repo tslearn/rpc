@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
 )
@@ -37,14 +37,14 @@ func TestSendItem_Back(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(0)
 		v.isRunning = false
-		assert(v.Back(core.NewStream())).IsFalse()
+		assert(v.Back(rpc.NewStream())).IsFalse()
 		assert(len(v.returnCH)).Equal(0)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := NewSendItem(0)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		assert(v.Back(stream)).IsTrue()
 		assert(len(v.returnCH)).Equal(1)
 		assert(<-v.returnCH).Equal(stream)
@@ -100,7 +100,7 @@ func TestSendItem_Release(t *testing.T) {
 		}
 
 		v.Release()
-		assert(v.sendStream.GetWritePos()).Equal(core.StreamHeadSize)
+		assert(v.sendStream.GetWritePos()).Equal(rpc.StreamHeadSize)
 	})
 
 	t.Run("test put back", func(t *testing.T) {

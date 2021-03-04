@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 type serverReceiver struct {
@@ -22,7 +22,7 @@ func (p *serverReceiver) OnConnClose(_ *StreamConn) {
 
 func (p *serverReceiver) OnConnReadStream(
 	streamConn *StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	streamConn.WriteStreamAndRelease(stream)
 }
@@ -39,7 +39,7 @@ func (p *serverReceiver) OnConnError(
 }
 
 type clientReceiver struct {
-	streamCH   chan *core.Stream
+	streamCH   chan *rpc.Stream
 	streamConn *StreamConn
 }
 
@@ -56,7 +56,7 @@ func (p *clientReceiver) OnConnClose(_ *StreamConn) {
 
 func (p *clientReceiver) OnConnReadStream(
 	_ *StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	p.streamCH <- stream
 }
@@ -83,7 +83,7 @@ func BenchmarkDebug(b *testing.B) {
 
 	time.Sleep(time.Second)
 
-	cReceiver := &clientReceiver{streamCH: make(chan *core.Stream)}
+	cReceiver := &clientReceiver{streamCH: make(chan *rpc.Stream)}
 	clientAdapter := NewClientAdapter(
 		"tcp", "0.0.0.0:8080", nil, 1200, 1200, cReceiver,
 	)
@@ -106,7 +106,7 @@ func BenchmarkDebug(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.WriteInt64(12)
 		stream.BuildStreamCheck()
 		cReceiver.streamConn.WriteStreamAndRelease(stream)

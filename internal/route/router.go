@@ -1,17 +1,17 @@
 package route
 
 import (
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // IRouteReceiver ...
 type IRouteReceiver interface {
-	ReceiveStreamFromRouter(stream *core.Stream)
+	ReceiveStreamFromRouter(stream *rpc.Stream)
 }
 
 // IRouteSender ...
 type IRouteSender interface {
-	SendStreamToRouter(stream *core.Stream)
+	SendStreamToRouter(stream *rpc.Stream)
 }
 
 // IRouter ...

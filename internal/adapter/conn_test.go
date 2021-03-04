@@ -2,7 +2,7 @@ package adapter
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"math/rand"
 	"net"
 	"testing"
@@ -177,7 +177,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 
 	t.Run("server ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.BuildStreamCheck()
 		netConn := newTestNetConn(stream.GetBuffer(), 1024, 10)
 		receiver := newTestSingleReceiver()
@@ -244,7 +244,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 		for write := 1; write < 200; write += 30 {
 			rand.Seed(base.TimeNow().UnixNano())
 			numOfStream := rand.Int()%5 + 1
-			stream := core.NewStream()
+			stream := rpc.NewStream()
 			for i := 0; i < write; i++ {
 				stream.PutBytes([]byte{43})
 			}
@@ -274,7 +274,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 
 	t.Run("write error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		receiver := newTestSingleReceiver()
 		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
@@ -291,7 +291,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 
 	t.Run("write zero", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		receiver := newTestSingleReceiver()
 		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
@@ -346,8 +346,8 @@ func TestNewStreamConn(t *testing.T) {
 		assert(len(v.writeCH)).Equal(0)
 		assert(cap(v.writeCH)).Equal(16)
 		assert(v.readHeadPos).Equal(0)
-		assert(len(v.readHeadBuf)).Equal(core.StreamHeadSize)
-		assert(cap(v.readHeadBuf)).Equal(core.StreamHeadSize)
+		assert(len(v.readHeadBuf)).Equal(rpc.StreamHeadSize)
+		assert(cap(v.readHeadBuf)).Equal(rpc.StreamHeadSize)
 		assert(v.readStream).IsNil()
 		assert(v.writeStream).IsNil()
 		assert(v.writePos).Equal(0)
@@ -411,7 +411,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 		receiver := newTestSingleReceiver()
 		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
-		streamConn.OnReadBytes(core.NewStream().GetBuffer())
+		streamConn.OnReadBytes(rpc.NewStream().GetBuffer())
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).Equal(base.ErrStream)
 	})
@@ -421,7 +421,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 		receiver := newTestSingleReceiver()
 		streamConn := NewStreamConn(false, nil, receiver)
 		streamConn.OnOpen()
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.PutBytes([]byte{12})
 		stream.BuildStreamCheck()
 		errBuffer := stream.GetBuffer()
@@ -437,7 +437,7 @@ func TestStreamConn_OnReadBytes(t *testing.T) {
 			buffer := make([]byte, 0)
 
 			for i := 0; i < streams; i++ {
-				stream := core.NewStream()
+				stream := rpc.NewStream()
 				for j := 0; j < i; j++ {
 					stream.PutBytes([]byte{12})
 				}
@@ -506,7 +506,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 			receiver,
 		)
 		v.OnOpen()
-		v.writeStream = core.NewStream()
+		v.writeStream = rpc.NewStream()
 		v.writePos = v.writeStream.GetWritePos()
 		assert(v.OnFillWrite(buf)).Equal(0)
 		assert(receiver.GetOnErrorCount()).Equal(1)
@@ -527,7 +527,7 @@ func TestStreamConn_OnFillWrite(t *testing.T) {
 
 				buffer := make([]byte, 0)
 				for i := 0; i < streams; i++ {
-					stream := core.NewStream()
+					stream := rpc.NewStream()
 					rand.Seed(base.TimeNow().UnixNano())
 					for j := 0; j < rand.Int()%20; j++ {
 						stream.PutBytes([]byte{12})
@@ -569,7 +569,7 @@ func TestStreamConn_Close(t *testing.T) {
 		v.Close()
 
 		assert(base.RunWithCatchPanic(func() {
-			v.writeCH <- core.NewStream()
+			v.writeCH <- rpc.NewStream()
 		})).IsNotNil()
 		assert(prev.isRunning).IsFalse()
 	})
@@ -581,7 +581,7 @@ func TestStreamConn_Close(t *testing.T) {
 		v.status = streamConnStatusClosed
 		v.Close()
 		assert(base.RunWithCatchPanic(func() {
-			v.writeCH <- core.NewStream()
+			v.writeCH <- rpc.NewStream()
 		})).IsNil()
 		assert(prev.isRunning).IsTrue()
 	})
@@ -615,8 +615,8 @@ func TestStreamConn_WriteStreamAndRelease(t *testing.T) {
 		v := NewStreamConn(false, netConn, newTestSingleReceiver())
 		netConn.SetNext(v)
 		v.OnOpen()
-		v.WriteStreamAndRelease(core.NewStream())
-		retStream := core.NewStream()
+		v.WriteStreamAndRelease(rpc.NewStream())
+		retStream := rpc.NewStream()
 		retStream.BuildStreamCheck()
 		assert(conn.writeBuf[:conn.writePos]).
 			Equal(retStream.GetBuffer())
@@ -630,8 +630,8 @@ func TestStreamConn_WriteStreamAndRelease(t *testing.T) {
 		netConn.SetNext(v)
 		v.OnOpen()
 		v.Close()
-		v.WriteStreamAndRelease(core.NewStream())
-		retStream := core.NewStream()
+		v.WriteStreamAndRelease(rpc.NewStream())
+		retStream := rpc.NewStream()
 		retStream.BuildStreamCheck()
 		assert(conn.writeBuf[:conn.writePos]).Equal([]byte{})
 	})

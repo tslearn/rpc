@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"testing"
 	"time"
@@ -27,7 +27,7 @@ func TestNewGateWay(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		assert(v.id).Equal(uint32(132))
 		assert(v.isRunning).Equal(false)
@@ -52,7 +52,7 @@ func TestNewGateWay(t *testing.T) {
 func TestGateWay_TotalSessions(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		v.totalSessions = 54321
 		assert(v.TotalSessions()).Equal(int64(54321))
 	})
@@ -61,7 +61,7 @@ func TestGateWay_TotalSessions(t *testing.T) {
 func TestGateWay_AddSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 
 		for i := uint64(1); i < 100; i++ {
 			session := newSession(i, v)
@@ -78,7 +78,7 @@ func TestGateWay_AddSession(t *testing.T) {
 func TestGateWay_GetSession(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 
 		for i := uint64(1); i < 100; i++ {
 			session := newSession(i, v)
@@ -102,7 +102,7 @@ func TestGateWay_GetSession(t *testing.T) {
 func TestGateWay_CreateSessionID(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		assert(v.CreateSessionID()).Equal(uint64(1))
 		assert(v.CreateSessionID()).Equal(uint64(2))
 	})
@@ -111,7 +111,7 @@ func TestGateWay_CreateSessionID(t *testing.T) {
 func TestGateWay_TimeCheck(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		for i := uint64(1); i <= sessionManagerVectorSize; i++ {
 			session := newSession(i, v)
 			session.activeTimeNS = 0
@@ -127,18 +127,18 @@ func TestGateWay_TimeCheck(t *testing.T) {
 func TestGateWay_Listen(t *testing.T) {
 	t.Run("gateway is running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		assert(v.Listen("tcp", "0.0.0.0:8080", nil)).Equal(v)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("gateway is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tlsConfig := &tls.Config{}
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		assert(v.Listen("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
 		assert(len(v.adapters)).Equal(1)
 		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
@@ -156,18 +156,18 @@ func TestGateWay_Listen(t *testing.T) {
 func TestGateWay_ListenWithDebug(t *testing.T) {
 	t.Run("gateway is running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", nil)).Equal(v)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("gateway is not running", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tlsConfig := &tls.Config{}
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		assert(v.ListenWithDebug("tcp", "0.0.0.0:8080", tlsConfig)).Equal(v)
 		assert(len(v.adapters)).Equal(1)
 		assert(v.adapters[0]).Equal(adapter.NewServerAdapter(
@@ -185,27 +185,27 @@ func TestGateWay_ListenWithDebug(t *testing.T) {
 func TestGateWay_Open(t *testing.T) {
 	t.Run("it is already running", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.isRunning = true
 		v.Open()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGatewayAlreadyRunning)
 	})
 
 	t.Run("no valid adapter", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.Open()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGatewayNoAvailableAdapter)
 	})
 
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 		v.Listen("tcp", "127.0.0.1:8001", nil)
@@ -232,7 +232,7 @@ func TestGateWay_Close(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		waitCH := make(chan bool)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		v.AddSession(&Session{id: 10})
 		v.Listen("tcp", "127.0.0.1:8000", nil)
 
@@ -261,10 +261,10 @@ func TestGateWay_Close(t *testing.T) {
 func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 	t.Run("session is exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetSessionID(10)
 		v.OutStream(stream)
 		assert(streamHub.GetStream()).IsNil()
@@ -272,13 +272,13 @@ func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 
 	t.Run("session is not exist", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetSessionID(11)
 		v.OutStream(stream)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
 	})
 }
@@ -286,7 +286,7 @@ func TestGateWay_ReceiveStreamFromRouter(t *testing.T) {
 func TestGateWay_OnConnOpen(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
@@ -298,13 +298,13 @@ func TestGateWay_OnConnOpen(t *testing.T) {
 func TestGateWay_OnConnReadStream(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		syncConn := adapter.NewServerSyncConn(newTestNetConn(), 1200, 1200)
 		streamConn := adapter.NewStreamConn(false, syncConn, v)
 		syncConn.SetNext(streamConn)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
@@ -315,7 +315,7 @@ func TestGateWay_OnConnReadStream(t *testing.T) {
 func TestGateWay_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
 		v.AddSession(newSession(10, v))
 		netConn := newTestNetConn()
@@ -324,7 +324,7 @@ func TestGateWay_OnConnError(t *testing.T) {
 		assert(netConn.isRunning).IsTrue()
 		v.OnConnError(streamConn, base.ErrStream)
 		assert(netConn.isRunning).IsFalse()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 }
@@ -332,7 +332,7 @@ func TestGateWay_OnConnError(t *testing.T) {
 func TestGateWay_OnConnClose(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewGateWay(132, GetDefaultConfig(), core.NewTestStreamHub())
+		v := NewGateWay(132, GetDefaultConfig(), rpc.NewTestStreamHub())
 		v.AddSession(newSession(10, v))
 		assert(base.RunWithCatchPanic(func() {
 			v.OnConnClose(nil)
