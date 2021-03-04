@@ -1,11 +1,17 @@
 package rpc
 
 import (
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
 )
+
+type blackHoleStreamHub struct {
+}
+
+func (p *blackHoleStreamHub) OnReceiveStream(stream *Stream) {
+	stream.Release()
+}
 
 func testWithRPCBenchmark(
 	numOfThreads int,
@@ -35,10 +41,8 @@ func testWithRPCBenchmark(
 				fileLine: "",
 				data:     serviceData,
 			}},
-			NewTestStreamHub(),
+			&blackHoleStreamHub{},
 		); processor != nil {
-			sendBuffer := stream.GetBuffer()
-			runtime.GC()
 			b.ResetTimer()
 			b.ReportAllocs()
 			bNPtr := &b.N
@@ -47,9 +51,7 @@ func testWithRPCBenchmark(
 
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					stream := NewStream()
-					stream.PutBytesTo(sendBuffer, 0)
-					processor.PutStream(stream)
+					processor.PutStream(stream.Clone())
 				}
 			})
 			return processor.Close()
