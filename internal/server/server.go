@@ -10,7 +10,6 @@ import (
 
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/gateway"
-	"github.com/rpccloud/rpc/internal/route"
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
@@ -29,7 +28,6 @@ var fnNumCPU = runtime.NumCPU
 type Server struct {
 	isRunning        bool
 	processor        *rpc.Processor
-	router           route.IRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
@@ -47,7 +45,6 @@ func NewServer() *Server {
 	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
-		router:           route.NewDirectRouter(),
 		gateway:          nil,
 		numOfThreads:     fnNumCPU() * defaultThreadsPerCPU,
 		maxNodeDepth:     defaultMaxNodeDepth,
