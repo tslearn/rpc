@@ -9,7 +9,7 @@ import (
 
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 const (
@@ -23,7 +23,7 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	streamHub      core.IStreamHub
+	streamHub      rpc.IStreamHub
 	closeCH        chan bool
 	config         *Config
 	adapters       []*adapter.Adapter
@@ -35,7 +35,7 @@ type GateWay struct {
 func NewGateWay(
 	id uint32,
 	config *Config,
-	streamHub core.IStreamHub,
+	streamHub rpc.IStreamHub,
 ) *GateWay {
 	if streamHub == nil {
 		panic("streamHub is nil")
@@ -109,7 +109,7 @@ func (p *GateWay) Listen(
 		))
 	} else {
 		p.streamHub.OnReceiveStream(
-			core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+			rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 		)
 	}
 
@@ -137,7 +137,7 @@ func (p *GateWay) ListenWithDebug(
 		))
 	} else {
 		p.streamHub.OnReceiveStream(
-			core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+			rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 		)
 	}
 
@@ -152,12 +152,12 @@ func (p *GateWay) Open() {
 
 		if p.isRunning {
 			p.streamHub.OnReceiveStream(
-				core.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
+				rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 			)
 			return false
 		} else if len(p.adapters) <= 0 {
 			p.streamHub.OnReceiveStream(
-				core.MakeSystemErrorStream(base.ErrGatewayNoAvailableAdapter),
+				rpc.MakeSystemErrorStream(base.ErrGatewayNoAvailableAdapter),
 			)
 			return false
 		} else {
@@ -214,11 +214,11 @@ func (p *GateWay) Close() {
 }
 
 // OutStream ...
-func (p *GateWay) OutStream(stream *core.Stream) {
+func (p *GateWay) OutStream(stream *rpc.Stream) {
 	if session, ok := p.GetSession(stream.GetSessionID()); ok {
 		session.OutStream(stream)
 	} else {
-		errStream := core.MakeSystemErrorStream(base.ErrGateWaySessionNotFound)
+		errStream := rpc.MakeSystemErrorStream(base.ErrGateWaySessionNotFound)
 		errStream.SetGatewayID(p.id)
 		errStream.SetSessionID(stream.GetSessionID())
 		p.streamHub.OnReceiveStream(errStream)
@@ -235,14 +235,14 @@ func (p *GateWay) OnConnOpen(_ *adapter.StreamConn) {
 // OnConnReadStream ...
 func (p *GateWay) OnConnReadStream(
 	streamConn *adapter.StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	InitSession(p, streamConn, stream)
 }
 
 // OnConnError ...
 func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.streamHub.OnReceiveStream(core.MakeSystemErrorStream(err))
+	p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 
 	if streamConn != nil {
 		streamConn.Close()

@@ -2,21 +2,21 @@ package route
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 )
 
 type testReceiver struct {
-	streamCH chan *core.Stream
+	streamCH chan *rpc.Stream
 }
 
 func newTestReceiver() *testReceiver {
 	return &testReceiver{
-		streamCH: make(chan *core.Stream, 1024),
+		streamCH: make(chan *rpc.Stream, 1024),
 	}
 }
 
-func (p *testReceiver) ReceiveStreamFromRouter(s *core.Stream) {
+func (p *testReceiver) ReceiveStreamFromRouter(s *rpc.Stream) {
 	p.streamCH <- s
 }
 
@@ -25,7 +25,7 @@ func TestDirectRouterSender_SendStreamToRouter(t *testing.T) {
 		assert := base.NewAssert(t)
 		receiver := IRouteReceiver(newTestReceiver())
 		v := &DirectRouterSender{receiver: &receiver}
-		sendStream := core.NewStream()
+		sendStream := rpc.NewStream()
 		v.SendStreamToRouter(sendStream)
 		assert(len(receiver.(*testReceiver).streamCH)).Equal(1)
 		assert(<-receiver.(*testReceiver).streamCH).Equal(sendStream)

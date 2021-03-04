@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"math/rand"
 	"net"
 	"sync"
@@ -65,17 +65,17 @@ func (p *testNetConn) SetWriteDeadline(_ time.Time) error {
 }
 
 func getTestServer() *server.Server {
-	userService := core.NewService().
-		On("SayHello", func(rt core.Runtime, name core.String) core.Return {
+	userService := rpc.NewService().
+		On("SayHello", func(rt rpc.Runtime, name rpc.String) rpc.Return {
 			return rt.Reply("hello " + name)
 		}).
-		On("Sleep", func(rt core.Runtime, timeNS int64) core.Return {
+		On("Sleep", func(rt rpc.Runtime, timeNS int64) rpc.Return {
 			time.Sleep(time.Duration(timeNS))
 			return rt.Reply(nil)
 		}).
-		On("PostMessage", func(rt core.Runtime, timeNS int64) core.Return {
+		On("PostMessage", func(rt rpc.Runtime, timeNS int64) rpc.Return {
 			return rt.Reply(
-				rt.Post(rt.GetPostEndPoint(), "@Post", core.Array{true, timeNS}),
+				rt.Post(rt.GetPostEndPoint(), "@Post", rpc.Array{true, timeNS}),
 			)
 		})
 
@@ -140,7 +140,7 @@ func TestSubscription_Close(t *testing.T) {
 		sub := &Subscription{
 			id:        13,
 			client:    client,
-			onMessage: func(value core.Any) {},
+			onMessage: func(value rpc.Any) {},
 		}
 		client.subscriptionMap["#.test%Message"] = []*Subscription{sub}
 
@@ -231,7 +231,7 @@ func TestClient_SetErrorHub(t *testing.T) {
 		assert := base.NewAssert(t)
 		v := &Client{}
 		assert(v.errorHub).IsNil()
-		v.SetErrorHub(core.NewTestStreamHub())
+		v.SetErrorHub(rpc.NewTestStreamHub())
 		assert(v.errorHub).IsNotNil()
 	})
 }
@@ -275,9 +275,9 @@ func TestClient_tryToSendPing(t *testing.T) {
 
 		v.tryToSendPing(base.TimeNow().UnixNano())
 
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.PutBytesTo(<-netConn.writeCH, 0)
-		assert(stream.GetKind()).Equal(uint8(core.StreamKindPing))
+		assert(stream.GetKind()).Equal(uint8(rpc.StreamKindPing))
 		assert(stream.IsReadFinish()).IsTrue()
 		assert(stream.CheckStream()).IsTrue()
 	})
@@ -525,9 +525,9 @@ func TestClient_Subscribe(t *testing.T) {
 		v := newClient("ws", "127.0.0.1:8080", nil, 1200, 1200)
 		defer v.Close()
 
-		sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
-		sub2 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
-		sub3 := v.Subscribe("#.test", "Message02", func(value core.Any) {})
+		sub1 := v.Subscribe("#.test", "Message01", func(value rpc.Any) {})
+		sub2 := v.Subscribe("#.test", "Message01", func(value rpc.Any) {})
+		sub3 := v.Subscribe("#.test", "Message02", func(value rpc.Any) {})
 
 		assert(sub1, sub2, sub3).IsNotNil()
 		assert(v.subscriptionMap).Equal(map[string][]*Subscription{
@@ -545,13 +545,13 @@ func TestClient_Subscribe(t *testing.T) {
 		rpcClient := newClient("ws", "0.0.0.0:8765", nil, 1200, 1200)
 		defer rpcClient.Close()
 
-		waitCH := make(chan core.Any, 1)
-		rpcClient.Subscribe("#.user", "@Post", func(value core.Any) {
+		waitCH := make(chan rpc.Any, 1)
+		rpcClient.Subscribe("#.user", "@Post", func(value rpc.Any) {
 			waitCH <- value
 		})
 		assert(rpcClient.Send(5*time.Second, "#.user:PostMessage", 2345)).
 			Equal(nil, nil)
-		assert(<-waitCH).Equal(core.Array{true, int64(2345)})
+		assert(<-waitCH).Equal(rpc.Array{true, int64(2345)})
 	})
 }
 
@@ -560,9 +560,9 @@ func TestClient_unsubscribe(t *testing.T) {
 	v := newClient("ws", "127.0.0.1:8080", nil, 1200, 1200)
 	defer v.Close()
 
-	sub1 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
-	sub2 := v.Subscribe("#.test", "Message01", func(value core.Any) {})
-	sub3 := v.Subscribe("#.test", "Message02", func(value core.Any) {})
+	sub1 := v.Subscribe("#.test", "Message01", func(value rpc.Any) {})
+	sub2 := v.Subscribe("#.test", "Message01", func(value rpc.Any) {})
+	sub3 := v.Subscribe("#.test", "Message02", func(value rpc.Any) {})
 
 	assert(v.subscriptionMap).Equal(map[string][]*Subscription{
 		"#.test%Message01": {sub1, sub2},
@@ -642,10 +642,10 @@ func TestClient_OnConnOpen(t *testing.T) {
 
 		v.OnConnOpen(streamConn)
 
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.PutBytesTo(<-netConn.writeCH, 0)
 		assert(stream.GetKind()).
-			Equal(uint8(core.StreamKindConnectRequest))
+			Equal(uint8(rpc.StreamKindConnectRequest))
 		assert(stream.ReadString()).Equal("123456", nil)
 	})
 }
@@ -665,174 +665,174 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("conn == nil, stream.callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(12)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, kind != StreamKindConnectResponse", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, read sessionString error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, read numOfChannels error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, numOfChannels config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.SetCallbackID(0)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(0)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrClientConfig)
 	})
 
 	t.Run("conn == nil, read transLimit error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, transLimit config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(0)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrClientConfig)
 	})
 
 	t.Run("conn == nil, read heartbeat error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, heartbeat config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
 		stream.WriteInt64(0)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrClientConfig)
 	})
 
 	t.Run("conn == nil, read heartbeatTimeout error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
 		stream.WriteInt64(int64(time.Second))
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, heartbeatTimeout config error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
 		stream.WriteInt64(int64(time.Second))
 		stream.WriteInt64(0)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrClientConfig)
 	})
 
 	t.Run("conn == nil, stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -840,25 +840,25 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		stream.WriteInt64(int64(2 * time.Second))
 		stream.WriteBool(false)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("conn == nil, sessionString != p.sessionString", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
 		stream.WriteInt64(int64(time.Second / time.Millisecond))
 		stream.WriteInt64(int64(2 * time.Second / time.Millisecond))
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
 		assert(errorHub.GetStream()).IsNil()
@@ -877,9 +877,9 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("conn == nil, sessionString == p.sessionString", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString("12-87654321876543218765432187654321")
 		stream.WriteInt64(32)
 		stream.WriteInt64(4 * 1024 * 1024)
@@ -900,25 +900,25 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, StreamKindPong error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindPong)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindPong)
 		stream.Write("error")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("p.conn != nil, StreamKindPong ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindPong)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindPong)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
 		assert(errorHub.GetStream()).IsNil()
@@ -926,9 +926,9 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, StreamKindRPCResponseOK ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.StreamKindRPCResponseOK)
+		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -940,9 +940,9 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, StreamKindRPCResponseOK error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(17)
-		stream.SetKind(core.StreamKindRPCResponseOK)
+		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -954,9 +954,9 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, StreamKindRPCResponseError ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.StreamKindRPCResponseError)
+		stream.SetKind(rpc.StreamKindRPCResponseError)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -968,9 +968,9 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, StreamKindRPCResponseError error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(17)
-		stream.SetKind(core.StreamKindRPCResponseError)
+		stream.SetKind(rpc.StreamKindRPCResponseError)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
 		v.channels = make([]Channel, 32)
@@ -982,71 +982,71 @@ func TestClient_OnConnReadStream(t *testing.T) {
 
 	t.Run("p.conn != nil, getKind() error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(17 + 32)
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		v, streamConn, _ := fnTestClient()
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.conn = streamConn
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("StreamKindRPCBoardCast Read path error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCBoardCast)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCBoardCast)
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("StreamKindRPCBoardCast Read value error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCBoardCast)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("StreamKindRPCBoardCast Read is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCBoardCast)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		stream.WriteBool(true)
 		stream.WriteString("error")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v.errorHub = errorHub
 		v.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("StreamKindRPCBoardCast ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCBoardCast)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCBoardCast)
 		stream.WriteString("#.test%Message")
 		stream.WriteString("Hello")
 		v, streamConn, _ := fnTestClient()
 		v.conn = streamConn
-		var ret core.Any
-		v.Subscribe("#.test", "Message", func(value core.Any) {
+		var ret rpc.Any
+		v.Subscribe("#.test", "Message", func(value rpc.Any) {
 			ret = value
 		})
 		v.OnConnReadStream(streamConn, stream)
@@ -1057,7 +1057,7 @@ func TestClient_OnConnReadStream(t *testing.T) {
 func TestClient_OnConnError(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		errorHub := core.NewTestStreamHub()
+		errorHub := rpc.NewTestStreamHub()
 		v := &Client{sessionString: "123456", errorHub: errorHub}
 		netConn := newTestNetConn()
 		syncConn := adapter.NewClientSyncConn(netConn, 1200, 1200)
@@ -1065,7 +1065,7 @@ func TestClient_OnConnError(t *testing.T) {
 		syncConn.SetNext(streamConn)
 		v.conn = streamConn
 		v.OnConnError(streamConn, base.ErrStream)
-		assert(core.ParseResponseStream(errorHub.WaitStream())).
+		assert(rpc.ParseResponseStream(errorHub.WaitStream())).
 			Equal(nil, base.ErrStream)
 		assert(netConn.isRunning).IsFalse()
 	})

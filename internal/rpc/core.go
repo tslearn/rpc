@@ -1,5 +1,5 @@
 // Package core ...
-package core
+package rpc
 
 import (
 	"log"

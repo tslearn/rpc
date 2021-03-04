@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // Channel ...
@@ -25,7 +25,7 @@ func (p *Channel) Use(item *SendItem, channelSize int) bool {
 }
 
 // Free ...
-func (p *Channel) Free(stream *core.Stream) bool {
+func (p *Channel) Free(stream *rpc.Stream) bool {
 	if item := p.item; item != nil {
 		p.item = nil
 		return item.Back(stream)

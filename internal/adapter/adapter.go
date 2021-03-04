@@ -4,7 +4,7 @@ package adapter
 import (
 	"crypto/tls"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 )
 
@@ -31,7 +31,7 @@ type IConn interface {
 type IReceiver interface {
 	OnConnOpen(streamConn *StreamConn)
 	OnConnClose(streamConn *StreamConn)
-	OnConnReadStream(streamConn *StreamConn, stream *core.Stream)
+	OnConnReadStream(streamConn *StreamConn, stream *rpc.Stream)
 	OnConnError(streamConn *StreamConn, err *base.Error)
 }
 

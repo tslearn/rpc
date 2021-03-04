@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/rpccloud/rpc/internal/adapter"
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"testing"
 	"time"
@@ -73,7 +73,7 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	gateway := NewGateWay(
 		3,
 		GetDefaultConfig(),
-		core.NewTestStreamHub(),
+		rpc.NewTestStreamHub(),
 	)
 	session := newSession(11, gateway)
 	netConn := newTestNetConn()
@@ -88,7 +88,7 @@ func TestInitSession(t *testing.T) {
 	t.Run("stream callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -97,20 +97,20 @@ func TestInitSession(t *testing.T) {
 			gw,
 		)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectRequest)
 		stream.SetCallbackID(1)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("kind is not StreamKindConnectRequest", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -119,19 +119,19 @@ func TestInitSession(t *testing.T) {
 			gw,
 		)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("read session string error", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -140,20 +140,20 @@ func TestInitSession(t *testing.T) {
 			gw,
 		)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectRequest)
 		stream.WriteBool(true)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("read stream is not finish", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		netConn := newTestNetConn()
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 
 		streamConn := adapter.NewStreamConn(
@@ -162,20 +162,20 @@ func TestInitSession(t *testing.T) {
 			gw,
 		)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.WriteBool(false)
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 		assert(netConn.isRunning).IsFalse()
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("max sessions limit", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		gw := NewGateWay(132, GetDefaultConfig(), streamHub)
 		gw.config.serverMaxSessions = 1
 		gw.AddSession(&Session{
@@ -187,13 +187,13 @@ func TestInitSession(t *testing.T) {
 		streamConn := adapter.NewStreamConn(false, syncConn, gw)
 		syncConn.SetNext(streamConn)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindConnectRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindConnectRequest)
 		stream.WriteString("")
 		stream.BuildStreamCheck()
 		streamConn.OnReadBytes(stream.GetBuffer())
 
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrGateWaySeedOverflows)
 	})
 
@@ -231,7 +231,7 @@ func TestInitSession(t *testing.T) {
 
 		for connStr, exist := range testCollection {
 			gw := NewGateWay(
-				132, GetDefaultConfig(), core.NewTestStreamHub(),
+				132, GetDefaultConfig(), rpc.NewTestStreamHub(),
 			)
 			gw.AddSession(&Session{id: id, security: security, gateway: gw})
 			netConn := newTestNetConn()
@@ -239,8 +239,8 @@ func TestInitSession(t *testing.T) {
 			streamConn := adapter.NewStreamConn(false, syncConn, gw)
 			syncConn.SetNext(streamConn)
 
-			stream := core.NewStream()
-			stream.SetKind(core.StreamKindConnectRequest)
+			stream := rpc.NewStream()
+			stream.SetKind(rpc.StreamKindConnectRequest)
 			stream.WriteString(connStr)
 			stream.BuildStreamCheck()
 			streamConn.OnReadBytes(stream.GetBuffer())
@@ -262,13 +262,13 @@ func TestInitSession(t *testing.T) {
 				assert(v.prev).IsNil()
 				assert(v.next).IsNil()
 
-				rs := core.NewStream()
+				rs := rpc.NewStream()
 				rs.PutBytesTo(netConn.writeBuffer, 0)
 
 				cfg := gw.config
 
 				assert(rs.GetKind()).
-					Equal(uint8(core.StreamKindConnectResponse))
+					Equal(uint8(rpc.StreamKindConnectResponse))
 				assert(rs.ReadString()).
 					Equal(fmt.Sprintf("%d-%s", v.id, v.security), nil)
 				assert(rs.ReadInt64()).Equal(int64(cfg.numOfChannels), nil)
@@ -290,7 +290,7 @@ func TestNewSession(t *testing.T) {
 		gateway := NewGateWay(
 			43,
 			GetDefaultConfig(),
-			core.NewTestStreamHub(),
+			rpc.NewTestStreamHub(),
 		)
 		v := newSession(3, gateway)
 		assert(v.id).Equal(uint64(3))
@@ -351,7 +351,7 @@ func TestSession_TimeCheck(t *testing.T) {
 
 		// fill the channels
 		for i := 0; i < session.gateway.config.numOfChannels; i++ {
-			stream := core.NewStream()
+			stream := rpc.NewStream()
 			stream.SetCallbackID(uint64(i) + 1)
 			session.channels[i].In(stream.GetCallbackID())
 			session.channels[i].Out(stream)
@@ -374,7 +374,7 @@ func TestSession_TimeCheck(t *testing.T) {
 
 		// fill the channels
 		for i := 0; i < session.gateway.config.numOfChannels; i++ {
-			stream := core.NewStream()
+			stream := rpc.NewStream()
 			stream.SetCallbackID(uint64(i) + 1)
 			session.channels[i].In(stream.GetCallbackID())
 			session.channels[i].Out(stream)
@@ -402,8 +402,8 @@ func TestSession_OutStream(t *testing.T) {
 	t.Run("p.conn is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, _, netConn := prepareTestSession()
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCResponseOK)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		session.OutStream(stream)
 		assert(len(netConn.writeBuffer)).Equal(0)
 		assert(session.channels[0].backStream).Equal(stream)
@@ -421,8 +421,8 @@ func TestSession_OutStream(t *testing.T) {
 		}
 
 		for i := 1; i <= len(session.channels); i++ {
-			stream := core.NewStream()
-			stream.SetKind(core.StreamKindConnectResponse)
+			stream := rpc.NewStream()
+			stream.SetKind(rpc.StreamKindConnectResponse)
 			stream.SetCallbackID(uint64(i))
 			session.OutStream(stream)
 		}
@@ -442,8 +442,8 @@ func TestSession_OutStream(t *testing.T) {
 		}
 
 		for i := len(session.channels) + 1; i <= 2*len(session.channels); i++ {
-			stream := core.NewStream()
-			stream.SetKind(core.StreamKindRPCResponseOK)
+			stream := rpc.NewStream()
+			stream.SetKind(rpc.StreamKindRPCResponseOK)
 			stream.SetCallbackID(uint64(i))
 			session.OutStream(stream)
 		}
@@ -464,9 +464,9 @@ func TestSession_OutStream(t *testing.T) {
 		}
 
 		for i := 1; i <= len(session.channels); i++ {
-			stream := core.NewStream()
+			stream := rpc.NewStream()
 			stream.SetCallbackID(uint64(i))
-			stream.SetKind(core.StreamKindRPCResponseOK)
+			stream.SetKind(rpc.StreamKindRPCResponseOK)
 			stream.BuildStreamCheck()
 			exceptBuffer = append(exceptBuffer, stream.GetBuffer()...)
 			session.OutStream(stream)
@@ -488,10 +488,10 @@ func TestSession_OutStream(t *testing.T) {
 		}
 
 		for i := 1; i <= len(session.channels); i++ {
-			stream := core.NewStream()
+			stream := rpc.NewStream()
 			stream.SetGatewayID(1234)
 			stream.SetSessionID(5678)
-			stream.SetKind(core.StreamKindRPCBoardCast)
+			stream.SetKind(rpc.StreamKindRPCBoardCast)
 			stream.WriteString("#.test%Msg")
 			stream.WriteString("HI")
 			stream.BuildStreamCheck()
@@ -522,12 +522,12 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		netConn.writeBuffer = make([]byte, 0)
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
-		sendStream := core.NewStream()
-		sendStream.SetKind(core.StreamKindPing)
+		sendStream := rpc.NewStream()
+		sendStream.SetKind(rpc.StreamKindPing)
 		session.OnConnReadStream(streamConn, sendStream)
-		backStream := core.NewStream()
+		backStream := rpc.NewStream()
 		backStream.PutBytesTo(netConn.writeBuffer, 0)
-		assert(backStream.GetKind()).Equal(uint8(core.StreamKindPong))
+		assert(backStream.GetKind()).Equal(uint8(rpc.StreamKindPong))
 		assert(backStream.IsReadFinish()).IsTrue()
 	})
 
@@ -538,28 +538,28 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		netConn.writeBuffer = make([]byte, 0)
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
 		syncConn.SetNext(streamConn)
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindPing)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindPing)
 		stream.WriteBool(true)
 
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 		session.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
 	t.Run("cbID > 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		session, syncConn, _ := prepareTestSession()
 		session.gateway.streamHub = streamHub
 
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(10)
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream.SetKind(rpc.StreamKindRPCRequest)
 		session.OnConnReadStream(streamConn, stream)
 
 		backStream := streamHub.GetStream()
@@ -571,7 +571,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, netConn := prepareTestSession()
 
-		cacheStream := core.NewStream()
+		cacheStream := rpc.NewStream()
 		cacheStream.SetCallbackID(10)
 		cacheStream.BuildStreamCheck()
 
@@ -581,8 +581,8 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		(&session.channels[10%len(session.channels)]).In(10)
 		(&session.channels[10%len(session.channels)]).Out(cacheStream)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -598,8 +598,8 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		syncConn.SetNext(streamConn)
 		(&session.channels[10%len(session.channels)]).In(10)
 
-		stream := core.NewStream()
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream := rpc.NewStream()
+		stream.SetKind(rpc.StreamKindRPCRequest)
 		stream.SetCallbackID(10)
 		session.OnConnOpen(streamConn)
 		netConn.writeBuffer = make([]byte, 0)
@@ -610,16 +610,16 @@ func TestSession_OnConnReadStream(t *testing.T) {
 	t.Run("cbID == 0, accept = true, backStream = nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		stream := core.NewStream()
+		stream := rpc.NewStream()
 		stream.SetCallbackID(0)
-		stream.SetKind(core.StreamKindRPCRequest)
+		stream.SetKind(rpc.StreamKindRPCRequest)
 
 		session.OnConnReadStream(streamConn, stream)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 
@@ -627,10 +627,10 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
-		session.OnConnReadStream(streamConn, core.NewStream())
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		session.OnConnReadStream(streamConn, rpc.NewStream())
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 }
@@ -640,10 +640,10 @@ func TestSession_OnConnError(t *testing.T) {
 		assert := base.NewAssert(t)
 		session, syncConn, _ := prepareTestSession()
 		streamConn := adapter.NewStreamConn(false, syncConn, session)
-		streamHub := core.NewTestStreamHub()
+		streamHub := rpc.NewTestStreamHub()
 		session.gateway.streamHub = streamHub
 		session.OnConnError(streamConn, base.ErrStream)
-		assert(core.ParseResponseStream(streamHub.GetStream())).
+		assert(rpc.ParseResponseStream(streamHub.GetStream())).
 			Equal(nil, base.ErrStream)
 	})
 }

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
 	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/route"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 const (
@@ -28,17 +28,17 @@ var fnNumCPU = runtime.NumCPU
 // Server ...
 type Server struct {
 	isRunning        bool
-	processor        *core.Processor
+	processor        *rpc.Processor
 	router           route.IRouter
 	gateway          *gateway.GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
 	maxCallDepth     int16
 	threadBufferSize uint32
-	actionCache      core.ActionCache
+	actionCache      rpc.ActionCache
 	closeTimeout     time.Duration
-	mountServices    []*core.ServiceMeta
-	logHub           core.IStreamHub
+	mountServices    []*rpc.ServiceMeta
+	logHub           rpc.IStreamHub
 	sync.Mutex
 }
 
@@ -55,8 +55,8 @@ func NewServer() *Server {
 		threadBufferSize: defaultThreadBufferSize,
 		actionCache:      nil,
 		closeTimeout:     defaultCloseTimeout,
-		mountServices:    make([]*core.ServiceMeta, 0),
-		logHub:           core.NewLogToScreenErrorStreamHub("Server"),
+		mountServices:    make([]*rpc.ServiceMeta, 0),
+		logHub:           rpc.NewLogToScreenErrorStreamHub("Server"),
 	}
 
 	if ret.numOfThreads > defaultMaxNumOfThreads {
@@ -98,11 +98,11 @@ func (p *Server) SetNumOfThreads(numOfThreads int) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else if numOfThreads <= 0 {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrNumOfThreadsIsWrong.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
@@ -118,11 +118,11 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else if threadBufferSize <= 0 {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrThreadBufferSizeIsWrong.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
@@ -133,12 +133,12 @@ func (p *Server) SetThreadBufferSize(threadBufferSize uint32) *Server {
 }
 
 // SetActionCache ...
-func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
+func (p *Server) SetActionCache(actionCache rpc.ActionCache) *Server {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
@@ -149,12 +149,12 @@ func (p *Server) SetActionCache(actionCache core.ActionCache) *Server {
 }
 
 // SetLogHub ...
-func (p *Server) SetLogHub(logHub core.IStreamHub) *Server {
+func (p *Server) SetLogHub(logHub rpc.IStreamHub) *Server {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
@@ -167,18 +167,18 @@ func (p *Server) SetLogHub(logHub core.IStreamHub) *Server {
 // AddService ...
 func (p *Server) AddService(
 	name string,
-	service *core.Service,
-	data core.Map,
+	service *rpc.Service,
+	data rpc.Map,
 ) *Server {
 	p.Lock()
 	defer p.Unlock()
 
 	if p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
-		p.mountServices = append(p.mountServices, core.NewServiceMeta(
+		p.mountServices = append(p.mountServices, rpc.NewServiceMeta(
 			name,
 			service,
 			base.GetFileLine(1),
@@ -197,7 +197,7 @@ func (p *Server) BuildReplyCache() *Server {
 	_, file, _, _ := runtime.Caller(1)
 	buildDir := path.Join(path.Dir(file))
 
-	processor := core.NewProcessor(
+	processor := rpc.NewProcessor(
 		1,
 		64,
 		64,
@@ -205,7 +205,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		p.mountServices,
-		core.NewTestStreamHub(),
+		rpc.NewTestStreamHub(),
 	)
 	defer processor.Close()
 
@@ -213,26 +213,26 @@ func (p *Server) BuildReplyCache() *Server {
 		"cache",
 		path.Join(buildDir, "cache", "rpc_action_cache.go"),
 	); err != nil {
-		p.OnReceiveStream(core.MakeSystemErrorStream(err))
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 	}
 
 	return p
 }
 
 // OnReceiveStream ...
-func (p *Server) OnReceiveStream(stream *core.Stream) {
+func (p *Server) OnReceiveStream(stream *rpc.Stream) {
 	if stream != nil {
 		switch stream.GetKind() {
-		case core.StreamKindRPCRequest:
+		case rpc.StreamKindRPCRequest:
 			p.processor.PutStream(stream)
-		case core.StreamKindRPCResponseOK:
+		case rpc.StreamKindRPCResponseOK:
 			fallthrough
-		case core.StreamKindRPCResponseError:
+		case rpc.StreamKindRPCResponseError:
 			fallthrough
-		case core.StreamKindRPCBoardCast:
+		case rpc.StreamKindRPCBoardCast:
 			p.gateway.OutStream(stream)
 		default:
-			if stream.GetKind() == core.StreamKindSystemErrorReport {
+			if stream.GetKind() == rpc.StreamKindSystemErrorReport {
 				p.logHub.OnReceiveStream(stream)
 			} else {
 				stream.Release()
@@ -250,11 +250,11 @@ func (p *Server) Open() bool {
 		defer p.Unlock()
 
 		if p.isRunning {
-			p.OnReceiveStream(core.MakeSystemErrorStream(
+			p.OnReceiveStream(rpc.MakeSystemErrorStream(
 				base.ErrServerAlreadyRunning.AddDebug(source),
 			))
 			return false
-		} else if processor := core.NewProcessor(
+		} else if processor := rpc.NewProcessor(
 			p.numOfThreads,
 			p.maxNodeDepth,
 			p.maxCallDepth,
@@ -293,7 +293,7 @@ func (p *Server) Close() bool {
 	defer p.Unlock()
 
 	if !p.isRunning {
-		p.OnReceiveStream(core.MakeSystemErrorStream(
+		p.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrServerNotRunning.AddDebug(base.GetFileLine(1)),
 		))
 		return false

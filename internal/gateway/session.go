@@ -11,7 +11,7 @@ import (
 	"github.com/rpccloud/rpc/internal/adapter"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // Session ...
@@ -31,12 +31,12 @@ type Session struct {
 func InitSession(
 	gw *GateWay,
 	streamConn *adapter.StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	if stream.GetCallbackID() != 0 {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
-	} else if kind := stream.GetKind(); kind != core.StreamKindConnectRequest {
+	} else if kind := stream.GetKind(); kind != rpc.StreamKindConnectRequest {
 		stream.Release()
 		gw.OnConnError(streamConn, base.ErrStream)
 	} else if sessionString, err := stream.ReadString(); err != nil {
@@ -84,7 +84,7 @@ func InitSession(
 		streamConn.SetReceiver(session)
 
 		stream.SetWritePosToBodyStart()
-		stream.SetKind(core.StreamKindConnectResponse)
+		stream.SetKind(rpc.StreamKindConnectResponse)
 		stream.WriteString(fmt.Sprintf("%d-%s", session.id, session.security))
 		stream.WriteInt64(int64(config.numOfChannels))
 		stream.WriteInt64(int64(config.transLimit))
@@ -127,15 +127,15 @@ func (p *Session) TimeCheck(nowNS int64) {
 }
 
 // OutStream ...
-func (p *Session) OutStream(stream *core.Stream) {
+func (p *Session) OutStream(stream *rpc.Stream) {
 	p.Lock()
 	defer p.Unlock()
 
 	if stream != nil {
 		switch stream.GetKind() {
-		case core.StreamKindRPCResponseOK:
+		case rpc.StreamKindRPCResponseOK:
 			fallthrough
-		case core.StreamKindRPCResponseError:
+		case rpc.StreamKindRPCResponseError:
 			// record stream
 			channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
 			if channel.Out(stream) && p.conn != nil {
@@ -143,7 +143,7 @@ func (p *Session) OutStream(stream *core.Stream) {
 			} else {
 				stream.Release()
 			}
-		case core.StreamKindRPCBoardCast:
+		case rpc.StreamKindRPCBoardCast:
 			p.conn.WriteStreamAndRelease(stream)
 		default:
 			stream.Release()
@@ -161,22 +161,22 @@ func (p *Session) OnConnOpen(streamConn *adapter.StreamConn) {
 // OnConnReadStream ...
 func (p *Session) OnConnReadStream(
 	streamConn *adapter.StreamConn,
-	stream *core.Stream,
+	stream *rpc.Stream,
 ) {
 	p.Lock()
 	defer p.Unlock()
 
 	switch stream.GetKind() {
-	case core.StreamKindPing:
+	case rpc.StreamKindPing:
 		if stream.IsReadFinish() {
 			p.activeTimeNS = base.TimeNow().UnixNano()
-			stream.SetKind(core.StreamKindPong)
+			stream.SetKind(rpc.StreamKindPong)
 			streamConn.WriteStreamAndRelease(stream)
 		} else {
 			p.OnConnError(streamConn, base.ErrStream)
 			stream.Release()
 		}
-	case core.StreamKindRPCRequest:
+	case rpc.StreamKindRPCRequest:
 		if cbID := stream.GetCallbackID(); cbID > 0 {
 			channel := &p.channels[cbID%uint64(len(p.channels))]
 			if accepted, backStream := channel.In(cbID); accepted {
@@ -204,7 +204,7 @@ func (p *Session) OnConnReadStream(
 
 // OnConnError ...
 func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	errStream := core.MakeSystemErrorStream(err)
+	errStream := rpc.MakeSystemErrorStream(err)
 	errStream.SetSessionID(p.id)
 	errStream.SetGatewayID(p.gateway.id)
 	p.gateway.streamHub.OnReceiveStream(errStream)

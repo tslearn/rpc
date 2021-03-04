@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rpccloud/rpc/internal/core"
+	"github.com/rpccloud/rpc/internal/rpc"
 
 	"github.com/rpccloud/rpc/internal/base"
 )
@@ -170,11 +170,11 @@ type StreamConn struct {
 	status       int32
 	prev         IConn
 	receiver     IReceiver
-	writeCH      chan *core.Stream
+	writeCH      chan *rpc.Stream
 	readHeadPos  int
 	readHeadBuf  []byte
-	readStream   *core.Stream
-	writeStream  *core.Stream
+	readStream   *rpc.Stream
+	writeStream  *rpc.Stream
 	writePos     int
 	activeTimeNS int64
 }
@@ -186,9 +186,9 @@ func NewStreamConn(isDebug bool, prev IConn, receiver IReceiver) *StreamConn {
 		status:       streamConnStatusRunning,
 		prev:         prev,
 		receiver:     receiver,
-		writeCH:      make(chan *core.Stream, 16),
+		writeCH:      make(chan *rpc.Stream, 16),
 		readHeadPos:  0,
-		readHeadBuf:  make([]byte, core.StreamHeadSize),
+		readHeadBuf:  make([]byte, rpc.StreamHeadSize),
 		readStream:   nil,
 		writeStream:  nil,
 		writePos:     0,
@@ -219,17 +219,17 @@ func (p *StreamConn) OnError(err *base.Error) {
 // OnReadBytes ...
 func (p *StreamConn) OnReadBytes(b []byte) {
 	if p.readStream == nil {
-		if p.readHeadPos < core.StreamHeadSize {
+		if p.readHeadPos < rpc.StreamHeadSize {
 			copyBytes := copy(p.readHeadBuf[p.readHeadPos:], b)
 			p.readHeadPos += copyBytes
 			b = b[copyBytes:]
 		}
 
-		if p.readHeadPos < core.StreamHeadSize {
+		if p.readHeadPos < rpc.StreamHeadSize {
 			return
 		}
 
-		p.readStream = core.NewStream()
+		p.readStream = rpc.NewStream()
 		p.readStream.PutBytesTo(p.readHeadBuf, 0)
 		p.readHeadPos = 0
 	}
@@ -324,7 +324,7 @@ func (p *StreamConn) RemoteAddr() net.Addr {
 }
 
 // WriteStreamAndRelease ...
-func (p *StreamConn) WriteStreamAndRelease(stream *core.Stream) {
+func (p *StreamConn) WriteStreamAndRelease(stream *rpc.Stream) {
 	func() {
 		defer func() {
 			_ = recover()
