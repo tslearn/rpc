@@ -63,10 +63,8 @@ func testConnReadAndWrite(
 	}
 
 	go func() {
-		n, e := sendConn.Write(dataSend)
-		if n == len(dataSend) && e == nil {
-			returnWrite <- sendConn.Close() == nil
-		} else {
+		_, e := sendConn.Write(dataSend)
+		if e != nil {
 			panic(e)
 		}
 	}()
@@ -85,9 +83,12 @@ func testConnReadAndWrite(
 
 		if reflect.DeepEqual(dataReceive, dataSend) {
 			returnRead <- receiveConn.Close() == nil
+			returnWrite <- sendConn.Close() == nil
 		} else {
 			_ = receiveConn.Close()
-			returnRead <- true
+			_ = sendConn.Close()
+			returnRead <- false
+			returnWrite <- false
 		}
 	}()
 
@@ -108,7 +109,6 @@ func TestSyncWSConn_Read(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		testCollection := [][2]int{
-			{0, 1},
 			{1, 1},
 			{10, 1},
 			{10, 3},
@@ -149,7 +149,6 @@ func TestSyncWSConn_Write(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		testCollection := [][2]int{
-			{0, 1},
 			{1, 1},
 			{10, 1},
 			{10, 3},
