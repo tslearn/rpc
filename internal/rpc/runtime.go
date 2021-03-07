@@ -28,17 +28,15 @@ func (p Runtime) unlock() bool {
 
 // Reply ...
 func (p Runtime) Reply(value interface{}) Return {
-	thread := p.lock()
-
-	if thread == nil {
-		base.PublishPanic(
-			base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
-		)
-		return emptyReturn
+	if thread := p.lock(); thread != nil {
+		defer p.unlock()
+		return thread.Write(value, 1, true)
 	}
 
-	defer p.unlock()
-	return thread.Write(value, 1, true)
+	base.PublishPanic(
+		base.ErrRuntimeIllegalInCurrentGoroutine.AddDebug(base.GetFileLine(1)),
+	)
+	return emptyReturn
 }
 
 // Post ...
