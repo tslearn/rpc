@@ -639,7 +639,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions:  []*rpcActionMeta{nil},
+				actions:  []*ActionMeta{nil},
 			},
 			fileLine: "",
 		}})).Equal(base.ErrProcessorActionMetaIsNil)
@@ -651,7 +651,7 @@ func TestProcessor_mountNode(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{nil},
-				actions:  []*rpcActionMeta{},
+				actions:  []*ActionMeta{},
 			},
 			fileLine: "",
 		}})).Equal(base.ErrProcessorNodeMetaIsNil)
@@ -701,7 +701,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions:  []*rpcActionMeta{nil},
+				actions:  []*ActionMeta{nil},
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(base.ErrProcessorActionMetaIsNil)
@@ -713,7 +713,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "+",
 					handler:  func(rt Runtime) Return { return rt.Reply(true) },
 					fileLine: "actionDebug",
@@ -734,7 +734,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "login",
 					handler:  nil,
 					fileLine: "actionDebug",
@@ -755,7 +755,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "login",
 					handler:  3,
 					fileLine: "actionDebug",
@@ -776,7 +776,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "login",
 					handler:  func() {},
 					fileLine: "actionDebug",
@@ -797,7 +797,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "login",
 					handler:  func(rt Runtime) {},
 					fileLine: "actionDebug",
@@ -818,7 +818,7 @@ func TestProcessor_mountAction(t *testing.T) {
 			name: "user",
 			service: &Service{
 				children: []*ServiceMeta{},
-				actions: []*rpcActionMeta{{
+				actions: []*ActionMeta{{
 					name:     "login",
 					handler:  func(rt Runtime) Return { return rt.Reply(true) },
 					fileLine: "actionDebug1",
@@ -853,7 +853,7 @@ func TestProcessor_mountAction(t *testing.T) {
 				name: "user",
 				service: &Service{
 					children: []*ServiceMeta{},
-					actions: []*rpcActionMeta{{
+					actions: []*ActionMeta{{
 						name:     "login",
 						handler:  handler,
 						fileLine: "actionDebug",

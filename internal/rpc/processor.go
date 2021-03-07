@@ -30,7 +30,7 @@ var (
 
 type rpcActionNode struct {
 	path       string
-	meta       *rpcActionMeta
+	meta       *ActionMeta
 	service    *rpcServiceNode
 	cacheFN    ActionCacheFunc
 	reflectFn  reflect.Value
@@ -417,7 +417,7 @@ func (p *Processor) mountNode(
 
 func (p *Processor) mountAction(
 	serviceNode *rpcServiceNode,
-	meta *rpcActionMeta,
+	meta *ActionMeta,
 	fnCache ActionCache,
 ) *base.Error {
 	if meta == nil {

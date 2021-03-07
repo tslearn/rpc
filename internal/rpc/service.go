@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type rpcActionMeta struct {
+type ActionMeta struct {
 	name     string      // action name
 	handler  interface{} // action handler
 	fileLine string      // where the action add in source file
@@ -36,8 +36,8 @@ func NewServiceMeta(
 
 // Service ...
 type Service struct {
-	children []*ServiceMeta   // all the children node meta pointer
-	actions  []*rpcActionMeta // all the actions meta pointer
+	children []*ServiceMeta // all the children node meta pointer
+	actions  []*ActionMeta  // all the actions meta pointer
 	sync.Mutex
 }
 
@@ -77,7 +77,7 @@ func (p *Service) On(
 	defer p.Unlock()
 
 	// add action meta
-	p.actions = append(p.actions, &rpcActionMeta{
+	p.actions = append(p.actions, &ActionMeta{
 		name:     name,
 		handler:  handler,
 		fileLine: base.GetFileLine(1),
