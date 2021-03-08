@@ -123,6 +123,58 @@ func (p *Client) SetErrorHub(errorHub rpc.IStreamHub) {
 	p.errorHub = errorHub
 }
 
+func (p *Client) initConn(stream *rpc.Stream) {
+	if kind := stream.GetKind(); kind != rpc.StreamKindConnectResponse {
+		p.OnConnError(p.conn, base.ErrStream)
+	} else if sessionString, err := stream.ReadString(); err != nil {
+		p.OnConnError(p.conn, err)
+	} else if numOfChannels, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(p.conn, err)
+	} else if numOfChannels <= 0 {
+		p.OnConnError(p.conn, base.ErrClientConfig)
+	} else if transLimit, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(p.conn, err)
+	} else if transLimit <= 0 {
+		p.OnConnError(p.conn, base.ErrClientConfig)
+	} else if heartbeat, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(p.conn, err)
+	} else if heartbeat <= 0 {
+		p.OnConnError(p.conn, base.ErrClientConfig)
+	} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
+		p.OnConnError(p.conn, err)
+	} else if heartbeatTimeout <= 0 {
+		p.OnConnError(p.conn, base.ErrClientConfig)
+	} else if !stream.IsReadFinish() {
+		p.OnConnError(p.conn, base.ErrStream)
+	} else {
+		if sessionString != p.sessionString {
+			// new session
+			p.sessionString = sessionString
+
+			// update config
+			p.config.numOfChannels = int(numOfChannels)
+			p.config.transLimit = int(transLimit)
+			p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
+			p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
+
+			p.channels = make([]Channel, numOfChannels)
+			for i := 0; i < len(p.channels); i++ {
+				(&p.channels[i]).sequence = uint64(i)
+				(&p.channels[i]).item = nil
+			}
+		} else {
+			// try to resend channel message
+			for i := 0; i < len(p.channels); i++ {
+				if item := (&p.channels[i]).item; item != nil {
+					p.conn.WriteStreamAndRelease(item.sendStream.Clone())
+				}
+			}
+		}
+
+		p.lastPingTimeNS = base.TimeNow().UnixNano()
+	}
+}
+
 func (p *Client) tryToSendPing(nowNS int64) {
 	if p.conn == nil || nowNS-p.lastPingTimeNS < int64(p.config.heartbeat) {
 		return
@@ -334,54 +386,8 @@ func (p *Client) OnConnReadStream(
 
 		if callbackID != 0 {
 			p.OnConnError(streamConn, base.ErrStream)
-		} else if kind := stream.GetKind(); kind != rpc.StreamKindConnectResponse {
-			p.OnConnError(streamConn, base.ErrStream)
-		} else if sessionString, err := stream.ReadString(); err != nil {
-			p.OnConnError(streamConn, err)
-		} else if numOfChannels, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
-		} else if numOfChannels <= 0 {
-			p.OnConnError(streamConn, base.ErrClientConfig)
-		} else if transLimit, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
-		} else if transLimit <= 0 {
-			p.OnConnError(streamConn, base.ErrClientConfig)
-		} else if heartbeat, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
-		} else if heartbeat <= 0 {
-			p.OnConnError(streamConn, base.ErrClientConfig)
-		} else if heartbeatTimeout, err := stream.ReadInt64(); err != nil {
-			p.OnConnError(streamConn, err)
-		} else if heartbeatTimeout <= 0 {
-			p.OnConnError(streamConn, base.ErrClientConfig)
-		} else if !stream.IsReadFinish() {
-			p.OnConnError(streamConn, base.ErrStream)
 		} else {
-			if sessionString != p.sessionString {
-				// new session
-				p.sessionString = sessionString
-
-				// update config
-				p.config.numOfChannels = int(numOfChannels)
-				p.config.transLimit = int(transLimit)
-				p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
-				p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
-
-				p.channels = make([]Channel, numOfChannels)
-				for i := 0; i < len(p.channels); i++ {
-					(&p.channels[i]).sequence = uint64(i)
-					(&p.channels[i]).item = nil
-				}
-			} else {
-				// try to resend channel message
-				for i := 0; i < len(p.channels); i++ {
-					if item := (&p.channels[i]).item; item != nil {
-						p.conn.WriteStreamAndRelease(item.sendStream.Clone())
-					}
-				}
-			}
-
-			p.lastPingTimeNS = base.TimeNow().UnixNano()
+			p.initConn(stream)
 		}
 
 		stream.Release()
