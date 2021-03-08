@@ -1,7 +1,7 @@
 // Package rpc provides the necessary structs and functions required to use rpc
 // service.
 //
-// The full document is located at http://127.0.0.1
+// The full document is located at https://github.com/rpccloud/rpc/blob/master/doc/rpc/index.md
 package rpc
 
 import (
