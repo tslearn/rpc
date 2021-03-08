@@ -256,13 +256,13 @@ func TestIsTimeApproximatelyEqual(t *testing.T) {
 
 		now := time.Now()
 
-		assert(IsTimeApproximatelyEqual(now, now.Add(100*time.Millisecond))).
+		assert(IsTimeApproximatelyEqual(now, now.Add(500*time.Millisecond))).
 			IsFalse()
-		assert(IsTimeApproximatelyEqual(now.Add(100*time.Millisecond), now)).
+		assert(IsTimeApproximatelyEqual(now.Add(500*time.Millisecond), now)).
 			IsFalse()
-		assert(IsTimeApproximatelyEqual(now, now.Add(99*time.Millisecond))).
+		assert(IsTimeApproximatelyEqual(now, now.Add(499*time.Millisecond))).
 			IsTrue()
-		assert(IsTimeApproximatelyEqual(now.Add(99*time.Millisecond), now)).
+		assert(IsTimeApproximatelyEqual(now.Add(499*time.Millisecond), now)).
 			IsTrue()
 	})
 }
