@@ -123,6 +123,14 @@ func (p *Client) SetErrorHub(errorHub rpc.IStreamHub) {
 	p.errorHub = errorHub
 }
 
+func (p *Client) initChannel(size int) {
+	p.channels = make([]Channel, size)
+	for i := 0; i < len(p.channels); i++ {
+		(&p.channels[i]).sequence = uint64(i)
+		(&p.channels[i]).item = nil
+	}
+}
+
 func (p *Client) initConn(stream *rpc.Stream) {
 	if kind := stream.GetKind(); kind != rpc.StreamKindConnectResponse {
 		p.OnConnError(p.conn, base.ErrStream)
@@ -156,11 +164,8 @@ func (p *Client) initConn(stream *rpc.Stream) {
 		p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
 		p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
 
-		p.channels = make([]Channel, numOfChannels)
-		for i := 0; i < len(p.channels); i++ {
-			(&p.channels[i]).sequence = uint64(i)
-			(&p.channels[i]).item = nil
-		}
+		// init channel
+		p.initChannel(p.config.numOfChannels)
 	} else {
 		// try to resend channel message
 		for i := 0; i < len(p.channels); i++ {
