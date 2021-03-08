@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// ActionMeta ...
 type ActionMeta struct {
 	name     string      // action name
 	handler  interface{} // action handler
