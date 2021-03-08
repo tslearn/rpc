@@ -146,33 +146,31 @@ func (p *Client) initConn(stream *rpc.Stream) {
 		p.OnConnError(p.conn, base.ErrClientConfig)
 	} else if !stream.IsReadFinish() {
 		p.OnConnError(p.conn, base.ErrStream)
+	} else if sessionString != p.sessionString {
+		// new session
+		p.sessionString = sessionString
+
+		// update config
+		p.config.numOfChannels = int(numOfChannels)
+		p.config.transLimit = int(transLimit)
+		p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
+		p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
+
+		p.channels = make([]Channel, numOfChannels)
+		for i := 0; i < len(p.channels); i++ {
+			(&p.channels[i]).sequence = uint64(i)
+			(&p.channels[i]).item = nil
+		}
 	} else {
-		if sessionString != p.sessionString {
-			// new session
-			p.sessionString = sessionString
-
-			// update config
-			p.config.numOfChannels = int(numOfChannels)
-			p.config.transLimit = int(transLimit)
-			p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
-			p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
-
-			p.channels = make([]Channel, numOfChannels)
-			for i := 0; i < len(p.channels); i++ {
-				(&p.channels[i]).sequence = uint64(i)
-				(&p.channels[i]).item = nil
-			}
-		} else {
-			// try to resend channel message
-			for i := 0; i < len(p.channels); i++ {
-				if item := (&p.channels[i]).item; item != nil {
-					p.conn.WriteStreamAndRelease(item.sendStream.Clone())
-				}
+		// try to resend channel message
+		for i := 0; i < len(p.channels); i++ {
+			if item := (&p.channels[i]).item; item != nil {
+				p.conn.WriteStreamAndRelease(item.sendStream.Clone())
 			}
 		}
-
-		p.lastPingTimeNS = base.TimeNow().UnixNano()
 	}
+
+	p.lastPingTimeNS = base.TimeNow().UnixNano()
 }
 
 func (p *Client) tryToSendPing(nowNS int64) {
