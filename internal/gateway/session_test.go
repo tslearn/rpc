@@ -98,19 +98,20 @@ func testTimeCheck(pos int) bool {
 	firstSession := (*Session)(nil)
 	lastSession := (*Session)(nil)
 
-	if pos == 1 {
+	switch pos {
+	case 1:
 		s1.activeTimeNS = 0
 		firstSession = s2
 		lastSession = s3
-	} else if pos == 2 {
+	case 2:
 		s2.activeTimeNS = 0
 		firstSession = s1
 		lastSession = s3
-	} else if pos == 3 {
+	case 3:
 		s3.activeTimeNS = 0
 		firstSession = s1
 		lastSession = s2
-	} else {
+	default:
 		v.TimeCheck(nowNS)
 		return v.gateway.totalSessions == 3 && v.head == s1 &&
 			s1.next == s2 && s2.next == s3 && s3.next == nil &&
