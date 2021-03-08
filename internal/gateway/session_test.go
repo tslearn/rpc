@@ -84,6 +84,37 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	return session, syncConn, netConn
 }
 
+func checkSessionList(head *Session) bool {
+	if head == nil {
+		return true
+	}
+
+	if head.prev != nil {
+		return false
+	}
+
+	list := make([]*Session, 0)
+	item := head
+	for item != nil {
+		list = append(list, item)
+		item = item.next
+	}
+
+	idx := len(list) - 1
+	item = list[idx]
+
+	for idx >= 0 {
+		if item == list[idx] {
+			item = item.prev
+			idx--
+		} else {
+			break
+		}
+	}
+
+	return idx == -1 && item == nil
+}
+
 func testTimeCheck(pos int) bool {
 	nowNS := base.TimeNow().UnixNano()
 	v := NewSessionPool(&GateWay{config: GetDefaultConfig()})
@@ -96,32 +127,28 @@ func testTimeCheck(pos int) bool {
 	v.Add(s1)
 
 	firstSession := (*Session)(nil)
-	lastSession := (*Session)(nil)
 
 	switch pos {
 	case 1:
 		s1.activeTimeNS = 0
 		firstSession = s2
-		lastSession = s3
 	case 2:
 		s2.activeTimeNS = 0
 		firstSession = s1
-		lastSession = s3
 	case 3:
 		s3.activeTimeNS = 0
 		firstSession = s1
-		lastSession = s2
 	default:
 		v.TimeCheck(nowNS)
-		return v.gateway.totalSessions == 3 && v.head == s1 &&
-			s1.next == s2 && s2.next == s3 && s3.next == nil &&
-			s3.prev == s2 && s2.prev == s1 && s1.prev == nil
+		return v.gateway.totalSessions == 3 &&
+			v.head == s1 &&
+			checkSessionList(v.head)
 	}
 
 	v.TimeCheck(nowNS)
-	return v.gateway.totalSessions == 2 && v.head == firstSession &&
-		firstSession.next == lastSession && lastSession.next == nil &&
-		lastSession.prev == firstSession && firstSession.prev == nil
+	return v.gateway.totalSessions == 2 &&
+		v.head == firstSession &&
+		checkSessionList(v.head)
 }
 
 func TestInitSession(t *testing.T) {
