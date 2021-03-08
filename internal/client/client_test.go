@@ -91,6 +91,28 @@ func getTestServer() *server.Server {
 	return rpcServer
 }
 
+func checkClientPreSendList(c *Client, arr []*SendItem) bool {
+	if len(arr) == 0 {
+		return c.preSendHead == nil && c.preSendTail == nil
+	}
+
+	if c.preSendHead != arr[0] || c.preSendTail != arr[len(arr)-1] {
+		return false
+	}
+
+	if c.preSendTail.next != nil {
+		return false
+	}
+
+	for i := 0; i < len(arr)-1; i++ {
+		if arr[i].next != arr[i+1] {
+			return false
+		}
+	}
+
+	return true
+}
+
 type TestAdapter struct {
 	isDebug    bool
 	isClient   bool
@@ -319,34 +341,12 @@ func TestClient_tryToTimeout(t *testing.T) {
 			afterData = append(afterData[:idx], afterData[idx+1:]...)
 		}
 
-		fnCheck := func(c *Client, arr []*SendItem) bool {
-			if len(arr) == 0 {
-				return c.preSendHead == nil && c.preSendTail == nil
-			}
-
-			if c.preSendHead != arr[0] || c.preSendTail != arr[len(arr)-1] {
-				return false
-			}
-
-			if c.preSendTail.next != nil {
-				return false
-			}
-
-			for i := 0; i < len(arr)-1; i++ {
-				if arr[i].next != arr[i+1] {
-					return false
-				}
-			}
-
-			return true
-		}
-
-		if !fnCheck(v, beforeData) {
+		if !checkClientPreSendList(v, beforeData) {
 			return false
 		}
 
 		v.tryToTimeout(nowNS + int64(500*time.Millisecond))
-		return fnCheck(v, afterData)
+		return checkClientPreSendList(v, afterData)
 	}
 
 	t.Run("check if the channels has been swept", func(t *testing.T) {
@@ -445,29 +445,7 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 			}
 		}
 
-		fnCheck := func(c *Client, arr []*SendItem) bool {
-			if len(arr) == 0 {
-				return c.preSendHead == nil && c.preSendTail == nil
-			}
-
-			if c.preSendHead != arr[0] || c.preSendTail != arr[len(arr)-1] {
-				return false
-			}
-
-			if c.preSendTail.next != nil {
-				return false
-			}
-
-			for i := 0; i < len(arr)-1; i++ {
-				if arr[i].next != arr[i+1] {
-					return false
-				}
-			}
-
-			return true
-		}
-
-		if !fnCheck(v, itemsArray) {
+		if !checkClientPreSendList(v, itemsArray) {
 			panic("error")
 		}
 
@@ -480,7 +458,10 @@ func TestClient_tryToDeliverPreSendMessages(t *testing.T) {
 
 		v.tryToDeliverPreSendMessages()
 
-		return fnCheck(v, itemsArray[base.MinInt(len(itemsArray), chFree):])
+		return checkClientPreSendList(
+			v,
+			itemsArray[base.MinInt(len(itemsArray), chFree):],
+		)
 	}
 
 	t.Run("p.conn == nil", func(t *testing.T) {

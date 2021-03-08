@@ -401,6 +401,8 @@ func TestProcessor_PutStream(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 		}
 
+		time.Sleep(100 * time.Millisecond)
+
 		freeSum := 0
 		for i := 0; i < len(processor.freeCHArray); i++ {
 			freeSum += len(processor.freeCHArray[i])

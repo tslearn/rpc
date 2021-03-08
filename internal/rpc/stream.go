@@ -740,7 +740,7 @@ func (p *Stream) WriteInt64(v int64) {
 			byte(v >> 24),
 		})
 	} else {
-		uv := uint64(0)
+		var uv uint64
 		if v < 0 {
 			uv = 9223372036854775808 - uint64(-v)
 		} else {
