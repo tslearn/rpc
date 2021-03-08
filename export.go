@@ -1,5 +1,7 @@
-// Package rpc
-// The document is located at http://127.0.0.1
+// Package rpc provides the necessary structs and functions required to use rpc
+// service.
+//
+// The full document is located at http://127.0.0.1
 package rpc
 
 import (
