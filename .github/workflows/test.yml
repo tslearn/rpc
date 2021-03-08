@@ -27,9 +27,13 @@ jobs:
                 run: |
                     go test ./... -timeout 20m -race -coverprofile=coverage.txt -covermode=atomic
 
+            -   name: LS Info
+                run: |
+                    ls -la
+
             -   name: Upload coverage to codecov
                 uses: codecov/codecov-action@v1
                 with:
                     file: ./coverage.txt
-                    flags: ${{ matrix.platform }}unittests
+                    flags: unittests
                     fail_ci_if_error: true
