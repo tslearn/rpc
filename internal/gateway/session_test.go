@@ -84,6 +84,45 @@ func prepareTestSession() (*Session, adapter.IConn, *testNetConn) {
 	return session, syncConn, netConn
 }
 
+func testTimeCheck(pos int) bool {
+	nowNS := base.TimeNow().UnixNano()
+	v := NewSessionPool(&GateWay{config: GetDefaultConfig()})
+
+	s1 := &Session{id: 1, activeTimeNS: nowNS}
+	s2 := &Session{id: 2, activeTimeNS: nowNS}
+	s3 := &Session{id: 3, activeTimeNS: nowNS}
+	v.Add(s3)
+	v.Add(s2)
+	v.Add(s1)
+
+	firstSession := (*Session)(nil)
+	lastSession := (*Session)(nil)
+
+	if pos == 1 {
+		s1.activeTimeNS = 0
+		firstSession = s2
+		lastSession = s3
+	} else if pos == 2 {
+		s2.activeTimeNS = 0
+		firstSession = s1
+		lastSession = s3
+	} else if pos == 3 {
+		s3.activeTimeNS = 0
+		firstSession = s1
+		lastSession = s2
+	} else {
+		v.TimeCheck(nowNS)
+		return v.gateway.totalSessions == 3 && v.head == s1 &&
+			s1.next == s2 && s2.next == s3 && s3.next == nil &&
+			s3.prev == s2 && s2.prev == s1 && s1.prev == nil
+	}
+
+	v.TimeCheck(nowNS)
+	return v.gateway.totalSessions == 2 && v.head == firstSession &&
+		firstSession.next == lastSession && lastSession.next == nil &&
+		lastSession.prev == firstSession && firstSession.prev == nil
+}
+
 func TestInitSession(t *testing.T) {
 	t.Run("stream callbackID != 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
@@ -730,51 +769,11 @@ func TestSessionPool_Get(t *testing.T) {
 }
 
 func TestSessionPool_TimeCheck(t *testing.T) {
-	fnTest := func(pos int) bool {
-		nowNS := base.TimeNow().UnixNano()
-		v := NewSessionPool(&GateWay{config: GetDefaultConfig()})
-
-		s1 := &Session{id: 1, activeTimeNS: nowNS}
-		s2 := &Session{id: 2, activeTimeNS: nowNS}
-		s3 := &Session{id: 3, activeTimeNS: nowNS}
-		v.Add(s3)
-		v.Add(s2)
-		v.Add(s1)
-
-		firstSession := (*Session)(nil)
-		lastSession := (*Session)(nil)
-
-		if pos == 1 {
-			s1.activeTimeNS = 0
-			firstSession = s2
-			lastSession = s3
-		} else if pos == 2 {
-			s2.activeTimeNS = 0
-			firstSession = s1
-			lastSession = s3
-		} else if pos == 3 {
-			s3.activeTimeNS = 0
-			firstSession = s1
-			lastSession = s2
-		} else {
-			v.TimeCheck(nowNS)
-			return v.gateway.totalSessions == 3 && v.head == s1 &&
-				s1.next == s2 && s2.next == s3 && s3.next == nil &&
-				s3.prev == s2 && s2.prev == s1 && s1.prev == nil
-		}
-
-		v.TimeCheck(nowNS)
-
-		return v.gateway.totalSessions == 2 && v.head == firstSession &&
-			firstSession.next == lastSession && lastSession.next == nil &&
-			lastSession.prev == firstSession && firstSession.prev == nil
-	}
-
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(fnTest(0)).IsTrue()
-		assert(fnTest(1)).IsTrue()
-		assert(fnTest(2)).IsTrue()
-		assert(fnTest(3)).IsTrue()
+		assert(testTimeCheck(0)).IsTrue()
+		assert(testTimeCheck(1)).IsTrue()
+		assert(testTimeCheck(2)).IsTrue()
+		assert(testTimeCheck(3)).IsTrue()
 	})
 }
