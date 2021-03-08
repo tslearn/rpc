@@ -279,7 +279,7 @@ func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
 				}, 500*time.Millisecond)
 				interval := TimeNow().Sub(startTime)
 				assert(interval > 480*time.Millisecond).IsTrue()
-				assert(interval < 780*time.Millisecond).IsTrue()
+				assert(interval < 880*time.Millisecond).IsTrue()
 				waitCH <- true
 			}()
 		}
