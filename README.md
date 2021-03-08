@@ -1,6 +1,8 @@
 # RPC
 [![Lint](https://github.com/rpccloud/rpc/workflows/Lint/badge.svg)](https://github.com/rpccloud/rpc/actions?query=workflow%3ALint)
 [![Test](https://github.com/rpccloud/rpc/workflows/Test/badge.svg)](https://github.com/rpccloud/rpc/actions?query=workflow%3ATest)
+[![codecov](https://codecov.io/gh/rpccloud/rpc/branch/master/graph/badge.svg)](https://codecov.io/gh/rpccloud/rpc)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rpccloud/rpc)](https://goreportcard.com/report/github.com/rpccloud/rpc)
 
 ### 性能测试
 ```go
