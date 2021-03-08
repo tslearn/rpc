@@ -126,7 +126,7 @@ func testTimeCheck(pos int) bool {
 	v.Add(s2)
 	v.Add(s1)
 
-	firstSession := (*Session)(nil)
+	var firstSession *Session
 
 	switch pos {
 	case 1:
