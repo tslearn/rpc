@@ -55,7 +55,7 @@ func TestTimeMaster_Run(t *testing.T) {
 	t.Run("status is timeMasterStatusNone high speed", func(t *testing.T) {
 		assert := NewAssert(t)
 		v1 := newTimeMaster()
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 10000; i++ {
 			v1.Count()
 		}
 		time.Sleep(50 * time.Millisecond)
