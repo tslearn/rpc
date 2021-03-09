@@ -29,7 +29,7 @@ func TestNewGateWay(t *testing.T) {
 		assert := base.NewAssert(t)
 		streamHub := rpc.NewTestStreamHub()
 		v := NewGateWay(132, GetDefaultConfig(), streamHub)
-		assert(v.id).Equal(uint32(132))
+		assert(v.id).Equal(uint64(132))
 		assert(v.isRunning).Equal(false)
 		assert(v.sessionSeed).Equal(uint64(0))
 		assert(v.totalSessions).Equal(int64(0))

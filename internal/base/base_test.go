@@ -482,7 +482,7 @@ func TestEncryptSessionEndpoint(t *testing.T) {
 		v, ok := EncryptSessionEndpoint(1, 32)
 		assert(len(v) > 0).IsTrue()
 		assert(ok).IsTrue()
-		assert(DecryptSessionEndpoint(v)).Equal(uint32(1), uint64(32), true)
+		assert(DecryptSessionEndpoint(v)).Equal(uint64(1), uint64(32), true)
 	})
 }
 
@@ -495,19 +495,19 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 		}()
 
 		assert := NewAssert(t)
-		assert(DecryptSessionEndpoint("")).Equal(uint32(0), uint64(0), false)
+		assert(DecryptSessionEndpoint("")).Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("base64 decode error", func(t *testing.T) {
 		assert := NewAssert(t)
-		assert(DecryptSessionEndpoint("err")).Equal(uint32(0), uint64(0), false)
+		assert(DecryptSessionEndpoint("err")).Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("cipher open error", func(t *testing.T) {
 		assert := NewAssert(t)
 		errString := base64.StdEncoding.EncodeToString([]byte{1, 2, 3})
 		assert(DecryptSessionEndpoint(errString)).
-			Equal(uint32(0), uint64(0), false)
+			Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("split arr length error", func(t *testing.T) {
@@ -519,7 +519,7 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 			nil,
 		))
 		assert(DecryptSessionEndpoint(errString)).
-			Equal(uint32(0), uint64(0), false)
+			Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("gatewayID parse error", func(t *testing.T) {
@@ -531,7 +531,7 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 			nil,
 		))
 		assert(DecryptSessionEndpoint(errString)).
-			Equal(uint32(0), uint64(0), false)
+			Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("sessionID parse error", func(t *testing.T) {
@@ -543,7 +543,7 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 			nil,
 		))
 		assert(DecryptSessionEndpoint(errString)).
-			Equal(uint32(0), uint64(0), false)
+			Equal(uint64(0), uint64(0), false)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -555,7 +555,7 @@ func TestDecryptSessionEndpoint(t *testing.T) {
 			nil,
 		))
 		assert(DecryptSessionEndpoint(errString)).
-			Equal(uint32(321), uint64(123456), true)
+			Equal(uint64(321), uint64(123456), true)
 	})
 }
 

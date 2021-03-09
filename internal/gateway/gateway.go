@@ -18,7 +18,7 @@ const (
 
 // GateWay ...
 type GateWay struct {
-	id             uint32
+	id             uint64
 	isRunning      bool
 	sessionSeed    uint64
 	totalSessions  int64
@@ -33,7 +33,7 @@ type GateWay struct {
 
 // NewGateWay ...
 func NewGateWay(
-	id uint32,
+	id uint64,
 	config *Config,
 	streamHub rpc.IStreamHub,
 ) *GateWay {

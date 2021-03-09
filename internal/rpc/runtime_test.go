@@ -187,7 +187,7 @@ func TestRuntime_Post(t *testing.T) {
 		)
 		assert(e).IsNil()
 		assert(stream.GetKind()).Equal(uint8(StreamKindRPCBoardCast))
-		assert(stream.GetGatewayID()).Equal(uint32(1234))
+		assert(stream.GetGatewayID()).Equal(uint64(1234))
 		assert(stream.GetSessionID()).Equal(uint64(5678))
 		assert(stream.Read()).Equal("#.test%Msg", nil)
 		assert(stream.Read()).Equal("HI", nil)
@@ -330,7 +330,7 @@ func TestRuntime_GetPostEndPoint(t *testing.T) {
 		v.thread.top.stream.SetGatewayID(13)
 		v.thread.top.stream.SetSessionID(15)
 		assert(base.DecryptSessionEndpoint(v.GetPostEndPoint())).
-			Equal(uint32(13), uint64(15), true)
+			Equal(uint64(13), uint64(15), true)
 		v.thread.top.stream = nil
 	})
 }

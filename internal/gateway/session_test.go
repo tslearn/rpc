@@ -630,7 +630,7 @@ func TestSession_OnConnReadStream(t *testing.T) {
 		session.OnConnReadStream(streamConn, stream)
 
 		backStream := streamHub.GetStream()
-		assert(backStream.GetGatewayID()).Equal(uint32(3))
+		assert(backStream.GetGatewayID()).Equal(uint64(3))
 		assert(backStream.GetSessionID()).Equal(uint64(11))
 	})
 
