@@ -568,7 +568,6 @@ func TestRunWithLogOutput(t *testing.T) {
 			"Hello world\n",
 		)).IsTrue()
 	})
-
 }
 
 func BenchmarkGetFileLine(b *testing.B) {
