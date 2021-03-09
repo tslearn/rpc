@@ -898,7 +898,7 @@ func TestStream_GetTargetID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetTargetID(id)
 			assert(v.GetTargetID()).Equal(id)
 			v.Release()
@@ -911,7 +911,7 @@ func TestStream_SetTargetID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetTargetID(id)
 			assert(v.GetTargetID()).Equal(id)
 			v.Release()
@@ -924,7 +924,7 @@ func TestStream_GetSourceID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetSourceID(id)
 			assert(v.GetSourceID()).Equal(id)
 			v.Release()
@@ -937,7 +937,7 @@ func TestStream_SetSourceID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetSourceID(id)
 			assert(v.GetSourceID()).Equal(id)
 			v.Release()
@@ -950,7 +950,7 @@ func TestStream_GetGatewayID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetGatewayID(id)
 			assert(v.GetGatewayID()).Equal(id)
 			v.Release()
@@ -963,7 +963,7 @@ func TestStream_SetGatewayID(t *testing.T) {
 		assert := base.NewAssert(t)
 		for i := 0; i < 1000; i++ {
 			v := NewStream()
-			id := rand.Uint32()
+			id := rand.Uint64()
 			v.SetGatewayID(id)
 			assert(v.GetGatewayID()).Equal(id)
 			v.Release()

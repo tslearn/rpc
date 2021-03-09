@@ -24,12 +24,12 @@ const (
 	streamPosCheckSum   = 8
 	streamPosZoneID     = 16
 	streamPosTargetID   = 18
-	streamPosSourceID   = 22
-	streamPosGatewayID  = 26
-	streamPosSessionID  = 30
-	streamPosCallbackID = 38
-	streamPosDepth      = 46
-	streamPosBody       = 48
+	streamPosSourceID   = 26
+	streamPosGatewayID  = 34
+	streamPosSessionID  = 42
+	streamPosCallbackID = 50
+	streamPosDepth      = 58
+	streamPosBody       = 60
 
 	streamStatusBitDebug = 0
 
@@ -255,11 +255,6 @@ func (p *Stream) GetLength() uint32 {
 	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosLength:])
 }
 
-// GetTargetID ...
-func (p *Stream) GetTargetID() uint32 {
-	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosTargetID:])
-}
-
 func (p *Stream) getCheckSum() uint64 {
 	checksum := uint64(0)
 	arr := []uint64(nil)
@@ -320,29 +315,34 @@ func (p *Stream) SetZoneID(v uint16) {
 	binary.LittleEndian.PutUint16((*p.frames[0])[streamPosZoneID:], v)
 }
 
+// GetTargetID ...
+func (p *Stream) GetTargetID() uint64 {
+	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosTargetID:])
+}
+
 // SetTargetID ...
-func (p *Stream) SetTargetID(v uint32) {
-	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosTargetID:], v)
+func (p *Stream) SetTargetID(v uint64) {
+	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosTargetID:], v)
 }
 
 // GetSourceID ...
-func (p *Stream) GetSourceID() uint32 {
-	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosSourceID:])
+func (p *Stream) GetSourceID() uint64 {
+	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosSourceID:])
 }
 
 // SetSourceID ...
-func (p *Stream) SetSourceID(v uint32) {
-	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosSourceID:], v)
+func (p *Stream) SetSourceID(v uint64) {
+	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosSourceID:], v)
 }
 
 // GetGatewayID ...
-func (p *Stream) GetGatewayID() uint32 {
-	return binary.LittleEndian.Uint32((*p.frames[0])[streamPosGatewayID:])
+func (p *Stream) GetGatewayID() uint64 {
+	return binary.LittleEndian.Uint64((*p.frames[0])[streamPosGatewayID:])
 }
 
 // SetGatewayID ...
-func (p *Stream) SetGatewayID(v uint32) {
-	binary.LittleEndian.PutUint32((*p.frames[0])[streamPosGatewayID:], v)
+func (p *Stream) SetGatewayID(v uint64) {
+	binary.LittleEndian.PutUint64((*p.frames[0])[streamPosGatewayID:], v)
 }
 
 // GetSessionID ...
