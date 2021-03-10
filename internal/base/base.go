@@ -36,7 +36,6 @@ var (
 		_, e := io.ReadFull(cryptoRand.Reader, ret)
 		return ret, e
 	}
-	fnNetInterfaces     = net.Interfaces
 	aesCipher, aesNonce = initAESCipherAndNonce()
 )
 
@@ -396,21 +395,4 @@ func RunWithLogOutput(fn func()) string {
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	return buf.String()
-}
-
-// FindMacAddrByIP ...
-func FindMacAddrByIP(ip string) string {
-	if interfaces, e := fnNetInterfaces(); e == nil {
-		for _, inter := range interfaces {
-			interfaceAddrList, _ := inter.Addrs()
-			for _, address := range interfaceAddrList {
-				ipNet, isValidIpNet := address.(*net.IPNet)
-				if isValidIpNet && ipNet.IP.String() == ip {
-					return inter.HardwareAddr.String()
-				}
-			}
-		}
-	}
-
-	return ""
 }
