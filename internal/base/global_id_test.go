@@ -1,53 +1,82 @@
 package base
 
 import (
-	"fmt"
+	"encoding/binary"
+	"errors"
+	"net"
 	"testing"
 )
 
 func TestNewGlobalID(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		fmt.Printf("%x\n", NewGlobalID().GetID())
+	t.Run("net.Listen error", func(t *testing.T) {
+		assert := NewAssert(t)
+		originFN := fnNetListen
+		fnNetListen = func(network, address string) (net.Listener, error) {
+			return nil, errors.New("error")
+		}
+		defer func() {
+			fnNetListen = originFN
+		}()
+
+		assert(NewGlobalID()).Equal(nil)
+	})
+
+	t.Run("net.Interfaces error", func(t *testing.T) {
+		assert := NewAssert(t)
+		originFN := fnNetInterfaces
+		fnNetInterfaces = func() ([]net.Interface, error) {
+			return nil, errors.New("error")
+		}
+		defer func() {
+			fnNetInterfaces = originFN
+		}()
+		assert(NewGlobalID()).Equal(nil)
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		assert(NewGlobalID()).IsNotNil()
 	})
 }
 
-//
-//func TestFindMacAddrByIP(t *testing.T) {
-//    t.Run("ip is nil", func(t *testing.T) {
-//        assert := NewAssert(t)
-//        assert(FindMacAddrByIP("")).Equal("")
-//    })
-//
-//    t.Run("ip is not local", func(t *testing.T) {
-//        assert := NewAssert(t)
-//        assert(FindMacAddrByIP("8.8.8.8")).Equal("")
-//    })
-//
-//    t.Run("fake net.Interface error", func(t *testing.T) {
-//        assert := NewAssert(t)
-//        saveFNNetInterfaces := fnNetInterfaces
-//        fnNetInterfaces = func() ([]net.Interface, error) {
-//            return nil, errors.New("error")
-//        }
-//        defer func() {
-//            fnNetInterfaces = saveFNNetInterfaces
-//        }()
-//        assert(FindMacAddrByIP("127.0.0.1")).Equal("")
-//    })
-//
-//    t.Run("test ok", func(t *testing.T) {
-//        assert := NewAssert(t)
-//        testCount := 0
-//        addrList, e := net.InterfaceAddrs()
-//        if e != nil {
-//            assert().Fail(e.Error())
-//        }
-//        for _, addr := range addrList {
-//            if ipNet, ok := addr.(*net.IPNet); ok && ipNet.IP.IsGlobalUnicast() {
-//                assert(len(FindMacAddrByIP(ipNet.IP.String()))).Equal(17)
-//                testCount++
-//            }
-//        }
-//        assert(testCount > 0).IsTrue()
-//    })
-//}
+func TestGlobalID_GetID(t *testing.T) {
+	t.Run("port error", func(t *testing.T) {
+		assert := NewAssert(t)
+		v := &GlobalID{port: 0, mac: []byte{3, 4, 5, 6, 7, 8}}
+		assert(v.GetID()).Equal(uint64(0))
+	})
+
+	t.Run("mac error", func(t *testing.T) {
+		assert := NewAssert(t)
+		v := &GlobalID{port: 513, mac: []byte{3, 4, 5, 6, 7}}
+		assert(v.GetID()).Equal(uint64(0))
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		v := &GlobalID{port: 513, mac: []byte{3, 4, 5, 6, 7, 8}}
+		buffer := make([]byte, 8)
+		binary.LittleEndian.PutUint64(buffer, v.GetID())
+		assert(buffer).Equal([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	})
+}
+
+func TestGlobalID_Close(t *testing.T) {
+	t.Run("p.listener == nil", func(t *testing.T) {
+		assert := NewAssert(t)
+		v := &GlobalID{port: 0, mac: []byte{3, 4, 5, 6, 7, 8}}
+		v.Close()
+		assert(v.listener).IsNil()
+		assert(v.port).Equal(uint16(0))
+		assert(v.mac).IsNil()
+	})
+
+	t.Run("test ok", func(t *testing.T) {
+		assert := NewAssert(t)
+		v := NewGlobalID()
+		v.Close()
+		assert(v.listener).IsNil()
+		assert(v.port).Equal(uint16(0))
+		assert(v.mac).IsNil()
+	})
+}

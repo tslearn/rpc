@@ -9,6 +9,7 @@ import (
 
 var (
 	fnNetInterfaces = net.Interfaces
+	fnNetListen     = net.Listen
 )
 
 type GlobalID struct {
@@ -18,20 +19,19 @@ type GlobalID struct {
 }
 
 func NewGlobalID() *GlobalID {
-	ret := &GlobalID{
-		listener: nil,
-		port:     0,
-		mac:      nil,
-	}
+	port := uint16(0)
+	mac := []byte(nil)
+	listener := net.Listener(nil)
+
 	// try to find a port
 	for i := 0; i < 1000; i++ {
 		testPort := uint16(50000 + rand.Uint64()%15000)
-		if ln, e := net.Listen(
+		if ln, e := fnNetListen(
 			"tcp",
 			fmt.Sprintf("localhost:%d", testPort),
-		); e != nil {
-			ret.port = testPort
-			ret.listener = ln
+		); e == nil {
+			port = testPort
+			listener = ln
 			break
 		}
 	}
@@ -43,14 +43,23 @@ func NewGlobalID() *GlobalID {
 			for _, address := range interfaceAddrList {
 				ipNet, isValidIpNet := address.(*net.IPNet)
 				if isValidIpNet && ipNet.IP.IsGlobalUnicast() {
-					ret.mac = inter.HardwareAddr
+					mac = inter.HardwareAddr
 					break
 				}
 			}
 		}
 	}
 
-	return ret
+	// check
+	if port <= 0 || len(mac) != 6 {
+		return nil
+	}
+
+	return &GlobalID{
+		listener: listener,
+		port:     port,
+		mac:      mac,
+	}
 }
 
 func (p *GlobalID) GetID() uint64 {
@@ -72,20 +81,3 @@ func (p *GlobalID) Close() {
 	p.port = 0
 	p.mac = nil
 }
-
-//// FindMacAddrByIP ...
-//func FindMacAddrByIP(ip string) string {
-//    if interfaces, e := fnNetInterfaces(); e == nil {
-//        for _, inter := range interfaces {
-//            interfaceAddrList, _ := inter.Addrs()
-//            for _, address := range interfaceAddrList {
-//                ipNet, isValidIpNet := address.(*net.IPNet)
-//                if isValidIpNet && ipNet.IP.String() == ip {
-//                    return inter.HardwareAddr.String()
-//                }
-//            }
-//        }
-//    }
-//
-//    return ""
-//}
