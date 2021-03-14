@@ -140,7 +140,7 @@ func (p *syncTCPServerService) Run() bool {
 			conn, e := p.ln.Accept()
 			if e != nil {
 				isCloseErr := !isRunning() &&
-					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
+					strings.HasSuffix(e.Error(), base.ErrNetClosingSuffix)
 
 				if !isCloseErr {
 					adapter.receiver.OnConnError(
@@ -263,7 +263,7 @@ func (p *syncWSServerService) Close() bool {
 		}
 
 		if e := p.ln.Close(); e != nil {
-			if !strings.HasSuffix(e.Error(), ErrNetClosingSuffix) {
+			if !strings.HasSuffix(e.Error(), base.ErrNetClosingSuffix) {
 				p.adapter.receiver.OnConnError(
 					nil,
 					base.ErrSyncWSServerServiceClose.AddDebug(e.Error()),

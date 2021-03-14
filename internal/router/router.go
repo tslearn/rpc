@@ -8,62 +8,8 @@ import (
 	"sync"
 )
 
-const (
-	numOfChannelPerSlot = 8
-	numOfCacheBuffer    = 512
-	bufferSize          = 65536
-)
-
-type ClientSlot struct {
-	addr      string
-	tlsConfig *tls.Config
-	hub       *ChannelHub
-}
-
 type ServerSlot struct {
-	hub *ChannelHub
-}
-
-type ChannelHub struct {
-	inputCH  chan *rpc.Stream
-	channels [numOfChannelPerSlot]Channel
-}
-
-type Channel struct {
-	hub       *ChannelHub
-	sequence  uint64
-	buffer    [numOfCacheBuffer][bufferSize]byte
-	bufferPos int
-	stream    *rpc.Stream
-	streamPos int
-}
-
-func NewSlotConn() {
-
-}
-
-func (p *Channel) RunWithConn(conn *adapter.StreamConn) {
-	waitCH := make(chan bool)
-	go func() {
-		p.runRead(conn)
-		waitCH <- true
-	}()
-
-	go func() {
-		p.runWrite(conn)
-		waitCH <- true
-	}()
-
-	<-waitCH
-	<-waitCH
-}
-
-func (p *Channel) runRead(conn *adapter.StreamConn) {
-
-}
-
-func (p *Channel) runWrite(conn *adapter.StreamConn) {
-
+	manager *ChannelManager
 }
 
 type Router struct {

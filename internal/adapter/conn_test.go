@@ -172,7 +172,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert(v.OnReadReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(base.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnRead.AddDebug(base.ErrNetClosingSuffix))
 	})
 
 	t.Run("server ok", func(t *testing.T) {
@@ -208,7 +208,7 @@ func TestSyncConn_OnReadReady(t *testing.T) {
 		assert(v.OnReadReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(base.ErrConnRead.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnRead.AddDebug(base.ErrNetClosingSuffix))
 	})
 
 	t.Run("client error use of closed conn when closed", func(t *testing.T) {
@@ -286,7 +286,7 @@ func TestSyncConn_OnWriteReady(t *testing.T) {
 		assert(v.OnWriteReady()).IsFalse()
 		assert(receiver.GetOnErrorCount()).Equal(1)
 		assert(receiver.GetError()).
-			Equal(base.ErrConnWrite.AddDebug(ErrNetClosingSuffix))
+			Equal(base.ErrConnWrite.AddDebug(base.ErrNetClosingSuffix))
 	})
 
 	t.Run("write zero", func(t *testing.T) {

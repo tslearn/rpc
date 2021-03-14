@@ -8,9 +8,6 @@ import (
 	"net"
 )
 
-// ErrNetClosingSuffix ...
-const ErrNetClosingSuffix = "use of closed network connection"
-
 // IConn ...
 type IConn interface {
 	OnOpen()

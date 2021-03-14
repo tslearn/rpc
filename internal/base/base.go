@@ -25,6 +25,9 @@ import (
 	"unsafe"
 )
 
+// ErrNetClosingSuffix ...
+const ErrNetClosingSuffix = "use of closed network connection"
+
 var (
 	seedInt64    = int64(10000)
 	base64String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

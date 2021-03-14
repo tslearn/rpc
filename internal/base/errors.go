@@ -293,6 +293,38 @@ var (
 	)
 )
 
+const routerErrorSeg = 5 << 8
+
+var (
+	// ErrRouterClientConnect ...
+	ErrRouterClientConnect = DefineNetError(
+		routerErrorSeg|1,
+		ErrorLevelWarn,
+		"",
+	)
+
+	// ErrRouteServerListen ...
+	ErrRouteServerListen = DefineNetError(
+		goAdapterErrorSeg|2,
+		ErrorLevelFatal,
+		"",
+	)
+
+	// ErrRouteServerAccept ...
+	ErrRouteServerAccept = DefineNetError(
+		goAdapterErrorSeg|3,
+		ErrorLevelFatal,
+		"",
+	)
+
+	// ErrRouteServerClose ...
+	ErrRouteServerClose = DefineNetError(
+		goAdapterErrorSeg|4,
+		ErrorLevelFatal,
+		"",
+	)
+)
+
 const goAdapterErrorSeg = 101 << 8
 
 var (
