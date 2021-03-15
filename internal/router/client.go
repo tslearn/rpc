@@ -10,21 +10,21 @@ import (
 )
 
 type Client struct {
-	addr           string
-	tlsConfig      *tls.Config
-	channelManager *ChannelManager
-	orcManager     *base.ORCManager
-	streamHub      rpc.IStreamHub
-	id             *base.GlobalID
+	addr        string
+	tlsConfig   *tls.Config
+	slotManager *SlotManager
+	orcManager  *base.ORCManager
+	streamHub   rpc.IStreamHub
+	id          *base.GlobalID
 }
 
 func NewClient(addr string, tlsConfig *tls.Config, streamHub rpc.IStreamHub) *Client {
 	return &Client{
-		addr:           addr,
-		tlsConfig:      tlsConfig,
-		channelManager: NewChannelManager(streamHub),
-		orcManager:     base.NewORCManager(),
-		streamHub:      streamHub,
+		addr:        addr,
+		tlsConfig:   tlsConfig,
+		slotManager: NewSlotManager(streamHub),
+		orcManager:  base.NewORCManager(),
+		streamHub:   streamHub,
 	}
 }
 
@@ -39,7 +39,7 @@ func (p *Client) Run() bool {
 	return p.orcManager.Run(func(isRunning func() bool) bool {
 		for isRunning() {
 			startMS := base.TimeNow().UnixNano()
-			frees := p.channelManager.GetFreeChannels()
+			frees := p.slotManager.GetFreeChannels()
 			for _, freeChannelID := range frees {
 				var conn net.Conn
 				var e error
@@ -70,7 +70,7 @@ func (p *Client) Run() bool {
 				}
 
 				// run conn
-				p.channelManager.RunAt(freeChannelID, conn)
+				p.slotManager.RunAt(freeChannelID, conn)
 			}
 
 			base.WaitAtLeastDurationWhenRunning(startMS, isRunning, time.Second)
@@ -82,7 +82,7 @@ func (p *Client) Run() bool {
 
 func (p *Client) Close() bool {
 	return p.orcManager.Close(func() bool {
-		p.channelManager.Close()
+		p.slotManager.Close()
 		return true
 	}, func() {
 		p.id = nil
