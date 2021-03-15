@@ -13,13 +13,13 @@ const (
 	bufferSize          = 65536
 )
 
-type ChannelManager struct {
+type SlotManager struct {
 	inputCH  chan *rpc.Stream
 	channels []*Channel
 }
 
-func NewChannelManager(streamHub rpc.IStreamHub) *ChannelManager {
-	ret := &ChannelManager{
+func NewSlotManager(streamHub rpc.IStreamHub) *SlotManager {
+	ret := &SlotManager{
 		inputCH:  make(chan *rpc.Stream, 8192),
 		channels: make([]*Channel, numOfChannelPerSlot),
 	}
@@ -31,7 +31,7 @@ func NewChannelManager(streamHub rpc.IStreamHub) *ChannelManager {
 	return ret
 }
 
-func (p *ChannelManager) RunAt(index uint16, conn net.Conn) bool {
+func (p *SlotManager) RunAt(index uint16, conn net.Conn) bool {
 	if index < numOfChannelPerSlot && conn != nil {
 		return p.channels[index].RunWithConn(conn)
 	}
@@ -39,7 +39,7 @@ func (p *ChannelManager) RunAt(index uint16, conn net.Conn) bool {
 	return false
 }
 
-func (p *ChannelManager) GetFreeChannels() []uint16 {
+func (p *SlotManager) GetFreeChannels() []uint16 {
 	ret := []uint16(nil)
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
@@ -51,7 +51,7 @@ func (p *ChannelManager) GetFreeChannels() []uint16 {
 	return ret
 }
 
-func (p *ChannelManager) Close() {
+func (p *SlotManager) Close() {
 	for i := 0; i < numOfChannelPerSlot; i++ {
 		p.channels[i].Close()
 	}
@@ -59,7 +59,7 @@ func (p *ChannelManager) Close() {
 
 type Channel struct {
 	isRunning bool
-	manager   *ChannelManager
+	manager   *SlotManager
 	sequence  uint64
 	buffers   [numOfCacheBuffer][]byte
 	stream    *rpc.Stream
@@ -69,10 +69,9 @@ type Channel struct {
 	sync.Mutex
 }
 
-func NewChannel(manager *ChannelManager, streamHub rpc.IStreamHub) *Channel {
+func NewChannel(streamHub rpc.IStreamHub) *Channel {
 	ret := &Channel{
 		isRunning: true,
-		manager:   manager,
 		sequence:  0,
 		stream:    nil,
 		streamPos: -1,

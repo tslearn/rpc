@@ -310,8 +310,8 @@ var (
 		"",
 	)
 
-	// ErrRouteServerAccept ...
-	ErrRouteServerAccept = DefineNetError(
+	// ErrRouteServerConnect ...
+	ErrRouteServerConnect = DefineNetError(
 		goAdapterErrorSeg|3,
 		ErrorLevelFatal,
 		"",

@@ -2,6 +2,7 @@ package router
 
 import (
 	"crypto/tls"
+	"encoding/binary"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
@@ -16,19 +17,20 @@ type Server struct {
 	orcManager *base.ORCManager
 	errorHub   rpc.IStreamHub
 	id         *base.GlobalID
-	slotMap    map[uint64]*ChannelManager
+	router     *Router
 	ln         net.Listener
 	sync.Mutex
 }
 
 func NewServer(addr string, tlsConfig *tls.Config) *Server {
+	errorHub := rpc.NewLogToScreenErrorStreamHub("Router")
 	return &Server{
 		addr:       addr,
 		tlsConfig:  tlsConfig,
 		orcManager: base.NewORCManager(),
-		errorHub:   rpc.NewLogToScreenErrorStreamHub("Router"),
+		errorHub:   errorHub,
 		id:         nil,
-		slotMap:    map[uint64]*ChannelManager{},
+		router:     NewRouter(errorHub),
 		ln:         nil,
 	}
 }
@@ -76,7 +78,7 @@ func (p *Server) Run() bool {
 
 				if !isCloseErr {
 					p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-						base.ErrRouteServerAccept.AddDebug(e.Error()),
+						base.ErrRouteServerConnect.AddDebug(e.Error()),
 					))
 
 					base.WaitAtLeastDurationWhenRunning(
@@ -95,7 +97,33 @@ func (p *Server) Run() bool {
 }
 
 func (p *Server) onConnect(conn net.Conn) {
+	buf := make([]byte, 16)
 
+	if e := conn.SetDeadline(base.TimeNow().Add(time.Second)); e != nil {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouteServerConnect.AddDebug(e.Error()),
+		))
+	} else if n, e := conn.Read(buf); e != nil {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouteServerConnect.AddDebug(e.Error()),
+		))
+	} else if n != 12 {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouteServerConnect.AddDebug(
+				"router client init data error",
+			),
+		))
+	} else if binary.LittleEndian.Uint16(buf) != rpc.StreamKindConnectRequest {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouteServerConnect.AddDebug(
+				"router client init data error",
+			),
+		))
+	} else {
+		channelID := binary.LittleEndian.Uint16(buf[2:])
+		slotID := binary.LittleEndian.Uint64(buf[4:])
+		p.router.AddSlot(slotID, conn, channelID)
+	}
 }
 
 // Close ...
