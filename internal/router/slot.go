@@ -3,8 +3,6 @@ package router
 import (
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
-	"sync"
-	"time"
 )
 
 const (
@@ -13,37 +11,38 @@ const (
 	bufferSize          = 65536
 )
 
-type SlotManager struct {
-	inputCH  chan *rpc.Stream
-	channels []*Channel
+type Slot struct {
+	inputCH       chan *rpc.Stream
+	manageChannel *Channel
+	dataChannels  []*Channel
 }
 
-func NewSlotManager(streamHub rpc.IStreamHub) *SlotManager {
-	ret := &SlotManager{
-		inputCH:  make(chan *rpc.Stream, 8192),
-		channels: make([]*Channel, numOfChannelPerSlot),
+func NewSlotManager(streamHub rpc.IStreamHub) *Slot {
+	ret := &Slot{
+		inputCH:      make(chan *rpc.Stream, 8192),
+		dataChannels: make([]*Channel, numOfChannelPerSlot),
 	}
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		ret.channels[i] = NewChannel(streamHub)
+		ret.dataChannels[i] = NewChannel(streamHub)
 	}
 
 	return ret
 }
 
-func (p *SlotManager) RunAt(index uint16, conn net.Conn) bool {
+func (p *Slot) RunAt(index uint16, conn net.Conn) bool {
 	if index < numOfChannelPerSlot && conn != nil {
-		return p.channels[index].RunWithConn(conn)
+		return p.dataChannels[index].RunWithConn(conn)
 	}
 
 	return false
 }
 
-func (p *SlotManager) GetFreeChannels() []uint16 {
+func (p *Slot) GetFreeChannels() []uint16 {
 	ret := []uint16(nil)
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		if p.channels[i].IsNotConnected() {
+		if p.dataChannels[i].IsNeedConnected() {
 			ret = append(ret, uint16(i))
 		}
 	}
@@ -51,117 +50,8 @@ func (p *SlotManager) GetFreeChannels() []uint16 {
 	return ret
 }
 
-func (p *SlotManager) Close() {
+func (p *Slot) Close() {
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		p.channels[i].Close()
+		p.dataChannels[i].Close()
 	}
-}
-
-type Channel struct {
-	isRunning bool
-	manager   *SlotManager
-	sequence  uint64
-	buffers   [numOfCacheBuffer][]byte
-	stream    *rpc.Stream
-	streamPos int
-	conn      net.Conn
-	streamHub rpc.IStreamHub
-	sync.Mutex
-}
-
-func NewChannel(streamHub rpc.IStreamHub) *Channel {
-	ret := &Channel{
-		isRunning: true,
-		sequence:  0,
-		stream:    nil,
-		streamPos: -1,
-		conn:      nil,
-		streamHub: streamHub,
-	}
-
-	for i := 0; i < numOfCacheBuffer; i++ {
-		ret.buffers[i] = make([]byte, bufferSize)
-	}
-
-	return ret
-}
-
-func (p *Channel) IsNotConnected() bool {
-	p.Lock()
-	defer p.Unlock()
-
-	return p.isRunning && p.conn == nil
-}
-
-func (p *Channel) getConn() net.Conn {
-	p.Lock()
-	defer p.Unlock()
-	return p.conn
-}
-
-func (p *Channel) setConn(conn net.Conn) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	if !p.isRunning {
-		return false
-	}
-
-	p.conn = conn
-	return true
-}
-
-func (p *Channel) waitUntilConnIsNil() {
-	for p.getConn() != nil {
-		time.Sleep(50 * time.Millisecond)
-	}
-}
-
-func (p *Channel) RunWithConn(conn net.Conn) bool {
-	p.waitUntilConnIsNil()
-
-	if !p.setConn(conn) {
-		return false
-	}
-
-	waitCH := make(chan bool)
-
-	go func() {
-		p.runRead(conn)
-		_ = conn.Close()
-		waitCH <- true
-	}()
-
-	go func() {
-		p.runWrite(conn)
-		_ = conn.Close()
-		waitCH <- true
-	}()
-
-	<-waitCH
-	<-waitCH
-
-	p.setConn(nil)
-	return true
-}
-
-func (p *Channel) runRead(conn net.Conn) {
-
-}
-
-func (p *Channel) runWrite(conn net.Conn) {
-
-}
-
-func (p *Channel) Close() {
-	func() {
-		p.Lock()
-		defer p.Unlock()
-		p.isRunning = false
-		if p.conn != nil {
-			_ = p.conn.Close()
-		}
-	}()
-
-	p.waitUntilConnIsNil()
 }

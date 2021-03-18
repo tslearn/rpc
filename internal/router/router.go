@@ -15,7 +15,7 @@ type Router struct {
 }
 
 func NewRouter(errorHub rpc.IStreamHub) *Router {
-	slotMap := make(map[uint64]*SlotManager)
+	slotMap := make(map[uint64]*Slot)
 	return &Router{
 		errorHub: errorHub,
 		slotMap:  unsafe.Pointer(&slotMap),
@@ -30,22 +30,20 @@ func (p *Router) AddSlot(id uint64, conn net.Conn, channelID uint16) {
 	p.Lock()
 	defer p.Unlock()
 
-	slotMap := *(*map[uint64]*SlotManager)(atomic.LoadPointer(&p.slotMap))
+	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
 	oldSlotMgr, ok := slotMap[id]
 	newSlotMgr := NewSlotManager(p)
 
 	if ok {
-		for i := 0; i < len(oldSlotMgr.channels); i++ {
-			newSlotMgr.channels[i] = oldSlotMgr.channels[i]
+		for i := 0; i < len(oldSlotMgr.dataChannels); i++ {
+			newSlotMgr.dataChannels[i] = oldSlotMgr.dataChannels[i]
 		}
 	}
 
-	if int(channelID) < len(newSlotMgr.channels) {
-		newSlotMgr.channels[channelID].Close()
-
-		newSlotMgr.channels[channelID] = NewChannel(p)
+	if int(channelID) < len(newSlotMgr.dataChannels) {
+		newSlotMgr.dataChannels[channelID].Close()
+		newSlotMgr.dataChannels[channelID] = NewChannel(p)
 	}
-
 }
 
 func (p *Router) DelSlot(id uint64) {
