@@ -16,14 +16,14 @@ type Slot struct {
 	dataChannels []*Channel
 }
 
-func NewSlotManager(streamHub rpc.IStreamHub) *Slot {
+func NewSlot(streamHub rpc.IStreamHub) *Slot {
 	ret := &Slot{
 		dataCH:       make(chan *rpc.Stream, 8192),
 		dataChannels: make([]*Channel, numOfChannelPerSlot),
 	}
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		ret.dataChannels[i] = NewChannel(streamHub)
+		ret.dataChannels[i] = NewChannel(i == 0, streamHub)
 	}
 
 	return ret

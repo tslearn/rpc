@@ -59,7 +59,12 @@ func (p *Channel) setConn(conn net.Conn) bool {
 		return false
 	}
 
+	if p.conn != nil {
+		_ = p.conn.Close()
+	}
+
 	p.conn = conn
+
 	return true
 }
 
