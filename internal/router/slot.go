@@ -12,14 +12,13 @@ const (
 )
 
 type Slot struct {
-	inputCH       chan *rpc.Stream
-	manageChannel *Channel
-	dataChannels  []*Channel
+	dataCH       chan *rpc.Stream
+	dataChannels []*Channel
 }
 
 func NewSlotManager(streamHub rpc.IStreamHub) *Slot {
 	ret := &Slot{
-		inputCH:      make(chan *rpc.Stream, 8192),
+		dataCH:       make(chan *rpc.Stream, 8192),
 		dataChannels: make([]*Channel, numOfChannelPerSlot),
 	}
 

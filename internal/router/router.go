@@ -26,28 +26,37 @@ func (p *Router) OnReceiveStream(s *rpc.Stream) {
 
 }
 
-func (p *Router) AddSlot(id uint64, conn net.Conn, channelID uint16) {
+func (p *Router) AddSlot(slotID uint64, conn net.Conn, channelID uint16) {
 	p.Lock()
 	defer p.Unlock()
 
 	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
-	oldSlotMgr, ok := slotMap[id]
-	newSlotMgr := NewSlotManager(p)
+	oldSlot, ok := slotMap[slotID]
+	newSlot := NewSlotManager(p)
 
 	if ok {
-		for i := 0; i < len(oldSlotMgr.dataChannels); i++ {
-			newSlotMgr.dataChannels[i] = oldSlotMgr.dataChannels[i]
+		for i := 0; i < len(oldSlot.dataChannels); i++ {
+			newSlot.dataChannels[i] = oldSlot.dataChannels[i]
 		}
 	}
 
-	if int(channelID) < len(newSlotMgr.dataChannels) {
-		newSlotMgr.dataChannels[channelID].Close()
-		newSlotMgr.dataChannels[channelID] = NewChannel(p)
+	if int(channelID) < len(newSlot.dataChannels) {
+		newSlot.dataChannels[channelID].Close()
+		newSlot.dataChannels[channelID] = NewChannel(channelID == 0, p)
 	}
+
+	newSlot.dataChannels[channelID].setConn(conn)
+	slotMap[slotID] = newSlot
 }
 
 func (p *Router) DelSlot(id uint64) {
 	p.Lock()
 	defer p.Unlock()
 
+	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
+	slot, ok := slotMap[id]
+	if ok {
+		delete(slotMap, id)
+		slot.Close()
+	}
 }

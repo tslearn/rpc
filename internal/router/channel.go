@@ -8,6 +8,7 @@ import (
 )
 
 type Channel struct {
+	isSystem  bool
 	isRunning bool
 	slot      *Slot
 	sequence  uint64
@@ -19,8 +20,9 @@ type Channel struct {
 	sync.Mutex
 }
 
-func NewChannel(streamHub rpc.IStreamHub) *Channel {
+func NewChannel(isSystem bool, streamHub rpc.IStreamHub) *Channel {
 	ret := &Channel{
+		isSystem:  isSystem,
 		isRunning: true,
 		sequence:  0,
 		stream:    nil,
