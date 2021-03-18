@@ -18,11 +18,15 @@ type Client struct {
 	id         *base.GlobalID
 }
 
-func NewClient(addr string, tlsConfig *tls.Config, streamHub rpc.IStreamHub) *Client {
+func NewClient(
+	addr string,
+	tlsConfig *tls.Config,
+	streamHub rpc.IStreamHub,
+) *Client {
 	return &Client{
 		addr:       addr,
 		tlsConfig:  tlsConfig,
-		slot:       NewSlotManager(streamHub),
+		slot:       NewSlot(streamHub),
 		orcManager: base.NewORCManager(),
 		streamHub:  streamHub,
 	}

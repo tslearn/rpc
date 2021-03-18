@@ -29,12 +29,10 @@ func NewSlot(streamHub rpc.IStreamHub) *Slot {
 	return ret
 }
 
-func (p *Slot) RunAt(index uint16, conn net.Conn) bool {
+func (p *Slot) RunAt(index uint16, conn net.Conn) {
 	if index < numOfChannelPerSlot && conn != nil {
-		return p.dataChannels[index].RunWithConn(conn)
+		p.dataChannels[index].RunWithConn(conn)
 	}
-
-	return false
 }
 
 func (p *Slot) GetFreeChannels() []uint16 {

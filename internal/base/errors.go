@@ -305,21 +305,21 @@ var (
 
 	// ErrRouteServerListen ...
 	ErrRouteServerListen = DefineNetError(
-		goAdapterErrorSeg|2,
+		routerErrorSeg|2,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrRouteServerConnect ...
 	ErrRouteServerConnect = DefineNetError(
-		goAdapterErrorSeg|3,
+		routerErrorSeg|3,
 		ErrorLevelFatal,
 		"",
 	)
 
 	// ErrRouteServerClose ...
 	ErrRouteServerClose = DefineNetError(
-		goAdapterErrorSeg|4,
+		routerErrorSeg|4,
 		ErrorLevelFatal,
 		"",
 	)

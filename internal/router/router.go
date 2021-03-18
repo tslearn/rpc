@@ -31,18 +31,15 @@ func (p *Router) AddSlot(slotID uint64, conn net.Conn, channelID uint16) {
 	defer p.Unlock()
 
 	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
-	oldSlot, ok := slotMap[slotID]
-	newSlot := NewSlot(p)
+	slot, ok := slotMap[slotID]
 
-	if ok {
-		for i := 0; i < len(oldSlot.dataChannels); i++ {
-			newSlot.dataChannels[i] = oldSlot.dataChannels[i]
-		}
+	if !ok {
+		slot = NewSlot(p)
+		slotMap[slotID] = slot
 	}
 
-	if int(channelID) < len(newSlot.dataChannels) {
-		newSlot.dataChannels[channelID].setConn(conn)
-		slotMap[slotID] = newSlot
+	if int(channelID) < len(slot.dataChannels) {
+		slot.RunAt(channelID, conn)
 	}
 }
 
