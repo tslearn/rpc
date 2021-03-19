@@ -14,21 +14,18 @@ type Client struct {
 	tlsConfig  *tls.Config
 	slot       *Slot
 	orcManager *base.ORCManager
-	streamHub  rpc.IStreamHub
+	errorHub   rpc.IStreamHub
 	id         *base.GlobalID
 }
 
-func NewClient(
-	addr string,
-	tlsConfig *tls.Config,
-	streamHub rpc.IStreamHub,
-) *Client {
+func NewClient(addr string, tlsConfig *tls.Config) *Client {
+	errorHub := rpc.NewLogToScreenErrorStreamHub("router-client")
 	return &Client{
 		addr:       addr,
 		tlsConfig:  tlsConfig,
-		slot:       NewSlot(streamHub),
+		slot:       NewSlot(errorHub),
 		orcManager: base.NewORCManager(),
-		streamHub:  streamHub,
+		errorHub:   errorHub,
 	}
 }
 
@@ -55,7 +52,7 @@ func (p *Client) Run() bool {
 				}
 
 				if e != nil {
-					p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+					p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
 						base.ErrRouterClientConnect.AddDebug(e.Error()),
 					))
 					break
@@ -67,7 +64,7 @@ func (p *Client) Run() bool {
 				binary.LittleEndian.PutUint16(buffer[2:], freeChannelID)
 				binary.LittleEndian.PutUint64(buffer[4:], p.id.GetID())
 				if _, e := conn.Write(buffer); e != nil {
-					p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+					p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
 						base.ErrRouterClientConnect.AddDebug(e.Error()),
 					))
 					break
@@ -82,6 +79,10 @@ func (p *Client) Run() bool {
 
 		return true
 	})
+}
+
+func (p *Client) SendStream(s *rpc.Stream) {
+	p.slot.SendStream(s)
 }
 
 func (p *Client) Close() bool {

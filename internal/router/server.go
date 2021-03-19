@@ -22,8 +22,7 @@ type Server struct {
 	sync.Mutex
 }
 
-func NewServer(addr string, tlsConfig *tls.Config) *Server {
-	errorHub := rpc.NewLogToScreenErrorStreamHub("Router")
+func NewServer(addr string, tlsConfig *tls.Config, errorHub rpc.IStreamHub) *Server {
 	return &Server{
 		addr:       addr,
 		tlsConfig:  tlsConfig,

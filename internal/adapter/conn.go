@@ -101,7 +101,7 @@ func (p *SyncConn) OnReadReady() bool {
 			} else {
 				p.Lock()
 				ignoreReport := (!p.isRunning) &&
-					strings.HasSuffix(e.Error(), ErrNetClosingSuffix)
+					strings.HasSuffix(e.Error(), base.ErrNetClosingSuffix)
 				p.Unlock()
 
 				if !ignoreReport {

@@ -23,7 +23,7 @@ func NewRouter(errorHub rpc.IStreamHub) *Router {
 }
 
 func (p *Router) OnReceiveStream(s *rpc.Stream) {
-
+	p.errorHub.OnReceiveStream(s)
 }
 
 func (p *Router) AddSlot(slotID uint64, conn net.Conn, channelID uint16) {
