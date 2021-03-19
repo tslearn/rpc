@@ -25,7 +25,11 @@ func NewSlot(streamHub rpc.IStreamHub) *Slot {
 	}
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		ret.dataChannels[i] = NewChannel(i == 0, streamHub)
+		if i == 0 {
+			ret.dataChannels[i] = NewChannel(ret.controlCH, streamHub)
+		} else {
+			ret.dataChannels[i] = NewChannel(ret.dataCH, streamHub)
+		}
 	}
 
 	return ret
