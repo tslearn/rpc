@@ -296,30 +296,51 @@ var (
 const routerErrorSeg = 5 << 8
 
 var (
-	// ErrRouterClientConnect ...
-	ErrRouterClientConnect = DefineNetError(
+	// ErrRouterConnDial ...
+	ErrRouterConnDial = DefineNetError(
 		routerErrorSeg|1,
 		ErrorLevelWarn,
 		"",
 	)
 
-	// ErrRouteServerListen ...
-	ErrRouteServerListen = DefineNetError(
+	// ErrRouterConnConnect ...
+	ErrRouterConnConnect = DefineNetError(
 		routerErrorSeg|2,
 		ErrorLevelFatal,
 		"",
 	)
 
-	// ErrRouteServerConnect ...
-	ErrRouteServerConnect = DefineNetError(
+	// ErrRouterConnRead ...
+	ErrRouterConnRead = DefineNetError(
 		routerErrorSeg|3,
+		ErrorLevelWarn,
+		"",
+	)
+
+	// ErrRouterConnWrite ...
+	ErrRouterConnWrite = DefineNetError(
+		routerErrorSeg|4,
+		ErrorLevelWarn,
+		"",
+	)
+
+	// ErrRouterConnProtocol ...
+	ErrRouterConnProtocol = DefineNetError(
+		routerErrorSeg|5,
+		ErrorLevelWarn,
+		"",
+	)
+
+	// ErrRouterConnListen ...
+	ErrRouterConnListen = DefineNetError(
+		routerErrorSeg|6,
 		ErrorLevelFatal,
 		"",
 	)
 
-	// ErrRouteServerClose ...
-	ErrRouteServerClose = DefineNetError(
-		routerErrorSeg|4,
+	// ErrRouterConnClose ...
+	ErrRouterConnClose = DefineNetError(
+		routerErrorSeg|7,
 		ErrorLevelFatal,
 		"",
 	)

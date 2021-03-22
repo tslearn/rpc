@@ -41,7 +41,7 @@ func newTestNetConn(readBuf []byte, maxRead int, maxWrite int) *testNetConn {
 
 func (p *testNetConn) Read(b []byte) (n int, err error) {
 	if !p.isRunning {
-		e := errors.New(ErrNetClosingSuffix)
+		e := errors.New(base.ErrNetClosingSuffix)
 		p.errCH <- e
 		return -1, e
 	}
@@ -62,7 +62,7 @@ func (p *testNetConn) Read(b []byte) (n int, err error) {
 
 func (p *testNetConn) Write(b []byte) (n int, err error) {
 	if !p.isRunning {
-		e := errors.New(ErrNetClosingSuffix)
+		e := errors.New(base.ErrNetClosingSuffix)
 		p.errCH <- e
 		return -1, e
 	}
@@ -307,7 +307,7 @@ func TestAdapter(t *testing.T) {
 
 	t.Run("test basic", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(ErrNetClosingSuffix).Equal("use of closed network connection")
+		assert(base.ErrNetClosingSuffix).Equal("use of closed network connection")
 
 		// check ErrNetClosingSuffix on all platform
 		waitCH := make(chan bool)
@@ -330,7 +330,7 @@ func TestAdapter(t *testing.T) {
 		_ = conn.Close()
 		e = conn.Close()
 		assert(e).IsNotNil()
-		assert(strings.HasSuffix(e.Error(), ErrNetClosingSuffix)).IsTrue()
+		assert(strings.HasSuffix(e.Error(), base.ErrNetClosingSuffix)).IsTrue()
 	})
 
 	t.Run("test", func(t *testing.T) {

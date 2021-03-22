@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 )
@@ -17,7 +18,7 @@ type Slot struct {
 	dataChannels []*Channel
 }
 
-func NewSlot(streamHub rpc.IStreamHub) *Slot {
+func NewSlot(connectMeta *ConnectMeta, streamHub rpc.IStreamHub) *Slot {
 	ret := &Slot{
 		controlCH:    make(chan *rpc.Stream, 1024),
 		dataCH:       make(chan *rpc.Stream, 8192),
@@ -26,31 +27,38 @@ func NewSlot(streamHub rpc.IStreamHub) *Slot {
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
 		if i == 0 {
-			ret.dataChannels[i] = NewChannel(ret.controlCH, streamHub)
+			ret.dataChannels[i] = NewChannel(
+				uint16(i), connectMeta, ret.controlCH, streamHub,
+			)
 		} else {
-			ret.dataChannels[i] = NewChannel(ret.dataCH, streamHub)
+			ret.dataChannels[i] = NewChannel(
+				uint16(i), connectMeta, ret.dataCH, streamHub,
+			)
 		}
 	}
 
 	return ret
 }
 
-func (p *Slot) RunAt(index uint16, conn net.Conn) {
+func (p *Slot) RunAt(
+	index uint16,
+	conn net.Conn,
+	remoteSendSequence uint64,
+	remoteReceiveSequence uint64,
+) *base.Error {
 	if index < numOfChannelPerSlot && conn != nil {
-		p.dataChannels[index].RunWithConn(conn)
-	}
-}
-
-func (p *Slot) GetFreeChannels() []uint16 {
-	ret := []uint16(nil)
-
-	for i := 0; i < numOfChannelPerSlot; i++ {
-		if p.dataChannels[i].IsNeedConnected() {
-			ret = append(ret, uint16(i))
+		channel := p.dataChannels[index]
+		if err := channel.initSlaveConn(conn, remoteSendSequence, remoteReceiveSequence); err != nil {
+			return err
+		} else {
+			go func() {
+				channel.RunWithConn(conn)
+			}()
+			return nil
 		}
+	} else {
+		return base.ErrRouterConnProtocol
 	}
-
-	return ret
 }
 
 func (p *Slot) SendStream(s *rpc.Stream) {

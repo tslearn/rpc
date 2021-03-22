@@ -23,7 +23,7 @@ type Server struct {
 }
 
 func NewServer(addr string, tlsConfig *tls.Config, errorHub rpc.IStreamHub) *Server {
-	return &Server{
+	ret := &Server{
 		addr:       addr,
 		tlsConfig:  tlsConfig,
 		orcManager: base.NewORCManager(),
@@ -32,18 +32,8 @@ func NewServer(addr string, tlsConfig *tls.Config, errorHub rpc.IStreamHub) *Ser
 		router:     NewRouter(errorHub),
 		ln:         nil,
 	}
-}
 
-func (p *Server) GetErrorHub() rpc.IStreamHub {
-	p.Lock()
-	defer p.Unlock()
-	return p.errorHub
-}
-
-func (p *Server) SetErrorHub(errorHub rpc.IStreamHub) {
-	p.Lock()
-	defer p.Unlock()
-	p.errorHub = errorHub
+	return ret
 }
 
 // Open ...
@@ -57,7 +47,7 @@ func (p *Server) Open() bool {
 		}
 		if e != nil {
 			p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-				base.ErrRouteServerListen.AddDebug(e.Error()),
+				base.ErrRouterConnListen.AddDebug(e.Error()),
 			))
 			return false
 		}
@@ -77,7 +67,7 @@ func (p *Server) Run() bool {
 
 				if !isCloseErr {
 					p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-						base.ErrRouteServerConnect.AddDebug(e.Error()),
+						base.ErrRouterConnConnect.AddDebug(e.Error()),
 					))
 
 					base.WaitAtLeastDurationWhenRunning(
@@ -96,33 +86,27 @@ func (p *Server) Run() bool {
 }
 
 func (p *Server) onConnect(conn net.Conn) {
-	buf := make([]byte, 16)
+	buffer := make([]byte, 32)
 
-	if e := conn.SetDeadline(base.TimeNow().Add(time.Second)); e != nil {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-			base.ErrRouteServerConnect.AddDebug(e.Error()),
-		))
-	} else if n, e := conn.Read(buf); e != nil {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-			base.ErrRouteServerConnect.AddDebug(e.Error()),
-		))
-	} else if n != 12 {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-			base.ErrRouteServerConnect.AddDebug(
-				"router client init data error",
-			),
-		))
-	} else if binary.LittleEndian.Uint16(buf) != rpc.StreamKindConnectRequest {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-			base.ErrRouteServerConnect.AddDebug(
-				"router client init data error",
-			),
-		))
-	} else {
-		channelID := binary.LittleEndian.Uint16(buf[2:])
-		slotID := binary.LittleEndian.Uint64(buf[4:])
-		p.router.AddSlot(slotID, conn, channelID)
+	if err := connReadBytes(conn, buffer); err != nil {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+		_ = conn.Close()
+		return
 	}
+
+	if binary.LittleEndian.Uint16(buffer) != rpc.StreamKindConnectRequest {
+		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouterConnProtocol,
+		))
+		_ = conn.Close()
+		return
+	}
+
+	channelIndex := binary.LittleEndian.Uint16(buffer[2:])
+	slotID := binary.LittleEndian.Uint64(buffer[8:])
+	remoteSendSequence := binary.LittleEndian.Uint64(buffer[16:])
+	remoteReceiveSequence := binary.LittleEndian.Uint64(buffer[24:])
+	p.router.AddSlot(slotID, conn, channelIndex, remoteSendSequence, remoteReceiveSequence)
 }
 
 // Close ...
@@ -130,7 +114,7 @@ func (p *Server) Close() bool {
 	return p.orcManager.Close(func() bool {
 		if e := p.ln.Close(); e != nil {
 			p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-				base.ErrRouteServerClose.AddDebug(e.Error()),
+				base.ErrRouterConnClose.AddDebug(e.Error()),
 			))
 		}
 

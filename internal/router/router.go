@@ -26,7 +26,13 @@ func (p *Router) OnReceiveStream(s *rpc.Stream) {
 	p.errorHub.OnReceiveStream(s)
 }
 
-func (p *Router) AddSlot(slotID uint64, conn net.Conn, channelID uint16) {
+func (p *Router) AddSlot(
+	slotID uint64,
+	conn net.Conn,
+	channelID uint16,
+	remoteSendSequence uint64,
+	remoteReceiveSequence uint64,
+) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -34,12 +40,12 @@ func (p *Router) AddSlot(slotID uint64, conn net.Conn, channelID uint16) {
 	slot, ok := slotMap[slotID]
 
 	if !ok {
-		slot = NewSlot(p)
+		slot = NewSlot(nil, p)
 		slotMap[slotID] = slot
 	}
 
 	if int(channelID) < len(slot.dataChannels) {
-		slot.RunAt(channelID, conn)
+		slot.RunAt(channelID, conn, remoteSendSequence, remoteReceiveSequence)
 	}
 }
 
