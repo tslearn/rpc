@@ -2,12 +2,82 @@
 package rpc
 
 import (
+	"github.com/rpccloud/rpc/internal/base"
 	"log"
 	"math"
 	"reflect"
-
-	"github.com/rpccloud/rpc/internal/base"
 )
+
+type StreamGenerator struct {
+	hub          IStreamHub
+	streamPos    int
+	streamBuffer []byte
+	stream       *Stream
+}
+
+func NewStreamGenerator(hub IStreamHub) *StreamGenerator {
+	return &StreamGenerator{
+		hub:          hub,
+		streamPos:    0,
+		streamBuffer: make([]byte, StreamHeadSize),
+		stream:       nil,
+	}
+}
+
+func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
+	// fill header
+	if p.stream == nil {
+		if p.streamPos < StreamHeadSize {
+			copyBytes := copy(p.streamBuffer[p.streamPos:], b)
+			p.streamPos += copyBytes
+			b = b[copyBytes:]
+		}
+
+		if p.streamPos < StreamHeadSize {
+			// not error
+			return nil
+		}
+
+		p.stream = NewStream()
+		p.stream.PutBytesTo(p.streamBuffer, 0)
+		p.streamPos = 0
+	}
+
+	// fill body
+	if byteLen := len(b); byteLen >= 0 {
+		streamLength := int(p.stream.GetLength())
+		remains := streamLength - p.stream.GetWritePos()
+
+		if remains < 0 {
+			return base.ErrStream
+		}
+
+		writeBuf := b[:base.MinInt(byteLen, remains)]
+		p.stream.PutBytes(writeBuf)
+		streamPos := p.stream.GetWritePos()
+
+		if streamPos > streamLength {
+			return base.ErrStream
+		}
+
+		if streamPos == streamLength {
+			if p.stream.CheckStream() {
+				p.hub.OnReceiveStream(p.stream)
+				p.stream = nil
+			} else {
+				return base.ErrStream
+			}
+		}
+
+		if byteLen > len(writeBuf) {
+			return p.OnBytes(b[len(writeBuf):])
+		} else {
+			return nil
+		}
+	}
+
+	return nil
+}
 
 // IStreamHub ...
 type IStreamHub interface {

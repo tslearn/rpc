@@ -17,10 +17,10 @@ func TestDebug(t *testing.T) {
 		}()
 
 		client := NewClient("127.0.0.1:8080", nil)
-		go func() {
-			client.Open()
-			client.Run()
-		}()
+		//go func() {
+		//	client.Open()
+		//	client.Run()
+		//}()
 
 		stream := rpc.NewStream()
 		client.SendStream(stream)

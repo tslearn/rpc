@@ -88,13 +88,13 @@ func (p *Server) Run() bool {
 func (p *Server) onConnect(conn net.Conn) {
 	buffer := make([]byte, 32)
 
-	if err := connReadBytes(conn, buffer); err != nil {
+	if err := connReadBytes(conn, time.Second, buffer); err != nil {
 		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 		_ = conn.Close()
 		return
 	}
 
-	if binary.LittleEndian.Uint16(buffer) != rpc.StreamKindConnectRequest {
+	if binary.LittleEndian.Uint16(buffer[2:]) != rpc.StreamKindConnectRequest {
 		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrRouterConnProtocol,
 		))
@@ -102,7 +102,7 @@ func (p *Server) onConnect(conn net.Conn) {
 		return
 	}
 
-	channelIndex := binary.LittleEndian.Uint16(buffer[2:])
+	channelIndex := binary.LittleEndian.Uint16(buffer[4:])
 	slotID := binary.LittleEndian.Uint64(buffer[8:])
 	remoteSendSequence := binary.LittleEndian.Uint64(buffer[16:])
 	remoteReceiveSequence := binary.LittleEndian.Uint64(buffer[24:])

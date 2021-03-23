@@ -14,8 +14,7 @@ import (
 const (
 	channelActionInitRequest       = 1
 	channelActionInitResponseOK    = 2
-	channelActionInitResponseError = 4
-	channelActionInitOK            = 3
+	channelActionInitResponseError = 3
 	channelDataBlock               = 5
 )
 
@@ -41,31 +40,51 @@ type Channel struct {
 	sync.Mutex
 }
 
-func connReadBytes(conn net.Conn, b []byte) *base.Error {
+func connReadBytes(conn net.Conn, timeout time.Duration, b []byte) *base.Error {
 	pos := 0
-	for pos < len(b) {
-		if e := conn.SetReadDeadline(base.TimeNow().Add(time.Second)); e != nil {
-			return base.ErrRouterConnRead.AddDebug(e.Error())
-		} else if n, e := conn.Read(b); e != nil {
+	length := 2
+
+	if e := conn.SetReadDeadline(base.TimeNow().Add(timeout)); e != nil {
+		return base.ErrRouterConnRead.AddDebug(e.Error())
+	}
+
+	for pos < length {
+		if n, e := conn.Read(b); e != nil {
 			return base.ErrRouterConnRead.AddDebug(e.Error())
 		} else {
 			pos += n
+
+			if length == 2 && pos >= 2 {
+				length = int(binary.LittleEndian.Uint16(b))
+				if length > len(b) {
+					return base.ErrRouterConnProtocol
+				}
+			}
 		}
 	}
+
 	return nil
 }
 
-func connWriteBytes(conn net.Conn, b []byte) *base.Error {
+func connWriteBytes(conn net.Conn, timeout time.Duration, b []byte) *base.Error {
 	pos := 0
+
+	if len(b) < 2 || int(binary.LittleEndian.Uint16(b)) != len(b) {
+		return base.ErrRouterConnProtocol
+	}
+
+	if e := conn.SetWriteDeadline(base.TimeNow().Add(timeout)); e != nil {
+		return base.ErrRouterConnWrite.AddDebug(e.Error())
+	}
+
 	for pos < len(b) {
-		if e := conn.SetWriteDeadline(base.TimeNow().Add(time.Second)); e != nil {
-			return base.ErrRouterConnWrite.AddDebug(e.Error())
-		} else if n, e := conn.Write(b[pos:]); e != nil {
+		if n, e := conn.Write(b[pos:]); e != nil {
 			return base.ErrRouterConnWrite.AddDebug(e.Error())
 		} else {
 			pos += n
 		}
 	}
+
 	return nil
 }
 
@@ -137,6 +156,7 @@ func (p *Channel) initSlaveConn(
 ) *base.Error {
 	needToSync := false
 	buffer := make([]byte, 32)
+	binary.LittleEndian.PutUint16(buffer, 32)
 	binary.LittleEndian.PutUint64(buffer[16:], p.sendSequence)
 	binary.LittleEndian.PutUint64(buffer[24:], p.receiveSequence)
 
@@ -146,14 +166,14 @@ func (p *Channel) initSlaveConn(
 		remoteReceiveSequence <= p.sendSequence-numOfCacheBuffer {
 		p.sendSequence = 0
 		p.receiveSequence = 0
-		binary.LittleEndian.PutUint16(buffer, channelActionInitResponseError)
+		binary.LittleEndian.PutUint16(buffer[2:], channelActionInitResponseError)
 	} else {
-		binary.LittleEndian.PutUint16(buffer, channelActionInitResponseOK)
+		binary.LittleEndian.PutUint16(buffer[2:], channelActionInitResponseOK)
 		needToSync = true
 	}
 
 	// send buffer
-	if err := connWriteBytes(conn, buffer); err != nil {
+	if err := connWriteBytes(conn, time.Second, buffer); err != nil {
 		return err
 	}
 
@@ -162,6 +182,7 @@ func (p *Channel) initSlaveConn(
 		for i := remoteReceiveSequence + 1; i <= p.sendSequence; i++ {
 			if err := connWriteBytes(
 				conn,
+				time.Second,
 				p.sendBuffers[i%numOfCacheBuffer][:],
 			); err != nil {
 				return err
@@ -180,21 +201,22 @@ func (p *Channel) initMasterConn(
 	buffer := make([]byte, 32)
 
 	// send channelActionInitRequest
-	binary.LittleEndian.PutUint16(buffer, channelActionInitRequest)
-	binary.LittleEndian.PutUint16(buffer[2:], index)
+	binary.LittleEndian.PutUint16(buffer, 32)
+	binary.LittleEndian.PutUint16(buffer[2:], channelActionInitRequest)
+	binary.LittleEndian.PutUint16(buffer[4:], index)
 	binary.LittleEndian.PutUint64(buffer[8:], slotID)
 	binary.LittleEndian.PutUint64(buffer[16:], p.sendSequence)
 	binary.LittleEndian.PutUint64(buffer[24:], p.receiveSequence)
-	if err := connWriteBytes(conn, buffer); err != nil {
+	if err := connWriteBytes(conn, time.Second, buffer); err != nil {
 		return err
 	}
 
 	// receive channelActionInitResponse
-	if err := connReadBytes(conn, buffer); err != nil {
+	if err := connReadBytes(conn, time.Second, buffer); err != nil {
 		return err
 	}
 
-	if binary.LittleEndian.Uint16(buffer) != channelActionInitResponseOK {
+	if binary.LittleEndian.Uint16(buffer[2:]) != channelActionInitResponseOK {
 		p.sendSequence = 0
 		p.receiveSequence = 0
 		return base.ErrRouterConnProtocol
@@ -211,16 +233,11 @@ func (p *Channel) initMasterConn(
 		return base.ErrRouterConnProtocol
 	}
 
-	// send ok to remote
-	binary.LittleEndian.PutUint16(buffer, channelActionInitOK)
-	if err := connWriteBytes(conn, buffer); err != nil {
-		return err
-	}
-
 	// send unreceived buffer to remote
 	for i := remoteReceiveSequence + 1; i <= p.sendSequence; i++ {
 		if err := connWriteBytes(
 			conn,
+			time.Second,
 			p.sendBuffers[i%numOfCacheBuffer][:],
 		); err != nil {
 			return err

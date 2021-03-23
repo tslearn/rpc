@@ -166,34 +166,32 @@ const streamConnStatusClosed = int32(0)
 
 // StreamConn ...
 type StreamConn struct {
-	isDebug      bool
-	status       int32
-	prev         IConn
-	receiver     IReceiver
-	writeCH      chan *rpc.Stream
-	readHeadPos  int
-	readHeadBuf  []byte
-	readStream   *rpc.Stream
-	writeStream  *rpc.Stream
-	writePos     int
-	activeTimeNS int64
+	isDebug             bool
+	status              int32
+	prev                IConn
+	receiver            IReceiver
+	writeCH             chan *rpc.Stream
+	writeStream         *rpc.Stream
+	readStreamGenerator *rpc.StreamGenerator
+	writePos            int
+	activeTimeNS        int64
 }
 
 // NewStreamConn ...
 func NewStreamConn(isDebug bool, prev IConn, receiver IReceiver) *StreamConn {
-	return &StreamConn{
-		isDebug:      isDebug,
-		status:       streamConnStatusRunning,
-		prev:         prev,
-		receiver:     receiver,
-		writeCH:      make(chan *rpc.Stream, 16),
-		readHeadPos:  0,
-		readHeadBuf:  make([]byte, rpc.StreamHeadSize),
-		readStream:   nil,
-		writeStream:  nil,
-		writePos:     0,
-		activeTimeNS: base.TimeNow().UnixNano(),
+	ret := &StreamConn{
+		isDebug:             isDebug,
+		status:              streamConnStatusRunning,
+		prev:                prev,
+		receiver:            receiver,
+		writeCH:             make(chan *rpc.Stream, 16),
+		readStreamGenerator: nil,
+		writeStream:         nil,
+		writePos:            0,
+		activeTimeNS:        base.TimeNow().UnixNano(),
 	}
+	ret.readStreamGenerator = rpc.NewStreamGenerator(ret)
+	return ret
 }
 
 // SetReceiver ...
@@ -216,51 +214,19 @@ func (p *StreamConn) OnError(err *base.Error) {
 	p.receiver.OnConnError(p, err)
 }
 
+func (p *StreamConn) OnReceiveStream(stream *rpc.Stream) {
+	atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
+	if p.isDebug {
+		stream.SetStatusBitDebug()
+		stream.BuildStreamCheck()
+	}
+	p.receiver.OnConnReadStream(p, stream)
+}
+
 // OnReadBytes ...
 func (p *StreamConn) OnReadBytes(b []byte) {
-	if p.readStream == nil {
-		if p.readHeadPos < rpc.StreamHeadSize {
-			copyBytes := copy(p.readHeadBuf[p.readHeadPos:], b)
-			p.readHeadPos += copyBytes
-			b = b[copyBytes:]
-		}
-
-		if p.readHeadPos < rpc.StreamHeadSize {
-			return
-		}
-
-		p.readStream = rpc.NewStream()
-		p.readStream.PutBytesTo(p.readHeadBuf, 0)
-		p.readHeadPos = 0
-	}
-
-	if byteLen := len(b); byteLen >= 0 {
-		streamLength := int(p.readStream.GetLength())
-		remains := streamLength - p.readStream.GetWritePos()
-		if remains >= 0 {
-			writeBuf := b[:base.MinInt(byteLen, remains)]
-			p.readStream.PutBytes(writeBuf)
-			if p.readStream.GetWritePos() == streamLength {
-				if p.readStream.CheckStream() {
-					atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
-					if p.isDebug {
-						p.readStream.SetStatusBitDebug()
-						p.readStream.BuildStreamCheck()
-					}
-					p.receiver.OnConnReadStream(p, p.readStream)
-					p.readStream = nil
-				} else {
-					p.receiver.OnConnError(p, base.ErrStream)
-					return
-				}
-			}
-
-			if byteLen > len(writeBuf) {
-				p.OnReadBytes(b[len(writeBuf):])
-			}
-		} else {
-			p.OnError(base.ErrStream)
-		}
+	if err := p.readStreamGenerator.OnBytes(b); err != nil {
+		p.receiver.OnConnError(p, base.ErrStream)
 	}
 }
 
