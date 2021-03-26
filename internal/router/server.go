@@ -88,7 +88,7 @@ func (p *Server) Run() bool {
 func (p *Server) onConnect(conn net.Conn) {
 	buffer := make([]byte, 32)
 
-	if err := connReadBytes(conn, time.Second, buffer); err != nil {
+	if n, err := connReadBytes(conn, time.Second, buffer); err != nil || n != 32 {
 		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 		_ = conn.Close()
 		return
