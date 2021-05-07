@@ -78,7 +78,7 @@ func connWriteBytes(conn net.Conn, timeout time.Duration, b []byte) *base.Error 
 }
 
 type Channel struct {
-	needReset              uint32
+	needReset              uint8
 	conn                   net.Conn
 	streamCH               chan *rpc.Stream
 	streamHub              rpc.IStreamHub
@@ -118,14 +118,21 @@ func NewChannel(
 		return true
 	})
 
-	go func() {
-		ret.runMakeFrame()
-	}()
-
 	if connMeta != nil {
 		go func() {
 			ret.orcManager.Run(func(isRunning func() bool) bool {
-				ret.runDial(index, connMeta, streamHub, isRunning)
+				for isRunning() {
+					startNS := base.TimeNow().UnixNano()
+					if err := ret.runMasterThread(index, connMeta); err != nil {
+						streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+					}
+					base.WaitAtLeastDurationWhenRunning(
+						startNS,
+						isRunning,
+						time.Second,
+					)
+				}
+
 				return true
 			})
 		}()
@@ -134,75 +141,32 @@ func NewChannel(
 	return ret
 }
 
-func (p *Channel) runDial(
-	index uint16,
-	connMeta *ConnectMeta,
-	streamHub rpc.IStreamHub,
-	isRunning func() bool,
-) {
-	for isRunning() {
-		var conn net.Conn
-		var e error
+func (p *Channel) runMasterThread(index uint16, connMeta *ConnectMeta) *base.Error {
+	var conn net.Conn
+	var e error
+	buffer := make([]byte, 40)
 
-		startNS := base.TimeNow().UnixNano()
-
-		if connMeta.tlsConfig == nil {
-			conn, e = net.Dial("tcp", connMeta.addr)
-		} else {
-			conn, e = tls.Dial("tcp", connMeta.addr, connMeta.tlsConfig)
-		}
-
-		if e != nil {
-			streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-				base.ErrRouterConnDial.AddDebug(e.Error()),
-			))
-			base.WaitAtLeastDurationWhenRunning(
-				startNS,
-				isRunning,
-				time.Second,
-			)
-			continue
-		}
-
-		buffer := make([]byte, 14)
-		binary.LittleEndian.PutUint16(buffer, 14)
-		binary.LittleEndian.PutUint16(buffer[2:], channelActionInit)
-		binary.LittleEndian.PutUint16(buffer[4:], index)
-		binary.LittleEndian.PutUint64(buffer[6:], connMeta.id.GetID())
-
-		if err := connWriteBytes(conn, time.Second, buffer); err != nil {
-			streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
-			_ = conn.Close()
-			continue
-		}
-
-		if err := p.initConn(conn); err != nil {
-			streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
-			_ = conn.Close()
-			continue
-		}
-
-		p.RunWithConn(conn)
+	// dail
+	if connMeta.tlsConfig == nil {
+		conn, e = net.Dial("tcp", connMeta.addr)
+	} else {
+		conn, e = tls.Dial("tcp", connMeta.addr, connMeta.tlsConfig)
 	}
-}
 
-func (p *Channel) initMaster(
-	conn net.Conn,
-	index uint16,
-	connMeta *ConnectMeta,
-) *base.Error {
-	buffer := make([]byte, 64)
+	// deal dail error
+	if e != nil {
+		return base.ErrRouterConnDial.AddDebug(e.Error())
+	}
 
 	// make init frame
-	binary.LittleEndian.PutUint16(buffer, 64)
+	binary.LittleEndian.PutUint16(buffer, 40)
 	binary.LittleEndian.PutUint16(buffer[2:], channelActionInit)
 	binary.LittleEndian.PutUint16(buffer[4:], index)
 	binary.LittleEndian.PutUint64(buffer[6:], connMeta.id.GetID())
-	binary.LittleEndian.PutUint32(buffer[14:], p.needReset)
-	binary.LittleEndian.PutUint64(buffer[32:], p.sendPrepareSequence)
-	binary.LittleEndian.PutUint64(buffer[40:], p.sendSequence)
-	binary.LittleEndian.PutUint64(buffer[48:], p.sendConfirmSequence)
-	binary.LittleEndian.PutUint64(buffer[56:], p.receiveSequence)
+	buffer[14] = p.needReset
+	binary.LittleEndian.PutUint64(buffer[16:], p.sendConfirmSequence)
+	binary.LittleEndian.PutUint64(buffer[24:], p.sendSequence)
+	binary.LittleEndian.PutUint64(buffer[32:], p.receiveSequence)
 
 	// send init frame
 	if err := connWriteBytes(conn, time.Second, buffer); err != nil {
@@ -216,88 +180,83 @@ func (p *Channel) initMaster(
 
 	switch binary.LittleEndian.Uint16(buffer[2:]) {
 	case channelActionContinue:
+
 	case channelActionReset:
+		p.needReset = 0
+		p.sendPrepareSequence = 0
+		p.sendSequence = 0
+		p.sendConfirmSequence = 0
+		p.receiveSequence = 0
 	default:
+		p.needReset = 1
+		return base.ErrRouterConnProtocol
 	}
 
-	//if err := p.initConn(conn); err != nil {
-	//    streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
-	//    _ = conn.Close()
-	//    continue
-	//}
-}
+	p.RunWithConn(conn)
 
-func (p *Channel) initConn(conn net.Conn) *base.Error {
-	buffer := make([]byte, 4)
-	binary.LittleEndian.PutUint16(buffer[2:], 4)
-
-	// send the status to remote
-	if atomic.LoadInt32(&p.needReset) != 0 {
-		p.sendPrepareSequence = 0
-		p.sendSequence = 0
-		p.sendConfirmSequence = 0
-		p.receiveSequence = 0
-		atomic.StoreInt32(&p.needReset, 0)
-		binary.LittleEndian.PutUint16(buffer[2:], channelActionReset)
-	} else {
-		binary.LittleEndian.PutUint16(buffer[2:], channelActionContinue)
-	}
-	if err := connWriteBytes(conn, time.Second, buffer); err != nil {
-		return err
-	}
-
-	// receive status from remote
-	if _, err := connReadBytes(conn, time.Second, buffer); err != nil {
-		return err
-	}
-	if binary.LittleEndian.Uint16(buffer[2:]) != channelActionContinue {
-		p.sendPrepareSequence = 0
-		p.sendSequence = 0
-		p.sendConfirmSequence = 0
-		p.receiveSequence = 0
-	}
-
-	// set sendSequence to sendConfirmSequence
-	// all the data blocks are not confirmed need to resend
-	atomic.StoreUint64(
-		&p.sendSequence,
-		atomic.LoadUint64(&p.sendConfirmSequence),
-	)
-
-	// finish
 	return nil
 }
 
-func (p *Channel) setConn(conn net.Conn) {
-	p.Lock()
-	defer p.Unlock()
+func (p *Channel) runSlaveThread(conn net.Conn, buffer [40]byte) *base.Error {
+	rNeedReset := buffer[14]
+	rSendConfirmSequence := binary.LittleEndian.Uint64(buffer[16:])
+	rSendSequence := binary.LittleEndian.Uint64(buffer[24:])
+	rReceiveSequence := binary.LittleEndian.Uint64(buffer[32:])
 
-	if p.conn != nil {
-		_ = p.conn.Close()
+	checkConfirmSequenceAndReceiveSequence :=
+		rSendConfirmSequence <= p.receiveSequence &&
+			rSendConfirmSequence+numOfCacheBuffer >= p.receiveSequence &&
+			p.sendConfirmSequence <= rReceiveSequence &&
+			p.sendConfirmSequence+numOfCacheBuffer >= rReceiveSequence
+
+	checkSendSequenceAndReceiveSequence :=
+		rSendSequence >= p.receiveSequence &&
+			rSendSequence <= p.receiveSequence+numOfCacheBuffer &&
+			p.sendSequence >= rReceiveSequence &&
+			p.sendSequence <= rReceiveSequence+numOfCacheBuffer
+
+	if p.needReset == 0 && rNeedReset == 0 &&
+		checkConfirmSequenceAndReceiveSequence &&
+		checkSendSequenceAndReceiveSequence {
+		p.sendSequence = rReceiveSequence
+		binary.LittleEndian.PutUint16(buffer[2:], channelActionContinue)
+	} else {
+		p.needReset = 0
+		p.sendPrepareSequence = 0
+		p.sendSequence = 0
+		p.sendConfirmSequence = 0
+		p.receiveSequence = 0
+		binary.LittleEndian.PutUint16(buffer[2:], channelActionReset)
 	}
-	p.conn = conn
+
+	// send response frame
+	if err := connWriteBytes(conn, time.Second, buffer[:]); err != nil {
+		return err
+	}
+
+	// run
+	p.RunWithConn(conn)
+
+	return nil
 }
 
-func (p *Channel) getConn() net.Conn {
-	p.Lock()
-	defer p.Unlock()
-
-	return p.conn
-}
-
-func (p *Channel) reset() {
-	atomic.StoreInt32(&p.needReset, 1)
-	p.setConn(nil)
-}
-
-func (p *Channel) RunWithConn(conn net.Conn) bool {
+func (p *Channel) RunWithConn(conn net.Conn) {
 	running := uint32(1)
+
 	isRunning := func() bool {
-		return atomic.LoadUint32(&running) == 1
+		isChannelRunning := p.orcManager.GetRunningFn()
+		return isChannelRunning() && atomic.LoadUint32(&running) == 1
 	}
 
-	p.setConn(conn)
+	p.conn = conn
 	waitCH := make(chan bool)
+
+	go func() {
+		p.runMakeFrame(isRunning)
+		atomic.StoreUint32(&running, 0)
+		_ = conn.Close()
+		waitCH <- true
+	}()
 
 	go func() {
 		_ = p.runRead(conn)
@@ -315,8 +274,8 @@ func (p *Channel) RunWithConn(conn net.Conn) bool {
 
 	<-waitCH
 	<-waitCH
-	p.setConn(nil)
-	return true
+	<-waitCH
+	p.conn = nil
 }
 
 //func (p *Channel) updateReceiveSequence(sequence uint64) *base.Error {
@@ -367,6 +326,62 @@ func (p *Channel) RunWithConn(conn net.Conn) bool {
 //    return nil
 //}
 
+func (p *Channel) canPrepare() bool {
+	sendPrepare := atomic.LoadUint64(&p.sendPrepareSequence)
+	sendConfirm := atomic.LoadUint64(&p.sendConfirmSequence)
+	return sendPrepare-sendConfirm < numOfCacheBuffer
+}
+
+func (p *Channel) runMakeFrame(isRunning func() bool) {
+	stream := (*rpc.Stream)(nil)
+	streamPos := 0
+
+	for isRunning() {
+		// get frame id
+		for isRunning() && !p.canPrepare() {
+			time.Sleep(30 * time.Millisecond)
+		}
+
+		if !isRunning() {
+			return
+		}
+
+		frameID := atomic.AddUint64(&p.sendPrepareSequence, 1)
+
+		// init data frame
+		frameBuffer := p.sendBuffers[frameID%numOfCacheBuffer][:]
+		binary.LittleEndian.PutUint16(frameBuffer[2:], channelActionDataBlock)
+		binary.LittleEndian.PutUint64(frameBuffer[4:], frameID)
+
+		// gat first stream
+		if stream == nil {
+			stream = <-p.streamCH
+		}
+
+		// write stream to buffer
+		bufferPos := 12
+		for stream != nil && bufferSize-bufferPos >= 512 {
+			peekBuf, finish := stream.PeekBufferSlice(
+				streamPos, bufferSize-bufferPos,
+			)
+			copyLen := copy(frameBuffer[bufferPos:], peekBuf)
+			streamPos += copyLen
+			bufferPos += copyLen
+
+			if finish {
+				streamPos = 0
+				select {
+				case stream = <-p.streamCH:
+				default:
+					stream = nil
+				}
+			}
+		}
+
+		binary.LittleEndian.PutUint16(frameBuffer, 12)
+	}
+}
+
 func (p *Channel) runRead(conn net.Conn) *base.Error {
 	for {
 		if n, err := connReadBytes(
@@ -383,64 +398,6 @@ func (p *Channel) runRead(conn net.Conn) *base.Error {
 			if err := p.receiveStreamGenerator.OnBytes(p.receiveBuffer[12:]); err != nil {
 				return err
 			}
-		}
-	}
-}
-
-func (p *Channel) runMakeFrame() {
-	isRunning := func() bool {
-		return atomic.LoadUint32(&p.makeFrameRunningStatus) == runningStatusRunning
-	}
-
-	if atomic.CompareAndSwapUint32(
-		&p.makeFrameRunningStatus, runningStatusNone, runningStatusRunning,
-	) {
-		defer func() {
-			atomic.StoreUint32(&p.makeFrameRunningStatus, runningStatusNone)
-		}()
-
-		stream := (*rpc.Stream)(nil)
-		streamPos := 0
-
-		for isRunning() {
-			// get frame id
-			frameID := p.requireSendPrepareSequence()
-			for isRunning() && frameID == 0 {
-				time.Sleep(30 * time.Millisecond)
-				frameID = p.requireSendPrepareSequence()
-			}
-
-			// init data frame
-			frameBuffer := p.sendBuffers[frameID%numOfCacheBuffer][:]
-			binary.LittleEndian.PutUint16(frameBuffer[2:], channelDataBlock)
-			binary.LittleEndian.PutUint64(frameBuffer[4:], frameID)
-
-			// gat first stream
-			if stream == nil {
-				stream = <-p.streamCH
-			}
-
-			// write stream to buffer
-			bufferPos := 12
-			for stream != nil && bufferSize-bufferPos >= 512 {
-				peekBuf, finish := stream.PeekBufferSlice(
-					streamPos, bufferSize-bufferPos,
-				)
-				copyLen := copy(frameBuffer[bufferPos:], peekBuf)
-				streamPos += copyLen
-				bufferPos += copyLen
-
-				if finish {
-					streamPos = 0
-					select {
-					case stream = <-p.streamCH:
-					default:
-						stream = nil
-					}
-				}
-			}
-
-			binary.LittleEndian.PutUint16(frameBuffer, 12)
 		}
 	}
 }
@@ -483,7 +440,6 @@ func (p *Channel) runWrite(conn net.Conn, isRunning func() bool) *base.Error {
 
 func (p *Channel) Close() {
 	p.orcManager.Close(func() bool {
-		p.reset()
 		return true
 	}, func() {
 

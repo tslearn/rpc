@@ -42,7 +42,8 @@ func (p *ORCManager) getStatus() uint64 {
 	return p.sequence % 8
 }
 
-func (p *ORCManager) getRunningFn() func() bool {
+// GetRunningFn ...
+func (p *ORCManager) GetRunningFn() func() bool {
 	baseSequence := p.getBaseSequence()
 
 	return func() bool {
@@ -135,7 +136,7 @@ func (p *ORCManager) Run(onRun func(isRunning func() bool) bool) bool {
 					return false
 				}
 
-				isRunningFn := p.getRunningFn()
+				isRunningFn := p.GetRunningFn()
 
 				// open the lock and then call didRun.
 				// at last lock again

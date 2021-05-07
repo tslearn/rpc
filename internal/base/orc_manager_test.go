@@ -56,13 +56,13 @@ func TestORCManager_getStatus(t *testing.T) {
 	})
 }
 
-func TestORCManager_getRunningFn(t *testing.T) {
+func TestORCManager_GetRunningFn(t *testing.T) {
 	t.Run("orcStatusReady after lock", func(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
 		waitCH := make(chan bool)
 
-		isRunning := o.getRunningFn()
+		isRunning := o.GetRunningFn()
 
 		go func() {
 			<-waitCH
@@ -105,7 +105,7 @@ func TestORCManager_getRunningFn(t *testing.T) {
 		assert := NewAssert(t)
 		o := NewORCManager()
 		atomic.StoreUint64(&o.sequence, 80)
-		isRunning := o.getRunningFn()
+		isRunning := o.GetRunningFn()
 		o.setStatus(orcStatusReady)
 		assert(isRunning()).IsTrue()
 		o.setStatus(orcStatusReady | orcLockBit)
