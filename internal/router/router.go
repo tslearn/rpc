@@ -50,7 +50,7 @@ func (p *Router) AddConn(conn net.Conn) *base.Error {
 	}
 	p.Unlock()
 
-	return slot.AddSlaveConn(conn, buffer)
+	return slot.addSlaveConn(conn, buffer)
 }
 
 func (p *Router) DelSlot(id uint64) {
