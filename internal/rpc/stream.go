@@ -62,8 +62,6 @@ const (
 	StreamKindRPCBoardCast = 8
 	// StreamKindSystemErrorReport ...
 	StreamKindSystemErrorReport = 9
-	// StreamKindRouterControl ...
-	StreamKindRouterControl = 10
 )
 
 var (

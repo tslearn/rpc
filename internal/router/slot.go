@@ -14,28 +14,20 @@ const (
 )
 
 type Slot struct {
-	controlCH    chan *rpc.Stream
 	dataCH       chan *rpc.Stream
 	dataChannels []*Channel
 }
 
 func NewSlot(connectMeta *ConnectMeta, streamHub rpc.IStreamHub) *Slot {
 	ret := &Slot{
-		controlCH:    make(chan *rpc.Stream, 1024),
 		dataCH:       make(chan *rpc.Stream, 8192),
 		dataChannels: make([]*Channel, numOfChannelPerSlot),
 	}
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
-		if i == 0 {
-			ret.dataChannels[i] = NewChannel(
-				uint16(i), connectMeta, ret.controlCH, streamHub,
-			)
-		} else {
-			ret.dataChannels[i] = NewChannel(
-				uint16(i), connectMeta, ret.dataCH, streamHub,
-			)
-		}
+		ret.dataChannels[i] = NewChannel(
+			uint16(i), connectMeta, ret.dataCH, streamHub,
+		)
 	}
 
 	return ret
@@ -57,11 +49,7 @@ func (p *Slot) AddConn(conn net.Conn, initBuffer [32]byte) *base.Error {
 
 func (p *Slot) SendStream(s *rpc.Stream) {
 	if s != nil {
-		if s.GetKind() == rpc.StreamKindRouterControl {
-			p.controlCH <- s
-		} else {
-			p.dataCH <- s
-		}
+		p.dataCH <- s
 	}
 }
 
