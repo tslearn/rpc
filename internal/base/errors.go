@@ -338,13 +338,6 @@ var (
 		"",
 	)
 
-	// ErrRouterConnTimeout ...
-	ErrRouterConnTimeout = DefineNetError(
-		routerErrorSeg|5,
-		ErrorLevelWarn,
-		"router connection is timeout",
-	)
-
 	// ErrRouterConnClose ...
 	ErrRouterConnClose = DefineNetError(
 		routerErrorSeg|7,
