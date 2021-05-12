@@ -47,14 +47,25 @@ func (p *Slot) addSlaveConn(conn net.Conn, initBuffer [32]byte) *base.Error {
 	}
 }
 
-func (p *Slot) SendStream(s *rpc.Stream) {
+func (p *Slot) SendStream(s *rpc.Stream) (ret bool) {
+	defer func() {
+		if e := recover(); e != nil {
+			ret = false
+		}
+	}()
+
 	if s != nil {
 		p.dataCH <- s
+		return true
 	}
+
+	return false
 }
 
 func (p *Slot) Close() {
 	for i := 0; i < numOfChannelPerSlot; i++ {
 		p.dataChannels[i].Close()
 	}
+
+	close(p.dataCH)
 }

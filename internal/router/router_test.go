@@ -16,7 +16,8 @@ func TestDebug(t *testing.T) {
 			server.Run()
 		}()
 
-		client := NewClient("127.0.0.1:8080", nil)
+		clientHub := rpc.NewLogToScreenErrorStreamHub("router-client")
+		client, _ := NewClient("127.0.0.1:8080", nil, clientHub)
 		//go func() {
 		//	client.Open()
 		//	client.Run()

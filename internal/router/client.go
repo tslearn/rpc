@@ -15,9 +15,20 @@ type Client struct {
 	errorHub   rpc.IStreamHub
 }
 
-func NewClient(addr string, tlsConfig *tls.Config) *Client {
+func NewClient(
+	addr string,
+	tlsConfig *tls.Config,
+	errorHub rpc.IStreamHub,
+) (*Client, *base.Error) {
 	id := base.NewGlobalID()
-	errorHub := rpc.NewLogToScreenErrorStreamHub("router-client")
+
+	if id == nil {
+		errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			base.ErrRouterIDInvalid,
+		))
+		return nil, base.ErrRouterIDInvalid
+	}
+
 	ret := &Client{
 		id:        id,
 		addr:      addr,
@@ -35,7 +46,7 @@ func NewClient(addr string, tlsConfig *tls.Config) *Client {
 		return true
 	})
 
-	return ret
+	return ret, nil
 }
 
 func (p *Client) SendStream(s *rpc.Stream) {
@@ -47,6 +58,7 @@ func (p *Client) Close() bool {
 		p.slot.Close()
 		return true
 	}, func() {
+		p.id.Close()
 		p.id = nil
 	})
 }
