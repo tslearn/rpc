@@ -2,7 +2,6 @@ package router
 
 import (
 	"crypto/tls"
-	"encoding/binary"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
@@ -86,27 +85,9 @@ func (p *Server) Run() bool {
 }
 
 func (p *Server) onConnect(conn net.Conn) {
-	buffer := make([]byte, 32)
-
-	if n, err := connReadBytes(conn, time.Second, buffer); err != nil || n != 32 {
+	if err := p.router.AddConn(conn); err != nil {
 		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
-		_ = conn.Close()
-		return
 	}
-
-	if binary.LittleEndian.Uint16(buffer[2:]) != rpc.StreamKindConnectRequest {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
-			base.ErrRouterConnProtocol,
-		))
-		_ = conn.Close()
-		return
-	}
-
-	channelIndex := binary.LittleEndian.Uint16(buffer[4:])
-	slotID := binary.LittleEndian.Uint64(buffer[8:])
-	remoteSendSequence := binary.LittleEndian.Uint64(buffer[16:])
-	remoteReceiveSequence := binary.LittleEndian.Uint64(buffer[24:])
-	p.router.AddSlot(slotID, conn, channelIndex, remoteSendSequence, remoteReceiveSequence)
 }
 
 // Close ...

@@ -1,24 +1,24 @@
 package router
 
 import (
+	"encoding/binary"
+	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"sync"
-	"sync/atomic"
-	"unsafe"
+	"time"
 )
 
 type Router struct {
 	errorHub rpc.IStreamHub
-	slotMap  unsafe.Pointer
+	slotMap  map[uint64]*Slot
 	sync.Mutex
 }
 
 func NewRouter(errorHub rpc.IStreamHub) *Router {
-	slotMap := make(map[uint64]*Slot)
 	return &Router{
 		errorHub: errorHub,
-		slotMap:  unsafe.Pointer(&slotMap),
+		slotMap:  make(map[uint64]*Slot),
 	}
 }
 
@@ -26,37 +26,39 @@ func (p *Router) OnReceiveStream(s *rpc.Stream) {
 	p.errorHub.OnReceiveStream(s)
 }
 
-func (p *Router) AddSlot(
-	slotID uint64,
-	conn net.Conn,
-	channelID uint16,
-	remoteSendSequence uint64,
-	remoteReceiveSequence uint64,
-) {
+func (p *Router) AddConn(conn net.Conn) *base.Error {
+	var buffer [32]byte
+	n, err := connReadBytes(conn, time.Second, buffer[:])
+
+	if err != nil || n != 32 {
+		_ = conn.Close()
+		return err
+	}
+
+	if binary.LittleEndian.Uint16(buffer[2:]) != channelActionInit {
+		_ = conn.Close()
+		return base.ErrRouterConnProtocol
+	}
+
+	slotID := binary.LittleEndian.Uint64(buffer[6:])
+
 	p.Lock()
-	defer p.Unlock()
-
-	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
-	slot, ok := slotMap[slotID]
-
+	slot, ok := p.slotMap[slotID]
 	if !ok {
 		slot = NewSlot(nil, p)
-		slotMap[slotID] = slot
+		p.slotMap[slotID] = slot
 	}
+	p.Unlock()
 
-	if int(channelID) < len(slot.dataChannels) {
-		slot.RunAt(channelID, conn, remoteSendSequence, remoteReceiveSequence)
-	}
+	return slot.AddConn(conn, buffer)
 }
 
 func (p *Router) DelSlot(id uint64) {
 	p.Lock()
 	defer p.Unlock()
 
-	slotMap := *(*map[uint64]*Slot)(atomic.LoadPointer(&p.slotMap))
-	slot, ok := slotMap[id]
-	if ok {
-		delete(slotMap, id)
+	if slot, ok := p.slotMap[id]; ok {
+		delete(p.slotMap, id)
 		slot.Close()
 	}
 }

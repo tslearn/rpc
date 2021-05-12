@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/binary"
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
@@ -40,22 +41,15 @@ func NewSlot(connectMeta *ConnectMeta, streamHub rpc.IStreamHub) *Slot {
 	return ret
 }
 
-func (p *Slot) RunAt(
-	index uint16,
-	conn net.Conn,
-	remoteSendSequence uint64,
-	remoteReceiveSequence uint64,
-) *base.Error {
+func (p *Slot) AddConn(conn net.Conn, initBuffer [32]byte) *base.Error {
+	index := binary.LittleEndian.Uint16(initBuffer[4:])
 	if index < numOfChannelPerSlot && conn != nil {
 		channel := p.dataChannels[index]
-		if err := channel.initSlaveConn(conn, remoteSendSequence, remoteReceiveSequence); err != nil {
+		if err := channel.runSlaveThread(conn, initBuffer); err != nil {
 			return err
-		} else {
-			go func() {
-				channel.RunWithConn(conn)
-			}()
-			return nil
 		}
+
+		return nil
 	} else {
 		return base.ErrRouterConnProtocol
 	}

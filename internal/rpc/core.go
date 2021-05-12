@@ -24,6 +24,14 @@ func NewStreamGenerator(hub IStreamHub) *StreamGenerator {
 	}
 }
 
+func (p *StreamGenerator) Reset() {
+	p.streamPos = 0
+	if p.stream != nil {
+		p.stream.Release()
+		p.stream = nil
+	}
+}
+
 func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
 	// fill header
 	if p.stream == nil {
