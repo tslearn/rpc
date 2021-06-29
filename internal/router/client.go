@@ -7,6 +7,7 @@ import (
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
+// Client ...
 type Client struct {
 	id         *base.GlobalID
 	addr       string
@@ -15,6 +16,7 @@ type Client struct {
 	orcManager *base.ORCManager
 }
 
+// NewClient ...
 func NewClient(
 	addr string,
 	tlsConfig *tls.Config,
@@ -52,10 +54,12 @@ func NewClient(
 	return ret, nil
 }
 
+// SendStream ...
 func (p *Client) SendStream(s *rpc.Stream) {
 	p.slot.SendStream(s)
 }
 
+// Close ...
 func (p *Client) Close() bool {
 	return p.orcManager.Close(func() bool {
 		p.slot.Close()

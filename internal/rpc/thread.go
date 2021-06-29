@@ -384,7 +384,8 @@ func (p *rpcThread) Eval(inStream *Stream, needCallback bool) Return {
 			p.Write(
 				base.ErrActionPanic.
 					AddDebug(fmt.Sprintf("runtime error: %v", v)).
-					AddDebug(p.GetExecActionDebug()).AddDebug(string(debug.Stack())),
+					AddDebug(p.GetExecActionDebug()).
+					AddDebug(string(debug.Stack())),
 				0,
 				false,
 			)
@@ -591,10 +592,13 @@ func (p *rpcThread) Eval(inStream *Stream, needCallback bool) Return {
 			return p.Write(
 				base.ErrArgumentsNotMatch.AddDebug(
 					fmt.Sprintf(
-						"rpc-call: %s %s argument does not match. want: %s got: %s\n%s",
+						"rpc-call: %s %s argument does not match. "+
+							"want: %s got: %s\n%s",
 						actionPath,
 						base.ConvertOrdinalToString(uint(argErrorIndex)),
-						convertTypeToString(execActionNode.argTypes[argErrorIndex]),
+						convertTypeToString(
+							execActionNode.argTypes[argErrorIndex],
+						),
 						typeName,
 						p.GetExecActionDebug(),
 					)),

@@ -14,12 +14,17 @@ const (
 	bufferSize          = 65536
 )
 
+// Slot ...
 type Slot struct {
 	dataCH       chan *rpc.Stream
 	dataChannels []*Channel
 }
 
-func NewSlot(connectMeta *ConnectMeta, streamReceiver rpc.IStreamReceiver) *Slot {
+// NewSlot ...
+func NewSlot(
+	connectMeta *ConnectMeta,
+	streamReceiver rpc.IStreamReceiver,
+) *Slot {
 	ret := &Slot{
 		dataCH:       make(chan *rpc.Stream, 8192),
 		dataChannels: make([]*Channel, numOfChannelPerSlot),
@@ -43,11 +48,12 @@ func (p *Slot) addSlaveConn(conn net.Conn, initBuffer [32]byte) *base.Error {
 		}
 
 		return nil
-	} else {
-		return base.ErrRouterConnProtocol
 	}
+
+	return base.ErrRouterConnProtocol
 }
 
+// SendStream ...
 func (p *Slot) SendStream(s *rpc.Stream) (ret bool) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -63,6 +69,7 @@ func (p *Slot) SendStream(s *rpc.Stream) (ret bool) {
 	return false
 }
 
+// Close ...
 func (p *Slot) Close() {
 	for i := 0; i < numOfChannelPerSlot; i++ {
 		p.dataChannels[i].Close()

@@ -22,7 +22,9 @@ const (
 var (
 	nodeNameRegex   = regexp.MustCompile(`^[_0-9a-zA-Z]+$`)
 	actionNameRegex = regexp.MustCompile(
-		`^([_a-zA-Z][_0-9a-zA-Z]*)|(\$onMount)|(\$onUnmount)|(\$onUpdateConfig)$`,
+		`^([_a-zA-Z][_0-9a-zA-Z]*)` +
+			`|` +
+			`(\$onMount)|(\$onUnmount)|(\$onUpdateConfig)$`,
 	)
 	emptyEvalBack   = func(*Stream) {}
 	emptyEvalFinish = func(*rpcThread) {}
@@ -239,9 +241,15 @@ func (p *Processor) Close() bool {
 		errList := make([]string, 0)
 		for k, v := range errMap {
 			if v > 1 {
-				errList = append(errList, fmt.Sprintf("%s (%d goroutines)", k, v))
+				errList = append(
+					errList,
+					fmt.Sprintf("%s (%d goroutines)", k, v),
+				)
 			} else {
-				errList = append(errList, fmt.Sprintf("%s (%d goroutine)", k, v))
+				errList = append(
+					errList,
+					fmt.Sprintf("%s (%d goroutine)", k, v),
+				)
 			}
 		}
 
@@ -360,14 +368,18 @@ func (p *Processor) mountNode(
 		if parentNode.depth+1 > p.maxNodeDepth { // depth overflows
 			return base.ErrServiceOverflow.
 				AddDebug(fmt.Sprintf(
-					"service path %s overflows (max depth: %d, current depth:%d)",
+					"service path %s overflows "+
+						"(max depth: %d, current depth:%d)",
 					servicePath,
 					p.maxNodeDepth, parentNode.depth+1,
 				)).
 				AddDebug(nodeMeta.fileLine)
-		} else if item, ok := p.servicesMap[servicePath]; ok { // path is occupied
+		} else if item, ok := p.servicesMap[servicePath]; ok { // path exists
 			return base.ErrServiceName.
-				AddDebug(fmt.Sprintf("duplicated service name %s", nodeMeta.name)).
+				AddDebug(fmt.Sprintf(
+					"duplicated service name %s",
+					nodeMeta.name,
+				)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
 					base.AddPrefixPerLine(nodeMeta.fileLine, "\t"),
@@ -444,7 +456,10 @@ func (p *Processor) mountAction(
 		if item, ok := p.actionsMap[actionPath]; ok {
 			// check the action path is not occupied
 			return base.ErrActionName.
-				AddDebug(base.ConcatString("duplicated action name ", meta.name)).
+				AddDebug(base.ConcatString(
+					"duplicated action name ",
+					meta.name,
+				)).
 				AddDebug(fmt.Sprintf(
 					"current:\n%s\nconflict:\n%s",
 					base.AddPrefixPerLine(meta.fileLine, "\t"),

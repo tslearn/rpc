@@ -147,7 +147,8 @@ func (p *Client) initConn(stream *rpc.Stream) {
 		p.config.numOfChannels = int(numOfChannels)
 		p.config.transLimit = int(transLimit)
 		p.config.heartbeat = time.Duration(heartbeat) * time.Millisecond
-		p.config.heartbeatTimeout = time.Duration(heartbeatTimeout) * time.Millisecond
+		p.config.heartbeatTimeout =
+			time.Duration(heartbeatTimeout) * time.Millisecond
 
 		// init channel
 		p.initChannel(p.config.numOfChannels)

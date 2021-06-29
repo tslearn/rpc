@@ -19,8 +19,9 @@ func TestBuildFuncCache(t *testing.T) {
 	t.Run("duplicate kind", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		filePath := path.Join(curDir, "_tmp_/duplicate-kind.go")
-		assert(buildFuncCache("pkgName", filePath, []string{"A", "A"})).
-			Equal(base.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"))
+		assert(buildFuncCache("pkgName", filePath, []string{"A", "A"})).Equal(
+			base.ErrFnCacheDuplicateKindString.AddDebug("duplicate kind A"),
+		)
 	})
 
 	t.Run("illegal kind", func(t *testing.T) {

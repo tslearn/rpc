@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"sync"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 // ActionMeta ...

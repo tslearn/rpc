@@ -1,10 +1,11 @@
 package gateway
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 func TestChannel_In(t *testing.T) {

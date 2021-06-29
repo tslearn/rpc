@@ -89,7 +89,9 @@ func runIConn(conn IConn) {
 func runNetConnOnServers(adapter *Adapter, conn net.Conn) {
 	go func() {
 		syncConn := NewServerSyncConn(conn, adapter.rBufSize, adapter.wBufSize)
-		syncConn.SetNext(NewStreamConn(adapter.isDebug, syncConn, adapter.receiver))
+		syncConn.SetNext(
+			NewStreamConn(adapter.isDebug, syncConn, adapter.receiver),
+		)
 
 		runIConn(syncConn)
 		syncConn.Close()

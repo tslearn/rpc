@@ -20,6 +20,7 @@ const (
 	channelActionTimer    = 5
 )
 
+// ConnectMeta ...
 type ConnectMeta struct {
 	addr      string
 	tlsConfig *tls.Config
@@ -43,16 +44,18 @@ func connReadBytes(
 	}
 
 	for pos < length {
-		if n, e := conn.Read(b[pos:]); e != nil {
-			return -1, base.ErrRouterConnRead.AddDebug(e.Error())
-		} else {
-			pos += n
+		n, e := conn.Read(b[pos:])
 
-			if length == 2 && pos >= 2 {
-				length = int(binary.LittleEndian.Uint16(b))
-				if length > len(b) {
-					return -1, base.ErrRouterConnProtocol
-				}
+		if e != nil {
+			return -1, base.ErrRouterConnRead.AddDebug(e.Error())
+		}
+
+		pos += n
+
+		if length == 2 && pos >= 2 {
+			length = int(binary.LittleEndian.Uint16(b))
+			if length > len(b) {
+				return -1, base.ErrRouterConnProtocol
 			}
 		}
 	}
@@ -76,16 +79,17 @@ func connWriteBytes(
 	}
 
 	for pos < len(b) {
-		if n, e := conn.Write(b[pos:]); e != nil {
+		n, e := conn.Write(b[pos:])
+		if e != nil {
 			return base.ErrRouterConnWrite.AddDebug(e.Error())
-		} else {
-			pos += n
 		}
+		pos += n
 	}
 
 	return nil
 }
 
+// Channel ...
 type Channel struct {
 	needReset              uint8
 	conn                   net.Conn
@@ -102,6 +106,7 @@ type Channel struct {
 	sync.Mutex
 }
 
+// NewChannel ...
 func NewChannel(
 	index uint16,
 	connMeta *ConnectMeta,
@@ -255,6 +260,7 @@ func (p *Channel) runSlaveThread(
 	return nil
 }
 
+// RunWithConn ...
 func (p *Channel) RunWithConn(sendSequence uint64, conn net.Conn) {
 	running := uint32(1)
 
@@ -453,6 +459,7 @@ func (p *Channel) runWrite(
 	}
 }
 
+// Close ...
 func (p *Channel) Close() {
 	p.orcManager.Close(func() bool {
 		return true

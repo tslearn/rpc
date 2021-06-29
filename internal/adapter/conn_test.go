@@ -1,12 +1,13 @@
 package adapter
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"math/rand"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 func TestNewServerSyncConn(t *testing.T) {

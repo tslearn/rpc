@@ -2,8 +2,6 @@ package adapter
 
 import (
 	"context"
-	"github.com/gobwas/ws"
-	"github.com/rpccloud/rpc/internal/base"
 	"io"
 	"net"
 	"net/http"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gobwas/ws"
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func getTestConnections() (*syncWSConn, *syncWSConn, *http.Server) {

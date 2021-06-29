@@ -1,10 +1,11 @@
 package client
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 func TestChannel_Use(t *testing.T) {

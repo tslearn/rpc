@@ -3,9 +3,10 @@ package adapter
 
 import (
 	"crypto/tls"
+	"net"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
-	"net"
 )
 
 // IConn ...

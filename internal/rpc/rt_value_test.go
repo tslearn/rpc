@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func testWithRTValue(fn func(v RTValue), v interface{}) {

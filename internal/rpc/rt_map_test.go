@@ -2,13 +2,14 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
 	"math/rand"
 	"runtime"
 	"sort"
 	"strconv"
 	"testing"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func getTestMapItems(size int, sequencePos bool) []mapItem {
@@ -226,7 +227,10 @@ func TestRTMap_Get(t *testing.T) {
 		assert(v.Get("age").ToUint64()).Equal(uint64(18), nil)
 		assert(v.Get("noKey").ToString()).Equal(
 			"",
-			base.ErrRTMapNameNotFound.AddDebug("RTMap key noKey does not exist"))
+			base.ErrRTMapNameNotFound.AddDebug(
+				"RTMap key noKey does not exist",
+			),
+		)
 	})
 
 	t.Run("key does not exist", func(t *testing.T) {
@@ -425,7 +429,8 @@ func TestRTMap_getPosRecord(t *testing.T) {
 
 			for j := 0; j < 600; j++ {
 				key := base.GetRandString(6 + rand.Int()%6)
-				assert(v.getPosRecord(key, getFastKey(key))).Equal(-1, posRecord(0))
+				assert(v.getPosRecord(key, getFastKey(key))).
+					Equal(-1, posRecord(0))
 			}
 		}
 	})

@@ -167,11 +167,13 @@ func TestIsUTF8Bytes(t *testing.T) {
 		assert(IsUTF8Bytes(([]byte)("🀄️文👃d"))).IsTrue()
 		assert(IsUTF8Bytes(([]byte)("🀄️文👃"))).IsTrue()
 		assert(IsUTF8Bytes(([]byte)(`
-            😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 🥰 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔 🤨
-            🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁
-            😤 😢 😭 😦 😧 😨 😩 🤯 😬 😰 😱 🥵 🥶 😳 🤪 😵 😡 😠 🤬 😷 🤒 🤕 🤢
-            🤡 🥳 🥴 🥺 🤥 🤫 🤭 🧐 🤓 😈 👿 👹 👺 💀 👻 👽 🤖 💩 😺 😸 😹 😻 😼 😽
-            👶 👧 🧒 👦 👩 🧑 👨 👵 🧓 👴 👲 👳 👳 🧕 🧔 👱 👱 👨 🦰 👩 🦰 👨 🦱 👩 🦱
+            😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 🥰 😗 😙 😚 ☺️
+            🙂 🤗 🤩 🤔 🤨 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜
+            😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁 😤 😢 😭 😦 😧 😨 😩
+            🤯 😬 😰 😱 🥵 🥶 😳 🤪 😵 😡 😠 🤬 😷 🤒 🤕 🤢 🤡 🥳
+            🥴 🥺 🤥 🤫 🤭 🧐 🤓 😈 👿 👹 👺 💀 👻 👽 🤖 💩 😺 😸
+            😹 😻 😼 😽 👶 👧 🧒 👦 👩 🧑 👨 👵 🧓 👴 👲 👳 👳 🧕
+            🧔 👱 👱 👨 🦰 👩 🦰 👨 🦱 👩 🦱
         `))).IsTrue()
 	})
 }
@@ -274,9 +276,11 @@ func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
 			go func() {
 				assert := NewAssert(t)
 				startTime := TimeNow()
-				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
-					return true
-				}, 500*time.Millisecond)
+				WaitAtLeastDurationWhenRunning(
+					TimeNow().UnixNano(),
+					func() bool { return true },
+					500*time.Millisecond,
+				)
 				interval := TimeNow().Sub(startTime)
 				assert(interval > 480*time.Millisecond).IsTrue()
 				assert(interval < 880*time.Millisecond).IsTrue()
@@ -294,9 +298,11 @@ func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
 			go func() {
 				assert := NewAssert(t)
 				startTime := TimeNow()
-				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
-					return false
-				}, 500*time.Millisecond)
+				WaitAtLeastDurationWhenRunning(
+					TimeNow().UnixNano(),
+					func() bool { return false },
+					500*time.Millisecond,
+				)
 				interval := TimeNow().Sub(startTime)
 				assert(interval > -180*time.Millisecond).IsTrue()
 				assert(interval < 180*time.Millisecond).IsTrue()
@@ -315,10 +321,14 @@ func TestWaitAtLeastDurationWhenRunning(t *testing.T) {
 				assert := NewAssert(t)
 				startTime := TimeNow()
 				count := 0
-				WaitAtLeastDurationWhenRunning(TimeNow().UnixNano(), func() bool {
-					count++
-					return count < 3
-				}, 500*time.Millisecond)
+				WaitAtLeastDurationWhenRunning(
+					TimeNow().UnixNano(),
+					func() bool {
+						count++
+						return count < 3
+					},
+					500*time.Millisecond,
+				)
 				interval := TimeNow().Sub(startTime)
 				assert(interval >= 180*time.Millisecond).IsTrue()
 				assert(interval < 480*time.Millisecond).IsTrue()

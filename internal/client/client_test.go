@@ -888,19 +888,22 @@ func TestClient_OnConnReadStream(t *testing.T) {
 		assert(v.channels[17].item).IsNil()
 	})
 
-	t.Run("p.conn != nil, StreamKindRPCResponseError error", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		stream := rpc.NewStream()
-		stream.SetCallbackID(17)
-		stream.SetKind(rpc.StreamKindRPCResponseError)
-		v, streamConn, _, _ := fnTestClient()
-		v.conn = streamConn
-		v.channels = make([]Channel, 32)
-		(&v.channels[17]).sequence = 17
-		(&v.channels[17]).Use(NewSendItem(0), 32)
-		v.OnConnReadStream(streamConn, stream)
-		assert(v.channels[17].item).IsNotNil()
-	})
+	t.Run(
+		"p.conn != nil, StreamKindRPCResponseError error",
+		func(t *testing.T) {
+			assert := base.NewAssert(t)
+			stream := rpc.NewStream()
+			stream.SetCallbackID(17)
+			stream.SetKind(rpc.StreamKindRPCResponseError)
+			v, streamConn, _, _ := fnTestClient()
+			v.conn = streamConn
+			v.channels = make([]Channel, 32)
+			(&v.channels[17]).sequence = 17
+			(&v.channels[17]).Use(NewSendItem(0), 32)
+			v.OnConnReadStream(streamConn, stream)
+			assert(v.channels[17].item).IsNotNil()
+		},
+	)
 
 	t.Run("p.conn != nil, getKind() error", func(t *testing.T) {
 		assert := base.NewAssert(t)

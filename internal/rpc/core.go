@@ -9,6 +9,7 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
+// StreamGenerator ...
 type StreamGenerator struct {
 	streamReceiver IStreamReceiver
 	streamPos      int
@@ -16,6 +17,7 @@ type StreamGenerator struct {
 	stream         *Stream
 }
 
+// NewStreamGenerator ...
 func NewStreamGenerator(streamReceiver IStreamReceiver) *StreamGenerator {
 	return &StreamGenerator{
 		streamReceiver: streamReceiver,
@@ -25,6 +27,7 @@ func NewStreamGenerator(streamReceiver IStreamReceiver) *StreamGenerator {
 	}
 }
 
+// Reset ...
 func (p *StreamGenerator) Reset() {
 	p.streamPos = 0
 	if p.stream != nil {
@@ -33,6 +36,7 @@ func (p *StreamGenerator) Reset() {
 	}
 }
 
+// OnBytes ...
 func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
 	// fill header
 	if p.stream == nil {
@@ -80,9 +84,9 @@ func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
 
 		if byteLen > len(writeBuf) {
 			return p.OnBytes(b[len(writeBuf):])
-		} else {
-			return nil
 		}
+
+		return nil
 	}
 
 	return nil

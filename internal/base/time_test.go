@@ -11,7 +11,8 @@ func TestTime(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
 		assert(gTimeMaster).IsNotNil()
-		assert(string(defaultISODateBuffer)).Equal("0000-00-00T00:00:00.000+00:00")
+		assert(string(defaultISODateBuffer)).
+			Equal("0000-00-00T00:00:00.000+00:00")
 		for i := 0; i < 100; i++ {
 			assert(string(intToStringCache2[i])).Equal(fmt.Sprintf("%02d", i))
 		}
@@ -176,7 +177,8 @@ func TestConvertToIsoDateString(t *testing.T) {
 			"2006-01-02T15:04:05.999Z07:00",
 			"0000-01-01T00:00:00+00:00",
 		)
-		assert(ConvertToIsoDateString(v1)).Equal("0000-01-01T00:00:00.000+00:00")
+		assert(ConvertToIsoDateString(v1)).
+			Equal("0000-01-01T00:00:00.000+00:00")
 	})
 
 	t.Run("year 9999", func(t *testing.T) {
@@ -186,7 +188,8 @@ func TestConvertToIsoDateString(t *testing.T) {
 			"9998-01-01T00:00:00+00:00",
 		)
 		v1 = v1.Add(1000000 * time.Hour)
-		assert(ConvertToIsoDateString(v1)).Equal("9999-01-30T16:00:00.000+00:00")
+		assert(ConvertToIsoDateString(v1)).
+			Equal("9999-01-30T16:00:00.000+00:00")
 	})
 
 	t.Run("test timezone", func(t *testing.T) {
@@ -196,25 +199,29 @@ func TestConvertToIsoDateString(t *testing.T) {
 			"2006-01-02T15:04:05.999Z07:00",
 			"2222-12-22T11:11:11.333-11:59",
 		)
-		assert(ConvertToIsoDateString(v1)).Equal("2222-12-22T11:11:11.333-11:59")
+		assert(ConvertToIsoDateString(v1)).
+			Equal("2222-12-22T11:11:11.333-11:59")
 
 		v2, _ := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			"2222-12-22T11:11:11.333+11:59",
 		)
-		assert(ConvertToIsoDateString(v2)).Equal("2222-12-22T11:11:11.333+11:59")
+		assert(ConvertToIsoDateString(v2)).
+			Equal("2222-12-22T11:11:11.333+11:59")
 
 		v3, _ := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			"2222-12-22T11:11:11.333+00:00",
 		)
-		assert(ConvertToIsoDateString(v3)).Equal("2222-12-22T11:11:11.333+00:00")
+		assert(ConvertToIsoDateString(v3)).
+			Equal("2222-12-22T11:11:11.333+00:00")
 
 		v4, _ := time.Parse(
 			"2006-01-02T15:04:05.999Z07:00",
 			"2222-12-22T11:11:11.333-00:00",
 		)
-		assert(ConvertToIsoDateString(v4)).Equal("2222-12-22T11:11:11.333+00:00")
+		assert(ConvertToIsoDateString(v4)).
+			Equal("2222-12-22T11:11:11.333+00:00")
 	})
 
 	t.Run("test", func(t *testing.T) {

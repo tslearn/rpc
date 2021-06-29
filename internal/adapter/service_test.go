@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"crypto/tls"
-	"github.com/rpccloud/rpc/internal/base"
 	"io"
 	"net"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func getFieldPointer(ptr interface{}, fieldName string) unsafe.Pointer {

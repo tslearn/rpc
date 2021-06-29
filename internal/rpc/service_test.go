@@ -1,19 +1,21 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func TestNewServiceMeta(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		service := NewService()
-		assert(NewServiceMeta("test", service, "debug", nil)).Equal(&ServiceMeta{
-			name:     "test",
-			service:  service,
-			fileLine: "debug",
-		})
+		assert(NewServiceMeta("test", service, "debug", nil)).
+			Equal(&ServiceMeta{
+				name:     "test",
+				service:  service,
+				fileLine: "debug",
+			})
 	})
 }
 
@@ -45,7 +47,8 @@ func TestService_AddChildService(t *testing.T) {
 func TestService_On(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		service, fileLine := NewService().On("sayHello", 2345), base.GetFileLine(0)
+		getFL := base.GetFileLine
+		service, fileLine := NewService().On("sayHello", 2345), getFL(0)
 		assert(service).IsNotNil()
 		assert(len(service.children)).Equal(0)
 		assert(len(service.actions)).Equal(1)

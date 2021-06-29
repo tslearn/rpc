@@ -10,12 +10,14 @@ import (
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
+// Router ...
 type Router struct {
 	streamReceiver rpc.IStreamReceiver
 	slotMap        map[uint64]*Slot
 	sync.Mutex
 }
 
+// NewRouter ...
 func NewRouter(streamReceiver rpc.IStreamReceiver) *Router {
 	return &Router{
 		streamReceiver: streamReceiver,
@@ -23,10 +25,12 @@ func NewRouter(streamReceiver rpc.IStreamReceiver) *Router {
 	}
 }
 
+// OnReceiveStream ...
 func (p *Router) OnReceiveStream(s *rpc.Stream) {
 	p.streamReceiver.OnReceiveStream(s)
 }
 
+// AddConn ...
 func (p *Router) AddConn(conn net.Conn) *base.Error {
 	var buffer [32]byte
 	n, err := connReadBytes(conn, time.Second, buffer[:])
@@ -54,6 +58,7 @@ func (p *Router) AddConn(conn net.Conn) *base.Error {
 	return slot.addSlaveConn(conn, buffer)
 }
 
+// DelSlot ...
 func (p *Router) DelSlot(id uint64) {
 	p.Lock()
 	defer p.Unlock()

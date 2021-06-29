@@ -88,10 +88,13 @@ func (p *timeMaster) Run() bool {
 			if speed > 10000 {
 				for i := 0; i < 100; i++ {
 					now := time.Now()
-					atomic.StorePointer(&p.timeNowPointer, unsafe.Pointer(&timeInfo{
-						time:          now,
-						timeISOString: ConvertToIsoDateString(now),
-					}))
+					atomic.StorePointer(
+						&p.timeNowPointer,
+						unsafe.Pointer(&timeInfo{
+							time:          now,
+							timeISOString: ConvertToIsoDateString(now),
+						}),
+					)
 					time.Sleep(time.Millisecond)
 				}
 			} else {

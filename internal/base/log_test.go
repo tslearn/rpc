@@ -21,7 +21,7 @@ func captureStdout(fn func()) string {
 	}()
 
 	outCH := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
+	// copy the output in a separate goroutine so print can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)

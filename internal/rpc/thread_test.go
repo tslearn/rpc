@@ -154,7 +154,8 @@ func TestNewRTMap(t *testing.T) {
 			testRuntime.thread.Reset()
 			v := newRTMap(testRuntime, i)
 			assert(v.rt).Equal(testRuntime)
-			assert(len(*v.items), cap(*v.items), *v.length).Equal(0, i, uint32(0))
+			assert(len(*v.items), cap(*v.items), *v.length).
+				Equal(0, i, uint32(0))
 		}
 	})
 
@@ -291,21 +292,27 @@ func TestRpcThread_Close(t *testing.T) {
 
 	t.Run("cannot close", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(testReply(true, nil, nil, func(rt Runtime, testThread bool) Return {
-			if testThread {
-				v := newThread(
-					rt.thread.processor, 3*time.Second, 2048, fnEvalFinish,
-				)
-				s, _ := MakeInternalRequestStream(
-					true, 0, "#.test:Eval", "", false,
-				)
-				v.PutStream(s)
-				assert(v.Close()).IsFalse()
-			} else {
-				time.Sleep(3500 * time.Millisecond)
-			}
-			return rt.Reply(true)
-		}, true)).Equal(true, nil)
+		assert(testReply(
+			true,
+			nil,
+			nil,
+			func(rt Runtime, testThread bool) Return {
+				if testThread {
+					v := newThread(
+						rt.thread.processor, 3*time.Second, 2048, fnEvalFinish,
+					)
+					s, _ := MakeInternalRequestStream(
+						true, 0, "#.test:Eval", "", false,
+					)
+					v.PutStream(s)
+					assert(v.Close()).IsFalse()
+				} else {
+					time.Sleep(3500 * time.Millisecond)
+				}
+				return rt.Reply(true)
+			},
+			true,
+		)).Equal(true, nil)
 	})
 
 	t.Run("test ok", func(t *testing.T) {
@@ -447,11 +454,16 @@ func TestRpcThread_popFrame(t *testing.T) {
 				parentRTWritePos := rt.thread.rtStream.GetWritePos()
 				ret := rt.Reply(rt.Call("#.test:Eval", v-1))
 				assert(rt.thread.top).Equal(curFrame)
-				assert(rt.thread.top.cacheArrayItemsPos).Equal(cacheArrayItemsPos)
-				assert(rt.thread.top.cacheMapItemsPos).Equal(cacheMapItemsPos)
-				assert(rt.thread.top.cacheArrayEntryPos).Equal(cacheArrayEntryPos)
-				assert(rt.thread.top.cacheMapEntryPos).Equal(cacheMapEntryPos)
-				assert(rt.thread.rtStream.GetWritePos()).Equal(parentRTWritePos + 1)
+				assert(rt.thread.top.cacheArrayItemsPos).
+					Equal(cacheArrayItemsPos)
+				assert(rt.thread.top.cacheMapItemsPos).
+					Equal(cacheMapItemsPos)
+				assert(rt.thread.top.cacheArrayEntryPos).
+					Equal(cacheArrayEntryPos)
+				assert(rt.thread.top.cacheMapEntryPos).
+					Equal(cacheMapEntryPos)
+				assert(rt.thread.rtStream.GetWritePos()).
+					Equal(parentRTWritePos + 1)
 				return ret
 			}, 10)).Equal(true, nil)
 	})
@@ -519,8 +531,10 @@ func TestRpcThread_GetExecActionDebug(t *testing.T) {
 	t.Run("node is not nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testReply(true, nil, nil, func(rt Runtime) Return {
-			(*rpcActionNode)(rt.thread.top.actionNode).meta.fileLine = "/file:001"
-			assert(rt.thread.GetExecActionDebug()).Equal("#.test:Eval /file:001")
+			(*rpcActionNode)(rt.thread.top.actionNode).meta.fileLine =
+				"/file:001"
+			assert(rt.thread.GetExecActionDebug()).
+				Equal("#.test:Eval /file:001")
 			return rt.Reply(true)
 		})).Equal(true, nil)
 	})
@@ -547,7 +561,8 @@ func TestRpcThread_Write(t *testing.T) {
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
 					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
-					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"] overflows").
+					"[\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"][\"v\"]"+
+					" overflows").
 				AddDebug("#.test:Eval "+source).Standardize(),
 		)
 	})
@@ -557,7 +572,8 @@ func TestRpcThread_Write(t *testing.T) {
 		source := ""
 		assert(testReply(true, nil, nil, func(rt Runtime) Return {
 			thread := rt.thread
-			ret, s := thread.Write(make(chan bool), 0, true), base.GetFileLine(0)
+			getFL := base.GetFileLine
+			ret, s := thread.Write(make(chan bool), 0, true), getFL(0)
 			source = s
 			return ret
 		})).Equal(
@@ -574,7 +590,8 @@ func TestRpcThread_Write(t *testing.T) {
 		source := ""
 		assert(testReply(true, nil, nil, func(rt Runtime) Return {
 			thread := rt.thread
-			ret, s := thread.Write((*base.Error)(nil), 0, true), base.GetFileLine(0)
+			getFL := base.GetFileLine
+			ret, s := thread.Write((*base.Error)(nil), 0, true), getFL(0)
 			source = s
 			return ret
 		})).Equal(
@@ -636,7 +653,7 @@ func TestRpcThread_Write(t *testing.T) {
 		)
 	})
 
-	t.Run("reply has already benn called (debug true)", func(t *testing.T) {
+	t.Run("reply has already been called (debug true)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		source := ""
 		assert(testReply(true, nil, nil, func(rt Runtime) Return {
@@ -653,7 +670,7 @@ func TestRpcThread_Write(t *testing.T) {
 		)
 	})
 
-	t.Run("reply has already benn called (debug false)", func(t *testing.T) {
+	t.Run("reply has already been called (debug false)", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(testReply(true, nil, nil, func(rt Runtime) Return {
 			thread := rt.thread
@@ -798,12 +815,15 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			assert(testReply(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"},
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
 			)).Equal(true, nil)
 		}
 		fnTest(true, nil)
@@ -814,12 +834,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
-				int64(3), int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				int64(3), int64(3), uint64(3), float64(3), "hello",
+				[]byte("hello"), Array{1}, Map{"name": "kitty"}, true,
+				Array{2}, Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -844,12 +868,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, false, uint64(3), float64(3), "hello", []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -874,12 +902,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), true, float64(3), "hello", []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -904,12 +936,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), true, "hello", []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -934,12 +970,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), true, []byte("hello"),
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -964,12 +1004,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", true,
-				Array{1}, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				Array{1}, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -994,12 +1038,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				true, Map{"name": "kitty"}, true, Array{2}, Map{"name": "doggy"})
+				true, Map{"name": "kitty"}, true, Array{2},
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -1024,12 +1072,15 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{2}, true, true, Array{2}, Map{"name": "doggy"})
+				Array{2}, true, true, Array{2}, Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -1063,8 +1114,10 @@ func TestRpcThread_Eval(t *testing.T) {
 			sendStream.Write(Map{"name": "doggy"})
 
 			assert(testReply(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				}, sendStream)).
 				Equal(nil, base.ErrStream)
@@ -1079,12 +1132,16 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{2}, Map{"name": "doggy"}, true, false, Map{"name": "doggy"})
+				Array{2}, Map{"name": "doggy"}, true, false,
+				Map{"name": "doggy"},
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -1109,12 +1166,15 @@ func TestRpcThread_Eval(t *testing.T) {
 		assert := base.NewAssert(t)
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			stream, source := testReplyWithSource(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				},
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{2}, Map{"name": "doggy"}, true, Array{2}, false)
+				Array{2}, Map{"name": "doggy"}, true, Array{2}, false,
+			)
 
 			if dbg {
 				assert(ParseResponseStream(stream)).
@@ -1141,13 +1201,15 @@ func TestRpcThread_Eval(t *testing.T) {
 			sendStream, _ := MakeInternalRequestStream(
 				dbg, 0, "#.test:Eval", "",
 				true, int64(3), uint64(3), float64(3), "hello", []byte("hello"),
-				Array{2}, Map{"name": "doggy"}, true, Array{2}, Map{"name": "doggy"},
-				false,
+				Array{2}, Map{"name": "doggy"}, true, Array{2},
+				Map{"name": "doggy"}, false,
 			)
 			sendStream.SetWritePos(sendStream.GetWritePos() + 1)
 			assert(testReply(dbg, fnCache, nil,
-				func(rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
-					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap) Return {
+				func(
+					rt Runtime, b Bool, i Int64, u Uint64, f Float64, s String,
+					x Bytes, a Array, m Map, v RTValue, y RTArray, z RTMap,
+				) Return {
 					return rt.Reply(true)
 				}, sendStream)).
 				Equal(nil, base.ErrStream)
@@ -1168,7 +1230,8 @@ func TestRpcThread_Eval(t *testing.T) {
 				func(rt Runtime, hook Bool) Return {
 					actionNode := rt.thread.GetActionNode()
 					actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
-					rtValue, s1 := rt.Call("#.test:Eval", false), base.GetFileLine(0)
+					getFL := base.GetFileLine
+					rtValue, s1 := rt.Call("#.test:Eval", false), getFL(0)
 					ret, s2 := rt.Reply(rtValue), base.GetFileLine(0)
 					source1 = s1
 					source2 = s2
@@ -1213,8 +1276,9 @@ func TestRpcThread_Eval(t *testing.T) {
 				func(rt Runtime, hook Bool) Return {
 					actionNode := rt.thread.GetActionNode()
 					actionNode.argTypes[1] = reflect.ValueOf(int16(0)).Type()
-					rtValue, s1 := rt.Call("#.test:Eval", nil), base.GetFileLine(0)
-					ret, s2 := rt.Reply(rtValue), base.GetFileLine(0)
+					getFL := base.GetFileLine
+					rtValue, s1 := rt.Call("#.test:Eval", nil), getFL(0)
+					ret, s2 := rt.Reply(rtValue), getFL(0)
 					source1 = s1
 					source2 = s2
 					return ret

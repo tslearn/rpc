@@ -539,9 +539,10 @@ func (p *Stream) writeStreamNext(s *Stream) bool {
 		return true
 	} else if s.hasNBytesToRead(skip) {
 		for skip > 0 {
+			copyEnd := base.MinInt(s.readIndex+skip, streamBlockSize)
 			n := copy(
 				p.writeFrame[p.writeIndex:],
-				s.readFrame[s.readIndex:base.MinInt(s.readIndex+skip, streamBlockSize)],
+				s.readFrame[s.readIndex:copyEnd],
 			)
 			skip -= n
 			p.writeIndex += n
@@ -593,7 +594,8 @@ func (p *Stream) PeekBufferSlice(pos int, max int) (ret []byte, isFinish bool) {
 	} else if peekSeg == p.writeSeg {
 		if peekIndex < p.writeIndex {
 			peekEnd := base.MinInt(peekIndex+max, p.writeIndex)
-			return (*p.frames[peekSeg])[peekIndex:peekEnd], peekEnd == p.writeIndex
+			return (*p.frames[peekSeg])[peekIndex:peekEnd],
+				peekEnd == p.writeIndex
 		}
 		return nil, true
 	} else {

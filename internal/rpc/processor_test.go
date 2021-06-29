@@ -336,7 +336,8 @@ func TestProcessor_Close(t *testing.T) {
 				assert(ParseResponseStream(streamReceiver.GetStream())).Equal(
 					nil,
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
-						"the following actions can not close: \n\t%s (1 goroutine)",
+						"the following actions can not close: \n\t%s "+
+							"(1 goroutine)",
 						source,
 					)).Standardize(),
 				)
@@ -344,7 +345,8 @@ func TestProcessor_Close(t *testing.T) {
 				assert(ParseResponseStream(streamReceiver.GetStream())).Equal(
 					nil,
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
-						"the following actions can not close: \n\t%s (%d goroutines)",
+						"the following actions can not close: \n\t%s "+
+							"(%d goroutines)",
 						source, count,
 					)).Standardize(),
 				)
@@ -422,7 +424,10 @@ func TestProcessor_BuildCache(t *testing.T) {
 	t.Run("services is empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tmpFile := path.Join(curDir, "_tmp_/test-processor-01.go")
-		snapshotFile := path.Join(curDir, "_snapshot_/test-processor-01.snapshot")
+		snapshotFile := path.Join(
+			curDir,
+			"_snapshot_/test-processor-01.snapshot",
+		)
 		processor := NewProcessor(
 			freeGroups,
 			2,
@@ -435,13 +440,17 @@ func TestProcessor_BuildCache(t *testing.T) {
 		)
 		defer processor.Close()
 		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
-		assert(base.ReadFromFile(tmpFile)).Equal(base.ReadFromFile(snapshotFile))
+		assert(base.ReadFromFile(tmpFile)).
+			Equal(base.ReadFromFile(snapshotFile))
 	})
 
 	t.Run("service is not empty", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		tmpFile := path.Join(curDir, "_tmp_/test-processor-02.go")
-		snapshotFile := path.Join(curDir, "_snapshot_/test-processor-02.snapshot")
+		snapshotFile := path.Join(
+			curDir,
+			"_snapshot_/test-processor-02.snapshot",
+		)
 		processor := NewProcessor(
 			freeGroups,
 			2,
@@ -460,7 +469,8 @@ func TestProcessor_BuildCache(t *testing.T) {
 		)
 		defer processor.Close()
 		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
-		assert(base.ReadFromFile(tmpFile)).Equal(base.ReadFromFile(snapshotFile))
+		assert(base.ReadFromFile(tmpFile)).
+			Equal(base.ReadFromFile(snapshotFile))
 	})
 
 	t.Run("processor is closed", func(t *testing.T) {
@@ -494,17 +504,21 @@ func TestProcessor_onUpdateConfig(t *testing.T) {
 			time.Second,
 			[]*ServiceMeta{{
 				name: "test1",
-				service: NewService().On("$onUpdateConfig", func(rt Runtime) Return {
-					waitCH <- true
-					return rt.Reply(true)
-				}),
+				service: NewService().On(
+					"$onUpdateConfig", func(rt Runtime) Return {
+						waitCH <- true
+						return rt.Reply(true)
+					},
+				),
 				fileLine: "",
 			}, {
 				name: "test2",
-				service: NewService().On("$onUpdateConfig", func(rt Runtime) Return {
-					waitCH <- true
-					return rt.Reply(true)
-				}),
+				service: NewService().On(
+					"$onUpdateConfig", func(rt Runtime) Return {
+						waitCH <- true
+						return rt.Reply(true)
+					},
+				),
 				fileLine: "",
 			}},
 			NewTestStreamReceiver(),
@@ -550,7 +564,8 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 		// for default onMount
 		assert(<-waitCH).Equal(true)
 		assert(processor.invokeSystemAction("onMount", "#.test")).IsTrue()
-		assert(processor.invokeSystemAction("onUpdateConfig", "#.test")).IsTrue()
+		assert(processor.invokeSystemAction("onUpdateConfig", "#.test")).
+			IsTrue()
 		assert(processor.invokeSystemAction("onUnmount", "#.test")).IsTrue()
 		assert(<-waitCH).Equal(true)
 		assert(<-waitCH).Equal(true)
@@ -766,10 +781,9 @@ func TestProcessor_mountAction(t *testing.T) {
 			},
 			fileLine: "nodeDebug",
 		}})).Equal(
-			base.ErrActionHandler.
-				AddDebug("handler must be func(rt rpc.Runtime, ...) rpc.Return").
-				AddDebug("actionDebug").
-				Standardize(),
+			base.ErrActionHandler.AddDebug(
+				"handler must be func(rt rpc.Runtime, ...) rpc.Return",
+			).AddDebug("actionDebug").Standardize(),
 		)
 	})
 

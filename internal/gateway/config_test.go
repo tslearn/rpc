@@ -1,9 +1,10 @@
 package gateway
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func TestGetDefaultConfig(t *testing.T) {

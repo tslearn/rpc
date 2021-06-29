@@ -8,9 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/rpccloud/rpc/internal/rpc"
-
 	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 // SyncConn ...
@@ -214,6 +213,7 @@ func (p *StreamConn) OnError(err *base.Error) {
 	p.receiver.OnConnError(p, err)
 }
 
+// OnReceiveStream ...
 func (p *StreamConn) OnReceiveStream(stream *rpc.Stream) {
 	atomic.StoreInt64(&p.activeTimeNS, base.TimeNow().UnixNano())
 	if p.isDebug {

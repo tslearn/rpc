@@ -43,7 +43,9 @@ func TestDefineError(t *testing.T) {
 			errorDefineMutex.Unlock()
 		}()
 		assert(RunWithCatchPanic(func() {
-			_ = defineError(ErrorTypeAction, num, ErrorLevelWarn, "msg", "source")
+			_ = defineError(
+				ErrorTypeAction, num, ErrorLevelWarn, "msg", "source",
+			)
 		})).Equal("Error redefined :\n>>> source\n>>> source\n")
 	})
 
@@ -151,7 +153,8 @@ func TestDefineSecurityError(t *testing.T) {
 
 	t.Run("test", func(t *testing.T) {
 		assert := NewAssert(t)
-		v1, s1 := DefineSecurityError(num, ErrorLevelWarn, "msg"), GetFileLine(0)
+		getFL := GetFileLine
+		v1, s1 := DefineSecurityError(num, ErrorLevelWarn, "msg"), getFL(0)
 		defer func() {
 			errorDefineMutex.Lock()
 			delete(errorDefineMap, num)

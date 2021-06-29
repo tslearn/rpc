@@ -3,8 +3,6 @@ package adapter
 import (
 	"crypto/tls"
 	"errors"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"io"
 	"net"
 	"path"
@@ -13,6 +11,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 type testNetConn struct {
@@ -307,7 +308,8 @@ func TestAdapter(t *testing.T) {
 
 	t.Run("test basic", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(base.ErrNetClosingSuffix).Equal("use of closed network connection")
+		assert(base.ErrNetClosingSuffix).
+			Equal("use of closed network connection")
 
 		// check ErrNetClosingSuffix on all platform
 		waitCH := make(chan bool)

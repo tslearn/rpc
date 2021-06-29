@@ -1,10 +1,11 @@
 package adapter
 
 import (
-	"github.com/gobwas/ws/wsutil"
 	"io"
 	"net"
 	"time"
+
+	"github.com/gobwas/ws/wsutil"
 )
 
 type syncWSConn struct {

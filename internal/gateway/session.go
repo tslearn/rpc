@@ -136,7 +136,8 @@ func (p *Session) OutStream(stream *rpc.Stream) {
 			fallthrough
 		case rpc.StreamKindRPCResponseError:
 			// record stream
-			channel := &p.channels[stream.GetCallbackID()%uint64(len(p.channels))]
+			callbackID := stream.GetCallbackID()
+			channel := &p.channels[callbackID%uint64(len(p.channels))]
 			if channel.Out(stream) && p.conn != nil {
 				p.conn.WriteStreamAndRelease(stream.Clone())
 			} else {

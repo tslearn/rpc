@@ -2,10 +2,11 @@ package client
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 func TestSendItem_NewSendItem(t *testing.T) {

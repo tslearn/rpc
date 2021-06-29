@@ -1,9 +1,10 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 var testRuntime = Runtime{id: 0, thread: testThread}
@@ -239,7 +240,8 @@ func TestRuntime_Call(t *testing.T) {
 						processor.maxCallDepth = oldMaxCallDepth
 					}()
 
-					rtValue, s1 := rt.Call("#.test:SayHello", "ts"), base.GetFileLine(0)
+					getFL := base.GetFileLine
+					rtValue, s1 := rt.Call("#.test:SayHello", "ts"), getFL(0)
 					source1 = rt.thread.GetActionNode().path + " " + s1
 					_, err := rtValue.ToString()
 					ret, s2 := rt.Reply(err), base.GetFileLine(0)

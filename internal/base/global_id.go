@@ -12,12 +12,14 @@ var (
 	fnNetListen     = net.Listen
 )
 
+// GlobalID ...
 type GlobalID struct {
 	listener net.Listener
 	port     uint16
 	mac      net.HardwareAddr
 }
 
+// NewGlobalID ...
 func NewGlobalID() *GlobalID {
 	port := uint16(0)
 	mac := []byte(nil)
@@ -41,8 +43,8 @@ func NewGlobalID() *GlobalID {
 		for _, inter := range interfaces {
 			interfaceAddrList, _ := inter.Addrs()
 			for _, address := range interfaceAddrList {
-				ipNet, isValidIpNet := address.(*net.IPNet)
-				if isValidIpNet && ipNet.IP.IsGlobalUnicast() {
+				ipNet, isValidIPNet := address.(*net.IPNet)
+				if isValidIPNet && ipNet.IP.IsGlobalUnicast() {
 					mac = inter.HardwareAddr
 					break
 				}
@@ -62,6 +64,7 @@ func NewGlobalID() *GlobalID {
 	}
 }
 
+// GetID ...
 func (p *GlobalID) GetID() uint64 {
 	if p.port > 0 && len(p.mac) == 6 {
 		buffer := make([]byte, 8)
@@ -73,6 +76,7 @@ func (p *GlobalID) GetID() uint64 {
 	return 0
 }
 
+// Close ...
 func (p *GlobalID) Close() {
 	if p.listener != nil {
 		_ = p.listener.Close()

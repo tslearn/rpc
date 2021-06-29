@@ -132,7 +132,8 @@ func BenchmarkRPC_map(b *testing.B) {
 			if rtMap.Size() != 2 {
 				panic("error")
 			}
-			if v, err := rtMap.Get("name").ToString(); err != nil || v != "kitty" {
+			if v, err := rtMap.Get("name").ToString(); err != nil ||
+				v != "kitty" {
 				panic("error")
 			}
 			if v, err := rtMap.Get("age").ToInt64(); err != nil || v != 12 {

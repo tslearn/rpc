@@ -1,9 +1,10 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"runtime"
 	"testing"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func TestRTArray(t *testing.T) {

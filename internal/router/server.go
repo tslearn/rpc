@@ -11,6 +11,7 @@ import (
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
+// Server ...
 type Server struct {
 	addr           string
 	tlsConfig      *tls.Config
@@ -22,6 +23,7 @@ type Server struct {
 	sync.Mutex
 }
 
+// NewServer ...
 func NewServer(
 	addr string,
 	tlsConfig *tls.Config,
