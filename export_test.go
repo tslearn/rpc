@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func TestNewService(t *testing.T) {
@@ -15,24 +16,14 @@ func TestNewService(t *testing.T) {
 func TestNewServer(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(NewServer()).IsNotNil()
+		assert(NewServer(nil)).IsNotNil()
 	})
 }
 
-func TestDialTLS(t *testing.T) {
+func TestNewClient(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		cert, _ := GetTLSClientConfig(true, nil)
-		v := DialTLS("ws", "127.0.0.1", cert)
-		defer v.Close()
-		assert(v).IsNotNil()
-	})
-}
-
-func TestDial(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
-		assert := base.NewAssert(t)
-		v := Dial("ws", "127.0.0.1")
+		v := NewClient("ws", "127.0.0.1", nil, 1500, 1500, nil)
 		defer v.Close()
 		assert(v).IsNotNil()
 	})

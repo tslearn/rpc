@@ -3,12 +3,13 @@ package router
 import (
 	"crypto/tls"
 	"encoding/binary"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 const (
@@ -89,7 +90,7 @@ type Channel struct {
 	needReset              uint8
 	conn                   net.Conn
 	streamCH               chan *rpc.Stream
-	streamHub              rpc.IStreamHub
+	streamReceiver         rpc.IStreamReceiver
 	sendPrepareSequence    uint64
 	sendConfirmSequence    uint64
 	sendBuffers            [numOfCacheBuffer][bufferSize]byte
@@ -105,17 +106,17 @@ func NewChannel(
 	index uint16,
 	connMeta *ConnectMeta,
 	streamCH chan *rpc.Stream,
-	streamHub rpc.IStreamHub,
+	streamReceiver rpc.IStreamReceiver,
 ) *Channel {
 	ret := &Channel{
 		needReset:              0,
 		conn:                   nil,
 		streamCH:               streamCH,
-		streamHub:              streamHub,
+		streamReceiver:         streamReceiver,
 		sendPrepareSequence:    0,
 		sendConfirmSequence:    0,
 		receiveSequence:        0,
-		receiveStreamGenerator: rpc.NewStreamGenerator(streamHub),
+		receiveStreamGenerator: rpc.NewStreamGenerator(streamReceiver),
 		closeCH:                make(chan bool),
 		orcManager:             base.NewORCManager(),
 	}
@@ -130,7 +131,7 @@ func NewChannel(
 				for isRunning() {
 					startNS := base.TimeNow().UnixNano()
 					if err := ret.runMasterThread(index, connMeta); err != nil {
-						streamHub.OnReceiveStream(
+						streamReceiver.OnReceiveStream(
 							rpc.MakeSystemErrorStream(err),
 						)
 					}
@@ -157,14 +158,14 @@ func (p *Channel) runMasterThread(
 	var e error
 	buffer := make([]byte, 32)
 
-	// dail
+	// dial
 	if connMeta.tlsConfig == nil {
 		conn, e = net.Dial("tcp", connMeta.addr)
 	} else {
 		conn, e = tls.Dial("tcp", connMeta.addr, connMeta.tlsConfig)
 	}
 
-	// deal dail error
+	// deal dial error
 	if e != nil {
 		return base.ErrRouterConnDial.AddDebug(e.Error())
 	}
@@ -280,7 +281,7 @@ func (p *Channel) RunWithConn(sendSequence uint64, conn net.Conn) {
 
 	go func() {
 		if err := p.runRead(conn, isRunning); err != nil {
-			p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+			p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 		}
 		atomic.StoreUint32(&running, 0)
 		_ = conn.Close()
@@ -289,7 +290,7 @@ func (p *Channel) RunWithConn(sendSequence uint64, conn net.Conn) {
 
 	go func() {
 		if err := p.runWrite(conn, isRunning, sendCH); err != nil {
-			p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+			p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 		}
 		atomic.StoreUint32(&running, 0)
 		_ = conn.Close()
@@ -383,9 +384,6 @@ func (p *Channel) runRead(conn net.Conn, isRunning func() bool) *base.Error {
 				return base.ErrRouterConnProtocol
 			}
 
-			// update receiveSequence
-			atomic.StoreUint64(&p.receiveSequence, rSendSequence)
-
 			// process receiveBuffer
 			err = p.receiveStreamGenerator.OnBytes(p.receiveBuffer[20:])
 			if err != nil {
@@ -393,7 +391,8 @@ func (p *Channel) runRead(conn net.Conn, isRunning func() bool) *base.Error {
 				return err
 			}
 
-			return base.ErrRouterConnProtocol
+			// update receiveSequence
+			atomic.StoreUint64(&p.receiveSequence, rSendSequence)
 		} else if channelAction == channelActionTimer {
 			rReceiveSequence = binary.LittleEndian.Uint64(p.receiveBuffer[4:])
 		} else {

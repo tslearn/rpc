@@ -75,7 +75,7 @@ type Processor struct {
 	readThreadPos     uint64
 	writeThreadPos    uint64
 	panicSubscription *base.PanicSubscription
-	streamHub         IStreamHub
+	streamReceiver    IStreamReceiver
 	closeCH           chan string
 	sync.Mutex
 }
@@ -89,24 +89,24 @@ func NewProcessor(
 	fnCache ActionCache,
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
-	streamHub IStreamHub,
+	streamReceiver IStreamReceiver,
 ) *Processor {
-	if streamHub == nil {
-		panic("streamHub is nil")
+	if streamReceiver == nil {
+		panic("streamReceiver is nil")
 	}
 
 	if numOfThreads <= 0 {
-		streamHub.OnReceiveStream(
+		streamReceiver.OnReceiveStream(
 			MakeSystemErrorStream(base.ErrNumOfThreadsIsWrong),
 		)
 		return nil
 	} else if maxNodeDepth <= 0 {
-		streamHub.OnReceiveStream(
+		streamReceiver.OnReceiveStream(
 			MakeSystemErrorStream(base.ErrMaxNodeDepthIsWrong),
 		)
 		return nil
 	} else if maxCallDepth <= 0 {
-		streamHub.OnReceiveStream(
+		streamReceiver.OnReceiveStream(
 			MakeSystemErrorStream(base.ErrProcessorMaxCallDepthIsWrong),
 		)
 		return nil
@@ -122,7 +122,7 @@ func NewProcessor(
 			freeCHArray:    nil,
 			readThreadPos:  0,
 			writeThreadPos: 0,
-			streamHub:      streamHub,
+			streamReceiver: streamReceiver,
 			closeCH:        make(chan string),
 		}
 
@@ -131,7 +131,7 @@ func NewProcessor(
 			defer func() {
 				_ = recover()
 			}()
-			streamHub.OnReceiveStream(MakeSystemErrorStream(err))
+			streamReceiver.OnReceiveStream(MakeSystemErrorStream(err))
 		})
 
 		// init system thread
@@ -152,7 +152,7 @@ func NewProcessor(
 
 		for _, meta := range mountServices {
 			if err := ret.mountNode(rootName, meta, fnCache); err != nil {
-				streamHub.OnReceiveStream(MakeSystemErrorStream(err))
+				streamReceiver.OnReceiveStream(MakeSystemErrorStream(err))
 				return nil
 			}
 		}
@@ -246,7 +246,7 @@ func (p *Processor) Close() bool {
 		}
 
 		if len(errList) > 0 {
-			p.streamHub.OnReceiveStream(MakeSystemErrorStream(
+			p.streamReceiver.OnReceiveStream(MakeSystemErrorStream(
 				base.ErrActionCloseTimeout.AddDebug(base.ConcatString(
 					"the following actions can not close: \n\t",
 					strings.Join(errList, "\n\t"),

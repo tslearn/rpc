@@ -9,18 +9,18 @@ import (
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-func TestNewLogToScreenErrorStreamHub(t *testing.T) {
+func TestNewLogToScreenErrorStreamReceiver(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(NewLogToScreenErrorStreamHub("Server")).
-			Equal(&LogToScreenErrorStreamHub{prefix: "Server"})
+		assert(NewLogToScreenErrorStreamReceiver("Server")).
+			Equal(&LogToScreenErrorStreamReceiver{prefix: "Server"})
 	})
 }
 
-func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
+func TestLogToScreenErrorStreamReceiver_OnReceiveStream(t *testing.T) {
 	t.Run("test ok gatewayID == 0 && sessionID == 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewLogToScreenErrorStreamHub("Server")
+		v := NewLogToScreenErrorStreamReceiver("Server")
 		stream := NewStream()
 		stream.SetKind(StreamKindRPCResponseError)
 		stream.SetGatewayID(0)
@@ -38,7 +38,7 @@ func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
 
 	t.Run("test ok gatewayID > 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewLogToScreenErrorStreamHub("Server")
+		v := NewLogToScreenErrorStreamReceiver("Server")
 		stream := NewStream()
 		stream.SetKind(StreamKindRPCResponseError)
 		stream.SetGatewayID(1234)
@@ -55,54 +55,54 @@ func TestLogToScreenErrorStreamHub_OnReceiveStream(t *testing.T) {
 	})
 }
 
-func TestNewTestStreamHub(t *testing.T) {
+func TestNewTestStreamReceiver(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		assert(v).IsNotNil()
 		assert(cap(v.streamCH)).Equal(10240)
 		assert(len(v.streamCH)).Equal(0)
 	})
 }
 
-func TestTestStreamHub_OnReceiveStream(t *testing.T) {
+func TestTestStreamReceiver_OnReceiveStream(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		v.OnReceiveStream(NewStream())
 		assert(cap(v.streamCH)).Equal(10240)
 		assert(len(v.streamCH)).Equal(1)
 	})
 }
 
-func TestTestStreamHub_GetStream(t *testing.T) {
+func TestTestStreamReceiver_GetStream(t *testing.T) {
 	t.Run("get nil stream", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		assert(v.GetStream()).IsNil()
 	})
 
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		v.OnReceiveStream(NewStream())
 		assert(v.GetStream()).IsNotNil()
 	})
 }
 
-func TestTestStreamHub_WaitStream(t *testing.T) {
+func TestTestStreamReceiver_WaitStream(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		v.streamCH <- NewStream()
 		assert(v.WaitStream()).IsNotNil()
 	})
 }
 
-func TestTestStreamHub_TotalStreams(t *testing.T) {
+func TestTestStreamReceiver_TotalStreams(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		v := NewTestStreamHub()
+		v := NewTestStreamReceiver()
 		assert(v.TotalStreams()).Equal(0)
 		v.streamCH <- NewStream()
 		assert(v.TotalStreams()).Equal(1)
@@ -490,8 +490,8 @@ func TestParseResponseStream(t *testing.T) {
 }
 
 type testProcessorHelper struct {
-	streamHub *TestStreamHub
-	processor *Processor
+	streamReceiver *TestStreamReceiver
+	processor      *Processor
 }
 
 func newTestProcessorHelper(
@@ -503,7 +503,7 @@ func newTestProcessorHelper(
 	closeTimeout time.Duration,
 	mountServices []*ServiceMeta,
 ) *testProcessorHelper {
-	streamHub := NewTestStreamHub()
+	streamReceiver := NewTestStreamReceiver()
 	processor := NewProcessor(
 		numOfThreads,
 		maxNodeDepth,
@@ -512,16 +512,16 @@ func newTestProcessorHelper(
 		fnCache,
 		closeTimeout,
 		mountServices,
-		streamHub,
+		streamReceiver,
 	)
 	return &testProcessorHelper{
-		streamHub: streamHub,
-		processor: processor,
+		streamReceiver: streamReceiver,
+		processor:      processor,
 	}
 }
 
 func (p *testProcessorHelper) GetStream() *Stream {
-	return p.streamHub.GetStream()
+	return p.streamReceiver.GetStream()
 }
 
 func (p *testProcessorHelper) GetProcessor() *Processor {
@@ -566,7 +566,7 @@ func testWithProcessorAndRuntime(
 	stream.SetGatewayID(1234)
 	stream.SetSessionID(5678)
 	helper.GetProcessor().PutStream(stream)
-	return <-helper.streamHub.streamCH
+	return <-helper.streamReceiver.streamCH
 }
 
 func testReplyWithSource(
@@ -596,12 +596,12 @@ func testReplyWithSource(
 	if len(args) == 1 {
 		if s, ok := args[0].(*Stream); ok {
 			helper.GetProcessor().PutStream(s)
-			return <-helper.streamHub.streamCH, source
+			return <-helper.streamReceiver.streamCH, source
 		}
 	}
 	stream, _ := MakeInternalRequestStream(debug, 0, "#.test:Eval", "", args...)
 	helper.GetProcessor().PutStream(stream)
-	return <-helper.streamHub.streamCH, source
+	return <-helper.streamReceiver.streamCH, source
 }
 
 func testReply(

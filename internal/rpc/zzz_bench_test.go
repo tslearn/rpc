@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-type blackHoleStreamHub struct {
+type blackHoleStreamReceiver struct {
 }
 
-func (p *blackHoleStreamHub) OnReceiveStream(stream *Stream) {
+func (p *blackHoleStreamReceiver) OnReceiveStream(stream *Stream) {
 	stream.Release()
 }
 
@@ -41,7 +41,7 @@ func testWithRPCBenchmark(
 				fileLine: "",
 				data:     serviceData,
 			}},
-			&blackHoleStreamHub{},
+			&blackHoleStreamReceiver{},
 		); processor != nil {
 			b.ResetTimer()
 			b.ReportAllocs()

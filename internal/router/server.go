@@ -2,34 +2,39 @@ package router
 
 import (
 	"crypto/tls"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 type Server struct {
-	addr       string
-	tlsConfig  *tls.Config
-	orcManager *base.ORCManager
-	errorHub   rpc.IStreamHub
-	id         *base.GlobalID
-	router     *Router
-	ln         net.Listener
+	addr           string
+	tlsConfig      *tls.Config
+	orcManager     *base.ORCManager
+	streamReceiver rpc.IStreamReceiver
+	id             *base.GlobalID
+	router         *Router
+	ln             net.Listener
 	sync.Mutex
 }
 
-func NewServer(addr string, tlsConfig *tls.Config, errorHub rpc.IStreamHub) *Server {
+func NewServer(
+	addr string,
+	tlsConfig *tls.Config,
+	streamReceiver rpc.IStreamReceiver,
+) *Server {
 	ret := &Server{
-		addr:       addr,
-		tlsConfig:  tlsConfig,
-		orcManager: base.NewORCManager(),
-		errorHub:   errorHub,
-		id:         nil,
-		router:     NewRouter(errorHub),
-		ln:         nil,
+		addr:           addr,
+		tlsConfig:      tlsConfig,
+		orcManager:     base.NewORCManager(),
+		streamReceiver: streamReceiver,
+		id:             nil,
+		router:         NewRouter(streamReceiver),
+		ln:             nil,
 	}
 
 	return ret
@@ -45,7 +50,7 @@ func (p *Server) Open() bool {
 			p.ln, e = tls.Listen("tcp", p.addr, p.tlsConfig)
 		}
 		if e != nil {
-			p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(
 				base.ErrRouterConnListen.AddDebug(e.Error()),
 			))
 			return false
@@ -65,7 +70,7 @@ func (p *Server) Run() bool {
 					strings.HasSuffix(e.Error(), base.ErrNetClosingSuffix)
 
 				if !isCloseErr {
-					p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+					p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(
 						base.ErrRouterConnConnect.AddDebug(e.Error()),
 					))
 
@@ -86,7 +91,7 @@ func (p *Server) Run() bool {
 
 func (p *Server) onConnect(conn net.Conn) {
 	if err := p.router.AddConn(conn); err != nil {
-		p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+		p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 	}
 }
 
@@ -94,7 +99,7 @@ func (p *Server) onConnect(conn net.Conn) {
 func (p *Server) Close() bool {
 	return p.orcManager.Close(func() bool {
 		if e := p.ln.Close(); e != nil {
-			p.errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+			p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(
 				base.ErrRouterConnClose.AddDebug(e.Error()),
 			))
 		}

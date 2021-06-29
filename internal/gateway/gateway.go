@@ -23,7 +23,7 @@ type GateWay struct {
 	sessionSeed    uint64
 	totalSessions  int64
 	sessionMapList []*SessionPool
-	streamHub      rpc.IStreamHub
+	streamReceiver rpc.IStreamReceiver
 	closeCH        chan bool
 	config         *Config
 	adapters       []*adapter.Adapter
@@ -35,10 +35,10 @@ type GateWay struct {
 func NewGateWay(
 	id uint64,
 	config *Config,
-	streamHub rpc.IStreamHub,
+	streamReceiver rpc.IStreamReceiver,
 ) *GateWay {
-	if streamHub == nil {
-		panic("streamHub is nil")
+	if streamReceiver == nil {
+		panic("streamReceiver is nil")
 	}
 
 	ret := &GateWay{
@@ -47,7 +47,7 @@ func NewGateWay(
 		sessionSeed:    0,
 		totalSessions:  0,
 		sessionMapList: make([]*SessionPool, sessionManagerVectorSize),
-		streamHub:      streamHub,
+		streamReceiver: streamReceiver,
 		closeCH:        make(chan bool, 1),
 		config:         config,
 		adapters:       make([]*adapter.Adapter, 0),
@@ -108,7 +108,7 @@ func (p *GateWay) Listen(
 			p,
 		))
 	} else {
-		p.streamHub.OnReceiveStream(
+		p.streamReceiver.OnReceiveStream(
 			rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 		)
 	}
@@ -136,7 +136,7 @@ func (p *GateWay) ListenWithDebug(
 			p,
 		))
 	} else {
-		p.streamHub.OnReceiveStream(
+		p.streamReceiver.OnReceiveStream(
 			rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 		)
 	}
@@ -151,12 +151,12 @@ func (p *GateWay) Open() {
 		defer p.Unlock()
 
 		if p.isRunning {
-			p.streamHub.OnReceiveStream(
+			p.streamReceiver.OnReceiveStream(
 				rpc.MakeSystemErrorStream(base.ErrGatewayAlreadyRunning),
 			)
 			return false
 		} else if len(p.adapters) <= 0 {
-			p.streamHub.OnReceiveStream(
+			p.streamReceiver.OnReceiveStream(
 				rpc.MakeSystemErrorStream(base.ErrGatewayNoAvailableAdapter),
 			)
 			return false
@@ -221,7 +221,7 @@ func (p *GateWay) OutStream(stream *rpc.Stream) {
 		errStream := rpc.MakeSystemErrorStream(base.ErrGateWaySessionNotFound)
 		errStream.SetGatewayID(p.id)
 		errStream.SetSessionID(stream.GetSessionID())
-		p.streamHub.OnReceiveStream(errStream)
+		p.streamReceiver.OnReceiveStream(errStream)
 		stream.Release()
 	}
 }
@@ -242,7 +242,7 @@ func (p *GateWay) OnConnReadStream(
 
 // OnConnError ...
 func (p *GateWay) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	p.streamHub.OnReceiveStream(rpc.MakeSystemErrorStream(err))
+	p.streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(err))
 
 	if streamConn != nil {
 		streamConn.Close()

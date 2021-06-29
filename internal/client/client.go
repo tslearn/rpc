@@ -11,16 +11,6 @@ import (
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
-// Dial ...
-func Dial(network string, addr string) *Client {
-	return newClient(network, addr, nil, 1500, 1500)
-}
-
-// DialTLS ...
-func DialTLS(network string, addr string, tlsConfig *tls.Config) *Client {
-	return newClient(network, addr, tlsConfig, 1500, 1500)
-}
-
 // Config ...
 type Config struct {
 	numOfChannels    int
@@ -57,17 +47,19 @@ type Client struct {
 	channels        []Channel
 	lastPingTimeNS  int64
 	orcManager      *base.ORCManager
-	errorHub        rpc.IStreamHub
+	onError         func(err *base.Error)
 	subscriptionMap map[string][]*Subscription
 	sync.Mutex
 }
 
-func newClient(
+// NewClient ...
+func NewClient(
 	network string,
 	addr string,
 	tlsConfig *tls.Config,
 	rBufSize int,
 	wBufSize int,
+	onError func(err *base.Error),
 ) *Client {
 	ret := &Client{
 		config:          &Config{},
@@ -80,7 +72,7 @@ func newClient(
 		lastPingTimeNS:  0,
 		orcManager:      base.NewORCManager(),
 		subscriptionMap: make(map[string][]*Subscription),
-		errorHub:        rpc.NewLogToScreenErrorStreamHub("Client"),
+		onError:         onError,
 	}
 
 	// init adapter
@@ -114,13 +106,6 @@ func newClient(
 	}()
 
 	return ret
-}
-
-// SetErrorHub ...
-func (p *Client) SetErrorHub(errorHub rpc.IStreamHub) {
-	p.Lock()
-	defer p.Unlock()
-	p.errorHub = errorHub
 }
 
 func (p *Client) initChannel(size int) {
@@ -435,10 +420,9 @@ func (p *Client) OnConnReadStream(
 
 // OnConnError ...
 func (p *Client) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
-	errStream := rpc.MakeSystemErrorStream(err)
-	errStream.SetSessionID(0)
-	errStream.SetGatewayID(0)
-	p.errorHub.OnReceiveStream(errStream)
+	if p.onError != nil {
+		p.onError(err)
+	}
 
 	if streamConn != nil {
 		streamConn.Close()

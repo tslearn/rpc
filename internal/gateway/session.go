@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/adapter"
-
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 )
@@ -183,7 +182,7 @@ func (p *Session) OnConnReadStream(
 				stream.SetGatewayID(p.gateway.id)
 				stream.SetSessionID(p.id)
 				// who receives the stream is responsible for releasing it
-				p.gateway.streamHub.OnReceiveStream(stream)
+				p.gateway.streamReceiver.OnReceiveStream(stream)
 			} else if backStream != nil {
 				// do not release the backStream, so we need to clone it
 				streamConn.WriteStreamAndRelease(backStream.Clone())
@@ -207,7 +206,7 @@ func (p *Session) OnConnError(streamConn *adapter.StreamConn, err *base.Error) {
 	errStream := rpc.MakeSystemErrorStream(err)
 	errStream.SetSessionID(p.id)
 	errStream.SetGatewayID(p.gateway.id)
-	p.gateway.streamHub.OnReceiveStream(errStream)
+	p.gateway.streamReceiver.OnReceiveStream(errStream)
 
 	if streamConn != nil {
 		streamConn.Close()

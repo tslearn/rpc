@@ -1,23 +1,21 @@
 package router
 
 import (
-	"github.com/rpccloud/rpc/internal/rpc"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 func TestDebug(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
-		hub := rpc.NewTestStreamHub()
-
-		server := NewServer("127.0.0.1:8080", nil, hub)
+		server := NewServer("127.0.0.1:8080", nil, rpc.NewTestStreamReceiver())
 		go func() {
 			server.Open()
 			server.Run()
 		}()
 
-		clientHub := rpc.NewLogToScreenErrorStreamHub("router-client")
-		client, _ := NewClient("127.0.0.1:8080", nil, clientHub)
+		client, _ := NewClient("127.0.0.1:8080", nil, rpc.NewTestStreamReceiver())
 		//go func() {
 		//	client.Open()
 		//	client.Run()

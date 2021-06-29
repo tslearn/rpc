@@ -424,7 +424,7 @@ func (p *rpcThread) Eval(inStream *Stream, needCallback bool) Return {
 		inStream.SetReadPosToBodyStart()
 
 		if needCallback {
-			p.processor.streamHub.OnReceiveStream(inStream)
+			p.processor.streamReceiver.OnReceiveStream(inStream)
 		}
 	}()
 

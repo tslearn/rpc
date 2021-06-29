@@ -28,12 +28,14 @@ const (
 type ErrorLevel uint8
 
 const (
+	// ErrorLevelInfo ...
+	ErrorLevelInfo = ErrorLevel(1 << 0)
 	// ErrorLevelWarn ...
-	ErrorLevelWarn = ErrorLevel(1)
+	ErrorLevelWarn = ErrorLevel(1 << 1)
 	// ErrorLevelError ...
-	ErrorLevelError = ErrorLevel(2)
+	ErrorLevelError = ErrorLevel(1 << 2)
 	// ErrorLevelFatal ...
-	ErrorLevelFatal = ErrorLevel(3)
+	ErrorLevelFatal = ErrorLevel(1 << 3)
 )
 
 // ErrorIndex ...

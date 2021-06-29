@@ -36,12 +36,16 @@ type Server struct {
 	actionCache      rpc.ActionCache
 	closeTimeout     time.Duration
 	mountServices    []*rpc.ServiceMeta
-	logHub           rpc.IStreamHub
+	logReceiver      rpc.IStreamReceiver
 	sync.Mutex
 }
 
 // NewServer ...
-func NewServer() *Server {
+func NewServer(logReceiver rpc.IStreamReceiver) *Server {
+	if logReceiver == nil {
+		logReceiver = rpc.NewLogToScreenErrorStreamReceiver("Server")
+	}
+
 	ret := &Server{
 		isRunning:        false,
 		processor:        nil,
@@ -53,7 +57,7 @@ func NewServer() *Server {
 		actionCache:      nil,
 		closeTimeout:     defaultCloseTimeout,
 		mountServices:    make([]*rpc.ServiceMeta, 0),
-		logHub:           rpc.NewLogToScreenErrorStreamHub("Server"),
+		logReceiver:      logReceiver,
 	}
 
 	if ret.numOfThreads > defaultMaxNumOfThreads {
@@ -145,8 +149,8 @@ func (p *Server) SetActionCache(actionCache rpc.ActionCache) *Server {
 	return p
 }
 
-// SetLogHub ...
-func (p *Server) SetLogHub(logHub rpc.IStreamHub) *Server {
+// SetLogReceiver ...
+func (p *Server) SetLogReceiver(logReceiver rpc.IStreamReceiver) *Server {
 	p.Lock()
 	defer p.Unlock()
 
@@ -155,7 +159,7 @@ func (p *Server) SetLogHub(logHub rpc.IStreamHub) *Server {
 			base.ErrServerAlreadyRunning.AddDebug(base.GetFileLine(1)),
 		))
 	} else {
-		p.logHub = logHub
+		p.logReceiver = logReceiver
 	}
 
 	return p
@@ -202,7 +206,7 @@ func (p *Server) BuildReplyCache() *Server {
 		nil,
 		time.Second,
 		p.mountServices,
-		rpc.NewTestStreamHub(),
+		rpc.NewTestStreamReceiver(),
 	)
 	defer processor.Close()
 
@@ -230,7 +234,7 @@ func (p *Server) OnReceiveStream(stream *rpc.Stream) {
 			p.gateway.OutStream(stream)
 		default:
 			if stream.GetKind() == rpc.StreamKindSystemErrorReport {
-				p.logHub.OnReceiveStream(stream)
+				p.logReceiver.OnReceiveStream(stream)
 			} else {
 				stream.Release()
 			}

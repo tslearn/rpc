@@ -1,4 +1,4 @@
-// Package rpc provides the necessary structs and functions required to use rpc
+// Package rpc provides the necessary struct and functions required to use rpc
 // service.
 //
 // The full document is located at https://github.com/rpccloud/rpc/blob/master/doc/rpc/index.md
@@ -6,6 +6,7 @@ package rpc
 
 import (
 	"crypto/tls"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/client"
 	"github.com/rpccloud/rpc/internal/rpc"
@@ -74,22 +75,29 @@ func NewService() *Service {
 // Server ...
 type Server = server.Server
 
+// IStreamReceiver ...
+type IStreamReceiver = rpc.IStreamReceiver
+
 // NewServer ...
-func NewServer() *Server {
-	return server.NewServer()
+func NewServer(logReceiver IStreamReceiver) *Server {
+	return server.NewServer(logReceiver)
 }
 
 // Client ...
 type Client = client.Client
 
-// Dial ...
-func Dial(network string, addr string) *Client {
-	return client.Dial(network, addr)
-}
-
-// DialTLS ...
-func DialTLS(network string, addr string, tlsConfig *tls.Config) *Client {
-	return client.DialTLS(network, addr, tlsConfig)
+// NewClient ...
+func NewClient(
+	network string,
+	addr string,
+	tlsConfig *tls.Config,
+	rBufSize int,
+	wBufSize int,
+	onError func(err *base.Error),
+) *Client {
+	return client.NewClient(
+		network, addr, tlsConfig, rBufSize, wBufSize, onError,
+	)
 }
 
 // GetTLSServerConfig ...

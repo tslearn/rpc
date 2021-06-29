@@ -2,28 +2,29 @@ package router
 
 import (
 	"encoding/binary"
-	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/rpc"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
+	"github.com/rpccloud/rpc/internal/rpc"
 )
 
 type Router struct {
-	errorHub rpc.IStreamHub
-	slotMap  map[uint64]*Slot
+	streamReceiver rpc.IStreamReceiver
+	slotMap        map[uint64]*Slot
 	sync.Mutex
 }
 
-func NewRouter(errorHub rpc.IStreamHub) *Router {
+func NewRouter(streamReceiver rpc.IStreamReceiver) *Router {
 	return &Router{
-		errorHub: errorHub,
-		slotMap:  make(map[uint64]*Slot),
+		streamReceiver: streamReceiver,
+		slotMap:        make(map[uint64]*Slot),
 	}
 }
 
 func (p *Router) OnReceiveStream(s *rpc.Stream) {
-	p.errorHub.OnReceiveStream(s)
+	p.streamReceiver.OnReceiveStream(s)
 }
 
 func (p *Router) AddConn(conn net.Conn) *base.Error {

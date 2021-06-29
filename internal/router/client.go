@@ -2,6 +2,7 @@ package router
 
 import (
 	"crypto/tls"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
 )
@@ -12,18 +13,21 @@ type Client struct {
 	tlsConfig  *tls.Config
 	slot       *Slot
 	orcManager *base.ORCManager
-	errorHub   rpc.IStreamHub
 }
 
 func NewClient(
 	addr string,
 	tlsConfig *tls.Config,
-	errorHub rpc.IStreamHub,
+	streamReceiver rpc.IStreamReceiver,
 ) (*Client, *base.Error) {
+	if streamReceiver == nil {
+		panic("streamReceiver is nil")
+	}
+
 	id := base.NewGlobalID()
 
 	if id == nil {
-		errorHub.OnReceiveStream(rpc.MakeSystemErrorStream(
+		streamReceiver.OnReceiveStream(rpc.MakeSystemErrorStream(
 			base.ErrRouterIDInvalid,
 		))
 		return nil, base.ErrRouterIDInvalid
@@ -37,9 +41,8 @@ func NewClient(
 			addr:      addr,
 			tlsConfig: tlsConfig,
 			id:        id,
-		}, errorHub),
+		}, streamReceiver),
 		orcManager: base.NewORCManager(),
-		errorHub:   errorHub,
 	}
 
 	ret.orcManager.Open(func() bool {

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
 	"os"
 	"path"
 	"reflect"
@@ -10,6 +9,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 		nil,
 		5*time.Second,
 		nil,
-		NewTestStreamHub(),
+		NewTestStreamReceiver(),
 	)
 )
 
@@ -30,7 +31,7 @@ func init() {
 }
 
 func testProcessorMountError(services []*ServiceMeta) *base.Error {
-	streamHub := NewTestStreamHub()
+	streamReceiver := NewTestStreamReceiver()
 	NewProcessor(
 		freeGroups,
 		2,
@@ -39,10 +40,10 @@ func testProcessorMountError(services []*ServiceMeta) *base.Error {
 		nil,
 		time.Second,
 		services,
-		streamHub,
+		streamReceiver,
 	)
 
-	if stream := streamHub.GetStream(); stream != nil {
+	if stream := streamReceiver.GetStream(); stream != nil {
 		_, err := ParseResponseStream(stream)
 		return err
 	}
@@ -112,53 +113,53 @@ func TestProcessor(t *testing.T) {
 }
 
 func TestNewProcessor(t *testing.T) {
-	t.Run("streamHub is nil", func(t *testing.T) {
+	t.Run("streamReceiver is nil", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(base.RunWithCatchPanic(func() {
 			NewProcessor(
 				1024, 16, 16, 2048, nil, 5*time.Second, nil, nil,
 			)
-		})).Equal("streamHub is nil")
+		})).Equal("streamReceiver is nil")
 	})
 
 	t.Run("numOfThreads <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		assert(NewProcessor(
-			0, 16, 16, 2048, nil, 5*time.Second, nil, streamHub,
+			0, 16, 16, 2048, nil, 5*time.Second, nil, streamReceiver,
 		)).Equal(nil)
-		assert(ParseResponseStream(streamHub.GetStream())).
+		assert(ParseResponseStream(streamReceiver.GetStream())).
 			Equal(nil, base.ErrNumOfThreadsIsWrong)
 	})
 
 	t.Run("maxNodeDepth <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		assert(NewProcessor(
-			1024, 0, 16, 2048, nil, 5*time.Second, nil, streamHub,
+			1024, 0, 16, 2048, nil, 5*time.Second, nil, streamReceiver,
 		)).Equal(nil)
-		assert(ParseResponseStream(streamHub.GetStream())).
+		assert(ParseResponseStream(streamReceiver.GetStream())).
 			Equal(nil, base.ErrMaxNodeDepthIsWrong)
 	})
 
 	t.Run("maxCallDepth <= 0", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		assert(NewProcessor(
-			1024, 16, 0, 2048, nil, 5*time.Second, nil, streamHub,
+			1024, 16, 0, 2048, nil, 5*time.Second, nil, streamReceiver,
 		)).Equal(nil)
-		assert(ParseResponseStream(streamHub.GetStream())).
+		assert(ParseResponseStream(streamReceiver.GetStream())).
 			Equal(nil, base.ErrProcessorMaxCallDepthIsWrong)
 	})
 
 	t.Run("mount service error", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		assert(NewProcessor(
 			1024, 16, 16, 2048, nil, 5*time.Second,
-			[]*ServiceMeta{nil}, streamHub,
+			[]*ServiceMeta{nil}, streamReceiver,
 		)).Equal(nil)
-		assert(ParseResponseStream(streamHub.GetStream())).
+		assert(ParseResponseStream(streamReceiver.GetStream())).
 			Equal(nil, base.ErrProcessorNodeMetaIsNil)
 	})
 
@@ -173,7 +174,7 @@ func TestNewProcessor(t *testing.T) {
 				}),
 				fileLine: "",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		assert(processor).IsNotNil()
 		assert(len(processor.threads)).Equal(freeGroups)
@@ -182,7 +183,7 @@ func TestNewProcessor(t *testing.T) {
 
 	t.Run("test ok (subscribe error)", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		processor := NewProcessor(
 			1, 16, 16, 2048, nil, 5*time.Second,
 			[]*ServiceMeta{{
@@ -192,18 +193,17 @@ func TestNewProcessor(t *testing.T) {
 				}),
 				fileLine: "",
 			}},
-			streamHub,
+			streamReceiver,
 		)
 		assert(processor).IsNotNil()
 		base.PublishPanic(base.ErrStream)
-		assert(ParseResponseStream(streamHub.GetStream())).
+		assert(ParseResponseStream(streamReceiver.GetStream())).
 			Equal(nil, base.ErrStream)
 		_ = processor.Close()
 	})
 
 	t.Run("test ok (system action)", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		processor := (*Processor)(nil)
 		wait := make(chan string, 3)
 		service := NewService().
 			On("$onMount", func(rt Runtime) Return {
@@ -218,14 +218,14 @@ func TestNewProcessor(t *testing.T) {
 				wait <- "$onUnmount called"
 				return rt.Reply(true)
 			})
-		processor = NewProcessor(
+		processor := NewProcessor(
 			1, 16, 16, 2048, nil, 5*time.Second,
 			[]*ServiceMeta{{
 				name:     "test",
 				service:  service,
 				fileLine: "",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		assert(processor).IsNotNil()
 		assert(<-wait).Equal("$onMount called")
@@ -236,7 +236,7 @@ func TestNewProcessor(t *testing.T) {
 
 	t.Run("test ok (10K calls)", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		service := NewService().
 			On("Eval", func(rt Runtime) Return {
 				return rt.Reply(true)
@@ -248,7 +248,7 @@ func TestNewProcessor(t *testing.T) {
 				service:  service,
 				fileLine: "",
 			}},
-			streamHub,
+			streamReceiver,
 		)
 
 		go func() {
@@ -261,12 +261,13 @@ func TestNewProcessor(t *testing.T) {
 		}()
 
 		// wait for finish
-		for streamHub.TotalStreams() < 10000 {
+		for streamReceiver.TotalStreams() < 10000 {
 			time.Sleep(10 * time.Millisecond)
 		}
 
 		for i := 0; i < 10000; i++ {
-			assert(ParseResponseStream(streamHub.GetStream())).Equal(true, nil)
+			assert(ParseResponseStream(streamReceiver.GetStream())).
+				Equal(true, nil)
 		}
 
 		processor.Close()
@@ -284,7 +285,7 @@ func TestProcessor_Close(t *testing.T) {
 			nil,
 			5*time.Second,
 			nil,
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		processor.Close()
 		assert(processor.Close()).Equal(false)
@@ -297,7 +298,7 @@ func TestProcessor_Close(t *testing.T) {
 			mutex := &sync.Mutex{}
 			source := ""
 			waitCH := make(chan bool)
-			streamHub := NewTestStreamHub()
+			streamReceiver := NewTestStreamReceiver()
 			processor := NewProcessor(
 				1024,
 				2,
@@ -317,7 +318,7 @@ func TestProcessor_Close(t *testing.T) {
 					}),
 					fileLine: "",
 				}},
-				streamHub,
+				streamReceiver,
 			)
 
 			for i := 0; i < count; i++ {
@@ -332,7 +333,7 @@ func TestProcessor_Close(t *testing.T) {
 
 			mutex.Lock()
 			if count == 1 {
-				assert(ParseResponseStream(streamHub.GetStream())).Equal(
+				assert(ParseResponseStream(streamReceiver.GetStream())).Equal(
 					nil,
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (1 goroutine)",
@@ -340,7 +341,7 @@ func TestProcessor_Close(t *testing.T) {
 					)).Standardize(),
 				)
 			} else {
-				assert(ParseResponseStream(streamHub.GetStream())).Equal(
+				assert(ParseResponseStream(streamReceiver.GetStream())).Equal(
 					nil,
 					base.ErrActionCloseTimeout.AddDebug(fmt.Sprintf(
 						"the following actions can not close: \n\t%s (%d goroutines)",
@@ -367,7 +368,7 @@ func TestProcessor_PutStream(t *testing.T) {
 			nil,
 			time.Second,
 			nil,
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		processor.Close()
 
@@ -379,7 +380,7 @@ func TestProcessor_PutStream(t *testing.T) {
 	t.Run("test ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		testCount := 10240
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		processor := NewProcessor(
 			freeGroups*2,
 			2,
@@ -388,7 +389,7 @@ func TestProcessor_PutStream(t *testing.T) {
 			nil,
 			time.Second,
 			nil,
-			streamHub,
+			streamReceiver,
 		)
 
 		defer processor.Close()
@@ -397,7 +398,7 @@ func TestProcessor_PutStream(t *testing.T) {
 			assert(processor.PutStream(NewStream())).IsTrue()
 		}
 
-		for streamHub.TotalStreams() < testCount {
+		for streamReceiver.TotalStreams() < testCount {
 			time.Sleep(10 * time.Millisecond)
 		}
 
@@ -430,7 +431,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 			nil,
 			time.Second,
 			nil,
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		defer processor.Close()
 		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
@@ -455,7 +456,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 				}),
 				fileLine: "",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		defer processor.Close()
 		assert(processor.BuildCache("pkgName", tmpFile)).IsNil()
@@ -472,7 +473,7 @@ func TestProcessor_BuildCache(t *testing.T) {
 			nil,
 			time.Second,
 			nil,
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		processor.Close()
 		assert(processor.BuildCache("pkgName", "")).
@@ -506,7 +507,7 @@ func TestProcessor_onUpdateConfig(t *testing.T) {
 				}),
 				fileLine: "",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		processor.onUpdateConfig()
 		assert(<-waitCH).Equal(true)
@@ -543,7 +544,7 @@ func TestProcessor_invokeSystemAction(t *testing.T) {
 					}),
 				fileLine: "",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 
 		// for default onMount
@@ -677,7 +678,7 @@ func TestProcessor_mountNode(t *testing.T) {
 				fileLine: "dbg",
 				data:     Map{"name": "kitty", "age": 18},
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		assert(processor).IsNotNil()
 		assert(processor.servicesMap["#.user"]).Equal(&rpcServiceNode{
@@ -863,7 +864,7 @@ func TestProcessor_mountAction(t *testing.T) {
 				},
 				fileLine: "nodeDebug",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 		assert(processor).IsNotNil()
 		assert(processor.actionsMap["#.user:login"]).Equal(&rpcActionNode{
@@ -921,7 +922,7 @@ func TestProcessor_unmount(t *testing.T) {
 					}),
 				fileLine: "nodeDebug",
 			}},
-			NewTestStreamHub(),
+			NewTestStreamReceiver(),
 		)
 
 		processor.unmount("#.test1")

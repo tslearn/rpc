@@ -2,25 +2,26 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"log"
 	"math"
 	"reflect"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 type StreamGenerator struct {
-	hub          IStreamHub
-	streamPos    int
-	streamBuffer []byte
-	stream       *Stream
+	streamReceiver IStreamReceiver
+	streamPos      int
+	streamBuffer   []byte
+	stream         *Stream
 }
 
-func NewStreamGenerator(hub IStreamHub) *StreamGenerator {
+func NewStreamGenerator(streamReceiver IStreamReceiver) *StreamGenerator {
 	return &StreamGenerator{
-		hub:          hub,
-		streamPos:    0,
-		streamBuffer: make([]byte, StreamHeadSize),
-		stream:       nil,
+		streamReceiver: streamReceiver,
+		streamPos:      0,
+		streamBuffer:   make([]byte, StreamHeadSize),
+		stream:         nil,
 	}
 }
 
@@ -70,7 +71,7 @@ func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
 
 		if streamPos == streamLength {
 			if p.stream.CheckStream() {
-				p.hub.OnReceiveStream(p.stream)
+				p.streamReceiver.OnReceiveStream(p.stream)
 				p.stream = nil
 			} else {
 				return base.ErrStream
@@ -87,23 +88,25 @@ func (p *StreamGenerator) OnBytes(b []byte) *base.Error {
 	return nil
 }
 
-// IStreamHub ...
-type IStreamHub interface {
+// IStreamReceiver ...
+type IStreamReceiver interface {
 	OnReceiveStream(stream *Stream)
 }
 
-// LogToScreenErrorStreamHub ...
-type LogToScreenErrorStreamHub struct {
+// LogToScreenErrorStreamReceiver ...
+type LogToScreenErrorStreamReceiver struct {
 	prefix string
 }
 
-// NewLogToScreenErrorStreamHub ...
-func NewLogToScreenErrorStreamHub(prefix string) *LogToScreenErrorStreamHub {
-	return &LogToScreenErrorStreamHub{prefix: prefix}
+// NewLogToScreenErrorStreamReceiver ...
+func NewLogToScreenErrorStreamReceiver(
+	prefix string,
+) *LogToScreenErrorStreamReceiver {
+	return &LogToScreenErrorStreamReceiver{prefix: prefix}
 }
 
 // OnReceiveStream ...
-func (p *LogToScreenErrorStreamHub) OnReceiveStream(stream *Stream) {
+func (p *LogToScreenErrorStreamReceiver) OnReceiveStream(stream *Stream) {
 	if stream != nil {
 		switch stream.GetKind() {
 		case StreamKindRPCResponseError:
@@ -130,25 +133,25 @@ func (p *LogToScreenErrorStreamHub) OnReceiveStream(stream *Stream) {
 	}
 }
 
-// TestStreamHub ...
-type TestStreamHub struct {
+// TestStreamReceiver ...
+type TestStreamReceiver struct {
 	streamCH chan *Stream
 }
 
-// NewTestStreamHub ...
-func NewTestStreamHub() *TestStreamHub {
-	return &TestStreamHub{
+// NewTestStreamReceiver ...
+func NewTestStreamReceiver() *TestStreamReceiver {
+	return &TestStreamReceiver{
 		streamCH: make(chan *Stream, 10240),
 	}
 }
 
 // OnReceiveStream ...
-func (p *TestStreamHub) OnReceiveStream(stream *Stream) {
+func (p *TestStreamReceiver) OnReceiveStream(stream *Stream) {
 	p.streamCH <- stream
 }
 
 // GetStream ...
-func (p *TestStreamHub) GetStream() *Stream {
+func (p *TestStreamReceiver) GetStream() *Stream {
 	select {
 	case stream := <-p.streamCH:
 		return stream
@@ -158,12 +161,12 @@ func (p *TestStreamHub) GetStream() *Stream {
 }
 
 // WaitStream ...
-func (p *TestStreamHub) WaitStream() *Stream {
+func (p *TestStreamReceiver) WaitStream() *Stream {
 	return <-p.streamCH
 }
 
 // TotalStreams ...
-func (p *TestStreamHub) TotalStreams() int {
+func (p *TestStreamReceiver) TotalStreams() int {
 	return len(p.streamCH)
 }
 

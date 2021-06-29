@@ -2,9 +2,10 @@ package router
 
 import (
 	"encoding/binary"
+	"net"
+
 	"github.com/rpccloud/rpc/internal/base"
 	"github.com/rpccloud/rpc/internal/rpc"
-	"net"
 )
 
 const (
@@ -18,7 +19,7 @@ type Slot struct {
 	dataChannels []*Channel
 }
 
-func NewSlot(connectMeta *ConnectMeta, streamHub rpc.IStreamHub) *Slot {
+func NewSlot(connectMeta *ConnectMeta, streamReceiver rpc.IStreamReceiver) *Slot {
 	ret := &Slot{
 		dataCH:       make(chan *rpc.Stream, 8192),
 		dataChannels: make([]*Channel, numOfChannelPerSlot),
@@ -26,7 +27,7 @@ func NewSlot(connectMeta *ConnectMeta, streamHub rpc.IStreamHub) *Slot {
 
 	for i := 0; i < numOfChannelPerSlot; i++ {
 		ret.dataChannels[i] = NewChannel(
-			uint16(i), connectMeta, ret.dataCH, streamHub,
+			uint16(i), connectMeta, ret.dataCH, streamReceiver,
 		)
 	}
 

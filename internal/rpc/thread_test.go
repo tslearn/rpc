@@ -3,13 +3,14 @@ package rpc
 import (
 	"errors"
 	"fmt"
-	"github.com/rpccloud/rpc/internal/base"
 	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 var (
@@ -230,8 +231,8 @@ func TestNewThread(t *testing.T) {
 		assert := base.NewAssert(t)
 
 		for i := 0; i < 100; i++ {
-			streamHub := NewTestStreamHub()
-			testProcessor.streamHub = streamHub
+			streamReceiver := NewTestStreamReceiver()
+			testProcessor.streamReceiver = streamReceiver
 			chFinish := make(chan bool, 1)
 			v := newThread(
 				testProcessor,
@@ -242,7 +243,7 @@ func TestNewThread(t *testing.T) {
 				},
 			)
 			v.PutStream(NewStream())
-			assert(streamHub.WaitStream()).IsNotNil()
+			assert(streamReceiver.WaitStream()).IsNotNil()
 			assert(<-chFinish).Equal(true)
 			assert(v.sequence > 0).Equal(true)
 			assert(v.sequence % 2).Equal(uint64(0))
@@ -1277,9 +1278,9 @@ func TestRpcThread_Eval(t *testing.T) {
 	t.Run("onEvalFinish panic", func(t *testing.T) {
 		assert := base.NewAssert(t)
 
-		streamHub := NewTestStreamHub()
+		streamReceiver := NewTestStreamReceiver()
 		// make error
-		close(streamHub.streamCH)
+		close(streamReceiver.streamCH)
 
 		fnTest := func(dbg bool, fnCache ActionCache) {
 			processor := NewProcessor(
@@ -1297,7 +1298,7 @@ func TestRpcThread_Eval(t *testing.T) {
 					fileLine: "",
 					data:     nil,
 				}},
-				streamHub,
+				streamReceiver,
 			)
 			defer processor.Close()
 			sendStream, _ := MakeInternalRequestStream(

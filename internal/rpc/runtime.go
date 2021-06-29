@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"github.com/rpccloud/rpc/internal/base"
 	"math"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 // Runtime ...
@@ -61,7 +62,7 @@ func (p Runtime) Post(endpoint string, message string, value Any) error {
 			))
 		}
 
-		thread.processor.streamHub.OnReceiveStream(stream)
+		thread.processor.streamReceiver.OnReceiveStream(stream)
 		return nil
 	}
 
