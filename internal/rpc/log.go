@@ -1,22 +1,21 @@
 package rpc
 
-// import (
-// 	"fmt"
-// 	"os"
-// 	"sync"
+import (
+	"os"
+	"sync"
 
-// 	"github.com/rpccloud/rpc/internal/base"
-// )
+	"github.com/rpccloud/rpc/internal/base"
+)
 
-// // ErrorLog ...
-// type ErrorLog struct {
-// 	level         base.ErrorLevel
-// 	onLogToServer func(err *base.Error)
-// 	file          *os.File
-// 	closeCH       chan bool
-// 	errorCH       chan *base.Error
-// 	sync.Mutex
-// }
+// ErrorLogV ...
+type ErrorLog struct {
+	level         base.ErrorLevel
+	onLogToServer func(err *base.Error)
+	file          *os.File
+	closeCH       chan bool
+	errorCH       chan *base.Error
+	sync.Mutex
+}
 
 // func getErrorString(err *base.Error) string {
 // 	if err == nil {
