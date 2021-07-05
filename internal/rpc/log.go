@@ -104,11 +104,11 @@ func (p *ErrorLog) Log(
 	logStr := getErrorString(machineID, sessionID, err)
 
 	if p.isLogToScreen {
-		os.Stdout.WriteString(logStr)
+		_, _ = os.Stdout.WriteString(logStr)
 	}
 
 	if p.file != nil {
-		p.file.WriteString(logStr)
+		_, _ = p.file.WriteString(logStr)
 	}
 
 	return true

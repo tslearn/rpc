@@ -26,7 +26,7 @@ var getProcStat = func() string {
 func parseProcStat(line string) *cpuTimesStat {
 	if fields := strings.Fields(line); len(fields) < 5 {
 		return nil
-	} else if strings.HasPrefix(fields[0], "cpu") == false {
+	} else if !strings.HasPrefix(fields[0], "cpu") {
 		return nil
 	} else if user, err := strconv.ParseFloat(fields[1], 64); err != nil {
 		return nil
