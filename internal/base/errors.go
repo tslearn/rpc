@@ -223,6 +223,20 @@ var (
 		ErrorLevelFatal,
 		"processor is not running",
 	)
+
+	// ErrLogOpenFile ...
+	ErrLogOpenFile = DefineKernelError(
+		coreErrorSeg|9,
+		ErrorLevelError,
+		"",
+	)
+
+	// ErrLogCloseFile ...
+	ErrLogCloseFile = DefineKernelError(
+		coreErrorSeg|10,
+		ErrorLevelError,
+		"",
+	)
 )
 
 const gatewayErrorSeg = 2 << 8

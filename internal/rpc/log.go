@@ -2,134 +2,132 @@ package rpc
 
 import (
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-// ErrorLogV ...
+// ErrorLog ...
 type ErrorLog struct {
 	level         base.ErrorLevel
-	onLogToServer func(err *base.Error)
+	isLogToScreen bool
 	file          *os.File
-	closeCH       chan bool
-	errorCH       chan *base.Error
 	sync.Mutex
 }
 
-// func getErrorString(err *base.Error) string {
-// 	if err == nil {
-// 		return ""
-// 	}
+func getErrorString(
+	machineID uint64,
+	sessionID uint64,
+	err *base.Error,
+) string {
+	if err == nil {
+		return ""
+	}
 
-// 	return fmt.Sprintf(
-// 		"%s %s \n",
-// 		base.ConvertToIsoDateString(base.TimeNow()),
-// 		err.Error(),
-// 	)
-// }
+	machineString := ""
+	if machineID != 0 {
+		machineString = base.ConcatString(
+			"<target:",
+			strconv.FormatUint(machineID, 10),
+			"> ",
+		)
+	}
+	sessionString := ""
+	if sessionID != 0 {
+		sessionString = base.ConcatString(
+			"<session:",
+			strconv.FormatUint(sessionID, 10),
+			"> ",
+		)
+	}
 
-// // NewErrorLog ...
-// func NewErrorLog(
-// 	outFile string,
-// 	level base.ErrorLevel,
-// 	onLogToServer func(err *base.Error),
-// ) *ErrorLog {
-// 	if onLogToServer == nil {
-// 		_, _ = os.Stderr.WriteString(getErrorString(
-// 			ErrLogServerHandlerIsNil.AddDebug("onLogToServer is nil"),
-// 		))
-// 		return nil
-// 	}
+	return base.ConcatString(
+		base.ConvertToIsoDateString(base.TimeNow()),
+		" ",
+		machineString,
+		sessionString,
+		err.Error(),
+		"\n",
+	)
+}
 
-// 	file, e := func() (*os.File, error) {
-// 		if outFile == "" {
-// 			return os.Stderr, nil
-// 		}
+// NewErrorLog ...
+func NewErrorLog(
+	isLogToScreen bool,
+	outFile string,
+	onLogToServer func(stream *Stream),
+	level base.ErrorLevel,
+) *ErrorLog {
+	file, e := func() (*os.File, error) {
+		if outFile == "" {
+			return nil, nil
+		}
 
-// 		return os.OpenFile(outFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-// 	}()
+		return os.OpenFile(outFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}()
 
-// 	if e != nil {
-// 		_, _ = os.Stderr.WriteString(getErrorString(
-// 			ErrLogOpenFile.AddDebug(e.Error()),
-// 		))
-// 		return nil
-// 	}
+	ret := &ErrorLog{
+		level:         level,
+		isLogToScreen: isLogToScreen,
+		file:          file,
+	}
 
-// 	ret := &ErrorLog{
-// 		level:         level,
-// 		onLogToServer: onLogToServer,
-// 		file:          file,
-// 		closeCH:       make(chan bool, 1),
-// 		errorCH:       make(chan *Error, 65536),
-// 	}
+	if e != nil {
+		_, _ = os.Stderr.WriteString(getErrorString(
+			0,
+			0,
+			base.ErrLogOpenFile.AddDebug(e.Error()),
+		))
+		return nil
+	}
 
-// 	go func() {
-// 		for {
-// 			select {
-// 			case <-ret.closeCH:
-// 				return
-// 			case err := <-ret.errorCH:
-// 				onLogToServer(err)
-// 			}
-// 		}
-// 	}()
+	ret.Log(0, 0, base.ErrLogOpenFile.AddDebug(e.Error()))
 
-// 	return ret
-// }
+	return ret
+}
 
-// func (p *ErrorLog) logToFile(err *Error) {
-// 	if errLevel := err.GetLevel(); errLevel&p.level != 0 && p.file != nil {
-// 		if _, e := p.file.WriteString(getErrorString(err)); e != nil {
-// 			_, _ = os.Stderr.WriteString(getErrorString(
-// 				ErrLogWriteFile.AddDebug(e.Error()),
-// 			))
-// 		}
-// 	}
-// }
+// Log ...
+func (p *ErrorLog) Log(
+	machineID uint64,
+	sessionID uint64,
+	err *base.Error,
+) bool {
+	if err == nil {
+		return false
+	}
 
-// func (p *ErrorLog) LogToFile(err *Error) {
-// 	p.Lock()
-// 	defer p.Unlock()
-// 	p.logToFile(err)
-// }
+	if err.GetLevel()&p.level == 0 {
+		return false
+	}
 
-// func (p *ErrorLog) LogToServer(err *Error) {
-// 	p.Lock()
-// 	defer p.Unlock()
+	logStr := getErrorString(machineID, sessionID, err)
 
-// 	if errLevel := err.GetLevel(); errLevel&p.level != 0 && p.file != nil {
-// 		select {
-// 		case p.errorCH <- err:
-// 			break
-// 		default:
-// 			p.logToFile(ErrLogChannelFull)
-// 		}
-// 	}
-// }
+	if p.isLogToScreen {
+		os.Stdout.WriteString(logStr)
+	}
 
-// // Log ....
-// func (p *ErrorLog) Log(err *Error) {
-// 	p.LogToFile(err)
-// 	p.LogToServer(err)
-// }
+	if p.file != nil {
+		p.file.WriteString(logStr)
+	}
 
-// func (p *ErrorLog) Close() bool {
-// 	p.Lock()
-// 	defer p.Unlock()
+	return true
+}
 
-// 	if p.file != nil {
-// 		if e := p.file.Close(); e != nil {
-// 			_, _ = os.Stderr.WriteString(getErrorString(
-// 				ErrLogCloseFile.AddDebug(e.Error()),
-// 			))
-// 			return false
-// 		}
-// 		p.file = nil
-// 		p.closeCH <- true
-// 		return true
-// 	}
+// Close ...
+func (p *ErrorLog) Close() bool {
+	p.Lock()
+	defer p.Unlock()
 
-// 	return false
-// }
+	if p.file != nil {
+		if e := p.file.Close(); e != nil {
+			p.Log(0, 0, base.ErrLogCloseFile.AddDebug(e.Error()))
+			return false
+		}
+
+		p.file = nil
+		return true
+	}
+
+	return true
+}
