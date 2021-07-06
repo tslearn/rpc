@@ -63,8 +63,8 @@ func TestNewLogger(t *testing.T) {
 
 func TestLogger_Log(t *testing.T) {
 	getFileContent := func(fileName string) string {
-		buffer, _ := os.ReadFile(fileName)
-		return string(buffer)
+		ret, _ := ReadFromFile(fileName)
+		return ret
 	}
 
 	t.Run("isLogToScreen == true, file is empty", func(t *testing.T) {
