@@ -1,6 +1,7 @@
 package base
 
 import (
+	"os"
 	"sync"
 )
 
@@ -48,7 +49,9 @@ func (p *SyncPoolDebug) Get() interface{} {
 
 	if p.pool.New == nil {
 		p.pool.New = p.New
-		Log("Warn: SyncPool is in debug mode, which may slow down the program")
+		_, _ = os.Stdout.WriteString(
+			"Warn: SyncPool is in debug mode, which may slow down the program",
+		)
 	}
 
 	x := p.pool.Get()

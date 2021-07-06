@@ -231,9 +231,16 @@ var (
 		"",
 	)
 
+	// ErrLogWriteFile ...
+	ErrLogWriteFile = DefineKernelError(
+		coreErrorSeg|10,
+		ErrorLevelError,
+		"",
+	)
+
 	// ErrLogCloseFile ...
 	ErrLogCloseFile = DefineKernelError(
-		coreErrorSeg|10,
+		coreErrorSeg|11,
 		ErrorLevelError,
 		"",
 	)

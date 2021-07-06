@@ -1,9 +1,7 @@
 package base
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 	"testing"
 	"unsafe"
 )
@@ -19,28 +17,26 @@ func (p *fakeTesting) Fail() {
 }
 
 func testFailHelper(fn func(_ func(_ ...interface{}) *Assert)) (bool, string) {
-	var buf bytes.Buffer
 	retCH := make(chan bool, 1)
 
-	SetLogWriter(&buf)
-	defer SetLogWriter(os.Stdout)
-
-	fn(func(args ...interface{}) *Assert {
-		return &Assert{
-			t: &fakeTesting{
-				onFail: func() {
-					retCH <- true
+	retValue := captureStdout(func() {
+		fn(func(args ...interface{}) *Assert {
+			return &Assert{
+				t: &fakeTesting{
+					onFail: func() {
+						retCH <- true
+					},
 				},
-			},
-			args: args,
-		}
+				args: args,
+			}
+		})
 	})
 
 	select {
 	case <-retCH:
-		return true, buf.String()
+		return true, retValue
 	default:
-		return false, buf.String()
+		return false, retValue
 	}
 }
 

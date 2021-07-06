@@ -1,8 +1,6 @@
 package base
 
 import (
-	"bytes"
-	"os"
 	"testing"
 )
 
@@ -44,9 +42,6 @@ func TestSyncPoolDebug_Put(t *testing.T) {
 			},
 		}
 		assert(RunWithCatchPanic(func() {
-			var buf bytes.Buffer
-			SetLogWriter(&buf)
-			defer SetLogWriter(os.Stdout)
 			v1.Put(v1.Get())
 		})).IsNil()
 	})
@@ -55,28 +50,24 @@ func TestSyncPoolDebug_Put(t *testing.T) {
 func TestSyncPoolDebug_Get(t *testing.T) {
 	t.Run("get value twice", func(t *testing.T) {
 		assert := NewAssert(t)
-		var buf bytes.Buffer
-		assert(RunWithCatchPanic(func() {
-			SetLogWriter(&buf)
-			defer SetLogWriter(os.Stdout)
-			v1 := &SyncPoolDebug{
-				New: func() interface{} {
-					return &buf
-				},
-			}
-			v1.Get()
-			v1.Get()
-		})).Equal("check failed")
-		assert(buf.String()).Equal(
+		outString := captureStdout(func() {
+			assert(RunWithCatchPanic(func() {
+				v1 := &SyncPoolDebug{
+					New: func() interface{} {
+						return 3
+					},
+				}
+				v1.Get()
+				v1.Get()
+			})).Equal("check failed")
+		})
+		assert(outString).Equal(
 			"Warn: SyncPool is in debug mode, which may slow down the program",
 		)
 	})
 
 	t.Run("get value ok", func(t *testing.T) {
 		assert := NewAssert(t)
-		var buf bytes.Buffer
-		SetLogWriter(&buf)
-		defer SetLogWriter(os.Stdout)
 
 		v1 := &SyncPoolDebug{
 			New: func() interface{} {
@@ -84,8 +75,12 @@ func TestSyncPoolDebug_Get(t *testing.T) {
 				return &ret
 			},
 		}
-		assert(v1.Get()).IsNotNil()
-		assert(buf.String()).Equal(
+
+		outString := captureStdout(func() {
+			assert(v1.Get()).IsNotNil()
+		})
+
+		assert(outString).Equal(
 			"Warn: SyncPool is in debug mode, which may slow down the program",
 		)
 	})

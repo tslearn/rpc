@@ -2,6 +2,7 @@ package base
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 )
 
@@ -22,7 +23,9 @@ func NewAssert(t interface{ Fail() }) func(args ...interface{}) *Assert {
 }
 
 func (p *Assert) fail(reason string) {
-	Log(fmt.Sprintf("\t%s\n\t%s\n", reason, GetFileLine(2)))
+	_, _ = os.Stdout.WriteString(
+		fmt.Sprintf("\t%s\n\t%s\n", reason, GetFileLine(2)),
+	)
 	p.t.Fail()
 }
 
