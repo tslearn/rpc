@@ -2,9 +2,10 @@ package metrics
 
 import (
 	"errors"
-	"github.com/rpccloud/rpc/internal/base"
 	"testing"
 	"time"
+
+	"github.com/rpccloud/rpc/internal/base"
 )
 
 func TestCheckEqual(t *testing.T) {
@@ -47,7 +48,7 @@ func TestGetCPUPercent(t *testing.T) {
 
 	t.Run("ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		cpu, ok := getCPUPercent(500 * time.Millisecond)
+		cpu, ok := getCPUPercent(200 * time.Millisecond)
 		assert(cpu >= 0 && cpu <= 1).IsTrue()
 		assert(ok).IsTrue()
 	})
@@ -75,7 +76,7 @@ func TestCalculateCPUPercent(t *testing.T) {
 	t.Run("t2All <= t1All", func(t *testing.T) {
 		assert := base.NewAssert(t)
 		assert(calculateCPUPercent(&cpuTimesStat{Idle: 1}, &cpuTimesStat{})).
-			Equal(float64(1), false)
+			Equal(float64(1), true)
 	})
 
 	t.Run("ok", func(t *testing.T) {
@@ -90,7 +91,7 @@ func TestCalculateCPUPercent(t *testing.T) {
 func TestGetMetrics(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		assert := base.NewAssert(t)
-		assert(GetMetrics(500 * time.Millisecond)).IsNotNil()
+		assert(GetMetrics(200 * time.Millisecond)).IsNotNil()
 	})
 
 	t.Run("interval <= 0", func(t *testing.T) {

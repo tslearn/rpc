@@ -2,7 +2,6 @@
 package metrics
 
 import (
-	"fmt"
 	"reflect"
 	"time"
 )
@@ -48,12 +47,10 @@ func (t *cpuTimesStat) getAllBusy() (float64, float64) {
 
 func calculateCPUPercent(t1 *cpuTimesStat, t2 *cpuTimesStat) (float64, bool) {
 	if t1 == nil {
-		fmt.Println("TA")
 		return 1, false
 	}
 
 	if t2 == nil {
-		fmt.Println("TB")
 		return 1, false
 	}
 
@@ -61,13 +58,11 @@ func calculateCPUPercent(t1 *cpuTimesStat, t2 *cpuTimesStat) (float64, bool) {
 	t2All, t2Busy := t2.getAllBusy()
 
 	if t2Busy < t1Busy {
-		fmt.Println("TC")
 		return 1, false
 	}
 
 	if t2All <= t1All {
-		fmt.Println("TD")
-		return 1, false
+		return 1, true
 	}
 
 	return (t2Busy - t1Busy) / (t2All - t1All), true
