@@ -257,7 +257,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !v.IsRunning() {
+		for !base.IsTCPPortOccupied(8888) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -286,7 +286,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !v.IsRunning() {
+		for !base.IsTCPPortOccupied(8888) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -312,7 +312,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		stream.Write(true)
 
-		for !v.IsRunning() {
+		for !base.IsTCPPortOccupied(8888) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -336,7 +336,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !v.IsRunning() {
+		for !base.IsTCPPortOccupied(8888) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
@@ -360,7 +360,7 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !v.IsRunning() {
+		for !base.IsTCPPortOccupied(8888) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		defer v.Close()
