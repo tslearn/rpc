@@ -23,7 +23,10 @@ func NewLogger(isLogToScreen bool, outFile string) (*Logger, *Error) {
 	}()
 
 	if e != nil {
-		return nil, ErrLogOpenFile.AddDebug(e.Error())
+		return &Logger{
+			isLogToScreen: isLogToScreen,
+			file:          nil,
+		}, ErrLogOpenFile.AddDebug(e.Error())
 	}
 
 	return &Logger{
@@ -33,20 +36,14 @@ func NewLogger(isLogToScreen bool, outFile string) (*Logger, *Error) {
 }
 
 // Log ...
-func (p *Logger) Log(str string) *Error {
-	if p.isLogToScreen {
-		if _, e := os.Stdout.WriteString(str); e != nil {
-			return ErrLogWriteFile.AddDebug(e.Error())
-		}
-	}
-
+func (p *Logger) Log(str string) {
 	if p.file != nil {
-		if _, e := p.file.WriteString(str); e != nil {
-			return ErrLogWriteFile.AddDebug(e.Error())
-		}
+		_, _ = p.file.WriteString(str)
 	}
 
-	return nil
+	if p.isLogToScreen {
+		_, _ = os.Stdout.WriteString(str)
+	}
 }
 
 // Close ...

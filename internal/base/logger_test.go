@@ -38,7 +38,7 @@ func TestNewLogger(t *testing.T) {
 	t.Run("open file error", func(t *testing.T) {
 		assert := NewAssert(t)
 		v, e := NewLogger(false, "/")
-		assert(v).IsNil()
+		assert(v.file).IsNil()
 		assert(e.GetCode()).Equal(ErrLogOpenFile.GetCode())
 	})
 
@@ -72,7 +72,7 @@ func TestLogger_Log(t *testing.T) {
 		v, _ := NewLogger(true, "")
 
 		assert(captureStdout(func() {
-			assert(v.Log("hello")).IsNil()
+			v.Log("hello")
 		})).Equal("hello")
 
 		v.Close()
@@ -83,41 +83,10 @@ func TestLogger_Log(t *testing.T) {
 		v, _ := NewLogger(false, "test.log")
 
 		assert(captureStdout(func() {
-			assert(v.Log("hello")).IsNil()
+			v.Log("hello")
 		})).Equal("")
 
 		assert(getFileContent("test.log")).Equal("hello")
-
-		v.Close()
-		_ = os.Remove("test.log")
-	})
-
-	t.Run("stdout WriteString error", func(t *testing.T) {
-		assert := NewAssert(t)
-
-		v, _ := NewLogger(true, "test.log")
-
-		oldStdout := os.Stdout
-		os.Stdout = v.file
-		defer func() {
-			os.Stdout = oldStdout
-		}()
-
-		v.file.Close()
-
-		assert(v.Log("hello").GetCode()).Equal(ErrLogWriteFile.GetCode())
-
-		v.Close()
-		_ = os.Remove("test.log")
-	})
-
-	t.Run("file WriteString error", func(t *testing.T) {
-		assert := NewAssert(t)
-
-		v, _ := NewLogger(true, "test.log")
-		v.file.Close()
-
-		assert(v.Log("hello").GetCode()).Equal(ErrLogWriteFile.GetCode())
 
 		v.Close()
 		_ = os.Remove("test.log")

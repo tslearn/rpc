@@ -304,12 +304,14 @@ func MakeInternalRequestStream(
 ) (*Stream, *base.Error) {
 	stream := NewStream()
 	stream.SetKind(StreamKindRPCRequest)
+
 	// set debug bit
 	if debug {
 		stream.SetStatusBitDebug()
 	} else {
 		stream.ClearStatusBitDebug()
 	}
+
 	// set depth
 	stream.SetDepth(depth)
 	// write target
@@ -325,9 +327,11 @@ func MakeInternalRequestStream(
 					base.ConvertOrdinalToString(uint(i)+2),
 					" argument: ",
 					reason,
-				))
+				),
+			)
 		}
 	}
+
 	return stream, nil
 }
 
