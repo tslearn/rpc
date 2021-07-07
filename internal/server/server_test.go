@@ -257,15 +257,19 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !base.IsTCPPortOccupied(8888) {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		defer v.Close()
 
 		v.OnReceiveStream(stream)
 
 		assert(rpc.ParseResponseStream(logReceiver.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
+
+		for !base.IsTCPPortOccupied(8888) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		v.Close()
 	})
 
 	t.Run("StreamKindRPCExternalRequest", func(t *testing.T) {
@@ -286,15 +290,19 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteString("#.test.Eval")
 		stream.WriteString("@")
 
-		for !base.IsTCPPortOccupied(8888) {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		defer v.Close()
 
 		v.OnReceiveStream(stream)
 
 		assert(rpc.ParseResponseStream(logReceiver.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
+
+		for !base.IsTCPPortOccupied(8888) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		v.Close()
 	})
 
 	t.Run("StreamKindRPCResponseOK", func(t *testing.T) {
@@ -312,13 +320,18 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.SetKind(rpc.StreamKindRPCResponseOK)
 		stream.Write(true)
 
-		for !base.IsTCPPortOccupied(8888) {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		defer v.Close()
+
 		v.OnReceiveStream(stream)
 		assert(rpc.ParseResponseStream(logReceiver.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
+
+		for !base.IsTCPPortOccupied(8888) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		v.Close()
 	})
 
 	t.Run("StreamKindRPCResponseError", func(t *testing.T) {
@@ -336,13 +349,18 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !base.IsTCPPortOccupied(8888) {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		defer v.Close()
+
 		v.OnReceiveStream(stream)
 		assert(rpc.ParseResponseStream(logReceiver.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
+
+		for !base.IsTCPPortOccupied(8888) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		v.Close()
 	})
 
 	t.Run("StreamKindRPCBoardCast", func(t *testing.T) {
@@ -360,13 +378,18 @@ func TestServer_OnReceiveStream(t *testing.T) {
 		stream.WriteUint64(uint64(base.ErrStream.GetCode()))
 		stream.WriteString(base.ErrStream.GetMessage())
 
-		for !base.IsTCPPortOccupied(8888) {
+		for !v.IsRunning() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		defer v.Close()
+
 		v.OnReceiveStream(stream)
 		assert(rpc.ParseResponseStream(logReceiver.WaitStream())).
 			Equal(nil, base.ErrGateWaySessionNotFound)
+
+		for !base.IsTCPPortOccupied(8888) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		v.Close()
 	})
 
 	t.Run("StreamKindSystemErrorReport log to screen", func(t *testing.T) {
