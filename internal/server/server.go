@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rpccloud/rpc/internal/base"
-	"github.com/rpccloud/rpc/internal/gateway"
 	"github.com/rpccloud/rpc/internal/rpc"
 )
 
@@ -28,7 +27,7 @@ var fnNumCPU = runtime.NumCPU
 type Server struct {
 	isRunning        bool
 	processor        *rpc.Processor
-	gateway          *gateway.GateWay
+	gateway          *GateWay
 	numOfThreads     int
 	maxNodeDepth     int16
 	maxCallDepth     int16
@@ -64,9 +63,9 @@ func NewServer(logReceiver rpc.IStreamReceiver) *Server {
 		ret.numOfThreads = defaultMaxNumOfThreads
 	}
 
-	ret.gateway = gateway.NewGateWay(
+	ret.gateway = NewGateWay(
 		0,
-		gateway.GetDefaultConfig(),
+		GetDefaultConfig(),
 		ret,
 	)
 

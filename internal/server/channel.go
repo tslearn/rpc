@@ -1,4 +1,4 @@
-package gateway
+package server
 
 import (
 	"github.com/rpccloud/rpc/internal/base"

@@ -1,5 +1,4 @@
-// Package gateway ...
-package gateway
+package server
 
 import (
 	"crypto/tls"
