@@ -1,61 +1,26 @@
 package rpc
 
 import (
-	"strconv"
-
 	"github.com/rpccloud/rpc/internal/base"
 )
 
-func getErrorString(
-	machineID uint64,
-	sessionID uint64,
-	err *base.Error,
-) string {
-	if err == nil {
-		return ""
-	}
-
-	machineString := ""
-	if machineID != 0 {
-		machineString = base.ConcatString(
-			"<target:",
-			strconv.FormatUint(machineID, 10),
-			"> ",
-		)
-	}
-	sessionString := ""
-	if sessionID != 0 {
-		sessionString = base.ConcatString(
-			"<session:",
-			strconv.FormatUint(sessionID, 10),
-			"> ",
-		)
-	}
-
-	return base.ConcatString(
-		base.ConvertToIsoDateString(base.TimeNow()),
-		" ",
-		machineString,
-		sessionString,
-		err.Error(),
-		"\n",
-	)
+type StreamHubCallback struct {
+	OnConnectRequestStream    func(stream *Stream)
+	OnConnectResponseStream   func(stream *Stream)
+	OnPingStream              func(stream *Stream)
+	OnPongStream              func(stream *Stream)
+	OnRPCRequestStream        func(stream *Stream)
+	OnRPCResponseOKStream     func(stream *Stream)
+	OnRPCResponseErrorStream  func(stream *Stream)
+	OnRPCBoardCastStream      func(stream *Stream)
+	OnSystemErrorReportStream func(sessionID uint64, err *base.Error)
 }
 
 // StreamHub ...
 type StreamHub struct {
-	onConnectRequestStream    func(stream *Stream)
-	onConnectResponseStream   func(stream *Stream)
-	onPingStream              func(stream *Stream)
-	onPongStream              func(stream *Stream)
-	onRPCRequestStream        func(stream *Stream)
-	onRPCResponseOKStream     func(stream *Stream)
-	onRPCResponseErrorStream  func(stream *Stream)
-	onRPCBoardCastStream      func(stream *Stream)
-	onSystemErrorReportStream func(stream *Stream)
-
 	logger   *base.Logger
 	logLevel base.ErrorLevel
+	callback StreamHubCallback
 }
 
 // NewStreamHub ...
@@ -63,35 +28,18 @@ func NewStreamHub(
 	isLogErrorToScreen bool,
 	logFile string,
 	logLevel base.ErrorLevel,
-	onConnectRequestStream func(stream *Stream),
-	onConnectResponseStream func(stream *Stream),
-	onPingStream func(stream *Stream),
-	onPongStream func(stream *Stream),
-	onRPCRequestStream func(stream *Stream),
-	onRPCResponseOKStream func(stream *Stream),
-	onRPCResponseErrorStream func(stream *Stream),
-	onRPCBoardCastStream func(stream *Stream),
-	onSystemErrorReportStream func(stream *Stream),
+	callback StreamHubCallback,
 ) *StreamHub {
 	logger, err := base.NewLogger(isLogErrorToScreen, logFile)
 
 	ret := &StreamHub{
-		onConnectRequestStream:    onConnectRequestStream,
-		onConnectResponseStream:   onConnectResponseStream,
-		onPingStream:              onPingStream,
-		onPongStream:              onPongStream,
-		onRPCRequestStream:        onRPCRequestStream,
-		onRPCResponseOKStream:     onRPCResponseOKStream,
-		onRPCResponseErrorStream:  onRPCResponseErrorStream,
-		onRPCBoardCastStream:      onRPCBoardCastStream,
-		onSystemErrorReportStream: onSystemErrorReportStream,
-		logger:                    logger,
-		logLevel:                  logLevel,
+		logger:   logger,
+		logLevel: logLevel,
+		callback: callback,
 	}
 
 	if err != nil {
-		errStream := MakeSystemErrorStream(err)
-		ret.OnReceiveStream(errStream)
+		ret.OnReceiveStream(MakeSystemErrorStream(err))
 	}
 
 	return ret
@@ -103,42 +51,34 @@ func (p *StreamHub) OnReceiveStream(stream *Stream) {
 		fn := (func(stream *Stream))(nil)
 		switch stream.GetKind() {
 		case StreamKindConnectRequest:
-			fn = p.onConnectRequestStream
+			fn = p.callback.OnConnectRequestStream
 		case StreamKindConnectResponse:
-			fn = p.onConnectResponseStream
+			fn = p.callback.OnConnectResponseStream
 		case StreamKindPing:
-			fn = p.onPingStream
+			fn = p.callback.OnPingStream
 		case StreamKindPong:
-			fn = p.onPongStream
+			fn = p.callback.OnPongStream
 		case StreamKindRPCRequest:
-			fn = p.onRPCRequestStream
+			fn = p.callback.OnRPCRequestStream
 		case StreamKindRPCResponseOK:
-			fn = p.onRPCResponseOKStream
+			fn = p.callback.OnRPCResponseOKStream
 		case StreamKindRPCResponseError:
-			fn = p.onRPCResponseErrorStream
+			fn = p.callback.OnRPCResponseErrorStream
 		case StreamKindRPCBoardCast:
-			fn = p.onRPCBoardCastStream
+			fn = p.callback.OnRPCBoardCastStream
 		case StreamKindSystemErrorReport:
-			fn = p.onSystemErrorReportStream
+			// err is definitely not nil
 			_, err := ParseResponseStream(stream)
 
 			if err.GetLevel()&p.logLevel == 0 {
 				return
 			}
 
-			sessionID := stream.GetSessionID()
-			p.logger.Log(getErrorString(0, sessionID, err))
+			if p.callback.OnSystemErrorReportStream != nil {
+				p.callback.OnSystemErrorReportStream(stream.GetSessionID(), err)
+			}
 
-			// exchange the stream
-			stream, _ = MakeInternalRequestStream(
-				false,
-				0,
-				"$sys.log.ReportError",
-				"@",
-				err.GetCode(),
-				err.GetMessage(),
-			)
-			stream.SetSessionID(sessionID)
+			return
 		}
 
 		if fn != nil {

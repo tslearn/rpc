@@ -207,3 +207,35 @@ func (p *Error) Error() string {
 		p.message,
 	)
 }
+
+func (p *Error) ReportString(machineID uint64, sessionID uint64) string {
+	machineString := ""
+	if machineID != 0 {
+		machineString = ConcatString(
+			"<target:",
+			strconv.FormatUint(machineID, 10),
+			"> ",
+		)
+	}
+	sessionString := ""
+	if sessionID != 0 {
+		sessionString = ConcatString(
+			"<session:",
+			strconv.FormatUint(sessionID, 10),
+			"> ",
+		)
+	}
+
+	return ConcatString(
+		ConvertToIsoDateString(TimeNow()),
+		" ",
+		machineString,
+		sessionString,
+		p.getErrorTypeString(),
+		p.getErrorLevelString(),
+		"[",
+		strconv.FormatUint(uint64(p.GetIndex()), 10),
+		"]: ",
+		p.message,
+	)
+}
