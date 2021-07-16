@@ -6,11 +6,10 @@ import (
 
 // Config ...
 type Config struct {
-	numOfChannels    int
-	transLimit       int
-	heartbeat        time.Duration
-	heartbeatTimeout time.Duration
-
+	numOfChannels         int
+	transLimit            int
+	heartbeat             time.Duration
+	heartbeatTimeout      time.Duration
 	serverMaxSessions     int
 	serverSessionTimeout  time.Duration
 	serverReadBufferSize  int
